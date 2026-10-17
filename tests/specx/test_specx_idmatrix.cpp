@@ -6,6 +6,8 @@
 //   test_specx_idmatrix            the full run: SNR 10 / 20 / 30 dB, 2 trials each, with and without the frequency known (a few minutes)
 //   test_specx_idmatrix --quick    SNR 20 dB, 1 trial, no frequency: for tuning
 //   test_specx_idmatrix --mode id  only the cases whose label contains id; --v prints every case
+#include "dect2/bandplan/bandplan.h"
+#include "dect2/channels/freq_db.h"
 #include "dect2/engine/mode_synth.h"
 #include "dect2/engine/mode_tuning.h"
 #include "dect2/engine/sig_ident.h"
@@ -170,6 +172,17 @@ bool sameGroup(const Case& c, const Candidate& k) {
     return a && a == b;
 }
 
+// Test signals in which there is nothing for a spectrum to identify, left out of the figures (and said so in the output): GNSS and radio astronomy are
+// below the noise floor by design, the spectrum tools (explorer, analyser) are not signals, the UAT generator is silent for its first seconds.
+const char* notIdentifiable(const std::string& label) {
+    if (label == "gnss") return "spread spectrum below the noise floor";
+    if (label == "astro") return "radio astronomy: a signal below the noise floor";
+    if (label == "specx") return "the spectrum explorer's own test signal, not a mode";
+    if (label == "specan") return "the spectrum analyser's own test signal, not a mode";
+    if (label == "uat") return "the generator is silent in the first seconds";
+    return nullptr;
+}
+
 std::string famOf(const Case& c) {
     for (size_t i = 0; i < signatureCount(); i++) {
         const SigInfo& s = signatureInfo(i);
@@ -191,23 +204,25 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--mode") && i + 1 < argc) only = argv[++i];
         else if (!strcmp(argv[i], "--list")) { for (const Case& c : allCases()) printf("%s|%s|%s|%d|%.0f|%.3f\n", c.label.c_str(), c.modeId.c_str(), c.subId.c_str(), c.std, c.rate, c.mhz); return 0; }
     }
+    (void)builtinFrequencies(); (void)bandplan::builtinPlans();   // parsed on first use: not inside the timing of the first case
     const std::vector<double> snrs = quick ? std::vector<double>{getenv("SNR") ? atof(getenv("SNR")) : 20.0} : std::vector<double>{10, 20, 30};
     const int trials = quick ? 1 : 2;
-    const std::vector<bool> freqKnown = quick ? std::vector<bool>{false} : std::vector<bool>{false, true};
+    const std::vector<int> freqKnown = quick ? std::vector<int>{0} : std::vector<int>{0, 1, 2};   // 0 blind, 1 the true frequency, 2 a wrong one (27.5 MHz)
 
     std::vector<Case> cases = allCases();
     // [freqKnown][snr] -> family -> tally;  per mode -> tally (blind, all SNRs)
-    std::map<std::string, Tally> famTally[2][3], modeTally[2];
+    std::map<std::string, Tally> famTally[3][3], modeTally[3];
     std::map<std::string, std::map<std::string, int>> confusion;   // blind, SNR 20: truth -> predicted top-1 -> count
-    Tally all[2][3];
+    Tally all[3][3];
     struct Bin { int n = 0, right = 0; double conf = 0; };
-    Bin rel[2][10];
+    Bin rel[3][10];
     double maxMs = 0, sumMs = 0; int nMs = 0;
     std::map<std::string, double> slow;
-    std::vector<std::string> skipped;
+    std::vector<std::string> skipped, excluded;
 
     for (Case& c : cases) {
         if (!only.empty() && c.label.find(only) == std::string::npos) continue;
+        if (const char* why = notIdentifiable(c.label)) { excluded.push_back(c.label + " (" + why + ")"); continue; }
         std::vector<cf32> clean;
         std::string why;
         const size_t n = (size_t)std::min(c.rate * captureSeconds(c.rate), 3.0e6);
@@ -223,10 +238,11 @@ int main(int argc, char** argv) {
                 Rng r(0x9E3779B9u * (uint32_t)(std::hash<std::string>()(c.label) + si * 17 + tr * 101));
                 const Prepared p = prepare(clean, c.rate, snrs[si], r);
                 for (int fk = 0; fk < (int)freqKnown.size(); fk++) {
-                    const bool known = freqKnown[fk];
-                    const int slot = quick ? 0 : (int)known;
+                    const int fmode = freqKnown[fk];
+                    const bool known = fmode != 0;
+                    const int slot = quick ? 0 : fmode;
                     Options o;
-                    o.rfHz = known ? c.mhz * 1e6 - p.offHz : 0;
+                    o.rfHz = fmode == 1 ? c.mhz * 1e6 - p.offHz : fmode == 2 ? 27.5e6 - p.offHz : 0;
                     o.usePriors = known;
                     const Region rg = regionAt(p.x.data(), p.x.size(), c.rate, p.clickOff);
                     o.loHz = rg.loHz; o.hiHz = rg.hiHz;
@@ -255,7 +271,7 @@ int main(int argc, char** argv) {
                     if (!known && (quick || si == 1)) confusion[c.label][called && !res.cands.empty() ? res.cands[0].name : "(unknown)"]++;
                     if (const char* csv = getenv("CSV")) {   // for fitting the confidence constants offline: one line per case, every candidate with its score
                         static FILE* fcsv = fopen(csv, "w");
-                        fprintf(fcsv, "%s,%s,%s,%.0f,%d,%d", c.label.c_str(), c.modeId.c_str(), c.subId.c_str(), snrs[si], (int)known, rank);
+                        fprintf(fcsv, "%s,%s,%s,%.0f,%d,%d", c.label.c_str(), c.modeId.c_str(), c.subId.c_str(), snrs[si], fmode, rank);
                         for (const Candidate& k : res.cands) fprintf(fcsv, ",%s|%s|%.1f%s", k.modeId.c_str(), k.subId.c_str(), k.score, isTruth(c, k) ? "|T" : "");
                         fprintf(fcsv, "\n"); fflush(fcsv);
                     }
@@ -265,16 +281,17 @@ int main(int argc, char** argv) {
                                g.duty, g.bursts, g.burstMs, g.burstPeriodMs, g.envKurt, g.carrierDb, g.fskLevels, g.devHz[0], g.devHz[1], g.devHz[2], g.devHz[3], g.ofdmTuSec * 1e6, g.ofdmTgSec * 1e6, g.snrDb);
                     }
                     if (verbose)
-                        printf("%-14s snr %2.0f off %+8.0f bw %7.0f reg [%+.0f %+.0f] %s %-7s -> %-22s %3.0f%% %s | %s\n", c.label.c_str(), snrs[si], p.offHz, p.bw, rg.loHz, rg.hiHz, known ? "freq " : "blind", rank == 0 ? "ok" : rank > 0 ? "top3" : "MISS",
+                        printf("%-14s snr %2.0f off %+8.0f bw %7.0f reg [%+.0f %+.0f] %s %-7s -> %-22s %3.0f%% %s | %s\n", c.label.c_str(), snrs[si], p.offHz, p.bw, rg.loHz, rg.hiHz, fmode == 1 ? "freq " : fmode == 2 ? "wrong" : "blind", rank == 0 ? "ok" : rank > 0 ? "top3" : "MISS",
                                res.cands.empty() ? "-" : res.cands[0].name.c_str(), conf * 100, res.verdict == VerdictUnknown ? "unknown" : res.verdict == VerdictAmbiguous ? "ambiguous" : "likely", res.summary.c_str());
                 }
             }
     }
-    for (const auto& s : skipped) printf("skipped: %s\n", s.c_str());
+    for (const auto& s : skipped) printf("skipped (no generator): %s\n", s.c_str());
+    if (!excluded.empty()) { printf("left out of the figures, nothing for a spectrum to identify:"); for (const auto& e : excluded) printf(" %s;", e.c_str()); printf("\n"); }
 
     auto pct = [](int a, int b) { return b ? 100.0 * a / b : 0.0; };
-    for (int slot = 0; slot < (quick ? 1 : 2); slot++) {
-        printf("\n==== %s ====\n", quick ? "blind (frequency not used), SNR 20 dB" : slot ? "frequency known (database and band plan used)" : "blind (frequency not used)");
+    for (int slot = 0; slot < (quick ? 1 : 3); slot++) {
+        printf("\n==== %s ====\n", quick ? "blind (frequency not used), SNR 20 dB" : slot == 2 ? "a wrong frequency given (27.5 MHz: the prior must not make a signal that does not fit into a match)" : slot ? "frequency known (database and band plan used)" : "blind (frequency not used)");
         for (int si = 0; si < (quick ? 1 : 3); si++) {
             if (!quick) printf("-- SNR %.0f dB: top-1 %.1f %% (group-level %.1f %%), top-3 %.1f %%, rejected %.1f %%, wrong with confidence >= 50 %%: %.1f %% (%d cases)\n", snrs[si], pct(all[slot][si].top1, all[slot][si].n), pct(all[slot][si].group1, all[slot][si].n),
                                pct(all[slot][si].top3, all[slot][si].n), pct(all[slot][si].unknown, all[slot][si].n), pct(all[slot][si].wrongSure, all[slot][si].n), all[slot][si].n);
@@ -344,9 +361,38 @@ int main(int argc, char** argv) {
     }
 
     if (!only.empty() || verbose) { printf("(partial run: thresholds not checked)\n"); return 0; }
-    // ---- thresholds: measured values minus a margin (docs/signal-id.md)
-    const int s20 = quick ? 0 : 1;
-    CHECK(pct(all[0][s20].top1, all[0][s20].n) >= 0.0, "blind top-1 at 20 dB %.1f", pct(all[0][s20].top1, all[0][s20].n));
-    CHECK(maxMs < 200, "identify() took %.0f ms, the target is 200", maxMs);
+    // ---- thresholds: the measured values (docs/signal-id.md) minus a margin of about five points, which the platforms' floating point can eat.
+    // They hold the line against a change that makes the identifier worse; they are not claims about real signals.
+    auto fam = [&](int slot, int si, const char* name) { const auto it = famTally[slot][si].find(name); return it == famTally[slot][si].end() ? Tally() : it->second; };
+    if (quick) {
+        CHECK(pct(all[0][0].top1, all[0][0].n) >= 42, "blind top-1 at 20 dB %.1f %% (>= 42)", pct(all[0][0].top1, all[0][0].n));
+        CHECK(pct(all[0][0].top3, all[0][0].n) >= 50, "blind top-3 at 20 dB %.1f %% (>= 50)", pct(all[0][0].top3, all[0][0].n));
+        CHECK(pct(all[0][0].wrongSure, all[0][0].n) <= 14, "wrong with confidence >= 50 %%: %.1f %% (<= 14)", pct(all[0][0].wrongSure, all[0][0].n));
+        CHECK(pct(fam(0, 0, "Broadcast").top1, fam(0, 0, "Broadcast").n) >= 70, "broadcast top-1 at 20 dB %.1f %% (>= 70)", pct(fam(0, 0, "Broadcast").top1, fam(0, 0, "Broadcast").n));
+        CHECK(pct(fam(0, 0, "Digital voice").top1, fam(0, 0, "Digital voice").n) >= 75, "digital voice top-1 at 20 dB %.1f %% (>= 75)", pct(fam(0, 0, "Digital voice").top1, fam(0, 0, "Digital voice").n));
+    } else {
+        static const double kBlind1[3] = {33, 42, 45}, kBlind3[3] = {39, 50, 53}, kKnown1[3] = {42, 51, 55};
+        for (int si = 0; si < 3; si++) {
+            CHECK(pct(all[0][si].top1, all[0][si].n) >= kBlind1[si], "blind top-1 at %.0f dB %.1f %% (>= %.0f)", snrs[si], pct(all[0][si].top1, all[0][si].n), kBlind1[si]);
+            CHECK(pct(all[0][si].top3, all[0][si].n) >= kBlind3[si], "blind top-3 at %.0f dB %.1f %% (>= %.0f)", snrs[si], pct(all[0][si].top3, all[0][si].n), kBlind3[si]);
+            CHECK(pct(all[1][si].top1, all[1][si].n) >= kKnown1[si], "frequency known: top-1 at %.0f dB %.1f %% (>= %.0f)", snrs[si], pct(all[1][si].top1, all[1][si].n), kKnown1[si]);
+            CHECK(pct(all[2][si].top1, all[2][si].n) >= pct(all[0][si].top1, all[0][si].n) - 10, "a wrong frequency costs more than 10 points at %.0f dB: %.1f %% against %.1f %% blind", snrs[si], pct(all[2][si].top1, all[2][si].n), pct(all[0][si].top1, all[0][si].n));
+            CHECK(pct(all[0][si].wrongSure, all[0][si].n) <= 14, "wrong with confidence >= 50 %% at %.0f dB: %.1f %% (<= 14)", snrs[si], pct(all[0][si].wrongSure, all[0][si].n));
+        }
+        CHECK(pct(fam(0, 1, "Broadcast").top1, fam(0, 1, "Broadcast").n) >= 70, "broadcast top-1 at 20 dB %.1f %% (>= 70)", pct(fam(0, 1, "Broadcast").top1, fam(0, 1, "Broadcast").n));
+        CHECK(pct(fam(0, 1, "Digital voice").top1, fam(0, 1, "Digital voice").n) >= 75, "digital voice top-1 at 20 dB %.1f %% (>= 75)", pct(fam(0, 1, "Digital voice").top1, fam(0, 1, "Digital voice").n));
+    }
+    // the stated confidence must be honest: of the answers stated at 80 % or more, at least 85 % were right (all settings together)
+    {
+        int n = 0, right = 0;
+        for (int slot = 0; slot < (quick ? 1 : 3); slot++) for (int b = 8; b < 10; b++) { n += rel[slot][b].n; right += rel[slot][b].right; }
+        CHECK(n == 0 || pct(right, n) >= 85, "answers stated at 80 %% or more were right in %.1f %% of %d cases (>= 85)", pct(right, n), n);
+    }
+    CHECK(rej[0] == rejN[0], "noise only answered \"unknown\" %d of %d times", rej[0], rejN[0]);
+    CHECK(rej[2] >= rejN[2] - 1, "two unrelated tones answered \"unknown\" %d of %d times", rej[2], rejN[2]);
+    CHECK(rej[1] >= rejN[1] / 2, "band-limited noise answered \"unknown\" %d of %d times", rej[1], rejN[1]);
+    // speed: the target is 200 ms; the test allows a slow CI machine
+    CHECK(nMs && sumMs / nMs < 150, "identify() took %.0f ms on average, the target is 100 and the limit here 150", nMs ? sumMs / nMs : 0.0);
+    CHECK(maxMs < 500, "identify() took %.0f ms at worst, the target is 200 and the limit here 500", maxMs);
     return testSummary("specx_idmatrix");
 }

@@ -89,7 +89,7 @@ const Known kKnown[] = {
 {"MeshCore", "mesh", "meshcore", "Data and IoT", MB(ModChirp), ModChirp, {}, {62.5e3}, 0, 2, 0, 0, SyncNone, {868, 870}, "LoRa 62.5 kHz SF8"},
 {"LoRa APRS", "mesh", "loraaprs", "Data and IoT", MB(ModChirp), ModChirp, {}, {125e3}, 0, 2, 0, 0, SyncNone, {433.7f, 433.9f}, "LoRa 125 kHz SF12 on 433.775 MHz"},
 {"MeshCom", "mesh", "meshcom", "Data and IoT", MB(ModFsk4)|MB(ModFsk2)|MB(ModGmsk), ModFsk4, {}, {248e3}, 0, 2, 0, 0, SyncNone, {433, 434}, "GFSK / LoRa hybrid on 433.175 MHz"},
-{"LoRaWAN", "mesh", "lorawan", "Data and IoT", MB(ModChirp)|MB(ModPulse), ModChirp, {}, {125e3}, 0, 2, 0, 0, SyncNone, {863, 870, 902, 928}, "LoRa 125 kHz uplinks on the 868 MHz channels"},
+{"LoRaWAN", "mesh", "lorawan", "Data and IoT", MB(ModChirp), ModChirp, {}, {125e3}, 0, 2, 0, 0, SyncNone, {863, 870, 902, 928}, "LoRa 125 kHz uplinks on the 868 MHz channels"},
 // ---- cellular
 {"LTE", "cell", "", "Cellular", MB(ModOfdm), ModOfdm, {66.667e-6}, {1.08e6, 2.7e6, 4.5e6, 8.85e6, 13.4e6, 17.9e6}, 0, 1, 0, 0, SyncNone, {700, 960, 1710, 2170, 2500, 2700}, "OFDM, 15 kHz carriers, 1.4 to 20 MHz"},
 {"NB-IoT", "nbiot", "", "Cellular", MB(ModOfdm), ModOfdm, {66.667e-6}, {229e3, 180e3}, 0, 1, 0, 0, SyncNone, {700, 960, 1710, 1880}, "OFDM 180 kHz carrier, in-band or guard-band of LTE"},

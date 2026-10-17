@@ -1617,3 +1617,5 @@ The frequency list has here:	周波数リストにはここに次があります
 What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	これは何? 信号をクリックするかその上をドラッグすると、OnAir が正体と確度を示します。キー I。Shift+ドラッグならツールなしでも使えます。
 Why?	なぜ?
 unknown	不明
+Identify selected	選択を識別
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	選択した信号に無線機を合わせて、その正体を示します (サンプルレートが信号をカバーするモードでレシーバーが動作している必要があります)

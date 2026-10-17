@@ -1617,3 +1617,5 @@ The frequency list has here:	频率列表在此处有:
 What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	这是什么?点击信号或在其上拖动,OnAir 会告诉你它是什么以及有多大把握。快捷键 I。按住 Shift 拖动无需启用该工具。
 Why?	为什么?
 unknown	未知
+Identify selected	识别所选
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	将无线电调谐到所选信号并说明它是什么(接收器须处于采样率能覆盖该信号的模式)

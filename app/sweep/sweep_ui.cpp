@@ -233,6 +233,9 @@ void window(App& a) {
     ImGui::SameLine();
     ImGui::BeginDisabled(S.sel < 0 || S.sel >= (int)recs.size());
     if (ImGui::Button(tr("Tune to selected"))) tuneTo(a, recs[S.sel].freqHz);
+    ImGui::SameLine();
+    if (ImGui::Button(tr("Identify selected"))) { stopSweep(); identifyTuned(a, recs[S.sel].freqHz, recs[S.sel].bwHz); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)"));
     ImGui::EndDisabled();
     if (ImGui::BeginTable("##sweepsigs", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable, ImVec2(0, 0))) {
         ImGui::TableSetupScrollFreeze(0, 1);

@@ -1617,3 +1617,5 @@ The frequency list has here:	Dažnių sąraše čia yra:
 What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Kas tai? Spustelėkite signalą arba pervilkite per jį, ir OnAir pasakys, kas tai yra ir kiek tuo tikra. Klavišas I. Shift+vilkimas veikia ir be įrankio.
 Why?	Kodėl?
 unknown	nežinoma
+Identify selected	Atpažinti pažymėtą
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Suderina radiją su pažymėtu signalu ir pasako, kas tai yra (imtuvas turi veikti režimu, kurio atrankos dažnis jį apima)

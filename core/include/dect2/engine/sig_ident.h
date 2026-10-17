@@ -1,10 +1,11 @@
-// Signal identifier: what is this carrier? From a stretch of complex samples it measures the centre, the -3 / -20 / -26 dB and 99 %
-// widths (specx::measure on its own spectrum), continuous or bursty (duty), the modulation class (AM, FM, constant envelope, 2- or 4-level
-// FSK, GMSK, BPSK / QPSK / pi/4-DQPSK / 8PSK from the |x|^n lines, QAM, OFDM from the flat top and the cyclic prefix correlation, LoRa
-// chirps, pulses), the symbol rate (cyclostationary line of |x|^2, of the FM discriminator or of x^n) and, for FSK, the deviation levels.
-// Then it ranks the modes it knows from a table (rate, levels, width, band) and, where it is cheap, looks for their frame sync
-// (DMR, P25, NXDN, dPMR, POCSAG, AIS flags) to confirm. identify() is a pure function; Capture collects samples from the engine's
-// sample path and runs it on its own thread.
+// Signal identifier: what is this carrier? From a stretch of complex samples it measures the centre, the -3 / -20 / -26 dB and 99 % widths
+// (specx::measure on its own spectrum), continuous or bursty (duty, burst length, the spacing of the burst starts), the modulation class (AM, FM,
+// constant envelope, 2- or 4-level FSK, GMSK, BPSK / QPSK / pi/4-DQPSK / 8PSK from the |x|^n lines, QAM, OFDM from the flat top and the cyclic
+// prefix correlation, LoRa chirps, pulses), the symbol rate (cyclostationary line of |x|^2, of the FM discriminator or of x^n) and, for FSK, the
+// deviation levels. Then it scores the table of OnAir's modes (sig_known.cpp: what each one looks like) against the measurement, looks for the frame
+// sync of the land-mobile systems and POCSAG / AIS where that is cheap, lets the frequency database and the band plan move the scores a little,
+// and turns the scores into calibrated probabilities with a reject option ("unknown"). identify() is a pure function; Capture collects samples from
+// the engine's sample path and runs it on its own thread (docs/signal-id.md says how it works, what the numbers mean and how well it does).
 #pragma once
 #include "dect2/channels/memory_bank.h"
 #include "dect2/common/ring.h"

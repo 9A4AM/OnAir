@@ -1617,3 +1617,5 @@ The frequency list has here:	De frequentielijst heeft hier:
 What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Wat is dit? Klik op een signaal of sleep eroverheen en OnAir zegt wat het is en hoe zeker dat is. Toets I. Shift+slepen werkt ook zonder het gereedschap.
 Why?	Waarom?
 unknown	onbekend
+Identify selected	Geselecteerde identificeren
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Stemt de radio af op het geselecteerde signaal en zegt wat het is (de ontvanger moet in een modus staan waarvan de samplefrequentie het dekt)

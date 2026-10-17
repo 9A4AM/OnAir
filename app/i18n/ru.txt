@@ -1599,3 +1599,5 @@ The frequency list has here:	В списке частот здесь есть:
 What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Что это? Щёлкните сигнал или проведите по нему мышью, и OnAir скажет, что это и насколько он уверен. Клавиша I. Shift+перетаскивание работает и без режима.
 Why?	Почему?
 unknown	неизвестно
+Identify selected	Определить выбранный
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Настроить радио на выбранный сигнал и сказать, что это (приёмник должен работать в режиме, частота дискретизации которого его покрывает)

@@ -1617,3 +1617,5 @@ The frequency list has here:	Lista częstotliwości zawiera tu:
 What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Co to jest? Kliknij sygnał lub przeciągnij po nim, a OnAir powie, co to jest i jak jest tego pewny. Klawisz I. Shift+przeciąganie działa także bez narzędzia.
 Why?	Dlaczego?
 unknown	nieznany
+Identify selected	Zidentyfikuj zaznaczony
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Strojenie radia na zaznaczony sygnał i podanie, co to jest (odbiornik musi pracować w trybie, którego częstotliwość próbkowania go obejmuje)

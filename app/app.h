@@ -939,6 +939,7 @@ void identifyStart(App& a, double sampleCentreRadioHz, double offHz, double widt
 void identifyAt(App& a, double clickMhz);
 void identifyRegion(App& a, double loMhz, double hiMhz);   // a dragged region (MHz)
 void identifyAll(App& a);                                  // every signal in the capture, in a table
+void identifyTuned(App& a, double freqHz, double bwHz);    // tunes the radio to a signal found by the sweep and identifies it there
 bool identifyRegionMhz(double& loMhz, double& hiMhz);      // the region of the open card, to draw it on the plots
 void identifyWindow(App& a);   // every frame: the window while it is open
 // general_ui.cpp: the general receiver's channel marker on the spectrum (plotId 0) and the waterfall (1): a click puts the channel

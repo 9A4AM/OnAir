@@ -3,6 +3,7 @@
 #include "sig_known.h"
 #include "dect2/dmr/dmr_proto.h"
 #include "dect2/dpmr/dpmr_proto.h"
+#include "dect2/bandplan/bandplan.h"
 #include "dect2/channels/freq_db.h"
 #include "dect2/dsp/fftutil.h"
 #include "dect2/nxdn/nxdn_proto.h"
@@ -12,9 +13,11 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cctype>
 #include <condition_variable>
 #include <cstdio>
 #include <mutex>
+#include <set>
 #include <thread>
 #include "dect2/common/mathconst.h"
 
@@ -334,6 +337,29 @@ void gate(Work& w, Features& f, double sigBw) {
     for (size_t i = 0; i < m; i++) w.core[i] = (i / B < nb) ? ob[i / B] : 0;
     std::fill(w.on.begin(), w.on.end(), 0);
     for (const auto& r : w.runs) std::fill(w.on.begin() + (long)r.first, w.on.begin() + (long)r.second, 1);
+    // The blocks are coarse (a burst a block long straddles two): move each edge to where the signal crosses the threshold, at a quarter of a block
+    {
+        const size_t W = std::max<size_t>(2, B / 4);
+        std::vector<double> pre(m + 1, 0.0);
+        for (size_t i = 0; i < m; i++) pre[i + 1] = pre[i] + std::norm(w.y[i]);
+        auto smooth = [&](size_t i) { const size_t a0 = i >= W / 2 ? i - W / 2 : 0, a1 = std::min(m, a0 + W); return (pre[a1] - pre[a0]) / (double)(a1 - a0); };
+        lens.clear();
+        std::fill(w.core.begin(), w.core.end(), 0);
+        for (auto& r : w.runs) {
+            const size_t cb = r.first + B < r.second ? r.first + B : r.first;   // inside the run (it was widened by a block each side)
+            const size_t ce = r.second > B + cb ? r.second - B : r.second;
+            size_t a0 = cb, b0 = ce;
+            while (a0 > r.first && smooth(a0 - 1) > thr) a0--;
+            while (b0 < r.second && smooth(b0) > thr) b0++;
+            while (a0 < b0 && smooth(a0) <= thr) a0++;
+            while (b0 > a0 && smooth(b0 - 1) <= thr) b0--;
+            lens.push_back((double)(b0 - a0) / w.fsd);
+            for (size_t i = a0; i < b0; i++) w.core[i] = 1;
+        }
+        size_t on2 = 0;
+        for (size_t i = 0; i < m; i++) on2 += w.core[i];
+        f.duty = (double)on2 / (double)m;
+    }
     f.bursts = (int)w.runs.size();
     f.burstMs = median(lens) * 1e3;
     if (w.runs.size() >= 4) {   // the spacing of the burst starts: the frame (or the slot) period of a time-division system
@@ -552,21 +578,33 @@ const char* modName(int m) {
 
 // ---------------------------------------------------------------------------------------------------- confidence and priors
 
-// What the evidence is worth. The score of a candidate (0 .. 100) goes through a softmax with the temperature kTemp against an "unknown" pseudo
-// candidate at kUnknownScore, so that a high score with a close runner-up is not a confident answer, and a middling score with nothing near it
-// is not either. The constants are fitted on the app's own test signals (test_specx_idmatrix prints the reliability table that checks them).
-constexpr double kTemp = 9.0, kUnknownScore = 55.0;
-constexpr double kMinScore = 50.0, kMinConfidence = 0.30, kLikelyConfidence = 0.60;
+// What the evidence is worth. The raw score of a candidate (0 .. 100) is turned into the probability that this candidate is the right one by a
+// logistic regression fitted on the app's own test signals (tests/specx/test_specx_idmatrix.cpp writes every candidate with its score when the
+// environment variable CSV names a file; the fit is a plain logistic regression of "is the truth" on the features below, over all modes, SNRs
+// and frequency settings, checked by leaving whole modes out):
+//   z = b0 + b1 s/100 - b2 (s1 - s)/100 + b3 (s1 - s2)/100 [best candidate only]      p = 1 / (1 + e^-z)
+// s the candidate's score, s1 the best score, s2 the runner-up's. A high score with a close runner-up is not a confident answer, and a middling
+// score with nothing near it is not either. The reliability table of the test shows whether the numbers are honest (they are, to about 6 points).
+constexpr double kB0 = -3.42, kB1 = 3.23, kB2 = 5.09, kB3 = 7.64;
+constexpr double kUnknownBelow = 0.30;   // the best candidate is not credible enough: "I do not know" (of the answers given at that level and above, two thirds were right on the test signals)
+constexpr double kLikelyFrom = 0.60;     // and a runner-up under half as likely
 
 static void calibrate(Result& R) {
-    double z = std::exp(kUnknownScore / kTemp);
-    for (const Candidate& c : R.cands) z += std::exp(c.score / kTemp);
-    for (Candidate& c : R.cands) c.confidence = std::exp(c.score / kTemp) / z;
     R.verdict = VerdictUnknown;
     if (R.cands.empty()) return;
+    const double s1 = R.cands[0].score, s2 = R.cands.size() > 1 ? R.cands[1].score : 0.0;
+    double sum = 0;
+    for (size_t i = 0; i < R.cands.size(); i++) {
+        Candidate& c = R.cands[i];
+        const double z = kB0 + kB1 * c.score / 100 - kB2 * (s1 - c.score) / 100 + (i == 0 ? kB3 * (s1 - s2) / 100 : 0.0);
+        c.confidence = 1.0 / (1.0 + std::exp(-z));
+        sum += c.confidence;
+    }
+    if (sum > 1) for (Candidate& c : R.cands) c.confidence /= sum;   // events that exclude each other cannot add up to more than one
     const Candidate& t = R.cands[0];
-    if (t.score < kMinScore || t.confidence < kMinConfidence) return;
-    R.verdict = t.confidence >= kLikelyConfidence ? VerdictLikely : VerdictAmbiguous;
+    const double p2 = R.cands.size() > 1 ? R.cands[1].confidence : 0.0;
+    if (t.confidence < kUnknownBelow) return;
+    R.verdict = t.confidence >= kLikelyFrom && p2 < 0.5 * t.confidence ? VerdictLikely : VerdictAmbiguous;
 }
 
 static void applyPriors(Result& R, const Features& f) {
@@ -588,6 +626,25 @@ static void applyPriors(Result& R, const Features& f) {
         if (exact) { c.score = std::min(100.0, c.score + 10); c.evidence.push_back("the frequency database lists this mode here (+10)"); }
         else if (family) { c.score = std::min(100.0, c.score + 4); c.evidence.push_back("the frequency database lists the same receiver here (+4)"); }
     }
+    // the band plans: the bands that contain the frequency name the modes they suggest ("DVB-T2", "Airband", "FM" ...)
+    auto norm = [](const std::string& t) { std::string o; for (char ch : t) if (std::isalnum((unsigned char)ch)) o += (char)std::tolower((unsigned char)ch); return o; };
+    std::set<std::string> bandModes;
+    std::string bandName;
+    for (const bandplan::Plan& pl : bandplan::builtinPlans())
+        for (const bandplan::Band& b : pl.bands)
+            if (b.contains(hz)) {
+                if (bandName.empty()) bandName = b.name + " (" + b.service + ")";
+                for (const std::string& m : b.modes) bandModes.insert(norm(m));
+            }
+    if (!bandName.empty()) {
+        R.priors.push_back("band plan: " + bandName);
+        for (Candidate& c : R.cands) {
+            const std::string want[] = {norm(c.name), norm(c.subId.empty() ? c.modeId : c.subId), norm(freqModeName(c.subId.empty() ? c.modeId : c.subId))};
+            bool hit = false;
+            for (const std::string& w : want) if (!w.empty() && bandModes.count(w)) hit = true;
+            if (hit) { c.score = std::min(100.0, c.score + 4); c.evidence.push_back("the band plan suggests this mode in " + bandName + " (+4)"); }
+        }
+    }
 }
 
 // The stretch of `want` samples of x[0 .. n) with the most power (a sparse signal is where it is; a continuous one is the same everywhere)
@@ -600,6 +657,8 @@ static void denseWindow(const cf32*& x, size_t& n, size_t want) {
     for (size_t b = 0; b + wb <= nb; b += std::max<size_t>(1, wb / 16)) if (pre[b + wb] - pre[b] > bv) { bv = pre[b + wb] - pre[b]; bs = b; }
     x += bs * B; n = wb * B;
 }
+
+static std::vector<Region> detectRegions(const cf32* x, size_t n, double fs, double thrDb);
 
 static Result identifyImpl(const cf32* x, size_t n, double fs, const Options& o) {
     Result R;
@@ -773,6 +832,7 @@ static Result identifyImpl(const cf32* x, size_t n, double fs, const Options& o)
         for (int i = 0; i < kKnownCount; i++) for (double r : kKnown[i].rates) if (r > 1 && std::fabs(rs / r - 1) < be) { be = std::fabs(rs / r - 1); best = r; }
         return best;
     };
+    auto inTable = [&](double rs) { return snap(rs) != rs; };
     // ---- classification
     std::vector<float> syms; double mid = 0, unit = 1;
     OfdmCorr oc;
@@ -826,7 +886,8 @@ static Result identifyImpl(const cf32* x, size_t n, double fs, const Options& o)
         // linear modulation: the lines of x^2, x^4, x^8 sit at 2, 4, 8 times the carrier's offset D (and Rs apart); pi/4-DQPSK puts its x^4
         // lines Rs/2 beside 4 D, MSK its x^2 lines Rs/2 beside 2 D. Each offset the strongest lines suggest is tried against each class,
         // the simplest that holds wins.
-        const double rs = le.ok && le.db > 9 ? snap(le.hz) : 0;
+        double rs = le.ok && le.db > 9 ? snap(le.hz) : 0;
+        if (rs > 0 && !inTable(rs) && inTable(rs / 2)) rs = snap(rs / 2);   // the line of the envelope is often at twice the rate (the transitions of a filtered PSK)
         if (rs > 0) { f.symRate = rs; f.symLineDb = le.db; f.symSrc = 1; }
         const double maxOff = rs > 0 ? std::min(0.15 * sigW, rs / 16) : 0.05 * sigW;   // pi/4-DQPSK is QPSK Rs/8 off: the spectrum says where the centre is
         auto at = [&](int j, double hz) {
@@ -1005,7 +1066,7 @@ static Result identifyImpl(const cf32* x, size_t n, double fs, const Options& o)
         if (k.bands[0] > 0 && o.rfHz > 0) {
             bool in = false;
             for (int j = 0; j + 1 < 10 && k.bands[j] > 0; j += 2) if (rf >= k.bands[j] && rf <= k.bands[j + 1]) in = true;
-            if (in) rule(12, 12, F("%.3f MHz is in its band", rf)); else rule(-6, 12, F("%.3f MHz is outside its band", rf));
+            if (in) rule(12, 12, F("%.3f MHz is in its band", rf)); else rule(-3, 12, F("%.3f MHz is outside its band", rf));   // a table of bands is never complete: a small penalty
         }
         c.name = k.name; c.modeId = k.modeId; c.subId = k.subId; c.why = k.note; c.family = k.family;
         if (k.sync && tried[k.sync]) {
@@ -1058,7 +1119,14 @@ static std::string headlineOf(const Result& R) {
 
 Result identify(const cf32* x, size_t n, double fs, const Options& o) {
     const auto t0 = std::chrono::steady_clock::now();
-    Result R = identifyImpl(x, n, fs, o);
+    Options o2 = o;
+    if (!(o.hiHz > o.loHz)) {   // no region given: the strongest signal, as the detector widens and merges the runs of its spectrum (an FM signal is a comb of lines)
+        const std::vector<Region> regs = detectRegions(x, n, fs, 6);
+        const Region* best = nullptr;
+        for (const Region& r : regs) if (!best || r.powerDb > best->powerDb) best = &r;
+        if (best) { o2.loHz = best->loHz; o2.hiHz = best->hiHz; }
+    }
+    Result R = identifyImpl(x, n, fs, o2);
     R.headline = headlineOf(R);
     R.ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
     return R;
@@ -1166,7 +1234,7 @@ static std::vector<Region> detectRegions(const cf32* x, size_t n, double fs, dou
     std::sort(runs.begin(), runs.end(), [](const Run& a, const Run& b) { return a.lo < b.lo; });
     std::vector<Run> merged;
     for (const Run& r : runs) {
-        if (!merged.empty() && r.lo <= merged.back().hi + std::max<long>(2, (merged.back().hi - merged.back().lo) / 8)) merged.back().hi = std::max(merged.back().hi, r.hi);
+        if (!merged.empty() && r.lo <= merged.back().hi + std::max<long>(std::max<long>(4, (long)(1500.0 / v.binHz)), (merged.back().hi - merged.back().lo) / 8)) merged.back().hi = std::max(merged.back().hi, r.hi);   // lines up to 1.5 kHz apart are one signal (a tone-modulated FM carrier is a comb)
         else merged.push_back(r);
     }
     for (const Run& r : merged) {
@@ -1226,6 +1294,8 @@ struct Capture::Impl {
 Capture::Capture() : p_(new Impl) {
     p_->th = std::thread([this] {
         Impl& m = *p_;
+        (void)builtinFrequencies(); (void)bandplan::builtinPlans();   // parsed once, on first use: not while someone waits for an answer
+        (void)signatureCount();
         std::unique_lock<std::mutex> lk(m.mu);
         for (;;) {
             m.cv.wait(lk, [&] { return m.stop || m.work; });

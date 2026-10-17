@@ -26,6 +26,7 @@ struct IdState {
     bool placed = false;
     std::string note;           // the last thing a button did ("Added to Memory.")
     double loMhz = 0, hiMhz = 0;   // the selection, for the band drawn on the plots
+    double pendingAt = 0, pendHz = 0, pendBw = 0;   // "Identify selected" of the sweep: the radio was tuned, the capture starts when it has settled
 };
 IdState I;
 
@@ -146,6 +147,16 @@ void identifyAt(App& a, double clickMhz) {
     identifyStart(a, rc, (lo + hi) / 2 - rc, hi - lo, rc);
 }
 
+void identifyTuned(App& a, double freqHz, double bwHz) {
+    I = IdState();
+    a.freqMhz = freqHz / 1e6;
+    if (a.engine.running()) { a.tune.centerHz = freqHz; a.engine.retune(a.tune); } else startReceiver(a);
+    I.open = true; I.placed = false;
+    I.anchor = ImGui::GetMousePos();
+    I.pendingAt = ImGui::GetTime() + 0.8; I.pendHz = freqHz; I.pendBw = bwHz;
+    I.rfHz = freqHz; I.centreRadioHz = freqHz; I.widthHz = std::max(bwHz * 1.2, 12.5e3);
+}
+
 void identifyAll(App& a) {
     const ImVec2 keep = I.anchor;
     const bool wasOpen = I.open;
@@ -159,6 +170,12 @@ void identifyAll(App& a) {
 void identifyWindow(App& a) {
     if (!I.open) return;
     si::Capture& cap = a.engine.sigid();
+    if (I.pendingAt > 0 && ImGui::GetTime() >= I.pendingAt && a.engine.running() && a.engine.sampleRate() > 0) {   // the radio has settled on the signal: look at it
+        const double hz = I.pendHz, bw = I.pendBw, rc = radioCenterMhz(a) * 1e6;
+        const ImVec2 anchor = I.anchor;
+        identifyStart(a, rc, hz - rc, std::max(bw * 1.2, 12.5e3), rc);
+        I.anchor = anchor; I.placed = false;
+    }
     if (I.all) { std::vector<si::Capture::Found> f; if (cap.resultAll(f, I.seqAll)) { I.found = std::move(f); I.haveAll = true; } }
     else { si::Result r; if (cap.result(r, I.seq)) { I.res = std::move(r); I.have = true; } }
     const ImVec2 disp = ImGui::GetIO().DisplaySize;
@@ -172,7 +189,8 @@ void identifyWindow(App& a) {
     const bool shown = ImGui::Begin(trw(I.all ? "Signals in the view" : "Identify signal"), &I.open, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
     if (shown) {
         const int st = cap.state();
-        if (!a.engine.running() && st != 3) ImGui::TextUnformatted(tr("Start the receiver to identify a signal."));
+        if (I.pendingAt > 0 && ImGui::GetTime() < I.pendingAt) ImGui::TextUnformatted(tr("Working it out..."));
+        else if (!a.engine.running() && st != 3) ImGui::TextUnformatted(tr("Start the receiver to identify a signal."));
         else if (st == 1) ImGui::ProgressBar((float)cap.progress(), ImVec2(-1, 0), tr("collecting samples"));
         else if (st == 2) ImGui::TextUnformatted(tr("Working it out..."));
         if (I.all) {

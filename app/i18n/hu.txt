@@ -1602,3 +1602,5 @@ The frequency list has here:	A frekvencialista itt ezt tartalmazza:
 What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Mi ez? Kattints egy jelre, vagy húzd át rajta, és az OnAir megmondja, mi az és mennyire biztos. I billentyű. A Shift+húzás az eszköz nélkül is működik.
 Why?	Miért?
 unknown	ismeretlen
+Identify selected	A kijelölt azonosítása
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	A rádiót a kijelölt jelre hangolja, és megmondja, mi az (a vevőnek olyan módban kell lennie, amelynek mintavételi sebessége lefedi)

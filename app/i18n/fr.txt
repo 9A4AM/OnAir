@@ -1617,3 +1617,5 @@ The frequency list has here:	La liste de fréquences indique ici :
 What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Qu'est-ce que c'est ? Cliquez sur un signal ou faites glisser dessus : OnAir dit ce que c'est et avec quelle certitude. Touche I. Maj+glisser le fait sans l'outil.
 Why?	Pourquoi ?
 unknown	inconnu
+Identify selected	Identifier la sélection
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Accorde la radio sur le signal sélectionné et dit ce que c'est (le récepteur doit être dans un mode dont le taux d'échantillonnage le couvre)
