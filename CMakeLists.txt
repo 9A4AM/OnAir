@@ -154,7 +154,7 @@ onair_rust_use(dect2core)   # -DDECT2_RUST_<MODULE> for every active module (cor
 # adsb_msg.cpp and the APRS parser (and the reference copies the Rust differential test builds) is compiled without fused multiply-add and without the sin+cos -> sincos rewrite:
 # clang and gcc do both by default (arm64, macOS), Rust never does, and the two builds (DECT2_RUST ON and OFF) should give the same numbers bit for bit
 set_source_files_properties(core/src/tv/dvbsub.cpp core/src/tv/dvbsub_rs.cpp core/src/adsb/adsb_msg.cpp core/src/dmr/dmr_fec.cpp core/src/p25/p25_proto.cpp core/src/tetra/tetra_pdu.cpp core/src/tetra/tetra_pdu_rs.cpp core/src/packet/packet_aprs.cpp core/src/packet/packet_aprs_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
-target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp)
+target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp core/src/df/df.cpp core/src/df/source.cpp core/src/df/position.cpp)
 target_sources(dect2core PRIVATE core/src/net/remote_api.cpp core/src/results/rx_json.cpp core/src/source/gain_opt.cpp core/src/mesh/mesh_report.cpp core/src/source/rotator.cpp)   # remote-control API server, telemetry JSON, gain optimiser, mesh report text, antenna rotator
 target_sources(dect2core PRIVATE core/src/tx/tx.cpp core/src/tx/tx_payload.cpp core/src/tx/tx_voice.cpp core/src/audio/audioin.cpp core/src/audio/videoin.cpp core/src/audio/neural_nr.cpp)   # transmit: modes, payloads, live voice/video, the TX session (tx.h)
 foreach(m ${DECT2_MODES})
@@ -659,6 +659,12 @@ if(DECT2_BUILD_TESTS)
   add_executable(test_rangeplot tests/geo/test_rangeplot.cpp)
   target_link_libraries(test_rangeplot PRIVATE dect2core)
   add_test(NAME rangeplot COMMAND test_rangeplot)
+  add_executable(test_df tests/df/test_df.cpp)
+  target_link_libraries(test_df PRIVATE dect2core)
+  add_test(NAME df COMMAND test_df)
+  add_executable(test_df_position tests/df/test_df_position.cpp)
+  target_link_libraries(test_df_position PRIVATE dect2core)
+  add_test(NAME df_position COMMAND test_df_position)
   add_executable(test_maidenhead tests/geo/test_maidenhead.cpp)
   target_link_libraries(test_maidenhead PRIVATE dect2core)
   add_test(NAME maidenhead COMMAND test_maidenhead)
