@@ -425,6 +425,7 @@ struct App {
     int fmDeemph = 50;        // FM de-emphasis in microseconds: 50 (Europe, Middle East, most of the world) or 75 (Americas, South Korea)
     bool pagerNarrow = false;  // pagers: 12.5 kHz channel filter instead of 25 kHz (saved as pagerNarrow)
     bool packetNarrow = false; // APRS / packet: 12.5 kHz channel filter instead of 25 kHz (saved as packetNarrow)
+    int fmRegion = 0;         // RDS meanings: 0 Auto (odd tenths of a MHz = RBDS), 1 RDS (Europe), 2 RBDS (US); saved as fmRegion
     int fmChanKhz = 0;        // FM channel filter: 0 = automatic (the receiver's standard 220 kHz), else a manual width of 100 to 300 kHz
     struct DabScan {
         bool running = false; int idx = -1; double t0 = 0, lockT = 0, savedFreq = 218.64;

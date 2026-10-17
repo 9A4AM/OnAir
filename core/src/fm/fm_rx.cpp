@@ -7,6 +7,7 @@
 #include "dect2/audio/audioout.h"
 #include "dect2/dsp/dsp_compat.h"
 #include "dect2/dsp/fftutil.h"
+#include "dect2/fm/fm_rbds.h"
 #include "dect2/fm/rds_tmc.h"
 #include "dect2/dsp/resampler.h"
 #include <algorithm>
@@ -146,11 +147,6 @@ struct DeEmphasis {
 };
 
 // ---- RDS
-
-const char* kPtyNames[32] = {"None", "News", "Current affairs", "Information", "Sport", "Education", "Drama", "Culture", "Science", "Varied",
-                             "Pop music", "Rock music", "Easy listening", "Light classical", "Serious classical", "Other music", "Weather",
-                             "Finance", "Children's", "Social affairs", "Religion", "Phone-in", "Travel", "Leisure", "Jazz music",
-                             "Country music", "National music", "Oldies music", "Folk music", "Documentary", "Alarm test", "Alarm"};
 
 uint32_t rdsRem(uint32_t v, int nbits) {
     for (int i = nbits - 1; i >= 10; i--) if ((v >> i) & 1) v ^= 0x5B9u << (i - 10);
@@ -336,6 +332,8 @@ struct FmReceiver::Impl {
     std::vector<float> sIn, dIn, mOut, dOut;
     DeEmphasis deL, deR;
     double deemphUs = 50;
+    std::atomic<int> rdsRegion{kRdsAuto};       // setRdsRegion(): RDS (Europe) or RBDS (US) names; Auto decides from the tuned frequency
+    std::atomic<double> tunedMhz{0};
     std::atomic<bool> forceMono{false};
     RationalResampler audioRs;
     bool audioRsOk = false;
@@ -723,7 +721,10 @@ struct FmReceiver::Impl {
         t.rdsSync = rds.synced;
         t.rdsBlockOkPct = rds.okPct;
         t.rdsGroups = rds.groups;
-        t.psName = rds.ps; t.radioText = rds.rt; t.radioTextComplete = rds.rtComplete; t.ptyText = rds.groups ? kPtyNames[rds.pty & 31] : "";
+        t.psName = rds.ps; t.radioText = rds.rt; t.radioTextComplete = rds.rtComplete; const bool rbds = rdsUseRbds(rdsRegion.load(), tunedMhz.load());
+        t.rbds = rbds;
+        t.ptyText = rds.groups ? rdsPtyName(rds.pty, rbds) : "";
+        t.callSign = rbds && rds.groups ? rbdsCallSign(rds.pi) : "";   // US call letters are in the PI code
         t.tmc = rds.tmc.system();
         t.tmcMessages = rds.tmc.messages(std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count());
         t.trafficAlert = rds.ta; t.trafficProgram = rds.tp; t.music = rds.ms; t.piCode = rds.groups ? rds.pi : 0;
@@ -766,6 +767,10 @@ void FmReceiver::setMuted(bool m) { p_->muted = m; p_->applyAudio(); }
 void FmReceiver::setDeemphasis(double us) {
     p_->deemphUs = us;
     if (p_->ready) { p_->deL.configure(us, p_->fa); p_->deR.configure(us, p_->fa); }
+}
+void FmReceiver::setRdsRegion(int region, double tunedMhz) {
+    p_->rdsRegion = region == kRdsEurope || region == kRdsUs ? region : (int)kRdsAuto;
+    p_->tunedMhz = tunedMhz;
 }
 void FmReceiver::setMono(bool on) { p_->forceMono = on; }
 void FmReceiver::setStationFinder(bool on) { p_->autoFind = on; }

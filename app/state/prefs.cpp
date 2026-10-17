@@ -69,6 +69,7 @@ PrefKey rx1(PrefKey p) { p.rx1Load = true; return p; }
 
 int fixDtmbBw(int v) { return v == 6 ? 6 : 8; }
 int fixIsdbtBw(int v) { return v == 0 || v == 7 || v == 8 ? v : 6; }
+int fixRegion(int v) { return v == 1 || v == 2 ? v : 0; }
 int fixDeemph(int v) { return v == 75 ? 75 : 50; }
 int fixChanKhz(int v) { return v > 0 ? std::min(300, std::max(100, v)) : 0; }
 int fixRecFormat(int v) { return v == 1 ? 1 : 0; }
@@ -98,6 +99,7 @@ const std::vector<PrefKey>& keyTable() {
         num("tuningMode", AT(a.tuningMode), 0, 0, 1, true),
         flagI("fmMono", AT(a.fmMono), false),
         numFix("fmDeemph", AT(a.fmDeemph), 50, fixDeemph),
+        numFix("fmRegion", AT(a.fmRegion), 0, fixRegion),
         numFix("fmChanKhz", AT(a.fmChanKhz), 0, fixChanKhz),
         flagI("pagerNarrow", AT(a.pagerNarrow), false), flagI("packetNarrow", AT(a.packetNarrow), false),
         shared(num("compute", AT(a.computeMode), 0, 0, 2, true, true)),   // indexes the CPU / GPU / Auto names

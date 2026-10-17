@@ -26,7 +26,9 @@ struct FmTelemetry {
     std::string psName;         // programme service name, 8 characters
     std::string radioText;      // radio text, up to 64 characters
     bool radioTextComplete = false;   // every segment of the radio text received (not only a part of it)
-    std::string ptyText;        // programme type
+    std::string ptyText;        // programme type (the RBDS names when rbds)
+    bool rbds = false;          // the RBDS (US) meanings are in use, by the setting or Auto from the tuned frequency
+    std::string callSign;       // US call letters from the PI code (RBDS only, empty when the PI holds none)
     bool trafficAlert = false;  // TA: a traffic announcement is on air
     bool trafficProgram = false;// TP: the station carries traffic announcements
     bool music = false;         // M/S flag: music (true) or speech (false)
