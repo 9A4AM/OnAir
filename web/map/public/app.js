@@ -7,6 +7,7 @@ import { SHAPES } from "./shapes.js";
 import { iconShape } from "./types.js";
 import { createCard } from "./card.js";
 import { generateDemo, stepDemo } from "./demo.js";
+import { watchMapTheme } from "./theme.js";
 import { mergeTrails, appendLive, toLine } from "./trail.js";
 
 const DEMO = new URLSearchParams(location.search).get("demo") === "1";
@@ -32,6 +33,7 @@ const kindOf = Object.fromEntries(KINDS.map((k) => [k.id, k]));
 let tracks = new Map();
 let selected = null;
 let liveOk = false;
+let everLive = false;
 let stations = 0;
 let serverLoad = null;
 let query = "";
@@ -434,6 +436,8 @@ function miniUrl(shape, color) {
   return u;
 }
 
+watchMapTheme(map);
+
 let layersBuilt = false;
 /** Build the layer toggles once; later calls only refresh the counts (keeps focus and hover state). */
 function renderLayers() {
@@ -530,7 +534,8 @@ function renderStats() {
   const pill = $("link");
   pill.classList.toggle("ok", liveOk);
   const viewers = serverLoad && serverLoad.viewers != null ? serverLoad.viewers : null;
-  const label = DEMO ? "demo" : liveOk ? (stations ? stations + " station" + (stations === 1 ? "" : "s") : "live") : "connecting";
+  if (liveOk) everLive = true;
+  const label = DEMO ? "demo" : liveOk ? (stations ? stations + " station" + (stations === 1 ? "" : "s") : "live") : everLive ? "reconnecting" : "connecting";
   pill.querySelector("span").textContent = label;
   pill.title = DEMO ? "Synthetic demo data" : [liveOk ? "Connected" : "Not connected", stations ? stations + " stations sending (30 min)" : "", viewers != null ? viewers + " viewers" : ""].filter(Boolean).join(" · ");
   const counts = {};
@@ -821,6 +826,13 @@ function setRailOpen(open) {
 }
 $("panelBtn")?.addEventListener("click", () => setRailOpen(!$("rail")?.classList.contains("open")));
 $("railBackdrop")?.addEventListener("click", () => setRailOpen(false));
+$("railClose")?.addEventListener("click", () => setRailOpen(false));
+for (const [id, v] of [["layersAll", true], ["layersNone", false]]) {
+  $(id)?.addEventListener("click", () => {
+    for (const box of $("layers").querySelectorAll("input")) { box.checked = v; on[box.dataset.k] = v; box.closest("label").classList.toggle("off", !v); }
+    apply();
+  });
+}
 
 // ---------- search: callsign, registration, ICAO hex, MMSI ----------
 
