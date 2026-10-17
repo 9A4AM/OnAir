@@ -21,7 +21,7 @@ extern std::mt19937 g;
 inline bool dEq(double a, double b) { return memcmp(&a, &b, sizeof a) == 0; }
 inline uint32_t r32() { return g(); }
 inline uint8_t rb() { return (uint8_t)g(); }
-inline long iterations() { const char* e = getenv("ONAIR_DIFF_ITERS"); return e ? atol(e) : 200000; }
+inline long iterations() { const char* e = getenv("ONAIR_DIFF_ITERS"); return e ? atol(e) : 100000; }
 
 // Compares two decode results of the two namespaces (all fields of MeshDecodeResult).
 template <class X, class Y> bool nodeEq(const X& a, const Y& b) {

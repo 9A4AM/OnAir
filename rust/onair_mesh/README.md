@@ -21,5 +21,5 @@ APRS information field parser (`aprs::parse`, itself Rust through onair_ax25). T
 `mesh_pb_rs.cpp` are the Rust-backed twins (`mesh_rs_util.h`: record to std::string conversions, layout check at start-up).
 
 C ABI: `src/ffi.rs`, header `core/include/dect2/rs/mesh.h`, symbols prefixed `onair_mesh_`. Differential test `tests/mesh/test_mesh_proto_rs.cpp` + `rs_part2_mesh.cpp` against a frozen copy of the
-seven files in `dect2_mesh_ref` (`cmake/gen_mesh_ref.cmake`): 200000 inputs per family (protobuf, Meshtastic packets of every port with default and user keys, MeshCore adverts / group / direct / TRACE /
-random, LoRaWAN, LoRa APRS, MeshCom) plus the name helpers, 5.2 M comparisons; fuzz target `fuzz_mesh_proto`. Status and conventions: ../README.md.
+seven files in `dect2_mesh_ref` (`cmake/gen_mesh_ref.cmake`): 100000 inputs per family by default, 200000 verified (protobuf, Meshtastic packets of every port with default and user keys, MeshCore adverts / group / direct / TRACE /
+random, LoRaWAN, LoRa APRS, MeshCom) plus the name helpers: 5.2 M comparisons at 200000; fuzz target `fuzz_mesh_proto`. Status and conventions: ../README.md.

@@ -1,7 +1,7 @@
 // Differential test of the mesh packet layer, part 1: the protobuf reader, the Meshtastic name / key helpers and the Meshtastic packet decoder. The Rust-backed
 // dect2:: implementation (DECT2_RUST_MESH) against the frozen C++ copy dect2_mesh_ref:: (cmake/gen_mesh_ref.cmake) on identical inputs: random and structured
 // protobuf, every port payload (text, position, node info, telemetry, routing, traceroute, neighbours) encrypted with the default key and with a user key, mutated and
-// truncated packets, headers of every length. ONAIR_DIFF_ITERS (default 200000) per family. Part 2 is rs_part2_mesh.cpp.
+// truncated packets, headers of every length. ONAIR_DIFF_ITERS (default 100000, 200000 verified) per family. Part 2 is rs_part2_mesh.cpp.
 #include "mesh_rs_cmp.h"
 #include "dect2/mesh/mesh_pb.h"
 #include "mesh_pb_ref.h"
