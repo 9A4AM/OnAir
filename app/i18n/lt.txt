@@ -2406,3 +2406,41 @@ Tracks	Trasos
 Two recordings (reference, surveillance)	Du įrašai (atraminis, stebėjimo)
 Two-channel recording (cf32)	Dviejų kanalų įrašas (cf32)
 Waiting for data.	Laukiama duomenų.
+The watchlist file could not be read:	Stebėjimo sąrašų failo nepavyko perskaityti:
+APRS call signs	APRS šaukiniai
+Words in messages	Žodžiai pranešimuose
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Po vieną eilutėje: ICAO šešioliktainis adresas (4840D6), registracijos ženklas (A6-EDA) arba šaukinys (KLM1023). Galinė * atitinka pradžią (KLM*). Girdima per ADS-B, ACARS, VDL2 ir HFDL.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Po vieną eilutėje: MMSI numeris, laivo pavadinimas arba šaukinys. Galinė * atitinka pradžią (2190*). Girdima per AIS ir DSC.
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Po vieną eilutėje: šaukinys. Be SSID (LY1ABC) tinka bet kuris SSID, su SSID (LY1ABC-9) tik tas vienas.
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Po vieną eilutėje: dažnis MHz (162.025), su vienetu (162025 kHz) arba intervalas (144-146). Skaičiuojama viskas, kas joje dekoduojama.
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Po vieną eilutėje: žodis arba frazė (didžiosios ir mažosios raidės nesvarbios). Galinė * atitinka žodžių pradžią (fire*). Ieškoma ieškiklių, ACARS, APRS ir kituose dekoduotuose tekstuose.
+New list...	Naujas sąrašas...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	Sukurkite sąrašą kairėje: orlaiviai, laivai, APRS šaukiniai, dažniai arba žodžiai. OnAir praneš, kai kas nors iš jo bus išgirsta.
+On	Įjungta
+Tolerance (kHz)	Paklaida (kHz)
+entries	įrašai
+Delete list	Ištrinti sąrašą
+Desktop notification	Darbalaukio pranešimas
+Sound (follows Mute)	Garsas (laikosi nutildymo)
+WAV file, empty = three beeps	WAV failas, tuščias = trys pyptelėjimai
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	Push pranešimai siunčiami jūsų pasirinktai paslaugai su jūsų nurodytu adresu ir raktu. Jie saugomi jūsų duomenų aplanke ir niekada nerašomi į žurnalą.
+optional	neprivaloma
+optional, sent as a Bearer token	neprivaloma, siunčiama kaip Bearer raktas
+Send a test alert	Siųsti bandomąjį pranešimą
+Most alerts per hour (0 = no limit)	Daugiausia pranešimų per valandą (0 = be ribos)
+Same station again after (minutes)	Ta pati stotis vėl po (minučių)
+Quiet hours (no alerts, still listed in the history)	Tylos valandos (be pranešimų, istorijoje išlieka)
+From	Nuo
+Until	Iki
+Local time of this computer.	Šio kompiuterio vietinis laikas.
+alerts sent	pranešimų išsiųsta
+Heard	Išgirsta
+What happened	Kas įvyko
+held back: quiet hours	sulaikyta: tylos valandos
+held back: rate limit	sulaikyta: pasiekta riba
+Watchlists	Stebėjimo sąrašai
+Watch for these	Stebėti šiuos
+Lists	Sąrašai
+Alerts	Pranešimai
+Watchlists...	Stebėjimo sąrašai...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Pranešimai, kai išgirstami sąraše esantys orlaiviai, laivai, šaukiniai, dažniai ar žodžiai: pranešimas, garsas, ntfy, Telegram arba webhook

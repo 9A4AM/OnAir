@@ -2406,3 +2406,41 @@ Tracks	Sporen
 Two recordings (reference, surveillance)	Twee opnames (referentie, bewaking)
 Two-channel recording (cf32)	Tweekanaalsopname (cf32)
 Waiting for data.	Wachten op gegevens.
+The watchlist file could not be read:	Het bestand met kijklijsten kon niet worden gelezen:
+APRS call signs	APRS-roepletters
+Words in messages	Woorden in berichten
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Een per regel: een ICAO-hexadres (4840D6), een registratie (A6-EDA) of een roepnaam (KLM1023). Een * aan het eind komt overeen met het begin (KLM*). Gehoord via ADS-B, ACARS, VDL2 en HFDL.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Een per regel: een MMSI-nummer, een scheepsnaam of een roepnaam. Een * aan het eind komt overeen met het begin (2190*). Gehoord via AIS en DSC.
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Een per regel: een roepnaam. Zonder SSID (LY1ABC) komt elke SSID overeen, met SSID (LY1ABC-9) alleen die ene.
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Een per regel: een frequentie in MHz (162.025), met een eenheid (162025 kHz) of een bereik (144-146). Alles wat erop wordt gedecodeerd telt mee.
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Een per regel: een woord of zin (hoofdletterongevoelig). Een * aan het eind komt overeen met woordbegin (fire*). Gezocht in pager-, ACARS-, APRS- en andere gedecodeerde teksten.
+New list...	Nieuwe lijst...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	Maak links een lijst: vliegtuigen, schepen, APRS-roepnamen, frequenties of woorden. OnAir meldt het als er iets van wordt gehoord.
+On	Aan
+Tolerance (kHz)	Tolerantie (kHz)
+entries	items
+Delete list	Lijst verwijderen
+Desktop notification	Bureaubladmelding
+Sound (follows Mute)	Geluid (volgt Dempen)
+WAV file, empty = three beeps	WAV-bestand, leeg = drie piepjes
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	Pushmeldingen gaan naar een dienst naar keuze, met het adres en de token die je opgeeft. Ze worden bewaard in je gegevensmap en nooit in een logboek geschreven.
+optional	optioneel
+optional, sent as a Bearer token	optioneel, verzonden als Bearer-token
+Send a test alert	Testmelding sturen
+Most alerts per hour (0 = no limit)	Maximaal aantal meldingen per uur (0 = geen limiet)
+Same station again after (minutes)	Hetzelfde station opnieuw na (minuten)
+Quiet hours (no alerts, still listed in the history)	Stille uren (geen meldingen, wel in de geschiedenis)
+From	Van
+Until	Tot
+Local time of this computer.	Lokale tijd van deze computer.
+alerts sent	meldingen verzonden
+Heard	Gehoord
+What happened	Wat er gebeurde
+held back: quiet hours	tegengehouden: stille uren
+held back: rate limit	tegengehouden: limiet bereikt
+Watchlists	Kijklijsten
+Watch for these	Hierop letten
+Lists	Lijsten
+Alerts	Meldingen
+Watchlists...	Kijklijsten...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Meldingen als aangewezen vliegtuigen, schepen, roepnamen, frequenties of woorden worden gehoord: melding, geluid, ntfy, Telegram of webhook

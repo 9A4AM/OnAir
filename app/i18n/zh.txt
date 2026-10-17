@@ -2406,3 +2406,41 @@ Tracks	航迹
 Two recordings (reference, surveillance)	两个录音（参考、监视）
 Two-channel recording (cf32)	双通道录音 (cf32)
 Waiting for data.	正在等待数据。
+The watchlist file could not be read:	无法读取监视列表文件:
+APRS call signs	APRS 呼号
+Words in messages	消息中的词语
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	每行一项: ICAO 十六进制地址 (4840D6)、注册号 (A6-EDA) 或呼号 (KLM1023)。末尾的 * 匹配开头 (KLM*)。可通过 ADS-B、ACARS、VDL2 和 HFDL 收到。
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	每行一项: MMSI 号码、船名或呼号。末尾的 * 匹配开头 (2190*)。可通过 AIS 和 DSC 收到。
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	每行一项: 呼号。不带 SSID (LY1ABC) 时匹配所有 SSID，带 SSID (LY1ABC-9) 时只匹配该 SSID。
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	每行一项: 以 MHz 为单位的频率 (162.025)、带单位 (162025 kHz) 或范围 (144-146)。在该频率上解码的任何内容都会计入。
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	每行一项: 一个词或短语 (不区分大小写)。末尾的 * 匹配词首 (fire*)。在寻呼机、ACARS、APRS 及其他解码文本中搜索。
+New list...	新建列表...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	在左侧创建列表: 飞机、船舶、APRS 呼号、频率或词语。收到列表中的内容时，OnAir 会通知你。
+On	启用
+Tolerance (kHz)	容差 (kHz)
+entries	项
+Delete list	删除列表
+Desktop notification	桌面通知
+Sound (follows Mute)	声音 (遵循静音)
+WAV file, empty = three beeps	WAV 文件，留空 = 三声提示音
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	推送提醒会发送到你选择的服务，使用你提供的地址和令牌。它们保存在你的数据文件夹中，绝不会写入日志。
+optional	可选
+optional, sent as a Bearer token	可选，作为 Bearer 令牌发送
+Send a test alert	发送测试提醒
+Most alerts per hour (0 = no limit)	每小时最多提醒数 (0 = 不限)
+Same station again after (minutes)	同一电台再次提醒间隔 (分钟)
+Quiet hours (no alerts, still listed in the history)	静默时段 (不提醒，但仍记录在历史中)
+From	从
+Until	到
+Local time of this computer.	此计算机的本地时间。
+alerts sent	条提醒已发送
+Heard	收到
+What happened	处理结果
+held back: quiet hours	已拦截: 静默时段
+held back: rate limit	已拦截: 达到上限
+Watchlists	监视列表
+Watch for these	监视这些
+Lists	列表
+Alerts	提醒
+Watchlists...	监视列表...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	当收到列表中的飞机、船舶、呼号、频率或词语时提醒: 通知、声音、ntfy、Telegram 或 Webhook

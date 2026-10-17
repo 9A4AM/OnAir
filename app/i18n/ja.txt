@@ -2406,3 +2406,41 @@ Tracks	トラック
 Two recordings (reference, surveillance)	2つの録音（参照、監視）
 Two-channel recording (cf32)	2チャンネルの録音 (cf32)
 Waiting for data.	データを待っています。
+The watchlist file could not be read:	ウォッチリストのファイルを読み込めませんでした:
+APRS call signs	APRSコールサイン
+Words in messages	メッセージ内の単語
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	1行に1件: ICAO の16進アドレス (4840D6)、登録記号 (A6-EDA)、またはコールサイン (KLM1023)。末尾の * は前方一致 (KLM*)。ADS-B、ACARS、VDL2、HFDL で検出されます。
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	1行に1件: MMSI 番号、船名、またはコールサイン。末尾の * は前方一致 (2190*)。AIS と DSC で検出されます。
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	1行に1件: コールサイン。SSID なし (LY1ABC) ではすべての SSID に一致し、SSID 付き (LY1ABC-9) ではそれだけに一致します。
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	1行に1件: MHz 単位の周波数 (162.025)、単位付き (162025 kHz)、または範囲 (144-146)。その周波数でデコードされたものはすべて対象になります。
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	1行に1件: 単語またはフレーズ (大文字小文字は区別しません)。末尾の * は単語の先頭に一致します (fire*)。ポケベル、ACARS、APRS などのデコードされたテキストから検索します。
+New list...	新しいリスト...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	左側でリストを作成します: 航空機、船舶、APRS コールサイン、周波数、単語。リストにあるものが受信されると OnAir が知らせます。
+On	オン
+Tolerance (kHz)	許容差 (kHz)
+entries	件
+Delete list	リストを削除
+Desktop notification	デスクトップ通知
+Sound (follows Mute)	音 (ミュートに従う)
+WAV file, empty = three beeps	WAV ファイル、空欄 = ビープ音3回
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	プッシュ通知は、指定したアドレスとトークンで、選んだサービスに送られます。これらはデータフォルダーに保存され、ログには書き込まれません。
+optional	任意
+optional, sent as a Bearer token	任意、Bearer トークンとして送信
+Send a test alert	テスト通知を送信
+Most alerts per hour (0 = no limit)	1時間あたりの最大通知数 (0 = 無制限)
+Same station again after (minutes)	同じ局を再通知するまで (分)
+Quiet hours (no alerts, still listed in the history)	おやすみ時間 (通知なし、履歴には残ります)
+From	開始
+Until	終了
+Local time of this computer.	このコンピューターの現地時間。
+alerts sent	件の通知を送信
+Heard	受信
+What happened	結果
+held back: quiet hours	保留: おやすみ時間
+held back: rate limit	保留: 上限に到達
+Watchlists	ウォッチリスト
+Watch for these	これらを監視する
+Lists	リスト
+Alerts	通知
+Watchlists...	ウォッチリスト...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	リストにある航空機、船舶、コールサイン、周波数、単語を受信したときに通知: 通知、音、ntfy、Telegram、Webhook

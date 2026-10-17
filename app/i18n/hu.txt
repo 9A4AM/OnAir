@@ -2392,3 +2392,41 @@ Tracks	Pályák
 Two recordings (reference, surveillance)	Két felvétel (referencia, megfigyelő)
 Two-channel recording (cf32)	Kétcsatornás felvétel (cf32)
 Waiting for data.	Adatra várakozás.
+The watchlist file could not be read:	A figyelőlista-fájlt nem sikerült beolvasni:
+APRS call signs	APRS hívójelek
+Words in messages	Szavak az üzenetekben
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Soronként egy: ICAO hexa cím (4840D6), lajstromjel (A6-EDA) vagy hívójel (KLM1023). A végén lévő * az elejére illeszkedik (KLM*). ADS-B, ACARS, VDL2 és HFDL jelzéseiből.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Soronként egy: MMSI szám, hajónév vagy hívójel. A végén lévő * az elejére illeszkedik (2190*). AIS és DSC jelzéseiből.
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Soronként egy hívójel. SSID nélkül (LY1ABC) minden SSID egyezik, SSID-vel (LY1ABC-9) csak az az egy.
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Soronként egy: frekvencia MHz-ben (162.025), mértékegységgel (162025 kHz) vagy tartomány (144-146). Minden dekódolt jel számít rajta.
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Soronként egy: szó vagy kifejezés (kis- és nagybetű nem számít). A végén lévő * a szókezdetekre illeszkedik (fire*). Keresés a személyhívó, ACARS, APRS és más dekódolt szövegekben.
+New list...	Új lista...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	Hozz létre egy listát balra: repülők, hajók, APRS hívójelek, frekvenciák vagy szavak. Az OnAir szól, ha valamelyik hallható.
+On	Be
+Tolerance (kHz)	Tűrés (kHz)
+entries	bejegyzés
+Delete list	Lista törlése
+Desktop notification	Asztali értesítés
+Sound (follows Mute)	Hang (követi a némítást)
+WAV file, empty = three beeps	WAV fájl, üres = három sípszó
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	A push riasztások az általad választott szolgáltatásnak mennek, a megadott címmel és tokennel. Az adatmappádban tárolódnak, naplóba soha nem kerülnek.
+optional	nem kötelező
+optional, sent as a Bearer token	nem kötelező, Bearer tokenként küldve
+Send a test alert	Teszt riasztás küldése
+Most alerts per hour (0 = no limit)	Legfeljebb ennyi riasztás óránként (0 = nincs korlát)
+Same station again after (minutes)	Ugyanaz az állomás újra ennyi perc után
+Quiet hours (no alerts, still listed in the history)	Csendes órák (nincs riasztás, az előzményekben megmarad)
+From	Ettől
+Until	Eddig
+Local time of this computer.	Ennek a gépnek a helyi ideje.
+alerts sent	riasztás elküldve
+Heard	Hallott
+What happened	Mi történt
+held back: quiet hours	visszatartva: csendes órák
+held back: rate limit	visszatartva: korlát elérve
+Watchlists	Figyelőlisták
+Watch for these	Ezek figyelése
+Lists	Listák
+Alerts	Riasztások
+Watchlists...	Figyelőlisták...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Riasztás, ha a listán szereplő repülőt, hajót, hívójelet, frekvenciát vagy szót hallja: értesítés, hang, ntfy, Telegram vagy webhook

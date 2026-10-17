@@ -2389,3 +2389,41 @@ Tracks	Треки
 Two recordings (reference, surveillance)	Две записи (опорная, обзорная)
 Two-channel recording (cf32)	Двухканальная запись (cf32)
 Waiting for data.	Ожидание данных.
+The watchlist file could not be read:	Не удалось прочитать файл списков наблюдения:
+APRS call signs	Позывные APRS
+Words in messages	Слова в сообщениях
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	По одному в строке: шестнадцатеричный адрес ICAO (4840D6), бортовой номер (A6-EDA) или позывной (KLM1023). * в конце означает начало (KLM*). Принимается по ADS-B, ACARS, VDL2 и HFDL.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	По одному в строке: номер MMSI, название судна или позывной. * в конце означает начало (2190*). Принимается по AIS и DSC.
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	По одному в строке: позывной. Без SSID (LY1ABC) подходит любой SSID, с SSID (LY1ABC-9) только он.
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	По одной в строке: частота в МГц (162.025), с единицей (162025 kHz) или диапазон (144-146). Учитывается всё, что декодировано на ней.
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	По одному в строке: слово или фраза (регистр не важен). * в конце означает начало слова (fire*). Поиск идёт в сообщениях пейджеров, ACARS, APRS и другом декодированном тексте.
+New list...	Новый список...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	Создайте список слева: самолёты, суда, позывные APRS, частоты или слова. OnAir сообщит, когда что-то из него будет принято.
+On	Вкл.
+Tolerance (kHz)	Допуск (кГц)
+entries	записей
+Delete list	Удалить список
+Desktop notification	Уведомление на рабочем столе
+Sound (follows Mute)	Звук (учитывает Без звука)
+WAV file, empty = three beeps	Файл WAV, пусто = три сигнала
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	Push-уведомления отправляются выбранному вами сервису по указанному адресу и с указанным токеном. Они хранятся в вашей папке данных и никогда не пишутся в журнал.
+optional	необязательно
+optional, sent as a Bearer token	необязательно, отправляется как токен Bearer
+Send a test alert	Отправить тестовое оповещение
+Most alerts per hour (0 = no limit)	Максимум оповещений в час (0 = без ограничений)
+Same station again after (minutes)	Та же станция снова через (минут)
+Quiet hours (no alerts, still listed in the history)	Тихие часы (без оповещений, остаются в истории)
+From	С
+Until	До
+Local time of this computer.	Местное время этого компьютера.
+alerts sent	оповещений отправлено
+Heard	Принято
+What happened	Что произошло
+held back: quiet hours	задержано: тихие часы
+held back: rate limit	задержано: достигнут лимит
+Watchlists	Списки наблюдения
+Watch for these	Следить за этими
+Lists	Списки
+Alerts	Оповещения
+Watchlists...	Списки наблюдения...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Оповещения, когда принимаются перечисленные самолёты, суда, позывные, частоты или слова: уведомление, звук, ntfy, Telegram или вебхук

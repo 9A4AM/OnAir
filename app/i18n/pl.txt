@@ -2406,3 +2406,41 @@ Tracks	Ślady
 Two recordings (reference, surveillance)	Dwa nagrania (referencyjne, obserwacyjne)
 Two-channel recording (cf32)	Nagranie dwukanałowe (cf32)
 Waiting for data.	Oczekiwanie na dane.
+The watchlist file could not be read:	Nie udało się odczytać pliku list obserwowanych:
+APRS call signs	Znaki wywoławcze APRS
+Words in messages	Słowa w wiadomościach
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Jedna w wierszu: adres ICAO szesnastkowo (4840D6), znaki rejestracyjne (A6-EDA) lub znak wywoławczy (KLM1023). * na końcu pasuje do początku (KLM*). Odbierane przez ADS-B, ACARS, VDL2 i HFDL.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Jedna w wierszu: numer MMSI, nazwa statku lub znak wywoławczy. * na końcu pasuje do początku (2190*). Odbierane przez AIS i DSC.
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Jedna w wierszu: znak wywoławczy. Bez SSID (LY1ABC) pasuje każdy SSID, z SSID (LY1ABC-9) tylko ten jeden.
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Jedna w wierszu: częstotliwość w MHz (162.025), z jednostką (162025 kHz) lub zakres (144-146). Liczy się wszystko, co na niej zdekodowano.
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Jedna w wierszu: słowo lub fraza (bez rozróżniania wielkości liter). * na końcu pasuje do początków słów (fire*). Szukane w wiadomościach pagerów, ACARS, APRS i innych zdekodowanych tekstach.
+New list...	Nowa lista...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	Utwórz listę po lewej: samoloty, statki, znaki APRS, częstotliwości lub słowa. OnAir powiadomi, gdy coś z niej zostanie odebrane.
+On	Wł.
+Tolerance (kHz)	Tolerancja (kHz)
+entries	wpisów
+Delete list	Usuń listę
+Desktop notification	Powiadomienie na pulpicie
+Sound (follows Mute)	Dźwięk (przestrzega wyciszenia)
+WAV file, empty = three beeps	Plik WAV, puste = trzy sygnały
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	Powiadomienia push trafiają do wybranej usługi, z podanym adresem i tokenem. Są zapisane w folderze danych i nigdy nie trafiają do dziennika.
+optional	opcjonalnie
+optional, sent as a Bearer token	opcjonalnie, wysyłany jako token Bearer
+Send a test alert	Wyślij alert testowy
+Most alerts per hour (0 = no limit)	Maks. alertów na godzinę (0 = bez limitu)
+Same station again after (minutes)	Ta sama stacja ponownie po (minutach)
+Quiet hours (no alerts, still listed in the history)	Godziny ciszy (bez alertów, nadal na liście historii)
+From	Od
+Until	Do
+Local time of this computer.	Czas lokalny tego komputera.
+alerts sent	wysłanych alertów
+Heard	Odebrano
+What happened	Co się stało
+held back: quiet hours	wstrzymano: godziny ciszy
+held back: rate limit	wstrzymano: limit osiągnięty
+Watchlists	Listy obserwowanych
+Watch for these	Obserwuj te
+Lists	Listy
+Alerts	Alerty
+Watchlists...	Listy obserwowanych...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alerty, gdy odebrane zostaną wymienione samoloty, statki, znaki wywoławcze, częstotliwości lub słowa: powiadomienie, dźwięk, ntfy, Telegram lub webhook

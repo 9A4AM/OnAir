@@ -198,6 +198,7 @@ static void floatingWindows(App& a, ImVec2 disp) {
     pluginFrame(a);
     pluginManagerWindow(a);
     msgdbWindow(a);
+    watchlistWindow(a);
     txTick(a);
     shareTick(a);
     remoteApiTick(a);
