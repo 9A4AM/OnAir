@@ -106,9 +106,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: brew install cmake pkg-config hackrf soapysdr libusb ffmpeg glfw librtlsdr airspy airspyhf libbladerf limesuite uhd hamlib   # radio libraries and Hamlib go into the app (tools/package/bundle_macos.py)
+        run: brew install cmake pkg-config nasm hackrf soapysdr libusb glfw librtlsdr airspy airspyhf libbladerf limesuite uhd hamlib   # radio libraries and Hamlib go into the app (tools/package/bundle_macos.py)
+      # No Homebrew FFmpeg (it is --enable-gpl): the LGPL static build of tools/package/build_ffmpeg_static.sh, cached per architecture and script version
+      - name: Cache the static FFmpeg
+        id: ffmpeg
+        uses: actions/cache@v4
+        with: { path: ~/ffmpeg, key: "ffmpeg-8.0-static-macos-${{ matrix.arch }}-${{ hashFiles('tools/package/build_ffmpeg_static.sh') }}" }
+      - name: Build FFmpeg (LGPL, static, only what OnAir uses)
+        if: steps.ffmpeg.outputs.cache-hit != 'true'
+        run: tools/package/build_ffmpeg_static.sh "$HOME/ffmpeg"
       - name: Build the app and the .dmg
-        run: tools/package/make_dmg.sh "${{ needs.version.outputs.ver }}"
+        run: FFMPEG_PREFIX="$HOME/ffmpeg" tools/package/make_dmg.sh "${{ needs.version.outputs.ver }}"
       - uses: actions/upload-artifact@v4
         with: { name: "macos-dmg-${{ matrix.arch }}", path: build-release/*.dmg }
 
