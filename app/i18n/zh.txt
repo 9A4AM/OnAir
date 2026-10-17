@@ -1315,3 +1315,10 @@ Status	状态
 Running	运行中
 Step	步进
 Keyboard	键盘
+Credits and licences	Credits and licences
+OnAir is free software under the GNU General Public License v3 or later. It is built on the work of the people and projects below; thank you.	OnAir is free software under the GNU General Public License v3 or later. It is built on the work of the people and projects below; thank you.
+Click a link to open it in your browser. The full notices and open licence points are in THIRD_PARTY.md.	Click a link to open it in your browser. The full notices and open licence points are in THIRD_PARTY.md.
+Project	Project
+Author	Author
+Licence	Licence
+Used for	Used for

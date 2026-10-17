@@ -405,7 +405,7 @@ static void menuBarRight(App& a) {
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.08f));
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.62f, 0.68f, 0.75f, 1));
             ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
-            ImGui::SmallButton(credit);
+            if (ImGui::SmallButton(credit)) a.creditsOpen = true;
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(4);
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Thank you to everyone who reported bugs, sent recordings and opened pull requests."));
@@ -449,11 +449,13 @@ float menuBar(App& a) {
             if (ImGui::MenuItem(tr("Troubleshooting"))) dect2::openUrl("https://on-air.dev/docs/troubleshooting/");
             if (ImGui::MenuItem(tr("Voice codecs (mbelib)"))) dect2::openUrl("https://on-air.dev/docs/codecs/");
             if (ImGui::MenuItem(tr("Website"))) dect2::openUrl("https://on-air.dev/");
+            if (ImGui::MenuItem(tr("Credits and licences"))) a.creditsOpen = true;
             ImGui::EndMenu();
         }
         menuBarRight(a);
         ImGui::EndMainMenuBar();
     }
+    creditsWindow(a);
     return menuH;
 }
 

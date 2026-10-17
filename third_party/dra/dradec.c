@@ -1,5 +1,7 @@
 /* DRA / DRA+ decoder. Plays the audio units of a CDR service.
-   Built from the decoder in https://github.com/maliwen2015/ffmpeg_cavs_dra (dradec.c).
+   Built from the decoder in https://github.com/maliwen2015/ffmpeg_cavs_dra (dradec.c),
+   Copyright (c) 2021 maliwen2015, MIT License (the text is in LICENSE-ffmpeg_cavs_dra.txt next to this file).
+   That project carries no earlier copyright notice for this file; where the decoder first came from is not known (see THIRD_PARTY.md).
 */
 #include "dradec.h"
 
