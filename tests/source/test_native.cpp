@@ -1672,6 +1672,32 @@ int main(int argc, char** argv) {
                     s.reset();
                     hazards("quit while running");
                 }
+                // #160 / #78: Stop while the library keeps calling back (cancelled transfers still in flight): the handle is kept, the source is
+                // destroyed, and the late callbacks must find no source (they used to write into its freed ring) and must not crash
+                {
+                    IqRing ringS(1 << 20);
+                    size_t before = 0;
+                    if (auto s = makeSource(*dev)) {
+                        hfSet("airspyhf.stubborn", 1);
+                        if (s->start(t, ringS, e)) {
+                            std::this_thread::sleep_for(std::chrono::milliseconds(30));
+                            s->stop();
+                            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                            before = ringS.available() + ringS.dropped();
+                        }
+                        s.reset();
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(80));   // (the fake keeps calling the callback)
+                    CHECK(ringS.available() + ringS.dropped() == before, "HF+ stubborn stop: samples arrived after the source was gone");
+                    CHECK(st("airspyhf.streaming") == 0, "HF+ stubborn stop: the library was not stopped");
+                    hfSet("airspyhf.stubborn", 0);
+                    if (auto s = makeSource(*dev)) {   // the kept handle is taken back and closed properly
+                        IqRing ringR(1 << 20);
+                        if (s->start(t, ringR, e)) s->stop();
+                        s.reset();
+                    }
+                    CHECK(st("airspyhf.opens") == st("airspyhf.closes") && st("airspyhf.deadCalls") == -1e300, "HF+ stubborn stop: opens %.0f closes %.0f dead calls %.0f", st("airspyhf.opens"), st("airspyhf.closes"), st("airspyhf.deadCalls"));
+                }
             }
         }
         fakeState = nullptr;

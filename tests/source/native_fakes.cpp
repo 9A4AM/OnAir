@@ -471,6 +471,7 @@ EXPORT int airspyhf_start(ahf_dev* d, int (*cb)(ahf_transfer_t*), void* ctx) {
             for (int i = 0; i < n; i++, k++) { const double ph = 2 * M_PI * (double)(k % 8) / 8; s[2 * i] = (float)(0.5 * cos(ph)); s[2 * i + 1] = (float)(0.5 * sin(ph)); }
             cb(&t);
             pace();
+            if (!d->started && fake_state("airspyhf.stubborn") != 1) break;   // a "stubborn" stream ends when the test lets go
         }
         d->run = false;   // (the library's streaming flag: false when a transfer fails)
     });
@@ -481,6 +482,7 @@ EXPORT int airspyhf_stop(ahf_dev* d) {
     if (!c.ok) return -1;
     if (!d->started) ahfCount("airspyhf.extraStops");
     d->started = false;
+    if (fake_state("airspyhf.stubborn") == 1) { rec("airspyhf.streaming", 0); return 0; }   // "stubborn": the stream and its callbacks go on after stop (#160/#78: cancelled URBs still in flight)
     d->run = false;
     if (d->th.joinable()) d->th.join();
     if (!ahfUnplugged()) d->inFlight = 3;   // cancelled, not yet collected (an unplugged radio's transfers fail at once)
