@@ -2088,3 +2088,26 @@ Clear all...	Tout effacer...
 Really clear	Effacer vraiment
 The database file:	Le fichier de la base :
 Voice audio and encrypted traffic are never stored.	L'audio vocal et le trafic chiffré ne sont jamais enregistrés.
+Band survey	Relevé de bande
+record every sweep into the survey	enregistrer chaque balayage dans le relevé
+persistent at %.0f%%	persistant à %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	Un signal est persistant quand il dépasse le seuil dans au moins cette part des balayages
+quiet slot %.0f kHz	plage calme %.0f kHz
+Clear survey	Effacer le relevé
+Save survey...	Enregistrer le relevé...
+Load as previous survey...	Charger comme relevé précédent...
+Export occupancy CSV...	Exporter l'occupation en CSV...
+Export persistent signals CSV...	Exporter les signaux persistants en CSV...
+Export picture...	Exporter l'image...
+cannot write the picture	impossible d'écrire l'image
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	Lancez un balayage : chaque balayage ajoute une ligne au relevé. Avec « toutes les » réglé sur quelques minutes, il peut tourner des heures en arrière-plan.
+%zu sweeps over %.1f h	%zu balayages sur %.1f h
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	depuis le relevé précédent : bruit de fond %+.1f dB, occupation %+.1f%%, %zu nouveaux, %zu disparus
+new %.4f MHz, %.0f%% of the time	nouveau %.4f MHz, %.0f%% du temps
+gone %.4f MHz, was %.0f%% of the time	disparu %.4f MHz, présent %.0f%% du temps
+Occupancy %	Occupation %
+Mean dB above floor	Moyenne dB au-dessus du bruit
+Peak dB above floor	Crête dB au-dessus du bruit
+Quietest slots	Plages les plus calmes
+From MHz	De MHz
+Width kHz	Largeur kHz

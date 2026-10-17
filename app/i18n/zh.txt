@@ -2088,3 +2088,26 @@ Clear all...	全部清除...
 Really clear	确认清除
 The database file:	数据库文件:
 Voice audio and encrypted traffic are never stored.	语音音频和加密通信从不存储。
+Band survey	频段调查
+record every sweep into the survey	将每次扫描记入调查
+persistent at %.0f%%	持续 %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	信号在至少这一比例的扫描中高于阈值即视为持续信号
+quiet slot %.0f kHz	安静频段 %.0f kHz
+Clear survey	清除调查
+Save survey...	保存调查...
+Load as previous survey...	载入为上次调查...
+Export occupancy CSV...	导出占用率为 CSV...
+Export persistent signals CSV...	导出持续信号为 CSV...
+Export picture...	导出图片...
+cannot write the picture	无法写入图片
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	开始扫描：每次扫描会为调查增加一行。将“每隔”设为几分钟，可在后台运行数小时。
+%zu sweeps over %.1f h	%zu 次扫描，历时 %.1f 小时
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	自上次调查以来：底噪 %+.1f dB，占用率 %+.1f%%，新增 %zu，消失 %zu
+new %.4f MHz, %.0f%% of the time	新增 %.4f MHz，占时间 %.0f%%
+gone %.4f MHz, was %.0f%% of the time	消失 %.4f MHz，原占时间 %.0f%%
+Occupancy %	占用率 %
+Mean dB above floor	高于底噪的平均 dB
+Peak dB above floor	高于底噪的峰值 dB
+Quietest slots	最安静的频段
+From MHz	起始 MHz
+Width kHz	宽度 kHz

@@ -2071,3 +2071,26 @@ Clear all...	Cancella tutto...
 Really clear	Cancella davvero
 The database file:	Il file del database:
 Voice audio and encrypted traffic are never stored.	L'audio vocale e il traffico cifrato non vengono mai salvati.
+Band survey	Rilevamento di banda
+record every sweep into the survey	registra ogni scansione nel rilevamento
+persistent at %.0f%%	persistente al %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	Un segnale è persistente quando supera la soglia in almeno questa parte delle scansioni
+quiet slot %.0f kHz	fascia silenziosa %.0f kHz
+Clear survey	Cancella rilevamento
+Save survey...	Salva rilevamento...
+Load as previous survey...	Carica come rilevamento precedente...
+Export occupancy CSV...	Esporta occupazione in CSV...
+Export persistent signals CSV...	Esporta segnali persistenti in CSV...
+Export picture...	Esporta immagine...
+cannot write the picture	impossibile scrivere l'immagine
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	Avvia una scansione: ogni scansione aggiunge una riga al rilevamento. Con "ogni" impostato a qualche minuto può girare per ore in background.
+%zu sweeps over %.1f h	%zu scansioni in %.1f h
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	dal rilevamento precedente: rumore di fondo %+.1f dB, occupazione %+.1f%%, %zu nuovi, %zu scomparsi
+new %.4f MHz, %.0f%% of the time	nuovo %.4f MHz, per il %.0f%% del tempo
+gone %.4f MHz, was %.0f%% of the time	scomparso %.4f MHz, c'era per il %.0f%% del tempo
+Occupancy %	Occupazione %
+Mean dB above floor	Media dB sopra il rumore
+Peak dB above floor	Picco dB sopra il rumore
+Quietest slots	Fasce più silenziose
+From MHz	Da MHz
+Width kHz	Larghezza kHz
