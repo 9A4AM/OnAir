@@ -1598,3 +1598,20 @@ Hides tone-only pages and pages whose text could not be decoded.	Paslepia vien t
 %zu tone-only or undecoded pages hidden (Decoded only)	Paslėpta %zu vien tono arba neiššifruotų pranešimų (Tik iššifruoti)
 %zu tone-only or undecoded pages hidden	Paslėpta %zu vien tono arba neiššifruotų pranešimų
 hidden	paslėpta
+# LBJ (Chinese railway train warning)
+What LBJ carries	Ką perduoda LBJ
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	LBJ yra Kinijos traukinio artėjimo įspėjimas apie 821,2375 MHz dažniu. Kiekvienas lokomotyvas siunčia 1200 bit/s POCSAG skaitmeninius pranešimus: kas kelias sekundes trumpą pranešimą su traukinio numeriu, greičiu (km/h) ir kilometro ženklu, taip pat ilgesnius pranešimus su lokomotyvo tipu, numeriu ir maršrutu.\n\nOnAir pats dekoduoja pranešimus (tik priėmimas). Tuščia reikšmė turėjo pažeistų skaitmenų; pilka eilutė turėjo ištaisytų klaidų, todėl palyginkite ją su kitu to paties traukinio pranešimu.
+tune to about 821.2375 MHz and start the receiver	sureguliuokite apie 821,2375 MHz ir paleiskite imtuvą
+FM, 1200 bit/s FSK, %.2f Msps	FM, 1200 bit/s FSK, %.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu pranešimų, %llu sinchronizacijos žodžių, %llu tuščių, %llu nepraėjo patikros
+listening (level %.0f dBFS, offset %+.0f Hz)	klausoma (lygis %.0f dBFS, poslinkis %+.0f Hz)
+Train	Traukinys
+Speed km/h	Greitis km/h
+Km post	Km ženklas
+Direction	Kryptis
+Locomotive	Lokomotyvas
+Route	Maršrutas
+Up	Aukštyn
+Down	Žemyn
+Some digits were corrected or lost: check this row against the next message of the train	Kai kurie skaitmenys ištaisyti arba prarasti: palyginkite šią eilutę su kitu traukinio pranešimu
+Train warning, 821 MHz	Traukinių įspėjimas, 821 MHz

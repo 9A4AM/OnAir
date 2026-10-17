@@ -1598,3 +1598,20 @@ Hides tone-only pages and pages whose text could not be decoded.	Oculta los avis
 %zu tone-only or undecoded pages hidden (Decoded only)	%zu avisos de tono o mensajes sin decodificar ocultos (Solo decodificados)
 %zu tone-only or undecoded pages hidden	%zu avisos de tono o mensajes sin decodificar ocultos
 hidden	ocultos
+# LBJ (Chinese railway train warning)
+What LBJ carries	Qué transmite LBJ
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	LBJ es el aviso chino de aproximación de trenes en unos 821,2375 MHz. Cada locomotora envía páginas numéricas POCSAG a 1200 bit/s: cada pocos segundos un mensaje corto con el número de tren, la velocidad (km/h) y el punto kilométrico, y mensajes más largos con el tipo y número de locomotora y la ruta.\n\nOnAir decodifica las páginas por sí mismo (solo recepción). Un valor en blanco tenía dígitos dañados; una fila en gris tenía errores corregidos, así que compárala con el siguiente mensaje del mismo tren.
+tune to about 821.2375 MHz and start the receiver	sintoniza unos 821,2375 MHz e inicia el receptor
+FM, 1200 bit/s FSK, %.2f Msps	FM, FSK de 1200 bit/s, %.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu mensajes, %llu palabras de sincronía, %llu en blanco, %llu con comprobación fallida
+listening (level %.0f dBFS, offset %+.0f Hz)	escuchando (nivel %.0f dBFS, desviación %+.0f Hz)
+Train	Tren
+Speed km/h	Velocidad km/h
+Km post	Punto km
+Direction	Sentido
+Locomotive	Locomotora
+Route	Ruta
+Up	Ascendente
+Down	Descendente
+Some digits were corrected or lost: check this row against the next message of the train	Algunos dígitos se corrigieron o se perdieron: compara esta fila con el siguiente mensaje del tren
+Train warning, 821 MHz	Aviso de trenes, 821 MHz

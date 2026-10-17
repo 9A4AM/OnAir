@@ -1580,3 +1580,20 @@ Hides tone-only pages and pages whose text could not be decoded.	Скрывае�
 %zu tone-only or undecoded pages hidden (Decoded only)	Скрыто вызовов только тоном или нерасшифрованных сообщений: %zu (Только расшифрованные)
 %zu tone-only or undecoded pages hidden	Скрыто вызовов только тоном или нерасшифрованных сообщений: %zu
 hidden	скрыто
+# LBJ (Chinese railway train warning)
+What LBJ carries	Что передаёт LBJ
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	LBJ — китайское предупреждение о приближении поезда на частоте около 821,2375 МГц. Каждый локомотив передаёт цифровые страницы POCSAG на 1200 бит/с: раз в несколько секунд короткое сообщение с номером поезда, скоростью (км/ч) и километровым столбом, а также более длинные сообщения с типом и номером локомотива и маршрутом.\n\nOnAir сам декодирует страницы (только приём). Пустое значение имело повреждённые цифры; серая строка содержала исправленные ошибки, поэтому сверьте её со следующим сообщением того же поезда.
+tune to about 821.2375 MHz and start the receiver	настройтесь примерно на 821,2375 МГц и запустите приёмник
+FM, 1200 bit/s FSK, %.2f Msps	FM, FSK 1200 бит/с, %.2f Мвыб/с
+%llu messages, %llu sync words, %llu blank, %llu failed checks	сообщений: %llu, слов синхронизации: %llu, пустых: %llu, не прошли проверку: %llu
+listening (level %.0f dBFS, offset %+.0f Hz)	прослушивание (уровень %.0f dBFS, смещение %+.0f Гц)
+Train	Поезд
+Speed km/h	Скорость км/ч
+Km post	Км
+Direction	Направление
+Locomotive	Локомотив
+Route	Маршрут
+Up	Вверх
+Down	Вниз
+Some digits were corrected or lost: check this row against the next message of the train	Часть цифр исправлена или потеряна: сверьте эту строку со следующим сообщением поезда
+Train warning, 821 MHz	Предупреждение о поездах, 821 МГц

@@ -1598,3 +1598,20 @@ Hides tone-only pages and pages whose text could not be decoded.	トーンのみ
 %zu tone-only or undecoded pages hidden (Decoded only)	トーンのみまたは未デコードのメッセージを%zu件非表示（デコード済みのみ）
 %zu tone-only or undecoded pages hidden	トーンのみまたは未デコードのメッセージを%zu件非表示
 hidden	非表示
+# LBJ (Chinese railway train warning)
+What LBJ carries	LBJが伝える内容
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	LBJは中国の列車接近警報で、約821.2375 MHzで送信されます。各機関車は1200 bit/sのPOCSAG数字ページを送ります。数秒ごとに列車番号・速度(km/h)・キロ程を含む短いメッセージと、機関車の形式と番号・路線を含む長いメッセージです。\n\nOnAir自身がページを復号します(受信のみ)。空欄の値は桁が壊れていたものです。灰色の行は誤りを訂正したものなので、同じ列車の次のメッセージと照合してください。
+tune to about 821.2375 MHz and start the receiver	約821.2375 MHzに合わせて受信を開始してください
+FM, 1200 bit/s FSK, %.2f Msps	FM、1200 bit/s FSK、%.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	メッセージ%llu件、同期ワード%llu件、空%llu件、検査失敗%llu件
+listening (level %.0f dBFS, offset %+.0f Hz)	受信待ち(レベル %.0f dBFS、オフセット %+.0f Hz)
+Train	列車
+Speed km/h	速度 km/h
+Km post	キロ程
+Direction	方向
+Locomotive	機関車
+Route	路線
+Up	上り
+Down	下り
+Some digits were corrected or lost: check this row against the next message of the train	一部の桁が訂正または欠落しました。同じ列車の次のメッセージと照合してください
+Train warning, 821 MHz	列車警報、821 MHz

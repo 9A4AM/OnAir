@@ -1580,3 +1580,20 @@ Hides tone-only pages and pages whose text could not be decoded.	Oculta as chama
 %zu tone-only or undecoded pages hidden (Decoded only)	%zu chamadas só de tom ou mensagens não decodificadas ocultas (Só decodificadas)
 %zu tone-only or undecoded pages hidden	%zu chamadas só de tom ou mensagens não decodificadas ocultas
 hidden	ocultas
+# LBJ (Chinese railway train warning)
+What LBJ carries	O que o LBJ transmite
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	O LBJ é o aviso chinês de aproximação de comboios em cerca de 821,2375 MHz. Cada locomotiva envia páginas numéricas POCSAG a 1200 bit/s: a cada poucos segundos uma mensagem curta com o número do comboio, a velocidade (km/h) e o ponto quilométrico, e mensagens mais longas com o tipo e número da locomotiva e o percurso.\n\nO OnAir descodifica as páginas por si (só receção). Um valor em branco tinha dígitos danificados; uma linha cinzenta tinha erros corrigidos, por isso compare-a com a mensagem seguinte do mesmo comboio.
+tune to about 821.2375 MHz and start the receiver	sintonize cerca de 821,2375 MHz e inicie o recetor
+FM, 1200 bit/s FSK, %.2f Msps	FM, FSK de 1200 bit/s, %.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu mensagens, %llu palavras de sincronismo, %llu em branco, %llu verificações falhadas
+listening (level %.0f dBFS, offset %+.0f Hz)	a escutar (nível %.0f dBFS, desvio %+.0f Hz)
+Train	Comboio
+Speed km/h	Velocidade km/h
+Km post	Ponto km
+Direction	Sentido
+Locomotive	Locomotiva
+Route	Percurso
+Up	Ascendente
+Down	Descendente
+Some digits were corrected or lost: check this row against the next message of the train	Alguns dígitos foram corrigidos ou perdidos: compare esta linha com a mensagem seguinte do comboio
+Train warning, 821 MHz	Aviso de comboios, 821 MHz
