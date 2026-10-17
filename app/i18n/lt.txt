@@ -2052,3 +2052,10 @@ How to install	Kaip įdiegti
 The services, signal information and data work without it.	Paslaugos, signalo informacija ir duomenys veikia ir be jo.
 Interface and windows	Sąsaja ir langai
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Rodinys perjungia išdėstymą (Sidebar, Scope, Tiles, Faceplate, Panel), klasikinę sąsają, teksto dydį ir paletę; lietimui skirta sąsaja yra skiltyje Įrankiai. Tokie langai kaip Dažniai, Skenavimo skeneris, Krypties ieškiklis ir Automatizavimas atidaromi iš čia.
+Air-interface encryption: %s	Oro sąsajos šifravimas: %s
+%llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu signalizacijos PDU su šifravimo režimu (neiššifruota); %llu neperskaitomų blokų (CRC klaida)
+none advertised	neskelbiama
+class 2	2 klasė
+class 3	3 klasė
+available	galimas
+unknown	nežinoma

@@ -2052,3 +2052,10 @@ How to install	安装方法
 The services, signal information and data work without it.	没有它,服务、信号信息和数据仍可正常使用。
 Interface and windows	界面与窗口
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	“视图”菜单可切换布局（Sidebar、Scope、Tiles、Faceplate、Panel）、经典界面、文字大小和配色；触控界面位于“工具”下。频率、扫频扫描器、测向和自动化等窗口也从这里打开。
+Air-interface encryption: %s	空中接口加密：%s
+%llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu 个设置了加密模式的信令PDU（未解密）；%llu 个不可读块（CRC错误）
+none advertised	未公布
+class 2	2类
+class 3	3类
+available	可用
+unknown	未知

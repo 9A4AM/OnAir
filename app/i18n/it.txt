@@ -2035,3 +2035,10 @@ How to install	Come installare
 The services, signal information and data work without it.	I servizi, le informazioni sul segnale e i dati funzionano anche senza.
 Interface and windows	Interfaccia e finestre
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Vista cambia il layout (Sidebar, Scope, Tiles, Faceplate, Panel), l'interfaccia classica, la dimensione del testo e la palette; l'interfaccia touch è sotto Strumenti. Finestre come Frequenze, Scanner di sweep, Radiogoniometro e Automazioni si aprono da qui.
+Air-interface encryption: %s	Cifratura dell'interfaccia radio: %s
+%llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu PDU di segnalazione con modo di cifratura (non decifrate); %llu blocchi illeggibili (CRC errato)
+none advertised	nessuna annunciata
+class 2	classe 2
+class 3	classe 3
+available	disponibile
+unknown	sconosciuto

@@ -502,6 +502,7 @@ struct TetraReceiver::Impl {
                 t->aie = (s.bsService & tetra::kSvcAirEncryption) != 0;
                 const tetra::Security sc = tetra::parseSecurity(s);
                 if (sc.valid) { t->secValid = true; t->authRequired = sc.authRequired; t->secClass1 = sc.class1; t->secClass2 = sc.class2; t->secClass3 = sc.class3; }
+                if (!t->aie) { t->secClass2 = false; t->secClass3 = false; }   // a class kept from an earlier broadcast: the service bit is the newest word
                 t->mainHz = tetra::dlCarrierHz(s.band, s.mainCarrier, s.offset);
                 t->uplinkHz = tetra::ulCarrierHz(s.band, s.mainCarrier, s.offset, s.duplex, s.reverse);
                 // the main carrier: the announced frequency is this one, or near enough for a radio whose clock is off (up to about 150 ppm)
@@ -554,7 +555,9 @@ struct TetraReceiver::Impl {
         }
         if (!t->hasSysinfo) t->cfoHz = 0;
         if (!encBefore && t->encryption()) {
-            snprintf(b, sizeof b, "%s: air interface encryption in use%s (nothing is decrypted)", freqText(freq).c_str(), t->encryptedPdus ? ", encrypted signalling seen" : "");
+            static const char* const kind[] = {"", "", "class 2", "class 3", "service available"};
+            snprintf(b, sizeof b, "%s: air interface encryption %s%s%s (nothing is decrypted)", freqText(freq).c_str(), t->airEnc() >= 2 ? "advertised: " : "", t->airEnc() >= 2 ? kind[t->airEnc()] : "not advertised",
+                     t->encryptedPdus ? ", some signalling PDUs carry an encryption mode" : "");
             event(b, sec);
         }
     }

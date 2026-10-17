@@ -2052,3 +2052,10 @@ How to install	Jak zainstalować
 The services, signal information and data work without it.	Usługi, informacje o sygnale i dane działają bez niego.
 Interface and windows	Interfejs i okna
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Widok przełącza układ (Sidebar, Scope, Tiles, Faceplate, Panel), interfejs klasyczny, rozmiar tekstu i paletę; interfejs dotykowy jest w sekcji Narzędzia. Okna takie jak Częstotliwości, Skaner przemiatający, Namierzanie i Automatyzacje otwierają się stąd.
+Air-interface encryption: %s	Szyfrowanie interfejsu radiowego: %s
+%llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu jednostek sygnalizacyjnych z trybem szyfrowania (nie odszyfrowano); %llu nieczytelnych bloków (błąd CRC)
+none advertised	brak ogłoszonego
+class 2	klasa 2
+class 3	klasa 3
+available	dostępne
+unknown	nieznane

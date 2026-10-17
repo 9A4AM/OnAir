@@ -59,6 +59,24 @@ fn sysinfo_bits() -> Vec<u8> {
 }
 
 #[test]
+fn security_needs_the_encryption_service_bit() {
+    // security bits 0110 0000 of a real clear cell, no air interface encryption service bit: class 1 only, never class 2 / 3
+    let mut s = Sysinfo::default();
+    s.opt_flag = 3;
+    s.opt_value = 0x60 << 12;
+    s.bs_service = 0xd65;
+    assert_eq!(security(&s), 1 | 1 << 2);
+    s.bs_service = 0xd67;
+    s.opt_value = 0xe0 << 12;
+    assert_eq!(security(&s), 1 | 1 << 1 | 1 << 2 | 1 << 4);
+    s.opt_value = 0x80 << 12;
+    assert_eq!(security(&s), 1 | 1 << 1 | 1 << 3);
+    s.bs_service = 0xd65;
+    s.opt_value = 0x1f << 12;
+    assert_eq!(security(&s), 1);
+}
+
+#[test]
 fn sysinfo_known() {
     let b = sysinfo_bits();
     assert_eq!(b.len(), 124);

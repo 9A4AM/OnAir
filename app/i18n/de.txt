@@ -2052,3 +2052,10 @@ How to install	So installieren
 The services, signal information and data work without it.	Die Dienste, Signalinformationen und Daten funktionieren auch ohne.
 Interface and windows	Oberfläche und Fenster
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Ansicht schaltet das Layout um (Sidebar, Scope, Tiles, Faceplate, Panel), die klassische Oberfläche, Textgröße und Palette; die Touch-Oberfläche steht unter Tools. Fenster wie Frequenzen, Sweep-Scanner, Peilung und Automatisierungen öffnen sich von hier.
+Air-interface encryption: %s	Verschlüsselung der Luftschnittstelle: %s
+%llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu Signalisierungs-PDUs mit gesetztem Verschlüsselungsmodus (nicht entschlüsselt); %llu Blöcke unlesbar (CRC fehlerhaft)
+none advertised	keine angekündigt
+class 2	Klasse 2
+class 3	Klasse 3
+available	verfügbar
+unknown	unbekannt

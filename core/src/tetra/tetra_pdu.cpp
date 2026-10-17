@@ -92,15 +92,19 @@ std::string serviceText(int v) {
     return s.empty() ? "none" : s;
 }
 
+// EN 300 392-7 table A.104: bit 7 authentication required, bit 6 class 1 MS supported, bit 5 class 3 (1) or class 2 (0) MS supported. The class 2 / 3 bit
+// means something only when the cell's "air interface encryption service" bit (D-MLE-SYSINFO) is set; the standard sets it to zero otherwise.
+// Bits 4..0 are the SCK number and key services, not a class.
 Security parseSecurity(const Sysinfo& s) {
     Security o;
     if (s.optFlag != 3) return o;
     const int sec = (int)((s.optValue >> 12) & 0xFF);
+    const bool aie = (s.bsService & kSvcAirEncryption) != 0;
     o.valid = true;
     o.authRequired = (sec >> 7) & 1;
     o.class1 = (sec >> 6) & 1;
-    o.class3 = (sec >> 5) & 1;
-    o.class2 = !o.class3 && ((sec >> 4) & 1);
+    o.class3 = aie && ((sec >> 5) & 1);
+    o.class2 = aie && !((sec >> 5) & 1);
     return o;
 }
 

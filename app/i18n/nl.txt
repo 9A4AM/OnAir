@@ -2052,3 +2052,10 @@ How to install	Zo installeer je het
 The services, signal information and data work without it.	De diensten, signaalinformatie en data werken ook zonder.
 Interface and windows	Interface en vensters
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Beeld wisselt de indeling (Sidebar, Scope, Tiles, Faceplate, Panel), de klassieke interface, tekstgrootte en palet; de touchinterface staat onder Tools. Vensters zoals Frequenties, Sweepscanner, Peilontvanger en Automatiseringen openen vanaf hier.
+Air-interface encryption: %s	Versleuteling van de luchtinterface: %s
+%llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu signaleringspakketten met een versleutelingsmodus (niet ontsleuteld); %llu onleesbare blokken (CRC fout)
+none advertised	geen aangekondigd
+class 2	klasse 2
+class 3	klasse 3
+available	beschikbaar
+unknown	onbekend

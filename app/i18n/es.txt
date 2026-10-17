@@ -2052,3 +2052,10 @@ How to install	Cómo instalar
 The services, signal information and data work without it.	Los servicios, la información de la señal y los datos funcionan sin él.
 Interface and windows	Interfaz y ventanas
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Ver cambia el diseño (Sidebar, Scope, Tiles, Faceplate, Panel), la interfaz clásica, el tamaño del texto y la paleta; la interfaz táctil está en Herramientas. Ventanas como Frecuencias, Escáner de barrido, Radiogoniómetro y Automatizaciones se abren desde aquí.
+Air-interface encryption: %s	Cifrado de la interfaz aire: %s
+%llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu PDU de señalización con modo de cifrado activo (sin descifrar); %llu bloques ilegibles (CRC erróneo)
+none advertised	ninguno anunciado
+class 2	clase 2
+class 3	clase 3
+available	disponible
+unknown	desconocido

@@ -2038,3 +2038,10 @@ How to install	Telepítés menete
 The services, signal information and data work without it.	A szolgáltatások, a jelinformációk és az adatok enélkül is működnek.
 Interface and windows	Felület és ablakok
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	A Nézet menüben váltható az elrendezés (Sidebar, Scope, Tiles, Faceplate, Panel), a klasszikus felület, a szövegméret és a paletta; az érintőfelület az Eszközök alatt van. Az olyan ablakok, mint a Frekvenciák, a Végigsöprő szkenner, az Iránykereső és az Automatizálások innen nyílnak.
+Air-interface encryption: %s	Légi interfész titkosítása: %s
+%llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu jelzés-PDU titkosítási móddal (nincs visszafejtve); %llu olvashatatlan blokk (hibás CRC)
+none advertised	nincs hirdetve
+class 2	2. osztály
+class 3	3. osztály
+available	elérhető
+unknown	ismeretlen
