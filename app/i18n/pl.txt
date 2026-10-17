@@ -1386,3 +1386,41 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: konwerter obniżający 1500 MHz dla ok. 1,5-3 GHz (2,4 GHz, 2,3/3,4 GHz). Podłącz go między antenę a radio; radio widzi RF - 1500 MHz. Poniżej 1500 MHz nie jest obsługiwane.
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s, %d skoków, %d uśrednień, %.0f ms na przemiatanie
+pick a radio first (the test signal and files cannot sweep)	najpierw wybierz radio (sygnał testowy i pliki nie mogą być przemiatane)
+Save scan...	Zapisz skan...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	CSV zgodny z rtl_power: otwiera się w Heatmap.py, narzędziach rtl_power_fftw i arkuszach
+Load as baseline...	Wczytaj jako punkt odniesienia...
+Keep this scan as baseline	Użyj tego skanu jako punktu odniesienia
+Save signal log...	Zapisz dziennik sygnałów...
+Sweep scanner	Skaner przemiatający
+from MHz	od MHz
+to MHz	do MHz
+bin %.0f kHz	bin %.0f kHz
+dwell %.0f ms	czas %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Czas na każdy skok: dłuższy uśrednia więcej FFT (stabilniejszy szum, widać słabe sygnały), ale przemiatanie jest wolniejsze
+measure retune time	zmierz czas przestrojenia
+settle %.0f ms	ustalanie %.0f ms
+rate: radio's best	próbkowanie: najlepsze radia
+rate: 10 Msps	próbkowanie: 10 Msps
+rate: 5 Msps	próbkowanie: 5 Msps
+rate: 2.4 Msps	próbkowanie: 2,4 Msps
+gain %.0f dB	wzmocnienie %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Przerwa między przemiataniami: co kilka sekund oszczędza procesor i baterię
+threshold floor+%.0f dB	próg szum+%.0f dB
+floor percentile %.0f	percentyl szumu %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	Szum to ten percentyl mocy binów w każdym skoku (50 = mediana). Obniż w zatłoczonych pasmach, podnieś w pustych
+retune settle %.1f ms	ustalanie %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	szum %.1f dBFS na bin (biny %.0f kHz), próg %.1f dBFS, %zu sygnałów w tym przemiataniu
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	względem punktu odniesienia: szum %+.1f dB, największy wzrost %+.1f dB przy %.3f MHz
+Signals found	Znalezione sygnały
+mode: as it is	tryb: bez zmian
+Tune to selected	Dostrój do wybranego
+Bandwidth kHz	Szerokość pasma kHz
+Peak dBFS	Szczyt dBFS
+Best SNR dB	Najlepszy SNR dB
+Sweep	Przemiataj
+every %.0f s	co %.0f s
+back to back	bez przerwy
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Szybkie przemiatanie szerokopasmowe z pomiarem szumu, dziennikiem sygnałów i wodospadem

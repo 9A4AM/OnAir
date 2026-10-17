@@ -1386,3 +1386,41 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down : convertisseur abaisseur de 1500 MHz pour environ 1,5 à 3 GHz (2,4 GHz, 2,3/3,4 GHz). À brancher entre l'antenne et la radio ; la radio voit RF - 1500 MHz. En dessous de 1500 MHz, ce n'est pas pris en charge.
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s, %d sauts, %d moyennes, %.0f ms par balayage
+pick a radio first (the test signal and files cannot sweep)	choisissez d'abord une radio (le signal de test et les fichiers ne se balayent pas)
+Save scan...	Enregistrer le balayage...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	CSV compatible rtl_power : s'ouvre dans Heatmap.py, les outils rtl_power_fftw et les tableurs
+Load as baseline...	Charger comme référence...
+Keep this scan as baseline	Garder ce balayage comme référence
+Save signal log...	Enregistrer le journal des signaux...
+Sweep scanner	Scanner à balayage
+from MHz	de MHz
+to MHz	à MHz
+bin %.0f kHz	bin %.0f kHz
+dwell %.0f ms	palier %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Temps passé sur chaque saut : plus long, plus de FFT moyennées (plancher plus stable, signaux faibles visibles) mais balayage plus lent
+measure retune time	mesurer le temps de réaccord
+settle %.0f ms	stabilisation %.0f ms
+rate: radio's best	débit : le meilleur de la radio
+rate: 10 Msps	débit : 10 Msps
+rate: 5 Msps	débit : 5 Msps
+rate: 2.4 Msps	débit : 2,4 Msps
+gain %.0f dB	gain %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Pause entre balayages : un balayage toutes les n secondes ménage le processeur et la batterie
+threshold floor+%.0f dB	seuil plancher+%.0f dB
+floor percentile %.0f	percentile du plancher %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	Le plancher de bruit est ce percentile de la puissance des bins à chaque saut (50 = médiane). Baissez-le dans les bandes chargées, montez-le dans les vides
+retune settle %.1f ms	stabilisation %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	plancher de bruit %.1f dBFS par bin (bins de %.0f kHz), seuil %.1f dBFS, %zu signaux dans ce balayage
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	par rapport à la référence : plancher %+.1f dB, plus forte hausse %+.1f dB à %.3f MHz
+Signals found	Signaux trouvés
+mode: as it is	mode : tel quel
+Tune to selected	Accorder sur la sélection
+Bandwidth kHz	Bande passante kHz
+Peak dBFS	Crête dBFS
+Best SNR dB	Meilleur SNR dB
+Sweep	Balayer
+every %.0f s	toutes les %.0f s
+back to back	en continu
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Balayage large bande rapide avec mesure du plancher de bruit, journal des signaux et cascade

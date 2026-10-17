@@ -222,6 +222,7 @@ void sidebar(App& a) {
         tool("Transmit...", txViewFlag(), N_("Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission."));
         tool("Map", a.mapOpen, "A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location");
         tool("Antenna rotator...", a.rotatorOpen, "Connect a GS-232-compatible rotator (serial or TCP), set azimuth and elevation");
+        tool("Sweep scanner", a.sweepOpen, N_("Fast wideband sweep with a noise-floor measurement, signal log and waterfall"));
         tool("Scanner (highly experimental)", a.scannerOpen, "HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity");
         ImGui::Separator();
         themeChoice(a, false);
@@ -371,6 +372,7 @@ static void viewMenu(App& a) {
         ImGui::MenuItem(tr("Transmit..."), nullptr, &txViewFlag());
         ImGui::MenuItem(tr("Map"), nullptr, &a.mapOpen);
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location"));
+        if (ImGui::MenuItem(tr("Sweep scanner"), nullptr, &a.sweepOpen)) {}
         if (ImGui::MenuItem(tr("Scanner (highly experimental)"), nullptr, &a.scannerOpen)) {}
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity"));
         ImGui::MenuItem(tr("Antenna rotator..."), nullptr, &a.rotatorOpen);

@@ -1368,3 +1368,41 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: понижающий конвертер 1500 МГц примерно для 1,5-3 ГГц (2,4 ГГц, 2,3/3,4 ГГц). Включите его между антенной и радио; радио видит RF - 1500 МГц. Ниже 1500 МГц не поддерживается.
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f МГц/с, %d скачков, %d усреднений, %.0f мс на проход
+pick a radio first (the test signal and files cannot sweep)	сначала выберите радио (тестовый сигнал и файлы сканировать нельзя)
+Save scan...	Сохранить скан...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	CSV, совместимый с rtl_power: открывается в Heatmap.py, инструментах rtl_power_fftw и электронных таблицах
+Load as baseline...	Загрузить как базу...
+Keep this scan as baseline	Взять этот скан за базу
+Save signal log...	Сохранить журнал сигналов...
+Sweep scanner	Сканер-свип
+from MHz	от МГц
+to MHz	до МГц
+bin %.0f kHz	бин %.0f кГц
+dwell %.0f ms	задержка %.0f мс
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Время на каждый скачок: дольше — больше усреднений БПФ (ровнее шум, видны слабые сигналы), но проход медленнее
+measure retune time	измерить время перестройки
+settle %.0f ms	установка %.0f мс
+rate: radio's best	частота: максимум радио
+rate: 10 Msps	частота: 10 Msps
+rate: 5 Msps	частота: 5 Msps
+rate: 2.4 Msps	частота: 2,4 Msps
+gain %.0f dB	усиление %.0f дБ
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Пауза между проходами: проход раз в несколько секунд бережёт процессор и батарею
+threshold floor+%.0f dB	порог шум+%.0f дБ
+floor percentile %.0f	перцентиль шума %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	Шум — это данный перцентиль мощности бинов в каждом скачке (50 = медиана). В занятых диапазонах уменьшайте, в пустых увеличивайте
+retune settle %.1f ms	установка %.1f мс
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	шум %.1f dBFS на бин (бины %.0f кГц), порог %.1f dBFS, сигналов в проходе: %zu
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	относительно базы: шум %+.1f дБ, наибольший рост %+.1f дБ на %.3f МГц
+Signals found	Найденные сигналы
+mode: as it is	режим: как есть
+Tune to selected	Настроиться на выбранный
+Bandwidth kHz	Полоса кГц
+Peak dBFS	Пик dBFS
+Best SNR dB	Лучший ОСШ дБ
+Sweep	Проход
+every %.0f s	каждые %.0f с
+back to back	подряд
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Быстрый широкополосный проход с измерением шума, журналом сигналов и водопадом

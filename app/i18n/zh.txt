@@ -1386,3 +1386,41 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 1500 MHz 下变频器,适用于约 1.5 至 3 GHz (2.4 GHz、2.3/3.4 GHz)。接在天线和电台之间;电台看到的是 RF - 1500 MHz。低于 1500 MHz 不支持。
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s，%d 跳，平均 %d 次，每次扫描 %.0f ms
+pick a radio first (the test signal and files cannot sweep)	请先选择一台电台(测试信号和文件无法扫描)
+Save scan...	保存扫描...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	兼容 rtl_power 的 CSV:可用 Heatmap.py、rtl_power_fftw 工具和电子表格打开
+Load as baseline...	载入为基线...
+Keep this scan as baseline	将此扫描设为基线
+Save signal log...	保存信号日志...
+Sweep scanner	扫频扫描器
+from MHz	起始 MHz
+to MHz	结束 MHz
+bin %.0f kHz	频点 %.0f kHz
+dwell %.0f ms	驻留 %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	每跳停留时间:越长平均的 FFT 越多(底噪更稳、可见弱信号),但扫描更慢
+measure retune time	测量调谐时间
+settle %.0f ms	稳定 %.0f ms
+rate: radio's best	采样率:电台最大值
+rate: 10 Msps	采样率:10 Msps
+rate: 5 Msps	采样率:5 Msps
+rate: 2.4 Msps	采样率:2.4 Msps
+gain %.0f dB	增益 %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	扫描间隔:每隔几秒扫描一次可节省 CPU 和电量
+threshold floor+%.0f dB	阈值 底噪+%.0f dB
+floor percentile %.0f	底噪百分位 %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	底噪取每跳各频点功率的该百分位(50 = 中位数)。拥挤频段调低,空闲频段调高
+retune settle %.1f ms	稳定时间 %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	底噪每频点 %.1f dBFS(频点 %.0f kHz),阈值 %.1f dBFS,本次扫描 %zu 个信号
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	相对基线:底噪 %+.1f dB,最大上升 %+.1f dB(%.3f MHz)
+Signals found	发现的信号
+mode: as it is	模式:保持不变
+Tune to selected	调谐到所选
+Bandwidth kHz	带宽 kHz
+Peak dBFS	峰值 dBFS
+Best SNR dB	最佳信噪比 dB
+Sweep	扫描
+every %.0f s	每 %.0f 秒
+back to back	连续
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	带底噪测量、信号日志和瀑布图的快速宽带扫描

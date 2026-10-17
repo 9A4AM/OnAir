@@ -1386,3 +1386,41 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: conversor descendente de 1500 MHz para aprox. 1,5 a 3 GHz (2,4 GHz, 2,3/3,4 GHz). Conéctalo entre la antena y la radio; la radio ve RF - 1500 MHz. Por debajo de 1500 MHz no es compatible.
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s, %d saltos, %d promedios, %.0f ms por barrido
+pick a radio first (the test signal and files cannot sweep)	elige primero una radio (la señal de prueba y los archivos no se pueden barrer)
+Save scan...	Guardar barrido...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	CSV compatible con rtl_power: se abre en Heatmap.py, herramientas rtl_power_fftw y hojas de cálculo
+Load as baseline...	Cargar como referencia...
+Keep this scan as baseline	Usar este barrido como referencia
+Save signal log...	Guardar registro de señales...
+Sweep scanner	Escáner de barrido
+from MHz	desde MHz
+to MHz	hasta MHz
+bin %.0f kHz	bin %.0f kHz
+dwell %.0f ms	permanencia %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Tiempo en cada salto: más tiempo promedia más FFT (suelo más estable, se ven señales débiles) pero el barrido es más lento
+measure retune time	medir tiempo de resintonía
+settle %.0f ms	estabilización %.0f ms
+rate: radio's best	tasa: la mejor de la radio
+rate: 10 Msps	tasa: 10 Msps
+rate: 5 Msps	tasa: 5 Msps
+rate: 2.4 Msps	tasa: 2,4 Msps
+gain %.0f dB	ganancia %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Pausa entre barridos: un barrido cada cierto número de segundos ahorra CPU y batería
+threshold floor+%.0f dB	umbral suelo+%.0f dB
+floor percentile %.0f	percentil del suelo %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	El suelo de ruido es este percentil de la potencia de los bins en cada salto (50 = mediana). Bájalo en bandas llenas, súbelo en vacías
+retune settle %.1f ms	estabilización %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	suelo de ruido %.1f dBFS por bin (bins de %.0f kHz), umbral %.1f dBFS, %zu señales en este barrido
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	frente a la referencia: suelo %+.1f dB, mayor subida %+.1f dB en %.3f MHz
+Signals found	Señales encontradas
+mode: as it is	modo: el actual
+Tune to selected	Sintonizar la selección
+Bandwidth kHz	Ancho de banda kHz
+Peak dBFS	Pico dBFS
+Best SNR dB	Mejor SNR dB
+Sweep	Barrer
+every %.0f s	cada %.0f s
+back to back	seguidos
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Barrido rápido de banda ancha con medida del suelo de ruido, registro de señales y cascada
