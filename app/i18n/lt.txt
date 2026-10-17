@@ -1573,3 +1573,8 @@ Copy VLC command	Kopijuoti VLC komandą
 Copy mpv command	Kopijuoti mpv komandą
 Copy ffplay command	Kopijuoti ffplay komandą
 Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Pirmiausia įjunkite UDP srautą, tada paleiskite komandą. Ar grotuvas rodys vaizdą, priklauso nuo jo paties versijos (docs/AVSPLUS.md).
+Decoded only	Tik iššifruoti
+Hides tone-only pages and pages whose text could not be decoded.	Paslepia vien tono iškvietimus ir pranešimus, kurių teksto nepavyko iššifruoti.
+%zu tone-only or undecoded pages hidden (Decoded only)	Paslėpta %zu vien tono arba neiššifruotų pranešimų (Tik iššifruoti)
+%zu tone-only or undecoded pages hidden	Paslėpta %zu vien tono arba neiššifruotų pranešimų
+hidden	paslėpta

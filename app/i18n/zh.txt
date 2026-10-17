@@ -1573,3 +1573,8 @@ Copy VLC command	Copy VLC command
 Copy mpv command	Copy mpv command
 Copy ffplay command	Copy ffplay command
 Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).
+Decoded only	仅已解码
+Hides tone-only pages and pages whose text could not be decoded.	隐藏仅有音调的呼叫以及文本无法解码的消息。
+%zu tone-only or undecoded pages hidden (Decoded only)	已隐藏 %zu 条仅音调或未解码的消息（仅已解码）
+%zu tone-only or undecoded pages hidden	已隐藏 %zu 条仅音调或未解码的消息
+hidden	已隐藏

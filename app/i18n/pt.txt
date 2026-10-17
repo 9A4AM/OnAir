@@ -1555,3 +1555,8 @@ Copy VLC command	Copy VLC command
 Copy mpv command	Copy mpv command
 Copy ffplay command	Copy ffplay command
 Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).
+Decoded only	Só decodificadas
+Hides tone-only pages and pages whose text could not be decoded.	Oculta as chamadas só de tom e as mensagens cujo texto não pôde ser decodificado.
+%zu tone-only or undecoded pages hidden (Decoded only)	%zu chamadas só de tom ou mensagens não decodificadas ocultas (Só decodificadas)
+%zu tone-only or undecoded pages hidden	%zu chamadas só de tom ou mensagens não decodificadas ocultas
+hidden	ocultas

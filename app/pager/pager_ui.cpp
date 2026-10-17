@@ -1,5 +1,6 @@
 // Pagers screens: lamps for the signal, the sync and the two protocols; the message list with a filter; the statistics per speed.
 #include "app.h"
+#include "pager_filter.h"
 #include "dect2/pager/pager_rx.h"
 #include "dect2/pager/pager_tel.h"
 #include "platform/platform.h"
@@ -19,6 +20,7 @@ struct State {
     int view = 0;                        // 0 messages, 1 statistics
     char filter[48] = "";                // matches the address or the text
     bool pocsag = true, flex = true;
+    bool decodedOnly = false;            // hide tone-only and empty pages from the table, Copy and the list (saved as pagerDecodedOnly)
     bool baud512 = true, baud1200 = true, baud2400 = true;
     int pushedBaud = -1;
     int pushedNarrow = -1;
@@ -42,6 +44,7 @@ void loadRead() {
     plat::Prefs& d = plat::prefs();
     const long m = d.getI("pocsagRead", dect2::kPocsagReadAuto);
     S.readMode = m >= 0 && m < dect2::kPocsagReadModes ? (int)m : dect2::kPocsagReadAuto;
+    S.decodedOnly = d.getI("pagerDecodedOnly", 0) != 0;
     const long b = d.getI("pocsagBaud", 7);
     S.baud512 = (b & 1) != 0;
     S.baud1200 = (b & 2) != 0;
@@ -120,6 +123,13 @@ bool passes(const dect2::PagerMessage& m) {   // m: resolved
     return std::string(adr).find(f) != std::string::npos || lower(m.text).find(f) != std::string::npos;
 }
 
+// passes() plus the "Decoded only" switch; hidden (when given) is incremented for a page that only that switch removed.
+bool shows(const dect2::PagerMessage& m, size_t* hidden = nullptr) {
+    if (!passes(m)) return false;
+    if (S.decodedOnly && !dect2::pagerIsDecoded(m)) { if (hidden) (*hidden)++; return false; }
+    return true;
+}
+
 const std::vector<dect2::PagerMessage>& messagesOf(const dect2::PagerTelemetry& t) {
     static const std::vector<dect2::PagerMessage> none;
     return t.messages ? *t.messages : none;
@@ -155,6 +165,9 @@ void messageView(App& a) {
     ImGui::Checkbox("POCSAG", &S.pocsag);
     flowNext(10 * gUi);
     ImGui::Checkbox("FLEX", &S.flex);
+    flowNext(12 * gUi);
+    if (ImGui::Checkbox(tr("Decoded only"), &S.decodedOnly)) { plat::prefs().setI("pagerDecodedOnly", S.decodedOnly ? 1 : 0); savePrefs(a); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Hides tone-only pages and pages whose text could not be decoded."));
     flowNext(12 * gUi);
     ImGui::TextDisabled("%s", tr("Channel")); ImGui::SameLine(0, 5 * gUi);
     ImGui::SetNextItemWidth(80 * gUi);
@@ -201,7 +214,7 @@ void messageView(App& a) {
         std::string txt;
         for (const auto& raw : all) {
             const dect2::PagerMessage m = resolved(raw);
-            if (!passes(m)) continue;
+            if (!shows(m)) continue;
             if (wide && m.carrierId > 0) { char fb[24]; snprintf(fb, sizeof fb, "%.4f\t", radioCenterMhz(a) + m.carrierHz / 1e6); txt += fb; }
             txt += clock(m.wallTime) + "\t" + dect2::pagerSpeedName(m.speed) + "\t" + std::to_string(m.address) + "\t" + fnText(m) + "\t" + typeText(m) + "\t" + oneLine(m.text) + "\n";
         }
@@ -213,11 +226,11 @@ void messageView(App& a) {
         ImGui::TableSetupColumn("Time UTC"); ImGui::TableSetupColumn("Protocol"); ImGui::TableSetupColumn("Address"); ImGui::TableSetupColumn("Fn");
         ImGui::TableSetupColumn("Type"); ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableHeadersRow();
-        size_t shown = 0, matching = 0;
+        size_t shown = 0, matching = 0, hiddenTones = 0;
         if (on) {
             for (const auto& raw : all) {
                 const dect2::PagerMessage m = resolved(raw);
-                if (!passes(m)) continue;
+                if (!shows(m, &hiddenTones)) continue;
                 matching++;
                 if (shown >= kShown) continue;
                 shown++;
@@ -255,7 +268,9 @@ void messageView(App& a) {
             }
         }
         ImGui::EndTable();
+        if (on && matching && hiddenTones) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(tr("%zu tone-only or undecoded pages hidden"), hiddenTones); ImGui::PopTextWrapPos(); }
         if (!on) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to see pages"); ImGui::PopTextWrapPos(); }
+        else if (!matching && hiddenTones) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(tr("%zu tone-only or undecoded pages hidden (Decoded only)"), hiddenTones); ImGui::PopTextWrapPos(); }
         else if (!matching) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(all.empty() ? "no page yet" : "no page matches the filter"); ImGui::PopTextWrapPos(); }
     }
 }
@@ -325,8 +340,10 @@ void list(App& a) {
     ImGui::TableHeadersRow();
     size_t n = 0;
     for (const auto& raw : all) {
-        if (n++ >= 100) break;
+        if (n >= 100) break;
         const dect2::PagerMessage m = resolved(raw);
+        if (S.decodedOnly && !dect2::pagerIsDecoded(m)) continue;
+        n++;
         ImGui::TableNextRow();
         if (wide) { ImGui::TableNextColumn(); wideCarrierCell(a, m.carrierId, m.carrierHz); }
         ImGui::TableNextColumn(); ImGui::Text("%u", (unsigned)m.address);
@@ -349,6 +366,7 @@ void receiver(App& a) {
 }
 
 void status(App& a) {
+    loadRead();
     const bool run = a.engine.running(), on = live(a);
     const dect2::PagerTelemetry& t = a.rx.pager;
     const SignalStats& st = a.spec.stats;
@@ -367,7 +385,13 @@ void status(App& a) {
     char b[64];
     if (!on) { ro("State", run ? "starting" : "stopped"); return; }
     ro("State", t.sync ? "Receiving" : t.state == 1 ? "Receiving" : "Searching");
-    snprintf(b, sizeof b, "%llu", (unsigned long long)t.messagesTotal); ro("Pages", b);
+    snprintf(b, sizeof b, "%llu", (unsigned long long)t.messagesTotal);
+    if (S.decodedOnly) {
+        size_t tones = 0;
+        for (const auto& raw : messagesOf(t)) if (!dect2::pagerIsDecoded(resolved(raw))) tones++;
+        if (tones) { char hb[48]; snprintf(hb, sizeof hb, "%s, %zu %s", b, tones, tr("hidden")); ro("Pages", hb); }
+        else ro("Pages", b);
+    } else ro("Pages", b);
     snprintf(b, sizeof b, "%llu / %llu", (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad); ro("Good / lost", b);
 }
 
