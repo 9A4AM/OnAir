@@ -130,6 +130,7 @@ const std::vector<PrefKey>& keyTable() {
         shared(rx1(text("mapStationId", AT(a.mapStationId)))), shared(rx1(text("mapServer", AT(a.mapServer)))),
         shared(flagI("lightUi", AT(a.lightUi), false)), shared(flagI("highContrast", AT(a.highContrast), false)),
         shared(text("uiLang", AT(a.uiLang))),
+        shared(text("bandPlan", AT(a.bandPlan))),
         shared(num("uiTheme", AT(a.uiTheme), 1, 0, 2, true)),
         shared(num("audioIq", AT(a.audioIqMode), 0, 0, 3)),
         shared(num("audioChan", AT(a.audioChan), 0, 0, 2)), shared(dbl("audioIfHz", AT(a.audioIfHz), 0)), shared(flagI("audioInvert", AT(a.audioInvert), false)),

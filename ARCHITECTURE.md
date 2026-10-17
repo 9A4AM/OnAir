@@ -33,6 +33,7 @@ Threads: the analysis thread runs the receiver (it must never wait for the inter
 | `core/src/net/` | remote API, share server, network tuner and radio, data feeds, PSKReporter, WSPRnet |
 | `core/src/geo/` | Maidenhead, satellite passes, map layers, tile cache, MBTiles |
 | `core/src/channels/` | channel database and lookup |
+| `core/src/bandplan/` | band plans: country channel rasters, CSV / JSON import |
 | `core/src/results/` | results serialiser and telemetry JSON (the Android bridge reads these) |
 | `core/src/tx/` | transmit |
 | `core/src/common/` | ring buffer, XML, inflate, PNG, character sets, platform headers |

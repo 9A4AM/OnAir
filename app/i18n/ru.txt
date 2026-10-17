@@ -1368,3 +1368,18 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: понижающий конвертер 1500 МГц примерно для 1,5-3 ГГц (2,4 ГГц, 2,3/3,4 ГГц). Включите его между антенной и радио; радио видит RF - 1500 МГц. Ниже 1500 МГц не поддерживается.
+# band plans (scan tab, TV channel list)
+Band plan	Частотный план
+None (built-in ranges)	Нет (встроенные диапазоны)
+My band plans	Мои частотные планы
+Export...	Экспорт...
+Really delete?	Точно удалить?
+Replaced band plan "%s" (%zu bands).	Частотный план «%s» заменён (диапазонов: %zu).
+Imported band plan "%s" (%zu bands).	Частотный план «%s» импортирован (диапазонов: %zu).
+Deleted band plan %s.	Частотный план %s удалён.
+Not fully verified: %s	Проверен не полностью: %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	Сетка каналов вашей страны: ТВ-каналы для сканирования и списка каналов и не только. «Автоматически» выбирает план по языку интерфейса и региону системы.
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	Читает частотный план из файла CSV или JSON (формат в docs/band-plans.md), проверяет его и сохраняет в папке настроек. Если в файле ошибка, ничего не меняется; сообщение указывает место.
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	Сохраняет план как файл JSON или как CSV, если имя оканчивается на .csv. Встроенный план — хорошая основа для собственного.
+Deletes one of your own band plans. The built-in plans stay.	Удаляет один из ваших частотных планов. Встроенные планы остаются.
+TV channels of the band plan %s (change it in the Scan tab).	ТВ-каналы частотного плана %s (меняется на вкладке «Сканирование»).

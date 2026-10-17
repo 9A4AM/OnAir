@@ -1371,3 +1371,18 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 1500 MHz-es lekeverő kb. 1,5-3 GHz-hez (2,4 GHz, 2,3/3,4 GHz). Az antenna és a rádió közé kell kötni; a rádió RF - 1500 MHz-et lát. 1500 MHz alatt nem támogatott.
+# band plans (scan tab, TV channel list)
+Band plan	Sávterv
+None (built-in ranges)	Nincs (beépített tartományok)
+My band plans	Saját sávterveim
+Export...	Exportálás...
+Really delete?	Biztosan törli?
+Replaced band plan "%s" (%zu bands).	A(z) "%s" sávterv lecserélve (%zu sáv).
+Imported band plan "%s" (%zu bands).	A(z) "%s" sávterv importálva (%zu sáv).
+Deleted band plan %s.	A(z) %s sávterv törölve.
+Not fully verified: %s	Nem teljesen ellenőrzött: %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	Az Ön országának csatornakiosztása: TV-csatornák a kereséshez és a csatornalistához, és más. Az Automatikus a felület nyelve és a rendszer régiója alapján választ tervet.
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	Sávtervet olvas be CSV- vagy JSON-fájlból (formátum: docs/band-plans.md), ellenőrzi, és a beállítások mappájában tárolja. Hibás fájlnál semmi sem változik; az üzenet megmondja, hol a hiba.
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	A tervet JSON-fájlként menti, vagy CSV-ként, ha a név .csv-re végződik. A beépített terv jó kiindulópont a sajátodhoz.
+Deletes one of your own band plans. The built-in plans stay.	Töröl egy saját sávtervet. A beépített tervek megmaradnak.
+TV channels of the band plan %s (change it in the Scan tab).	A(z) %s sávterv TV-csatornái (a Keresés fülön módosítható).

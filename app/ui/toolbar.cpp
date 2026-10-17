@@ -164,6 +164,7 @@ static void toolbarTuner(App& a, int mask, bool vertical, bool& retune, const Mo
         ImGui::EndDisabled();
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Automatic: the width of the signal is measured in the spectrum and the channel bandwidth (5, 6, 7 or 8 MHz) is set for you."));
         }
+        if (a.family != 7) { ImGui::SameLine(0, 6 * gUi); if (tvChannelCombo(a)) retune = true; }   // the TV channels of the band plan (a channel sets the frequency)
         // a radio too slow for the channel: next to the width as well (rateWarning: the 6 MHz of ATSC, ATSC 3.0 and ISDB-T, not the DVB width left in kBw)
         if (const std::string rw = rateWarning(a); !rw.empty()) {
             ImGui::SameLine(0, 6 * gUi);

@@ -1386,3 +1386,18 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 1500 MHz 下变频器,适用于约 1.5 至 3 GHz (2.4 GHz、2.3/3.4 GHz)。接在天线和电台之间;电台看到的是 RF - 1500 MHz。低于 1500 MHz 不支持。
+# band plans (scan tab, TV channel list)
+Band plan	频段规划
+None (built-in ranges)	无（内置范围）
+My band plans	我的频段规划
+Export...	导出...
+Really delete?	确定删除？
+Replaced band plan "%s" (%zu bands).	已替换频段规划“%s”（%zu 个频段）。
+Imported band plan "%s" (%zu bands).	已导入频段规划“%s”（%zu 个频段）。
+Deleted band plan %s.	已删除频段规划 %s。
+Not fully verified: %s	尚未完全核实：%s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	你所在国家的频道栅格：用于扫描和频道列表的电视频道等。“自动”根据界面语言和系统区域选择规划。
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	从 CSV 或 JSON 文件读取频段规划（格式见 docs/band-plans.md），检查后保存在设置文件夹中。文件有错误时不会改动任何内容，提示会指出位置。
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	将规划保存为 JSON 文件；文件名以 .csv 结尾时保存为 CSV。内置规划是创建自己规划的好起点。
+Deletes one of your own band plans. The built-in plans stay.	删除你自己的一个频段规划。内置规划会保留。
+TV channels of the band plan %s (change it in the Scan tab).	频段规划 %s 的电视频道（可在“扫描”选项卡中更改）。

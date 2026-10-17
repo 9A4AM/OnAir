@@ -1386,3 +1386,18 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: conversor descendente de 1500 MHz para aprox. 1,5 a 3 GHz (2,4 GHz, 2,3/3,4 GHz). Conéctalo entre la antena y la radio; la radio ve RF - 1500 MHz. Por debajo de 1500 MHz no es compatible.
+# band plans (scan tab, TV channel list)
+Band plan	Plan de bandas
+None (built-in ranges)	Ninguno (rangos integrados)
+My band plans	Mis planes de bandas
+Export...	Exportar...
+Really delete?	¿Borrar de verdad?
+Replaced band plan "%s" (%zu bands).	Plan de bandas "%s" reemplazado (%zu bandas).
+Imported band plan "%s" (%zu bands).	Plan de bandas "%s" importado (%zu bandas).
+Deleted band plan %s.	Plan de bandas %s borrado.
+Not fully verified: %s	No del todo verificado: %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	La trama de canales de su país: canales de TV para el escaneo y la lista de canales, y más. Automático elige un plan según el idioma de la interfaz y la región del sistema.
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	Lee un plan de bandas de un archivo CSV o JSON (formato en docs/band-plans.md), lo comprueba y lo guarda en su carpeta de ajustes. Si el archivo tiene un error no se cambia nada; el mensaje indica dónde.
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	Guarda el plan como archivo JSON, o como CSV si el nombre acaba en .csv. Un plan integrado es un buen punto de partida para el suyo.
+Deletes one of your own band plans. The built-in plans stay.	Borra uno de sus planes de bandas. Los planes integrados se quedan.
+TV channels of the band plan %s (change it in the Scan tab).	Canales de TV del plan de bandas %s (se cambia en la pestaña Escaneo).
