@@ -34,7 +34,7 @@ void process(void* p, const float* iq, uint32_t n, const OnAirIqMeta* meta) {
         if (++c->acc < S) continue;
         const double pw = c->sum / S + 1e-20;
         c->acc = 0; c->sum = 0;
-        const double t = meta->timestamp + (double)i / (meta->sampleRate > 0 ? meta->sampleRate : 1);
+        const double t = meta->timestamp + (double)i / (meta->sample_rate > 0 ? meta->sample_rate : 1);
         if (c->noise < 0) c->noise = pw;
         const double over = 10 * log10(pw / c->noise);
         const double slice = S / (c->rate > 0 ? c->rate : 1);

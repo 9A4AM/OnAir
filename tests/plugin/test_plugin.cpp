@@ -15,6 +15,7 @@
 
 using namespace dect2::plugin;
 namespace fs = std::filesystem;
+namespace automation = dect2::automation;
 using Clock = std::chrono::steady_clock;
 
 namespace {
@@ -154,7 +155,7 @@ void testZip() {
     auto bad = zipStore({{"../evil", {1}}});
     CHECK(!ZipReader().open(bad, err), "path traversal refused");
     CHECK(!safeZipName("/abs") && !safeZipName("a\\b") && !safeZipName("a/../b") && !safeZipName("c:x") && safeZipName("a/b/c.so"), "safe names");
-    auto corrupt = z; corrupt[40] ^= 0xff;
+    auto corrupt = z; corrupt[43] ^= 0xff;
     ZipReader r2; bool opened = r2.open(corrupt, err);
     if (opened) { bool anyBad = false; for (auto& e : r2.entries()) { std::vector<uint8_t> o; if (!r2.read(e, o, err)) anyBad = true; } CHECK(anyBad, "corrupt data caught by CRC"); }
     CHECK(!ZipReader().open({1, 2, 3}, err), "garbage refused");

@@ -62,7 +62,7 @@ void process(void* p, const float* iq, uint32_t n, const OnAirIqMeta* meta) {
         for (uint32_t k = 0; k < N; k++) {
             const uint32_t s = (k + N / 2) % N;   // shifted: bin 0 = most negative frequency
             const float pw = t->re[k] * t->re[k] + t->im[k] * t->im[k];
-            t->db[s] = 10.0f * log10f(pw / (float)N / (float)N + 1e-20f);
+            t->db[s] = 10.0f * log10f(pw / (float)N / (float)N + 1e-20f) + 6.02f;   // +6 dB: the Hann window passes a tone at half amplitude
             if (pw > bestP) { bestP = pw; best = s; }
         }
         const double hz = ((double)best - N / 2.0) * t->rate / N;
