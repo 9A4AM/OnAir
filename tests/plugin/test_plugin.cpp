@@ -3,6 +3,7 @@
 // numbers, installing from a .onairplugin zip (and refusing hostile ones), and the three example plugins.
 // usage: test_plugin <onair-plugin-host> <examples dir> <fake plugin lib> <fake plugin lib with a wrong ABI>
 #include "dect2/plugin/host.h"
+#include "onair_plugin.h"
 #include "dect2/plugin/zip.h"
 #include "dect2/automation/engine.h"
 #include "../common/test_util.h"
@@ -17,6 +18,12 @@ using namespace dect2::plugin;
 namespace fs = std::filesystem;
 namespace automation = dect2::automation;
 using Clock = std::chrono::steady_clock;
+
+// the sizes the Rust bindings (sdk/rust/onair-plugin) assert on a 64-bit target
+#if defined(__LP64__) || defined(_WIN64)
+static_assert(sizeof(OnAirIqMeta) == 40 && sizeof(OnAirCell) == 32 && sizeof(OnAirField) == 32 && sizeof(OnAirEvent) == 56 &&
+              sizeof(OnAirPluginVTable) == 80 && sizeof(OnAirHostApi) == 152, "the C ABI layout changed: bump ONAIR_PLUGIN_ABI_VERSION and the Rust bindings");
+#endif
 
 namespace {
 std::string gHost, gExamples, gFake, gFakeBad;

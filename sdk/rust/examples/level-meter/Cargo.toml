@@ -1,0 +1,17 @@
+[package]
+name = "level-meter"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+onair-plugin = { path = "../../onair-plugin" }
+
+[profile.release]
+panic = "abort"
+opt-level = 3
+
+[workspace]
