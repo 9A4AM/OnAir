@@ -184,7 +184,7 @@ jobs:
               gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
             else
               gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-                --title "OnAir ${BASE} beta" --notes "$notes" --prerelease
+                --title "OnAir ${BASE} beta" --notes "$notes" --prerelease --draft   # a draft until Windows and the APK are attached
             fi
           else
             gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber \
