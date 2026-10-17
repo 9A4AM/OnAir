@@ -1,6 +1,7 @@
 // ADS-B screens: the aircraft table, the selected aircraft's detail, the statistics view, the sources panel and the
 // unit controls.
 // Split from adsb_ui.cpp; the shared state is declared in adsb_internal.h.
+#include "../panels/photo_links_ui.h"
 #include "adsb_internal.h"
 
 using namespace adsbui;
@@ -101,6 +102,7 @@ void aircraftTable(App& a, bool compact) {
         ImGui::TableNextColumn();
         char id[24]; snprintf(id, sizeof id, "%s##%u", icaoText(ac.icao).c_str(), ac.icao);
         if (ImGui::Selectable(id, S.sel == ac.icao, ImGuiSelectableFlags_SpanAllColumns)) S.sel = ac.icao;
+        if (ImGui::BeginPopupContextItem()) { photolinks::aircraftMenuItems(ac.icao, registrationOf(ac.icao), ac.callsign); ImGui::EndPopup(); }
         ImGui::TableNextColumn(); ImGui::TextUnformatted(ac.callsign.empty() ? "-" : ac.callsign.c_str());
         { const std::string rg = registrationOf(ac.icao); ImGui::TableNextColumn(); ImGui::TextUnformatted(rg.empty() ? "-" : rg.c_str()); }
         if (!compact) {
@@ -173,6 +175,7 @@ void detail(const App& a) {
         kv("operator", e && !e->operatorName.empty() ? e->operatorName : "-");
     }
     kv("source", sourceName(a.rx.adsb, ac->srcId));
+    photolinks::aircraftButton(ac->icao, registrationOf(ac->icao), ac->callsign);
     kv("callsign", ac->callsign.empty() ? "-" : ac->callsign);
     if (ac->hasPos) snprintf(b, sizeof b, "%.4f  %.4f", ac->lat, ac->lon); else snprintf(b, sizeof b, "-");
     kv("position", b);

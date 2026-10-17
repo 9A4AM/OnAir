@@ -104,6 +104,7 @@ export function createCard(host, api) {
         <button type="button" class="tg" data-act="track" aria-pressed="true">Track</button>
         <button type="button" data-act="copy" title="Copy a link that opens this card">Copy link</button>
         <button type="button" data-act="share" hidden>Share</button>
+        <span class="c-photo" data-f="shiplinks" hidden>Photo / info: <a data-ship="vf" target="_blank" rel="noopener noreferrer" title="Opens VesselFinder in a new tab">VesselFinder</a> · <a data-ship="mt" target="_blank" rel="noopener noreferrer" title="Opens MarineTraffic in a new tab">MarineTraffic</a></span>
       </footer>`;
     f = {};
     for (const el of host.querySelectorAll("[data-f]")) f[el.dataset.f] = el;
@@ -115,12 +116,23 @@ export function createCard(host, api) {
     if (navigator.share) { share.hidden = false; share.onclick = () => navigator.share({ title: document.title, url: linkFor(cur) }).catch(() => {}); }
     show("demo", !!api.demo);
     show("rows", true);
+    shipLinks(t);
     photoFor = "";
     renderStatic(t);
     update(t);
     syncToggles();
     maybeLoadPhoto(t);
     host.querySelector(".x").focus({ preventScroll: true });
+  }
+
+  /** Ships: links to public databases by MMSI (9 digits only). Nothing is fetched; the browser opens a new tab on click. */
+  function shipLinks(t) {
+    const box = f.shiplinks;
+    const m = t.kind === "vessel" ? (String(t.id).split(":")[1] || "") : "";
+    if (!box || !/^[0-9]{9}$/.test(m)) return;
+    box.querySelector("[data-ship=vf]").href = "https://www.vesselfinder.com/?mmsi=" + m;
+    box.querySelector("[data-ship=mt]").href = "https://www.marinetraffic.com/en/ais/details/ships/mmsi:" + m;
+    box.hidden = false;
   }
 
   function syncToggles() {

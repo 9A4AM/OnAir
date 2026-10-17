@@ -1,5 +1,6 @@
 // AIS screens: the map of vessels (the ADS-B map underneath), the vessel table, the detail panel, the message counters
 // with the rates of the two channels, and the raw NMEA log.
+#include "../panels/photo_links_ui.h"
 #include "app.h"
 #include "state/results_export.h"
 #include "../adsb/adsb_map.h"
@@ -156,6 +157,7 @@ void detail(App& a) {
         kv("aid", b);
     }
     if (v->navStatus >= 0) kv("status", dect2::aisNavStatusText(v->navStatus));
+    photolinks::shipButton(v->mmsi, v->imo, v->name);
     ImGui::Spacing();
     if (v->hasPos) { snprintf(b, sizeof b, "%.5f, %.5f", v->lat, v->lon); kv("position", b); } else kv("position", "-");
     snprintf(b, sizeof b, "%.1f kn", v->sog); kv("speed", v->sog >= 0 ? b : "-");
@@ -316,6 +318,7 @@ void vesselTable(App& a, bool compact) {
         ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(c.x + 4 * gUi, c.y + ImGui::GetTextLineHeight() * 0.5f), 3.f * gUi, vesselColour(*v));
         ImGui::SetCursorScreenPos(ImVec2(c.x + 12 * gUi, c.y));
         if (ImGui::Selectable(nm.c_str(), v->mmsi == S.sel, ImGuiSelectableFlags_SpanAllColumns)) S.sel = v->mmsi;
+        if (ImGui::BeginPopupContextItem()) { photolinks::shipMenuItems(v->mmsi, v->imo, v->name); ImGui::EndPopup(); }
         ImGui::PopID();
         char b[32];
         if (!compact) {

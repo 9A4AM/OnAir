@@ -1,4 +1,5 @@
 // UAT (978 MHz): aircraft table, FIS-B weather text, message log.
+#include "../panels/photo_links_ui.h"
 #include "app.h"
 #include "dect2/uat/uat_rx.h"
 #include "dect2/uat/uat_tel.h"
@@ -58,6 +59,7 @@ void aircraftTable(const dect2::UatTelemetry& t) {
             char id[16]; snprintf(id, sizeof id, "%06X", ac.icao & 0xFFFFFF);
             ImGui::TableNextColumn();
             if (ImGui::Selectable(id, S.sel == ac.icao, ImGuiSelectableFlags_SpanAllColumns)) S.sel = S.sel == ac.icao ? 0xFFFFFFFFu : ac.icao;
+            if (ImGui::BeginPopupContextItem()) { photolinks::aircraftMenuItems(ac.icao & 0xFFFFFF, "", ac.callsign); ImGui::EndPopup(); }
             ImGui::TableNextColumn(); ImGui::TextUnformatted(ac.callsign.empty() ? "-" : ac.callsign.c_str());
             ImGui::TableNextColumn(); ImGui::Text(ac.hasAlt ? "%d" : "-", ac.altFt);
             ImGui::TableNextColumn(); ImGui::Text(ac.hasSpeed ? "%d kt" : "-", ac.speedKt);
