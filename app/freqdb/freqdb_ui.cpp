@@ -1,6 +1,7 @@
 // The Frequencies panel: the built-in frequency database (core/include/dect2/channels/freq_db.h, data/frequencies) and the user's own entries.
 // A window (View > Frequencies, Ctrl+Shift+F), an optional tab of the main screen, and the "Known frequencies" drop-down of the Tuner panel.
 // Tuning goes through the Memory panel's recall (memory_options.h), so the mode is switched and its tuning applied exactly as a recalled memory does.
+#include "airband/airport_ui.h"
 #include "../memory/memory_options.h"
 #include "../ui/ui_common.h"
 #include "dect2/channels/freq_db.h"
@@ -196,6 +197,32 @@ void row(App& a, const FreqEntry& e) {
     ImGui::PopID();
 }
 
+// An airport code in the search (EGLL, LHR): its airband channels are listed first, as entries of the airband mode
+const std::vector<FreqEntry>& airportRows() {
+    static std::string last = "\x01";
+    static std::vector<FreqEntry> rows;
+    if (last == u.query) return rows;
+    last = u.query;
+    rows.clear();
+    std::string t;
+    for (char c : last) if (c != ' ') t += c;
+    if (t.size() < 3 || t.size() > 4 || t.size() != last.size()) return rows;
+    const dect2::Airport* ap = airportDb().find(t);
+    if (!ap) return rows;
+    for (const auto& c : dect2::airportAirbandChannels(*ap)) {
+        FreqEntry e;
+        e.hz = (uint64_t)std::llround(c.freqHz);
+        e.mode = "airband";
+        e.name = c.label;
+        e.region = ap->country;
+        e.category = "airport";
+        e.notes = ap->name + (ap->city.empty() ? "" : ", " + ap->city) + (c.is833 ? ". 8.33 kHz channel." : ". 25 kHz channel.");
+        e.source = "OurAirports (public domain)";
+        rows.push_back(e);
+    }
+    return rows;
+}
+
 void table(App& a, float h) {
     FreqQuery q;
     q.text = u.query; q.mode = u.mode; q.region = u.region; q.category = u.category; q.favouritesOnly = u.favOnly; q.userOnly = u.userOnly;
@@ -219,12 +246,13 @@ void table(App& a, float h) {
         ImGui::TableSetupColumn(tr("Region"), ImGuiTableColumnFlags_WidthFixed, 64 * gUi);
         ImGui::TableSetupColumn(tr("Category"), ImGuiTableColumnFlags_WidthStretch, 1.f);
         ImGui::TableHeadersRow();
+        if ((u.mode.empty() || u.mode == "airband") && !u.favOnly && !u.userOnly) for (const FreqEntry& e : airportRows()) row(a, e);
         ImGuiListClipper clip;
         clip.Begin((int)v.size());
         while (clip.Step()) for (int i = clip.DisplayStart; i < clip.DisplayEnd; i++) row(a, u.all[v[(size_t)i]]);
         ImGui::EndTable();
     }
-    if (v.empty()) ImGui::TextDisabled("%s", tr("Nothing matches. Clear the search or the filters."));
+    if (v.empty() && airportRows().empty()) ImGui::TextDisabled("%s", tr("Nothing matches. Clear the search or the filters."));
 }
 
 const FreqEntry* selected() {

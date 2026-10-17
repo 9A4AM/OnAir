@@ -229,7 +229,7 @@ void airportTuneCentre(App& a, double centreHz) {
 void airportSection(App& a, const std::function<void(const std::vector<dect2::AirbandChannel>&, bool)>& apply) {
     pollDownload();
     const dect2::AirportDb& db = airportDb();
-    ImGui::SetNextItemOpen(S.open || S.sel >= 0, ImGuiCond_Once);
+    ImGui::SetNextItemOpen(true, ImGuiCond_Once);
     S.open = ImGui::CollapsingHeader(tr("Airports##airportsec"));
     if (!S.open) return;
     ImGui::AlignTextToFramePadding();

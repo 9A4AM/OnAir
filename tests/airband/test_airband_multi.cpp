@@ -173,6 +173,24 @@ int main() {
         const Run r = run(q, 2.4e6, 0, 20, 12, &none);
         CHECK(r.tel.seen.empty() && r.tel.activity.empty(), "noise: %zu carriers seen", r.tel.seen.size());
     }
+    // ---- scan with hold: the scan stays on the channel it stopped on; without hold it goes on to the next one that opens
+    for (bool hold : {false, true}) {
+        AirbandGenChannel a = st.gen[0], b = st.gen[2];
+        a.bursts = {{1.0, 1.4}}; b.bursts = {{5.0, 1.4}};
+        AirbandGenConfig g; g.rate = 1e6; g.dialOffsetHz = -kOff; g.chans = {a, b}; g.snrDb = 25;
+        AirbandGenerator gen(g);
+        std::vector<cf32> x((size_t)(6.2 * 1e6));
+        for (size_t o = 0; o < x.size(); o += 65536) gen.generate(x.data() + o, std::min<size_t>(65536, x.size() - o));
+        AirbandReceiver rx;
+        rx.setSilent(true); rx.configure(1e6); rx.setCenterHz(kDial + kOff);
+        rx.setChannels({st.list[0], st.list[2]});
+        rx.setScan(true); rx.setScanHold(hold);
+        for (size_t o = 0; o < x.size(); o += 8192) rx.feed(x.data() + o, std::min<size_t>(8192, x.size() - o));
+        AirbandTelemetry t;
+        rx.telemetry(t, 0);
+        CHECK(t.channels.size() == 2 && t.channels[1].open && t.channels[1].playing == !hold, "scan, hold %d: B open %d playing %d", hold, t.channels.size() == 2 ? t.channels[1].open : -1, t.channels.size() == 2 ? t.channels[1].playing : -1);
+        CHECK(t.scanChan == (hold ? 0 : 1), "scan, hold %d: stopped on channel %d", hold, t.scanChan);
+    }
     // ---- grouping of a frequency list into captures
     {
         std::vector<double> f = {118.5e6, 118.525e6, 121.9e6, 121.7e6, 123.45e6, 126.7e6, 127.0e6, 135.0e6};
