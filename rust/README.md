@@ -75,7 +75,7 @@ Then update the status table below and run `tools/rust_check.sh`.
 | hfdl | `onair_hfdl` | `DECT2_RUST_HFDL` | `rs/hfdl.h` | HFDL | not started |
 | mesh | `onair_mesh` | `DECT2_RUST_MESH` | `rs/mesh.h` | LoRa / mesh / LoRaWAN | not started |
 | wisun | `onair_wisun` | `DECT2_RUST_WISUN` | `rs/wisun.h` | Wi-SUN | not started |
-| uat | `onair_uat` | `DECT2_RUST_UAT` | `rs/uat.h` | UAT 978 | not started |
+| uat | `onair_uat` | `DECT2_RUST_UAT` | `rs/uat.h` | UAT 978 message layer: downlink (header, state vector, mode status, aux SV), uplink frame, information frames, FIS-B APDU headers | done (FEC, demodulator, tracker, display text and UI mapping in C / C++) |
 | ts | `onair_ts` | `DECT2_RUST_TS` | `rs/ts.h` | MPEG-TS, PSI, EIT | not started |
 | dvbsi | `onair_dvbsi` | `DECT2_RUST_DVBSI` | `rs/dvbsi.h` | DVB service info, teletext, subtitles | not started |
 | dab | `onair_dab` | `DECT2_RUST_DAB` | `rs/dab.h` | DAB FIG, MOT | not started |

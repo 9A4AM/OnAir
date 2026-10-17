@@ -992,6 +992,25 @@ if(DECT2_BUILD_TESTS)
     add_test(NAME fuzz_packet_proto COMMAND fuzz_packet_proto)
   endif()
 
+  # UAT message decoding (dump978 uat_decode.c): the reference is a copy of the C file with the two decode functions renamed ref_*, compiled without DECT2_RUST_UAT
+  if(ONAIR_RUST_UAT)
+    set(_dir ${CMAKE_BINARY_DIR}/uat_ref)
+    file(MAKE_DIRECTORY ${_dir})
+    configure_file(core/src/uat/uat_decode.c ${_dir}/uat_decode_ref.c COPYONLY)
+    set_source_files_properties(${_dir}/uat_decode_ref.c PROPERTIES LANGUAGE C COMPILE_DEFINITIONS "uat_decode_adsb_mdb=ref_uat_decode_adsb_mdb;uat_decode_uplink_mdb=ref_uat_decode_uplink_mdb;uat_display_adsb_mdb=ref_uat_display_adsb_mdb;uat_display_uplink_mdb=ref_uat_display_uplink_mdb")
+    set_source_files_properties(core/src/uat/uat_decode.c PROPERTIES LANGUAGE C COMPILE_DEFINITIONS DECT2_RUST_UAT)
+    set_source_files_properties(core/src/uat/uat_decode_rs.cpp PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_UAT)
+    add_executable(test_uat_proto_rs tests/uat/test_uat_proto_rs.cpp ${_dir}/uat_decode_ref.c core/src/uat/uat_decode.c core/src/uat/uat_decode_rs.cpp)
+    target_include_directories(test_uat_proto_rs PRIVATE core/include)
+    target_link_libraries(test_uat_proto_rs PRIVATE onair_rs)
+    add_test(NAME uat_proto_rs COMMAND test_uat_proto_rs)
+    add_executable(fuzz_uat_proto tests/uat/fuzz_uat_proto.cpp core/src/uat/uat_decode.c core/src/uat/uat_decode_rs.cpp)
+    target_include_directories(fuzz_uat_proto PRIVATE core/include)
+    target_compile_definitions(fuzz_uat_proto PRIVATE DECT2_RUST_UAT)
+    target_link_libraries(fuzz_uat_proto PRIVATE onair_rs)
+    add_test(NAME fuzz_uat_proto COMMAND fuzz_uat_proto)
+  endif()
+
   # seeded mutation runs of the AIS and ANT frame layers (also libFuzzer targets with -DONAIR_LIBFUZZER); meant for DECT2_SANITIZE=ON
   foreach(f ais ant)
     add_executable(fuzz_${f}_proto tests/${f}/fuzz_${f}_proto.cpp core/src/${f}/${f}_proto.cpp)   # standalone: only the frame layer, so a sanitizer build stays small
