@@ -1,4 +1,5 @@
 // ACARS screens: the message list with a detail pane, the aircraft table and the channel bars.
+#include "../panels/photo_links_ui.h"
 #include "../adsb/adsb_map.h"
 #include "app.h"
 #include "state/results_export.h"
@@ -354,6 +355,7 @@ void mapSide(App& a) {
             char id[16]; snprintf(id, sizeof id, "##ap%d", n);
             const std::string row = nameOf(x) + "   " + ago(t.nowSec, x.posTime) + " ago" + id;
             if (ImGui::Selectable(row.c_str(), false)) S.selReg = x.reg;
+            if (ImGui::BeginPopupContextItem()) { std::string rg = x.reg; while (!rg.empty() && rg[0] == '.') rg.erase(0, 1); photolinks::aircraftMenuItems(0, rg, ""); ImGui::EndPopup(); }
         }
         if (!n) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("(no aircraft has sent a position yet)"); ImGui::PopTextWrapPos(); }
         return;

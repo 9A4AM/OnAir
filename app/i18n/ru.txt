@@ -1377,3 +1377,8 @@ Noise remover (neural)##gennr	Шумоподавление (нейросеть)#
 Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay.	Смесь очищенного и исходного звука: вправо — больше шума убирается, влево — больше исходного. Добавляет около 20 мс задержки.
 Speech only; do not use on music or data modes.	Только для речи; не используйте для музыки и режимов данных.
 Noise remover (neural)##airnr	Шумоподавление (нейросеть)##airnr
+Photo / info	Photo / info
+No identifier to look up	No identifier to look up
+Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
+Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
+Preferred site	Preferred site

@@ -1377,3 +1377,8 @@ Noise remover (neural)##gennr	Riduttore di rumore (neurale)##gennr
 Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay.	Miscela di audio pulito e originale: a destra toglie più rumore, a sinistra tiene più l'originale. Aggiunge circa 20 ms di ritardo.
 Speech only; do not use on music or data modes.	Solo voce; non usare con musica o modi dati.
 Noise remover (neural)##airnr	Riduttore di rumore (neurale)##airnr
+Photo / info	Photo / info
+No identifier to look up	No identifier to look up
+Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
+Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
+Preferred site	Preferred site

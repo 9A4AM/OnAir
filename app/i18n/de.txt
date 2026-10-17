@@ -1395,3 +1395,8 @@ Noise remover (neural)##gennr	Rauschentferner (neuronal)##gennr
 Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay.	Mischung aus bereinigtem und Originalton: rechts entfernt mehr Rauschen, links bleibt mehr vom Original. Fügt etwa 20 ms Verzögerung hinzu.
 Speech only; do not use on music or data modes.	Nur Sprache; nicht für Musik oder Datenmodi verwenden.
 Noise remover (neural)##airnr	Rauschentferner (neuronal)##airnr
+Photo / info	Photo / info
+No identifier to look up	No identifier to look up
+Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
+Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
+Preferred site	Preferred site

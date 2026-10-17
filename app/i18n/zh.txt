@@ -1395,3 +1395,8 @@ Noise remover (neural)##gennr	降噪（神经网络）##gennr
 Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay.	净化音频与原声的混合：向右去除更多噪声，向左保留更多原声。会增加约 20 毫秒延迟。
 Speech only; do not use on music or data modes.	仅用于语音；请勿用于音乐或数据模式。
 Noise remover (neural)##airnr	降噪（神经网络）##airnr
+Photo / info	Photo / info
+No identifier to look up	No identifier to look up
+Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
+Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
+Preferred site	Preferred site

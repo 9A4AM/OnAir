@@ -1395,3 +1395,8 @@ Noise remover (neural)##gennr	Triukšmo šalintuvas (neuroninis)##gennr
 Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay.	Išvalyto ir originalaus garso mišinys: dešinėn pašalina daugiau triukšmo, kairėn lieka daugiau originalo. Prideda apie 20 ms vėlinimo.
 Speech only; do not use on music or data modes.	Tik kalbai; nenaudokite su muzika ar duomenų režimais.
 Noise remover (neural)##airnr	Triukšmo šalintuvas (neuroninis)##airnr
+Photo / info	Photo / info
+No identifier to look up	No identifier to look up
+Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
+Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
+Preferred site	Preferred site

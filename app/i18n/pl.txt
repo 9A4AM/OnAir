@@ -1395,3 +1395,8 @@ Noise remover (neural)##gennr	Usuwanie szumu (neuronowe)##gennr
 Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay.	Mieszanka dźwięku oczyszczonego i oryginalnego: w prawo usuwa więcej szumu, w lewo zostaje więcej oryginału. Dodaje około 20 ms opóźnienia.
 Speech only; do not use on music or data modes.	Tylko mowa; nie używaj przy muzyce ani trybach danych.
 Noise remover (neural)##airnr	Usuwanie szumu (neuronowe)##airnr
+Photo / info	Photo / info
+No identifier to look up	No identifier to look up
+Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
+Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
+Preferred site	Preferred site

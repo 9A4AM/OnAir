@@ -1395,3 +1395,8 @@ Noise remover (neural)##gennr	Ruisonderdrukking (neuraal)##gennr
 Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay.	Mix van gereinigd en origineel geluid: naar rechts meer ruis weg, naar links meer van het origineel. Voegt ongeveer 20 ms vertraging toe.
 Speech only; do not use on music or data modes.	Alleen spraak; niet gebruiken bij muziek of datamodi.
 Noise remover (neural)##airnr	Ruisonderdrukking (neuraal)##airnr
+Photo / info	Photo / info
+No identifier to look up	No identifier to look up
+Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
+Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
+Preferred site	Preferred site
