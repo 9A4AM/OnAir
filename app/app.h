@@ -298,6 +298,8 @@ struct App {
     bool galleryOpen = false;           // the picture gallery (View > Images)
     bool passesOpen = false;            // the satellite pass planner window (View > Passes)
     bool scannerOpen = false;           // the scanner window (View > Scanner, highly experimental)
+    bool memoryOpen = false;            // the Memory window (View > Memory, Ctrl+M; app/memory)
+    bool memoryTab = false;             // the Memory panel as a tab of the main screen (View > Memory as a tab; saved as memTab)
     bool mapOpen = false;               // the map window (View > Map): positions and Maidenhead locators
     bool rotatorOpen = false;           // View > Antenna rotator (rotator_ui.cpp)
     int wizStep = 0;
@@ -675,6 +677,14 @@ std::string mapSendDiagnosticsBlock(const App& a);  // map.on-air.dev ingest sta
 void passesDevTle(const std::string& path);       // dev (--tle): TLEs from a file, as if pasted
 std::vector<std::pair<std::string, double>> passesGlobalstarDoppler(double unixSec, double freqHz);   // passes_ui.cpp: Globalstar satellites above the horizon and their Doppler (TLEs from the planner)
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
+void memoryWindow(App& a);                         // memory_ui.cpp: the Memory window (a.memoryOpen), the Ctrl+M key, the scan of the flagged memories, every frame
+void memoryTabItem(App& a);                        // memory_ui.cpp: the "Memory" tab when View > Memory as a tab is on (inside the main tab bar)
+int memorySelfTest(App& a);                        // memory_selftest.cpp: --memory-selftest, the recall checked on a hidden run (exit code = failures)
+void memoryDev(int what);                          // memory_ui.cpp: --memdev (screenshots)
+void memoryToolbarButton(App& a);                  // memory_ui.cpp: the same quick list as a small "M" button with a pop-up (the classic toolbar)
+void memoryMenu(App& a);                           // memory_ui.cpp: the "M" menu of the menu bar: open, store, the favourites and the ten most recent
+double generalListenHz(const App& a);
+void generalRecallHz(App& a, double hz);          // general_ui.cpp: a memory's frequency: the dial on hz, the channel marker back on the dial              // general_ui.cpp: the general receiver's listening frequency (the dial plus its offset)
 void scannerWindow(App& a);                        // scanner_ui.cpp: the scanner window (a.scannerOpen) and its scan loop, every frame (HIGHLY EXPERIMENTAL)
 void scannerButton(App& a);                        // a button that opens it (the classic interface's Scan tab)
 GLFWmonitor* monitorFor(int x, int y, int w, int h);   // widgets.cpp: the monitor holding most of the rectangle
@@ -873,6 +883,10 @@ bool setSecondMode(App& a, int modeIdx, double mhz);
 void secondModeTick(App& a);                 // every frame: its report, its tick (sound pushed muted unless asked for)
 void secondModeTabs(App& a);                 // in mainTabs(): the tab "Second: <mode>" with the mode's own main screen
 void secondModeControl(App& a, bool vertical);   // the tuner panel: the button and its pop-up (pick a mode and its frequency)
+std::string scanModeKey(const ModeDef& m);         // scanner_ui.cpp: the mode key the scan list and the memories store (the protocol id, the mode's id, or dvb / atsc / ... / fm)
+int scanModeIndex(const std::string& key);         // its index in kModes, -1 when this build has no such mode
+struct ScanSeed { double mhz = 0; std::string mode, name; double dwellSec = 2; };
+void scannerLoadList(App& a, const std::vector<ScanSeed>& list);   // scanner_ui.cpp: replaces the scan list (the memory scan), opens the window and starts it
 void selectMode(App& a, int family, const char* subId = nullptr);
 bool modeSelected(const App& a, const ModeDef& m);    // the row of the current mode
 const char* modeSearchBox();                          // a search box at the top of a mode drop-down (mode_select.cpp); returns the query

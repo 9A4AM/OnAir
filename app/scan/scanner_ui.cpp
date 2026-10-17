@@ -34,6 +34,8 @@ struct State {
     std::string what;
     std::string msg;
     int addMode = -1;                // mode of a new entry (kModes index; -1: the current mode)
+    bool fromMemory = false;         // the list is the scan-flagged memories (scannerLoadList): never saved over the user's own list, which waits in userList
+    std::vector<Entry> userList;
 };
 State S;
 
@@ -120,7 +122,7 @@ void load() {
 }
 void save(App& a) {
     plat::Prefs& p = plat::prefs();
-    p.setS("scanList", scanlist::toCsv(S.m.list));
+    p.setS("scanList", scanlist::toCsv(S.fromMemory ? S.userList : S.m.list));
     p.setD("scanHang", S.m.hangSec); p.setD("scanPrio", S.m.prioritySec); p.setD("scanThr", S.thrDb);
     p.setB("scanUseBand", S.m.useBand);
     p.setD("scanBandStart", S.m.band.startMhz); p.setD("scanBandStop", S.m.band.stopMhz); p.setD("scanBandStep", S.m.band.stepKhz);
@@ -339,6 +341,13 @@ void window(App& a) {
     ImGui::SameLine();
     ImGui::TextDisabled("%s", tr("Steps through the list or a band, stops on activity. A mode change restarts the receiver."));
     const bool run = S.m.running();
+    if (S.fromMemory) {   // the Memory panel's scan: the list is theirs, and is not kept
+        ImGui::TextColored(pal::accent(1.f), "%s", tr("The list is the memories flagged for scan (Memory panel)."));
+        ImGui::SameLine();
+        ImGui::BeginDisabled(run);
+        if (ImGui::SmallButton(tr("Back to my list"))) { S.m.list = S.userList; S.fromMemory = false; }
+        ImGui::EndDisabled();
+    }
     {   // controls
         if (ImGui::Button(tr(run ? "Stop scan" : "Start scan"))) { if (run) { S.m.stop(); closeHit(glfwGetTime()); } else startScan(a); }
         ImGui::SameLine();
@@ -382,6 +391,21 @@ void window(App& a) {
 }
 
 } // namespace
+
+std::string scanModeKey(const ModeDef& m) { return modeKey(m); }
+int scanModeIndex(const std::string& key) { return modeIndex(key); }
+
+void scannerLoadList(App& a, const std::vector<ScanSeed>& list) {
+    load();
+    if (S.m.running()) { S.m.stop(); closeHit(glfwGetTime()); }
+    if (!S.fromMemory) S.userList = S.m.list;
+    S.fromMemory = true;
+    S.m.list.clear();
+    for (const ScanSeed& q : list) { Entry e; e.mhz = q.mhz; e.mode = q.mode; e.name = q.name; e.dwellSec = q.dwellSec > 0 ? q.dwellSec : 2; S.m.list.push_back(e); }
+    S.m.useBand = false;
+    a.scannerOpen = true;
+    startScan(a);
+}
 
 void scannerWindow(App& a) {
     load();

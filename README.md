@@ -271,6 +271,7 @@ OnAir writes the bits only and never decodes voice (the AMBE codec is patented).
 - **DAB transmitter map:** OnAir reads the transmitter identification (TII) that DAB networks send and lists the transmitters heard.
 
 **Get the best reception**
+- **Memories:** keep the frequencies you use with their mode, sample rate, gains and the mode's options (`Ctrl+M`, or the **M** menu): search, favourites, groups, one-click recall on any receiver, import and export as CSV / JSON (also plain `frequency,name` lists and SDR++ bookmarks), and a scan of the memories you flag.
 - A **channel scanner**, **automatic gain tuning**, a **gain optimiser**, and a **direction finder** that helps you aim the antenna; a **pass planner** for satellites.
 - **Your radio, set up properly:** every antenna input is its own entry in the source list, with per-radio settings.
 - **Up-converters and LNBs:** Ham It Up, SpyVerter, QO-100 / Bullseye TCXO / Ku LNB or a custom LO.

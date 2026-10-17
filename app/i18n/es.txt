@@ -1297,3 +1297,71 @@ The audio frequency of the signal's centre in the sound card, for example 12000 
 Mirror the spectrum: for a receiver whose output is the other sideband.	Refleja el espectro: para un receptor cuya salida es la otra banda lateral.
 The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	La frecuencia de muestreo de la tarjeta de sonido, de 8 a 192 kHz. Una mayor muestra más de una FI. Se aplica al iniciar el receptor.
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	Para WebSDR, un cable de audio virtual (VAC) o el altavoz/línea de una radio al ordenador. No sustituye a un SDR cuando necesita megahercios de ancho de banda.
+#  memories (English until translated)
+"%s" is stored on this frequency and mode already.	"%s" is stored on this frequency and mode already.
+%zu memories	%zu memories
+(frequency only)	(frequency only)
+(no name)	(no name)
+(nothing stored or used yet)	(nothing stored or used yet)
+0 keeps the mode's own rate (Auto)	0 keeps the mode's own rate (Auto)
+Add another	Add another
+Back to my list	Back to my list
+Bandwidth	Bandwidth
+Bandwidth (kHz)	Bandwidth (kHz)
+Click a heading of the table to sort by it too	Click a heading of the table to sort by it too
+Colour	Colour
+Could not apply this memory.	Could not apply this memory.
+Delete	Delete
+Edit...	Edit...
+Enter a frequency.	Enter a frequency.
+Export JSON...	Export JSON...
+Exported to 	Exported to 
+Favourite	Favourite
+Frequency only	Frequency only
+Group	Group
+Groups	Groups
+Import failed: 	Import failed: 
+Import...	Import...
+Imported %zu memories, %zu skipped (duplicates or lines without a frequency).	Imported %zu memories, %zu skipped (duplicates or lines without a frequency).
+Include in the memory scan	Include in the memory scan
+Informative: the channel width at the time. The mode's own width options are in the options below.	Informative: the channel width at the time. The mode's own width options are in the options below.
+Keep the gains	Keep the gains
+Keeps this receiver's frequency, mode, sample rate, gains and the mode's options. The name is the station's when the mode reports one.	Keeps this receiver's frequency, mode, sample rate, gains and the mode's options. The name is the station's when the mode reports one.
+Last used	Last used
+Manual order	Manual order
+Memories: the frequencies you keep, with mode and settings (Ctrl+M)	Memories: the frequencies you keep, with mode and settings (Ctrl+M)
+Memory	Memory
+Memory panel...	Memory panel...
+Memory...	Memory...
+No group	No group
+No memories yet. Tune to a frequency you want to keep and press Store current; or import a list.	No memories yet. Tune to a frequency you want to keep and press Store current; or import a list.
+Notes	Notes
+Options	Options
+RX%d: %s	RX%d: %s
+Reads a memories CSV or JSON file, a plain list of 'frequency,name' lines (MHz), or an SDR++ Frequency Manager export. Memories already stored on the same frequency and mode are skipped.	Reads a memories CSV or JSON file, a plain list of 'frequency,name' lines (MHz), or an SDR++ Frequency Manager export. Memories already stored on the same frequency and mode are skipped.
+Recall	Recall
+Recall frequency only	Recall frequency only
+Sample rate (kHz)	Sample rate (kHz)
+Save	Save
+Scan memories	Scan memories
+Search name, tag, mode, frequency (162.4)	Search name, tag, mode, frequency (162.4)
+Show Memory as a tab	Show Memory as a tab
+Stars only	Stars only
+Steps through the memories marked 'Include in the memory scan' with the Scanner: it tunes each one, switches the mode, listens for its dwell time and stops while the receiver reports a signal or a lock. Memories without a mode are left out.	Steps through the memories marked 'Include in the memory scan' with the Scanner: it tunes each one, switches the mode, listens for its dwell time and stops while the receiver reports a signal or a lock. Memories without a mode are left out.
+Store current	Store current
+Store current...	Store current...
+Tags	Tags
+The list is the memories flagged for scan (Memory panel).	The list is the memories flagged for scan (Memory panel).
+The memory bank is full.	The memory bank is full.
+The mode's settings, one key=value per line (demodulator, de-emphasis, widths ...).	The mode's settings, one key=value per line (demodulator, de-emphasis, widths ...).
+The receiver Store current and Recall work on	The receiver Store current and Recall work on
+This receiver	This receiver
+Tunes to the frequency and keeps the mode as it is	Tunes to the frequency and keeps the mode as it is
+Tunes to the frequency, switches to the stored mode and applies its options and gains. Double-click a row does the same. A running receiver restarts when the mode changes.	Tunes to the frequency, switches to the stored mode and applies its options and gains. Double-click a row does the same. A running receiver restarts when the mode changes.
+Undo delete	Undo delete
+Update it	Update it
+Words separated by commas; the search finds them.	Words separated by commas; the search finds them.
+stored with: %s	stored with: %s
+Edit memory	Edit memory
+Click to make this a favourite	Click to make this a favourite
+Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
