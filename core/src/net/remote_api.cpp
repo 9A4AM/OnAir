@@ -1,6 +1,7 @@
 // Remote-control API server: see dect2/net/remote_api.h. One thread accepts; every connection has a thread of its own (at most 16), so a slow or
 // silent client never holds up another one. Blocking sockets with select() for the waits, on top of the helpers of tcp_client.h.
 #include "dect2/net/remote_api.h"
+#include "dect2/net/net_proto.h"
 #include "dect2/source/rotator.h"
 #include "dect2/engine/mode_tuning.h"
 #include "netcompat.h"
@@ -21,65 +22,11 @@
 
 namespace dect2 {
 
-// ------------------------------------------------------------------ SHA-1, base64 (RFC 3174, RFC 4648): for the WebSocket handshake
-std::string sha1(const std::string& data) {
-    uint32_t h[5] = {0x67452301u, 0xEFCDAB89u, 0x98BADCFEu, 0x10325476u, 0xC3D2E1F0u};
-    std::string m = data;
-    const uint64_t bits = (uint64_t)data.size() * 8;
-    m.push_back((char)0x80);
-    while (m.size() % 64 != 56) m.push_back(0);
-    for (int i = 7; i >= 0; i--) m.push_back((char)((bits >> (8 * i)) & 0xFF));
-    auto rol = [](uint32_t v, int n) { return (v << n) | (v >> (32 - n)); };
-    for (size_t o = 0; o < m.size(); o += 64) {
-        uint32_t w[80];
-        for (int i = 0; i < 16; i++)
-            w[i] = (uint32_t)(uint8_t)m[o + 4 * i] << 24 | (uint32_t)(uint8_t)m[o + 4 * i + 1] << 16 | (uint32_t)(uint8_t)m[o + 4 * i + 2] << 8 | (uint32_t)(uint8_t)m[o + 4 * i + 3];
-        for (int i = 16; i < 80; i++) w[i] = rol(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
-        uint32_t a = h[0], b = h[1], c = h[2], d = h[3], e = h[4];
-        for (int i = 0; i < 80; i++) {
-            uint32_t f, k;
-            if (i < 20) { f = (b & c) | (~b & d); k = 0x5A827999u; }
-            else if (i < 40) { f = b ^ c ^ d; k = 0x6ED9EBA1u; }
-            else if (i < 60) { f = (b & c) | (b & d) | (c & d); k = 0x8F1BBCDCu; }
-            else { f = b ^ c ^ d; k = 0xCA62C1D6u; }
-            const uint32_t t = rol(a, 5) + f + e + k + w[i];
-            e = d; d = c; c = rol(b, 30); b = a; a = t;
-        }
-        h[0] += a; h[1] += b; h[2] += c; h[3] += d; h[4] += e;
-    }
-    std::string out;
-    for (int i = 0; i < 5; i++) for (int j = 3; j >= 0; j--) out.push_back((char)((h[i] >> (8 * j)) & 0xFF));
-    return out;
-}
-
-std::string base64(const std::string& d) {
-    static const char* t = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    std::string o;
-    size_t i = 0;
-    for (; i + 2 < d.size(); i += 3) {
-        const uint32_t v = (uint32_t)(uint8_t)d[i] << 16 | (uint32_t)(uint8_t)d[i + 1] << 8 | (uint8_t)d[i + 2];
-        o += t[v >> 18]; o += t[(v >> 12) & 63]; o += t[(v >> 6) & 63]; o += t[v & 63];
-    }
-    if (i + 1 == d.size()) {
-        const uint32_t v = (uint32_t)(uint8_t)d[i] << 16;
-        o += t[v >> 18]; o += t[(v >> 12) & 63]; o += "==";
-    } else if (i + 2 == d.size()) {
-        const uint32_t v = (uint32_t)(uint8_t)d[i] << 16 | (uint32_t)(uint8_t)d[i + 1] << 8;
-        o += t[v >> 18]; o += t[(v >> 12) & 63]; o += t[(v >> 6) & 63]; o += '=';
-    }
-    return o;
-}
-
-std::string wsAcceptKey(const std::string& key) { return base64(sha1(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")); }
-
-std::string wsFrame(int opcode, const std::string& p) {
-    std::string f;
-    f.push_back((char)(0x80 | (opcode & 0x0F)));
-    if (p.size() < 126) f.push_back((char)p.size());
-    else if (p.size() < 65536) { f.push_back(126); f.push_back((char)(p.size() >> 8)); f.push_back((char)(p.size() & 0xFF)); }
-    else { f.push_back(127); for (int i = 7; i >= 0; i--) f.push_back((char)(((uint64_t)p.size() >> (8 * i)) & 0xFF)); }
-    return f + p;
-}
+// ------------------------------------------------------------------ SHA-1, base64, WebSocket frames: net_proto.h (C++ or the Rust crate onair_net)
+std::string sha1(const std::string& data) { return netp::sha1(data); }
+std::string base64(const std::string& d) { return netp::base64(d); }
+std::string wsAcceptKey(const std::string& key) { return netp::wsAcceptKey(key); }
+std::string wsFrame(int opcode, const std::string& p) { return netp::wsFrame(opcode, p); }
 
 // ------------------------------------------------------------------ JSON
 std::string jsonEscape(const std::string& s) { return dect2::str::jsonEscape(s); }
@@ -91,87 +38,7 @@ std::string jsonNum(double v) {
     return b;
 }
 
-bool parseFlatJson(const std::string& t, std::map<std::string, JsonVal>& out) {
-    out.clear();
-    size_t i = 0;
-    auto ws = [&] { while (i < t.size() && (t[i] == ' ' || t[i] == '\t' || t[i] == '\r' || t[i] == '\n')) i++; };
-    auto str = [&](std::string& s) {
-        if (i >= t.size() || t[i] != '"') return false;
-        i++;
-        s.clear();
-        while (i < t.size() && t[i] != '"') {
-            char c = t[i++];
-            if ((unsigned char)c < 0x20) return false;
-            if (c == '\\') {
-                if (i >= t.size()) return false;
-                const char e = t[i++];
-                switch (e) {
-                case '"': case '\\': case '/': s.push_back(e); break;
-                case 'b': s.push_back('\b'); break;
-                case 'f': s.push_back('\f'); break;
-                case 'n': s.push_back('\n'); break;
-                case 'r': s.push_back('\r'); break;
-                case 't': s.push_back('\t'); break;
-                case 'u': {
-                    if (i + 4 > t.size()) return false;
-                    unsigned v = 0;
-                    for (int k = 0; k < 4; k++) {
-                        const char h = t[i++];
-                        if (!isxdigit((unsigned char)h)) return false;
-                        v = v * 16 + (unsigned)(isdigit((unsigned char)h) ? h - '0' : (tolower(h) - 'a' + 10));
-                    }
-                    if (v < 0x80) s.push_back((char)v);
-                    else if (v < 0x800) { s.push_back((char)(0xC0 | (v >> 6))); s.push_back((char)(0x80 | (v & 63))); }
-                    else { s.push_back((char)(0xE0 | (v >> 12))); s.push_back((char)(0x80 | ((v >> 6) & 63))); s.push_back((char)(0x80 | (v & 63))); }
-                    break;
-                }
-                default: return false;
-                }
-            } else s.push_back(c);
-        }
-        if (i >= t.size()) return false;
-        i++;
-        return true;
-    };
-    ws();
-    if (i >= t.size() || t[i] != '{') return false;
-    i++;
-    ws();
-    if (i < t.size() && t[i] == '}') { i++; ws(); return i == t.size(); }
-    while (true) {
-        ws();
-        std::string k;
-        if (!str(k)) return false;
-        ws();
-        if (i >= t.size() || t[i] != ':') return false;
-        i++;
-        ws();
-        JsonVal v;
-        if (i < t.size() && t[i] == '"') { v.kind = JsonVal::Str; if (!str(v.str)) return false; }
-        else if (t.compare(i, 4, "true") == 0) { v.kind = JsonVal::Bool; v.b = true; i += 4; }
-        else if (t.compare(i, 5, "false") == 0) { v.kind = JsonVal::Bool; v.b = false; i += 5; }
-        else if (t.compare(i, 4, "null") == 0) { v.kind = JsonVal::Null; i += 4; }
-        else {
-            size_t j = i;
-            while (j < t.size() && (isdigit((unsigned char)t[j]) || t[j] == '-' || t[j] == '+' || t[j] == '.' || t[j] == 'e' || t[j] == 'E')) j++;
-            if (j == i || j - i > 32) return false;
-            const std::string num = t.substr(i, j - i);
-            char* end = nullptr;
-            v.num = strtod(num.c_str(), &end);
-            if (!end || *end || !std::isfinite(v.num)) return false;
-            v.kind = JsonVal::Num;
-            i = j;
-        }
-        if (out.size() >= 32 && !out.count(k)) return false;
-        out[k] = v;
-        ws();
-        if (i < t.size() && t[i] == ',') { i++; continue; }
-        if (i < t.size() && t[i] == '}') { i++; break; }
-        return false;
-    }
-    ws();
-    return i == t.size();
-}
+bool parseFlatJson(const std::string& t, std::map<std::string, JsonVal>& out) { return netp::parseFlatJson(t, out); }
 
 std::string remoteApiNewToken() {
     std::random_device rd;
@@ -185,7 +52,7 @@ std::string remoteApiNewToken() {
 
 // ------------------------------------------------------------------ the server
 namespace {
-constexpr size_t kMaxHeader = 8192, kMaxBody = 4096, kMaxConns = 16, kMaxWs = 8, kMaxWsFrame = 4096;
+constexpr size_t kMaxConns = 16, kMaxWs = 8, kMaxWsFrame = 4096;
 constexpr int kRequestMs = 5000;
 
 std::string lower(std::string s) { return dect2::str::lower(std::move(s)); }
@@ -210,52 +77,12 @@ void sockSendTimeout(sock_t s, int ms) {
     setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof tv);
 #endif
 }
-bool ctEqual(const std::string& a, const std::string& b) {   // time does not depend on where they differ
-    unsigned char d = a.size() == b.size() ? 0 : 1;
-    for (size_t i = 0; i < std::min(a.size(), b.size()); i++) d |= (unsigned char)(a[i] ^ b[i]);
-    return d == 0;
-}
-std::string hostOnly(const std::string& h) {   // "127.0.0.1:8765" -> "127.0.0.1", "[::1]:80" -> "[::1]"
-    if (!h.empty() && h[0] == '[') { const size_t e = h.find(']'); return e == std::string::npos ? h : h.substr(0, e + 1); }
-    const size_t c = h.rfind(':');
-    return c == std::string::npos ? h : h.substr(0, c);
-}
-bool loopbackName(const std::string& n) {
-    if (n == "localhost" || n == "[::1]") return true;
-    if (n.compare(0, 4, "127.") != 0) return false;
-    for (char c : n) if (!isdigit((unsigned char)c) && c != '.') return false;
-    return true;
-}
-std::string urlDecode(const std::string& s) {
-    std::string o;
-    for (size_t i = 0; i < s.size(); i++) {
-        if (s[i] == '%' && i + 2 < s.size() && isxdigit((unsigned char)s[i + 1]) && isxdigit((unsigned char)s[i + 2])) { o.push_back((char)strtol(s.substr(i + 1, 2).c_str(), nullptr, 16)); i += 2; }
-        else if (s[i] == '+') o.push_back(' ');
-        else o.push_back(s[i]);
-    }
-    return o;
-}
-std::string queryParam(const std::string& q, const std::string& key) {
-    size_t i = 0;
-    while (i <= q.size()) {
-        size_t e = q.find('&', i);
-        if (e == std::string::npos) e = q.size();
-        const std::string kv = q.substr(i, e - i);
-        const size_t eq = kv.find('=');
-        if (urlDecode(kv.substr(0, eq)) == key) return eq == std::string::npos ? "" : urlDecode(kv.substr(eq + 1));
-        i = e + 1;
-    }
-    return "";
-}
-const char* statusText(int c) {
-    switch (c) {
-    case 200: return "OK"; case 101: return "Switching Protocols"; case 400: return "Bad Request"; case 401: return "Unauthorized";
-    case 403: return "Forbidden"; case 404: return "Not Found"; case 405: return "Method Not Allowed"; case 408: return "Request Timeout";
-    case 411: return "Length Required"; case 413: return "Payload Too Large"; case 415: return "Unsupported Media Type";
-    case 426: return "Upgrade Required"; case 431: return "Request Header Fields Too Large"; case 501: return "Not Implemented";
-    case 503: return "Service Unavailable"; default: return "Error";
-    }
-}
+bool ctEqual(const std::string& a, const std::string& b) { return netp::ctEqual(a, b); }
+std::string hostOnly(const std::string& h) { return netp::hostOnly(h); }
+bool loopbackName(const std::string& n) { return netp::loopbackName(n); }
+std::string urlDecode(const std::string& s) { return netp::urlDecode(s); }
+std::string queryParam(const std::string& q, const std::string& key) { return netp::queryParam(q, key); }
+std::string statusText(int c) { return netp::statusText(c); }
 struct Request {
     std::string method, path, query, body;
     std::map<std::string, std::string> h;   // lower-case names
@@ -312,8 +139,9 @@ struct RemoteApiServer::Impl {
         std::string buf;
         const auto t0 = std::chrono::steady_clock::now();
         auto late = [&] { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count() > kRequestMs; };
-        size_t hdrEnd = std::string::npos;
-        while (hdrEnd == std::string::npos) {
+        size_t hdrEnd = 0;
+        bool have = false;
+        while (!have) {
             if (quit) return false;
             if (late()) { sendErr(s, 408, "request timeout"); return false; }
             if (!waitReadable(s, 100)) continue;
@@ -321,43 +149,17 @@ struct RemoteApiServer::Impl {
             const long long k = sockRecv(s, b, sizeof b);
             if (k <= 0) return false;
             buf.append(b, (size_t)k);
-            hdrEnd = buf.find("\r\n\r\n");
-            if (hdrEnd == std::string::npos && buf.size() > kMaxHeader) { sendErr(s, 431, "headers too large"); return false; }
-            if (hdrEnd != std::string::npos && hdrEnd > kMaxHeader) { sendErr(s, 431, "headers too large"); return false; }
+            const int sc = netp::httpScan(buf, hdrEnd);   // 0 not yet, 1 found, 2 over 8192 bytes
+            if (sc == 2) { sendErr(s, 431, "headers too large"); return false; }
+            have = sc == 1;
         }
         const std::string head = buf.substr(0, hdrEnd);
         std::string rest = buf.substr(hdrEnd + 4);
-        size_t pos = head.find("\r\n");
-        const std::string line = head.substr(0, pos);
-        const size_t s1 = line.find(' '), s2 = line.rfind(' ');
-        if (s1 == std::string::npos || s2 == s1 || line.compare(s2 + 1, 5, "HTTP/") != 0) { sendErr(s, 400, "bad request line"); return false; }
-        rq.method = line.substr(0, s1);
-        std::string target = line.substr(s1 + 1, s2 - s1 - 1);
-        if (target.empty() || target[0] != '/' || target.size() > 512) { sendErr(s, 400, "bad target"); return false; }
-        for (unsigned char c : target) if (c < 0x21 || c == 0x7f) { sendErr(s, 400, "bad target"); return false; }
-        const size_t q = target.find('?');
-        rq.path = target.substr(0, q);
-        rq.query = q == std::string::npos ? "" : target.substr(q + 1);
-        int nh = 0;
-        while (pos != std::string::npos && pos < head.size()) {
-            const size_t nx = head.find("\r\n", pos + 2);
-            const std::string l = head.substr(pos + 2, nx == std::string::npos ? std::string::npos : nx - pos - 2);
-            pos = nx;
-            if (l.empty()) continue;
-            const size_t c = l.find(':');
-            if (c == std::string::npos || c == 0 || ++nh > 48) { sendErr(s, 400, "bad header"); return false; }
-            const std::string name = lower(trim(l.substr(0, c)));
-            if (rq.h.count(name) && (name == "content-length" || name == "host")) { sendErr(s, 400, "duplicate header"); return false; }
-            rq.h[name] = trim(l.substr(c + 1));
-        }
-        if (rq.h.count("transfer-encoding")) { sendErr(s, 501, "chunked bodies are not supported"); return false; }
-        size_t want = 0;
-        if (rq.h.count("content-length")) {
-            const std::string& cl = rq.h["content-length"];
-            if (cl.empty() || cl.size() > 9 || !std::all_of(cl.begin(), cl.end(), [](char c) { return isdigit((unsigned char)c) != 0; })) { sendErr(s, 400, "bad Content-Length"); return false; }
-            want = (size_t)atol(cl.c_str());
-            if (want > kMaxBody) { sendErr(s, 413, "body too large (limit 4096 bytes)"); return false; }
-        } else if (rq.method == "POST") { sendErr(s, 411, "Content-Length required"); return false; }
+        netp::HttpHead hh;
+        const netp::HttpError he = netp::httpHead(head, hh);   // request line, header fields, Content-Length
+        if (he.status) { sendErr(s, he.status, he.msg); return false; }
+        rq.method = std::move(hh.method); rq.path = std::move(hh.path); rq.query = std::move(hh.query); rq.h = std::move(hh.h);
+        const size_t want = hh.contentLength;
         while (rest.size() < want) {
             if (quit) return false;
             if (late()) { sendErr(s, 408, "request timeout"); return false; }
@@ -515,21 +317,12 @@ struct RemoteApiServer::Impl {
                 if (in.size() > 2 * (kMaxWsFrame + 16)) { closeWith(1009); return; }
             }
             while (in.size() >= 2) {   // whole frames
-                const uint8_t b0 = (uint8_t)in[0], b1 = (uint8_t)in[1];
-                const int op = b0 & 0x0F;
-                const bool fin = (b0 & 0x80) != 0, masked = (b1 & 0x80) != 0;
-                uint64_t len = b1 & 0x7F;
-                size_t hl = 2;
-                if (len == 126) { if (in.size() < 4) break; len = (uint64_t)(uint8_t)in[2] << 8 | (uint8_t)in[3]; hl = 4; }
-                else if (len == 127) { closeWith(1009); return; }   // 64-bit lengths are never this small
-                if (!masked) { closeWith(1002); return; }           // RFC 6455 5.1: clients mask
-                if (len > kMaxWsFrame) { closeWith(1009); return; }
-                if (in.size() < hl + 4 + len) break;
-                const uint8_t* mk = (const uint8_t*)in.data() + hl;
-                std::string pl((size_t)len, 0);
-                for (size_t i = 0; i < len; i++) pl[i] = (char)((uint8_t)in[hl + 4 + i] ^ mk[i & 3]);
-                in.erase(0, hl + 4 + (size_t)len);
-                if (!fin || op == 0 || op == 2 || (op > 2 && op < 8) || op > 10) { closeWith(1003); return; }   // no fragmentation, no binary
+                const netp::WsClient fr = netp::wsParseClient(in);   // 0 need more, 1 close with a code, 2 a frame (text, ping, pong or close)
+                if (fr.kind == 0) break;
+                if (fr.kind == 1) { closeWith(fr.code); return; }
+                in.erase(0, fr.used);
+                const int op = fr.op;
+                const std::string& pl = fr.payload;
                 if (op == 8) { closeWith(1000); return; }
                 if (op == 9) { const std::string f = wsFrame(10, pl.substr(0, 125)); if (!sockSendAll(s, f.data(), f.size())) return; continue; }
                 if (op == 10) continue;

@@ -17,6 +17,7 @@
 #include "../net/tcp_client.h"
 #include "native_common.h"
 #include "dect2/net/netradio.h"
+#include "dect2/net/net_proto.h"
 #include <algorithm>
 #include <atomic>
 #include <cctype>
@@ -46,12 +47,10 @@ enum : uint8_t {
     kStCombo = 0x80, kStButton, kStColumns, kStNextColumn, kStRadio, kStBeginGroup, kStEndGroup, kStLeftLabel, kStSliderInt,
     kStSliderFloatSteps, kStInputInt, kStCheckbox, kStSliderFloat, kStInputText, kStText, kStTextColored,
 };
-constexpr uint32_t kMaxPacket = 32u << 20;   // the server's own limit is 16 MB (a million complex floats, twice)
 constexpr int kConnectMs = 3000, kStallMs = 3000, kAckMs = 4000, kMaxAckMs = 30000;
 constexpr int kPipelinePackets = 2;   // SDR++'s dsp::stream between the source and the server: a write buffer and a read buffer
 constexpr const char* kServerSourceId = "##sdrpp_server_src_sel";
 
-void put32(unsigned char* p, uint32_t v) { for (int k = 0; k < 4; k++) p[k] = (unsigned char)(v >> (8 * k)); }
 uint32_t le32(const unsigned char* p) { return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24; }
 uint16_t le16(const unsigned char* p) { return (uint16_t)(p[0] | p[1] << 8); }
 float lef32(const unsigned char* p) { float f; uint32_t u = le32(p); memcpy(&f, &u, 4); return f; }
@@ -60,182 +59,40 @@ double lef64(const unsigned char* p) { uint64_t u = 0; for (int k = 7; k >= 0; k
 std::string lower(std::string s) { for (char& c : s) c = (char)tolower((unsigned char)c); return s; }
 std::string hiddenPart(const std::string& id) { const size_t p = id.find("##"); return p == std::string::npos ? std::string() : id.substr(p + 2); }
 std::string visiblePart(const std::string& id) { return id.substr(0, id.find("##")); }
-
-// the words of a widget's hidden id, without the module's prefix and the source's instance name: "_airspy_lna_gain_Airspy Source" -> lna, gain
-std::vector<std::string> idWords(const std::string& id) {
-    std::vector<std::string> w;
-    std::string cur;
-    for (char c : hiddenPart(id) + "_") {
-        if (c == '_') { if (!cur.empty()) w.push_back(cur); cur.clear(); }
-        else cur += c;
-    }
-    if (!w.empty() && (w.back().find(' ') != std::string::npos || std::any_of(w.back().begin(), w.back().end(), [](char c) { return isupper((unsigned char)c); })))
-        w.pop_back();   // the instance name ("Airspy Source")
-    if (w.size() > 1) w.erase(w.begin());   // the module ("airspy", "rtlsdr", ...)
-    for (auto& s : w) s = lower(s);
-    return w;
-}
-bool hasWord(const std::vector<std::string>& w, const char* x) { return std::find(w.begin(), w.end(), x) != w.end(); }
-
-// a readable name for a control that has no label of its own
-std::string labelFromId(const std::string& id) {
-    if (id == kServerSourceId) return "Server source";
-    static const std::map<std::string, std::string> kWords = {
-        {"dev", "Device"}, {"sr", "Sample rate"}, {"bw", "Bandwidth"}, {"ant", "Antenna"}, {"gm", "Gain mode"}, {"clk", "Clock"},
-        {"ch", "Channel"}, {"chan", "Channel"}, {"ds", "Direct sampling"}, {"agc", "AGC"}, {"port", "Port"}, {"lna", "LNA"}, {"vga", "VGA"},
-        {"mix", "Mixer"}, {"att", "Attenuator"}, {"atten", "Attenuator"}, {"attn", "Attenuator"}, {"ppm", "PPM"}, {"biast", "Bias tee"},
-        {"ofs", "Offset tuning"}, {"rtl", "RTL"}, {"lin", "Linear"}, {"sens", "Sensitive"}, {"refr", "Refresh"}, {"ref", "Reference"},
-    };
-    std::string s;
-    for (const auto& w : idWords(id)) {
-        if (w == "sel" || w == "select") continue;
-        const auto it = kWords.find(w);
-        s += (s.empty() ? "" : " ") + (it != kWords.end() ? it->second : w);
-    }
-    if (s.empty()) s = hiddenPart(id);
-    if (!s.empty()) s[0] = (char)toupper((unsigned char)s[0]);
-    return s;
-}
-
-struct Elem { uint8_t type = 0, step = 0; bool b = false; int32_t i = 0; float f = 0; std::string s; };
-
-// the draw list's elements as SmGui::DrawList::loadItem reads them; false when it is cut short or holds an unknown element type
-bool parseElems(const unsigned char* p, size_t n, std::vector<Elem>& out) {
-    out.clear();
-    size_t k = 0;
-    while (k < n) {
-        Elem e;
-        e.type = p[k++];
-        switch (e.type) {
-        case kElStep: if (k + 2 > n) return false; e.step = p[k]; k += 2; break;   // the step, and its "force sync" flag
-        case kElBool: if (k + 1 > n) return false; e.b = p[k] != 0; k += 1; break;
-        case kElInt: if (k + 4 > n) return false; e.i = (int32_t)le32(p + k); k += 4; break;
-        case kElFloat: if (k + 4 > n) return false; e.f = lef32(p + k); k += 4; break;
-        case kElString: {
-            if (k + 2 > n) return false;
-            const size_t len = le16(p + k);
-            k += 2;
-            if (k + len > n) return false;
-            e.s.assign((const char*)p + k, len);
-            k += len;
-            break;
-        }
-        default: return false;
-        }
-        out.push_back(std::move(e));
-    }
-    return true;
-}
-
-// "10.0MHz", "2.5MHz", "250KHz", "2.048 MSPS", "48000" -> Hz; 0 when it is not a rate
-double parseRateText(const std::string& t) {
-    const char* s = t.c_str();
-    while (*s == ' ') s++;
-    char* end = nullptr;
-    const double v = strtod(s, &end);
-    if (end == s || !(v > 0)) return 0;
-    std::string unit = lower(end);
-    unit.erase(std::remove(unit.begin(), unit.end(), ' '), unit.end());
-    double mul = 1;
-    if (!unit.empty() && (unit[0] == 'k' || unit[0] == 'm' || unit[0] == 'g')) { mul = unit[0] == 'k' ? 1e3 : unit[0] == 'm' ? 1e6 : 1e9; unit.erase(0, 1); }
-    if (!(unit.empty() || unit == "hz" || unit == "sps" || unit == "s/s")) return 0;
-    return v * mul;
-}
+std::string labelFromId(const std::string& id) { return netp::sdrppLabelFromId(id); }
 
 } // namespace
 
 // ---- the server's menu --------------------------------------------------------------------------------------------------------------------
 
+// the menu from the draw list: net_proto.h reads it (C++ or the Rust crate onair_net)
 bool sdrppParseUi(const unsigned char* p, size_t n, std::vector<SdrppWidget>& out) {
     out.clear();
-    std::vector<Elem> el;
-    if (!parseElems(p, n, el)) return false;
-    int disabled = 0;
-    std::string leftLabel;
-    for (size_t k = 0; k < el.size();) {
-        if (el[k].type != kElStep) return false;   // every step is followed by its arguments, none of which is a step
-        const uint8_t st = el[k].step;
-        size_t a = ++k;
-        while (k < el.size() && el[k].type != kElStep) k++;
-        const size_t na = k - a;
-        auto is = [&](size_t j, uint8_t t) { return j < na && el[a + j].type == t; };
+    std::vector<netp::UiWidget> u;
+    if (!netp::sdrppParseUi(p, n, u)) return false;
+    for (auto& x : u) {
         SdrppWidget w;
-        bool widget = false;
-        switch (st) {
-        case kStBeginDisabled: disabled++; break;
-        case kStEndDisabled: disabled = std::max(0, disabled - 1); break;
-        case kStLeftLabel: if (is(0, kElString)) leftLabel = el[a].s; break;
-        case kStCombo:
-            if (!(is(0, kElString) && is(1, kElInt) && is(2, kElString))) break;
-            w.kind = SdrppWidget::Combo; w.id = el[a].s; w.i = el[a + 1].i;
-            for (size_t q = 0; q < el[a + 2].s.size();) {   // ImGui's "a\0b\0c\0" list
-                const size_t z = el[a + 2].s.find('\0', q);
-                const std::string item = el[a + 2].s.substr(q, z == std::string::npos ? std::string::npos : z - q);
-                if (item.empty() && z == std::string::npos) break;
-                w.items.push_back(item);
-                if (z == std::string::npos) break;
-                q = z + 1;
-            }
-            widget = true;
-            break;
-        case kStCheckbox:
-            if (!(is(0, kElString) && is(1, kElBool))) break;
-            w.kind = SdrppWidget::Checkbox; w.id = el[a].s; w.b = el[a + 1].b; widget = true;
-            break;
-        case kStRadio:
-            if (!(is(0, kElString) && is(1, kElBool))) break;
-            w.kind = SdrppWidget::Radio; w.id = el[a].s; w.b = el[a + 1].b; widget = true;
-            break;
-        case kStSliderInt:
-            if (!(is(0, kElString) && is(1, kElInt) && is(2, kElInt) && is(3, kElInt))) break;
-            w.kind = SdrppWidget::SliderInt; w.id = el[a].s; w.value = el[a + 1].i; w.minV = el[a + 2].i; w.maxV = el[a + 3].i; w.step = 1;
-            widget = true;
-            break;
-        case kStSliderFloatSteps:
-            if (!(is(0, kElString) && is(1, kElFloat) && is(2, kElFloat) && is(3, kElFloat) && is(4, kElFloat))) break;
-            w.kind = SdrppWidget::SliderFloat; w.id = el[a].s; w.value = el[a + 1].f; w.minV = el[a + 2].f; w.maxV = el[a + 3].f; w.step = el[a + 4].f;
-            widget = true;
-            break;
-        case kStSliderFloat:
-            if (!(is(0, kElString) && is(1, kElFloat) && is(2, kElFloat) && is(3, kElFloat))) break;
-            w.kind = SdrppWidget::SliderFloat; w.id = el[a].s; w.value = el[a + 1].f; w.minV = el[a + 2].f; w.maxV = el[a + 3].f; w.step = 0;
-            widget = true;
-            break;
-        case kStInputInt:
-            if (!(is(0, kElString) && is(1, kElInt) && is(2, kElInt))) break;
-            w.kind = SdrppWidget::InputInt; w.id = el[a].s; w.value = el[a + 1].i; w.step = std::max(1, el[a + 2].i); widget = true;
-            break;
-        case kStText: case kStTextColored:
-            for (size_t j = 0; j < na; j++) if (el[a + j].type == kElString && !el[a + j].s.empty()) { w.kind = SdrppWidget::Text; w.label = el[a + j].s; widget = true; }
-            break;
-        default: break;   // layout steps (columns, groups, tables, popups), buttons, text inputs: nothing to drive
-        }
-        if (widget) {
-            w.disabled = disabled > 0;
-            if (w.kind != SdrppWidget::Text) {
-                const std::string vis = visiblePart(w.id);
-                w.label = !leftLabel.empty() ? leftLabel : !vis.empty() && w.kind != SdrppWidget::Radio ? vis : labelFromId(w.id);
-            }
-            out.push_back(std::move(w));
-        }
-        if (st != kStLeftLabel && st != kStFillWidth && st != kStSameLine && st != kStBeginDisabled && st != kStEndDisabled) leftLabel.clear();
+        w.kind = (SdrppWidget::Kind)x.kind;
+        w.id = std::move(x.id); w.label = std::move(x.label); w.items = std::move(x.items);
+        w.i = x.i; w.b = x.b; w.value = x.value; w.minV = x.minV; w.maxV = x.maxV; w.step = x.step; w.disabled = x.disabled;
+        out.push_back(std::move(w));
     }
     return true;
 }
 
-double sdrppParseRate(const std::string& text) { return parseRateText(text); }
+double sdrppParseRate(const std::string& text) { return netp::sdrppRateText(text); }
 
 int sdrppRateCombo(const std::vector<SdrppWidget>& ui) {
     int fallback = -1;
     for (size_t k = 0; k < ui.size(); k++) {
         const auto& w = ui[k];
         if (w.kind != SdrppWidget::Combo || w.id == kServerSourceId || w.items.empty()) continue;
-        const bool allRates = std::all_of(w.items.begin(), w.items.end(), [](const std::string& s) { return parseRateText(s) > 0; });
+        const bool allRates = std::all_of(w.items.begin(), w.items.end(), [](const std::string& s) { return netp::sdrppRateText(s) > 0; });
         if (!allRates) continue;
-        const auto words = idWords(w.id);
+        const unsigned words = netp::sdrppIdFlags(w.id);
         const std::string h = lower(hiddenPart(w.id));
-        if (hasWord(words, "sr") || h.find("samplerate") != std::string::npos || h.find("sample_rate") != std::string::npos || h.find("_sr") != std::string::npos) return (int)k;
-        if (fallback < 0 && !hasWord(words, "bw") && h.find("bandwidth") == std::string::npos && h.find("_bw") == std::string::npos) fallback = (int)k;
+        if ((words & netp::kWordSr) || h.find("samplerate") != std::string::npos || h.find("sample_rate") != std::string::npos || h.find("_sr") != std::string::npos) return (int)k;
+        if (fallback < 0 && !(words & netp::kWordBw) && h.find("bandwidth") == std::string::npos && h.find("_bw") == std::string::npos) fallback = (int)k;
     }
     return fallback;
 }
@@ -249,13 +106,13 @@ SdrppGainPlan sdrppGainPlan(const std::vector<SdrppWidget>& ui) {
         const auto& w = ui[k];
         if (w.kind != SdrppWidget::SliderInt && w.kind != SdrppWidget::SliderFloat) continue;
         if (w.minV == w.maxV) continue;
-        const auto words = idWords(w.id);
+        const unsigned words = netp::sdrppIdFlags(w.id);
         const std::string h = lower(hiddenPart(w.id));
-        const bool stage = hasWord(words, "lna") || hasWord(words, "vga") || hasWord(words, "mix") || hasWord(words, "mixer") || hasWord(words, "if");
+        const bool stage = (words & (netp::kWordLna | netp::kWordVga | netp::kWordMix | netp::kWordMixer | netp::kWordIf)) != 0;
         const bool gain = h.find("gain") != std::string::npos || lower(w.label).find("gain") != std::string::npos;
         if (stage) { stages.push_back((int)k); continue; }
         if (!gain) continue;
-        const int score = hasWord(words, "lin") ? 4 : hasWord(words, "sens") ? 3 : 2;
+        const int score = (words & netp::kWordLin) ? 4 : (words & netp::kWordSens) ? 3 : 2;
         if (score > bestScore) { best = (int)k; bestScore = score; }
     }
     if (best >= 0) g.sliders.push_back(best);
@@ -303,7 +160,7 @@ std::string sourceOf(const std::vector<SdrppWidget>& ui) {
 std::vector<double> ratesOf(const std::vector<SdrppWidget>& ui) {
     std::vector<double> r;
     const int c = sdrppRateCombo(ui);
-    if (c >= 0) for (const auto& s : ui[(size_t)c].items) r.push_back(parseRateText(s));
+    if (c >= 0) for (const auto& s : ui[(size_t)c].items) r.push_back(netp::sdrppRateText(s));
     return r;
 }
 // the key of a server control in TuneSettings::radio: "srv:" and its id; radio buttons share one key per group ("srv:##_airspy_gm_...")
@@ -389,14 +246,7 @@ void setCaps(DeviceInfo& d, const ServerState& st) {
     d.settings = settingsOf(st);
 }
 
-bool splitHostPort(const std::string& a, std::string& host, int& port) {
-    const size_t c = a.rfind(':');
-    if (c == std::string::npos || c == 0) return false;
-    host = a.substr(0, c);
-    if (host.size() > 2 && host.front() == '[' && host.back() == ']') host = host.substr(1, host.size() - 2);
-    port = atoi(a.c_str() + c + 1);
-    return port > 0 && port < 65536;
-}
+bool splitHostPort(const std::string& a, std::string& host, int& port) { return netp::splitHostPort(a, host, port); }
 
 // ---- one connection to a server -----------------------------------------------------------------------------------------------------------
 // Every packet is read by readOne(), whoever calls it: the stream thread while the radio runs, the caller of waitAck() otherwise (it reads
@@ -431,29 +281,15 @@ public:
     void shutdown() { if (sock_ != kBadSock) sockShutdown(sock_); }
 
     bool command(uint32_t cmd, const unsigned char* arg = nullptr, size_t n = 0) {
-        std::vector<unsigned char> b(12 + n);
-        put32(b.data(), kPktCommand);
-        put32(b.data() + 4, (uint32_t)b.size());
-        put32(b.data() + 8, cmd);
-        if (n) memcpy(b.data() + 12, arg, n);
+        const std::string b = netp::sdrppCommand(cmd, arg, n);
         std::lock_guard<std::mutex> lk(sendMu_);
         return sock_ != kBadSock && sockSendAll(sock_, b.data(), b.size());
     }
     bool commandU8(uint32_t cmd, uint8_t v) { return command(cmd, &v, 1); }
     // one control of the server's menu set to a value (an element as SmGui stores it); sync: the server answers with its redrawn menu
     bool uiAction(const std::string& id, uint8_t type, int32_t i, float f, bool b, bool sync) {
-        std::vector<unsigned char> a;
-        a.push_back(sync ? 1 : 0);
-        a.push_back(kElString);
-        const size_t len = std::min<size_t>(id.size(), 0xffff);
-        a.push_back((unsigned char)len); a.push_back((unsigned char)(len >> 8));
-        a.insert(a.end(), id.begin(), id.begin() + (ptrdiff_t)len);
-        a.push_back(type);
-        unsigned char v[4];
-        if (type == kElBool) a.push_back(b ? 1 : 0);
-        else if (type == kElInt) { put32(v, (uint32_t)i); a.insert(a.end(), v, v + 4); }
-        else { uint32_t u; memcpy(&u, &f, 4); put32(v, u); a.insert(a.end(), v, v + 4); }
-        return command(kCmdUiAction, a.data(), a.size());
+        const std::string a = netp::sdrppUiAction(id, type, i, f, b, sync);
+        return command(kCmdUiAction, (const unsigned char*)a.data(), a.size());
     }
     uint64_t acks(uint32_t cmd) { std::lock_guard<std::mutex> lk(stMu_); return cmd < 8 ? acks_[cmd] : 0; }
     // waits for one more answer to cmd than `before` (reading the socket itself when the stream thread does not). The answer comes after every
@@ -523,9 +359,9 @@ public:
         if (sel < 0) return errno == EINTR ? 0 : fail(-1);
         unsigned char h[8];
         if (!sockRecvAll(sock_, h, sizeof h)) return fail(-1);
-        const uint32_t type = le32(h), size = le32(h + 4);
-        if (size < 8 || size > kMaxPacket || type > kPktError) { { std::lock_guard<std::mutex> lk(stMu_); badPacket_ = true; } return fail(-1); }
-        body_.resize(size - 8);
+        uint32_t type = 0, bodySize = 0;
+        if (!netp::sdrppPacketHeader(h, type, bodySize)) { { std::lock_guard<std::mutex> lk(stMu_); badPacket_ = true; } return fail(-1); }
+        body_.resize(bodySize);
         if (!body_.empty() && !sockRecvAll(sock_, body_.data(), body_.size())) return fail(-1);
         { std::lock_guard<std::mutex> lk(stMu_); lastRx_ = std::chrono::steady_clock::now(); goodPackets_++; }
         handle(type, body_.data(), body_.size());
@@ -594,10 +430,10 @@ private:
             return;
         }
         if (type == kPktError) {
-            const char* what[] = {"none", "invalid packet", "invalid command", "invalid argument"};
             const uint8_t c = n ? b[0] : 0;
+            std::string what;
             std::lock_guard<std::mutex> lk(stMu_);
-            lastError_ = c < 4 ? what[c] : "error " + std::to_string(c);
+            lastError_ = netp::sdrppErrorText(c, what) ? what : "error " + std::to_string(c);
             fprintf(stderr, "SDR++ server: %s reports an error: %s\n", addr_.c_str(), lastError_.c_str());
             fflush(stderr);
             return;

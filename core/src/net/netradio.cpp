@@ -2,6 +2,7 @@
 #include "tcp_client.h"
 #include "../source/native_common.h"
 #include "dect2/net/netradio.h"
+#include "dect2/net/net_proto.h"
 #include <algorithm>
 #include <chrono>
 #include <map>
@@ -22,73 +23,38 @@ namespace {
 std::mutex gNetMu;
 std::vector<NetRadio> gNet;
 
-const char* typeKey(NetRadio::Type t) {
-    return t == NetRadio::Pluto ? "pluto" : t == NetRadio::SoapyRemote ? "soapyremote" : t == NetRadio::SpyServer ? "spyserver" : t == NetRadio::HermesLite2 ? "hl2" : t == NetRadio::RedPitaya ? "redpitaya" : t == NetRadio::SdrppServer ? "sdrpp" : "rtltcp";
-}
-
 // the host as typed: no spaces, no "ip:" (a Pluto's libiio URI), no "tcp://" (a SoapyRemote URL)
-std::string cleanHost(std::string h) {
-    std::string r;
-    for (char c : h) if (c != ' ' && c != '\t' && c != ',' && c != ';') r += c;
-    for (const char* pre : {"ip:", "tcp://"}) if (r.rfind(pre, 0) == 0) r.erase(0, strlen(pre));
-    return r;
-}
+std::string cleanHost(std::string h) { return netp::cleanHost(h); }
 std::string hostPort(const std::string& host, int port) {
     return (host.find(':') != std::string::npos ? "[" + host + "]" : host) + ":" + std::to_string(port);
 }
 } // namespace
 
+// the type tables and the settings text of the list are in net_proto.h (C++ or the Rust crate onair_net)
 const char* netRadioTypeName(NetRadio::Type t) {
-    return t == NetRadio::Pluto ? "PlutoSDR" : t == NetRadio::SoapyRemote ? "SoapyRemote" : t == NetRadio::SpyServer ? "SpyServer"
-         : t == NetRadio::HermesLite2 ? "Hermes Lite 2" : t == NetRadio::RedPitaya ? "Red Pitaya" : t == NetRadio::SdrppServer ? "SDR++ server" : "rtl_tcp";
+    static const std::string names[7] = {netp::radioTypeName(0), netp::radioTypeName(1), netp::radioTypeName(2), netp::radioTypeName(3), netp::radioTypeName(4), netp::radioTypeName(5), netp::radioTypeName(6)};
+    return names[(unsigned)t < 7 ? (unsigned)t : 1].c_str();
 }
-int netRadioDefaultPort(NetRadio::Type t) {
-    return t == NetRadio::Pluto ? 0 : t == NetRadio::SoapyRemote ? 55132 : t == NetRadio::SpyServer ? 5555 : (t == NetRadio::HermesLite2 || t == NetRadio::RedPitaya) ? 1024 : t == NetRadio::SdrppServer ? 5259 : 1234;
+int netRadioDefaultPort(NetRadio::Type t) { return netp::radioDefaultPort((uint32_t)t); }
+const char* netRadioDefaultHost(NetRadio::Type t) {
+    static const std::string pluto = netp::radioDefaultHost(0);
+    return t == NetRadio::Pluto ? pluto.c_str() : "";
 }
-const char* netRadioDefaultHost(NetRadio::Type t) { return t == NetRadio::Pluto ? "192.168.2.1" : ""; }
-int netRadioPort(const NetRadio& r) {
-    if (r.port > 0) return r.port;
-    return r.type == NetRadio::Pluto ? 30431 : netRadioDefaultPort(r.type);
-}
+int netRadioPort(const NetRadio& r) { return netp::radioPort((uint32_t)r.type, r.port); }
 
 std::string netRadiosToString(const std::vector<NetRadio>& v) {
-    std::string s;
-    for (const auto& r : v) {
-        const std::string h = cleanHost(r.host);
-        if (h.empty()) continue;
-        std::string rem;
-        if (r.type == NetRadio::SoapyRemote) for (char c : r.remote) if (c != ';') rem += c;
-        s += (s.empty() ? "" : ";") + std::string(typeKey(r.type)) + "," + h + "," + std::to_string(r.port > 0 ? r.port : 0) + (rem.empty() ? "" : "," + rem);
-    }
-    return s;
+    std::vector<netp::Radio> in;
+    for (const auto& r : v) { netp::Radio x; x.kind = (uint32_t)r.type; x.host = r.host; x.port = r.port; x.remote = r.remote; in.push_back(std::move(x)); }
+    return netp::radiosToString(in);
 }
 
 std::vector<NetRadio> netRadiosFromString(const std::string& s) {
     std::vector<NetRadio> v;
-    size_t pos = 0;
-    while (pos <= s.size()) {
-        size_t e = s.find(';', pos);
-        if (e == std::string::npos) e = s.size();
-        const std::string item = s.substr(pos, e - pos);
-        pos = e + 1;
-        const size_t c1 = item.find(','), c2 = c1 == std::string::npos ? c1 : item.find(',', c1 + 1);
-        const size_t c3 = c2 == std::string::npos ? c2 : item.find(',', c2 + 1);   // a SoapyRemote's "remote driver" follows (it may hold commas)
-        if (c2 == std::string::npos) continue;
-        const std::string t = item.substr(0, c1);
+    for (const auto& x : netp::radiosFromString(s)) {
         NetRadio r;
-        if (t == "pluto") r.type = NetRadio::Pluto;
-        else if (t == "rtltcp") r.type = NetRadio::RtlTcp;
-        else if (t == "soapyremote") r.type = NetRadio::SoapyRemote;
-        else if (t == "spyserver") r.type = NetRadio::SpyServer;
-        else if (t == "hl2") r.type = NetRadio::HermesLite2;
-        else if (t == "redpitaya") r.type = NetRadio::RedPitaya;
-        else if (t == "sdrpp") r.type = NetRadio::SdrppServer;
-        else continue;
-        r.host = cleanHost(item.substr(c1 + 1, c2 - c1 - 1));
-        r.port = atoi(item.c_str() + c2 + 1);
-        if (c3 != std::string::npos && r.type == NetRadio::SoapyRemote) r.remote = item.substr(c3 + 1);
-        if (r.port < 0 || r.port > 65535) r.port = 0;
-        if (!r.host.empty() && std::find(v.begin(), v.end(), r) == v.end()) v.push_back(r);
+        r.type = (NetRadio::Type)x.kind;
+        r.host = x.host; r.port = x.port; r.remote = x.remote;
+        v.push_back(std::move(r));
     }
     return v;
 }

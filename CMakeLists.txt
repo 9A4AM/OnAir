@@ -121,6 +121,7 @@ set(DECT2_MODES dvbs dtmb atv dmr drm adsb gnss dab sonde ais marine acars inmc 
 target_sources(dect2core PRIVATE core/src/tv/ts_proto.cpp core/src/tv/ts_proto_rs.cpp core/src/common/text_charset_rs.cpp core/src/tv/dvb_text.cpp core/src/tv/dvb_text_rs.cpp core/src/tv/teletext_rs.cpp core/src/tv/dvbsub_rs.cpp)   # MPEG-TS parsing layer (C++ or the Rust crate onair_ts)
 target_sources(dect2core PRIVATE core/src/fec/fec_proto.cpp core/src/fec/fec_proto_rs.cpp)   # Reed-Solomon (DVB-T, ATSC, DAB) and DVB-T2 BCH (C++ or the Rust crate onair_fec)
 target_sources(dect2core PRIVATE core/src/files/files_proto.cpp core/src/files/files_proto_rs.cpp)   # CSV, SigMF, WAV, TLE, SQLite pages, results container (C++ or the Rust crate onair_files)
+target_sources(dect2core PRIVATE core/src/net/net_proto.cpp core/src/net/net_proto_rs.cpp)   # remote API HTTP / WebSocket text, rtl_tcp, SpyServer, SDR++ server and network radio list parsing (C++ or the Rust crate onair_net)
 # the TLE epoch / B* arithmetic (pow, floor) must come out the same bit for bit in the C++ and the Rust build: no fused multiply-add, the C library pow
 set_source_files_properties(core/src/files/files_proto.cpp core/src/files/files_proto_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-pow")
 option(DECT2_RUST_VITERBI "Use the Rust NEON Viterbi decoder of onair_fec on aarch64 (about 4% slower than the C++ NEON one, so off by default)" OFF)
@@ -966,6 +967,7 @@ if(DECT2_BUILD_TESTS)
   onair_rust_diff_tests(ts ts_proto tv ts_proto dect2/tv/ts_proto.h "namespace dect2::tsp {" "namespace dect2::tsp_ref {" "" "")
   onair_rust_diff_tests(fec fec_proto fec fec_proto dect2/fec/fec_proto.h "namespace dect2::fecp {" "namespace dect2::fecp_ref {" "" "")
   onair_rust_diff_tests(files files_proto files files_proto dect2/files/files_proto.h "namespace dect2::filesp {" "namespace dect2::filesp_ref {" "" "")
+  onair_rust_diff_tests(net net_proto net net_proto dect2/net/net_proto.h "namespace dect2::netp {" "namespace dect2::netp_ref {" "" "")
   if(ONAIR_RUST_FEC)   # the C++ BCH reads the generator polynomials of the T2 tables
     target_sources(test_fec_proto_rs PRIVATE core/src/t2/t2fec_tables.cpp)
     target_sources(fuzz_fec_proto PRIVATE core/src/t2/t2fec_tables.cpp)
