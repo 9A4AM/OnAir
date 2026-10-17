@@ -162,9 +162,10 @@ helper. IQ is copied through the pipe (about 8 bytes per sample), so very high s
   version, author, licence, kind and permissions; enable/disable; the first-use permission prompt; settings; each plugin's log; **Install from
   file...** (a `.onairplugin`); **Open folder**; **Remove**; **Safe mode**; **Community plugins**.
 - Plugin modes appear in the mode list under **PLUGINS** with a stable number (family 1000 and up, stored in `plugins/state.json`: assigned in order of
-  first appearance, never reused, kept when a plugin is removed and reinstalled). Settings you changed in a mode (frequency, plugin settings) are saved
-  per plugin id.
-- Plugin modes run on receiver 1. The plugins folder is `plugins/` in OnAir's data folder; the examples are in `plugins/` next to the program.
+  first appearance, never reused, kept when a plugin is removed and reinstalled). A plugin's settings are saved per plugin id.
+- Plugin modes run on receiver 1. The plugins folder is `plugins/` in OnAir's data folder. The bundled examples and `onair-plugin-host` are looked for next to the program
+  (`plugins/`, `../Resources/plugins/` in an app bundle, `../lib/onair/plugins/` for the Linux packages, which install them; the macOS and Windows
+  packaging scripts do not copy them yet, so there only the build folder's `plugins/` has them).
 
 ## Distributing a plugin
 
