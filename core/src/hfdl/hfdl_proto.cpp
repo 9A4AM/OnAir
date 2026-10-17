@@ -1,7 +1,10 @@
-// HFDL layers (hfdl_proto.h)
+// HFDL layers (hfdl_proto.h). With DECT2_RUST_HFDL the bit layers, FCS, station table and PDU parser come from the Rust crate rust/onair_hfdl through
+// hfdl_proto_rs.cpp; the C++ of those is kept below under #ifndef DECT2_RUST_HFDL (the frozen reference of the differential test). The PSK maps (libm), the burst and PDU
+// builders for the test signal and the ACARS reader stay here.
 #include "dect2/hfdl/hfdl_proto.h"
 #include "dect2/acars/acars_proto.h"
 #include "dect2/aero/aero_pos.h"
+#include "hfdl_internal.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>
@@ -11,6 +14,7 @@
 namespace dect2 {
 
 namespace {
+#ifndef DECT2_RUST_HFDL
 const HfdlRate kRates[8] = {
     {0, 300, 1, true, false, 72, 17},  {1, 600, 1, false, false, 72, 17},  {2, 1200, 2, false, false, 72, 17},  {3, 1800, 3, false, false, 72, 17},
     {4, 300, 1, true, true, 168, 23},  {5, 600, 1, false, true, 168, 23},  {6, 1200, 2, false, true, 168, 23},  {7, 1800, 3, false, true, 168, 23},
@@ -18,17 +22,21 @@ const HfdlRate kRates[8] = {
 const uint8_t kAOct[16] = {0x5B, 0xBC, 0x74, 0x57, 0x03, 0xD9, 0x89, 0x39, 0xF2, 0x08, 0xD5, 0x36, 0x94, 0x2C, 0x32, 0xFE};
 const char* kMBase = "0111011011110100010110010111110001000000110011011000111001110101110000100110000010101011010010010100111100100011010100001111111";
 const int kMShift[8] = {72, 82, 113, 123, 61, 103, 93, 9};
+#endif
 
 void addLine(std::string& s, const char* fmt, ...) {
     char b[512];
     va_list ap; va_start(ap, fmt); vsnprintf(b, sizeof b, fmt, ap); va_end(ap);
     s += b; s += '\n';
 }
+#ifndef DECT2_RUST_HFDL
 int parity(unsigned v) { return __builtin_popcount(v) & 1; }
+#endif
 } // namespace
 
 const int8_t kHfdlT[kHfdlTLen] = {1, 1, 1, -1, 1, 1, -1, -1, 1, -1, 1, -1, -1, -1, -1};
 
+#ifndef DECT2_RUST_HFDL
 const HfdlRate& hfdlRate(int m1) { return kRates[std::max(0, std::min(7, m1))]; }
 int hfdlBurstSyms(int m1) { return kHfdlPreLen + hfdlRate(m1).blocks * kHfdlBlockLen; }
 int hfdlCodedBits(int m1) { const HfdlRate& r = hfdlRate(m1); return r.blocks * kHfdlDataLen * r.bitsPerSym; }
@@ -138,6 +146,8 @@ std::vector<uint8_t> hfdlViterbi(const std::vector<float>& soft, int n) {
     return o;
 }
 
+#endif // DECT2_RUST_HFDL
+
 namespace {
 // v (first bit sent in bit 0) -> the phase index k of k * 360 / M degrees: the first bit is the most significant bit of the
 // Gray label (liquid-dsp PSK4 / PSK8 as dumphfdl demodulates them: QPSK at 0 / 90 / 180 / 270 degrees, not 45)
@@ -227,6 +237,7 @@ std::vector<uint8_t> hfdlDecodeSoft(int m1, const std::vector<float>& chan) {
     return o;
 }
 
+#ifndef DECT2_RUST_HFDL
 uint16_t hfdlFcs(const uint8_t* p, size_t n) {
     uint16_t c = 0xFFFF;
     for (size_t i = 0; i < n; i++) { c ^= p[i]; for (int b = 0; b < 8; b++) c = (c & 1) ? (uint16_t)((c >> 1) ^ 0x8408) : (uint16_t)(c >> 1); }
@@ -265,6 +276,8 @@ std::vector<int> hfdlMaskKhz(int gsId, uint32_t mask) {
     return o;
 }
 int hfdlStationOnKhz(int khz) { for (const auto& s : hfdlStations()) for (int k : s.khz) if (k == khz) return s.id; return 0; }
+
+#endif // DECT2_RUST_HFDL
 
 // ---------------------------------------------------------------- builders
 
@@ -364,6 +377,7 @@ std::vector<uint8_t> hfdlMpduUp(int gsId, int acId, const std::vector<std::vecto
 
 // ---------------------------------------------------------------- parser
 
+#ifndef DECT2_RUST_HFDL
 namespace {
 
 std::string khzList(const std::vector<int>& k) {
@@ -373,7 +387,11 @@ std::string khzList(const std::vector<int>& k) {
 }
 std::string gsName(int id) { const HfdlStationInfo* s = hfdlStation(id); char b[48]; snprintf(b, sizeof b, "%d %s", id, s ? s->name : "(not in the table)"); return b; }
 
-void readAcars(const uint8_t* p, size_t n, HfdlMessage& m) {
+} // namespace
+#endif
+
+// the ACARS block of an HFNPDU (n octets at p, after the HFNPDU's FF FF) into m: the registration, label, text and any position; appends to m.detail
+void hfdlReadAcars(const uint8_t* p, size_t n, HfdlMessage& m) {
     m.hfnpdu = "ACARS";
     m.acars = true;
     if (n && p[0] == kAcarsSoh) { p++; n--; }
@@ -408,6 +426,9 @@ void readAcars(const uint8_t* p, size_t n, HfdlMessage& m) {
     if (m.hasPos) addLine(m.detail, "  position %.4f %.4f%s (%s)", m.lat, m.lon, m.hasAlt ? (" " + std::to_string(m.altFt) + " ft").c_str() : "", m.posKind.c_str());
 }
 
+#ifndef DECT2_RUST_HFDL
+namespace {
+
 void readPosTime(const uint8_t* h, HfdlMessage& m, const char* what) {
     std::string fl;
     for (int i = 2; i < 8; i++) if (h[i] >= 0x20 && h[i] < 0x7F) fl += (char)h[i];
@@ -428,7 +449,7 @@ void readHfnpdu(const uint8_t* h, size_t n, HfdlMessage& m) {
     if (n < 2 || h[0] != 0xFF) { m.summary = m.kind + " (" + std::to_string(n) + " octets, not an HFNPDU)"; addLine(m.detail, "  %zu octets of user data", n); return; }
     char b[200];
     switch (h[1]) {
-    case 0xFF: readAcars(h + 2, n - 2, m); break;
+    case 0xFF: hfdlReadAcars(h + 2, n - 2, m); break;
     case 0xD1:
         m.hfnpdu = "Performance data";
         if (n < 47) { m.summary = "Performance data (short)"; break; }
@@ -569,5 +590,6 @@ bool hfdlParsePdu(const uint8_t* p, size_t n, std::vector<HfdlMessage>& out) {
     return true;
     (void)good;
 }
+#endif // DECT2_RUST_HFDL
 
 } // namespace dect2
