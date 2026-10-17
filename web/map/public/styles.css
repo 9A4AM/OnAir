@@ -286,3 +286,7 @@ kbd { font: 10.5px/1 var(--mono); padding: 2px 5px; border: 1px solid var(--line
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+.jambar { display: flex; gap: 2px; height: 8px; margin-bottom: 4px; }
+.jambar i { flex: 1; border-radius: 2px; }
+.jamnote { font-size: 11px; color: var(--dim); line-height: 1.35; }

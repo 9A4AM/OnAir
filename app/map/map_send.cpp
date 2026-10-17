@@ -4,6 +4,7 @@
 #include "../app.h"
 #include "../state/receivers.h"
 #include "map_ask.h"
+#include "../rooms/rooms.h"
 #include "../adsb/adsb_acars.h"
 #include "../transcribe/transcribe_app.h"
 #ifndef ONAIR_VERSION
@@ -521,6 +522,7 @@ void attachMsgs(std::vector<Track>& tracks) {
             dect2::AcarsLogEntry e = *it;
             e.text = dect2::acarsRedact(e.text);
             if (e.text.empty()) continue;
+            roomsFeedText(e.text);
             newest = std::max(newest, e.wall);
             t.msgs.push_back(std::move(e));
         }
@@ -684,6 +686,40 @@ void msgsToggle(App& s, bool menu) {
     savePrefs(s);
 }
 
+// "Also share GPS interference cells": per 0.5 degree cell, how many aircraft the ADS-B receiver heard and how many of them reported a degraded
+// GPS position. No aircraft ids, no positions finer than the cell. Its own choice, off until chosen.
+void jamToggle(App& s, bool menu) {
+    bool v = s.mapJam;
+    const char* label = tr("Also share GPS interference cells (counts per area, no aircraft)");
+    bool hit = false;
+    if (menu) hit = ImGui::MenuItem(label, nullptr, v);
+    else hit = ImGui::Checkbox(label, &v) && v != s.mapJam;
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("%s", tr("For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it."));
+    if (!hit) return;
+    s.mapJam = menu ? !s.mapJam : v;
+    savePrefs(s);
+}
+
+// POST /jam every 5 minutes while sending and the option is on (its own thread, apart from the track posts)
+void jamTick(App& s) {
+    static int64_t lastTry = 0;
+    static std::atomic<bool> busy{false};
+    const int64_t now = nowMs();
+    if (!s.mapJam || busy.load() || (lastTry != 0 && now - lastTry < 300000)) return;
+    ensureStation(s);
+    const std::string body = adsbJamBody(s.mapStationId);
+    lastTry = now;
+    if (body.empty()) return;
+    busy = true;
+    const std::string url = originOf(s) + "/jam", ua = std::string("OnAir/") + ONAIR_VERSION + " (map jam)";
+    std::thread([url, body, ua] {
+        const bool ok = plat::postJson(url, body, ua);
+        mapLog("jam %s body=%zu B", ok ? "ok" : "failed", body.size());
+        busy = false;
+    }).detach();   // short-lived, touches only its own copies and the flag
+}
+
 // "Also share transcripts": what the airband voice transcripts say to or about an aircraft, on that aircraft's card. Public radio, but the text may be wrong
 // or name people, so this is its own choice and off until chosen. Only airband; nothing from marine, ham or other private channels.
 void voiceToggle(App& s, bool menu) {
@@ -789,6 +825,7 @@ void startupQuestion(App& a) {
 }
 
 void mapPopups(App& a) {
+    roomsPopups(rootApp(a));
     startupQuestion(a);
     consentPopup(a);
     connectingPopup();
@@ -828,6 +865,9 @@ void mapSendServerMenu(App& a) {
     sendToggle(a, true);
     if (rootApp(a).mapSend) msgsToggle(rootApp(a), true);
     if (rootApp(a).mapSend) voiceToggle(rootApp(a), true);
+    if (rootApp(a).mapSend) jamToggle(rootApp(a), true);
+    ImGui::Separator();
+    roomsMenu(rootApp(a), true);
     ImGui::TextDisabled("%s", tr("The map is at map.on-air.dev"));
     ImGui::EndMenu();
     mapPopups(a);
@@ -840,6 +880,9 @@ void mapSendButton(App& a) {
         sendToggle(a, false);
         if (rootApp(a).mapSend) msgsToggle(rootApp(a), false);
         if (rootApp(a).mapSend) voiceToggle(rootApp(a), false);
+        if (rootApp(a).mapSend) jamToggle(rootApp(a), false);
+        ImGui::Separator();
+        roomsMenu(rootApp(a), false);
         ImGui::TextDisabled("%s", tr("The map is at map.on-air.dev"));
         ImGui::EndPopup();
     }
@@ -899,6 +942,7 @@ void mapSendTick(App& a) {
         return;
     }
     if (gPhase.load(std::memory_order_relaxed) == kOff) gPhase = kConnecting;
+    jamTick(s);
     if (gBusy) return;
     ensureStation(s);
     const int64_t now = nowMs();
@@ -959,6 +1003,7 @@ void mapTransmitEnded() {
 }
 
 void mapSendShutdown() {
+    roomsShutdown();
     std::thread t;
     { std::lock_guard<std::mutex> lk(gThMu); if (gTh.joinable()) t = std::move(gTh); }
     if (t.joinable()) t.join();

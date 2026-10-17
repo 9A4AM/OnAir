@@ -2326,6 +2326,24 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Pourquoi ?
 Identify selected	Identifier la sélection
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Accorde la radio sur le signal sélectionné et dit ce que c'est (le récepteur doit être dans un mode dont le taux d'échantillonnage le couvre)
+Orbit from Doppler	Orbite par effet Doppler
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	Suit la porteuse du satellite suivi pendant un passage et ajuste son orbite à la courbe Doppler. Demande une référence de fréquence stable (un récepteur asservi par GPS ou bien étalonné) ; l'erreur de l'horloge du récepteur est ajustée comme un décalage constant.
+Measure the carrier during tracked passes	Mesurer la porteuse pendant les passages suivis
+gate +-%.0f kHz	fenêtre +-%.0f kHz
+How far from the predicted carrier the peak is looked for	Distance maximale à la porteuse prévue où le pic est cherché
+%d measurements of %s	%d mesures de %s
+Fit orbit	Ajuster l'orbite
+Save refined TLE	Enregistrer le TLE affiné
+saved in %s	enregistré dans %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	Écrit les éléments affinés dans un fichier séparé, marqué comme dérivé de cette mesure ; les TLE téléchargés ne sont pas modifiés
+Use the derived elements for predictions	Utiliser les éléments dérivés pour les prévisions
+no measurements yet	pas encore de mesures
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	gris : prévu par les éléments téléchargés, bleu : affiné, vert : mesuré, ambre : résidu de la courbe affinée
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	résidu %.1f Hz -> %.1f Hz (%d utilisées, %d rejetées) ; décalage du récepteur %+.0f Hz
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	anomalie moyenne %+.3f degrés, mouvement moyen %+.5f tr/jour, inclinaison %+.4f degrés, RAAN %+.4f degrés
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	erreur de temps estimée de la prévision : %.1f s avant, %.1f s après (1 sigma)
+Also share GPS interference cells (counts per area, no aircraft)	Partager aussi les cellules de brouillage GPS (comptes par zone, sans aéronefs)
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	Pour chaque carré de 0,5 degré (environ 55 km) autour de votre récepteur ADS-B : combien d'aéronefs ont été entendus durant la dernière heure et combien ont signalé une mauvaise position GPS. Seuls ces deux nombres par carré sont envoyés, jamais d'identités d'aéronefs, de traces ni votre position. Ils alimentent la couche de brouillage GPS de la carte publique et constituent un indice, pas une preuve de brouillage. Désactivé tant que vous ne le choisissez pas.
 Calibrate...	Étalonner...
 Measure this radio's frequency error against an FM station or a carrier of known frequency	Mesurer l'erreur de fréquence de cette radio avec une station FM ou une porteuse de fréquence connue
 Frequency calibration	Étalonnage en fréquence
@@ -2373,3 +2391,60 @@ azimuth	azimut
 azimuth only; the picture is just a backdrop	azimut seulement ; l'image n'est qu'un fond
 column	colonne
 to (kHz)	à (kHz)
+Translate to English	Traduire en anglais
+Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	La parole dans une autre langue est aussi traduite en anglais, hors ligne, à côté de l'original. Nécessite un modèle multilingue et coûte environ 1,5 fois plus de temps processeur ; ignoré quand le moteur ne suit plus. Rien n'est envoyé. La traduction vers d'autres langues n'est pas disponible.
+The loaded model is English only: translation needs a multilingual model.	Le modèle chargé est uniquement anglais : la traduction nécessite un modèle multilingue.
+Live: stop the room	En direct : arrêter la salle
+Copy room link	Copier le lien de la salle
+Host PIN (to moderate on the room page):	PIN de l'hôte (pour modérer sur la page de la salle) :
+Go live (Live rooms)...	Passer en direct (salles en direct)...
+Could not create the room	Impossible de créer la salle
+Lost the connection to the rooms server	Connexion au serveur de salles perdue
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Salles en direct : tant que vous êtes en direct, toute personne ayant le lien de la salle peut voir la cascade de ce récepteur, le mode et la fréquence réglée, et discuter avec les autres. La liste des salles sur le web affiche aussi son titre. Rien n'est envoyé avant d'appuyer sur Passer en direct, et rien n'est conservé après la fin de la salle. Votre position, votre nom et l'audio ne sont jamais envoyés.
+Room title	Titre de la salle
+Also show decoded ACARS text in the room (public)	Afficher aussi le texte ACARS décodé dans la salle (public)
+Needs Server > Send data to map server and Also share interesting ACARS messages.	Nécessite Serveur > Envoyer les données au serveur de la carte et Partager aussi les messages ACARS intéressants.
+Go live	Passer en direct
+Schedule passes by itself	Planifier les passages automatiquement
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Prend les passages des groupes cochés un par un, par priorité décroissante, et démarre, accorde et enregistre chacun sans vous. Les passages qui se chevauchent sont raccourcis ou ignorés ; un récepteur que vous avez lancé vous-même n'est pas touché.
+Priority (higher wins)	Priorité (la plus haute gagne)
+Keep the SDR free every day	Garder le SDR libre chaque jour
+from %d:00	de %d:00
+to %d:00	à %d:00
+Nothing planned.	Rien de prévu.
+planned	prévu
+trimmed	raccourci
+skipped: SDR reserved	ignoré : SDR réservé
+skipped: too short	ignoré : trop court
+skipped: higher priority	ignoré : priorité supérieure
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Avions détectés par les échos d'un émetteur de radiodiffusion, avec deux voies cohérentes
+Baseline %.1f km, transmitter bearing %.0f degrees	Ligne de base %.1f km, cap de l'émetteur %.0f degrés
+Cancellation taps	Coefficients d'annulation
+Cannot open the recording.	Impossible d'ouvrir l'enregistrement.
+Clutter cancelled by %.0f dB, %d detections	Fouillis annulé de %.0f dB, %d détections
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Complexe float32, voie 0 référence et voie 1 surveillance, synchrones à l'échantillon.
+Doppler Hz	Doppler Hz
+Doppler over time	Doppler au cours du temps
+Echo level (dB)	Niveau de l'écho (dB)
+End of the recording.	Fin de l'enregistrement.
+Enter the illuminator position.	Saisissez la position de l'illuminateur.
+False alarm rate 1e-x	Taux de fausses alarmes 1e-x
+Illuminator	Illuminateur
+NLMS instead of ECA	NLMS au lieu d'ECA
+Noise-like waveform (DVB-T)	Forme d'onde de type bruit (DVB-T)
+Passive radar	Radar passif
+Processing	Traitement
+Range km	Distance km
+Range rate (m/s)	Vitesse de variation de distance (m/s)
+Range-Doppler map	Carte distance-Doppler
+Rate m/s	Vitesse m/s
+Saved illuminators	Illuminateurs enregistrés
+Second target	Seconde cible
+Target range (km)	Distance de la cible (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Les cibles plus proches que le nombre de coefficients, en échantillons de distance, sont masquées par l'annulation.
+The receiver position is the one set for ADS-B.	La position du récepteur est celle réglée pour l'ADS-B.
+Tracks	Pistes
+Two recordings (reference, surveillance)	Deux enregistrements (référence, surveillance)
+Two-channel recording (cf32)	Enregistrement à deux voies (cf32)
+Waiting for data.	En attente de données.

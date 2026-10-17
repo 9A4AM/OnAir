@@ -22,6 +22,7 @@ namespace dect2 {
 
 struct SpeechOptions {
     std::string language = "en";   // "auto" detects (multilingual models only)
+    bool translate = false;        // whisper task "translate": the text comes out in English (multilingual models only)
     std::string prompt;            // biases the words (initial prompt)
     int threads = 2;
 };
@@ -32,6 +33,7 @@ struct SpeechResult {
     float noSpeechProb = 0;        // the engine's own probability that there was no speech
     float avgLogprob = 0;          // mean log probability of the tokens (<= 0)
     float confidence = 0;          // mean probability of the tokens, 0..1
+    std::string lang;              // the language the engine detected or was told ("de"), "" when not known
 };
 
 class SpeechBackend {
@@ -61,6 +63,8 @@ struct TranscribeConfig {
     int threads = 2;               // CPU threads of the speech engine per transmission (the CPU budget)
     size_t queueMax = 6;           // transmissions waiting; the oldest is dropped beyond
     std::string language = "en";
+    bool translate = false;        // also keep an English translation next to the original text (a second pass; ~1.5 x the cost); needs a multilingual model
+    double translateMaxRtf = 0.8;  // performance guard: above this average speed (engine time / audio time) the translation pass is skipped
     std::string extraPrompt;       // added to the built-in prompt of the domain
     FilterConfig filter;
     SegmenterOptions segmenter;
@@ -79,6 +83,7 @@ struct TranscriberStats {
     uint64_t dropped = 0;          // thrown away because the queue was full
     uint64_t done = 0;             // transcribed (text kept or not)
     uint64_t kept = 0, filtered = 0, errors = 0;
+    uint64_t translated = 0, translateSkipped = 0;   // translation passes done / skipped by the performance guard
     size_t queued = 0;
     bool busy = false;
     double lastRtf = 0;            // speech engine time / audio time of the last transmission (below 1 = faster than real time)

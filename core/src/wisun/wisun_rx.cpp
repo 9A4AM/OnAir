@@ -85,16 +85,18 @@ struct WisunReceiver::Impl {
     struct Bin {
         bool used = false;
         double fHz = 0;                   // the bin's centre from the radio's centre
-        float pAvg = 0, floor = 0;
-        bool primed = false, active = false;
+        bool active = false;
         int quiet = 0;
         int64_t start = 0;                // bin sample index of buf[0]
-        cf pre[kLook] = {};
-        int prePos = 0;
+        int64_t zeroUpTo = -1;            // the look-back history counts as zero up to this bin sample (a burst's end clears it)
         std::vector<cf> buf;
         std::vector<int> chans;           // indices into chans
     };
     std::vector<Bin> bins;
+    // The per-sample part of the burst detector runs over all bins as plain arrays (the compiler vectorises it); only a bin that is in a burst or
+    // has just crossed the threshold goes through binSample(). The look-back history of the last kLook bin samples is one ring for all bins.
+    std::vector<float> hPavg, hFloor, hSign, ringR, ringI;
+    std::vector<uint8_t> hAct, hFlag;
 
     struct Chan {
         double mhz = 0;
@@ -235,6 +237,10 @@ struct WisunReceiver::Impl {
         std::sort(allMhz.begin(), allMhz.end());
         allMhz.erase(std::unique(allMhz.begin(), allMhz.end(), [](double x, double y) { return std::fabs(x - y) < 1e-6; }), allMhz.end());
         bins.assign((size_t)M, Bin());
+        hPavg.assign((size_t)M, 0.f); hFloor.assign((size_t)M, 0.f); hSign.assign((size_t)M, 1.f);
+        for (int k = 1; k < M; k += 2) hSign[(size_t)k] = -1.f;
+        ringR.assign((size_t)kLook * (size_t)M, 0.f); ringI.assign((size_t)kLook * (size_t)M, 0.f);
+        hAct.assign((size_t)M, 0); hFlag.assign((size_t)M, 0);
         for (int k = 0; k < M; k++) {
             Bin& b = bins[(size_t)k];
             b.fHz = (k < M / 2 ? k : k - M) * binHz;
@@ -377,36 +383,51 @@ struct WisunReceiver::Impl {
             for (int r = 0; r < M; r++) { u[r] += hh[r] * a[r]; v[r] += hh[r] * b[r]; }
         }
         fftSplit(u, v, log2M, false);
-        const bool odd = frame & 1;
+        const bool odd = frame & 1;   // the hop of M / 2 inputs turns odd bins by pi every output
+        const size_t slot = (size_t)(frame % kLook) * (size_t)M;
+        float* rr = ringR.data() + slot;
+        float* ri = ringI.data() + slot;
+        const float* sg = hSign.data();
+        float* pa = hPavg.data();
+        float* fl = hFloor.data();
+        uint8_t* act = hAct.data();
+        uint8_t* flag = hFlag.data();
+        const bool primedNow = frame > 64, learn = frame > 65;
         for (int k = 0; k < M; k++) {
+            const float sgn = odd ? sg[k] : 1.f;
+            const float yr = u[k] * sgn, yi = v[k] * sgn;
+            rr[k] = yr; ri[k] = yi;
+            const float p = yr * yr + yi * yi;
+            pa[k] += (p - pa[k]) * (1.f / 16);
+            const float f0 = learn ? fl[k] + (pa[k] - fl[k]) * (pa[k] < fl[k] ? (1.f / 512) : (1.f / 65536)) : pa[k];
+            fl[k] = act[k] ? fl[k] : f0;
+            flag[k] = (uint8_t)(act[k] | (primedNow && pa[k] > std::max(fl[k], kFloorMin) * 5.f));
+        }
+        for (int k = 0; k < M; k++) {
+            if (!flag[k]) continue;
             Bin& b = bins[(size_t)k];
-            if (!b.used) continue;
-            cf y(u[k], v[k]);
-            if (odd && (k & 1)) y = -y;   // the hop of M / 2 inputs turns odd bins by pi every output
-            binSample(b, y);
+            if (b.used) binSample(b, k, cf(rr[k], ri[k]));
         }
         frame++;
     }
 
-    void binSample(Bin& b, cf y) {
-        const float p = std::norm(y);
-        b.pAvg += (p - b.pAvg) * (1.f / 16);
-        if (!b.primed) { b.floor = b.pAvg; if (frame > 64) b.primed = true; }
-        if (!b.active) {
-            b.pre[b.prePos] = y; b.prePos = (b.prePos + 1) % kLook;
-            if (b.primed) b.floor += (b.pAvg - b.floor) * (b.pAvg < b.floor ? (1.f / 512) : (1.f / 65536));
-            if (b.primed && b.pAvg > std::max(b.floor, kFloorMin) * 5.f) {
-                b.active = true; b.quiet = 0;
-                b.buf.clear();
-                for (int i = 0; i < kLook; i++) b.buf.push_back(b.pre[(b.prePos + i) % kLook]);
-                b.start = frame - kLook + 1;
+    void binSample(Bin& b, int k, cf y) {
+        if (!b.active) {   // the threshold was crossed on this sample: the burst starts kLook samples back
+            b.active = true; b.quiet = 0; hAct[(size_t)k] = 1;
+            b.buf.clear();
+            for (int i = 0; i < kLook; i++) {
+                const int64_t idx = frame - (kLook - 1) + i;
+                if (idx < 0 || idx <= b.zeroUpTo) { b.buf.push_back(cf(0, 0)); continue; }
+                const size_t at = (size_t)(idx % kLook) * (size_t)M + (size_t)k;
+                b.buf.push_back(cf(ringR[at], ringI[at]));
             }
+            b.start = frame - kLook + 1;
             return;
         }
         b.buf.push_back(y);
-        if (b.pAvg < std::max(b.floor, kFloorMin) * 2.5f) b.quiet++; else b.quiet = 0;
+        if (hPavg[(size_t)k] < std::max(hFloor[(size_t)k], kFloorMin) * 2.5f) b.quiet++; else b.quiet = 0;
         if (b.quiet >= kHang || (double)b.buf.size() > kMaxBurstSec * outRate) {
-            b.active = false;
+            b.active = false; hAct[(size_t)k] = 0;
             tel.bursts++;
             {
                 std::unique_lock<std::mutex> lk(qm);
@@ -422,7 +443,7 @@ struct WisunReceiver::Impl {
                 }
             }
             b.buf.clear();
-            for (cf& s : b.pre) s = 0;
+            b.zeroUpTo = frame;
         }
     }
 
