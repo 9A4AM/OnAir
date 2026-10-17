@@ -867,6 +867,10 @@ if(DECT2_BUILD_TESTS)
   target_link_libraries(test_dji_resampler PRIVATE dect2core)
   add_test(NAME dji_resampler COMMAND test_dji_resampler)
 
+  add_executable(test_iono_dechirp tests/dsp/test_iono_dechirp.cpp)
+  target_link_libraries(test_iono_dechirp PRIVATE dect2core)
+  add_test(NAME iono_dechirp COMMAND test_iono_dechirp)
+
   add_executable(test_isdbt_rx tests/isdbt/test_isdbt_rx.cpp)
   target_link_libraries(test_isdbt_rx PRIVATE dect2core)
   add_test(NAME isdbt_rx COMMAND test_isdbt_rx)
