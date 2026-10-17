@@ -1578,3 +1578,63 @@ testing	tesztelés
 idea	ötlet
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Köszönet mindenkinek, aki javítást küldött, hibát jelentett, felvételt osztott meg, fordított vagy ötletet adott. A szerző Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Szeretnéd, ha módosítanánk vagy törölnénk a neved? Szólj a Discordon, vagy nyiss egy issue-t.
+# direction finder
+Cannot open the recording (interleaved complex float32, one sample of every channel after the other).	A felvétel nem nyitható meg (komplex float32, váltott sorrendű, minden csatorna egy-egy mintája egymás után).
+The recording has a different number of channels than the array.	A felvétel csatornaszáma eltér az antennarendszerétől.
+Choose a source first.	Először válassz forrást.
+No data to calibrate with.	Nincs adat a kalibráláshoz.
+Calibration stored.	A kalibráció elmentve.
+Add this bearing	Ezen irány hozzáadása
+Keeps the current bearing and your position as a line. Move, or take bearings from other stations, add more lines and the position is fixed where they cross.	Eltárolja az aktuális irányt és a pozíciódat egy vonalként. Mozogj, vagy vegyél fel irányokat más állomásokról, adj hozzá több vonalat, és a pozíció ott lesz meghatározva, ahol metszik egymást.
+Clear lines	Vonalak törlése
+Position	Pozíció
+95%% ellipse %.1f x %.1f km, %d of %d lines used	95%%-os ellipszis %.1f x %.1f km, %d/%d vonal felhasználva
+The lines do not cross (parallel, or they meet behind the stations).	A vonalak nem metszik egymást (párhuzamosak, vagy az állomások mögött találkoznak).
+Direction finder	Iránymérő
+Simulator (demo, no hardware)	Szimulátor (demó, hardver nélkül)
+Recording (cf32 / SigMF)	Felvétel (cf32 / SigMF)
+KrakenSDR bearing file (JSON)	KrakenSDR irányfájl (JSON)
+Lock to the tuned frequency	Rögzítés a hangolt frekvenciára
+Run	Fut
+path of the recording	a felvétel elérési útja
+a file the DoA server's JSON lines are saved to	fájl, amelybe a DoA-szerver JSON-sorait mentik
+channels	csatorna
+kS/s	kS/s
+Bearing	Irány
+Confidence	Megbízhatóság
+Sidelobe %.0f dB, coherence %.2f	Mellékcsúcs %.0f dB, koherencia %.2f
+Waiting for a bearing.	Várakozás egy irányra.
+Array and estimator	Antennarendszer és becslő
+Circular (KrakenSDR)	Körkörös (KrakenSDR)
+Linear	Lineáris
+Array	Antennarendszer
+Elements	Elemek
+Spacing (wavelengths)	Távolság (hullámhossz)
+Array orientation	Az antennarendszer tájolása
+Compass offset	Iránytű-eltolás
+Added to every bearing: where the array's own north points relative to true north.	Minden irányhoz hozzáadódik: merre mutat az antennarendszer északja a valódi északhoz képest.
+Interferometer	Interferométer
+Estimator	Becslő
+Sources	Források
+Forward-backward averaging (reflections)	Előre-hátra átlagolás (visszaverődések)
+Calibration	Kalibráció
+1. Feed all channels the same signal: the receiver's noise source (KrakenSDR: switch it on in the DAQ), or a signal from a known bearing. 2. Choose the matching mode and press Calibrate. The offsets between the channels are measured and removed.	1. Adj minden csatornának ugyanazt a jelet: a vevő zajforrását (KrakenSDR: kapcsold be a DAQ-ban) vagy egy ismert irányból érkező jelet. 2. Válaszd a megfelelő módot és nyomd meg a Kalibrálás gombot. A csatornák közti eltéréseket megméri és eltávolítja.
+Common noise source	Közös zajforrás
+Known bearing	Ismert irány
+Bearing of the source	A forrás iránya
+Calibrate	Kalibrálás
+Forget	Elfelejt
+Use calibration	Kalibráció használata
+Not calibrated.	Nincs kalibrálva.
+Simulated channel errors	Szimulált csatornahibák
+Simulator	Szimulátor
+Transmitter bearing	Az adó iránya
+Spin	Forgatás
+SNR per channel	SNR csatornánként
+Second transmitter	Második adó
+Second bearing	Második irány
+Position fix	Pozíciómeghatározás
+Sharing	Megosztás
+Share my bearing on the map server	Irányom megosztása a térképszerverrel
+Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	Szükséges hozzá: Szerver > Adatok küldése a térképszervernek. Csak az irány, bizonytalansága, a frekvencia és az állomásod pozíciója kerül fel; a térkép megmutatja, hol metszik egymást több állomás irányai.
+Bearing and position of a transmitter from an antenna array such as the KrakenSDR	Egy adó iránya és pozíciója antennarendszerrel, például a KrakenSDR-rel

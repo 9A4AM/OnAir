@@ -1575,3 +1575,63 @@ testing	testes
 idea	ideia
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Obrigado a todos que enviaram correções, relataram bugs, compartilharam gravações, traduziram ou sugeriram ideias. O autor é Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Quer que seu nome seja alterado ou removido? Avise-nos no Discord ou abra uma issue.
+# direction finder
+Cannot open the recording (interleaved complex float32, one sample of every channel after the other).	Não foi possível abrir a gravação (float32 complexo intercalado, uma amostra de cada canal em sequência).
+The recording has a different number of channels than the array.	A gravação tem um número de canais diferente do do arranjo.
+Choose a source first.	Escolha primeiro uma fonte.
+No data to calibrate with.	Sem dados para calibrar.
+Calibration stored.	Calibração guardada.
+Add this bearing	Adicionar este rumo
+Keeps the current bearing and your position as a line. Move, or take bearings from other stations, add more lines and the position is fixed where they cross.	Guarda o rumo atual e a sua posição como uma linha. Mova-se ou use rumos de outras estações, adicione mais linhas e a posição é fixada onde se cruzam.
+Clear lines	Limpar linhas
+Position	Posição
+95%% ellipse %.1f x %.1f km, %d of %d lines used	Elipse de 95%% %.1f x %.1f km, %d de %d linhas usadas
+The lines do not cross (parallel, or they meet behind the stations).	As linhas não se cruzam (paralelas, ou encontram-se atrás das estações).
+Direction finder	Radiogoniómetro
+Simulator (demo, no hardware)	Simulador (demo, sem hardware)
+Recording (cf32 / SigMF)	Gravação (cf32 / SigMF)
+KrakenSDR bearing file (JSON)	Ficheiro de rumos KrakenSDR (JSON)
+Lock to the tuned frequency	Fixar na frequência sintonizada
+Run	Ativo
+path of the recording	caminho da gravação
+a file the DoA server's JSON lines are saved to	um ficheiro onde são guardadas as linhas JSON do servidor DoA
+channels	canais
+kS/s	kS/s
+Bearing	Rumo
+Confidence	Confiança
+Sidelobe %.0f dB, coherence %.2f	Lóbulo lateral %.0f dB, coerência %.2f
+Waiting for a bearing.	A aguardar um rumo.
+Array and estimator	Arranjo e estimador
+Circular (KrakenSDR)	Circular (KrakenSDR)
+Linear	Linear
+Array	Arranjo
+Elements	Elementos
+Spacing (wavelengths)	Espaçamento (comprimentos de onda)
+Array orientation	Orientação do arranjo
+Compass offset	Desvio da bússola
+Added to every bearing: where the array's own north points relative to true north.	Somado a cada rumo: para onde aponta o norte do arranjo em relação ao norte verdadeiro.
+Interferometer	Interferómetro
+Estimator	Estimador
+Sources	Fontes
+Forward-backward averaging (reflections)	Média para a frente e para trás (reflexões)
+Calibration	Calibração
+1. Feed all channels the same signal: the receiver's noise source (KrakenSDR: switch it on in the DAQ), or a signal from a known bearing. 2. Choose the matching mode and press Calibrate. The offsets between the channels are measured and removed.	1. Dê o mesmo sinal a todos os canais: a fonte de ruído do recetor (KrakenSDR: ligue-a no DAQ) ou um sinal de um rumo conhecido. 2. Escolha o modo correspondente e prima Calibrar. As diferenças entre os canais são medidas e removidas.
+Common noise source	Fonte de ruído comum
+Known bearing	Rumo conhecido
+Bearing of the source	Rumo da fonte
+Calibrate	Calibrar
+Forget	Esquecer
+Use calibration	Usar calibração
+Not calibrated.	Não calibrado.
+Simulated channel errors	Erros de canal simulados
+Simulator	Simulador
+Transmitter bearing	Rumo do transmissor
+Spin	Rodar
+SNR per channel	SNR por canal
+Second transmitter	Segundo transmissor
+Second bearing	Segundo rumo
+Position fix	Determinação da posição
+Sharing	Partilha
+Share my bearing on the map server	Partilhar o meu rumo no servidor do mapa
+Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	Requer Servidor > Enviar dados para o servidor do mapa. Só sobem o rumo, a sua incerteza, a frequência e a posição da sua estação; o mapa mostra onde se cruzam os rumos de várias estações.
+Bearing and position of a transmitter from an antenna array such as the KrakenSDR	Rumo e posição de um transmissor com um arranjo de antenas como o KrakenSDR

@@ -80,6 +80,7 @@ void parseDevFlags(App& app, int argc, char** argv, DevOpts& o) {
         if (std::string(argv[i]) == "--shotdelay" && i + 1 < argc) o.shotAfter = atof(argv[++i]);
         if (std::string(argv[i]) == "--fmscan") o.fmScanAuto = true;
         if (std::string(argv[i]) == "--passes") app.passesOpen = true;
+        if (std::string(argv[i]) == "--df") app.dfOpen = true;
         if (std::string(argv[i]) == "--images") app.galleryOpen = true;   // dev: open View > Images
         if (std::string(argv[i]) == "--hamlib") app.hamlibAddOpen = true;   // dev: open the Add Hamlib rig window
         if (std::string(argv[i]) == "--map") app.mapOpen = true;   // dev: open View > Map

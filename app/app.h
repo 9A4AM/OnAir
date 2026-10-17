@@ -270,6 +270,7 @@ struct App {
     int creditsTab = 0;         // 0 Contributors, 1 Projects and licences (the tab the Credits window opens on)
     bool creditsOpen = false;   // the Credits window (Help menu, the "by: ..." button)
     bool galleryOpen = false;           // the picture gallery (View > Images)
+    bool dfOpen = false;                // the direction finder window (View > Direction finder; app/df)
     bool passesOpen = false;            // the satellite pass planner window (View > Passes)
     bool sweepOpen = false;             // the sweep scanner window (View > Sweep scanner)
     bool scannerOpen = false;           // the scanner window (View > Scanner, highly experimental)
@@ -668,6 +669,9 @@ std::string mapSendStatusLine();                    // short "connected / N sent
 std::string mapSendDiagnosticsBlock(const App& a);  // map.on-air.dev ingest state + recent log for Copy diagnostics
 void passesDevTle(const std::string& path);       // dev (--tle): TLEs from a file, as if pasted
 std::vector<std::pair<std::string, double>> passesGlobalstarDoppler(double unixSec, double freqHz);   // passes_ui.cpp: Globalstar satellites above the horizon and their Doppler (TLEs from the planner)
+struct DfMapLine { double lat = 0, lon = 0, bearing = 0, sigma = 5, conf = 0, freqHz = 0, ageSec = 0; };
+void dfWindow(App& a);                              // df_ui.cpp: the direction finder window (a.dfOpen), every frame
+bool dfMapLine(const App& a, DfMapLine& out);       // df_ui.cpp: the current bearing as a map line, only when the user chose to share it and it is fresh and confident
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
 void memoryWindow(App& a);                         // memory_ui.cpp: the Memory window (a.memoryOpen), the Ctrl+M key, the scan of the flagged memories, every frame
 void freqdbWindow(App& a);                          // freqdb_ui.cpp: the Frequencies window (a.freqOpen), the Ctrl+Shift+F key, every frame
