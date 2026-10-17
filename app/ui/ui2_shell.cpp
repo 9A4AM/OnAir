@@ -412,7 +412,7 @@ static void menuBarRight(App& a) {
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.08f));
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.62f, 0.68f, 0.75f, 1));
             ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
-            if (ImGui::SmallButton(credit)) a.creditsOpen = true;
+            if (ImGui::SmallButton(credit)) { a.creditsOpen = true; a.creditsTab = 0; }
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(4);
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Thank you to everyone who reported bugs, sent recordings and opened pull requests."));
@@ -450,6 +450,8 @@ float menuBar(App& a) {
         memoryMenu(a);
         mapSendServerMenu(a);
         if (ImGui::BeginMenu(tr("Help"))) {
+            if (ImGui::MenuItem(tr("Credits"))) { a.creditsOpen = true; a.creditsTab = 0; }
+            ImGui::Separator();
             if (ImGui::MenuItem(tr("Setup wizard"))) setupWizardOpen(a);
             if (ImGui::MenuItem(tr("Guided tour"))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
             ImGui::Separator();
@@ -457,7 +459,7 @@ float menuBar(App& a) {
             if (ImGui::MenuItem(tr("Troubleshooting"))) dect2::openUrl("https://on-air.dev/docs/troubleshooting/");
             if (ImGui::MenuItem(tr("Voice codecs (mbelib)"))) dect2::openUrl("https://on-air.dev/docs/codecs/");
             if (ImGui::MenuItem(tr("Website"))) dect2::openUrl("https://on-air.dev/");
-            if (ImGui::MenuItem(tr("Credits and licences"))) a.creditsOpen = true;
+            if (ImGui::MenuItem(tr("Credits and licences"))) { a.creditsOpen = true; a.creditsTab = 1; }
             ImGui::EndMenu();
         }
         menuBarRight(a);
@@ -546,7 +548,7 @@ void modeCombo(App& a, float w) {
             for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g && modeMatches(kModes[i], q)) {
                 ImGui::PushID(i);
                 if (ImGui::Selectable(kModes[i].name, modeSelected(a, kModes[i]))) selectMode(a, kModes[i].family, kModes[i].subId);
-                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", kModes[i].tip);
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s%s", kModes[i].tip, modeCreditsLine(kModes[i].name).c_str());
                 ImGui::PopID();
             }
         }

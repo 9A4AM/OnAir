@@ -1573,3 +1573,19 @@ Copy VLC command	Copy VLC command
 Copy mpv command	Copy mpv command
 Copy ffplay command	Copy ffplay command
 Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).
+# credits and contributors
+Credits	Podziękowania
+Contributors	Współtwórcy
+Projects and licences	Projekty i licencje
+People	Osoby
+By mode	Według trybu
+pull request	pull request
+optimisation	optymalizacja
+fix	poprawka
+bug report	zgłoszenie błędu
+samples	nagrania
+translation	tłumaczenie
+testing	testy
+idea	pomysł
+Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Dziękujemy wszystkim, którzy przysłali poprawki, zgłosili błędy, udostępnili nagrania, tłumaczyli lub podsunęli pomysły. Autorem jest Kristijonas Adomaitis.
+Want your name changed or removed? Tell us on Discord or open an issue.	Chcesz zmienić lub usunąć swoje imię? Napisz do nas na Discordzie albo otwórz zgłoszenie (issue).
