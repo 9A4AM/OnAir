@@ -1598,3 +1598,32 @@ Hides tone-only pages and pages whose text could not be decoded.	Oculta los avis
 %zu tone-only or undecoded pages hidden (Decoded only)	%zu avisos de tono o mensajes sin decodificar ocultos (Solo decodificados)
 %zu tone-only or undecoded pages hidden	%zu avisos de tono o mensajes sin decodificar ocultos
 hidden	ocultos
+# radio clips
+Clip	Clip
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Clip de radio: guarda los últimos momentos (espectrograma, audio, mensajes decodificados) como archivo para compartir. Tecla: C
+Radio clip	Clip de radio
+Last:	Últimos:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Lo que vio el receptor, lo más antiguo a la izquierda. Más brillo es una señal más fuerte. Arrastra para elegir la parte a guardar.
+Include:	Incluir:
+Spectrogram picture	Imagen del espectrograma
+Audio	Audio
+Decoded messages	Mensajes decodificados
+Title	Título
+Your station position is never included.	La posición de tu estación nunca se incluye.
+Could not save:	No se pudo guardar:
+Saved: %s (zip %.1f MB)	Guardado: %s (zip %.1f MB)
+Save clip	Guardar clip
+Nothing to save: no waterfall, audio or decoded rows in this range	Nada que guardar: no hay cascada, audio ni filas decodificadas en este rango
+Saving...	Guardando...
+Copy Discord post text	Copiar texto para Discord
+Copied: paste it into Discord and attach the files	Copiado: pégalo en Discord y adjunta los archivos
+Open folder	Abrir carpeta
+Memory kept for clips	Memoria para clips
+Waterfall history	Historial de la cascada
+%d min	%d min
+%d MB max	máx. %d MB
+Audio history	Historial de audio
+%d s	%d s
+Decoded rows history	Historial de filas decodificadas
+Uses about %.1f MB now	Usa ahora unos %.1f MB
+Decoded rows are kept from the results tables you have open.	Las filas decodificadas se toman de las tablas de resultados que tienes abiertas.

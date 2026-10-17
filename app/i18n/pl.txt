@@ -1598,3 +1598,32 @@ Hides tone-only pages and pages whose text could not be decoded.	Ukrywa wywołan
 %zu tone-only or undecoded pages hidden (Decoded only)	Ukryto %zu wywołań samym tonem lub niezdekodowanych wiadomości (Tylko zdekodowane)
 %zu tone-only or undecoded pages hidden	Ukryto %zu wywołań samym tonem lub niezdekodowanych wiadomości
 hidden	ukryto
+# radio clips
+Clip	Klip
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Klip radiowy: zapisuje ostatnie chwile (spektrogram, dźwięk, zdekodowane wiadomości) jako plik do udostępnienia. Klawisz: C
+Radio clip	Klip radiowy
+Last:	Ostatnie:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	To, co widział odbiornik, najstarsze po lewej. Jaśniej oznacza silniejszy sygnał. Przeciągnij, aby wybrać część do zapisania.
+Include:	Dołącz:
+Spectrogram picture	Obraz spektrogramu
+Audio	Dźwięk
+Decoded messages	Zdekodowane wiadomości
+Title	Tytuł
+Your station position is never included.	Pozycja twojej stacji nigdy nie jest dołączana.
+Could not save:	Nie udało się zapisać:
+Saved: %s (zip %.1f MB)	Zapisano: %s (zip %.1f MB)
+Save clip	Zapisz klip
+Nothing to save: no waterfall, audio or decoded rows in this range	Brak danych do zapisania: w tym zakresie nie ma wodospadu, dźwięku ani zdekodowanych wierszy
+Saving...	Zapisywanie...
+Copy Discord post text	Kopiuj tekst na Discorda
+Copied: paste it into Discord and attach the files	Skopiowano: wklej do Discorda i dołącz pliki
+Open folder	Otwórz folder
+Memory kept for clips	Pamięć na klipy
+Waterfall history	Historia wodospadu
+%d min	%d min
+%d MB max	maks. %d MB
+Audio history	Historia dźwięku
+%d s	%d s
+Decoded rows history	Historia zdekodowanych wierszy
+Uses about %.1f MB now	Obecnie zajmuje około %.1f MB
+Decoded rows are kept from the results tables you have open.	Zdekodowane wiersze są zapamiętywane z otwartych tabel wyników.

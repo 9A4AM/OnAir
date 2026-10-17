@@ -1583,3 +1583,32 @@ Hides tone-only pages and pages whose text could not be decoded.	Elrejti a csak 
 %zu tone-only or undecoded pages hidden (Decoded only)	%zu csak hangjelzéses vagy dekódolatlan üzenet elrejtve (Csak dekódolt)
 %zu tone-only or undecoded pages hidden	%zu csak hangjelzéses vagy dekódolatlan üzenet elrejtve
 hidden	elrejtve
+# radio clips
+Clip	Klip
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Rádióklip: az utolsó pillanatokat (spektrogram, hang, dekódolt üzenetek) menti megosztható fájlként. Billentyű: C
+Radio clip	Rádióklip
+Last:	Utolsó:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Amit a vevő látott, a legrégebbi balra. A világosabb erősebb jel. Húzással jelölheted ki a mentendő részt.
+Include:	Tartalom:
+Spectrogram picture	Spektrogramkép
+Audio	Hang
+Decoded messages	Dekódolt üzenetek
+Title	Cím
+Your station position is never included.	A állomásod helyzete soha nem kerül bele.
+Could not save:	A mentés nem sikerült:
+Saved: %s (zip %.1f MB)	Mentve: %s (zip %.1f MB)
+Save clip	Klip mentése
+Nothing to save: no waterfall, audio or decoded rows in this range	Nincs mit menteni: ebben a tartományban nincs vízesés, hang vagy dekódolt sor
+Saving...	Mentés...
+Copy Discord post text	Discord-szöveg másolása
+Copied: paste it into Discord and attach the files	Másolva: illeszd be a Discordba, és csatold a fájlokat
+Open folder	Mappa megnyitása
+Memory kept for clips	Klipekhez tartott memória
+Waterfall history	Vízesés-előzmények
+%d min	%d perc
+%d MB max	max. %d MB
+Audio history	Hangelőzmények
+%d s	%d mp
+Decoded rows history	Dekódolt sorok előzményei
+Uses about %.1f MB now	Jelenleg kb. %.1f MB-ot használ
+Decoded rows are kept from the results tables you have open.	A dekódolt sorokat a megnyitott eredménytáblákból őrzi meg.

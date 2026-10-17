@@ -1598,3 +1598,32 @@ Hides tone-only pages and pages whose text could not be decoded.	トーンのみ
 %zu tone-only or undecoded pages hidden (Decoded only)	トーンのみまたは未デコードのメッセージを%zu件非表示（デコード済みのみ）
 %zu tone-only or undecoded pages hidden	トーンのみまたは未デコードのメッセージを%zu件非表示
 hidden	非表示
+# radio clips
+Clip	クリップ
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	ラジオクリップ: 直近の様子(スペクトログラム、音声、デコードしたメッセージ)を共有用のファイルとして保存します。キー: C
+Radio clip	ラジオクリップ
+Last:	直近:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	受信機が捉えた内容(左が最も古い)。明るいほど強い信号です。ドラッグして保存する範囲を選びます。
+Include:	含める:
+Spectrogram picture	スペクトログラム画像
+Audio	音声
+Decoded messages	デコードしたメッセージ
+Title	タイトル
+Your station position is never included.	あなたの局の位置情報は含まれません。
+Could not save:	保存できませんでした:
+Saved: %s (zip %.1f MB)	保存しました: %s (zip %.1f MB)
+Save clip	クリップを保存
+Nothing to save: no waterfall, audio or decoded rows in this range	保存するものがありません: この範囲にはウォーターフォール、音声、デコード済みの行がありません
+Saving...	保存中...
+Copy Discord post text	Discord用の文章をコピー
+Copied: paste it into Discord and attach the files	コピーしました: Discordに貼り付けてファイルを添付してください
+Open folder	フォルダーを開く
+Memory kept for clips	クリップ用に保持するメモリ
+Waterfall history	ウォーターフォールの履歴
+%d min	%d 分
+%d MB max	最大 %d MB
+Audio history	音声の履歴
+%d s	%d 秒
+Decoded rows history	デコード済み行の履歴
+Uses about %.1f MB now	現在およそ %.1f MB 使用
+Decoded rows are kept from the results tables you have open.	デコード済みの行は、開いている結果テーブルから保持されます。

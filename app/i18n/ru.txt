@@ -1580,3 +1580,32 @@ Hides tone-only pages and pages whose text could not be decoded.	Скрывае�
 %zu tone-only or undecoded pages hidden (Decoded only)	Скрыто вызовов только тоном или нерасшифрованных сообщений: %zu (Только расшифрованные)
 %zu tone-only or undecoded pages hidden	Скрыто вызовов только тоном или нерасшифрованных сообщений: %zu
 hidden	скрыто
+# radio clips
+Clip	Клип
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Радиоклип: сохраняет последние моменты (спектрограмму, звук, декодированные сообщения) в файл, которым можно поделиться. Клавиша: C
+Radio clip	Радиоклип
+Last:	Последние:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Что видел приёмник, самое старое слева. Ярче значит сильнее сигнал. Перетащите, чтобы выбрать сохраняемую часть.
+Include:	Включить:
+Spectrogram picture	Картинка спектрограммы
+Audio	Звук
+Decoded messages	Декодированные сообщения
+Title	Заголовок
+Your station position is never included.	Положение вашей станции никогда не включается.
+Could not save:	Не удалось сохранить:
+Saved: %s (zip %.1f MB)	Сохранено: %s (zip %.1f МБ)
+Save clip	Сохранить клип
+Nothing to save: no waterfall, audio or decoded rows in this range	Нечего сохранять: в этом диапазоне нет водопада, звука и декодированных строк
+Saving...	Сохранение...
+Copy Discord post text	Копировать текст для Discord
+Copied: paste it into Discord and attach the files	Скопировано: вставьте в Discord и приложите файлы
+Open folder	Открыть папку
+Memory kept for clips	Память для клипов
+Waterfall history	История водопада
+%d min	%d мин
+%d MB max	макс. %d МБ
+Audio history	История звука
+%d s	%d с
+Decoded rows history	История декодированных строк
+Uses about %.1f MB now	Сейчас занимает около %.1f МБ
+Decoded rows are kept from the results tables you have open.	Декодированные строки сохраняются из открытых таблиц результатов.

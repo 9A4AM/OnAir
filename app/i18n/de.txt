@@ -1598,3 +1598,32 @@ Hides tone-only pages and pages whose text could not be decoded.	Blendet reine T
 %zu tone-only or undecoded pages hidden (Decoded only)	%zu reine Tonrufe oder nicht dekodierte Meldungen ausgeblendet (Nur dekodiert)
 %zu tone-only or undecoded pages hidden	%zu reine Tonrufe oder nicht dekodierte Meldungen ausgeblendet
 hidden	ausgeblendet
+# radio clips
+Clip	Clip
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Radio-Clip: speichert die letzten Momente (Spektrogramm, Audio, dekodierte Meldungen) als Datei zum Teilen. Taste: C
+Radio clip	Radio-Clip
+Last:	Letzte:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Was der Empfänger gesehen hat, das Älteste links. Heller ist ein stärkeres Signal. Ziehen, um den zu speichernden Teil zu wählen.
+Include:	Enthalten:
+Spectrogram picture	Spektrogramm-Bild
+Audio	Audio
+Decoded messages	Dekodierte Meldungen
+Title	Titel
+Your station position is never included.	Deine Stationsposition wird nie mitgesendet.
+Could not save:	Speichern fehlgeschlagen:
+Saved: %s (zip %.1f MB)	Gespeichert: %s (Zip %.1f MB)
+Save clip	Clip speichern
+Nothing to save: no waterfall, audio or decoded rows in this range	Nichts zu speichern: In diesem Bereich gibt es kein Wasserfall-Bild, kein Audio und keine dekodierten Zeilen
+Saving...	Speichere ...
+Copy Discord post text	Discord-Text kopieren
+Copied: paste it into Discord and attach the files	Kopiert: In Discord einfügen und die Dateien anhängen
+Open folder	Ordner öffnen
+Memory kept for clips	Speicher für Clips
+Waterfall history	Wasserfall-Verlauf
+%d min	%d Min.
+%d MB max	max. %d MB
+Audio history	Audio-Verlauf
+%d s	%d s
+Decoded rows history	Verlauf dekodierter Zeilen
+Uses about %.1f MB now	Belegt jetzt etwa %.1f MB
+Decoded rows are kept from the results tables you have open.	Dekodierte Zeilen werden aus den Ergebnistabellen übernommen, die du geöffnet hast.
