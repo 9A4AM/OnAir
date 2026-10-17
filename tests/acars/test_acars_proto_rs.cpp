@@ -1,26 +1,23 @@
-// Differential test: the C++ ACARS block layer (a generated copy in dect2_acars_ref, see cmake/gen_rs_ref.cmake) against the Rust one (dect2 when
-// DECT2_RUST is used). The same inputs go to both and every result has to be identical: frames built by the transmitter, damaged frames
-// (flipped bits, truncation, random bytes), every label, texts of the Q labels and the media advisory, and ONAIR_DIFF_ITERS (default 200000)
-// seeded random inputs per function family.
+// Golden-vector test of the Rust ACARS block layer (rust/onair_acars): frames built by the transmitter, damaged frames (flipped bits, truncation,
+// random bytes), every label, texts of the Q labels and the media advisory, and ONAIR_DIFF_ITERS (default 200000) seeded random inputs per function
+// family. Every result goes into a digest (tests/common/golden.h) that is compared with the one recorded from the C++ block layer the Rust code replaced.
 #include "dect2/acars/acars_proto.h"
-#include "acars_proto_ref.h"
+#include "../common/golden.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <random>
 namespace A = dect2;
-namespace R = dect2_acars_ref;
 
-static long fails = 0, checks = 0, repairedOk = 0, repairedFixed = 0, parsedOk = 0, decodedNonEmpty = 0;
-#define SAME(c, ...) do { checks++; if (!(c)) { if (fails++ < 20) { printf("MISMATCH: " __VA_ARGS__); printf("\n"); } } } while (0)
+static long repairedOk = 0, repairedFixed = 0, parsedOk = 0, decodedNonEmpty = 0;
+static golden::Digest dig;
 
 static std::mt19937 g(4242);
 static std::string rnd(const char* alphabet, size_t n) { std::string s; for (size_t i = 0; i < n; i++) s += alphabet[g() % strlen(alphabet)]; return s; }
 
-static bool msgEq(const A::AcarsMessage& a, const A::AcarsMessage& b) {
-    return a.mode == b.mode && a.reg == b.reg && a.ack == b.ack && a.label == b.label && a.labelText == b.labelText && a.blockId == b.blockId &&
-           a.downlink == b.downlink && a.finalBlock == b.finalBlock && a.msgNum == b.msgNum && a.msgSeq == b.msgSeq && a.flightId == b.flightId &&
-           a.sublabel == b.sublabel && a.mfi == b.mfi && a.text == b.text && a.decoded == b.decoded;
+static void addMsg(const A::AcarsMessage& a) {
+    dig.add(a.mode, a.reg, a.ack, a.label, a.labelText, a.blockId, a.downlink, a.finalBlock, a.msgNum, a.msgSeq, a.flightId);
+    dig.add(a.sublabel, a.mfi, a.text, a.decoded);
 }
 
 // a block as transmitted: txt (after SOH, with parity, up to and including the suffix) and the two check bytes
@@ -66,25 +63,24 @@ static void damage(Block& b) {
     if (g() % 12 == 0) b.txt.insert(b.txt.begin() + (long)(g() % (b.txt.size() + 1)), (uint8_t)g());
 }
 
-static void compareRepair(const Block& b, int maxPar) {
-    std::vector<uint8_t> t1 = b.txt, t2 = b.txt;
-    int f1 = -7, p1 = -7, f2 = -9, p2 = -9;
+static void checkRepair(const Block& b, int maxPar) {
+    std::vector<uint8_t> t1 = b.txt;
+    int f1 = -7, p1 = -7;
     const bool r1 = A::acarsRepairBlock(t1.data(), (int)t1.size(), b.crc, f1, p1, maxPar);
-    const bool r2 = R::acarsRepairBlock(t2.data(), (int)t2.size(), b.crc, f2, p2, maxPar);
     repairedOk += r1; repairedFixed += f1 > 0;
-    SAME(r1 == r2 && f1 == f2 && p1 == p2 && t1 == t2, "repairBlock len %zu max %d: ok %d/%d fixed %d/%d parity %d/%d", b.txt.size(), maxPar, r1, r2, f1, f2, p1, p2);
+    dig.add(r1, f1, p1, t1);
 }
 
 static void stripParity(std::vector<uint8_t>& v) { for (auto& c : v) c &= 0x7f; }
 
-static void compareParse(const std::vector<uint8_t>& t) {
+static void checkParse(const std::vector<uint8_t>& t) {
     for (int pre = 0; pre < 2; pre++) {
-        A::AcarsMessage a, b;
-        if (pre) { a.sublabel = b.sublabel = "ZZ"; a.mfi = b.mfi = "YY"; a.decoded = b.decoded = "old"; a.text = b.text = "old text"; a.msgNum = b.msgNum = "OLD"; }
+        A::AcarsMessage a;
+        if (pre) { a.sublabel = "ZZ"; a.mfi = "YY"; a.decoded = "old"; a.text = "old text"; a.msgNum = "OLD"; }
         const bool r1 = A::acarsParseBlock(t.data(), (int)t.size(), a);
-        const bool r2 = R::acarsParseBlock(t.data(), (int)t.size(), b);
         parsedOk += r1; decodedNonEmpty += !a.decoded.empty();
-        SAME(r1 == r2 && msgEq(a, b), "parseBlock len %zu pre %d: %d/%d text '%s' / '%s'", t.size(), pre, r1, r2, a.text.c_str(), b.text.c_str());
+        dig.add(r1);
+        addMsg(a);
     }
 }
 
@@ -94,32 +90,32 @@ int main() {
 
     // labels: every pair of printable characters
     for (int a = 0; a < 256; a++) for (int b = 0; b < 256; b++)
-        SAME(!strcmp(A::acarsLabelText((char)a, (char)b), R::acarsLabelText((char)a, (char)b)), "labelText %d %d", a, b);
+        dig.add(A::acarsLabelText((char)a, (char)b));
     // syndromes and the check sequence
-    for (int e = -2; e < 300; e++) for (int bit = -1; bit < 10; bit++) SAME(A::acarsSyndrome(e, bit) == R::acarsSyndrome(e, bit), "syndrome %d %d", e, bit);
-    for (int c = 0; c < 65536; c += 7) for (int b = 0; b < 256; b += 5) SAME(A::acarsCrcUpdate((uint16_t)c, (uint8_t)b) == R::acarsCrcUpdate((uint16_t)c, (uint8_t)b), "crcUpdate");
+    for (int e = -2; e < 300; e++) for (int bit = -1; bit < 10; bit++) dig.add(A::acarsSyndrome(e, bit));
+    for (int c = 0; c < 65536; c += 7) for (int b = 0; b < 256; b += 5) dig.add(A::acarsCrcUpdate((uint16_t)c, (uint8_t)b));
     for (long i = 0; i < iters; i++) {
         std::vector<uint8_t> v(g() % 300);
         for (auto& c : v) c = (uint8_t)g();
         const uint16_t start = (uint16_t)g();
-        SAME(A::acarsCrc(v.data(), v.size(), start) == R::acarsCrc(v.data(), v.size(), start), "crc len %zu", v.size());
+        dig.add(A::acarsCrc(v.data(), v.size(), start));
     }
 
     // repair: transmitted blocks, damaged ones, random bytes
     for (long i = 0; i < iters; i++) {
         Block b = randomBlock();
-        compareRepair(b, 3);
+        checkRepair(b, 3);
         Block d = b;
         damage(d);
-        compareRepair(d, (int)(g() % 6));
-        compareRepair(d, 3);
+        checkRepair(d, (int)(g() % 6));
+        checkRepair(d, 3);
     }
     for (long i = 0; i < iters / 20; i++) {
         Block r;
         r.txt.resize(g() % 275);
         for (auto& c : r.txt) c = (uint8_t)g();
         r.crc[0] = (uint8_t)g(); r.crc[1] = (uint8_t)g();
-        compareRepair(r, 3);
+        checkRepair(r, 3);
     }
 
     // parsing: transmitted blocks (parity removed), damaged ones, random bytes
@@ -127,26 +123,26 @@ int main() {
         Block b = randomBlock();
         std::vector<uint8_t> t = b.txt;
         stripParity(t);
-        compareParse(t);
+        checkParse(t);
         Block d = b;
         damage(d);
         t = d.txt;
         stripParity(t);
-        compareParse(t);
+        checkParse(t);
     }
     for (long i = 0; i < iters; i++) {
         std::vector<uint8_t> t(g() % 60);
         for (auto& c : t) c = (uint8_t)(g() % 3 ? 0x20 + g() % 95 : g() & 0x7f);
         if (!t.empty() && g() % 2) t.back() = g() % 2 ? 0x03 : 0x17;
         if (t.size() > 13 && g() % 2) t[12] = 0x02;
-        compareParse(t);
+        checkParse(t);
     }
     for (long i = 0; i < iters / 20; i++) {   // the longest blocks
         Block b = randomBlock();
         std::vector<uint8_t> t = b.txt;
         stripParity(t);
         t.insert(t.end() - 1, (size_t)(g() % 300), (uint8_t)('A' + g() % 26));
-        compareParse(t);
+        checkParse(t);
     }
 
     // decoded text: every Q label with good and damaged texts, the media advisory, other labels
@@ -164,13 +160,14 @@ int main() {
             if (g() % 3 == 0) text.resize(g() % (text.size() + 1));
             if (g() % 3 == 0 && !text.empty()) text[g() % text.size()] = (char)(g() & 0x7f);
         }
-        SAME(A::acarsDecodeText(label, text) == R::acarsDecodeText(label, text), "decodeText '%s' '%s'", label.c_str(), text.c_str());
+        dig.add(A::acarsDecodeText(label, text));
     }
     for (int k = 0; k < 400; k++) {   // long media advisories (many links)
         std::string text = "0LV123456" + rnd("VSHGC2XI", (size_t)k) + "/x";
-        SAME(A::acarsDecodeText("SA", text) == R::acarsDecodeText("SA", text), "decodeText SA long %d", k);
+        dig.add(A::acarsDecodeText("SA", text));
     }
 
-    printf("acars_proto_rs: %ld checks, %ld mismatches (coverage: %ld repairs ok, %ld with flipped bits, %ld parses ok, %ld with a decoded reading)\n", checks, fails, repairedOk, repairedFixed, parsedOk, decodedNonEmpty);
-    return fails ? 1 : 0;
+    printf("acars_proto_rs: coverage: %ld repairs ok, %ld with flipped bits, %ld parses ok, %ld with a decoded reading\n", repairedOk, repairedFixed, parsedOk, decodedNonEmpty);
+    if (!repairedFixed || !parsedOk || !decodedNonEmpty) { printf("the inputs no longer reach the interesting paths\n"); return 1; }
+    return golden::check("acars_proto_rs", dig, 0xebcd9c2b4eed071cull, !it);
 }

@@ -1,6 +1,5 @@
-// The ACARS block layer on top of the Rust crate rust/onair_acars (DECT2_RUST_ACARS): the same functions as acars_proto.cpp, which keeps
-// acarsBuildFrame (the transmitter of the test signal). Empty when the crate is not built.
-#ifdef DECT2_RUST_ACARS
+// The ACARS block layer on top of the Rust crate rust/onair_acars: the functions of acars_proto.h; acars_proto.cpp keeps
+// acarsBuildFrame (the transmitter of the test signal).
 #include "dect2/acars/acars_proto.h"
 #include "dect2/rs/acars.h"
 #include <cstdio>
@@ -67,4 +66,3 @@ bool acarsParseBlock(const uint8_t* t, int len, AcarsMessage& m) {
 }
 
 } // namespace dect2
-#endif

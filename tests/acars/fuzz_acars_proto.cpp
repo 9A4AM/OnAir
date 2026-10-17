@@ -1,4 +1,4 @@
-// Seeded mutation run of the ACARS block layer (the Rust one under DECT2_RUST_ACARS), meant for DECT2_SANITIZE=ON: repair and parse must never crash
+// Seeded mutation run of the ACARS block layer, meant for DECT2_SANITIZE=ON: repair and parse must never crash
 // or hang on any bytes. Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/acars/acars_proto.h"
 #include <cstdio>
