@@ -1785,3 +1785,72 @@ full	満員
 Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	このレシーバーをネットワークラジオに追加します（ラジオとして選ぶまで接続しません）。
 The downloaded list has no receivers OnAir can read.	ダウンロードしたリストに OnAir が読めるレシーバーがありません。
 Could not download the list. Check the internet connection.	リストをダウンロードできませんでした。インターネット接続を確認してください。
+# live transcripts (docs/TRANSCRIBE.md)
+Transcribing speech: %s	音声を文字起こし中: %s
+Voice (radio calls)	音声（無線交信）
+No radio call with this aircraft's callsign heard yet	この機体のコールサインでの交信はまだ聞こえていません
+Live transcription is off (View > Transcripts). Airband calls would be listed here by callsign.	ライブ文字起こしはオフです（表示 > 文字起こし）。航空無線の交信はここにコールサイン別に並びます。
+Live captions: loading the speech model ...	ライブ字幕: 音声モデルを読み込み中 ...
+Live captions: off.	ライブ字幕: オフ。
+Set up transcripts	文字起こしの設定
+Turns what is said on the airband channels into text as it is heard. It needs a speech model that you download or put in the models folder.	航空無線チャンネルで話された内容を、聞こえたそばから文字にします。ダウンロードするか、モデルフォルダーに置いた音声モデルが必要です。
+Live captions	ライブ字幕
+working ...	処理中 ...
+listening ...	待機中 ...
+Transcripts	文字起こし
+Airband is off in the transcript settings	文字起こし設定で航空無線がオフです
+Nothing heard yet.	まだ何も聞こえていません。
+Cannot write %s	書き込めません: %s
+Saved %s	保存しました: %s
+Privacy: what is said on public aviation radio is public, but the speech engine runs here on your computer and the text is kept in your data folder. Do not use it on private conversations: marine, amateur, CB and every other mode are off until you choose them, and a visible line shows whenever transcription is on.	プライバシー: 公開の航空無線で話された内容は公開情報ですが、音声認識はこのコンピューター上で動き、テキストはデータフォルダーに保存されます。私的な会話には使わないでください。海上、アマチュア、CB などその他のモードは、選ぶまでオフで、文字起こし中は常に表示が出ます。
+Transcribe speech	音声を文字起こしする
+Master switch. While a transmission is going on the audio is cut out, sent to the speech engine and turned into text. Nothing runs while the channels are quiet.	マスタースイッチ。送信中の音声を切り出して音声認識に渡し、テキストにします。チャンネルが静かな間は何も動きません。
+Airband channels	航空無線チャンネル
+Marine VHF	海上VHF
+Any other mode that plays sound (amateur, CB, FM ...)	音を出すその他のモード（アマチュア、CB、FM ...）
+Takes the sound you hear. Music and private conversations are not meant for this: leave it off unless you need it.	聞こえている音を取り込みます。音楽や私的な会話向けではありません。必要がなければオフのままにしてください。
+Speech model	音声モデル
+none	なし
+Open models folder	モデルフォルダーを開く
+Put a whisper.cpp model file (ggml-*.bin) here to use it. The folder is made if it does not exist.	whisper.cpp のモデルファイル（ggml-*.bin）をここに置くと使えます。フォルダーがなければ作成されます。
+No speech model yet. Download one below, or put a model file in the models folder.	音声モデルがまだありません。下からダウンロードするか、モデルファイルをモデルフォルダーに置いてください。
+Loading the speech model ...	音声モデルを読み込み中 ...
+Speech model loaded.	音声モデルを読み込みました。
+This build has no speech engine.	このビルドには音声認識エンジンがありません。
+checking	確認中
+Download speech model:	音声モデルをダウンロード:
+%s %d MB	%s %d MB
+Already downloaded	ダウンロード済み
+English only. tiny is the fastest (real time on a laptop), small hears more words and needs a stronger computer.	英語のみ。tiny が最速（ノートPCでリアルタイム）、small は聞き取れる語が多く、より高性能なコンピューターが必要です。
+Other languages (multilingual models)	その他の言語（多言語モデル）
+The loaded model is English only: other languages need a multilingual model (tiny, base or small without .en).	読み込み済みのモデルは英語専用です。他の言語には多言語モデル（.en なしの tiny、base、small）が必要です。
+CPU threads	CPU スレッド数
+How many processor threads the speech engine may use for one transmission. Fewer threads use less battery and take longer.	1回の送信に音声認識が使えるプロセッサのスレッド数。少ないほど電力を節約しますが、時間がかかります。
+Keep transcripts (days)	文字起こしの保存期間（日）
+Heard %llu, kept %llu, left out %llu (silence, noise, repeats), skipped %llu (too slow), speed %.2f x real time	検出 %llu、採用 %llu、除外 %llu（無音、ノイズ、繰り返し）、スキップ %llu（処理が遅い）、速度 %.2f x リアルタイム
+Download the speech model %s (%d MB)?	音声モデル %s（%d MB）をダウンロードしますか？
+OnAir asks the model repository (huggingface.co) for this one file and sends nothing else. The file is checked against a fixed SHA-256 checksum and thrown away if it does not match. The model is MIT licensed.	OnAir はモデルのリポジトリ（huggingface.co）にこの1ファイルだけを要求し、ほかには何も送りません。ファイルは固定の SHA-256 チェックサムで検証され、一致しなければ破棄されます。モデルは MIT ライセンスです。
+Download	ダウンロード
+Delete all saved transcripts? This cannot be undone.	保存したすべての文字起こしを削除しますか？ 元に戻せません。
+Delete all	すべて削除
+Transcription is off.	文字起こしはオフです。
+Hide settings	設定を隠す
+Settings and speech model	設定と音声モデル
+Search the text ...	テキストを検索 ...
+All frequencies	すべての周波数
+A callsign (DLH123), a registration (N123AB) or an ICAO address (3C6444)	コールサイン（DLH123）、登録記号（N123AB）、または ICAO アドレス（3C6444）
+Airport	空港
+An airport code or name found in the channel name or the text (EYVI, Tower)	チャンネル名またはテキストに含まれる空港コードまたは名前（EYVI、Tower）
+%zu of %zu	%zu / %zu
+Copy all shown	表示中をすべてコピー
+Export %s	%s を書き出す
+Delete all ...	すべて削除 ...
+Time (UTC)	時刻 (UTC)
+Sure	確度
+Speaker (a guess from the wording)	話者（言葉からの推測）
+Click to copy this line	クリックでこの行をコピー
+Aircraft on the screen	画面上の機体
+Also share transcripts of aircraft radio calls (text becomes public on the map)	航空機の無線交信の文字起こしも共有する（テキストは地図上で公開されます）
+The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	受信した内容からこのコンピューター上の音声認識が作った航空無線の交信テキスト（文字起こしウィンドウ）を、話されたコールサインで機体に結び付け、地図上のその機体のカードに48時間公開します。誤りを含むことがあります。電話番号は先に取り除かれます。共有するのは航空無線のみで、海上、アマチュア、その他のチャンネルは共有しません。選ぶまでオフで、いつでもオフにできます。
+Transcripts ...	文字起こし ...
+What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	航空無線やその他の音声チャンネルで話された内容をテキストで: ライブ字幕、検索、書き出し。オンにするまでオフです。

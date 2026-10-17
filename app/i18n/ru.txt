@@ -1768,3 +1768,72 @@ full	занят
 Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Добавляет этот приёмник в сетевые радио (он не подключается, пока вы не выберете его как радио).
 The downloaded list has no receivers OnAir can read.	В скачанном списке нет приёмников, которые OnAir может прочитать.
 Could not download the list. Check the internet connection.	Не удалось скачать список. Проверьте подключение к интернету.
+# live transcripts (docs/TRANSCRIBE.md)
+Transcribing speech: %s	Расшифровка речи: %s
+Voice (radio calls)	Голос (радиообмен)
+No radio call with this aircraft's callsign heard yet	Радиообмена с позывным этого воздушного судна пока не слышно
+Live transcription is off (View > Transcripts). Airband calls would be listed here by callsign.	Живая расшифровка выключена (Вид > Расшифровки). Вызовы авиадиапазона были бы перечислены здесь по позывному.
+Live captions: loading the speech model ...	Живые субтитры: загрузка речевой модели ...
+Live captions: off.	Живые субтитры: выключены.
+Set up transcripts	Настроить расшифровки
+Turns what is said on the airband channels into text as it is heard. It needs a speech model that you download or put in the models folder.	Превращает сказанное на каналах авиадиапазона в текст по мере приёма. Нужна речевая модель, которую вы скачиваете или кладёте в папку моделей.
+Live captions	Живые субтитры
+working ...	работает ...
+listening ...	слушает ...
+Transcripts	Расшифровки
+Airband is off in the transcript settings	Авиадиапазон выключен в настройках расшифровки
+Nothing heard yet.	Пока ничего не слышно.
+Cannot write %s	Не удаётся записать: %s
+Saved %s	Сохранено: %s
+Privacy: what is said on public aviation radio is public, but the speech engine runs here on your computer and the text is kept in your data folder. Do not use it on private conversations: marine, amateur, CB and every other mode are off until you choose them, and a visible line shows whenever transcription is on.	Конфиденциальность: то, что говорят в открытом авиационном радиообмене, общедоступно, но речевой движок работает здесь, на вашем компьютере, а текст хранится в вашей папке данных. Не используйте для личных разговоров: морской, любительский, CB и все остальные режимы выключены, пока вы их не выберете, а заметная строка показывает, когда расшифровка включена.
+Transcribe speech	Расшифровывать речь
+Master switch. While a transmission is going on the audio is cut out, sent to the speech engine and turned into text. Nothing runs while the channels are quiet.	Главный выключатель. Во время передачи звук вырезается, отправляется речевому движку и превращается в текст. Пока каналы молчат, ничего не работает.
+Airband channels	Каналы авиадиапазона
+Marine VHF	Морской УКВ
+Any other mode that plays sound (amateur, CB, FM ...)	Любой другой режим со звуком (любительский, CB, FM ...)
+Takes the sound you hear. Music and private conversations are not meant for this: leave it off unless you need it.	Берёт звук, который вы слышите. Музыка и личные разговоры для этого не предназначены: оставьте выключенным, если не нужно.
+Speech model	Речевая модель
+none	нет
+Open models folder	Открыть папку моделей
+Put a whisper.cpp model file (ggml-*.bin) here to use it. The folder is made if it does not exist.	Положите сюда файл модели whisper.cpp (ggml-*.bin), чтобы использовать его. Папка создаётся, если её нет.
+No speech model yet. Download one below, or put a model file in the models folder.	Речевой модели пока нет. Скачайте её ниже или положите файл модели в папку моделей.
+Loading the speech model ...	Загрузка речевой модели ...
+Speech model loaded.	Речевая модель загружена.
+This build has no speech engine.	В этой сборке нет речевого движка.
+checking	проверка
+Download speech model:	Скачать речевую модель:
+%s %d MB	%s %d МБ
+Already downloaded	Уже скачано
+English only. tiny is the fastest (real time on a laptop), small hears more words and needs a stronger computer.	Только английский. tiny — самая быстрая (в реальном времени на ноутбуке), small слышит больше слов, но требует более мощного компьютера.
+Other languages (multilingual models)	Другие языки (многоязычные модели)
+The loaded model is English only: other languages need a multilingual model (tiny, base or small without .en).	Загруженная модель только английская: для других языков нужна многоязычная модель (tiny, base или small без .en).
+CPU threads	Потоки процессора
+How many processor threads the speech engine may use for one transmission. Fewer threads use less battery and take longer.	Сколько потоков процессора речевой движок может использовать для одной передачи. Меньше потоков — меньше расход батареи, но дольше.
+Keep transcripts (days)	Хранить расшифровки (дней)
+Heard %llu, kept %llu, left out %llu (silence, noise, repeats), skipped %llu (too slow), speed %.2f x real time	Услышано %llu, сохранено %llu, отброшено %llu (тишина, шум, повторы), пропущено %llu (слишком медленно), скорость %.2f x реального времени
+Download the speech model %s (%d MB)?	Скачать речевую модель %s (%d МБ)?
+OnAir asks the model repository (huggingface.co) for this one file and sends nothing else. The file is checked against a fixed SHA-256 checksum and thrown away if it does not match. The model is MIT licensed.	OnAir запрашивает у репозитория моделей (huggingface.co) только этот файл и больше ничего не отправляет. Файл проверяется по фиксированной контрольной сумме SHA-256 и удаляется, если она не совпала. Модель имеет лицензию MIT.
+Download	Скачать
+Delete all saved transcripts? This cannot be undone.	Удалить все сохранённые расшифровки? Это нельзя отменить.
+Delete all	Удалить всё
+Transcription is off.	Расшифровка выключена.
+Hide settings	Скрыть настройки
+Settings and speech model	Настройки и речевая модель
+Search the text ...	Поиск по тексту ...
+All frequencies	Все частоты
+A callsign (DLH123), a registration (N123AB) or an ICAO address (3C6444)	Позывной (DLH123), регистрационный номер (N123AB) или адрес ICAO (3C6444)
+Airport	Аэропорт
+An airport code or name found in the channel name or the text (EYVI, Tower)	Код или название аэропорта в названии канала или в тексте (EYVI, Tower)
+%zu of %zu	%zu из %zu
+Copy all shown	Копировать всё показанное
+Export %s	Экспорт %s
+Delete all ...	Удалить всё ...
+Time (UTC)	Время (UTC)
+Sure	Уверенность
+Speaker (a guess from the wording)	Говорящий (догадка по словам)
+Click to copy this line	Нажмите, чтобы скопировать эту строку
+Aircraft on the screen	Воздушное судно на экране
+Also share transcripts of aircraft radio calls (text becomes public on the map)	Также делиться расшифровками радиообмена воздушных судов (текст станет общедоступным на карте)
+The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	Текст радиообмена авиадиапазона, который речевой движок на этом компьютере получил из принятого вами сигнала (окно Расшифровки), привязанный к воздушному судну по произнесённому позывному и показываемый публично на карточке этого судна на карте 48 часов. Возможны ошибки. Номера телефонов предварительно удаляются. Передаётся только авиадиапазон, никогда морской, любительский и другие каналы. Выключено, пока вы не выберете, и это можно отключить в любой момент.
+Transcripts ...	Расшифровки ...
+What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	Что говорят в авиадиапазоне и на других голосовых каналах, в виде текста: живые субтитры, поиск, экспорт. Выключено, пока вы не включите.

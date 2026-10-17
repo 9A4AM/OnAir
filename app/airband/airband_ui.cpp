@@ -1,6 +1,7 @@
 // Airband screens: the channel list with live levels and squelch, adding and editing channels (validated to the 25 / 8.33 kHz raster),
 // scan, squelch and hang, the activity log, and the band spectrum with a marker for every channel.
 #include "app.h"
+#include "transcribe/transcribe_app.h"
 #include "ui/ui_common.h"
 #include "gfx/plot.h"
 #include "dect2/airband/airband_gen.h"
@@ -301,6 +302,7 @@ void tick(App& a) {
 void tab(App& a) {
     load();
     subNav("airv", S.view, {"Channels", "Activity", "Spectrum"});
+    tx::captions(a);
     if (S.view == 0) channelView(a); else if (S.view == 1) activityView(a); else spectrumView(a);
 }
 

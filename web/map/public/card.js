@@ -101,7 +101,7 @@ export function createCard(host, api) {
         <dl class="rows" data-f="rows"></dl>
         <p class="c-extra" data-f="extra" hidden></p>
         <section class="c-msgs" data-f="msgsBox" hidden>
-          <h3>ACARS messages <span class="c-msgs-n" data-f="msgsN"></span></h3>
+          <h3>ACARS and radio messages <span class="c-msgs-n" data-f="msgsN"></span></h3>
           <ol class="c-msgs-list" data-f="msgs"></ol>
         </section>
       </div>

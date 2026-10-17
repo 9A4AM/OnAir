@@ -1768,3 +1768,72 @@ full	pieno
 Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Aggiunge questo ricevitore alle radio di rete (non si collega finché non lo scegli come radio).
 The downloaded list has no receivers OnAir can read.	L'elenco scaricato non contiene ricevitori che OnAir sappia leggere.
 Could not download the list. Check the internet connection.	Impossibile scaricare l'elenco. Controlla la connessione a internet.
+# live transcripts (docs/TRANSCRIBE.md)
+Transcribing speech: %s	Trascrizione della voce: %s
+Voice (radio calls)	Voce (chiamate radio)
+No radio call with this aircraft's callsign heard yet	Nessuna chiamata con il nominativo di questo aeromobile ancora ascoltata
+Live transcription is off (View > Transcripts). Airband calls would be listed here by callsign.	La trascrizione dal vivo è disattivata (Visualizza > Trascrizioni). Le chiamate della banda aeronautica sarebbero elencate qui per nominativo.
+Live captions: loading the speech model ...	Sottotitoli dal vivo: caricamento del modello vocale ...
+Live captions: off.	Sottotitoli dal vivo: disattivati.
+Set up transcripts	Configura le trascrizioni
+Turns what is said on the airband channels into text as it is heard. It needs a speech model that you download or put in the models folder.	Trasforma in testo ciò che viene detto sui canali della banda aeronautica mentre lo si ascolta. Serve un modello vocale che scarichi o metti nella cartella dei modelli.
+Live captions	Sottotitoli dal vivo
+working ...	elaborazione ...
+listening ...	in ascolto ...
+Transcripts	Trascrizioni
+Airband is off in the transcript settings	La banda aeronautica è disattivata nelle impostazioni di trascrizione
+Nothing heard yet.	Ancora nulla di ascoltato.
+Cannot write %s	Impossibile scrivere %s
+Saved %s	Salvato %s
+Privacy: what is said on public aviation radio is public, but the speech engine runs here on your computer and the text is kept in your data folder. Do not use it on private conversations: marine, amateur, CB and every other mode are off until you choose them, and a visible line shows whenever transcription is on.	Privacy: ciò che si dice sulla radio aeronautica pubblica è pubblico, ma il motore vocale gira qui, sul tuo computer, e il testo resta nella tua cartella dati. Non usarlo per conversazioni private: marittimo, radioamatori, CB e ogni altro modo restano disattivati finché non li scegli, e una riga visibile mostra quando la trascrizione è attiva.
+Transcribe speech	Trascrivi la voce
+Master switch. While a transmission is going on the audio is cut out, sent to the speech engine and turned into text. Nothing runs while the channels are quiet.	Interruttore generale. Durante una trasmissione l'audio viene ritagliato, inviato al motore vocale e trasformato in testo. Non gira nulla finché i canali sono silenziosi.
+Airband channels	Canali della banda aeronautica
+Marine VHF	VHF marittimo
+Any other mode that plays sound (amateur, CB, FM ...)	Qualsiasi altro modo che riproduce suono (radioamatori, CB, FM ...)
+Takes the sound you hear. Music and private conversations are not meant for this: leave it off unless you need it.	Prende il suono che ascolti. Musica e conversazioni private non sono pensate per questo: lascialo disattivato se non serve.
+Speech model	Modello vocale
+none	nessuno
+Open models folder	Apri la cartella dei modelli
+Put a whisper.cpp model file (ggml-*.bin) here to use it. The folder is made if it does not exist.	Metti qui un file di modello whisper.cpp (ggml-*.bin) per usarlo. La cartella viene creata se non esiste.
+No speech model yet. Download one below, or put a model file in the models folder.	Ancora nessun modello vocale. Scaricane uno qui sotto o metti un file di modello nella cartella dei modelli.
+Loading the speech model ...	Caricamento del modello vocale ...
+Speech model loaded.	Modello vocale caricato.
+This build has no speech engine.	Questa versione non ha un motore vocale.
+checking	verifica
+Download speech model:	Scarica un modello vocale:
+%s %d MB	%s %d MB
+Already downloaded	Già scaricato
+English only. tiny is the fastest (real time on a laptop), small hears more words and needs a stronger computer.	Solo inglese. tiny è il più veloce (tempo reale su un portatile), small capisce più parole e richiede un computer più potente.
+Other languages (multilingual models)	Altre lingue (modelli multilingue)
+The loaded model is English only: other languages need a multilingual model (tiny, base or small without .en).	Il modello caricato è solo inglese: per altre lingue serve un modello multilingue (tiny, base o small senza .en).
+CPU threads	Thread della CPU
+How many processor threads the speech engine may use for one transmission. Fewer threads use less battery and take longer.	Quanti thread del processore può usare il motore vocale per una trasmissione. Meno thread consumano meno batteria e richiedono più tempo.
+Keep transcripts (days)	Conserva le trascrizioni (giorni)
+Heard %llu, kept %llu, left out %llu (silence, noise, repeats), skipped %llu (too slow), speed %.2f x real time	Ascoltate %llu, tenute %llu, scartate %llu (silenzio, rumore, ripetizioni), saltate %llu (troppo lento), velocità %.2f x tempo reale
+Download the speech model %s (%d MB)?	Scaricare il modello vocale %s (%d MB)?
+OnAir asks the model repository (huggingface.co) for this one file and sends nothing else. The file is checked against a fixed SHA-256 checksum and thrown away if it does not match. The model is MIT licensed.	OnAir chiede questo solo file al repository dei modelli (huggingface.co) e non invia altro. Il file viene verificato con una somma SHA-256 fissa e scartato se non corrisponde. Il modello ha licenza MIT.
+Download	Scarica
+Delete all saved transcripts? This cannot be undone.	Eliminare tutte le trascrizioni salvate? Non si può annullare.
+Delete all	Elimina tutto
+Transcription is off.	La trascrizione è disattivata.
+Hide settings	Nascondi impostazioni
+Settings and speech model	Impostazioni e modello vocale
+Search the text ...	Cerca nel testo ...
+All frequencies	Tutte le frequenze
+A callsign (DLH123), a registration (N123AB) or an ICAO address (3C6444)	Un nominativo (DLH123), una marca (N123AB) o un indirizzo ICAO (3C6444)
+Airport	Aeroporto
+An airport code or name found in the channel name or the text (EYVI, Tower)	Un codice o nome di aeroporto trovato nel nome del canale o nel testo (EYVI, Tower)
+%zu of %zu	%zu di %zu
+Copy all shown	Copia tutto ciò che è mostrato
+Export %s	Esporta %s
+Delete all ...	Elimina tutto ...
+Time (UTC)	Ora (UTC)
+Sure	Sicuro
+Speaker (a guess from the wording)	Parlante (stimato dalle parole)
+Click to copy this line	Clic per copiare questa riga
+Aircraft on the screen	Aeromobile sullo schermo
+Also share transcripts of aircraft radio calls (text becomes public on the map)	Condividi anche le trascrizioni delle chiamate radio degli aeromobili (il testo diventa pubblico sulla mappa)
+The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	Il testo delle chiamate radio della banda aeronautica che un motore vocale su questo computer ha ricavato da ciò che ricevi (finestra Trascrizioni), collegato all'aeromobile dal nominativo pronunciato e mostrato per 48 ore sulla scheda pubblica dell'aeromobile nella mappa. Può contenere errori. I numeri di telefono vengono rimossi prima. Si condivide solo la banda aeronautica, mai marittimo, radioamatori o altri canali. Disattivato finché non lo scegli, e puoi disattivarlo in qualsiasi momento.
+Transcripts ...	Trascrizioni ...
+What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	Ciò che si dice sulla banda aeronautica e su altri canali vocali, come testo: sottotitoli dal vivo, ricerca, esportazione. Disattivato finché non lo attivi.

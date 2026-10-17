@@ -4,6 +4,7 @@
 #include "../state/receivers.h"
 #include "map_ask.h"
 #include "../adsb/adsb_acars.h"
+#include "../transcribe/transcribe_app.h"
 #ifndef ONAIR_VERSION
 #define ONAIR_VERSION "dev"
 #endif
@@ -503,6 +504,32 @@ void attachMsgs(std::vector<Track>& tracks) {
     if (sent.size() > 3000) sent.clear();
 }
 
+// What was said on the radio to an aircraft (airband transcripts, transcribe/transcribe_app.h), as messages of mode VOICE, not sent before. Only with the
+// user's own choice (Server > also share transcripts), only airband, only text the speech engine was fairly sure of; phone numbers are removed.
+void attachVoice(std::vector<Track>& tracks) {
+    static std::unordered_map<std::string, int64_t> sent;    // track id > time of the newest transcript sent
+    std::unordered_map<std::string, int> holders;
+    for (const Track& t : tracks) if (t.kind && !std::strcmp(t.kind, "aircraft") && !t.label.empty() && t.label != t.id) holders[dect2::acarsNormFlight(t.label)]++;
+    for (Track& t : tracks) {
+        if (!t.kind || std::strcmp(t.kind, "aircraft")) continue;
+        const auto h = holders.find(dect2::acarsNormFlight(t.label));
+        std::vector<dect2::AcarsLogEntry> v = tx::voiceForTrack(t.id, t.label == t.id ? std::string() : t.label, h == holders.end() ? 1 : h->second);
+        const int64_t from = sent.count(t.id) ? sent[t.id] : 0;
+        int64_t newest = from;
+        int n = 0;
+        for (auto it = v.rbegin(); it != v.rend(); ++it) {      // oldest first
+            if (it->wall <= from) continue;
+            dect2::AcarsLogEntry e = *it;
+            e.text = dect2::acarsRedact(e.text);
+            if (e.text.empty()) continue;
+            newest = std::max(newest, e.wall);
+            if (n++ < 3) t.msgs.push_back(std::move(e));   // a few per aircraft per upload, together with the ACARS ones the server takes five
+        }
+        if (newest > from) sent[t.id] = newest;
+    }
+    if (sent.size() > 3000) sent.clear();
+}
+
 std::string buildJson(const std::string& station, const std::vector<Track>& tracks) {
     std::string j = "{\"station\":\"" + jsonEsc(station) + "\",\"tracks\":[";
     bool first = true;
@@ -627,6 +654,21 @@ void msgsToggle(App& s, bool menu) {
         ImGui::SetTooltip("%s", tr("Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time."));
     if (!hit) return;
     s.mapMsgs = menu ? !s.mapMsgs : v;
+    savePrefs(s);
+}
+
+// "Also share transcripts": what the airband voice transcripts say to or about an aircraft, on that aircraft's card. Public radio, but the text may be wrong
+// or name people, so this is its own choice and off until chosen. Only airband; nothing from marine, ham or other private channels.
+void voiceToggle(App& s, bool menu) {
+    bool v = s.mapVoice;
+    const char* label = tr("Also share transcripts of aircraft radio calls (text becomes public on the map)");
+    bool hit = false;
+    if (menu) hit = ImGui::MenuItem(label, nullptr, v);
+    else hit = ImGui::Checkbox(label, &v) && v != s.mapVoice;
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("%s", tr("The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time."));
+    if (!hit) return;
+    s.mapVoice = menu ? !s.mapVoice : v;
     savePrefs(s);
 }
 
@@ -758,6 +800,7 @@ void mapSendServerMenu(App& a) {
     if (!ImGui::BeginMenu(tr("Server"))) { mapPopups(a); return; }
     sendToggle(a, true);
     if (rootApp(a).mapSend) msgsToggle(rootApp(a), true);
+    if (rootApp(a).mapSend) voiceToggle(rootApp(a), true);
     ImGui::TextDisabled("%s", tr("The map is at map.on-air.dev"));
     ImGui::EndMenu();
     mapPopups(a);
@@ -769,6 +812,7 @@ void mapSendButton(App& a) {
     if (ImGui::BeginPopup("##serverpop")) {
         sendToggle(a, false);
         if (rootApp(a).mapSend) msgsToggle(rootApp(a), false);
+        if (rootApp(a).mapSend) voiceToggle(rootApp(a), false);
         ImGui::TextDisabled("%s", tr("The map is at map.on-air.dev"));
         ImGui::EndPopup();
     }
@@ -850,6 +894,7 @@ void mapSendTick(App& a) {
         }
     }
     if (s.mapMsgs) attachMsgs(tracks);
+    if (s.mapVoice) attachVoice(tracks);
     const bool ping = gPingNow || needHb || (tracks.empty() && (ph == kConnecting || ph == kRetry));
     if (!gPingNow && !needHb && !tracks.empty()) {
         static int64_t lastSend = 0;

@@ -1785,3 +1785,72 @@ full	pilnas
 Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Prideda šį imtuvą prie tinklo radijų (jis neprisijungs, kol nepasirinksite jo kaip radijo).
 The downloaded list has no receivers OnAir can read.	Atsisiųstame sąraše nėra imtuvų, kuriuos OnAir gali perskaityti.
 Could not download the list. Check the internet connection.	Nepavyko atsisiųsti sąrašo. Patikrinkite interneto ryšį.
+# live transcripts (docs/TRANSCRIBE.md)
+Transcribing speech: %s	Kalba transkribuojama: %s
+Voice (radio calls)	Kalba (radijo skambučiai)
+No radio call with this aircraft's callsign heard yet	Su šio orlaivio šaukiniu skambučių dar negirdėta
+Live transcription is off (View > Transcripts). Airband calls would be listed here by callsign.	Tiesioginė transkripcija išjungta (Rodymas > Transkripcijos). Aviacijos juostos skambučiai čia būtų išvardyti pagal šaukinį.
+Live captions: loading the speech model ...	Tiesioginiai subtitrai: įkeliamas kalbos modelis ...
+Live captions: off.	Tiesioginiai subtitrai: išjungti.
+Set up transcripts	Nustatyti transkripcijas
+Turns what is said on the airband channels into text as it is heard. It needs a speech model that you download or put in the models folder.	Aviacijos juostos kanalais pasakytus žodžius paverčia tekstu, kai tik jie girdimi. Reikia kalbos modelio, kurį atsisiunčiate arba įdedate į modelių aplanką.
+Live captions	Tiesioginiai subtitrai
+working ...	dirba ...
+listening ...	klausosi ...
+Transcripts	Transkripcijos
+Airband is off in the transcript settings	Aviacijos juosta išjungta transkripcijos nustatymuose
+Nothing heard yet.	Dar nieko negirdėta.
+Cannot write %s	Nepavyksta įrašyti: %s
+Saved %s	Išsaugota: %s
+Privacy: what is said on public aviation radio is public, but the speech engine runs here on your computer and the text is kept in your data folder. Do not use it on private conversations: marine, amateur, CB and every other mode are off until you choose them, and a visible line shows whenever transcription is on.	Privatumas: tai, kas sakoma viešame aviacijos radijuje, yra vieša, bet kalbos variklis veikia čia, jūsų kompiuteryje, o tekstas laikomas jūsų duomenų aplanke. Nenaudokite privatiems pokalbiams: jūrų, mėgėjų, CB ir visi kiti režimai išjungti, kol jų nepasirinksite, o matoma eilutė rodo, kada transkripcija įjungta.
+Transcribe speech	Transkribuoti kalbą
+Master switch. While a transmission is going on the audio is cut out, sent to the speech engine and turned into text. Nothing runs while the channels are quiet.	Pagrindinis jungiklis. Kol vyksta perdavimas, garsas iškerpamas, perduodamas kalbos varikliui ir paverčiamas tekstu. Kol kanalai tylūs, niekas neveikia.
+Airband channels	Aviacijos juostos kanalai
+Marine VHF	Jūrų VHF
+Any other mode that plays sound (amateur, CB, FM ...)	Bet kuris kitas režimas, grojantis garsą (mėgėjų, CB, FM ...)
+Takes the sound you hear. Music and private conversations are not meant for this: leave it off unless you need it.	Paima garsą, kurį girdite. Muzikai ir privatiems pokalbiams tai neskirta: palikite išjungta, jei nereikia.
+Speech model	Kalbos modelis
+none	nėra
+Open models folder	Atidaryti modelių aplanką
+Put a whisper.cpp model file (ggml-*.bin) here to use it. The folder is made if it does not exist.	Įdėkite čia whisper.cpp modelio failą (ggml-*.bin), kad jį naudotumėte. Aplankas sukuriamas, jei jo nėra.
+No speech model yet. Download one below, or put a model file in the models folder.	Kalbos modelio dar nėra. Atsisiųskite vieną žemiau arba įdėkite modelio failą į modelių aplanką.
+Loading the speech model ...	Įkeliamas kalbos modelis ...
+Speech model loaded.	Kalbos modelis įkeltas.
+This build has no speech engine.	Šioje versijoje nėra kalbos variklio.
+checking	tikrinama
+Download speech model:	Atsisiųsti kalbos modelį:
+%s %d MB	%s %d MB
+Already downloaded	Jau atsisiųsta
+English only. tiny is the fastest (real time on a laptop), small hears more words and needs a stronger computer.	Tik anglų kalba. tiny greičiausias (realiuoju laiku nešiojamajame), small girdi daugiau žodžių ir reikalauja galingesnio kompiuterio.
+Other languages (multilingual models)	Kitos kalbos (daugiakalbiai modeliai)
+The loaded model is English only: other languages need a multilingual model (tiny, base or small without .en).	Įkeltas modelis tik anglų kalbos: kitoms kalboms reikia daugiakalbio modelio (tiny, base arba small be .en).
+CPU threads	Procesoriaus gijos
+How many processor threads the speech engine may use for one transmission. Fewer threads use less battery and take longer.	Kiek procesoriaus gijų kalbos variklis gali naudoti vienam perdavimui. Mažiau gijų naudoja mažiau baterijos ir trunka ilgiau.
+Keep transcripts (days)	Saugoti transkripcijas (dienomis)
+Heard %llu, kept %llu, left out %llu (silence, noise, repeats), skipped %llu (too slow), speed %.2f x real time	Išgirsta %llu, palikta %llu, atmesta %llu (tyla, triukšmas, pasikartojimai), praleista %llu (per lėtai), greitis %.2f x realusis laikas
+Download the speech model %s (%d MB)?	Atsisiųsti kalbos modelį %s (%d MB)?
+OnAir asks the model repository (huggingface.co) for this one file and sends nothing else. The file is checked against a fixed SHA-256 checksum and thrown away if it does not match. The model is MIT licensed.	OnAir prašo šio vieno failo modelių saugyklos (huggingface.co) ir nieko daugiau nesiunčia. Failas tikrinamas pagal fiksuotą SHA-256 kontrolinę sumą ir išmetamas, jei nesutampa. Modelis licencijuotas pagal MIT.
+Download	Atsisiųsti
+Delete all saved transcripts? This cannot be undone.	Ištrinti visas išsaugotas transkripcijas? Atšaukti negalima.
+Delete all	Ištrinti viską
+Transcription is off.	Transkripcija išjungta.
+Hide settings	Slėpti nustatymus
+Settings and speech model	Nustatymai ir kalbos modelis
+Search the text ...	Ieškoti tekste ...
+All frequencies	Visi dažniai
+A callsign (DLH123), a registration (N123AB) or an ICAO address (3C6444)	Šaukinys (DLH123), registracija (N123AB) arba ICAO adresas (3C6444)
+Airport	Oro uostas
+An airport code or name found in the channel name or the text (EYVI, Tower)	Oro uosto kodas ar pavadinimas, rastas kanalo pavadinime arba tekste (EYVI, Tower)
+%zu of %zu	%zu iš %zu
+Copy all shown	Kopijuoti viską, kas rodoma
+Export %s	Eksportuoti %s
+Delete all ...	Ištrinti viską ...
+Time (UTC)	Laikas (UTC)
+Sure	Tikra
+Speaker (a guess from the wording)	Kalbėtojas (spėjimas pagal žodžius)
+Click to copy this line	Spustelėkite, kad nukopijuotumėte šią eilutę
+Aircraft on the screen	Orlaivis ekrane
+Also share transcripts of aircraft radio calls (text becomes public on the map)	Taip pat dalytis orlaivių radijo skambučių transkripcijomis (tekstas taps viešas žemėlapyje)
+The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	Aviacijos juostos radijo skambučių tekstas, kurį šio kompiuterio kalbos variklis sudarė iš to, ką priimate (langas Transkripcijos), susiejamas su orlaiviu pagal jame pasakytą šaukinį ir 48 valandas viešai rodomas to orlaivio kortelėje žemėlapyje. Gali būti klaidų. Telefono numeriai prieš tai pašalinami. Dalijamasi tik aviacijos juosta, niekada jūrų, mėgėjų ar kitais kanalais. Išjungta, kol nepasirinksite, ir bet kada galite išjungti.
+Transcripts ...	Transkripcijos ...
+What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	Kas sakoma aviacijos juostoje ir kituose kalbos kanaluose, kaip tekstas: tiesioginiai subtitrai, paieška, eksportas. Išjungta, kol neįjungsite.

@@ -1,6 +1,7 @@
 // ADS-B screens: the aircraft table, the selected aircraft's detail, the statistics view, the sources panel and the
 // unit controls.
 // Split from adsb_ui.cpp; the shared state is declared in adsb_internal.h.
+#include "transcribe/transcribe_app.h"
 #include "../panels/photo_links_ui.h"
 #include "adsb_internal.h"
 #include "adsb_acars.h"
@@ -258,6 +259,7 @@ void detail(const App& a) {
     snprintf(b, sizeof b, "%u messages", ac->messages); kv("heard", b);
     snprintf(b, sizeof b, "%.0f dBFS", ac->levelDbfs); kv("level", b);
     acarsLogSection(a, *ac);
+    tx::voiceSection(a, ac->icao, ac->callsign, registrationOf(ac->icao));
 }
 
 // ---------------------------------------------------------------- range statistics

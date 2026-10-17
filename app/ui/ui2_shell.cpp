@@ -1,6 +1,7 @@
 // The new interface: the shell around the body (menu bar, top bar with the mode combo and summary, bottom bar, the
 // mode list and side bar, the status line and the log console).
 // Split from ui2.cpp; the shared declarations are in ui2_internal.h.
+#include "transcribe/transcribe_app.h"
 #include "ui2_internal.h"
 #include "ui_common.h"
 #ifdef _WIN32
@@ -348,6 +349,8 @@ static void viewMenu(App& a) {
             ImGui::TextDisabled("%s", tr("Ctrl + / Ctrl - / Ctrl 0"));
             ImGui::EndMenu();
         }
+        if (ImGui::MenuItem(tr("Transcripts ..."), nullptr, tx::windowOpen())) tx::windowOpen() = !tx::windowOpen();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on."));
         if (ImGui::MenuItem(tr("Reset layout"))) { a.splitSide = a.splitRight = a.splitBottom = a.splitDock = a.splitBot2 = 0; savePrefs(a); }
         if (ImGui::MenuItem(tr("Reset spectrum"))) resetSpectrum(a);
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Put the panels back to their automatic sizes (drag the bars between panels to resize them)"));
@@ -483,6 +486,7 @@ float menuBar(App& a) {
         ImGui::EndMainMenuBar();
     }
     creditsWindow(a);
+    tx::window(a);
     return menuH;
 }
 

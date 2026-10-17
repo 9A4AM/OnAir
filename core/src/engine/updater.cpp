@@ -1112,4 +1112,19 @@ void openUrl(const std::string& url) {
 #endif
 }
 
+// A plain https download to a file through the same curl runner (the speech models: transcribe/models.h). https only, redirects too.
+int curlDownloadFile(const std::string& url, const std::string& outFile, uint64_t maxBytes, int maxTime, const std::atomic<bool>& cancel, const std::function<void()>& tick) {
+    if (url.compare(0, 8, "https://") != 0) return 1;
+    const std::vector<std::string> a = {"-fsSL", "--connect-timeout", "15", "--max-time", std::to_string(maxTime), "--max-redirs", "5", "--max-filesize", std::to_string(maxBytes),
+                                        "--speed-limit", "1000", "--speed-time", "40", "--proto", "=https", "--proto-redir", "=https", "--retry", "2",
+                                        "-H", "User-Agent: OnAir", "-o", outFile, url};
+    return runCurl(a, nullptr, cancel, tick);
+}
+std::string curlDownloadError(int rc) {
+    if (rc == kCurlCancelled) return "cancelled";
+    if (rc == kCurlMissing) return curlError(rc, "the download");
+    if (rc == 6 || rc == 7 || rc == 28 || rc == 35 || rc == 56) return std::string("could not reach the server (") + (rc == 28 ? "it timed out;" : "is the network up?") + " curl error " + std::to_string(rc) + ")";
+    return curlError(rc, "the download");
+}
+
 } // namespace dect2

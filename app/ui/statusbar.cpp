@@ -12,6 +12,7 @@
 #include <memory>
 #include <thread>
 #include "toolbar_internal.h"
+#include "transcribe/transcribe_app.h"
 
 // one "label value" readout of the status line, with its icon
 static void statusReadout(const App& a, const char* label, const std::string& val, ImVec4 col = ImVec4(0.93f, 0.95f, 0.97f, 1)) {
@@ -183,6 +184,10 @@ static void statusNotes(App& a, bool run, AdcStatus adc) {
 }
 
 void statusBar(App& a) {
+    {   // live transcripts are on: always visible
+        std::string t;
+        if (tx::indicator(t)) { ImGui::TextColored(pal::badRed(), "\xE2\x97\x8F"); ImGui::SameLine(0, 4 * gUi); ImGui::TextColored(pal::warnAmber(), "%s", t.c_str()); }
+    }
     // a radio on the network: the samples that did not arrive (the connection dropped and came back, or the receiver was too slow)
     if (a.engine.running() && a.devIdx >= 0 && a.devIdx < (int)a.devices.size() && a.devices[a.devIdx].kind == DeviceInfo::Native &&
         (a.devices[a.devIdx].board == "rtltcp" || a.devices[a.devIdx].board == "spyserver" || a.devices[a.devIdx].board == "sdrpp")) {
