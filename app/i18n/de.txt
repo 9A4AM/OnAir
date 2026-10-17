@@ -2138,6 +2138,59 @@ Peak dB above floor	Spitze dB über Grundrauschen
 Quietest slots	Ruhigste Bereiche
 From MHz	Von MHz
 Width kHz	Breite kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Wähle eine Sendung, um Details zu sehen.
+Cancel recording	Aufnahme abbrechen
+Record	Aufnehmen
+Stop series	Serie beenden
+Record series	Serie aufnehmen
+The broadcaster sends no series identifier for this programme.	Der Sender übermittelt keine Serienkennung für diese Sendung.
+No reminder	Keine Erinnerung
+Remind me	Erinnern
+Watch	Ansehen
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	Nicht genug Tuner: Das überschneidet sich mit einer Aufnahme auf einem anderen Multiplex und wird nicht aufgenommen.
+No description broadcast.	Keine Beschreibung gesendet.
+Waiting for the service list...	Warte auf die Senderliste ...
+Search title or description	Titel oder Beschreibung suchen
+This multiplex only	Nur dieses Multiplex
+time zone:	Zeitzone:
+this computer	dieser Computer
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Noch keine Programminformationen empfangen. Sender übertragen sie in den EIT-Tabellen, die sich alle paar Sekunden (jetzt/nächste) bis alle paar Minuten (Programmvorschau) wiederholen. Manche Multiplexe senden gar keine.
+Opening the recording...	Aufnahme wird geöffnet ...
+Pause (timeshift)	Pause (Timeshift)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Hält das Live-Fernsehen an und schreibt es weiter auf die Festplatte, damit du fortsetzen oder zurückspulen kannst.
+buffered	gepuffert
+Timeshift	Timeshift
+Play	Wiedergabe
+behind live	hinter Live
+Live	Live
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	Aufnahmen laufen nur, solange OnAir geöffnet und der Computer wach ist; ein schlafender Computer nimmt nichts auf. Verschlüsselte Dienste werden so aufgezeichnet, wie sie ankommen, und nicht entschlüsselt. Nur für den privaten Gebrauch.
+Scheduled	Geplant
+recording	nimmt auf
+conflict	Konflikt
+any multiplex	beliebiges Multiplex
+series	Serie
+waiting for the tuner	wartet auf den Tuner
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Nichts geplant. Wähle eine Sendung im Programmführer oder füge unten eine manuelle Aufnahme hinzu.
+Manual recording	Manuelle Aufnahme
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Beginnt zu dieser Uhrzeit (heute, oder morgen, wenn sie vorbei ist), ohne Zugabe.
+Recorded	Aufgenommen
+No recordings yet.	Noch keine Aufnahmen.
+Export	Exportieren
+Delete this recording and its subtitle files?	Diese Aufnahme und ihre Untertiteldateien löschen?
+free	frei
+Recorder settings	Rekorder-Einstellungen
+Folder	Ordner
+Start earlier (s)	Früher beginnen (s)
+End later (s)	Später beenden (s)
+Tuners	Tuner
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Wie viele verschiedene Multiplexe gleichzeitig empfangen werden können. Dienste desselben Multiplex werden immer zusammen aufgenommen.
+Keep free (GB)	Frei lassen (GB)
+Stop after signal loss (s, 0 = never)	Nach Signalverlust stoppen (s, 0 = nie)
+Save teletext subtitles next to recordings (.srt, .vtt)	Teletext-Untertitel neben den Aufnahmen speichern (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Beim Start einer geplanten Aufnahme auf deren Kanal abstimmen
+Timeshift buffer on disk	Timeshift-Puffer auf der Festplatte
+minutes	Minuten
 Propagation	Ausbreitung
 open	offen
 marginal	grenzwertig

@@ -1024,6 +1024,12 @@ void drawTtxGrid(ImDrawList* dl, ImFont* f, ImVec2 o, float cw, float ch, const 
 void teletextTab(App& a);
 const EpgEvent* epgCurrent(const App& a, int sid, const EpgEvent** next = nullptr);
 void guideTab(App& a);
+void tvGuideTab(App& a);            // tvrec_ui.cpp: the programme guide grid, search, record / remind
+void tvRecordingsTab(App& a);       // scheduled and finished recordings, recorder settings
+void tvPlaybackBar(App& a);         // timeshift pause / rewind / live and the controls of a recording being played
+void tvRecTick(App& a);             // every frame: the recorder's clock, the schedule, the guide cache
+void tvRecOverrideTs(App& a);       // while a recording plays, a.ts is that stream's service list
+void tvRecShutdown(App& a);         // before the engine goes: finishes the recordings that run
 void playerTab(App& a);
 void rightPanel(App& a);
 void tvTab(App& a);

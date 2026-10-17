@@ -49,6 +49,7 @@ static void tickReceiver(App& a) {
         a.epgT = glfwGetTime();
     }
     if (!a.engine.running()) { a.epg.clear(); }
+    tvRecTick(a);
     gainControl(a);
     followBandwidth(a);
     feedDirection(a);

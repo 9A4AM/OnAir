@@ -215,6 +215,7 @@ static void shutdownApp(App& app, gfx::Backend* gfxBackend, GLFWwindow* window) 
     delete gDiscord;   // clears the status and joins its thread
     txShutdown();      // the transmitter goes quiet before anything else is closed
     receiversShutdown(app);
+    tvRecShutdown(app);   // the recordings that run are finished and closed before the receiver stops
     app.engine.stop();
     app.engine.flushResults();
     appResultsSave(app, true);

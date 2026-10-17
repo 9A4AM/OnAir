@@ -2138,6 +2138,59 @@ Peak dB above floor	Pikas dB virš triukšmo
 Quietest slots	Ramiausi intervalai
 From MHz	Nuo MHz
 Width kHz	Plotis kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Pasirinkite laidą, kad pamatytumėte išsamią informaciją.
+Cancel recording	Atšaukti įrašymą
+Record	Įrašyti
+Stop series	Nutraukti serialą
+Record series	Įrašyti serialą
+The broadcaster sends no series identifier for this programme.	Transliuotojas nesiunčia šios laidos serialo identifikatoriaus.
+No reminder	Be priminimo
+Remind me	Priminti
+Watch	Žiūrėti
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	Nepakanka imtuvų: sutampa su įrašymu kitame multipleksuose, todėl nebus įrašyta.
+No description broadcast.	Aprašymas netransliuojamas.
+Waiting for the service list...	Laukiama paslaugų sąrašo...
+Search title or description	Ieškoti pavadinimo ar aprašymo
+This multiplex only	Tik šis multipleksas
+time zone:	laiko juosta:
+this computer	šis kompiuteris
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Programos informacija dar negauta. Transliuotojai ją siunčia EIT lentelėse, kurios kartojamos kas kelias sekundes (dabar/toliau) ar kas kelias minutes (tvarkaraštis). Kai kurie multipleksai jos nesiunčia visai.
+Opening the recording...	Atidaromas įrašas...
+Pause (timeshift)	Pauzė (laiko poslinkis)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Sustabdo tiesioginę TV ir toliau įrašo ją į diską, kad galėtumėte tęsti ar atsukti atgal.
+buffered	buferyje
+Timeshift	Laiko poslinkis
+Play	Groti
+behind live	atsilieka nuo tiesioginės
+Live	Tiesiogiai
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	Įrašymas vyksta tik kol OnAir atidarytas ir kompiuteris nemiega; miegantis kompiuteris nieko neįrašo. Užšifruotos paslaugos įrašomos tokios, kokios gaunamos, ir neiššifruojamos. Tik asmeniniam naudojimui.
+Scheduled	Suplanuota
+recording	įrašoma
+conflict	konfliktas
+any multiplex	bet kuris multipleksas
+series	serialas
+waiting for the tuner	laukia imtuvo
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Nieko nesuplanuota. Pasirinkite laidą vadove arba apačioje pridėkite rankinį įrašymą.
+Manual recording	Rankinis įrašymas
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Prasideda šiuo laiku (šiandien, o jei jau praėjo – rytoj), be atsargos.
+Recorded	Įrašyta
+No recordings yet.	Įrašų dar nėra.
+Export	Eksportuoti
+Delete this recording and its subtitle files?	Ištrinti šį įrašą ir jo subtitrų failus?
+free	laisva
+Recorder settings	Įrašymo nustatymai
+Folder	Aplankas
+Start earlier (s)	Pradėti anksčiau (s)
+End later (s)	Baigti vėliau (s)
+Tuners	Imtuvai
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Kiek skirtingų multipleksų galima priimti vienu metu. To paties multiplekso paslaugos visada įrašomos kartu.
+Keep free (GB)	Palikti laisvos (GB)
+Stop after signal loss (s, 0 = never)	Sustoti dingus signalui (s, 0 = niekada)
+Save teletext subtitles next to recordings (.srt, .vtt)	Išsaugoti teleteksto subtitrus šalia įrašų (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Prasidėjus suplanuotam įrašymui, persijungti į jo kanalą
+Timeshift buffer on disk	Laiko poslinkio buferis diske
+minutes	minutės
 Propagation	Sklaida
 open	atidaryta
 marginal	ribinė

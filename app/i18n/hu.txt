@@ -2124,6 +2124,59 @@ Peak dB above floor	Csúcs dB a zajszint felett
 Quietest slots	Legcsendesebb sávok
 From MHz	Innen (MHz)
 Width kHz	Szélesség kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Válassz egy műsort a részletek megtekintéséhez.
+Cancel recording	Felvétel törlése
+Record	Felvétel
+Stop series	Sorozat leállítása
+Record series	Sorozat felvétele
+The broadcaster sends no series identifier for this programme.	A műsorszolgáltató nem küld sorozatazonosítót ehhez a műsorhoz.
+No reminder	Nincs emlékeztető
+Remind me	Emlékeztess
+Watch	Megnézem
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	Nincs elég tuner: ez egy másik multiplexen zajló felvétellel ütközik, ezért nem lesz rögzítve.
+No description broadcast.	Nincs leírás a adásban.
+Waiting for the service list...	Várakozás a szolgáltatáslistára...
+Search title or description	Cím vagy leírás keresése
+This multiplex only	Csak ez a multiplex
+time zone:	időzóna:
+this computer	ez a számítógép
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Még nem érkezett műsorinformáció. A műsorszolgáltatók az EIT táblákban küldik, amelyek néhány másodpercenként (most/következő) vagy néhány percenként (műsorrend) ismétlődnek. Egyes multiplexek egyáltalán nem küldenek.
+Opening the recording...	Felvétel megnyitása...
+Pause (timeshift)	Szünet (időeltolás)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Megállítja az élő adást, és tovább rögzíti a lemezre, így folytathatod vagy visszatekerhetsz.
+buffered	pufferelve
+Timeshift	Időeltolás
+Play	Lejátszás
+behind live	az élő adás mögött
+Live	Élő
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	A felvételek csak akkor futnak, ha az OnAir meg van nyitva és a számítógép ébren van; alvó gép nem rögzít semmit. A kódolt szolgáltatások úgy kerülnek rögzítésre, ahogy megérkeznek, nem lesznek dekódolva. Kizárólag személyes használatra.
+Scheduled	Ütemezett
+recording	rögzít
+conflict	ütközés
+any multiplex	bármely multiplex
+series	sorozat
+waiting for the tuner	várakozik a tunerre
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Nincs ütemezve semmi. Válassz műsort az útmutatóban, vagy adj hozzá kézi felvételt lent.
+Manual recording	Kézi felvétel
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Ekkor kezdődik (ma, vagy holnap, ha már elmúlt), ráhagyás nélkül.
+Recorded	Felvett
+No recordings yet.	Még nincs felvétel.
+Export	Exportálás
+Delete this recording and its subtitle files?	Törlöd ezt a felvételt és a feliratfájljait?
+free	szabad
+Recorder settings	Felvevő beállításai
+Folder	Mappa
+Start earlier (s)	Korábbi kezdés (mp)
+End later (s)	Későbbi befejezés (mp)
+Tuners	Tunerek
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Hány különböző multiplex fogható egyszerre. Ugyanazon multiplex szolgáltatásai mindig együtt rögzíthetők.
+Keep free (GB)	Szabadon hagyandó (GB)
+Stop after signal loss (s, 0 = never)	Leállítás jelvesztés után (mp, 0 = soha)
+Save teletext subtitles next to recordings (.srt, .vtt)	Teletext feliratok mentése a felvételek mellé (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Ütemezett felvétel indulásakor az adott csatornára hangolás
+Timeshift buffer on disk	Időeltolás puffer a lemezen
+minutes	perc
 Propagation	Terjedés
 open	nyitott
 marginal	határeset

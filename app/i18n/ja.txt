@@ -2138,6 +2138,59 @@ Peak dB above floor	フロア上のピーク dB
 Quietest slots	最も静かな帯
 From MHz	開始 MHz
 Width kHz	幅 kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	番組を選ぶと詳細が表示されます。
+Cancel recording	録画を取り消す
+Record	録画
+Stop series	シリーズ録画を止める
+Record series	シリーズを録画
+The broadcaster sends no series identifier for this programme.	この番組にはシリーズ識別子が放送されていません。
+No reminder	通知しない
+Remind me	通知する
+Watch	視聴
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	チューナーが足りません。別のマルチプレックスの録画と重なるため、録画されません。
+No description broadcast.	説明は放送されていません。
+Waiting for the service list...	サービス一覧を待っています...
+Search title or description	タイトルまたは説明を検索
+This multiplex only	このマルチプレックスのみ
+time zone:	タイムゾーン:
+this computer	このコンピューター
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	番組情報はまだ受信されていません。放送局はEITテーブルで送信し、数秒ごと(現在/次)から数分ごと(番組表)に繰り返されます。まったく送信しないマルチプレックスもあります。
+Opening the recording...	録画を開いています...
+Pause (timeshift)	一時停止(タイムシフト)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	ライブ放送を一時停止し、ディスクへ記録し続けるので、再開や巻き戻しができます。
+buffered	バッファ
+Timeshift	タイムシフト
+Play	再生
+behind live	ライブより遅れ
+Live	ライブ
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	録画はOnAirが開いていてコンピューターが動作している間のみ行われ、スリープ中は何も録画されません。スクランブルされたサービスは受信したまま記録され、復号されません。個人利用に限ります。
+Scheduled	予約済み
+recording	録画中
+conflict	競合
+any multiplex	任意のマルチプレックス
+series	シリーズ
+waiting for the tuner	チューナー待ち
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	予約はありません。番組表から番組を選ぶか、下で手動録画を追加してください。
+Manual recording	手動録画
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	この時刻に開始します(過ぎていれば翌日)。余裕時間はありません。
+Recorded	録画済み
+No recordings yet.	録画はまだありません。
+Export	書き出し
+Delete this recording and its subtitle files?	この録画と字幕ファイルを削除しますか?
+free	空き
+Recorder settings	レコーダー設定
+Folder	フォルダー
+Start earlier (s)	早めに開始(秒)
+End later (s)	遅めに終了(秒)
+Tuners	チューナー数
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	同時に受信できる異なるマルチプレックスの数。同じマルチプレックスのサービスは常に同時に録画できます。
+Keep free (GB)	空き容量を確保(GB)
+Stop after signal loss (s, 0 = never)	信号消失後に停止(秒、0=しない)
+Save teletext subtitles next to recordings (.srt, .vtt)	テレテキスト字幕を録画の横に保存(.srt、.vtt)
+Tune to a scheduled recording's channel when it starts	予約録画の開始時にそのチャンネルへ合わせる
+Timeshift buffer on disk	ディスク上のタイムシフトバッファ
+minutes	分
 Propagation	伝搬
 open	オープン
 marginal	限界
