@@ -1,7 +1,6 @@
-// The DVB subtitle layer of dvbsub.h on top of the Rust crate rust/onair_dvbsi (DECT2_RUST_DVBSI): PES header, segment walk, the five segment parsers, the colour
+// The DVB subtitle layer of dvbsub.h on top of the Rust crate rust/onair_dvbsi: PES header, segment walk, the five segment parsers, the colour
 // tables, the run-length pixel decoder, region blending and the PTS arithmetic. The decoder class with its page, region, CLUT and object state stays in
-// dvbsub.cpp. Empty when the crate is not built.
-#ifdef DECT2_RUST_DVBSI
+// dvbsub.cpp.
 #include "dect2/tv/dvbsub.h"
 #include "dect2/rs/dvbsi.h"
 #include <cstdio>
@@ -104,4 +103,3 @@ void dvbSubRegionRgba(const uint8_t* pix, size_t n, int depth, const uint32_t* e
 }
 
 } // namespace dect2
-#endif

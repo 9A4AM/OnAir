@@ -1,6 +1,5 @@
-// dvbText() on top of the Rust crate rust/onair_dvbsi (DECT2_RUST_DVBSI): the prefix dispatch, ISO/IEC 6937 and the clean-up are Rust; the character set tables
-// the system provides come back through convertCharset() (dvb_text.cpp), registered with the crate before main. Empty when the crate is not built.
-#ifdef DECT2_RUST_DVBSI
+// dvbText() on top of the Rust crate rust/onair_dvbsi: the prefix dispatch, ISO/IEC 6937 and the clean-up are Rust; the character set tables
+// the system provides come back through convertCharset() (dvb_text.cpp), registered with the crate before main.
 #include "dect2/tv/dvb_text.h"
 #include "dect2/rs/dvbsi.h"
 #include <algorithm>
@@ -28,4 +27,3 @@ std::string dvbText(const uint8_t* p, int n, bool gbDefault) {
 }
 
 } // namespace dect2::dvbsi
-#endif

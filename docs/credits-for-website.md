@@ -44,7 +44,7 @@ The full notices and the open licence points are in [THIRD_PARTY.md](https://git
 | gr-iridium | muccc | GPL-3.0-or-later | core/src/iridium (symbol mapping) | facts read |
 | multimon-ng | Elias Oenal, Thomas Sailer and contributors | GPL-2.0 | core/src/pager (POCSAG capcode and alphanumeric rules) | rules read, re-written |
 | dump1090 and readsb | Salvatore Sanfilippo, Oliver Jowett, Matthew Kirkwood and contributors | GPL-2.0-or-later / GPL-3.0 | core/src/net (Beast and SBS feed formats) | formats read, re-implemented |
-| welle.io | Albrecht Lohofener and contributors | GPL-2.0-or-later | core/src/common/text_charset.cpp (EBU Latin table) | table generated from it |
+| welle.io | Albrecht Lohofener and contributors | GPL-2.0-or-later | rust/onair_dvbsi/src/tables.rs, core/src/common/text_charset.cpp (EBU Latin table) | table generated from it |
 | ODR-PadEnc | Matthias P. Braendli, Opendigitalradio | GPL-3.0-or-later | core/src/common/text_charset.cpp (cross-check) | table checked against it |
 | FFmpeg (AAC tables) | FFmpeg developers | LGPL-2.1-or-later | core/src/drm/drm_aactab.cpp (AAC window and scale-factor values) | data copied by a script |
 | glibc iso_6937 | GNU C Library authors | LGPL-2.1-or-later | core/src/common/text_charset.cpp (ISO 6937) | table generated from it |

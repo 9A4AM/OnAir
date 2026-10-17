@@ -1,6 +1,6 @@
 // DVB SI text fields (ETSI EN 300 468 Annex A) to clean UTF-8: the character table prefix selects ISO/IEC 6937 (default), ISO 8859-x, UCS-2, UTF-8, GB 2312,
 // Big5 or KS X 1001; the converted text loses its control characters. The character set tables that the system provides (iconv, or the Windows code pages) are
-// reached through convertCharset(); everything else lives in text_charset (Rust with DECT2_RUST_DVBSI).
+// reached through convertCharset(); everything else lives in text_charset (Rust).
 #pragma once
 #include <cstddef>
 #include <cstdint>

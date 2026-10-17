@@ -1,6 +1,5 @@
-// The teletext layer of teletext.h on top of the Rust crate rust/onair_dvbsi (DECT2_RUST_DVBSI): Hamming codes, the G0 national option subsets, the renderer,
-// the PES data unit walk and the data unit decoder. The decoder class with its page store stays in teletext.cpp. Empty when the crate is not built.
-#ifdef DECT2_RUST_DVBSI
+// The teletext layer of teletext.h on top of the Rust crate rust/onair_dvbsi: Hamming codes, the G0 national option subsets, the renderer,
+// the PES data unit walk and the data unit decoder. The decoder class with its page store stays in teletext.cpp.
 #include "dect2/tv/teletext.h"
 #include "dect2/rs/dvbsi.h"
 #include <cstdio>
@@ -67,4 +66,3 @@ TtxUnit ttxDecodeUnit(const uint8_t* u44) {
 size_t ttxPesUnits(const uint8_t* pes, size_t n, uint32_t* off, size_t cap) { return onair_dvbsi_ttx_pes_units(pes, n, off, cap); }
 
 } // namespace dect2
-#endif

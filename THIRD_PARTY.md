@@ -42,7 +42,7 @@ How to read the "How" column: **vendored** means the source is in this repositor
 | gr-iridium | muccc | GPL-3.0-or-later | core/src/iridium (symbol mapping) | facts read | Compatible. |
 | multimon-ng | Elias Oenal, Thomas Sailer and contributors | GPL-2.0 | core/src/pager (POCSAG capcode and alphanumeric rules) | rules read, re-written | Project is GPL-2.0 and pocsag.c says "version 2 or any later version", so compatible. Only formulas and field layouts were used. |
 | dump1090 and readsb | Salvatore Sanfilippo, Oliver Jowett, Matthew Kirkwood and contributors | GPL-2.0-or-later / GPL-3.0 | core/src/net (Beast and SBS feed formats) | formats read, re-implemented | Compatible (formats). |
-| welle.io | Albrecht Lohofener and contributors | GPL-2.0-or-later | core/src/common/text_charset.cpp (EBU Latin table) | table generated from it | "Or later": compatible. |
+| welle.io | Albrecht Lohofener and contributors | GPL-2.0-or-later | rust/onair_dvbsi/src/tables.rs, core/src/common/text_charset.cpp (EBU Latin table) | table generated from it | "Or later": compatible. |
 | ODR-PadEnc | Matthias P. Braendli, Opendigitalradio | GPL-3.0-or-later | core/src/common/text_charset.cpp (cross-check) | table checked against it | Compatible. |
 | FFmpeg (AAC tables) | FFmpeg developers | LGPL-2.1-or-later | core/src/drm/drm_aactab.cpp (AAC window and scale-factor values) | data copied by a script | LGPL-2.1+ data, standard's values. Notice named in the file. Compatible. |
 | glibc iso_6937 | GNU C Library authors | LGPL-2.1-or-later | core/src/common/text_charset.cpp (ISO 6937) | table generated from it | Compatible. |

@@ -1,6 +1,5 @@
-// text_charset.h on top of the Rust crate rust/onair_dvbsi (DECT2_RUST_DVBSI): the same functions as text_charset.cpp (which keeps appendUtf8). Output buffers
-// are sized for the worst case of each converter (3 bytes per input byte for the table based ones). Empty when the crate is not built.
-#ifdef DECT2_RUST_DVBSI
+// text_charset.h on top of the Rust crate rust/onair_dvbsi: the functions of text_charset.h (text_charset.cpp keeps appendUtf8). Output buffers
+// are sized for the worst case of each converter (3 bytes per input byte for the table based ones).
 #include "dect2/common/text_charset.h"
 #include "dect2/rs/dvbsi.h"
 #include <vector>
@@ -23,4 +22,3 @@ std::string iso6937(const uint8_t* p, size_t n) { return run(3 * n, [&](uint8_t*
 std::string clean(const std::string& s) { return run(s.size(), [&](uint8_t* o, size_t c) { return onair_dvbsi_clean((const uint8_t*)s.data(), s.size(), o, c); }); }
 
 } // namespace dect2::text
-#endif

@@ -1,4 +1,4 @@
-// Seeded mutation run of the DVB service information layers (the Rust ones under DECT2_RUST_DVBSI), meant for DECT2_SANITIZE=ON: the character set converters, the
+// Seeded mutation run of the DVB service information layers, meant for DECT2_SANITIZE=ON: the character set converters, the
 // DVB text field, the teletext decoder and renderer, the subtitle segment parsers, the pixel decoder and both decoder classes must never crash or hang on any
 // bytes, at any length (the input is copied to an exactly sized heap block). Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/common/text_charset.h"
