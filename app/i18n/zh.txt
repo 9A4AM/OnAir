@@ -2086,3 +2086,16 @@ Peak dB above floor	高于底噪的峰值 dB
 Quietest slots	最安静的频段
 From MHz	起始 MHz
 Width kHz	宽度 kHz
+Propagation	传播
+open	开放
+marginal	临界
+closed	关闭
+Best band now	当前最佳波段
+Stations	电台数
+Best SNR	最佳信噪比
+Farthest	最远
+Heard from	接收自
+Forget the history	清除历史
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	本接收机按波段听到的内容:信标(NCDXF/IARU、Long Dashes、单字母、载波)以及在 HF 数字界面解码的 FT8 / FT4 / FT2 / WSPR 电台。最近 30 分钟内至少听到 3 个电台即视为波段开放。仅使用自己的接收机:不下载任何数据,因此没有太阳通量和 K 指数。
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	最近 30 分钟没有听到任何信号:请启动 HF 信标或 HF 数字界面并保持运行。
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	最近 24 小时(UTC),每格 15 分钟,颜色越深电台越少

@@ -2086,3 +2086,16 @@ Peak dB above floor	フロア上のピーク dB
 Quietest slots	最も静かな帯
 From MHz	開始 MHz
 Width kHz	幅 kHz
+Propagation	伝搬
+open	オープン
+marginal	限界
+closed	クローズ
+Best band now	今のベストバンド
+Stations	局数
+Best SNR	最良SNR
+Farthest	最遠
+Heard from	受信元
+Forget the history	履歴を消去
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	この受信機がバンド別に聞いたもの:ビーコン(NCDXF/IARU、Long Dashes、単文字、キャリア)と、HFデジタル画面でデコードしたFT8 / FT4 / FT2 / WSPR局。直近30分に3局以上が聞こえたバンドはオープンです。自分の受信機のみ:何もダウンロードしないため、太陽フラックスやKインデックスはありません。
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	直近30分は何も聞こえていません:HFビーコンまたはHFデジタル画面を起動したままにしてください。
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	直近24時間(UTC)、15分ごとのセル、濃いほど局が少ない

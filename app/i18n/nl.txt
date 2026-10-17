@@ -2086,3 +2086,16 @@ Peak dB above floor	Piek dB boven ruisvloer
 Quietest slots	Stilste gebieden
 From MHz	Van MHz
 Width kHz	Breedte kHz
+Propagation	Propagatie
+open	open
+marginal	grensgeval
+closed	gesloten
+Best band now	Beste band nu
+Stations	Stations
+Best SNR	Beste SNR
+Farthest	Verste
+Heard from	Gehoord van
+Forget the history	Geschiedenis wissen
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Wat deze ontvanger heeft gehoord, per band: bakens (NCDXF/IARU, Long Dashes, losse letters, dragers) en de FT8- / FT4- / FT2- / WSPR-stations die in het HF-digitaalscherm zijn gedecodeerd. Een band is open als in de laatste 30 minuten minstens 3 stations zijn gehoord. Alleen de eigen ontvanger: er wordt niets gedownload, dus geen zonneflux of K-index.
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Niets gehoord in de laatste 30 minuten: start de HF-bakens of het HF-digitaalscherm en laat het draaien.
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Laatste 24 uur (UTC), cellen van 15 minuten, donkerder: minder stations

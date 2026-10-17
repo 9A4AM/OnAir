@@ -2086,3 +2086,16 @@ Peak dB above floor	Szczyt dB nad szumem
 Quietest slots	Najcichsze zakresy
 From MHz	Od MHz
 Width kHz	Szerokość kHz
+Propagation	Propagacja
+open	otwarte
+marginal	graniczne
+closed	zamknięte
+Best band now	Najlepsze pasmo teraz
+Stations	Stacje
+Best SNR	Najlepszy SNR
+Farthest	Najdalsza
+Heard from	Słyszane z
+Forget the history	Wyczyść historię
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Co ten odbiornik usłyszał, według pasm: radiolatarnie (NCDXF/IARU, Long Dashes, pojedyncze litery, nośne) oraz stacje FT8 / FT4 / FT2 / WSPR zdekodowane na ekranie HF cyfrowym. Pasmo jest otwarte, gdy w ciągu ostatnich 30 minut usłyszano co najmniej 3 stacje. Tylko własny odbiornik: nic nie jest pobierane, więc nie ma strumienia słonecznego ani indeksu K.
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Nic nie usłyszano w ciągu ostatnich 30 minut: uruchom radiolatarnie HF lub ekran HF cyfrowy i zostaw go włączony.
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Ostatnie 24 godziny (UTC), komórki po 15 minut, ciemniej: mniej stacji

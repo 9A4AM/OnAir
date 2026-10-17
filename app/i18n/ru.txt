@@ -2069,3 +2069,16 @@ Peak dB above floor	Пик дБ над шумом
 Quietest slots	Самые тихие участки
 From MHz	От МГц
 Width kHz	Ширина кГц
+Propagation	Прохождение
+open	открыт
+marginal	на грани
+closed	закрыт
+Best band now	Лучший диапазон сейчас
+Stations	Станции
+Best SNR	Лучший SNR
+Farthest	Самая дальняя
+Heard from	Слышно из
+Forget the history	Очистить историю
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Что этот приёмник слышал по диапазонам: маяки (NCDXF/IARU, Long Dashes, одиночные буквы, несущие) и станции FT8 / FT4 / FT2 / WSPR, декодированные на экране HF-цифры. Диапазон открыт, если за последние 30 минут услышаны не менее 3 станций. Только свой приёмник: ничего не скачивается, поэтому нет солнечного потока и K-индекса.
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	За последние 30 минут ничего не слышно: запустите HF-маяки или экран HF-цифры и оставьте работать.
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Последние 24 часа (UTC), ячейки по 15 минут, темнее: меньше станций

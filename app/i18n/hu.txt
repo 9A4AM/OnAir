@@ -2072,3 +2072,16 @@ Peak dB above floor	Csúcs dB a zajszint felett
 Quietest slots	Legcsendesebb sávok
 From MHz	Innen (MHz)
 Width kHz	Szélesség kHz
+Propagation	Terjedés
+open	nyitott
+marginal	határeset
+closed	zárt
+Best band now	Legjobb sáv most
+Stations	Állomások
+Best SNR	Legjobb SNR
+Farthest	Legtávolabbi
+Heard from	Hallva innen
+Forget the history	Előzmények törlése
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Amit ez a vevő hallott, sávonként: jeladók (NCDXF/IARU, Long Dashes, egybetűs jeladók, vivők) és a HF digitális képernyőn dekódolt FT8 / FT4 / FT2 / WSPR állomások. Egy sáv nyitott, ha az utolsó 30 percben legalább 3 állomást hallottunk. Csak a saját vevő: semmit nem töltünk le, ezért nincs napsugárzási fluxus és K-index.
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Az utolsó 30 percben semmi nem hallatszott: indítsd el a HF jeladókat vagy a HF digitális képernyőt, és hagyd futni.
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Utolsó 24 óra (UTC), 15 perces cellák, sötétebb: kevesebb állomás

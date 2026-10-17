@@ -2086,3 +2086,16 @@ Peak dB above floor	Crête dB au-dessus du bruit
 Quietest slots	Plages les plus calmes
 From MHz	De MHz
 Width kHz	Largeur kHz
+Propagation	Propagation
+open	ouverte
+marginal	limite
+closed	fermée
+Best band now	Meilleure bande maintenant
+Stations	Stations
+Best SNR	Meilleur SNR
+Farthest	Plus lointaine
+Heard from	Entendu depuis
+Forget the history	Effacer l'historique
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Ce que ce récepteur a entendu, par bande : balises (NCDXF/IARU, Long Dashes, lettres seules, porteuses) et stations FT8 / FT4 / FT2 / WSPR décodées dans l'écran HF numérique. Une bande est ouverte quand au moins 3 stations ont été entendues ces 30 dernières minutes. Récepteur propre uniquement : rien n'est téléchargé, donc ni flux solaire ni indice K.
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Rien entendu ces 30 dernières minutes : lancez les balises HF ou l'écran HF numérique et laissez-le tourner.
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	24 dernières heures (UTC), cellules de 15 minutes, plus sombre : moins de stations
