@@ -1,7 +1,7 @@
 // The pure parsing layer of the MPEG transport-stream analyser (ts.cpp): packet header, section CRC-32 (ISO/IEC 13818-1), PAT / PMT / SDT / NIT / EIT / TDT
 // section parsers (ETSI EN 300 468) and the ATSC virtual channel table (A/65). Text fields come back as byte ranges (Span) of the section: the character
-// set conversion (dvbText, iconv) and every table of state stay in ts.cpp. With DECT2_RUST_TS these functions are implemented by the Rust crate
-// rust/onair_ts (ts_proto_rs.cpp); otherwise by ts_proto.cpp.
+// set conversion (dvbText, iconv) and every table of state stay in ts.cpp. These functions are implemented by the Rust crate
+// rust/onair_ts (ts_proto_rs.cpp).
 #pragma once
 #include <array>
 #include <cstdint>

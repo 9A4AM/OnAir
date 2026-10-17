@@ -1,6 +1,5 @@
-// ts_proto.h on top of the Rust crate rust/onair_ts (DECT2_RUST_TS): record arrays sized from the section length (every record needs at least 4 bytes of
-// section; the two lists that corrupt overlapping descriptors can lengthen are parsed again with the counted size), turned into the std::string / vector forms of the header. Empty when the crate is not built.
-#ifdef DECT2_RUST_TS
+// ts_proto.h on top of the Rust crate rust/onair_ts: record arrays sized from the section length (every record needs at least 4 bytes of
+// section; the two lists that corrupt overlapping descriptors can lengthen are parsed again with the counted size), turned into the std::string / vector forms of the header.
 #include "dect2/tv/ts_proto.h"
 #include "dect2/rs/ts.h"
 #include <cstdio>
@@ -146,4 +145,3 @@ bool parseEit(const uint8_t* s, int len, Eit& out) {
 }
 
 } // namespace dect2::tsp
-#endif

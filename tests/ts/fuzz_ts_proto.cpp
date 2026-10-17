@@ -1,4 +1,4 @@
-// Seeded mutation run of the transport-stream parsing layer (the Rust one under DECT2_RUST_TS), meant for DECT2_SANITIZE=ON: every section parser, the packet
+// Seeded mutation run of the transport-stream parsing layer, meant for DECT2_SANITIZE=ON: every section parser, the packet
 // header, the CRC and the PAT packet must never crash or hang on any bytes, at any length (the input is copied to an exactly sized heap block).
 // Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/tv/ts_proto.h"

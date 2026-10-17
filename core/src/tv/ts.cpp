@@ -11,9 +11,9 @@
 
 namespace dect2 {
 
-uint32_t mpegCrc32(const uint8_t* p, int n) { return tsp::crc32(p, n); }   // the section CRC-32 lives in ts_proto (Rust with DECT2_RUST_TS)
+uint32_t mpegCrc32(const uint8_t* p, int n) { return tsp::crc32(p, n); }   // the section CRC-32 lives in ts_proto (Rust)
 
-std::string dvbText(const uint8_t* p, int n, bool gbDefault) { return dvbsi::dvbText(p, n, gbDefault); }   // the text fields: dvb_text.cpp (Rust with DECT2_RUST_DVBSI)
+std::string dvbText(const uint8_t* p, int n, bool gbDefault) { return dvbsi::dvbText(p, n, gbDefault); }   // the text fields: dvb_text.cpp (Rust)
 
 const char* TsService::typeName() const {
     switch (type) {
