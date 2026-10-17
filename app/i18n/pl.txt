@@ -2363,6 +2363,60 @@ Current setting: %.2f ppm	Bieżące ustawienie: %.2f ppm
 No measurements of this radio yet.	Brak jeszcze pomiarów tego radia.
 History of this radio (ppm)	Historia tego radia (ppm)
 Drift: %+.3f ppm per minute	Dryf: %+.3f ppm na minutę
+Band from (kHz)	Pasmo od (kHz)
+Calibrate from two landmarks	Kalibruj dwoma punktami orientacyjnymi
+Calibrated.	Skalibrowano.
+Camera snapshot URL (JPEG)	Adres URL migawki z kamery (JPEG)
+Cannot load the picture.	Nie można wczytać obrazu.
+Cannot save the snapshot.	Nie można zapisać migawki.
+Centre azimuth	Azymut środkowy
+Click the picture to set the column of the selected landmark.	Kliknij obraz, aby ustawić kolumnę wybranego punktu orientacyjnego.
+Demo skyline (no camera)	Przykładowa panorama (bez kamery)
+Enable RF camera	Włącz kamerę RF
+Field of view	Pole widzenia
+Heat strength	Intensywność mapy cieplnej
+No picture.	Brak obrazu.
+Normal camera lens	Zwykły obiektyw kamery
+Panorama (equirectangular)	Panorama (równoprostokątna)
+Picture	Obraz
+Picture or panorama file	Plik obrazu lub panoramy
+Projection	Odwzorowanie
+RF camera	Kamera RF
+Save snapshot	Zapisz migawkę
+Snapshot saved: %s	Migawka zapisana: %s
+Sub-bands	Podpasma
+The two landmarks do not fit a picture.	Dwa punkty orientacyjne nie pasują do obrazu.
+Weakest shown	Najsłabszy pokazywany
+azimuth	azymut
+azimuth only; the picture is just a backdrop	tylko azymut; obraz jest tylko tłem
+column	kolumna
+to (kHz)	do (kHz)
+Translate to English	Tłumacz na angielski
+Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	Mowa w innym języku jest dodatkowo tłumaczona na angielski, offline, obok oryginału. Wymaga modelu wielojęzycznego i zużywa około 1,5 raza więcej czasu procesora; pomijane, gdy silnik nie nadąża. Nic nie jest wysyłane. Tłumaczenie na inne języki nie jest dostępne.
+The loaded model is English only: translation needs a multilingual model.	Załadowany model jest tylko angielski: tłumaczenie wymaga modelu wielojęzycznego.
+Live: stop the room	Na żywo: zatrzymaj pokój
+Copy room link	Kopiuj link do pokoju
+Host PIN (to moderate on the room page):	PIN gospodarza (do moderowania na stronie pokoju):
+Go live (Live rooms)...	Rozpocznij transmisję (Pokoje na żywo)...
+Could not create the room	Nie udało się utworzyć pokoju
+Lost the connection to the rooms server	Utracono połączenie z serwerem pokoi
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Pokoje na żywo: dopóki transmitujesz, każdy z linkiem do pokoju może oglądać wodospad tego odbiornika, tryb i ustawioną częstotliwość oraz czatować z innymi. Lista pokoi w sieci pokazuje też jego tytuł. Nic nie jest wysyłane przed naciśnięciem Rozpocznij transmisję i nic nie jest przechowywane po zakończeniu pokoju. Twoja lokalizacja, imię i dźwięk nigdy nie są wysyłane.
+Room title	Tytuł pokoju
+Also show decoded ACARS text in the room (public)	Pokazuj w pokoju także zdekodowany tekst ACARS (publicznie)
+Needs Server > Send data to map server and Also share interesting ACARS messages.	Wymaga: Serwer > Wysyłaj dane na serwer mapy oraz Udostępniaj także ciekawe wiadomości ACARS.
+Go live	Rozpocznij transmisję
+Schedule passes by itself	Planuj przeloty automatycznie
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Bierze przeloty zaznaczonych grup po kolei, od najwyższego priorytetu, i sam uruchamia, stroi i nagrywa każdy z nich. Nakładające się przeloty są skracane lub pomijane; odbiornik uruchomiony przez Ciebie pozostaje nietknięty.
+Priority (higher wins)	Priorytet (wyższy wygrywa)
+Keep the SDR free every day	Zostaw SDR wolny codziennie
+from %d:00	od %d:00
+to %d:00	do %d:00
+Nothing planned.	Nic nie zaplanowano.
+planned	zaplanowano
+trimmed	skrócono
+skipped: SDR reserved	pominięto: SDR zarezerwowany
+skipped: too short	pominięto: za krótki
+skipped: higher priority	pominięto: wyższy priorytet
 # passive radar
 Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Samoloty z odbić od nadajnika radiowo-telewizyjnego, z dwoma kanałami koherentnymi
 Baseline %.1f km, transmitter bearing %.0f degrees	Linia bazowa %.1f km, azymut nadajnika %.0f stopni
@@ -2466,3 +2520,40 @@ Interference hunter	Łowca zakłóceń
 Monitor	Monitor
 Walk	Spacer
 Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Obserwuj pasmo pod kątem nowych zakłóceń, rozpoznaj ich rodzaj i znajdź źródło spacerując ze wskaźnikiem głośno / cicho
+The watchlist file could not be read:	Nie udało się odczytać pliku list obserwowanych:
+APRS call signs	Znaki wywoławcze APRS
+Words in messages	Słowa w wiadomościach
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Jedna w wierszu: adres ICAO szesnastkowo (4840D6), znaki rejestracyjne (A6-EDA) lub znak wywoławczy (KLM1023). * na końcu pasuje do początku (KLM*). Odbierane przez ADS-B, ACARS, VDL2 i HFDL.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Jedna w wierszu: numer MMSI, nazwa statku lub znak wywoławczy. * na końcu pasuje do początku (2190*). Odbierane przez AIS i DSC.
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Jedna w wierszu: znak wywoławczy. Bez SSID (LY1ABC) pasuje każdy SSID, z SSID (LY1ABC-9) tylko ten jeden.
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Jedna w wierszu: częstotliwość w MHz (162.025), z jednostką (162025 kHz) lub zakres (144-146). Liczy się wszystko, co na niej zdekodowano.
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Jedna w wierszu: słowo lub fraza (bez rozróżniania wielkości liter). * na końcu pasuje do początków słów (fire*). Szukane w wiadomościach pagerów, ACARS, APRS i innych zdekodowanych tekstach.
+New list...	Nowa lista...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	Utwórz listę po lewej: samoloty, statki, znaki APRS, częstotliwości lub słowa. OnAir powiadomi, gdy coś z niej zostanie odebrane.
+On	Wł.
+Tolerance (kHz)	Tolerancja (kHz)
+entries	wpisów
+Delete list	Usuń listę
+Desktop notification	Powiadomienie na pulpicie
+Sound (follows Mute)	Dźwięk (przestrzega wyciszenia)
+WAV file, empty = three beeps	Plik WAV, puste = trzy sygnały
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	Powiadomienia push trafiają do wybranej usługi, z podanym adresem i tokenem. Są zapisane w folderze danych i nigdy nie trafiają do dziennika.
+optional	opcjonalnie
+optional, sent as a Bearer token	opcjonalnie, wysyłany jako token Bearer
+Send a test alert	Wyślij alert testowy
+Most alerts per hour (0 = no limit)	Maks. alertów na godzinę (0 = bez limitu)
+Same station again after (minutes)	Ta sama stacja ponownie po (minutach)
+Quiet hours (no alerts, still listed in the history)	Godziny ciszy (bez alertów, nadal na liście historii)
+From	Od
+Until	Do
+Local time of this computer.	Czas lokalny tego komputera.
+alerts sent	wysłanych alertów
+Heard	Odebrano
+What happened	Co się stało
+held back: quiet hours	wstrzymano: godziny ciszy
+held back: rate limit	wstrzymano: limit osiągnięty
+Watchlists	Listy obserwowanych
+Watch for these	Obserwuj te
+Lists	Listy
+Watchlists...	Listy obserwowanych...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alerty, gdy odebrane zostaną wymienione samoloty, statki, znaki wywoławcze, częstotliwości lub słowa: powiadomienie, dźwięk, ntfy, Telegram lub webhook

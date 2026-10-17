@@ -2363,6 +2363,60 @@ Current setting: %.2f ppm	Dabartinis nustatymas: %.2f ppm
 No measurements of this radio yet.	Šio radijo matavimų dar nėra.
 History of this radio (ppm)	Šio radijo istorija (ppm)
 Drift: %+.3f ppm per minute	Dreifas: %+.3f ppm per minutę
+Band from (kHz)	Juosta nuo (kHz)
+Calibrate from two landmarks	Kalibruoti pagal du orientyrus
+Calibrated.	Sukalibruota.
+Camera snapshot URL (JPEG)	Kameros momentinės nuotraukos URL (JPEG)
+Cannot load the picture.	Nepavyksta įkelti paveikslo.
+Cannot save the snapshot.	Nepavyksta išsaugoti momentinės nuotraukos.
+Centre azimuth	Vidurio azimutas
+Click the picture to set the column of the selected landmark.	Spustelėkite paveikslą, kad nustatytumėte pasirinkto orientyro stulpelį.
+Demo skyline (no camera)	Demonstracinė panorama (be kameros)
+Enable RF camera	Įjungti RD kamerą
+Field of view	Matymo laukas
+Heat strength	Šilumos žemėlapio stiprumas
+No picture.	Nėra paveikslo.
+Normal camera lens	Įprastas kameros objektyvas
+Panorama (equirectangular)	Panorama (lygiakampė cilindrinė)
+Picture	Paveikslas
+Picture or panorama file	Paveikslo arba panoramos failas
+Projection	Projekcija
+RF camera	RD kamera
+Save snapshot	Išsaugoti momentinę nuotrauką
+Snapshot saved: %s	Momentinė nuotrauka išsaugota: %s
+Sub-bands	Povaisčiai
+The two landmarks do not fit a picture.	Du orientyrai netinka šiam paveikslui.
+Weakest shown	Silpniausias rodomas
+azimuth	azimutas
+azimuth only; the picture is just a backdrop	tik azimutas; paveikslas yra tik fonas
+column	stulpelis
+to (kHz)	iki (kHz)
+Translate to English	Versti į anglų kalbą
+Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	Kita kalba sakoma kalba papildomai verčiama į anglų kalbą, neprisijungus, šalia originalo. Reikia daugiakalbio modelio, procesoriaus laiko sunaudojama apie 1,5 karto daugiau; praleidžiama, kai variklis nespėja. Niekas nesiunčiama. Vertimo į kitas kalbas nėra.
+The loaded model is English only: translation needs a multilingual model.	Įkeltas modelis tik anglų kalbos: vertimui reikia daugiakalbio modelio.
+Live: stop the room	Gyvai: sustabdyti kambarį
+Copy room link	Kopijuoti kambario nuorodą
+Host PIN (to moderate on the room page):	Šeimininko PIN (moderuoti kambario puslapyje):
+Go live (Live rooms)...	Pradėti transliaciją (Gyvi kambariai)...
+Could not create the room	Nepavyko sukurti kambario
+Lost the connection to the rooms server	Prarastas ryšys su kambarių serveriu
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Gyvi kambariai: kol transliuojate, kiekvienas, turintis kambario nuorodą, gali matyti šio imtuvo krioklio diagramą, režimą ir derinamą dažnį bei kalbėtis tarpusavyje. Kambarių sąraše internete rodomas ir jo pavadinimas. Kol nenuspausite Pradėti transliaciją, niekas nesiunčiama, o kambariui pasibaigus nieko nelieka saugoma. Jūsų vieta, vardas ir garsas niekada nesiunčiami.
+Room title	Kambario pavadinimas
+Also show decoded ACARS text in the room (public)	Rodyti kambaryje ir dekoduotą ACARS tekstą (viešai)
+Needs Server > Send data to map server and Also share interesting ACARS messages.	Reikia: Serveris > Siųsti duomenis žemėlapio serveriui ir Dalytis ir įdomiais ACARS pranešimais.
+Go live	Pradėti transliaciją
+Schedule passes by itself	Praskridimus planuoti automatiškai
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Paimia pažymėtų grupių praskridimus po vieną, pirma aukščiausio prioriteto, ir pats paleidžia, sutaiko bei įrašo kiekvieną. Persidengiantys praskridimai sutrumpinami arba praleidžiami; pats paleistas imtuvas neliečiamas.
+Priority (higher wins)	Prioritetas (didesnis laimi)
+Keep the SDR free every day	Kasdien laikyti SDR laisvą
+from %d:00	nuo %d:00
+to %d:00	iki %d:00
+Nothing planned.	Nieko neplanuota.
+planned	suplanuota
+trimmed	sutrumpinta
+skipped: SDR reserved	praleista: SDR rezervuotas
+skipped: too short	praleista: per trumpas
+skipped: higher priority	praleista: aukštesnis prioritetas
 # passive radar
 Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Orlaivai iš transliuojančio siųstuvo aidų, naudojant du koherentinius kanalus
 Baseline %.1f km, transmitter bearing %.0f degrees	Bazinė linija %.1f km, siųstuvo azimutas %.0f laipsnių
@@ -2466,3 +2520,40 @@ Interference hunter	Trukdžių medžiotojas
 Monitor	Stebėjimas
 Walk	Ėjimas
 Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Stebėkite juostą dėl naujų trukdžių, nustatykite jų rūšį ir eidami suraskite šaltinį pagal stiprus / tylus matuoklį
+The watchlist file could not be read:	Stebėjimo sąrašų failo nepavyko perskaityti:
+APRS call signs	APRS šaukiniai
+Words in messages	Žodžiai pranešimuose
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Po vieną eilutėje: ICAO šešioliktainis adresas (4840D6), registracijos ženklas (A6-EDA) arba šaukinys (KLM1023). Galinė * atitinka pradžią (KLM*). Girdima per ADS-B, ACARS, VDL2 ir HFDL.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Po vieną eilutėje: MMSI numeris, laivo pavadinimas arba šaukinys. Galinė * atitinka pradžią (2190*). Girdima per AIS ir DSC.
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Po vieną eilutėje: šaukinys. Be SSID (LY1ABC) tinka bet kuris SSID, su SSID (LY1ABC-9) tik tas vienas.
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Po vieną eilutėje: dažnis MHz (162.025), su vienetu (162025 kHz) arba intervalas (144-146). Skaičiuojama viskas, kas joje dekoduojama.
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Po vieną eilutėje: žodis arba frazė (didžiosios ir mažosios raidės nesvarbios). Galinė * atitinka žodžių pradžią (fire*). Ieškoma ieškiklių, ACARS, APRS ir kituose dekoduotuose tekstuose.
+New list...	Naujas sąrašas...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	Sukurkite sąrašą kairėje: orlaiviai, laivai, APRS šaukiniai, dažniai arba žodžiai. OnAir praneš, kai kas nors iš jo bus išgirsta.
+On	Įjungta
+Tolerance (kHz)	Paklaida (kHz)
+entries	įrašai
+Delete list	Ištrinti sąrašą
+Desktop notification	Darbalaukio pranešimas
+Sound (follows Mute)	Garsas (laikosi nutildymo)
+WAV file, empty = three beeps	WAV failas, tuščias = trys pyptelėjimai
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	Push pranešimai siunčiami jūsų pasirinktai paslaugai su jūsų nurodytu adresu ir raktu. Jie saugomi jūsų duomenų aplanke ir niekada nerašomi į žurnalą.
+optional	neprivaloma
+optional, sent as a Bearer token	neprivaloma, siunčiama kaip Bearer raktas
+Send a test alert	Siųsti bandomąjį pranešimą
+Most alerts per hour (0 = no limit)	Daugiausia pranešimų per valandą (0 = be ribos)
+Same station again after (minutes)	Ta pati stotis vėl po (minučių)
+Quiet hours (no alerts, still listed in the history)	Tylos valandos (be pranešimų, istorijoje išlieka)
+From	Nuo
+Until	Iki
+Local time of this computer.	Šio kompiuterio vietinis laikas.
+alerts sent	pranešimų išsiųsta
+Heard	Išgirsta
+What happened	Kas įvyko
+held back: quiet hours	sulaikyta: tylos valandos
+held back: rate limit	sulaikyta: pasiekta riba
+Watchlists	Stebėjimo sąrašai
+Watch for these	Stebėti šiuos
+Lists	Sąrašai
+Watchlists...	Stebėjimo sąrašai...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Pranešimai, kai išgirstami sąraše esantys orlaiviai, laivai, šaukiniai, dažniai ar žodžiai: pranešimas, garsas, ntfy, Telegram arba webhook

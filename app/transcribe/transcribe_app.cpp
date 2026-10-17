@@ -42,6 +42,7 @@ struct Cfg {
     bool other = false;         // the sound of any other mode (amateur, CB, FM ...): off
     std::string model = "tiny.en";   // a catalogue id, or "file:<name>" for a file the user put in the models folder
     std::string lang = "en";    // "auto" needs a multilingual model
+    bool translate = false;     // also keep an English translation of foreign speech (multilingual model)
     int threads = 2;            // CPU budget: threads of the speech engine
     int days = 7;               // retention
     bool loaded = false;
@@ -85,6 +86,7 @@ void load() {
     C.other = d.getB("txOther", false);
     C.model = d.getS("txModel", "tiny.en");
     C.lang = d.getS("txLang", "en");
+    C.translate = d.getB("txTranslate", false);
     C.threads = (int)std::max(1L, std::min(8L, d.getI("txThreads", 2)));
     C.days = (int)std::max(1L, std::min(365L, d.getI("txDays", 7)));
 }
@@ -92,7 +94,7 @@ void save() {
     Rx1 r;
     plat::Prefs& d = plat::prefs();
     d.setB("txEnabled", C.enabled); d.setB("txAirband", C.airband); d.setB("txMarine", C.marine); d.setB("txOther", C.other);
-    d.setS("txModel", C.model); d.setS("txLang", C.lang); d.setI("txThreads", C.threads); d.setI("txDays", C.days);
+    d.setS("txModel", C.model); d.setS("txLang", C.lang); d.setB("txTranslate", C.translate); d.setI("txThreads", C.threads); d.setI("txDays", C.days);
     d.flush();
 }
 
@@ -124,6 +126,7 @@ void applyConfig() {
     c.workers = 1;
     c.threads = C.threads;
     c.language = C.lang;
+    c.translate = C.translate;
     c.queueMax = 6;
     gTr.configure(c);
     gStore.setLimits(20000, C.days);
@@ -248,7 +251,8 @@ void tick(App& first) {
     static bool lastEnabled = false;
     static int lastThreads = 0;
     static std::string lastLang;
-    if (lastEnabled != C.enabled || lastThreads != C.threads || lastLang != C.lang) { lastEnabled = C.enabled; lastThreads = C.threads; lastLang = C.lang; applyConfig(); }
+    static bool lastTr = false;
+    if (lastEnabled != C.enabled || lastThreads != C.threads || lastLang != C.lang || lastTr != C.translate) { lastTr = C.translate; lastEnabled = C.enabled; lastThreads = C.threads; lastLang = C.lang; applyConfig(); }
     ensureBackend();
     if (gDl.state() == dect2::ModelDownloader::State::Done) {
         const std::string id = gDl.modelId();
@@ -326,7 +330,9 @@ std::string tstr(int64_t wall) { return acarslog::timeText(wall); }
 
 std::string entryLine(const dect2::TranscriptEntry& e) {
     std::string s = e.channel.empty() ? std::string() : e.channel + ": ";
-    return s + e.text;
+    s += e.text;
+    if (!e.translation.empty()) s += "\n[EN] " + e.translation;
+    return s;
 }
 
 std::vector<dect2::TranscriptEntry> voiceFor(uint32_t icao, const std::string& callsign, const std::string& reg, size_t limit) {
@@ -393,7 +399,9 @@ void voiceSection(const App& a, uint32_t icao, const std::string& callsign, cons
     ImGui::PushFont(a.mono, 0);
     for (const auto& e : v) {
         ImGui::TextDisabled("%s  %s%s%s", tstr(e.wall).c_str(), e.channel.c_str(), e.speaker.empty() ? "" : "  ", e.speaker.c_str());
-        ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(e.text.c_str()); ImGui::PopTextWrapPos();
+        ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(e.text.c_str());
+        if (!e.translation.empty()) { ImGui::TextDisabled("EN"); ImGui::SameLine(); ImGui::TextUnformatted(e.translation.c_str()); }
+        ImGui::PopTextWrapPos();
         ImGui::Dummy(ImVec2(0, 2 * gUi));
     }
     ImGui::PopFont();
@@ -616,6 +624,13 @@ void settingsPanel() {
         ImGui::TextColored(pal::warnAmber(), "%s", tr("The loaded model is English only: other languages need a multilingual model (tiny, base or small without .en)."));
         ImGui::PopTextWrapPos();
     }
+    if (ImGui::Checkbox(tr("Translate to English"), &C.translate)) { save(); applyConfig(); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available."));
+    if (C.translate && backendReady() && gBackendEnglishOnly) {
+        ImGui::PushTextWrapPos(0);
+        ImGui::TextColored(pal::warnAmber(), "%s", tr("The loaded model is English only: translation needs a multilingual model."));
+        ImGui::PopTextWrapPos();
+    }
     ImGui::SetNextItemWidth(160 * gUi);
     if (ImGui::SliderInt(tr("CPU threads"), &C.threads, 1, 8)) { save(); applyConfig(); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("How many processor threads the speech engine may use for one transmission. Fewer threads use less battery and take longer."));
@@ -750,6 +765,11 @@ void window(App& a) {
             ImGui::TableNextColumn();
             ImGui::PushTextWrapPos(0);
             ImGui::TextUnformatted(e.text.c_str());
+            if (!e.translation.empty()) {
+                ImGui::TextDisabled("%s > EN", e.lang.empty() ? "?" : e.lang.c_str());
+                ImGui::SameLine();
+                ImGui::TextUnformatted(e.translation.c_str());
+            }
             ImGui::PopTextWrapPos();
             if (ImGui::IsItemClicked()) ImGui::SetClipboardText(entryLine(e).c_str());
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Click to copy this line"));
