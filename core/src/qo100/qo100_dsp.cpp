@@ -25,7 +25,7 @@ void Decimator::configure(double inRate, double passHz, double minOutRate) {
     while (r / 2 >= minOutRate && r / 2 > 2.2 * passHz) {
         Stage s;
         s.h = dmr::lowpassTaps(passHz, r / 2 - passHz, r, 70, 9, 255);
-        s.hist.assign(2 * s.h.size(), cf32(0, 0));
+        s.hist.assign(s.h.size() - 1, cf32(0, 0));   // the last T - 1 input samples
         st_.push_back(std::move(s));
         r /= 2;
     }
@@ -33,7 +33,7 @@ void Decimator::configure(double inRate, double passHz, double minOutRate) {
 }
 
 void Decimator::reset() {
-    for (Stage& s : st_) { std::fill(s.hist.begin(), s.hist.end(), cf32(0, 0)); s.pos = 0; s.ph = 0; }
+    for (Stage& s : st_) { std::fill(s.hist.begin(), s.hist.end(), cf32(0, 0)); s.ph = 0; }
 }
 
 void Decimator::process(const cf32* x, size_t n, std::vector<cf32>& out) {
@@ -41,19 +41,37 @@ void Decimator::process(const cf32* x, size_t n, std::vector<cf32>& out) {
     a_.assign(x, x + n);
     for (size_t si = 0; si < st_.size(); si++) {
         Stage& s = st_[si];
-        const int T = (int)s.h.size();
+        const size_t T = s.h.size(), m = a_.size();
         std::vector<cf32>& dst = si + 1 == st_.size() ? out : b_;
         if (&dst == &b_) b_.clear();
-        for (const cf32 v : a_) {
-            s.hist[(size_t)s.pos] = v; s.hist[(size_t)(s.pos + T)] = v;
-            if (++s.pos >= T) s.pos = 0;
-            if (++s.ph < 2) continue;
-            s.ph = 0;
-            const cf32* w = &s.hist[(size_t)s.pos];
-            float ar = 0, ai = 0;
-            for (int k = 0; k < T; k++) { ar += s.h[(size_t)k] * w[k].real(); ai += s.h[(size_t)k] * w[k].imag(); }
-            dst.push_back(cf32(ar, ai));
+        // the last T - 1 inputs of the previous call, then this call's: the window of the input at index j is ext[j .. j + T)
+        ext_.resize(T - 1 + m);
+        std::copy(s.hist.begin(), s.hist.end(), ext_.begin());
+        std::copy(a_.begin(), a_.end(), ext_.begin() + (std::ptrdiff_t)(T - 1));
+        const size_t first = s.ph == 0 ? 1 : 0;   // an output after every second input
+        const size_t nOut = m > first ? (m - first + 1) / 2 : 0;
+        const size_t base = dst.size();
+        dst.resize(base + nOut);
+        const float* h = s.h.data();
+        size_t o = 0;
+        // four outputs at a time: each keeps its own sequential sum (the result is the one-output-at-a-time value bit for bit), the four chains overlap
+        for (; o + 4 <= nOut; o += 4) {
+            const cf32* e = &ext_[first + 2 * o];
+            float ar[4] = {0, 0, 0, 0}, ai[4] = {0, 0, 0, 0};
+            for (size_t k = 0; k < T; k++) {
+                const float hk = h[k];
+                for (int q = 0; q < 4; q++) { ar[q] += hk * e[k + (size_t)(2 * q)].real(); ai[q] += hk * e[k + (size_t)(2 * q)].imag(); }
+            }
+            for (int q = 0; q < 4; q++) dst[base + o + (size_t)q] = cf32(ar[q], ai[q]);
         }
+        for (; o < nOut; o++) {
+            const cf32* e = &ext_[first + 2 * o];
+            float ar = 0, ai = 0;
+            for (size_t k = 0; k < T; k++) { ar += h[k] * e[k].real(); ai += h[k] * e[k].imag(); }
+            dst[base + o] = cf32(ar, ai);
+        }
+        std::copy(ext_.end() - (std::ptrdiff_t)(T - 1), ext_.end(), s.hist.begin());
+        s.ph = (int)((s.ph + m) & 1);
         if (&dst == &b_) std::swap(a_, b_);
     }
 }

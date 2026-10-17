@@ -2374,3 +2374,46 @@ Room title	Kambario pavadinimas
 Also show decoded ACARS text in the room (public)	Rodyti kambaryje ir dekoduotą ACARS tekstą (viešai)
 Needs Server > Send data to map server and Also share interesting ACARS messages.	Reikia: Serveris > Siųsti duomenis žemėlapio serveriui ir Dalytis ir įdomiais ACARS pranešimais.
 Go live	Pradėti transliaciją
+Schedule passes by itself	Praskridimus planuoti automatiškai
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Paimia pažymėtų grupių praskridimus po vieną, pirma aukščiausio prioriteto, ir pats paleidžia, sutaiko bei įrašo kiekvieną. Persidengiantys praskridimai sutrumpinami arba praleidžiami; pats paleistas imtuvas neliečiamas.
+Priority (higher wins)	Prioritetas (didesnis laimi)
+Keep the SDR free every day	Kasdien laikyti SDR laisvą
+from %d:00	nuo %d:00
+to %d:00	iki %d:00
+Nothing planned.	Nieko neplanuota.
+planned	suplanuota
+trimmed	sutrumpinta
+skipped: SDR reserved	praleista: SDR rezervuotas
+skipped: too short	praleista: per trumpas
+skipped: higher priority	praleista: aukštesnis prioritetas
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Orlaivai iš transliuojančio siųstuvo aidų, naudojant du koherentinius kanalus
+Baseline %.1f km, transmitter bearing %.0f degrees	Bazinė linija %.1f km, siųstuvo azimutas %.0f laipsnių
+Cancellation taps	Slopinimo koeficientai
+Cannot open the recording.	Nepavyksta atidaryti įrašo.
+Clutter cancelled by %.0f dB, %d detections	Trukdžiai nuslopinti %.0f dB, aptikimų: %d
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Kompleksinis float32, 0 kanalas atraminis, 1 kanalas stebėjimo, sinchroniniai pagal atskaitą.
+Doppler Hz	Doplerio Hz
+Doppler over time	Doplerio dažnis laike
+Echo level (dB)	Aido lygis (dB)
+End of the recording.	Įrašo pabaiga.
+Enter the illuminator position.	Įveskite apšvietėjo (siųstuvo) padėtį.
+False alarm rate 1e-x	Klaidingų aliarmų dažnis 1e-x
+Illuminator	Apšvietėjas
+NLMS instead of ECA	NLMS vietoje ECA
+Noise-like waveform (DVB-T)	Triukšmą primenanti bangos forma (DVB-T)
+Passive radar	Pasyvusis radaras
+Processing	Apdorojimas
+Range km	Atstumas km
+Range rate (m/s)	Atstumo kitimo greitis (m/s)
+Range-Doppler map	Atstumo ir Doplerio žemėlapis
+Rate m/s	Greitis m/s
+Saved illuminators	Išsaugoti apšvietėjai
+Second target	Antras taikinys
+Target range (km)	Taikinio atstumas (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Taikinius, esančius arčiau nei koeficientų skaičius atstumo atskaitomis, slopinimas paslepia.
+The receiver position is the one set for ADS-B.	Imtuvo padėtis yra ta pati, kuri nustatyta ADS-B.
+Tracks	Trasos
+Two recordings (reference, surveillance)	Du įrašai (atraminis, stebėjimo)
+Two-channel recording (cf32)	Dviejų kanalų įrašas (cf32)
+Waiting for data.	Laukiama duomenų.

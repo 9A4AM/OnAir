@@ -2374,3 +2374,46 @@ Room title	Raumtitel
 Also show decoded ACARS text in the room (public)	Auch dekodierten ACARS-Text im Raum zeigen (öffentlich)
 Needs Server > Send data to map server and Also share interesting ACARS messages.	Benötigt Server > Daten an Kartenserver senden und Auch interessante ACARS-Nachrichten teilen.
 Go live	Live gehen
+Schedule passes by itself	Durchgänge selbst planen
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Nimmt die Durchgänge der angehakten Gruppen nacheinander auf, höchste Priorität zuerst, und startet, stimmt ab und nimmt jeden ohne dein Zutun auf. Überlappende Durchgänge werden gekürzt oder übersprungen; ein von dir gestarteter Empfänger bleibt unberührt.
+Priority (higher wins)	Priorität (höher gewinnt)
+Keep the SDR free every day	SDR täglich freihalten
+from %d:00	ab %d:00
+to %d:00	bis %d:00
+Nothing planned.	Nichts geplant.
+planned	geplant
+trimmed	gekürzt
+skipped: SDR reserved	übersprungen: SDR reserviert
+skipped: too short	übersprungen: zu kurz
+skipped: higher priority	übersprungen: höhere Priorität
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Flugzeuge aus den Echos eines Rundfunksenders, mit zwei kohärenten Kanälen
+Baseline %.1f km, transmitter bearing %.0f degrees	Basislinie %.1f km, Senderpeilung %.0f Grad
+Cancellation taps	Auslöschungs-Taps
+Cannot open the recording.	Die Aufnahme lässt sich nicht öffnen.
+Clutter cancelled by %.0f dB, %d detections	Störechos um %.0f dB unterdrückt, %d Detektionen
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Komplex float32, Kanal 0 Referenz und Kanal 1 Überwachung, abtastsynchron.
+Doppler Hz	Doppler Hz
+Doppler over time	Doppler über der Zeit
+Echo level (dB)	Echopegel (dB)
+End of the recording.	Ende der Aufnahme.
+Enter the illuminator position.	Position des Beleuchtungssenders eingeben.
+False alarm rate 1e-x	Fehlalarmrate 1e-x
+Illuminator	Beleuchtungssender
+NLMS instead of ECA	NLMS statt ECA
+Noise-like waveform (DVB-T)	Rauschähnliche Signalform (DVB-T)
+Passive radar	Passivradar
+Processing	Verarbeitung
+Range km	Entfernung km
+Range rate (m/s)	Entfernungsänderung (m/s)
+Range-Doppler map	Entfernungs-Doppler-Karte
+Rate m/s	Rate m/s
+Saved illuminators	Gespeicherte Beleuchtungssender
+Second target	Zweites Ziel
+Target range (km)	Zielentfernung (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Ziele, die näher sind als die Tap-Zahl in Entfernungsschritten, werden von der Auslöschung verdeckt.
+The receiver position is the one set for ADS-B.	Als Empfängerposition dient die für ADS-B eingestellte.
+Tracks	Spuren
+Two recordings (reference, surveillance)	Zwei Aufnahmen (Referenz, Überwachung)
+Two-channel recording (cf32)	Zweikanal-Aufnahme (cf32)
+Waiting for data.	Warte auf Daten.

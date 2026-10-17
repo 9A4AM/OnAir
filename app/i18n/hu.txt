@@ -2360,3 +2360,46 @@ Room title	Szoba címe
 Also show decoded ACARS text in the room (public)	A dekódolt ACARS-szöveg megjelenítése a szobában (nyilvános)
 Needs Server > Send data to map server and Also share interesting ACARS messages.	Szükséges hozzá: Szerver > Adatok küldése a térképszervernek és Az érdekes ACARS-üzenetek megosztása is.
 Go live	Élő adás indítása
+Schedule passes by itself	Átvonulások automatikus ütemezése
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	A bejelölt csoportok átvonulásait egymás után veszi, a legnagyobb prioritásúval kezdve, és mindegyiket magától indítja, hangolja és rögzíti. Az átfedő átvonulásokat lerövidíti vagy kihagyja; a te indította vevőhöz nem nyúl.
+Priority (higher wins)	Prioritás (a magasabb nyer)
+Keep the SDR free every day	SDR szabadon tartása naponta
+from %d:00	%d:00-tól
+to %d:00	%d:00-ig
+Nothing planned.	Nincs betervezve semmi.
+planned	betervezve
+trimmed	lerövidítve
+skipped: SDR reserved	kihagyva: az SDR le van foglalva
+skipped: too short	kihagyva: túl rövid
+skipped: higher priority	kihagyva: magasabb prioritás
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Repülőgépek egy műsorszóró adó visszaverődéseiből, két koherens csatornával
+Baseline %.1f km, transmitter bearing %.0f degrees	Alapvonal %.1f km, az adó iránya %.0f fok
+Cancellation taps	Kioltási együtthatók
+Cannot open the recording.	A felvétel nem nyitható meg.
+Clutter cancelled by %.0f dB, %d detections	Zavar elnyomva %.0f dB-lel, %d észlelés
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Komplex float32, a 0. csatorna referencia, az 1. megfigyelő, mintaszinkron.
+Doppler Hz	Doppler Hz
+Doppler over time	Doppler az idő függvényében
+Echo level (dB)	Visszhang szintje (dB)
+End of the recording.	A felvétel vége.
+Enter the illuminator position.	Add meg a megvilágító adó helyét.
+False alarm rate 1e-x	Téves riasztás aránya 1e-x
+Illuminator	Megvilágító adó
+NLMS instead of ECA	NLMS az ECA helyett
+Noise-like waveform (DVB-T)	Zajszerű jelalak (DVB-T)
+Passive radar	Passzív radar
+Processing	Feldolgozás
+Range km	Távolság km
+Range rate (m/s)	Távolságváltozás sebessége (m/s)
+Range-Doppler map	Távolság–Doppler térkép
+Rate m/s	Sebesség m/s
+Saved illuminators	Mentett megvilágító adók
+Second target	Második cél
+Target range (km)	Cél távolsága (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Azokat a célokat, amelyek közelebb vannak, mint az együtthatók száma távolságmintákban, elrejti a kioltás.
+The receiver position is the one set for ADS-B.	A vevő helyzete az ADS-B-hez beállított.
+Tracks	Pályák
+Two recordings (reference, surveillance)	Két felvétel (referencia, megfigyelő)
+Two-channel recording (cf32)	Kétcsatornás felvétel (cf32)
+Waiting for data.	Adatra várakozás.

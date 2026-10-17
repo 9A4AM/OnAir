@@ -2374,3 +2374,46 @@ Room title	ルームのタイトル
 Also show decoded ACARS text in the room (public)	デコードしたACARSテキストもルームに表示する（公開）
 Needs Server > Send data to map server and Also share interesting ACARS messages.	サーバー > 地図サーバーにデータを送信 と 興味深いACARSメッセージも共有 が必要です。
 Go live	ライブ配信を開始
+Schedule passes by itself	通過を自動でスケジュール
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	チェックしたグループの通過を優先度の高い順に1つずつ取り、操作なしで開始・同調・録音します。重なる通過は短縮またはスキップされ、自分で起動した受信機には手を触れません。
+Priority (higher wins)	優先度(高い方が優先)
+Keep the SDR free every day	毎日SDRを空けておく
+from %d:00	%d:00から
+to %d:00	%d:00まで
+Nothing planned.	予定なし。
+planned	予定済み
+trimmed	短縮
+skipped: SDR reserved	スキップ: SDR予約中
+skipped: too short	スキップ: 短すぎる
+skipped: higher priority	スキップ: 優先度が高い通過あり
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	放送局の反射波から航空機を検出（コヒーレントな2チャンネル）
+Baseline %.1f km, transmitter bearing %.0f degrees	基線 %.1f km、送信所の方位 %.0f 度
+Cancellation taps	キャンセレーションのタップ数
+Cannot open the recording.	録音ファイルを開けません。
+Clutter cancelled by %.0f dB, %d detections	クラッタを %.0f dB 抑圧、検出 %d 件
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	複素 float32。チャンネル0が参照、チャンネル1が監視、サンプル同期。
+Doppler Hz	ドップラー Hz
+Doppler over time	ドップラーの時間変化
+Echo level (dB)	エコーレベル (dB)
+End of the recording.	録音の終わり。
+Enter the illuminator position.	照射する送信所の位置を入力してください。
+False alarm rate 1e-x	誤警報率 1e-x
+Illuminator	照射源
+NLMS instead of ECA	ECA の代わりに NLMS
+Noise-like waveform (DVB-T)	雑音状の波形 (DVB-T)
+Passive radar	パッシブレーダー
+Processing	処理
+Range km	距離 km
+Range rate (m/s)	距離変化率 (m/s)
+Range-Doppler map	距離-ドップラーマップ
+Rate m/s	変化率 m/s
+Saved illuminators	保存済みの照射源
+Second target	2つ目の目標
+Target range (km)	目標の距離 (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	距離サンプルで見てタップ数より近い目標は、キャンセレーションにより隠れます。
+The receiver position is the one set for ADS-B.	受信機の位置は ADS-B に設定したものを使います。
+Tracks	トラック
+Two recordings (reference, surveillance)	2つの録音（参照、監視）
+Two-channel recording (cf32)	2チャンネルの録音 (cf32)
+Waiting for data.	データを待っています。
