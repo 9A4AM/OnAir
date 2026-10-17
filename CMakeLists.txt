@@ -863,6 +863,10 @@ if(DECT2_BUILD_TESTS)
   target_link_libraries(test_exact_resampler PRIVATE dect2core)
   add_test(NAME exact_resampler COMMAND test_exact_resampler)
 
+  add_executable(test_dji_resampler tests/dsp/test_dji_resampler.cpp)
+  target_link_libraries(test_dji_resampler PRIVATE dect2core)
+  add_test(NAME dji_resampler COMMAND test_dji_resampler)
+
   add_executable(test_isdbt_rx tests/isdbt/test_isdbt_rx.cpp)
   target_link_libraries(test_isdbt_rx PRIVATE dect2core)
   add_test(NAME isdbt_rx COMMAND test_isdbt_rx)
