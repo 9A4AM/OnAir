@@ -1368,3 +1368,17 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: convertitore discendente da 1500 MHz per circa 1,5-3 GHz (2,4 GHz, 2,3/3,4 GHz). Collegalo tra l'antenna e la radio; la radio vede RF - 1500 MHz. Sotto i 1500 MHz non è supportato.
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	Equipaggio
+Operations	Operazioni
+Company	Compagnia
+Maintenance	Manutenzione
+Fault	Guasto
+Show all messages	Mostra tutti i messaggi
+ACARS messages	Messaggi ACARS
+%d ACARS messages	%d messaggi ACARS
+Copy these messages as text	Copia questi messaggi come testo
+No ACARS messages heard from this aircraft	Nessun messaggio ACARS ricevuto da questo aeromobile
+Also share interesting ACARS messages (text becomes public on the map)	Condividi anche i messaggi ACARS interessanti (il testo diventa pubblico sulla mappa)
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	Messaggi inviati da un aeromobile via ACARS (testo libero e messaggi di equipaggio, operazioni, compagnia e manutenzione), mostrati per 48 ore nella scheda di quell'aeromobile sulla mappa pubblica. Numeri di telefono e indirizzi e-mail vengono rimossi prima. I rapporti di posizione e i test di collegamento non ne fanno parte. Puoi disattivarlo in qualsiasi momento.
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	I messaggi che gli aeromobili inviano via ACARS (testo libero e messaggi di equipaggio, operazioni, compagnia e manutenzione) possono comparire anche nella scheda dell'aeromobile, senza numeri di telefono né indirizzi e-mail. È una scelta separata, modificabile nel menu Server.

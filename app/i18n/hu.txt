@@ -1371,3 +1371,17 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 1500 MHz-es lekeverő kb. 1,5-3 GHz-hez (2,4 GHz, 2,3/3,4 GHz). Az antenna és a rádió közé kell kötni; a rádió RF - 1500 MHz-et lát. 1500 MHz alatt nem támogatott.
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	Személyzet
+Operations	Üzemeltetés
+Company	Légitársaság
+Maintenance	Karbantartás
+Fault	Hiba
+Show all messages	Összes üzenet mutatása
+ACARS messages	ACARS-üzenetek
+%d ACARS messages	%d ACARS-üzenet
+Copy these messages as text	Üzenetek másolása szövegként
+No ACARS messages heard from this aircraft	Ettől a légi járműtől nem érkezett ACARS-üzenet
+Also share interesting ACARS messages (text becomes public on the map)	Az érdekes ACARS-üzenetek megosztása is (a szöveg nyilvános lesz a térképen)
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	A légi jármű ACARS-on küldött üzenetei (szabad szöveg, valamint személyzeti, üzemeltetési, társasági és karbantartási üzenetek) 48 órán át látszanak a jármű kártyáján a nyilvános térképen. A telefonszámokat és e-mail-címeket előtte eltávolítjuk. A helyzetjelentések és a kapcsolatpróbák nem tartoznak ide. Bármikor kikapcsolhatod.
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	A légi járművek ACARS-on küldött üzenetei (szabad szöveg, valamint személyzeti, üzemeltetési, társasági és karbantartási üzenetek) megjelenhetnek a jármű kártyáján is, telefonszámok és e-mail-címek nélkül. Ez külön választás, a Szerver menüben módosíthatod.

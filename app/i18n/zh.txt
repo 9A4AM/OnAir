@@ -1386,3 +1386,17 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 1500 MHz 下变频器,适用于约 1.5 至 3 GHz (2.4 GHz、2.3/3.4 GHz)。接在天线和电台之间;电台看到的是 RF - 1500 MHz。低于 1500 MHz 不支持。
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	机组
+Operations	运行
+Company	航空公司
+Maintenance	维护
+Fault	故障
+Show all messages	显示所有消息
+ACARS messages	ACARS 消息
+%d ACARS messages	%d 条 ACARS 消息
+Copy these messages as text	将这些消息复制为文本
+No ACARS messages heard from this aircraft	未收到这架飞机的 ACARS 消息
+Also share interesting ACARS messages (text becomes public on the map)	同时分享有价值的 ACARS 消息（文本将在地图上公开）
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	飞机通过 ACARS 发送的消息（自由文本，以及机组、运行、公司和维护消息）会在公开地图上该飞机的卡片中显示 48 小时。电话号码和电子邮件地址会先被移除。位置报告和链路测试不包括在内。你可以随时关闭。
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	飞机通过 ACARS 发送的消息（自由文本，以及机组、运行、公司和维护消息）也可以显示在飞机卡片上，并已去除电话号码和电子邮件地址。这是一项单独的选择，可在“服务器”菜单中更改。

@@ -144,14 +144,16 @@ void tab(App& a) {
     subNav("adsbv", S.viewMode, {"Map", "Table", "Radar", tr("Range"), "Range stats"});
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     const float dw = std::min(250.f * gUi, W * 0.26f);
-    ImGui::BeginChild("##adsb_l", ImVec2(S.viewMode == 1 || S.viewMode >= 3 ? W : W - dw - 8 * gUi, H));
+    // the readout beside the map and radar; beside the table only once an aircraft is picked (its ACARS messages are in it)
+    const bool pane = S.viewMode == 0 || S.viewMode == 2 || (S.viewMode == 1 && S.sel != 0xFFFFFFFFu);
+    ImGui::BeginChild("##adsb_l", ImVec2(pane ? W - dw - 8 * gUi : W, H));
     if (S.viewMode == 0) mapView(a, ImGui::GetContentRegionAvail());
     else if (S.viewMode == 1) aircraftTable(a, false);
     else if (S.viewMode == 2) radar(a, ImGui::GetContentRegionAvail());
     else if (S.viewMode == 3) rangeView(S.range, ImGui::GetContentRegionAvail(), au::distOut(S.units, 1.0 / 1.852), au::distUnit(S.units), "adsb", receiverLocationSet());
     else statsView(a);
     ImGui::EndChild();
-    if (S.viewMode != 1 && S.viewMode < 3) {
+    if (pane) {
         ImGui::SameLine();
         ImGui::BeginChild("##adsb_r", ImVec2(0, H));
         detail(a);

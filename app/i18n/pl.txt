@@ -1386,3 +1386,17 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: konwerter obniżający 1500 MHz dla ok. 1,5-3 GHz (2,4 GHz, 2,3/3,4 GHz). Podłącz go między antenę a radio; radio widzi RF - 1500 MHz. Poniżej 1500 MHz nie jest obsługiwane.
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	Załoga
+Operations	Operacje
+Company	Linia lotnicza
+Maintenance	Utrzymanie
+Fault	Usterka
+Show all messages	Pokaż wszystkie wiadomości
+ACARS messages	Wiadomości ACARS
+%d ACARS messages	%d wiadomości ACARS
+Copy these messages as text	Skopiuj te wiadomości jako tekst
+No ACARS messages heard from this aircraft	Nie odebrano wiadomości ACARS od tego statku powietrznego
+Also share interesting ACARS messages (text becomes public on the map)	Udostępniaj także ciekawe wiadomości ACARS (tekst staje się publiczny na mapie)
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	Wiadomości wysłane przez statek powietrzny przez ACARS (dowolny tekst oraz wiadomości załogi, operacyjne, linii i serwisowe) są pokazywane przez 48 godzin na karcie tego statku na publicznej mapie. Numery telefonów i adresy e-mail są wcześniej usuwane. Raporty pozycji i testy łącza nie wchodzą w to. Możesz to wyłączyć w każdej chwili.
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	Wiadomości wysyłane przez statki powietrzne przez ACARS (dowolny tekst oraz wiadomości załogi, operacyjne, linii i serwisowe) mogą być też pokazane na karcie statku, bez numerów telefonów i adresów e-mail. To osobny wybór, który możesz zmienić w menu Serwer.

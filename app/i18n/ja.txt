@@ -1386,3 +1386,17 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 約1.5〜3 GHz (2.4 GHz、2.3/3.4 GHz) 用の1500 MHzダウンコンバーターです。アンテナと無線機の間に接続します。無線機には RF - 1500 MHz が見えます。1500 MHz未満は非対応です。
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	乗員
+Operations	運航
+Company	航空会社
+Maintenance	整備
+Fault	故障
+Show all messages	すべてのメッセージを表示
+ACARS messages	ACARSメッセージ
+%d ACARS messages	ACARSメッセージ %d 件
+Copy these messages as text	これらのメッセージをテキストとしてコピー
+No ACARS messages heard from this aircraft	この機体からのACARSメッセージは受信されていません
+Also share interesting ACARS messages (text becomes public on the map)	興味深いACARSメッセージも共有する（テキストは地図上で公開されます）
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	機体がACARSで送信したメッセージ（自由文、乗員・運航・会社・整備のメッセージ）を、公開地図のその機体のカードに48時間表示します。電話番号とメールアドレスは事前に削除されます。位置報告とリンクテストは含まれません。いつでもオフにできます。
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	機体がACARSで送信するメッセージ（自由文、乗員・運航・会社・整備のメッセージ）を、電話番号とメールアドレスを除いて機体のカードにも表示できます。これは別の選択で、サーバーメニューで変更できます。

@@ -1368,3 +1368,17 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: conversor descendente de 1500 MHz para cerca de 1,5 a 3 GHz (2,4 GHz, 2,3/3,4 GHz). Ligue-o entre a antena e o rádio; o rádio vê RF - 1500 MHz. Abaixo de 1500 MHz não é suportado.
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	Tripulação
+Operations	Operações
+Company	Companhia
+Maintenance	Manutenção
+Fault	Avaria
+Show all messages	Mostrar todas as mensagens
+ACARS messages	Mensagens ACARS
+%d ACARS messages	%d mensagens ACARS
+Copy these messages as text	Copiar estas mensagens como texto
+No ACARS messages heard from this aircraft	Nenhuma mensagem ACARS recebida desta aeronave
+Also share interesting ACARS messages (text becomes public on the map)	Partilhar também mensagens ACARS interessantes (o texto torna-se público no mapa)
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	Mensagens que uma aeronave enviou por ACARS (texto livre e mensagens de tripulação, operações, companhia e manutenção), mostradas durante 48 horas na ficha dessa aeronave no mapa público. Números de telefone e endereços de e-mail são removidos antes. Relatórios de posição e testes de ligação não fazem parte. Pode desativar a qualquer momento.
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	As mensagens que as aeronaves enviam por ACARS (texto livre e mensagens de tripulação, operações, companhia e manutenção) também podem aparecer na ficha da aeronave, sem números de telefone nem endereços de e-mail. É uma escolha separada, que pode mudar no menu Servidor.

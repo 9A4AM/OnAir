@@ -3,6 +3,7 @@
 #include "../app.h"
 #include "../state/receivers.h"
 #include "map_ask.h"
+#include "../adsb/adsb_acars.h"
 #ifndef ONAIR_VERSION
 #define ONAIR_VERSION "dev"
 #endif
@@ -168,6 +169,7 @@ struct Track {
     double alt = 0, hdg = 0, spd = 0, vrate = 0, age = 0;
     int squawk = 0;
     std::vector<std::pair<double, double>> path;
+    std::vector<dect2::AcarsLogEntry> msgs;   // interesting ACARS messages not sent yet (only when the user chose to share them)
 };
 
 struct RunGate {
@@ -453,6 +455,32 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
     gG = nullptr;
 }
 
+// The interesting ACARS messages of each aircraft track that were not sent before, redacted (phone numbers, e-mail), the newest few.
+// Only with the user's choice (Server > share ACARS messages). Remembered by message time so a message goes up once.
+void attachMsgs(std::vector<Track>& tracks) {
+    static std::unordered_map<std::string, int64_t> sent;    // track id > time of the newest message sent
+    std::unordered_map<std::string, int> holders;
+    for (const Track& t : tracks) if (t.kind && !std::strcmp(t.kind, "aircraft") && !t.label.empty() && t.label != t.id) holders[dect2::acarsNormFlight(t.label)]++;
+    for (Track& t : tracks) {
+        if (!t.kind || std::strcmp(t.kind, "aircraft")) continue;
+        const auto h = holders.find(dect2::acarsNormFlight(t.label));
+        std::vector<dect2::AcarsLogEntry> v = acarslog::forTrack(t.id, t.label == t.id ? std::string() : t.label, h == holders.end() ? 1 : h->second);
+        const int64_t from = sent.count(t.id) ? sent[t.id] : 0;
+        int64_t newest = from;
+        for (auto it = v.rbegin(); it != v.rend(); ++it) {      // oldest first
+            if (it->wall <= from || !dect2::acarsInteresting(it->cat)) continue;
+            dect2::AcarsLogEntry e = *it;
+            e.text = dect2::acarsRedact(e.text);
+            if (e.text.empty()) continue;
+            newest = std::max(newest, e.wall);
+            t.msgs.push_back(std::move(e));
+        }
+        if (t.msgs.size() > 5) t.msgs.erase(t.msgs.begin(), t.msgs.end() - 5);
+        if (newest > from) sent[t.id] = newest;
+    }
+    if (sent.size() > 3000) sent.clear();
+}
+
 std::string buildJson(const std::string& station, const std::vector<Track>& tracks) {
     std::string j = "{\"station\":\"" + jsonEsc(station) + "\",\"tracks\":[";
     bool first = true;
@@ -489,6 +517,11 @@ std::string buildJson(const std::string& station, const std::vector<Track>& trac
                 snprintf(b, sizeof b, "[%.5f,%.5f]", t.path[i].first, t.path[i].second);
                 j += b;
             }
+            j += ']';
+        }
+        if (!t.msgs.empty()) {
+            j += ",\"msgs\":[";
+            for (size_t i = 0; i < t.msgs.size(); i++) { if (i) j += ','; j += dect2::acarsEntryJson(t.msgs[i]); }
             j += ']';
         }
         j += '}';
@@ -558,6 +591,21 @@ void stopSend(App& s) {
     mapLog("send disabled");
 }
 
+// "Also share interesting ACARS messages": free text and crew / operations / company / maintenance messages from the aircraft on the map.
+// They are public radio, but the text may name people, so phone numbers and e-mail addresses are removed before upload and this is its own choice.
+void msgsToggle(App& s, bool menu) {
+    bool v = s.mapMsgs;
+    const char* label = tr("Also share interesting ACARS messages (text becomes public on the map)");
+    bool hit = false;
+    if (menu) hit = ImGui::MenuItem(label, nullptr, v);
+    else hit = ImGui::Checkbox(label, &v) && v != s.mapMsgs;
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("%s", tr("Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time."));
+    if (!hit) return;
+    s.mapMsgs = menu ? !s.mapMsgs : v;
+    savePrefs(s);
+}
+
 void consentPopup(App& a) {
     App& s = rootApp(a);
     if (gAskConsent) { ImGui::OpenPopup("##mapconsent"); gAskConsent = false; }
@@ -566,6 +614,10 @@ void consentPopup(App& a) {
     ImGui::PushTextWrapPos(480 * gUi);
     ImGui::TextUnformatted(tr("When this is on, positions decoded from the signals you receive are sent to map.on-air.dev so they can appear on the public map. Catalogue satellite orbits, your receiver location, drone operator locations, privacy-flagged FLARM aircraft, and the built-in test signal are not sent. You can turn this off at any time from Server."));
     ImGui::Dummy(ImVec2(0, 4 * gUi));
+    ImGui::TextUnformatted(tr("Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu."));
+    static bool shareMsgs = true;
+    ImGui::Checkbox(tr("Also share interesting ACARS messages (text becomes public on the map)"), &shareMsgs);
+    ImGui::Dummy(ImVec2(0, 4 * gUi));
     ImGui::TextUnformatted(tr("OnAir asks this question at every start. \"No, do not ask again\" stops it until OnAir is updated."));
     ImGui::PopTextWrapPos();
     ImGui::Dummy(ImVec2(0, 8 * gUi));
@@ -573,6 +625,7 @@ void consentPopup(App& a) {
     if (ImGui::Button(wasOn ? tr("Keep sending positions") : tr("Send positions"), ImVec2(190 * gUi, 0))) {
         ensureStation(s);
         s.mapConsent = true;
+        s.mapMsgs = shareMsgs;
         s.mapDeclined = false;
         if (s.mapSend) savePrefs(s); else beginSend(s);
         ImGui::CloseCurrentPopup();
@@ -680,6 +733,7 @@ void sendToggle(App& a, bool menu) {
 void mapSendServerMenu(App& a) {
     if (!ImGui::BeginMenu(tr("Server"))) { mapPopups(a); return; }
     sendToggle(a, true);
+    if (rootApp(a).mapSend) msgsToggle(rootApp(a), true);
     ImGui::TextDisabled("%s", tr("The map is at map.on-air.dev"));
     ImGui::EndMenu();
     mapPopups(a);
@@ -690,6 +744,7 @@ void mapSendButton(App& a) {
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Send decoded positions to the public map"));
     if (ImGui::BeginPopup("##serverpop")) {
         sendToggle(a, false);
+        if (rootApp(a).mapSend) msgsToggle(rootApp(a), false);
         ImGui::TextDisabled("%s", tr("The map is at map.on-air.dev"));
         ImGui::EndPopup();
     }
@@ -762,6 +817,7 @@ void mapSendTick(App& a) {
     std::vector<Track> tracks;
     std::unordered_set<std::string> seen;
     for (App* r : receiversAll()) if (r) collectFrom(*r, tracks, seen);
+    if (s.mapMsgs) attachMsgs(tracks);
     const bool ping = gPingNow || needHb || (tracks.empty() && (ph == kConnecting || ph == kRetry));
     if (!gPingNow && !needHb && !tracks.empty()) {
         static int64_t lastSend = 0;

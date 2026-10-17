@@ -1386,3 +1386,17 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 1500 MHz neerwaartse converter voor ongeveer 1,5 tot 3 GHz (2,4 GHz, 2,3/3,4 GHz). Sluit hem aan tussen antenne en radio; de radio ziet RF - 1500 MHz. Onder 1500 MHz wordt niet ondersteund.
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	Bemanning
+Operations	Operaties
+Company	Maatschappij
+Maintenance	Onderhoud
+Fault	Storing
+Show all messages	Alle berichten tonen
+ACARS messages	ACARS-berichten
+%d ACARS messages	%d ACARS-berichten
+Copy these messages as text	Kopieer deze berichten als tekst
+No ACARS messages heard from this aircraft	Geen ACARS-berichten ontvangen van dit vliegtuig
+Also share interesting ACARS messages (text becomes public on the map)	Deel ook interessante ACARS-berichten (de tekst wordt openbaar op de kaart)
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	Berichten die een vliegtuig via ACARS verstuurde (vrije tekst en berichten van bemanning, operaties, maatschappij en onderhoud), 48 uur lang getoond op de kaart van dat vliegtuig op de openbare kaart. Telefoonnummers en e-mailadressen worden eerst verwijderd. Positiemeldingen en linktests horen hier niet bij. Je kunt dit altijd uitzetten.
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	Berichten die vliegtuigen via ACARS versturen (vrije tekst en berichten van bemanning, operaties, maatschappij en onderhoud) kunnen ook op de kaart van het vliegtuig staan, zonder telefoonnummers en e-mailadressen. Dit is een aparte keuze die je in het Server-menu kunt wijzigen.

@@ -2,6 +2,7 @@
 // Split from adsb_ui.cpp; the tile map itself (projection, tiles, controls) is in adsb_map.cpp.
 // The shared state and helpers are declared in adsb_internal.h.
 #include "adsb_internal.h"
+#include "adsb_acars.h"
 
 using namespace adsbui;
 
@@ -185,6 +186,7 @@ static void drawAircraft(ImDrawList* dl, const AdsbTelemetry& t, ImVec2 p0, ImVe
         const bool sel = ac.icao == S.sel;
         const ImU32 fill = ac.emergency ? ImGui::ColorConvertFloat4ToU32(pal::badRed()) : adsbmap::acColour(adsbmap::AcSrc::Adsb, ac.posAgeSec);
         { float hdg = 0.f; drawPlane(dl, q, planeHeadingDeg(ac, hdg) ? hdg : 0.f, (sel ? 14.f : 12.f) * gUi, fill, sel); }
+        if (acarslog::count(ac.icao) > 0) dl->AddCircleFilled(ImVec2(q.x + 8 * gUi, q.y - 8 * gUi), 3.f * gUi, IM_COL32(245, 160, 40, 255));   // it has sent ACARS messages
         if (S.map.zoom >= 6 || sel) {
             char l1[48]; snprintf(l1, sizeof l1, "%s", ac.callsign.empty() ? icaoText(ac.icao).c_str() : ac.callsign.c_str());
             char l2[48] = "", l3[48] = "";

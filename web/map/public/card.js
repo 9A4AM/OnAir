@@ -51,6 +51,7 @@ function resolveAirport(meta, side) {
 export function createCard(host, api) {
   let cur = null;       // current track
   let f = {};           // data-f element map
+  let msgsFor = "", msgsAt = 0;   // hex whose ACARS messages were asked for, and when
   let photoFor = "";    // hex whose photo request was made
 
   function field(name) { return f[name]; }
@@ -98,6 +99,10 @@ export function createCard(host, api) {
         </figure>
         <dl class="rows" data-f="rows"></dl>
         <p class="c-extra" data-f="extra" hidden></p>
+        <section class="c-msgs" data-f="msgsBox" hidden>
+          <h3>ACARS messages <span class="c-msgs-n" data-f="msgsN"></span></h3>
+          <ol class="c-msgs-list" data-f="msgs"></ol>
+        </section>
       </div>
       <footer class="c-actions">
         <button type="button" class="tg" data-act="follow" aria-pressed="false">Follow</button>
@@ -120,6 +125,8 @@ export function createCard(host, api) {
     update(t);
     syncToggles();
     maybeLoadPhoto(t);
+    msgsFor = "";
+    maybeLoadMsgs(t);
     host.querySelector(".x").focus({ preventScroll: true });
   }
 
@@ -169,6 +176,43 @@ export function createCard(host, api) {
       })
       .then((p) => { if (p) showPhoto(p, hex); })
       .catch(() => {});
+  }
+
+  /** ACARS messages of this aircraft: one request per card and then every 60 s (they are not part of /live). Text goes in with textContent only. */
+  function maybeLoadMsgs(t) {
+    if (t.kind !== "aircraft" || api.demo) return;
+    const hex = String(t.id).split(":")[1] || "";
+    if (!/^[0-9A-Fa-f]{6}$/.test(hex)) return;
+    const now = Date.now();
+    if (msgsFor === hex && now - msgsAt < 60e3) return;
+    msgsFor = hex; msgsAt = now;
+    fetch("/msgs?id=" + encodeURIComponent(hex.toUpperCase()))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d && msgsFor === hex && cur && String(cur.id).endsWith(hex)) renderMsgs(d.msgs); })
+      .catch(() => {});
+  }
+
+  const CAT_NAME = { free: "Free text", crew: "Crew", ops: "Operations", company: "Company", maint: "Maintenance", fault: "Fault", other: "" };
+
+  function renderMsgs(list) {
+    const arr = Array.isArray(list) ? list.slice(0, 20) : [];
+    f.msgsBox.hidden = arr.length === 0;
+    f.msgsN.textContent = arr.length ? "(" + arr.length + ")" : "";
+    f.msgs.textContent = "";
+    for (const m of arr) {
+      const li = document.createElement("li");
+      const head = document.createElement("div");
+      head.className = "m-head";
+      const when = new Date(m.t);
+      const bits = [String(when.getUTCHours()).padStart(2, "0") + ":" + String(when.getUTCMinutes()).padStart(2, "0") + "Z", String(m.m || ""),
+        Number.isFinite(m.f) ? m.f.toFixed(3) + " MHz" : "", [m.l, CAT_NAME[m.c] || ""].filter(Boolean).join(" ")].filter(Boolean);
+      head.textContent = bits.join(" · ");
+      const body = document.createElement("div");
+      body.className = "m-text";
+      body.textContent = String(m.x == null ? "" : m.x);
+      li.append(head, body);
+      f.msgs.append(li);
+    }
   }
 
   /** One Planespotters lookup ('hex/<ICAO>' or 'reg/<registration>'): the first photo, or null. Asked from the visitor's browser (free, keyless). */
@@ -324,9 +368,10 @@ export function createCard(host, api) {
     const nm = m.type || (t.kind === "aircraft" ? FAMILY_NAME[fam] : cap(t.kind));
     set("picName", [nm, m.registration].filter(Boolean).join(" · "));
     maybeLoadPhoto(t);
+    maybeLoadMsgs(t);
   }
 
-  function close() { host.hidden = true; host.classList.remove("open", "emergency"); cur = null; photoFor = ""; }
+  function close() { host.hidden = true; host.classList.remove("open", "emergency"); cur = null; photoFor = ""; msgsFor = ""; }
 
   return { open, update, close, syncToggles, current: () => cur };
 }

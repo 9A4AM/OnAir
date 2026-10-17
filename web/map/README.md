@@ -4,6 +4,7 @@ Cloudflare Worker + static page. The Worker (`src/index.js`) holds the `MapHub` 
 proxies OSM tiles and serves `/meta` (aircraft type, airline and route from adsbdb, with airport coordinates). The page is in `public/`.
 
 ## Files
+- `src/msgs.js` - ACARS messages per aircraft: sanitising, limits, merge (ingest `msgs` per aircraft track, at most 5 per track per post, 120 per station per minute, 20 kept per aircraft, 500 characters each, 48 h). `GET /msgs?id=<ICAO hex>` returns them; they are not part of `/live`. The card shows them with textContent only.
 - `src/index.js` - Worker + MapHub. `/meta` returns type, registration, airline, flight number and `route.origin/destination` (with lat/lon).
 - `public/index.html`, `styles.css` - page shell and theme (dark tokens, drawer rail and bottom-sheet card on phones).
 - `public/app.js` - map, layers, live feed, search (callsign / registration / hex / MMSI, `/` focuses it), stats bar, selection, `#hex=` deep links.
