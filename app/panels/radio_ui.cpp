@@ -96,6 +96,11 @@ bool converterUi(App& a, bool vertical) {
         ImGui::EndCombo();
     }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Show and tune the frequency at the antenna while the radio is tuned to what the converter outputs."));
+    if (std::string(cur->id) == "hamitdown") {
+        ImGui::PushTextWrapPos(0);
+        ImGui::TextDisabled("%s", tr("Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported."));
+        ImGui::PopTextWrapPos();
+    }
     if (cur->custom) {
         double lo = atof(get(convKeyLo(), "125").c_str());
         ImGui::SetNextItemWidth(120 * gUi);

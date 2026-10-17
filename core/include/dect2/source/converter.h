@@ -1,7 +1,7 @@
 // Frequency converter (up-converter or LNB) in front of the radio. The app shows and takes the frequency at the antenna (the RF); the
 // radio is tuned to what comes out of the converter (the IF). This is the one place the two are converted, in both directions.
 //   Add     IF = RF + LO       up-converter (Ham-it-up, SpyVerter): HF at the antenna, the radio tunes LO above it
-//   Sub     IF = RF - LO       down-converter, LO below the signal (LNBs): the spectrum keeps its direction
+//   Sub     IF = RF - LO       down-converter, LO below the signal (LNBs, Ham It Down 1500 MHz): the spectrum keeps its direction
 //   HighLo  IF = LO - RF       down-converter, LO above the signal: the spectrum comes out mirrored (swap I and Q to restore it)
 // ppm: the converter's reference error, LO(actual) = LO * (1 + ppm / 1e6). invert: the spectrum is mirrored by something else as well.
 // The setting lives in TuneSettings::radio (per radio, saved with it) under the keys below.
@@ -52,6 +52,7 @@ inline const std::vector<ConverterPreset>& converterPresets() {
     static const std::vector<ConverterPreset> p = {
         {"none",      "None",                                      0,       Converter::Add,    false, false},
         {"hamitup",   "Ham It Up / Ham It Up Plus (125 MHz up)",   125,     Converter::Add,    true,  false},
+        {"hamitdown", "Ham It Down (1500 MHz down)",               1500,    Converter::Sub,    true,  false},
         {"spyverter", "SpyVerter (120 MHz up)",                    120,     Converter::Add,    false, false},
         {"qo100",     "QO-100 LNB (9750 MHz)",                     9750,    Converter::Sub,    false, false},
         {"bullseye",  "Bullseye TCXO LNB (9750 MHz, ppm)",         9750,    Converter::Sub,    true,  false},
