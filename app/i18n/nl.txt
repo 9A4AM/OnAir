@@ -168,7 +168,6 @@ Back	Terug
 Next	Volgende
 Finish	Voltooien
 Skip	Overslaan
-Skip tour	Rondleiding overslaan
 Dismiss	Sluiten
 Again	Opnieuw
 Auto	Auto
@@ -212,7 +211,6 @@ New interface	Nieuwe interface
 Try the new interface. You can switch back at any time.	Probeer de nieuwe interface. Je kunt op elk moment terugschakelen.
 Guided tour	Rondleiding
 Tour	Rondleiding
-Take the guided tour with Onny	Volg de rondleiding met Onny
 by: Kristijonas Adomaitis, made with help from the community	door: Kristijonas Adomaitis, gemaakt met hulp van de community
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Dank aan iedereen die bugs meldde, opnames instuurde en pull requests opende.
 Source	Bron
@@ -477,21 +475,6 @@ Radio settings (%d changed)	Radio-instellingen (%d gewijzigd)
 %s: frequency correction and the other settings of this radio	%s: frequentiecorrectie en de overige instellingen van deze radio
 The driver's own settings show up here\nonce this radio has been started.	De eigen instellingen van het stuurprogramma verschijnen hier\nzodra deze radio is gestart.
 0 = libiio's default	0 = standaardwaarde van libiio
-#  the guided tour
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	Hoi, ik ben Onny! Ik ben een kleine tv die in OnAir woont. Zin in een korte rondleiding? Die duurt ongeveer een minuut en ik laat je alles zien met een demosignaal, dus je hebt nog geen hardware nodig.
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Hier bovenin kies je wat voor soort uitzending je wilt: DVB voor het meeste digitale tv in de wereld, ATSC voor Noord-Amerika en DAB voor digitale radio. OnAir heeft alle drie op één plek.
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	Laten we het in actie zien! Ik start een nepsignaal. Het is een testzender die in de app draait, dus er hoeft niets aangesloten te worden.
-Start the demo signal	Demosignaal starten
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	Zie je die kronkelende lijn? Dat is het spectrum: hoe sterk alles in de ether is, van links naar rechts. De hoge bult in het midden is ons kanaal. Daaronder toont de waterval hetzelfde, langzaam voorbijschuivend in de tijd.
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	En deze vier vakken tonen de stippen die de ontvanger ziet. Bij een goed signaal verzamelen de stippen zich in nette groepjes. Rommelige stippen betekenen een ruisig signaal. Nu is het een schone demo, dus ze zouden er netjes uit moeten zien!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Hier vind je de kanalen zodra de ontvanger vergrendeld is. Klik er een aan om te kijken. Er is ook een speler met beeld en geluid, een klok en opties om op te nemen of te streamen wat je kijkt.
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	Nu het echte werk. Kies hier je radio, kies een frequentie en stel de versterking in. Versterking is hoeveel je radio het signaal opvoert: te weinig en het gaat verloren, te veel en het vervormt. De knop Auto-afstemming vindt een goede waarde voor je.
-Stop the demo and look for my radio	Demo stoppen en naar mijn radio zoeken
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	Weet je niet waar de kanalen zijn? Het tabblad Scan zoekt voor je. Een goede antenne, hoog en bij een raam geplaatst, maakt meer verschil dan wat dan ook. Beloofd!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	Dat was de hele rondleiding! Je kunt je kanalen met andere apparaten delen via het tabblad Stream (Uitgangen), en met de knop Rondleiding rechtsboven haal je me op elk moment terug. Veel kijkplezier!
-Good news: I can see "%s"!	Goed nieuws: ik zie "%s"!
-(I can't see a radio right now. Plug it in and press the button again.)	(Ik zie nu geen radio. Sluit hem aan en druk nogmaals op de knop.)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	Onder Windows heeft een HackRF eenmalig zijn WinUSB-stuurprogramma nodig: installeer het met Zadig, op zadig.akeo.ie.
 #  passes
 Weather (137 MHz)	Weer (137 MHz)
 Amateur	Amateur
@@ -1267,7 +1250,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	Een LimeSDR Mini heeft onder Windows het FT60x-stuurprogramma van FTDI nodig (niet Zadig), onder Linux de udev-regels, en eenmalig "LimeUtil --update" zodat de gateware bij de bibliotheek past.
 Real (mono)	Reëel (mono)
 Left	Links
 Right	Rechts
@@ -1547,6 +1529,27 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	De nRSP-ST wordt bereikt via SDRconnect: start SDRconnect (of de headless versie) op een computer met de WebSocket-server aan (poort 5454) en de nRSP-ST geselecteerd, en typ het adres van die computer. Er is geen wachtwoord nodig en er wordt er geen opgeslagen.
+#  the guided tour
+Tuning and gain	Afstemmen en versterking
+Modes	Modi
+Spectrum and waterfall	Spectrum en waterval
+Mode panel	Modipaneel
+Memory and frequencies	Geheugen en frequenties
+Receivers	Ontvangers
+Audio	Audio
+Server and support	Server en steun
+Done	Klaar
+Take the guided tour	Rondleiding starten
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Kies de radio of opname die de samples levert. Record IQ slaat het ruwe signaal op voor latere weergave.
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Stel hier frequentie, band en samplefrequentie in. Gain en AGC bepalen het ingangsniveau; Tweede modus decodeert een andere modus uit dezelfde opname.
+%d modes, grouped by family. Use the search box to find one by name.	%d modi, gegroepeerd per familie. Zoek met het zoekvak een modus op naam.
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	Klik om af te stemmen en scrol om te zoomen. Peak hold bewaart het sterkste niveau dat op elke frequentie is gezien.
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	Elke modus heeft eigen tabbladen voor gedecodeerde uitvoer, instellingen en hulpmiddelen. Ze veranderen met de gekozen modus.
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	Geheugen bewaart frequenties met hun modus en instellingen. Frequenties en bandplannen tonen wat er per modus in de lucht is.
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	Elke ontvanger koppelt een radio aan een modus. Deze balk schakelt ertussen en bepaalt welke het geluid afspeelt.
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen speelt het gedemoduleerde signaal af. Volume en dempen staan hier; Record audio slaat het op in een bestand.
+Server sends decoded positions to the public map. Support helps fund development.	Server stuurt gedecodeerde posities naar de openbare kaart. Steun helpt de ontwikkeling te financieren.
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Hier staan documentatie, probleemoplossing, dankwoord en licenties. Rondleiding start deze rondleiding opnieuw.
 Monitor audio	Audio meeluisteren
 Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Luister in elke modus naar het afgestemde kanaal om een signaal te herkennen: de samples van de radio worden gedemoduleerd als USB, LSB, smalle FM of AM. Stil zolang de modus eigen geluid speelt.
 Auto: USB below 30 MHz, narrow FM above	Auto: USB onder 30 MHz, smalle FM erboven
@@ -1653,3 +1656,56 @@ Sharing	Delen
 Share my bearing on the map server	Mijn peiling delen met de kaartserver
 Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	Vereist Server > Gegevens naar de kaartserver sturen. Alleen de peiling, de onzekerheid, de frequentie en de positie van je station gaan omhoog; de kaart toont waar peilingen van meerdere stations elkaar kruisen.
 Bearing and position of a transmitter from an antenna array such as the KrakenSDR	Peiling en positie van een zender met een antennearray zoals de KrakenSDR
+Decoded only	Alleen gedecodeerd
+Hides tone-only pages and pages whose text could not be decoded.	Verbergt alleen-toon-oproepen en berichten waarvan de tekst niet gedecodeerd kon worden.
+%zu tone-only or undecoded pages hidden (Decoded only)	%zu alleen-toon- of niet-gedecodeerde berichten verborgen (Alleen gedecodeerd)
+%zu tone-only or undecoded pages hidden	%zu alleen-toon- of niet-gedecodeerde berichten verborgen
+hidden	verborgen
+# LBJ (Chinese railway train warning)
+What LBJ carries	Wat LBJ uitzendt
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	LBJ is de Chinese waarschuwing voor naderende treinen op ongeveer 821,2375 MHz. Elke locomotief verstuurt numerieke POCSAG-pagina's van 1200 bit/s: om de paar seconden een kort bericht met treinnummer, snelheid (km/u) en kilometerpaal, en langere berichten met locomotieftype en -nummer en de route.\n\nOnAir decodeert de pagina's zelf (alleen ontvangen). Een lege waarde had beschadigde cijfers; een grijze regel had gecorrigeerde fouten, vergelijk hem dus met het volgende bericht van dezelfde trein.
+tune to about 821.2375 MHz and start the receiver	stem af op ongeveer 821,2375 MHz en start de ontvanger
+FM, 1200 bit/s FSK, %.2f Msps	FM, 1200 bit/s FSK, %.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu berichten, %llu syncwoorden, %llu leeg, %llu mislukte controles
+listening (level %.0f dBFS, offset %+.0f Hz)	luistert (niveau %.0f dBFS, afwijking %+.0f Hz)
+Train	Trein
+Speed km/h	Snelheid km/u
+Km post	Km-paal
+Direction	Richting
+Locomotive	Locomotief
+Route	Route
+Up	Op
+Down	Neer
+Some digits were corrected or lost: check this row against the next message of the train	Sommige cijfers zijn gecorrigeerd of verloren: vergelijk deze regel met het volgende bericht van de trein
+Train warning, 821 MHz	Treinwaarschuwing, 821 MHz
+clear picture	afbeelding wissen
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Wist de afbeelding en de regels die de decoder heeft verzameld, en begint een nieuwe afbeelding bij de volgende starttoon of fasering. Afbeeldingen die al in de lijst rechts staan blijven.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Wist de NAVTEX- en DSC-lijsten en de weerfaxafbeelding.
+# radio clips
+Clip	Clip
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Radioclip: slaat de laatste momenten (spectrogram, audio, gedecodeerde berichten) op als bestand om te delen. Toets: C
+Radio clip	Radioclip
+Last:	Laatste:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Wat de ontvanger zag, het oudste links. Helderder is een sterker signaal. Sleep om het op te slaan deel te kiezen.
+Include:	Opnemen:
+Spectrogram picture	Spectrogramafbeelding
+Decoded messages	Gedecodeerde berichten
+Title	Titel
+Your station position is never included.	Je stationspositie wordt nooit opgenomen.
+Could not save:	Opslaan mislukt:
+Saved: %s (zip %.1f MB)	Opgeslagen: %s (zip %.1f MB)
+Save clip	Clip opslaan
+Nothing to save: no waterfall, audio or decoded rows in this range	Niets om op te slaan: in dit bereik is geen waterval, audio of gedecodeerde rij
+Saving...	Opslaan...
+Copy Discord post text	Discord-tekst kopiëren
+Copied: paste it into Discord and attach the files	Gekopieerd: plak het in Discord en voeg de bestanden toe
+Open folder	Map openen
+Memory kept for clips	Geheugen voor clips
+Waterfall history	Waterval-geschiedenis
+%d min	%d min
+%d MB max	max. %d MB
+Audio history	Audiogeschiedenis
+%d s	%d s
+Decoded rows history	Geschiedenis van gedecodeerde rijen
+Uses about %.1f MB now	Gebruikt nu ongeveer %.1f MB
+Decoded rows are kept from the results tables you have open.	Gedecodeerde rijen worden bewaard uit de resultaattabellen die je open hebt.

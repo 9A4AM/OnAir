@@ -2,6 +2,7 @@
 #include "results_export.h"
 #include "../app.h"
 #include "../ui/icons.h"
+#include "../clips/clips.h"
 #include <ctime>
 #include <fstream>
 #include "dect2/common/u8file.h"
@@ -13,6 +14,7 @@ static const double kStart = (double)std::time(nullptr);   // when OnAir started
 bool saveButton(const Table& t, const char* kind, std::string& note, const char* id) {
     static int fmt = 0, scope = 1;   // Fmt order below; scope 0 = since start, 1 = all
     static const Fmt order[] = {Fmt::Csv, Fmt::Json, Fmt::Adif, Fmt::Kml, Fmt::Gpx};
+    clips::tableLog().observe(kind, t, (double)std::time(nullptr));   // radio clips: remembers what the table showed (rate limited inside)
     ImGui::PushID(id);
     bool hit = iconFlat(Ic::Save, "Save results: CSV, JSON, ADIF logbook (ham modes), KML or GPX (anything with positions)");
     ImGui::SameLine();

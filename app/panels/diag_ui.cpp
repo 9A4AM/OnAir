@@ -8,6 +8,7 @@
 #include "dect2/audio/mp3_enc.h"
 #include "dect2/source/iq_record.h"
 #include "../app.h"
+#include "../clips/clips_ui.h"
 #include "dect2/source/converter.h"
 #include "dect2/engine/updater.h"
 #include "dect2/hfdig/hfdig_freedv.h"
@@ -613,5 +614,7 @@ void radioMessagesUi(App& a, bool vertical) {
     recordUi(a);
     flowNext(10 * gUi);
     audioRecordUi(a);
+    flowNext(6 * gUi);
+    clipsui::button(a);
     audioMonitorUi(a);
 }

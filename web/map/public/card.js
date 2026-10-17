@@ -72,6 +72,7 @@ export function createCard(host, api) {
         <div class="c-title">
           <h2 data-f="title"></h2>
           <div class="c-sub" data-f="subtitle"></div>
+          <div class="c-peek" data-f="peek"></div>
         </div>
         <span class="demo-tag" data-f="demo" hidden>DEMO</span>
       </header>
@@ -272,6 +273,11 @@ export function createCard(host, api) {
     if (m.flightNumber && m.flightNumber !== t.label) bits.push("Flight " + m.flightNumber);
     if (!bits.length) bits.push(t.sub || cap(t.kind));
     set("subtitle", bits.join(" · "));
+    // one-line summary for the collapsed phone sheet
+    const pk = [];
+    if (t.alt != null) pk.push(t.kind === "sat" || t.kind === "gnss" ? Math.round(t.alt).toLocaleString() + " km" : t.kind === "aircraft" ? Math.round(t.alt).toLocaleString() + " ft" : Math.round(t.alt).toLocaleString() + " m");
+    if (t.speed != null) pk.push(Math.round(t.speed) + (t.kind === "vessel" ? " kn" : t.kind === "aircraft" || t.kind === "flarm" ? " kt" : ""));
+    set("peek", pk.join(" · "));
   }
 
   /** Route block: airports, progress, ETA, departure. */

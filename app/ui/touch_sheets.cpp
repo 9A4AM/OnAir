@@ -214,7 +214,7 @@ void menuSheet(App& a, ImVec2 disp) {
     const float hw = (w - sp) / 2;
     if (bigButton(txViewFlag() ? tr("Receive view") : tr("Transmit view"), ImVec2(hw, 0))) { txViewFlag() = !txViewFlag(); closeSheet(); }
     ImGui::SameLine();
-    if (bigButton(tr("Tour"), ImVec2(hw, 0))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); closeSheet(); }
+    if (bigButton(tr("Tour"), ImVec2(hw, 0))) { tourStart(a); closeSheet(); }
     languageButton(a);
     endSheet();
 }

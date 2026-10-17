@@ -166,7 +166,6 @@ Back	Voltar
 Next	Próximo
 Finish	Concluir
 Skip	Pular
-Skip tour	Pular o tour
 Dismiss	Dispensar
 Again	De novo
 Auto	Auto
@@ -209,7 +208,6 @@ New interface	Nova interface
 Try the new interface. You can switch back at any time.	Experimente a nova interface. Você pode voltar quando quiser.
 Guided tour	Tour guiado
 Tour	Tour
-Take the guided tour with Onny	Fazer o tour guiado com o Onny
 by: Kristijonas Adomaitis, made with help from the community	por Kristijonas Adomaitis, feito com a ajuda da comunidade
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Obrigado a todos que relataram bugs, enviaram gravações e abriram pull requests.
 Source	Fonte
@@ -467,20 +465,6 @@ Radio settings (%d changed)	Ajustes do rádio (%d alterados)
 %s: frequency correction and the other settings of this radio	%s: correção de frequência e demais ajustes deste rádio
 The driver's own settings show up here\nonce this radio has been started.	Os ajustes próprios do driver aparecem aqui\ndepois que este rádio for iniciado.
 0 = libiio's default	0 = padrão da libiio
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	Oi, eu sou o Onny! Sou uma TVzinha que mora no OnAir. Quer um tour rápido? Leva cerca de um minuto, e eu mostro tudo com um sinal de demonstração, então você ainda não precisa de nenhum hardware.
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Aqui em cima fica a chave para escolher o tipo de transmissão que você quer: DVB para a maior parte da TV digital do mundo, ATSC para a América do Norte e DAB para rádio digital. O OnAir tem os três num só lugar.
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	Vamos ver em ação! Vou iniciar um sinal de mentirinha. É um transmissor de teste que roda dentro do aplicativo, então não é preciso conectar nada.
-Start the demo signal	Iniciar o sinal de demonstração
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	Está vendo a linha ondulada? Esse é o espectro: a intensidade de tudo o que está no ar, da esquerda para a direita. A elevação alta no meio é o nosso canal. Abaixo dela, a cascata mostra a mesma coisa rolando devagar ao longo do tempo.
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	E estes quatro quadros mostram os pontos que o receptor enxerga. Quando o sinal é bom, os pontos se agrupam em aglomerados organizados. Pontos bagunçados indicam um sinal com ruído. Agora é uma demonstração limpa, então eles devem estar bem arrumados!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Aqui você encontra os canais assim que o receptor sincronizar. Clique em um para assistir. Também há um player com imagem e som, um relógio e opções para gravar ou transmitir o que você está assistindo.
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	Agora, para valer. Escolha aqui o seu rádio, uma frequência e ajuste o ganho. O ganho é o quanto o seu rádio amplifica o sinal: pouco e ele se perde, muito e ele distorce. O botão Ajuste automático encontra um bom valor para você.
-Stop the demo and look for my radio	Parar a demonstração e procurar meu rádio
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	Não sabe onde estão os canais? A aba Busca procura para você. Uma boa antena, colocada no alto e perto de uma janela, faz mais diferença do que qualquer outra coisa. Prometo!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	Esse foi o tour completo! Você pode compartilhar seus canais com outros dispositivos pela aba Streaming (Saídas) e me chamar de volta quando quiser com o botão Tour no canto superior direito. Boa diversão!
-Good news: I can see "%s"!	Boas notícias: estou vendo "%s"!
-(I can't see a radio right now. Plug it in and press the button again.)	(Não estou vendo nenhum rádio agora. Conecte-o e aperte o botão de novo.)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	No Windows, o HackRF precisa uma vez do driver WinUSB: instale-o com o Zadig, em zadig.akeo.ie.
 Weather (137 MHz)	Meteorologia (137 MHz)
 Amateur	Radioamador
 Amateur satellites	Satélites de radioamador
@@ -1249,7 +1233,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	Um LimeSDR Mini precisa no Windows do driver FT60x da FTDI (não do Zadig), no Linux das regras udev e, uma vez, de "LimeUtil --update" para que o gateware corresponda à biblioteca.
 Real (mono)	Real (mono)
 Left	Esquerdo
 Right	Direito
@@ -1529,6 +1512,27 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	O nRSP-ST é acedido através do SDRconnect: execute o SDRconnect (ou a versão headless) num computador com o servidor WebSocket ligado (porta 5454) e o nRSP-ST selecionado, e escreva o endereço desse computador. Não é necessária nem guardada nenhuma palavra-passe.
+#  the guided tour
+Tuning and gain	Sintonia e ganho
+Modes	Modos
+Spectrum and waterfall	Espectro e cascata
+Mode panel	Painel do modo
+Memory and frequencies	Memória e frequências
+Receivers	Recetores
+Audio	Áudio
+Server and support	Servidor e apoio
+Done	Concluir
+Take the guided tour	Iniciar a visita guiada
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Escolha o rádio ou a gravação que fornece as amostras. Record IQ guarda o sinal bruto para reprodução posterior.
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Defina aqui a frequência, a banda e a taxa de amostragem. O ganho e o AGC definem o nível de entrada; Segundo modo descodifica outro modo a partir da mesma captura.
+%d modes, grouped by family. Use the search box to find one by name.	%d modos, agrupados por família. Use a caixa de pesquisa para encontrar um pelo nome.
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	Clique para sintonizar e use a roda para ampliar. Peak hold mantém o nível mais forte visto em cada frequência.
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	Cada modo tem separadores próprios para a saída descodificada, as definições e as ferramentas. Mudam com o modo escolhido.
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	Memória guarda frequências com o respetivo modo e definições. Frequências e planos de banda mostram o que está no ar, por modo.
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	Cada recetor associa um rádio a um modo. Esta barra alterna entre eles e escolhe qual reproduz o som.
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen reproduz o sinal desmodulado. O volume e o silêncio estão aqui; Record audio guarda-o num ficheiro.
+Server sends decoded positions to the public map. Support helps fund development.	Servidor envia as posições descodificadas para o mapa público. Apoio ajuda a financiar o desenvolvimento.
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Aqui encontra a documentação, a resolução de problemas, os créditos e as licenças. Visita guiada inicia esta visita novamente.
 Monitor audio	Monitorizar áudio
 Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Ouve o canal sintonizado em qualquer modo para reconhecer um sinal: as amostras do rádio são desmoduladas como USB, LSB, FM estreita ou AM. Silencioso enquanto o modo toca o seu próprio som.
 Auto: USB below 30 MHz, narrow FM above	Auto: USB abaixo de 30 MHz, FM estreita acima
@@ -1635,3 +1639,56 @@ Sharing	Partilha
 Share my bearing on the map server	Partilhar o meu rumo no servidor do mapa
 Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	Requer Servidor > Enviar dados para o servidor do mapa. Só sobem o rumo, a sua incerteza, a frequência e a posição da sua estação; o mapa mostra onde se cruzam os rumos de várias estações.
 Bearing and position of a transmitter from an antenna array such as the KrakenSDR	Rumo e posição de um transmissor com um arranjo de antenas como o KrakenSDR
+Decoded only	Só decodificadas
+Hides tone-only pages and pages whose text could not be decoded.	Oculta as chamadas só de tom e as mensagens cujo texto não pôde ser decodificado.
+%zu tone-only or undecoded pages hidden (Decoded only)	%zu chamadas só de tom ou mensagens não decodificadas ocultas (Só decodificadas)
+%zu tone-only or undecoded pages hidden	%zu chamadas só de tom ou mensagens não decodificadas ocultas
+hidden	ocultas
+# LBJ (Chinese railway train warning)
+What LBJ carries	O que o LBJ transmite
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	O LBJ é o aviso chinês de aproximação de comboios em cerca de 821,2375 MHz. Cada locomotiva envia páginas numéricas POCSAG a 1200 bit/s: a cada poucos segundos uma mensagem curta com o número do comboio, a velocidade (km/h) e o ponto quilométrico, e mensagens mais longas com o tipo e número da locomotiva e o percurso.\n\nO OnAir descodifica as páginas por si (só receção). Um valor em branco tinha dígitos danificados; uma linha cinzenta tinha erros corrigidos, por isso compare-a com a mensagem seguinte do mesmo comboio.
+tune to about 821.2375 MHz and start the receiver	sintonize cerca de 821,2375 MHz e inicie o recetor
+FM, 1200 bit/s FSK, %.2f Msps	FM, FSK de 1200 bit/s, %.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu mensagens, %llu palavras de sincronismo, %llu em branco, %llu verificações falhadas
+listening (level %.0f dBFS, offset %+.0f Hz)	a escutar (nível %.0f dBFS, desvio %+.0f Hz)
+Train	Comboio
+Speed km/h	Velocidade km/h
+Km post	Ponto km
+Direction	Sentido
+Locomotive	Locomotiva
+Route	Percurso
+Up	Ascendente
+Down	Descendente
+Some digits were corrected or lost: check this row against the next message of the train	Alguns dígitos foram corrigidos ou perdidos: compare esta linha com a mensagem seguinte do comboio
+Train warning, 821 MHz	Aviso de comboios, 821 MHz
+clear picture	limpar imagem
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Limpa a imagem e as linhas reunidas pelo descodificador e começa uma imagem nova no próximo tom de início ou faseamento. As imagens que já estão na lista à direita ficam.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Limpa as listas NAVTEX e DSC e a imagem do fax meteorológico.
+# radio clips
+Clip	Clipe
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Clipe de rádio: guarda os últimos momentos (espectrograma, áudio, mensagens descodificadas) num ficheiro para partilhar. Tecla: C
+Radio clip	Clipe de rádio
+Last:	Últimos:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	O que o receptor viu, o mais antigo à esquerda. Mais claro é um sinal mais forte. Arraste para escolher a parte a guardar.
+Include:	Incluir:
+Spectrogram picture	Imagem do espectrograma
+Decoded messages	Mensagens descodificadas
+Title	Título
+Your station position is never included.	A posição da tua estação nunca é incluída.
+Could not save:	Não foi possível guardar:
+Saved: %s (zip %.1f MB)	Guardado: %s (zip %.1f MB)
+Save clip	Guardar clipe
+Nothing to save: no waterfall, audio or decoded rows in this range	Nada para guardar: não há cascata, áudio nem linhas descodificadas neste intervalo
+Saving...	A guardar...
+Copy Discord post text	Copiar texto para o Discord
+Copied: paste it into Discord and attach the files	Copiado: cole no Discord e anexe os ficheiros
+Open folder	Abrir pasta
+Memory kept for clips	Memória para clipes
+Waterfall history	Histórico da cascata
+%d min	%d min
+%d MB max	máx. %d MB
+Audio history	Histórico de áudio
+%d s	%d s
+Decoded rows history	Histórico de linhas descodificadas
+Uses about %.1f MB now	Usa agora cerca de %.1f MB
+Decoded rows are kept from the results tables you have open.	As linhas descodificadas são guardadas das tabelas de resultados que tens abertas.

@@ -168,7 +168,6 @@ Back	戻る
 Next	次へ
 Finish	完了
 Skip	スキップ
-Skip tour	ツアーをスキップ
 Dismiss	閉じる
 Again	もう一度
 Auto	自動
@@ -212,7 +211,6 @@ New interface	新しいインターフェース
 Try the new interface. You can switch back at any time.	新しいインターフェースを試せます。いつでも元に戻せます。
 Guided tour	ガイドツアー
 Tour	ツアー
-Take the guided tour with Onny	Onny と一緒にガイドツアーを見る
 by: Kristijonas Adomaitis, made with help from the community	作者: Kristijonas Adomaitis、コミュニティの協力で制作
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	不具合の報告、録音の提供、プルリクエストをしてくださったみなさん、ありがとうございます。
 Source	ソース
@@ -477,21 +475,6 @@ Radio settings (%d changed)	無線機の設定 (%d 件変更)
 %s: frequency correction and the other settings of this radio	%s: この無線機の周波数補正とその他の設定
 The driver's own settings show up here\nonce this radio has been started.	ドライバー固有の設定は、この無線機を一度\n開始するとここに表示されます。
 0 = libiio's default	0 = libiio の既定値
-#  the guided tour
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	こんにちは、Onny です! OnAir に住んでいる小さなテレビです。簡単なツアーはいかがですか? 約 1 分で、デモ信号を使ってすべてをご案内しますので、ハードウェアはまだ必要ありません。
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	ここ上部では、受信したい放送の種類を切り替えます。世界の多くのデジタルテレビは DVB、北米は ATSC、デジタルラジオは DAB です。OnAir ならこの 3 つがひとつにまとまっています。
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	実際に動かしてみましょう! 模擬信号を開始します。アプリの中で動くテスト用の送信機なので、何もつなぐ必要はありません。
-Start the demo signal	デモ信号を開始
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	このくねくねした線が見えますか? これがスペクトラムで、電波の強さを左から右へ表しています。中央の高い山が私たちのチャンネルです。その下のウォーターフォールは、同じ内容を時間とともにゆっくりスクロールして表示します。
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	そしてこの 4 つの枠は、受信機が見ている点を表示します。信号が良いと点はきれいにまとまります。点が乱れているのはノイズが多い信号です。今はきれいなデモなので、整って見えるはずです!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	ここには、受信機がロックするとチャンネルが並びます。クリックすると視聴できます。映像と音声のプレーヤー、時計、視聴中の番組を録画・配信するオプションもあります。
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	では本番です。ここで無線機を選び、周波数を決め、ゲインを設定します。ゲインは無線機が信号をどれだけ増幅するかで、小さすぎると信号が埋もれ、大きすぎると歪みます。自動調整ボタンが良い値を見つけてくれます。
-Stop the demo and look for my radio	デモを停止して無線機を探す
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	チャンネルの場所がわかりませんか? スキャンタブが探してくれます。高い場所の窓際に置いた良いアンテナは、何よりも大きな違いを生みます。約束します!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	ツアーは以上です! ストリームタブ (出力) から、チャンネルを他の機器と共有できます。右上のツアーボタンを押せば、いつでも私を呼び戻せます。楽しい視聴を!
-Good news: I can see "%s"!	朗報です: 「%s」が見つかりました!
-(I can't see a radio right now. Plug it in and press the button again.)	(今は無線機が見つかりません。接続してもう一度ボタンを押してください。)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	Windows では、HackRF に WinUSB ドライバーが一度だけ必要です。zadig.akeo.ie の Zadig でインストールしてください。
 #  passes
 Weather (137 MHz)	気象 (137 MHz)
 Amateur	アマチュア
@@ -1267,7 +1250,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	LimeSDR Mini には、Windows では FTDI の FT60x ドライバ(Zadig ではありません)、Linux では udev ルール、そしてゲートウェアをライブラリに合わせるための一度きりの「LimeUtil --update」が必要です。
 Real (mono)	実数（モノ）
 Left	左
 Right	右
@@ -1547,6 +1529,27 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	nRSP-STにはSDRconnect経由で接続します。WebSocketサーバー（ポート5454）を有効にし、nRSP-STを選択した状態で、コンピューター上のSDRconnect（またはヘッドレス版）を起動し、そのコンピューターのアドレスを入力してください。パスワードは不要で、保存もされません。
+#  the guided tour
+Tuning and gain	チューニングとゲイン
+Modes	モード
+Spectrum and waterfall	スペクトルとウォーターフォール
+Mode panel	モードパネル
+Memory and frequencies	メモリと周波数
+Receivers	受信機
+Audio	オーディオ
+Server and support	サーバーとサポート
+Done	完了
+Take the guided tour	ガイドツアーを開始
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	サンプルを供給する無線機または録音を選びます。Record IQ は生の信号を保存し、後で再生できます。
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	ここで周波数、バンド、サンプルレートを設定します。ゲインと AGC は入力レベルを決め、セカンドモードは同じ受信データから別のモードをデコードします。
+%d modes, grouped by family. Use the search box to find one by name.	%d 個のモードをファミリーごとに分類しています。検索ボックスで名前から探せます。
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	クリックで同調し、スクロールで拡大します。ピークホールドは各周波数で観測した最大レベルを保持します。
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	各モードには、デコード結果、設定、ツール用の専用タブがあります。選択したモードに応じて変わります。
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	メモリは周波数をモードと設定とともに保存します。周波数とバンドプランは、モードごとの運用状況を示します。
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	各受信機は無線機とモードの組み合わせです。このバーで切り替え、音声を出す受信機を選びます。
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen は復調した信号を再生します。音量とミュートはここにあり、Record audio はファイルに保存します。
+Server sends decoded positions to the public map. Support helps fund development.	サーバーはデコードした位置情報を公開マップに送信します。サポートは開発資金に役立ちます。
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	ドキュメント、トラブルシューティング、クレジット、ライセンスはここにあります。ガイドツアーでこのツアーを再開できます。
 Monitor audio	音声モニター
 Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	どのモードでも同調したチャンネルを聞いて信号を識別できます。無線のサンプルをUSB、LSB、狭帯域FM、AMとして復調します。モードが自分の音を出している間は無音です。
 Auto: USB below 30 MHz, narrow FM above	自動: 30 MHz未満はUSB、以上は狭帯域FM
@@ -1653,3 +1656,56 @@ Sharing	共有
 Share my bearing on the map server	自分の方位を地図サーバーで共有
 Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	サーバー > 地図サーバーにデータを送信 が必要です。送信されるのは方位とその不確かさ、周波数、あなたの局の位置だけです。地図には複数の局の方位が交差する場所が表示されます。
 Bearing and position of a transmitter from an antenna array such as the KrakenSDR	KrakenSDRのようなアンテナアレイによる送信機の方位と位置
+Decoded only	デコード済みのみ
+Hides tone-only pages and pages whose text could not be decoded.	トーンのみの呼び出しと、テキストをデコードできなかったメッセージを非表示にします。
+%zu tone-only or undecoded pages hidden (Decoded only)	トーンのみまたは未デコードのメッセージを%zu件非表示（デコード済みのみ）
+%zu tone-only or undecoded pages hidden	トーンのみまたは未デコードのメッセージを%zu件非表示
+hidden	非表示
+# LBJ (Chinese railway train warning)
+What LBJ carries	LBJが伝える内容
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	LBJは中国の列車接近警報で、約821.2375 MHzで送信されます。各機関車は1200 bit/sのPOCSAG数字ページを送ります。数秒ごとに列車番号・速度(km/h)・キロ程を含む短いメッセージと、機関車の形式と番号・路線を含む長いメッセージです。\n\nOnAir自身がページを復号します(受信のみ)。空欄の値は桁が壊れていたものです。灰色の行は誤りを訂正したものなので、同じ列車の次のメッセージと照合してください。
+tune to about 821.2375 MHz and start the receiver	約821.2375 MHzに合わせて受信を開始してください
+FM, 1200 bit/s FSK, %.2f Msps	FM、1200 bit/s FSK、%.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	メッセージ%llu件、同期ワード%llu件、空%llu件、検査失敗%llu件
+listening (level %.0f dBFS, offset %+.0f Hz)	受信待ち(レベル %.0f dBFS、オフセット %+.0f Hz)
+Train	列車
+Speed km/h	速度 km/h
+Km post	キロ程
+Direction	方向
+Locomotive	機関車
+Route	路線
+Up	上り
+Down	下り
+Some digits were corrected or lost: check this row against the next message of the train	一部の桁が訂正または欠落しました。同じ列車の次のメッセージと照合してください
+Train warning, 821 MHz	列車警報、821 MHz
+clear picture	画像を消去
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	画像とデコーダーが集めたラインを消去し、次のスタートトーンまたは位相合わせから新しい画像を始めます。右のリストにある画像はそのまま残ります。
+Clears the NAVTEX and DSC lists and the weather fax picture.	NAVTEX と DSC のリストと気象ファックスの画像を消去します。
+# radio clips
+Clip	クリップ
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	ラジオクリップ: 直近の様子(スペクトログラム、音声、デコードしたメッセージ)を共有用のファイルとして保存します。キー: C
+Radio clip	ラジオクリップ
+Last:	直近:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	受信機が捉えた内容(左が最も古い)。明るいほど強い信号です。ドラッグして保存する範囲を選びます。
+Include:	含める:
+Spectrogram picture	スペクトログラム画像
+Decoded messages	デコードしたメッセージ
+Title	タイトル
+Your station position is never included.	あなたの局の位置情報は含まれません。
+Could not save:	保存できませんでした:
+Saved: %s (zip %.1f MB)	保存しました: %s (zip %.1f MB)
+Save clip	クリップを保存
+Nothing to save: no waterfall, audio or decoded rows in this range	保存するものがありません: この範囲にはウォーターフォール、音声、デコード済みの行がありません
+Saving...	保存中...
+Copy Discord post text	Discord用の文章をコピー
+Copied: paste it into Discord and attach the files	コピーしました: Discordに貼り付けてファイルを添付してください
+Open folder	フォルダーを開く
+Memory kept for clips	クリップ用に保持するメモリ
+Waterfall history	ウォーターフォールの履歴
+%d min	%d 分
+%d MB max	最大 %d MB
+Audio history	音声の履歴
+%d s	%d 秒
+Decoded rows history	デコード済み行の履歴
+Uses about %.1f MB now	現在およそ %.1f MB 使用
+Decoded rows are kept from the results tables you have open.	デコード済みの行は、開いている結果テーブルから保持されます。

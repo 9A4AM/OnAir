@@ -175,7 +175,6 @@ Back	Atgal
 Next	Toliau
 Finish	Baigti
 Skip	Praleisti
-Skip tour	Praleisti apžvalgą
 Dismiss	Paslėpti
 Again	Dar kartą
 Auto	Auto
@@ -219,7 +218,6 @@ New interface	Nauja sąsaja
 Try the new interface. You can switch back at any time.	Išbandykite naują sąsają. Grįžti galima bet kada.
 Guided tour	Apžvalga su gidu
 Tour	Apžvalga
-Take the guided tour with Onny	Apžvalga kartu su Onny
 by: Kristijonas Adomaitis, made with help from the community	autorius Kristijonas Adomaitis, padedant bendruomenei
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Ačiū visiems, kurie pranešė apie klaidas, atsiuntė įrašus ir pateikė „pull request“.
 Source	Šaltinis
@@ -484,21 +482,6 @@ Radio settings (%d changed)	Radijo nustatymai (pakeista: %d)
 %s: frequency correction and the other settings of this radio	%s: dažnio korekcija ir kiti šio radijo nustatymai
 The driver's own settings show up here\nonce this radio has been started.	Tvarkyklės nustatymai atsiras čia,\nkai šis radijas bus paleistas.
 0 = libiio's default	0 = libiio numatytoji reikšmė
-#  the guided tour
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	Labas, aš Onny! Esu mažas televizorius, gyvenantis OnAir. Norite trumpos apžvalgos? Ji truks apie minutę, viską parodysiu su demonstraciniu signalu, tad jokios įrangos dar nereikia.
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Čia viršuje pasirenkate transliacijos rūšį: DVB – daugumai pasaulio skaitmeninės televizijos, ATSC – Šiaurės Amerikai, DAB – skaitmeniniam radijui. OnAir turi visus tris vienoje vietoje.
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	Pažiūrėkime, kaip tai veikia! Paleisiu tariamą signalą. Tai programos viduje veikiantis bandomasis siųstuvas, tad nieko jungti nereikia.
-Start the demo signal	Paleisti demonstracinį signalą
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	Matote banguojančią liniją? Tai spektras: kiek stiprus viskas eteryje, iš kairės į dešinę. Aukšta kupra viduryje – mūsų kanalas. Po juo krioklys rodo tą patį, lėtai slenkantį laike.
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	O šie keturi langeliai rodo taškus, kuriuos mato imtuvas. Kai signalas geras, taškai susiburia į tvarkingas grupeles. Netvarkingi taškai reiškia triukšmingą signalą. Dabar tai švari demonstracija, tad jie turėtų atrodyti tvarkingai!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Kai imtuvas prisisinchronizuos, kanalai atsiras čia. Spustelėkite vieną, kad žiūrėtumėte. Yra ir grotuvas su vaizdu ir garsu, laikrodis bei galimybė įrašyti ar transliuoti tai, ką žiūrite.
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	O dabar tikras dalykas. Čia pasirinkite savo radiją, dažnį ir nustatykite stiprinimą. Stiprinimas – tai, kiek radijas sustiprina signalą: per mažai – signalas dingsta, per daug – iškraipomas. Mygtukas „Auto derinimas“ suras gerą reikšmę už jus.
-Stop the demo and look for my radio	Stabdyti demonstraciją ir ieškoti mano radijo
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	Nežinote, kur kanalai? Skirtukas „Paieška“ suras juos už jus. Gera antena, pastatyta aukštai ir prie lango, padeda labiau už bet ką kita. Pažadu!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	Tai ir visa apžvalga! Kanalais su kitais įrenginiais galite dalytis skirtuke „Srautas“ (Išvestys), o mane bet kada sugrąžinsite mygtuku „Apžvalga“ viršuje dešinėje. Malonaus žiūrėjimo!
-Good news: I can see "%s"!	Gera žinia: matau „%s“!
-(I can't see a radio right now. Plug it in and press the button again.)	(Šiuo metu nematau radijo. Prijunkite jį ir dar kartą paspauskite mygtuką.)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	Windows sistemoje HackRF vieną kartą reikia WinUSB tvarkyklės: įdiekite ją su Zadig, zadig.akeo.ie.
 #  passes
 Weather (137 MHz)	Orai (137 MHz)
 Amateur	Mėgėjų
@@ -1267,7 +1250,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	LimeSDR Mini sistemoje Windows reikia FTDI FT60x tvarkyklės (ne Zadig), sistemoje Linux - udev taisyklių, o vieną kartą paleisti "LimeUtil --update", kad jo gateware atitiktų biblioteką.
 Real (mono)	Realus (mono)
 Left	Kairysis
 Right	Dešinysis
@@ -1547,6 +1529,27 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	nRSP-ST pasiekiamas per SDRconnect: paleiskite SDRconnect (arba jo headless versiją) kompiuteryje su įjungtu WebSocket serveriu (prievadas 5454) ir pasirinktu nRSP-ST, tada įveskite to kompiuterio adresą. Slaptažodžio nereikia ir jis nesaugomas.
+#  the guided tour
+Tuning and gain	Derinimas ir stiprinimas
+Modes	Režimai
+Spectrum and waterfall	Spektras ir krioklys
+Mode panel	Režimo skydelis
+Memory and frequencies	Atmintis ir dažniai
+Receivers	Imtuvai
+Audio	Garsas
+Server and support	Serveris ir parama
+Done	Atlikta
+Take the guided tour	Pradėti gidą
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Pasirinkite radiją arba įrašą, kuris teikia atskaitas. Record IQ išsaugo neapdorotą signalą vėlesniam atkūrimui.
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Čia nustatomas dažnis, juosta ir atskaitų dažnis. Stiprinimas ir AGC nustato įėjimo lygį; Antras režimas iš to paties įrašo dekoduoja kitą režimą.
+%d modes, grouped by family. Use the search box to find one by name.	%d režimų, sugrupuotų pagal šeimas. Paieškos laukelyje galite rasti režimą pagal pavadinimą.
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	Spustelėkite norėdami derinti, ratuku keiskite mastelį. Peak hold išlaiko stipriausią kiekviename dažnyje matytą lygį.
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	Kiekvienas režimas turi savo korteles dekoduotai išvesčiai, nustatymams ir įrankiams. Jos keičiasi pagal pasirinktą režimą.
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	Atmintis saugo dažnius su jų režimu ir nustatymais. Dažniai ir juostų planai parodo, kas transliuojama, pagal režimą.
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	Kiekvienas imtuvas sieja radiją su režimu. Ši juosta perjungia juos ir parenka, kuris groja garsą.
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen groja demoduliuotą signalą. Garsumas ir nutildymas čia; Record audio įrašo garsą į failą.
+Server sends decoded positions to the public map. Support helps fund development.	Serveris siunčia dekoduotas pozicijas į viešą žemėlapį. Parama padeda finansuoti kūrimą.
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Čia rasite dokumentaciją, trikčių šalinimą, padėkas ir licencijas. Gidas paleidžia šį gidą iš naujo.
 Monitor audio	Garso stebėjimas
 Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Klausykitės suderinto kanalo bet kuriuo režimu, kad atpažintumėte signalą: radijo mėginiai demoduliuojami kaip USB, LSB, siaura FM arba AM. Tylu, kol režimas groja savo garsą.
 Auto: USB below 30 MHz, narrow FM above	Auto: USB žemiau 30 MHz, siaura FM aukščiau
@@ -1653,3 +1656,56 @@ Sharing	Dalijimasis
 Share my bearing on the map server	Dalytis mano kryptimi žemėlapio serveryje
 Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	Reikia Serveris > Siųsti duomenis į žemėlapio serverį. Siunčiama tik kryptis, jos neapibrėžtis, dažnis ir jūsų stoties vieta; žemėlapyje matoma, kur susikerta kelių stočių kryptys.
 Bearing and position of a transmitter from an antenna array such as the KrakenSDR	Siųstuvo kryptis ir vieta naudojant antenų gardelę, pavyzdžiui, KrakenSDR
+Decoded only	Tik iššifruoti
+Hides tone-only pages and pages whose text could not be decoded.	Paslepia vien tono iškvietimus ir pranešimus, kurių teksto nepavyko iššifruoti.
+%zu tone-only or undecoded pages hidden (Decoded only)	Paslėpta %zu vien tono arba neiššifruotų pranešimų (Tik iššifruoti)
+%zu tone-only or undecoded pages hidden	Paslėpta %zu vien tono arba neiššifruotų pranešimų
+hidden	paslėpta
+# LBJ (Chinese railway train warning)
+What LBJ carries	Ką perduoda LBJ
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	LBJ yra Kinijos traukinio artėjimo įspėjimas apie 821,2375 MHz dažniu. Kiekvienas lokomotyvas siunčia 1200 bit/s POCSAG skaitmeninius pranešimus: kas kelias sekundes trumpą pranešimą su traukinio numeriu, greičiu (km/h) ir kilometro ženklu, taip pat ilgesnius pranešimus su lokomotyvo tipu, numeriu ir maršrutu.\n\nOnAir pats dekoduoja pranešimus (tik priėmimas). Tuščia reikšmė turėjo pažeistų skaitmenų; pilka eilutė turėjo ištaisytų klaidų, todėl palyginkite ją su kitu to paties traukinio pranešimu.
+tune to about 821.2375 MHz and start the receiver	sureguliuokite apie 821,2375 MHz ir paleiskite imtuvą
+FM, 1200 bit/s FSK, %.2f Msps	FM, 1200 bit/s FSK, %.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu pranešimų, %llu sinchronizacijos žodžių, %llu tuščių, %llu nepraėjo patikros
+listening (level %.0f dBFS, offset %+.0f Hz)	klausoma (lygis %.0f dBFS, poslinkis %+.0f Hz)
+Train	Traukinys
+Speed km/h	Greitis km/h
+Km post	Km ženklas
+Direction	Kryptis
+Locomotive	Lokomotyvas
+Route	Maršrutas
+Up	Aukštyn
+Down	Žemyn
+Some digits were corrected or lost: check this row against the next message of the train	Kai kurie skaitmenys ištaisyti arba prarasti: palyginkite šią eilutę su kitu traukinio pranešimu
+Train warning, 821 MHz	Traukinių įspėjimas, 821 MHz
+clear picture	išvalyti vaizdą
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Išvalo vaizdą ir dekoderio surinktas eilutes, o kitu pradžios tonu ar fazavimu pradeda naują vaizdą. Dešiniajame sąraše jau esantys vaizdai lieka.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Išvalo NAVTEX ir DSC sąrašus bei orų fakso vaizdą.
+# radio clips
+Clip	Klipas
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Radijo klipas: išsaugo paskutines akimirkas (spektrogramą, garsą, dekoduotus pranešimus) failu, kuriuo galima dalytis. Klavišas: C
+Radio clip	Radijo klipas
+Last:	Paskutiniai:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Ką matė imtuvas, seniausia kairėje. Šviesesnis reiškia stipresnį signalą. Vilkite, kad pasirinktumėte išsaugotiną dalį.
+Include:	Įtraukti:
+Spectrogram picture	Spektrogramos paveikslėlis
+Decoded messages	Dekoduoti pranešimai
+Title	Pavadinimas
+Your station position is never included.	Jūsų stoties padėtis niekada neįtraukiama.
+Could not save:	Nepavyko išsaugoti:
+Saved: %s (zip %.1f MB)	Išsaugota: %s (zip %.1f MB)
+Save clip	Išsaugoti klipą
+Nothing to save: no waterfall, audio or decoded rows in this range	Nėra ką išsaugoti: šiame intervale nėra krioklio, garso ar dekoduotų eilučių
+Saving...	Saugoma...
+Copy Discord post text	Kopijuoti Discord tekstą
+Copied: paste it into Discord and attach the files	Nukopijuota: įklijuokite į Discord ir pridėkite failus
+Open folder	Atidaryti aplanką
+Memory kept for clips	Klipams laikoma atmintis
+Waterfall history	Krioklio istorija
+%d min	%d min.
+%d MB max	daugiausia %d MB
+Audio history	Garso istorija
+%d s	%d s
+Decoded rows history	Dekoduotų eilučių istorija
+Uses about %.1f MB now	Dabar naudoja apie %.1f MB
+Decoded rows are kept from the results tables you have open.	Dekoduotos eilutės saugomos iš atidarytų rezultatų lentelių.

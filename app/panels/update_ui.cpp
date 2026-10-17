@@ -215,6 +215,7 @@ void clearAllButton(App& a) {
         ImGui::PopTextWrapPos();
         if (ImGui::Button(tr("Yes, clear all"))) {
             a.engine.clearAllResults();
+            marineFaxClearUi();
             for (App* r : receiversAll()) if (r != &a) r->engine.clearAllResults();
             a.engine.log("results: all previous data cleared");
             ImGui::CloseCurrentPopup();
