@@ -1424,3 +1424,41 @@ No ACARS messages heard from this aircraft	Nessun messaggio ACARS ricevuto da qu
 Also share interesting ACARS messages (text becomes public on the map)	Condividi anche i messaggi ACARS interessanti (il testo diventa pubblico sulla mappa)
 Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	Messaggi inviati da un aeromobile via ACARS (testo libero e messaggi di equipaggio, operazioni, compagnia e manutenzione), mostrati per 48 ore nella scheda di quell'aeromobile sulla mappa pubblica. Numeri di telefono e indirizzi e-mail vengono rimossi prima. I rapporti di posizione e i test di collegamento non ne fanno parte. Puoi disattivarlo in qualsiasi momento.
 Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	I messaggi che gli aeromobili inviano via ACARS (testo libero e messaggi di equipaggio, operazioni, compagnia e manutenzione) possono comparire anche nella scheda dell'aeromobile, senza numeri di telefono né indirizzi e-mail. È una scelta separata, modificabile nel menu Server.
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s, %d salti, %d medie, %.0f ms per scansione
+pick a radio first (the test signal and files cannot sweep)	scegli prima una radio (il segnale di prova e i file non si possono scandire)
+Save scan...	Salva scansione...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	CSV compatibile con rtl_power: si apre in Heatmap.py, negli strumenti rtl_power_fftw e nei fogli di calcolo
+Load as baseline...	Carica come riferimento...
+Keep this scan as baseline	Usa questa scansione come riferimento
+Save signal log...	Salva registro segnali...
+Sweep scanner	Scanner a scansione rapida
+from MHz	da MHz
+to MHz	a MHz
+bin %.0f kHz	bin %.0f kHz
+dwell %.0f ms	sosta %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Tempo su ogni salto: più lungo media più FFT (rumore più stabile, segnali deboli visibili) ma la scansione è più lenta
+measure retune time	misura il tempo di risintonia
+settle %.0f ms	assestamento %.0f ms
+rate: radio's best	frequenza: la migliore della radio
+rate: 10 Msps	frequenza: 10 Msps
+rate: 5 Msps	frequenza: 5 Msps
+rate: 2.4 Msps	frequenza: 2,4 Msps
+gain %.0f dB	guadagno %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Pausa tra le scansioni: una scansione ogni tot secondi risparmia CPU e batteria
+threshold floor+%.0f dB	soglia fondo+%.0f dB
+floor percentile %.0f	percentile del fondo %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	Il fondo di rumore è questo percentile della potenza dei bin in ogni salto (50 = mediana). Abbassalo nelle bande affollate, alzalo in quelle vuote
+retune settle %.1f ms	assestamento %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	fondo di rumore %.1f dBFS per bin (bin da %.0f kHz), soglia %.1f dBFS, %zu segnali in questa scansione
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	rispetto al riferimento: fondo %+.1f dB, massimo aumento %+.1f dB a %.3f MHz
+Signals found	Segnali trovati
+mode: as it is	modalità: com'è
+Tune to selected	Sintonizza la selezione
+Bandwidth kHz	Larghezza di banda kHz
+Peak dBFS	Picco dBFS
+Best SNR dB	Miglior SNR dB
+Sweep	Scansiona
+every %.0f s	ogni %.0f s
+back to back	di seguito
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Scansione rapida a banda larga con misura del fondo di rumore, registro segnali e cascata

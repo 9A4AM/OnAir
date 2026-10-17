@@ -1442,3 +1442,41 @@ No ACARS messages heard from this aircraft	Geen ACARS-berichten ontvangen van di
 Also share interesting ACARS messages (text becomes public on the map)	Deel ook interessante ACARS-berichten (de tekst wordt openbaar op de kaart)
 Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	Berichten die een vliegtuig via ACARS verstuurde (vrije tekst en berichten van bemanning, operaties, maatschappij en onderhoud), 48 uur lang getoond op de kaart van dat vliegtuig op de openbare kaart. Telefoonnummers en e-mailadressen worden eerst verwijderd. Positiemeldingen en linktests horen hier niet bij. Je kunt dit altijd uitzetten.
 Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	Berichten die vliegtuigen via ACARS versturen (vrije tekst en berichten van bemanning, operaties, maatschappij en onderhoud) kunnen ook op de kaart van het vliegtuig staan, zonder telefoonnummers en e-mailadressen. Dit is een aparte keuze die je in het Server-menu kunt wijzigen.
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s, %d sprongen, %d gemiddelden, %.0f ms per sweep
+pick a radio first (the test signal and files cannot sweep)	kies eerst een radio (testsignaal en bestanden kunnen niet worden gesweept)
+Save scan...	Scan opslaan...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	rtl_power-compatibele CSV: opent in Heatmap.py, rtl_power_fftw-tools en spreadsheets
+Load as baseline...	Laden als basislijn...
+Keep this scan as baseline	Deze scan als basislijn houden
+Save signal log...	Signaallogboek opslaan...
+Sweep scanner	Sweep-scanner
+from MHz	van MHz
+to MHz	tot MHz
+bin %.0f kHz	bin %.0f kHz
+dwell %.0f ms	verblijf %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Tijd per sprong: langer middelt meer FFT's (rustigere ruisvloer, zwakke signalen zichtbaar) maar de sweep is trager
+measure retune time	omstemtijd meten
+settle %.0f ms	insteltijd %.0f ms
+rate: radio's best	samplerate: het beste van de radio
+rate: 10 Msps	samplerate: 10 Msps
+rate: 5 Msps	samplerate: 5 Msps
+rate: 2.4 Msps	samplerate: 2,4 Msps
+gain %.0f dB	gain %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Pauze tussen sweeps: om de zoveel seconden sweepen spaart processor en accu
+threshold floor+%.0f dB	drempel ruisvloer+%.0f dB
+floor percentile %.0f	ruisvloer-percentiel %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	De ruisvloer is dit percentiel van het binvermogen per sprong (50 = mediaan). Verlaag het in drukke banden, verhoog het in lege
+retune settle %.1f ms	insteltijd %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	ruisvloer %.1f dBFS per bin (bins van %.0f kHz), drempel %.1f dBFS, %zu signalen in deze sweep
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	t.o.v. basislijn: ruisvloer %+.1f dB, grootste stijging %+.1f dB bij %.3f MHz
+Signals found	Gevonden signalen
+mode: as it is	modus: zoals hij is
+Tune to selected	Afstemmen op selectie
+Bandwidth kHz	Bandbreedte kHz
+Peak dBFS	Piek dBFS
+Best SNR dB	Beste SNR dB
+Sweep	Sweep
+every %.0f s	elke %.0f s
+back to back	achter elkaar
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Snelle breedband-sweep met ruisvloermeting, signaallogboek en waterval

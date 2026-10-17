@@ -1424,3 +1424,41 @@ No ACARS messages heard from this aircraft	От этого воздушного 
 Also share interesting ACARS messages (text becomes public on the map)	Также делиться интересными сообщениями ACARS (текст становится публичным на карте)
 Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	Сообщения, которые воздушное судно отправило по ACARS (свободный текст, сообщения экипажа, эксплуатации, авиакомпании и обслуживания), показываются 48 часов в карточке этого судна на публичной карте. Номера телефонов и адреса e-mail предварительно удаляются. Отчёты о положении и проверки связи сюда не входят. Это можно отключить в любой момент.
 Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	Сообщения, которые воздушные суда отправляют по ACARS (свободный текст, сообщения экипажа, эксплуатации, авиакомпании и обслуживания), можно показывать и в карточке судна, без номеров телефонов и адресов e-mail. Это отдельный выбор, его можно изменить в меню «Сервер».
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f МГц/с, %d скачков, %d усреднений, %.0f мс на проход
+pick a radio first (the test signal and files cannot sweep)	сначала выберите радио (тестовый сигнал и файлы сканировать нельзя)
+Save scan...	Сохранить скан...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	CSV, совместимый с rtl_power: открывается в Heatmap.py, инструментах rtl_power_fftw и электронных таблицах
+Load as baseline...	Загрузить как базу...
+Keep this scan as baseline	Взять этот скан за базу
+Save signal log...	Сохранить журнал сигналов...
+Sweep scanner	Сканер-свип
+from MHz	от МГц
+to MHz	до МГц
+bin %.0f kHz	бин %.0f кГц
+dwell %.0f ms	задержка %.0f мс
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Время на каждый скачок: дольше — больше усреднений БПФ (ровнее шум, видны слабые сигналы), но проход медленнее
+measure retune time	измерить время перестройки
+settle %.0f ms	установка %.0f мс
+rate: radio's best	частота: максимум радио
+rate: 10 Msps	частота: 10 Msps
+rate: 5 Msps	частота: 5 Msps
+rate: 2.4 Msps	частота: 2,4 Msps
+gain %.0f dB	усиление %.0f дБ
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Пауза между проходами: проход раз в несколько секунд бережёт процессор и батарею
+threshold floor+%.0f dB	порог шум+%.0f дБ
+floor percentile %.0f	перцентиль шума %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	Шум — это данный перцентиль мощности бинов в каждом скачке (50 = медиана). В занятых диапазонах уменьшайте, в пустых увеличивайте
+retune settle %.1f ms	установка %.1f мс
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	шум %.1f dBFS на бин (бины %.0f кГц), порог %.1f dBFS, сигналов в проходе: %zu
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	относительно базы: шум %+.1f дБ, наибольший рост %+.1f дБ на %.3f МГц
+Signals found	Найденные сигналы
+mode: as it is	режим: как есть
+Tune to selected	Настроиться на выбранный
+Bandwidth kHz	Полоса кГц
+Peak dBFS	Пик dBFS
+Best SNR dB	Лучший ОСШ дБ
+Sweep	Проход
+every %.0f s	каждые %.0f с
+back to back	подряд
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Быстрый широкополосный проход с измерением шума, журналом сигналов и водопадом

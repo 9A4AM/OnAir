@@ -1442,3 +1442,41 @@ No ACARS messages heard from this aircraft	Von diesem Flugzeug wurden keine ACAR
 Also share interesting ACARS messages (text becomes public on the map)	Auch interessante ACARS-Nachrichten teilen (der Text wird auf der Karte öffentlich)
 Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	Nachrichten, die ein Flugzeug per ACARS gesendet hat (Freitext sowie Besatzungs-, Betriebs-, Firmen- und Wartungsnachrichten), werden 48 Stunden lang auf der Karte dieses Flugzeugs in der öffentlichen Karte gezeigt. Telefonnummern und E-Mail-Adressen werden vorher entfernt. Positionsmeldungen und Verbindungstests gehören nicht dazu. Du kannst das jederzeit ausschalten.
 Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	Nachrichten, die Flugzeuge per ACARS senden (Freitext sowie Besatzungs-, Betriebs-, Firmen- und Wartungsnachrichten), können auch auf der Karte des Flugzeugs erscheinen, ohne Telefonnummern und E-Mail-Adressen. Das ist eine eigene Wahl, die du im Server-Menü ändern kannst.
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s, %d Sprünge, %d Mittelungen, %.0f ms pro Durchlauf
+pick a radio first (the test signal and files cannot sweep)	Wähle zuerst ein Radio (Testsignal und Dateien können nicht durchlaufen)
+Save scan...	Scan speichern...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	rtl_power-kompatible CSV: öffnet in Heatmap.py, rtl_power_fftw-Werkzeugen und Tabellen
+Load as baseline...	Als Vergleich laden...
+Keep this scan as baseline	Diesen Scan als Vergleich behalten
+Save signal log...	Signalprotokoll speichern...
+Sweep scanner	Sweep-Scanner
+from MHz	von MHz
+to MHz	bis MHz
+bin %.0f kHz	Bin %.0f kHz
+dwell %.0f ms	Verweilzeit %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Zeit pro Sprung: länger mittelt mehr FFTs (ruhigerer Rauschteppich, schwache Signale sichtbar), der Durchlauf wird aber langsamer
+measure retune time	Umstellzeit messen
+settle %.0f ms	Einschwingen %.0f ms
+rate: radio's best	Rate: Maximum des Radios
+rate: 10 Msps	Rate: 10 Msps
+rate: 5 Msps	Rate: 5 Msps
+rate: 2.4 Msps	Rate: 2,4 Msps
+gain %.0f dB	Verstärkung %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Pause zwischen Durchläufen: ein Durchlauf alle paar Sekunden schont CPU und Akku
+threshold floor+%.0f dB	Schwelle Rauschen+%.0f dB
+floor percentile %.0f	Rausch-Perzentil %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	Der Rauschteppich ist dieses Perzentil der Bin-Leistung je Sprung (50 = Median). In vollen Bändern senken, in leeren erhöhen
+retune settle %.1f ms	Einschwingzeit %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	Rauschteppich %.1f dBFS pro Bin (%.0f-kHz-Bins), Schwelle %.1f dBFS, %zu Signale in diesem Durchlauf
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	gegenüber Vergleich: Rauschen %+.1f dB, größter Anstieg %+.1f dB bei %.3f MHz
+Signals found	Gefundene Signale
+mode: as it is	Modus: wie er ist
+Tune to selected	Auf Auswahl abstimmen
+Bandwidth kHz	Bandbreite kHz
+Peak dBFS	Spitze dBFS
+Best SNR dB	Bester SNR dB
+Sweep	Durchlauf
+every %.0f s	alle %.0f s
+back to back	nahtlos
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Schneller Breitband-Durchlauf mit Rauschmessung, Signalprotokoll und Wasserfall

@@ -1427,3 +1427,41 @@ No ACARS messages heard from this aircraft	Ettől a légi járműtől nem érkez
 Also share interesting ACARS messages (text becomes public on the map)	Az érdekes ACARS-üzenetek megosztása is (a szöveg nyilvános lesz a térképen)
 Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	A légi jármű ACARS-on küldött üzenetei (szabad szöveg, valamint személyzeti, üzemeltetési, társasági és karbantartási üzenetek) 48 órán át látszanak a jármű kártyáján a nyilvános térképen. A telefonszámokat és e-mail-címeket előtte eltávolítjuk. A helyzetjelentések és a kapcsolatpróbák nem tartoznak ide. Bármikor kikapcsolhatod.
 Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	A légi járművek ACARS-on küldött üzenetei (szabad szöveg, valamint személyzeti, üzemeltetési, társasági és karbantartási üzenetek) megjelenhetnek a jármű kártyáján is, telefonszámok és e-mail-címek nélkül. Ez külön választás, a Szerver menüben módosíthatod.
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s, %d ugrás, %d átlagolás, %.0f ms söprésenként
+pick a radio first (the test signal and files cannot sweep)	előbb válassz rádiót (a tesztjel és a fájlok nem söpörhetők)
+Save scan...	Söprés mentése...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	rtl_power-kompatibilis CSV: megnyitható a Heatmap.py-ban, rtl_power_fftw eszközökben és táblázatokban
+Load as baseline...	Betöltés alapként...
+Keep this scan as baseline	Ez a söprés legyen az alap
+Save signal log...	Jelnapló mentése...
+Sweep scanner	Söprő szkenner
+from MHz	MHz-től
+to MHz	MHz-ig
+bin %.0f kHz	bin %.0f kHz
+dwell %.0f ms	várakozás %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Az egyes ugrásokra fordított idő: hosszabb = több FFT átlagolása (nyugodtabb zajpadló, gyenge jelek látszanak), de lassabb söprés
+measure retune time	átállási idő mérése
+settle %.0f ms	beállás %.0f ms
+rate: radio's best	mintavétel: a rádió legjobbja
+rate: 10 Msps	mintavétel: 10 Msps
+rate: 5 Msps	mintavétel: 5 Msps
+rate: 2.4 Msps	mintavétel: 2,4 Msps
+gain %.0f dB	erősítés %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Szünet a söpréssorozatok között: néhány másodpercenkénti söprés kíméli a processzort és az akkut
+threshold floor+%.0f dB	küszöb zajpadló+%.0f dB
+floor percentile %.0f	zajpadló percentilis %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	A zajpadló az egyes ugrások bin-teljesítményének ez a percentilise (50 = medián). Zsúfolt sávban csökkentsd, üresben növeld
+retune settle %.1f ms	beállási idő %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	zajpadló %.1f dBFS binenként (%.0f kHz-es binek), küszöb %.1f dBFS, %zu jel ebben a söprésben
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	az alaphoz képest: zajpadló %+.1f dB, legnagyobb emelkedés %+.1f dB %.3f MHz-en
+Signals found	Talált jelek
+mode: as it is	mód: marad
+Tune to selected	Hangolás a kijelöltre
+Bandwidth kHz	Sávszélesség kHz
+Peak dBFS	Csúcs dBFS
+Best SNR dB	Legjobb SNR dB
+Sweep	Söprés
+every %.0f s	%.0f s-onként
+back to back	egymás után
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Gyors szélessávú söprés zajpadló-méréssel, jelnaplóval és vízeséssel

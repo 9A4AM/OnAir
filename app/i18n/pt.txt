@@ -1424,3 +1424,41 @@ No ACARS messages heard from this aircraft	Nenhuma mensagem ACARS recebida desta
 Also share interesting ACARS messages (text becomes public on the map)	Partilhar também mensagens ACARS interessantes (o texto torna-se público no mapa)
 Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	Mensagens que uma aeronave enviou por ACARS (texto livre e mensagens de tripulação, operações, companhia e manutenção), mostradas durante 48 horas na ficha dessa aeronave no mapa público. Números de telefone e endereços de e-mail são removidos antes. Relatórios de posição e testes de ligação não fazem parte. Pode desativar a qualquer momento.
 Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	As mensagens que as aeronaves enviam por ACARS (texto livre e mensagens de tripulação, operações, companhia e manutenção) também podem aparecer na ficha da aeronave, sem números de telefone nem endereços de e-mail. É uma escolha separada, que pode mudar no menu Servidor.
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s, %d saltos, %d médias, %.0f ms por varredura
+pick a radio first (the test signal and files cannot sweep)	escolha primeiro um rádio (o sinal de teste e os ficheiros não podem ser varridos)
+Save scan...	Guardar varredura...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	CSV compatível com rtl_power: abre no Heatmap.py, nas ferramentas rtl_power_fftw e em folhas de cálculo
+Load as baseline...	Carregar como referência...
+Keep this scan as baseline	Usar esta varredura como referência
+Save signal log...	Guardar registo de sinais...
+Sweep scanner	Scanner de varredura
+from MHz	de MHz
+to MHz	até MHz
+bin %.0f kHz	bin %.0f kHz
+dwell %.0f ms	permanência %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Tempo em cada salto: mais tempo faz a média de mais FFT (piso mais estável, vêem-se sinais fracos) mas a varredura é mais lenta
+measure retune time	medir tempo de retonia
+settle %.0f ms	estabilização %.0f ms
+rate: radio's best	taxa: a melhor do rádio
+rate: 10 Msps	taxa: 10 Msps
+rate: 5 Msps	taxa: 5 Msps
+rate: 2.4 Msps	taxa: 2,4 Msps
+gain %.0f dB	ganho %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Pausa entre varreduras: uma varredura a cada tantos segundos poupa CPU e bateria
+threshold floor+%.0f dB	limiar piso+%.0f dB
+floor percentile %.0f	percentil do piso %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	O piso de ruído é este percentil da potência dos bins em cada salto (50 = mediana). Baixe-o em bandas cheias, suba-o em vazias
+retune settle %.1f ms	estabilização %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	piso de ruído %.1f dBFS por bin (bins de %.0f kHz), limiar %.1f dBFS, %zu sinais nesta varredura
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	face à referência: piso %+.1f dB, maior subida %+.1f dB em %.3f MHz
+Signals found	Sinais encontrados
+mode: as it is	modo: como está
+Tune to selected	Sintonizar a seleção
+Bandwidth kHz	Largura de banda kHz
+Peak dBFS	Pico dBFS
+Best SNR dB	Melhor SNR dB
+Sweep	Varrer
+every %.0f s	a cada %.0f s
+back to back	seguidas
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Varredura rápida de banda larga com medição do piso de ruído, registo de sinais e cascata

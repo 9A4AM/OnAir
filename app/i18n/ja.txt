@@ -1442,3 +1442,41 @@ No ACARS messages heard from this aircraft	この機体からのACARSメッセ�
 Also share interesting ACARS messages (text becomes public on the map)	興味深いACARSメッセージも共有する（テキストは地図上で公開されます）
 Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	機体がACARSで送信したメッセージ（自由文、乗員・運航・会社・整備のメッセージ）を、公開地図のその機体のカードに48時間表示します。電話番号とメールアドレスは事前に削除されます。位置報告とリンクテストは含まれません。いつでもオフにできます。
 Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	機体がACARSで送信するメッセージ（自由文、乗員・運航・会社・整備のメッセージ）を、電話番号とメールアドレスを除いて機体のカードにも表示できます。これは別の選択で、サーバーメニューで変更できます。
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s、%dホップ、%d回平均、1スイープ %.0f ms
+pick a radio first (the test signal and files cannot sweep)	先に無線機を選んでください(テスト信号とファイルはスイープできません)
+Save scan...	スキャンを保存...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	rtl_power互換CSV: Heatmap.py、rtl_power_fftwツール、表計算で開けます
+Load as baseline...	基準として読み込む...
+Keep this scan as baseline	このスキャンを基準にする
+Save signal log...	信号ログを保存...
+Sweep scanner	スイープスキャナー
+from MHz	開始 MHz
+to MHz	終了 MHz
+bin %.0f kHz	ビン %.0f kHz
+dwell %.0f ms	滞留 %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	各ホップの時間: 長いほどFFTを多く平均します(ノイズフロアが安定し弱い信号が見える)がスイープは遅くなります
+measure retune time	再同調時間を測定
+settle %.0f ms	整定 %.0f ms
+rate: radio's best	レート: 無線機の最大
+rate: 10 Msps	レート: 10 Msps
+rate: 5 Msps	レート: 5 Msps
+rate: 2.4 Msps	レート: 2.4 Msps
+gain %.0f dB	ゲイン %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	スイープ間の休止: 数秒おきに実行するとCPUとバッテリーを節約できます
+threshold floor+%.0f dB	しきい値 フロア+%.0f dB
+floor percentile %.0f	フロア百分位 %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	ノイズフロアは各ホップのビン電力のこの百分位です(50=中央値)。混雑した帯域では下げ、空いた帯域では上げます
+retune settle %.1f ms	整定時間 %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	ノイズフロア ビンあたり %.1f dBFS(%.0f kHzビン)、しきい値 %.1f dBFS、このスイープで %zu 信号
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	基準との差: フロア %+.1f dB、最大上昇 %+.1f dB(%.3f MHz)
+Signals found	検出した信号
+mode: as it is	モード: そのまま
+Tune to selected	選択に同調
+Bandwidth kHz	帯域幅 kHz
+Peak dBFS	ピーク dBFS
+Best SNR dB	最大SNR dB
+Sweep	スイープ
+every %.0f s	%.0f 秒ごと
+back to back	連続
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	ノイズフロア測定、信号ログ、ウォーターフォール付きの高速広帯域スイープ
