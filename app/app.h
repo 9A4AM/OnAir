@@ -373,6 +373,7 @@ struct App {
     bool reduceCpuHidden = true;   // View > Reduce CPU when hidden: no drawing while the window is minimised or hidden (decoding goes on)
     bool discordOn = false, discordFreq = true;   // View > Show in Discord (opt-in Rich Presence, discord_rpc.cpp) and its "Show the frequency"
     bool mapSend = false, mapConsent = false;     // Server > Send data to map server (opt-in; consent once)
+    bool mapVoice = false;                        // Server > also share transcripts of airband radio calls (public text; own choice, off until chosen)
     bool mapMsgs = false;                         // Server > also share interesting ACARS messages (free text becomes public); off until chosen
     std::string mapDeclinedVersion;               // ONAIR_VERSION when "No, do not ask again" was chosen; another version asks again
     bool mapDeclined = false;                     // the start-up question was answered "No, do not ask again" (the Server menu still works)

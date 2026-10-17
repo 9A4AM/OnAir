@@ -7,6 +7,7 @@ constexpr int kMaxReceivers = 4;
 
 void receiversInit(App& first);                   // RX 1 is `first`; also restores the receivers that were open at the last exit
 App* receiverById(int id);                        // nullptr when closed
+App* receiverHeard();                             // the receiver whose sound plays (Hear this receiver); never null while RX 1 is open
 std::vector<App*> receiversAll();                 // open receivers, RX 1 first
 App* addReceiver();                               // a new receiver (nullptr: no more room); it becomes the selected tab
 void closeReceiver(int id);                       // stops it and lets go of its radio (done at the start of the next frame)

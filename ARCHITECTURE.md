@@ -28,6 +28,7 @@ Threads: the analysis thread runs the receiver (it must never wait for the inter
 | `core/src/engine/` | the engine thread, mode table and tuning, scanner, quality, wide-capture helpers |
 | `core/src/source/` | radios and drivers (`source_*.cpp`), Hamlib, rotator, IQ files, gain |
 | `core/src/audio/` | audio and video input/output, AC-4, encoders, shared ham audio front end |
+| `core/src/transcribe/` | live transcripts: voice segmenter, speech-engine queue, callsign reader, transcript store, models (whisper.cpp in `third_party/whisper`) |
 | `core/src/tv/` | transport stream, player, concealment, HLS, subtitles, teletext |
 | `core/src/dsp/` | FFT and SIMD kernels, resamplers, LDPC (CPU, GPU), IQ correction, spectrum |
 | `core/src/net/` | remote API, share server, network tuner and radio, data feeds, PSKReporter, WSPRnet |

@@ -1575,3 +1575,72 @@ testing	testes
 idea	ideia
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Obrigado a todos que enviaram correções, relataram bugs, compartilharam gravações, traduziram ou sugeriram ideias. O autor é Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Quer que seu nome seja alterado ou removido? Avise-nos no Discord ou abra uma issue.
+# live transcripts (docs/TRANSCRIBE.md)
+Transcribing speech: %s	A transcrever voz: %s
+Voice (radio calls)	Voz (chamadas de rádio)
+No radio call with this aircraft's callsign heard yet	Ainda não se ouviu nenhuma chamada com o indicativo desta aeronave
+Live transcription is off (View > Transcripts). Airband calls would be listed here by callsign.	A transcrição em direto está desligada (Ver > Transcrições). As chamadas da banda aeronáutica seriam listadas aqui por indicativo.
+Live captions: loading the speech model ...	Legendas em direto: a carregar o modelo de voz ...
+Live captions: off.	Legendas em direto: desligadas.
+Set up transcripts	Configurar transcrições
+Turns what is said on the airband channels into text as it is heard. It needs a speech model that you download or put in the models folder.	Converte em texto o que é dito nos canais da banda aeronáutica à medida que é ouvido. Precisa de um modelo de voz que descarregue ou ponha na pasta de modelos.
+Live captions	Legendas em direto
+working ...	a trabalhar ...
+listening ...	a ouvir ...
+Transcripts	Transcrições
+Airband is off in the transcript settings	A banda aeronáutica está desligada nas definições de transcrição
+Nothing heard yet.	Ainda nada foi ouvido.
+Cannot write %s	Não é possível escrever: %s
+Saved %s	Guardado: %s
+Privacy: what is said on public aviation radio is public, but the speech engine runs here on your computer and the text is kept in your data folder. Do not use it on private conversations: marine, amateur, CB and every other mode are off until you choose them, and a visible line shows whenever transcription is on.	Privacidade: o que é dito na rádio aeronáutica pública é público, mas o motor de voz corre aqui, no seu computador, e o texto fica na sua pasta de dados. Não o use em conversas privadas: marítimo, radioamador, CB e todos os outros modos estão desligados até os escolher, e uma linha visível mostra quando a transcrição está ativa.
+Transcribe speech	Transcrever voz
+Master switch. While a transmission is going on the audio is cut out, sent to the speech engine and turned into text. Nothing runs while the channels are quiet.	Interruptor geral. Durante uma emissão, o áudio é recortado, enviado ao motor de voz e convertido em texto. Nada corre enquanto os canais estão em silêncio.
+Airband channels	Canais da banda aeronáutica
+Marine VHF	VHF marítimo
+Any other mode that plays sound (amateur, CB, FM ...)	Qualquer outro modo que reproduza som (radioamador, CB, FM ...)
+Takes the sound you hear. Music and private conversations are not meant for this: leave it off unless you need it.	Usa o som que ouve. Música e conversas privadas não são para isto: deixe desligado se não for preciso.
+Speech model	Modelo de voz
+none	nenhum
+Open models folder	Abrir pasta de modelos
+Put a whisper.cpp model file (ggml-*.bin) here to use it. The folder is made if it does not exist.	Ponha aqui um ficheiro de modelo whisper.cpp (ggml-*.bin) para o usar. A pasta é criada se não existir.
+No speech model yet. Download one below, or put a model file in the models folder.	Ainda não há modelo de voz. Descarregue um abaixo ou ponha um ficheiro de modelo na pasta de modelos.
+Loading the speech model ...	A carregar o modelo de voz ...
+Speech model loaded.	Modelo de voz carregado.
+This build has no speech engine.	Esta versão não tem motor de voz.
+checking	a verificar
+Download speech model:	Descarregar modelo de voz:
+%s %d MB	%s %d MB
+Already downloaded	Já descarregado
+English only. tiny is the fastest (real time on a laptop), small hears more words and needs a stronger computer.	Só inglês. O tiny é o mais rápido (tempo real num portátil), o small percebe mais palavras e precisa de um computador mais forte.
+Other languages (multilingual models)	Outros idiomas (modelos multilingues)
+The loaded model is English only: other languages need a multilingual model (tiny, base or small without .en).	O modelo carregado é só inglês: outros idiomas precisam de um modelo multilingue (tiny, base ou small sem .en).
+CPU threads	Threads do CPU
+How many processor threads the speech engine may use for one transmission. Fewer threads use less battery and take longer.	Quantas threads do processador o motor de voz pode usar numa emissão. Menos threads gastam menos bateria e demoram mais.
+Keep transcripts (days)	Guardar transcrições (dias)
+Heard %llu, kept %llu, left out %llu (silence, noise, repeats), skipped %llu (too slow), speed %.2f x real time	Ouvidas %llu, mantidas %llu, descartadas %llu (silêncio, ruído, repetições), ignoradas %llu (demasiado lento), velocidade %.2f x tempo real
+Download the speech model %s (%d MB)?	Descarregar o modelo de voz %s (%d MB)?
+OnAir asks the model repository (huggingface.co) for this one file and sends nothing else. The file is checked against a fixed SHA-256 checksum and thrown away if it does not match. The model is MIT licensed.	O OnAir pede este único ficheiro ao repositório de modelos (huggingface.co) e não envia mais nada. O ficheiro é verificado com uma soma SHA-256 fixa e descartado se não coincidir. O modelo tem licença MIT.
+Download	Descarregar
+Delete all saved transcripts? This cannot be undone.	Apagar todas as transcrições guardadas? Não pode ser desfeito.
+Delete all	Apagar tudo
+Transcription is off.	A transcrição está desligada.
+Hide settings	Ocultar definições
+Settings and speech model	Definições e modelo de voz
+Search the text ...	Pesquisar no texto ...
+All frequencies	Todas as frequências
+A callsign (DLH123), a registration (N123AB) or an ICAO address (3C6444)	Um indicativo (DLH123), uma matrícula (N123AB) ou um endereço ICAO (3C6444)
+Airport	Aeroporto
+An airport code or name found in the channel name or the text (EYVI, Tower)	Um código ou nome de aeroporto encontrado no nome do canal ou no texto (EYVI, Tower)
+%zu of %zu	%zu de %zu
+Copy all shown	Copiar tudo o que é mostrado
+Export %s	Exportar %s
+Delete all ...	Apagar tudo ...
+Time (UTC)	Hora (UTC)
+Sure	Certeza
+Speaker (a guess from the wording)	Interlocutor (um palpite pelas palavras)
+Click to copy this line	Clique para copiar esta linha
+Aircraft on the screen	Aeronave no ecrã
+Also share transcripts of aircraft radio calls (text becomes public on the map)	Partilhar também transcrições de chamadas de rádio de aeronaves (o texto fica público no mapa)
+The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	O texto das chamadas de rádio da banda aeronáutica que um motor de voz neste computador criou a partir do que recebe (janela Transcrições), associado à aeronave pelo indicativo dito e mostrado durante 48 horas no cartão público dessa aeronave no mapa. Pode conter erros. Os números de telefone são removidos antes. Só a banda aeronáutica é partilhada, nunca marítimo, radioamador ou outros canais. Desligado até o escolher, e pode desligá-lo a qualquer momento.
+Transcripts ...	Transcrições ...
+What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	O que é dito na banda aeronáutica e noutros canais de voz, em texto: legendas em direto, pesquisa, exportação. Desligado até o ativar.

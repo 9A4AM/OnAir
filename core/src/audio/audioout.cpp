@@ -1,5 +1,6 @@
 #include "audioout_impl.h"
 #include "dect2/audio/audio_rec.h"
+#include "dect2/transcribe/audio_tap.h"
 #include <algorithm>
 #include <cstring>
 #include <cstdint>
@@ -97,6 +98,7 @@ int AudioOut::write(const float* s, int frames) {
     p_->written.fetch_add(n);
     if (!monitor_ && !p_->muted.load(std::memory_order_relaxed) && n > 0) gModeWriteMs.store(nowMs(), std::memory_order_relaxed);   // the mode is playing: a monitor yields
     AudioRecorder::offer(this, s, n, rate_);   // "Record audio": the sound before the volume, from any mode
+    AudioTap::offer(this, s, n, rate_);        // live transcripts of the modes that have no channel audio of their own
     return n;
 }
 

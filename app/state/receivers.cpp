@@ -2,6 +2,7 @@
 #include "receivers.h"
 #include "rxbar.h"
 #include "adsb/adsb_acars.h"
+#include "transcribe/transcribe_app.h"
 #include "dect2/engine/device_claims.h"
 #include <memory>
 #ifndef _WIN32
@@ -270,6 +271,8 @@ void strip(App& first, ImVec2 disp, float h) {
 }
 }  // namespace
 
+App* receiverHeard() { return receiverById(gAudio); }
+
 App* receiverById(int id) {
     if (id == 1) return gFirst;
     return id >= 2 && id <= kMaxReceivers ? gExtra[id - 2].get() : nullptr;
@@ -342,10 +345,12 @@ void receiversFrame(App& first, ImVec2 disp) {
     strip(first, disp, h);
     drawWarning(first);
     acarslog::tick(first);
+    tx::tick(first);
     mapSendTick(first);
 }
 
 void receiversShutdown(App& first) {
+    tx::shutdown();
     mapSendShutdown();
     for (int id = 2; id <= kMaxReceivers; id++) if (App* r = gExtra[id - 2].get()) {
         { PrefScope ps(id); savePrefs(*r); }

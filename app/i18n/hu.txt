@@ -1578,3 +1578,72 @@ testing	tesztelés
 idea	ötlet
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Köszönet mindenkinek, aki javítást küldött, hibát jelentett, felvételt osztott meg, fordított vagy ötletet adott. A szerző Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Szeretnéd, ha módosítanánk vagy törölnénk a neved? Szólj a Discordon, vagy nyiss egy issue-t.
+# live transcripts (docs/TRANSCRIBE.md)
+Transcribing speech: %s	Beszéd átírása: %s
+Voice (radio calls)	Hang (rádióhívások)
+No radio call with this aircraft's callsign heard yet	Még nem hallatszott hívás ennek a légijárműnek a hívójelével
+Live transcription is off (View > Transcripts). Airband calls would be listed here by callsign.	Az élő átírás ki van kapcsolva (Nézet > Átiratok). A repülési sáv hívásai itt jelennének meg hívójel szerint.
+Live captions: loading the speech model ...	Élő feliratok: a beszédmodell betöltése ...
+Live captions: off.	Élő feliratok: kikapcsolva.
+Set up transcripts	Átiratok beállítása
+Turns what is said on the airband channels into text as it is heard. It needs a speech model that you download or put in the models folder.	A repülési sáv csatornáin elhangzottakat szöveggé alakítja hallás közben. Beszédmodell kell hozzá, amelyet letöltesz vagy a modellek mappájába teszel.
+Live captions	Élő feliratok
+working ...	dolgozik ...
+listening ...	figyel ...
+Transcripts	Átiratok
+Airband is off in the transcript settings	A repülési sáv ki van kapcsolva az átírási beállításokban
+Nothing heard yet.	Még semmi sem hallatszott.
+Cannot write %s	Nem írható: %s
+Saved %s	Mentve: %s
+Privacy: what is said on public aviation radio is public, but the speech engine runs here on your computer and the text is kept in your data folder. Do not use it on private conversations: marine, amateur, CB and every other mode are off until you choose them, and a visible line shows whenever transcription is on.	Adatvédelem: ami a nyilvános repülési rádión elhangzik, az nyilvános, de a beszédfelismerő itt, a számítógépeden fut, és a szöveg az adatmappádban marad. Ne használd magánbeszélgetésekre: a tengeri, amatőr, CB és minden más üzemmód ki van kapcsolva, amíg be nem kapcsolod, és egy látható sor jelzi, ha az átírás működik.
+Transcribe speech	Beszéd átírása
+Master switch. While a transmission is going on the audio is cut out, sent to the speech engine and turned into text. Nothing runs while the channels are quiet.	Főkapcsoló. Adás közben a hangot kivágja, a beszédfelismerőnek adja, és szöveggé alakítja. Amíg a csatornák csendesek, semmi sem fut.
+Airband channels	Repülési sáv csatornái
+Marine VHF	Tengeri URH
+Any other mode that plays sound (amateur, CB, FM ...)	Bármely más üzemmód, amely hangot ad (amatőr, CB, FM ...)
+Takes the sound you hear. Music and private conversations are not meant for this: leave it off unless you need it.	A hallott hangot veszi. Zene és magánbeszélgetések nem erre valók: hagyd kikapcsolva, ha nincs rá szükség.
+Speech model	Beszédmodell
+none	nincs
+Open models folder	Modellek mappájának megnyitása
+Put a whisper.cpp model file (ggml-*.bin) here to use it. The folder is made if it does not exist.	Tegyél ide egy whisper.cpp modellfájlt (ggml-*.bin) a használatához. A mappa létrejön, ha nem létezik.
+No speech model yet. Download one below, or put a model file in the models folder.	Még nincs beszédmodell. Tölts le egyet lent, vagy tegyél egy modellfájlt a modellek mappájába.
+Loading the speech model ...	A beszédmodell betöltése ...
+Speech model loaded.	A beszédmodell betöltve.
+This build has no speech engine.	Ez a változat nem tartalmaz beszédfelismerőt.
+checking	ellenőrzés
+Download speech model:	Beszédmodell letöltése:
+%s %d MB	%s %d MB
+Already downloaded	Már letöltve
+English only. tiny is the fastest (real time on a laptop), small hears more words and needs a stronger computer.	Csak angol. A tiny a leggyorsabb (valós idejű egy laptopon), a small több szót ért meg, és erősebb gépet kér.
+Other languages (multilingual models)	Más nyelvek (többnyelvű modellek)
+The loaded model is English only: other languages need a multilingual model (tiny, base or small without .en).	A betöltött modell csak angolul tud: más nyelvekhez többnyelvű modell kell (tiny, base vagy small .en nélkül).
+CPU threads	CPU-szálak
+How many processor threads the speech engine may use for one transmission. Fewer threads use less battery and take longer.	Hány processzorszálat használhat a beszédfelismerő egy adáshoz. Kevesebb szál kevesebb akkut fogyaszt, és tovább tart.
+Keep transcripts (days)	Átiratok megőrzése (nap)
+Heard %llu, kept %llu, left out %llu (silence, noise, repeats), skipped %llu (too slow), speed %.2f x real time	Hallott %llu, megtartott %llu, eldobott %llu (csend, zaj, ismétlés), kihagyott %llu (túl lassú), sebesség %.2f x valós idő
+Download the speech model %s (%d MB)?	Letöltöd a(z) %s beszédmodellt (%d MB)?
+OnAir asks the model repository (huggingface.co) for this one file and sends nothing else. The file is checked against a fixed SHA-256 checksum and thrown away if it does not match. The model is MIT licensed.	Az OnAir ezt az egy fájlt kéri el a modelltárból (huggingface.co), mást nem küld. A fájlt egy rögzített SHA-256 ellenőrzőösszeggel ellenőrzi, és eldobja, ha nem egyezik. A modell MIT licencű.
+Download	Letöltés
+Delete all saved transcripts? This cannot be undone.	Törlöd az összes mentett átiratot? Ez nem vonható vissza.
+Delete all	Összes törlése
+Transcription is off.	Az átírás ki van kapcsolva.
+Hide settings	Beállítások elrejtése
+Settings and speech model	Beállítások és beszédmodell
+Search the text ...	Keresés a szövegben ...
+All frequencies	Minden frekvencia
+A callsign (DLH123), a registration (N123AB) or an ICAO address (3C6444)	Hívójel (DLH123), lajstromjel (N123AB) vagy ICAO-cím (3C6444)
+Airport	Repülőtér
+An airport code or name found in the channel name or the text (EYVI, Tower)	A csatorna nevében vagy a szövegben található repülőtérkód vagy -név (EYVI, Tower)
+%zu of %zu	%zu / %zu
+Copy all shown	Az összes látható másolása
+Export %s	%s exportálása
+Delete all ...	Összes törlése ...
+Time (UTC)	Idő (UTC)
+Sure	Biztos
+Speaker (a guess from the wording)	Beszélő (a szavakból tippelve)
+Click to copy this line	Kattints a sor másolásához
+Aircraft on the screen	Légijármű a képernyőn
+Also share transcripts of aircraft radio calls (text becomes public on the map)	A légijárművek rádióhívásainak átiratát is megosztom (a szöveg nyilvános lesz a térképen)
+The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	Az a repülési sávú rádióhívás-szöveg, amelyet a számítógéped beszédfelismerője készített a vett jelből (Átiratok ablak), a benne elhangzó hívójel alapján a légijárműhöz kötve, 48 órán át nyilvánosan megjelenik a légijármű kártyáján a térképen. Hibákat tartalmazhat. A telefonszámokat előtte eltávolítja. Csak a repülési sáv kerül megosztásra, soha tengeri, amatőr vagy más csatorna. Kikapcsolva, amíg be nem kapcsolod, és bármikor kikapcsolhatod.
+Transcripts ...	Átiratok ...
+What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	Ami a repülési sávon és más hangcsatornákon elhangzik, szövegként: élő feliratok, keresés, exportálás. Kikapcsolva, amíg be nem kapcsolod.

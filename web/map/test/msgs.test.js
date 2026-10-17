@@ -66,3 +66,10 @@ test("station rate limit", () => {
   assert.equal(takeBudget(st, "s2", 5, NOW + 2000), 5);
   assert.equal(takeBudget(st, "s1", 5, NOW + 70e3), 5);   // a minute later
 });
+
+test("transcripts of radio calls arrive as mode VOICE, cleaned like every other message", () => {
+  const m = sanitizeMsg(mk({ m: "voice", c: "free", l: "", f: 118.7, x: "Lufthansa one two three, call +49 69 1234 5678 now" }), NOW);
+  assert.equal(m.m, "VOICE");
+  assert.equal(m.x, "Lufthansa one two three, call [number] now");
+  assert.equal(m.f, 118.7);
+});

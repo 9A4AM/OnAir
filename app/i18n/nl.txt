@@ -1593,3 +1593,72 @@ testing	testen
 idea	idee
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Dank aan iedereen die fixes stuurde, bugs meldde, opnames deelde, vertaalde of ideeën aandroeg. De auteur is Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Wil je dat je naam wordt aangepast of verwijderd? Laat het ons weten op Discord of open een issue.
+# live transcripts (docs/TRANSCRIBE.md)
+Transcribing speech: %s	Spraak wordt getranscribeerd: %s
+Voice (radio calls)	Spraak (radio-oproepen)
+No radio call with this aircraft's callsign heard yet	Nog geen oproep met de roepletters van dit vliegtuig gehoord
+Live transcription is off (View > Transcripts). Airband calls would be listed here by callsign.	Live transcriptie staat uit (Beeld > Transcripties). Oproepen op de luchtvaartband zouden hier per roepletters staan.
+Live captions: loading the speech model ...	Live ondertiteling: spraakmodel wordt geladen ...
+Live captions: off.	Live ondertiteling: uit.
+Set up transcripts	Transcripties instellen
+Turns what is said on the airband channels into text as it is heard. It needs a speech model that you download or put in the models folder.	Zet wat op de luchtvaartkanalen wordt gezegd om in tekst terwijl het wordt gehoord. Daarvoor is een spraakmodel nodig dat je downloadt of in de modellenmap zet.
+Live captions	Live ondertiteling
+working ...	bezig ...
+listening ...	luistert ...
+Transcripts	Transcripties
+Airband is off in the transcript settings	Luchtvaartband staat uit in de transcriptie-instellingen
+Nothing heard yet.	Nog niets gehoord.
+Cannot write %s	Kan niet schrijven: %s
+Saved %s	Opgeslagen: %s
+Privacy: what is said on public aviation radio is public, but the speech engine runs here on your computer and the text is kept in your data folder. Do not use it on private conversations: marine, amateur, CB and every other mode are off until you choose them, and a visible line shows whenever transcription is on.	Privacy: wat op de openbare luchtvaartradio wordt gezegd is openbaar, maar de spraakengine draait hier op je computer en de tekst blijft in je gegevensmap. Gebruik het niet voor privégesprekken: marifoon, amateur, CB en elke andere modus staan uit tot je ze kiest, en een zichtbare regel toont wanneer transcriptie aan staat.
+Transcribe speech	Spraak transcriberen
+Master switch. While a transmission is going on the audio is cut out, sent to the speech engine and turned into text. Nothing runs while the channels are quiet.	Hoofdschakelaar. Tijdens een uitzending wordt het geluid uitgeknipt, naar de spraakengine gestuurd en omgezet in tekst. Zolang de kanalen stil zijn, draait er niets.
+Airband channels	Luchtvaartkanalen
+Marine VHF	Marifoon (VHF)
+Any other mode that plays sound (amateur, CB, FM ...)	Elke andere modus die geluid afspeelt (amateur, CB, FM ...)
+Takes the sound you hear. Music and private conversations are not meant for this: leave it off unless you need it.	Neemt het geluid dat je hoort. Muziek en privégesprekken zijn hier niet voor bedoeld: laat het uit tenzij je het nodig hebt.
+Speech model	Spraakmodel
+none	geen
+Open models folder	Modellenmap openen
+Put a whisper.cpp model file (ggml-*.bin) here to use it. The folder is made if it does not exist.	Zet hier een whisper.cpp-modelbestand (ggml-*.bin) neer om het te gebruiken. De map wordt aangemaakt als ze niet bestaat.
+No speech model yet. Download one below, or put a model file in the models folder.	Nog geen spraakmodel. Download er hieronder een of zet een modelbestand in de modellenmap.
+Loading the speech model ...	Spraakmodel wordt geladen ...
+Speech model loaded.	Spraakmodel geladen.
+This build has no speech engine.	Deze versie heeft geen spraakengine.
+checking	controleren
+Download speech model:	Spraakmodel downloaden:
+%s %d MB	%s %d MB
+Already downloaded	Al gedownload
+English only. tiny is the fastest (real time on a laptop), small hears more words and needs a stronger computer.	Alleen Engels. tiny is het snelst (realtime op een laptop), small hoort meer woorden en heeft een krachtigere computer nodig.
+Other languages (multilingual models)	Andere talen (meertalige modellen)
+The loaded model is English only: other languages need a multilingual model (tiny, base or small without .en).	Het geladen model is alleen Engels: andere talen hebben een meertalig model nodig (tiny, base of small zonder .en).
+CPU threads	CPU-threads
+How many processor threads the speech engine may use for one transmission. Fewer threads use less battery and take longer.	Hoeveel processorthreads de spraakengine voor één uitzending mag gebruiken. Minder threads gebruiken minder accu en duren langer.
+Keep transcripts (days)	Transcripties bewaren (dagen)
+Heard %llu, kept %llu, left out %llu (silence, noise, repeats), skipped %llu (too slow), speed %.2f x real time	Gehoord %llu, bewaard %llu, weggelaten %llu (stilte, ruis, herhalingen), overgeslagen %llu (te traag), snelheid %.2f x realtime
+Download the speech model %s (%d MB)?	Spraakmodel %s (%d MB) downloaden?
+OnAir asks the model repository (huggingface.co) for this one file and sends nothing else. The file is checked against a fixed SHA-256 checksum and thrown away if it does not match. The model is MIT licensed.	OnAir vraagt dit ene bestand op bij de modelopslag (huggingface.co) en verstuurt verder niets. Het bestand wordt gecontroleerd met een vaste SHA-256-checksum en weggegooid als het niet klopt. Het model heeft een MIT-licentie.
+Download	Downloaden
+Delete all saved transcripts? This cannot be undone.	Alle opgeslagen transcripties verwijderen? Dit kan niet ongedaan worden gemaakt.
+Delete all	Alles verwijderen
+Transcription is off.	Transcriptie staat uit.
+Hide settings	Instellingen verbergen
+Settings and speech model	Instellingen en spraakmodel
+Search the text ...	In de tekst zoeken ...
+All frequencies	Alle frequenties
+A callsign (DLH123), a registration (N123AB) or an ICAO address (3C6444)	Roepletters (DLH123), registratie (N123AB) of ICAO-adres (3C6444)
+Airport	Luchthaven
+An airport code or name found in the channel name or the text (EYVI, Tower)	Een luchthavencode of -naam in de kanaalnaam of de tekst (EYVI, Tower)
+%zu of %zu	%zu van %zu
+Copy all shown	Alles wat getoond wordt kopiëren
+Export %s	%s exporteren
+Delete all ...	Alles verwijderen ...
+Time (UTC)	Tijd (UTC)
+Sure	Zeker
+Speaker (a guess from the wording)	Spreker (een gok op basis van de woorden)
+Click to copy this line	Klik om deze regel te kopiëren
+Aircraft on the screen	Vliegtuig op het scherm
+Also share transcripts of aircraft radio calls (text becomes public on the map)	Ook transcripties van radio-oproepen van vliegtuigen delen (tekst wordt openbaar op de kaart)
+The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	De tekst van oproepen op de luchtvaartband die een spraakengine op deze computer van je ontvangst heeft gemaakt (venster Transcripties), gekoppeld aan het vliegtuig via de uitgesproken roepletters en 48 uur openbaar getoond op de kaart van dat vliegtuig. Kan fouten bevatten. Telefoonnummers worden eerst verwijderd. Alleen de luchtvaartband wordt gedeeld, nooit marifoon, amateur of andere kanalen. Uit tot je het kiest, en je kunt het altijd uitzetten.
+Transcripts ...	Transcripties ...
+What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	Wat op de luchtvaartband en andere spraakkanalen wordt gezegd, als tekst: live ondertiteling, zoeken, exporteren. Uit tot je het aanzet.

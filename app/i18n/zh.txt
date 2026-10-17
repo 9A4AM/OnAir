@@ -1593,3 +1593,72 @@ testing	测试
 idea	创意
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	感谢所有提交修复、报告错误、分享录音、翻译或提出想法的人。作者是 Kristijonas Adomaitis。
 Want your name changed or removed? Tell us on Discord or open an issue.	希望更改或删除您的名字？请在 Discord 告诉我们或提交 issue。
+# live transcripts (docs/TRANSCRIBE.md)
+Transcribing speech: %s	正在转录语音：%s
+Voice (radio calls)	语音（无线电通话）
+No radio call with this aircraft's callsign heard yet	尚未听到使用该飞机呼号的通话
+Live transcription is off (View > Transcripts). Airband calls would be listed here by callsign.	实时转录已关闭（视图 > 转录）。航空频段的通话会按呼号列在这里。
+Live captions: loading the speech model ...	实时字幕：正在加载语音模型 ...
+Live captions: off.	实时字幕：已关闭。
+Set up transcripts	设置转录
+Turns what is said on the airband channels into text as it is heard. It needs a speech model that you download or put in the models folder.	把航空频段信道上说的话在听到时转成文字。需要语音模型，可下载或放入模型文件夹。
+Live captions	实时字幕
+working ...	处理中 ...
+listening ...	监听中 ...
+Transcripts	转录
+Airband is off in the transcript settings	转录设置中已关闭航空频段
+Nothing heard yet.	还没有听到任何内容。
+Cannot write %s	无法写入：%s
+Saved %s	已保存：%s
+Privacy: what is said on public aviation radio is public, but the speech engine runs here on your computer and the text is kept in your data folder. Do not use it on private conversations: marine, amateur, CB and every other mode are off until you choose them, and a visible line shows whenever transcription is on.	隐私：公开航空无线电中说的话是公开的，但语音引擎在你的电脑上运行，文字保存在你的数据文件夹中。请勿用于私人对话：海事、业余无线电、CB 及其他所有模式在你选择之前都是关闭的，转录开启时会有明显的提示行。
+Transcribe speech	转录语音
+Master switch. While a transmission is going on the audio is cut out, sent to the speech engine and turned into text. Nothing runs while the channels are quiet.	总开关。发射期间，音频被截取、交给语音引擎并转成文字。信道安静时不会运行任何东西。
+Airband channels	航空频段信道
+Marine VHF	海事甚高频
+Any other mode that plays sound (amateur, CB, FM ...)	其他任何会播放声音的模式（业余无线电、CB、FM ...）
+Takes the sound you hear. Music and private conversations are not meant for this: leave it off unless you need it.	取用你听到的声音。音乐和私人对话不适用：不需要时请保持关闭。
+Speech model	语音模型
+none	无
+Open models folder	打开模型文件夹
+Put a whisper.cpp model file (ggml-*.bin) here to use it. The folder is made if it does not exist.	把 whisper.cpp 模型文件（ggml-*.bin）放在这里即可使用。文件夹不存在时会自动创建。
+No speech model yet. Download one below, or put a model file in the models folder.	还没有语音模型。请在下面下载一个，或把模型文件放入模型文件夹。
+Loading the speech model ...	正在加载语音模型 ...
+Speech model loaded.	语音模型已加载。
+This build has no speech engine.	此版本没有语音引擎。
+checking	校验中
+Download speech model:	下载语音模型：
+%s %d MB	%s %d MB
+Already downloaded	已下载
+English only. tiny is the fastest (real time on a laptop), small hears more words and needs a stronger computer.	仅英语。tiny 最快（笔记本上可实时），small 听到的词更多，但需要更强的电脑。
+Other languages (multilingual models)	其他语言（多语言模型）
+The loaded model is English only: other languages need a multilingual model (tiny, base or small without .en).	已加载的模型仅支持英语：其他语言需要多语言模型（不带 .en 的 tiny、base 或 small）。
+CPU threads	CPU 线程数
+How many processor threads the speech engine may use for one transmission. Fewer threads use less battery and take longer.	语音引擎处理一次发射可使用的处理器线程数。线程越少越省电，但耗时更长。
+Keep transcripts (days)	转录保留天数
+Heard %llu, kept %llu, left out %llu (silence, noise, repeats), skipped %llu (too slow), speed %.2f x real time	听到 %llu，保留 %llu，丢弃 %llu（静音、噪声、重复），跳过 %llu（太慢），速度 %.2f x 实时
+Download the speech model %s (%d MB)?	下载语音模型 %s（%d MB）？
+OnAir asks the model repository (huggingface.co) for this one file and sends nothing else. The file is checked against a fixed SHA-256 checksum and thrown away if it does not match. The model is MIT licensed.	OnAir 只向模型仓库（huggingface.co）请求这一个文件，不发送其他任何内容。文件会用固定的 SHA-256 校验和检查，不匹配则丢弃。该模型采用 MIT 许可证。
+Download	下载
+Delete all saved transcripts? This cannot be undone.	删除所有已保存的转录？此操作无法撤销。
+Delete all	全部删除
+Transcription is off.	转录已关闭。
+Hide settings	隐藏设置
+Settings and speech model	设置和语音模型
+Search the text ...	在文本中搜索 ...
+All frequencies	所有频率
+A callsign (DLH123), a registration (N123AB) or an ICAO address (3C6444)	呼号（DLH123）、注册号（N123AB）或 ICAO 地址（3C6444）
+Airport	机场
+An airport code or name found in the channel name or the text (EYVI, Tower)	信道名称或文本中出现的机场代码或名称（EYVI、Tower）
+%zu of %zu	%zu / %zu
+Copy all shown	复制所有显示的内容
+Export %s	导出 %s
+Delete all ...	全部删除 ...
+Time (UTC)	时间 (UTC)
+Sure	可信度
+Speaker (a guess from the wording)	说话者（根据措辞推测）
+Click to copy this line	点击复制此行
+Aircraft on the screen	屏幕上的飞机
+Also share transcripts of aircraft radio calls (text becomes public on the map)	同时共享飞机无线电通话的转录（文字将在地图上公开）
+The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	本机语音引擎根据你接收到的内容生成的航空频段通话文字（转录窗口），按其中说出的呼号关联到飞机，并在地图上该飞机的公开卡片中显示 48 小时。可能含有错误。电话号码会先被移除。只共享航空频段，绝不共享海事、业余无线电或其他信道。在你选择之前保持关闭，并且可随时关闭。
+Transcripts ...	转录 ...
+What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	航空频段和其他语音信道上说的话，以文字显示：实时字幕、搜索、导出。在你开启之前保持关闭。
