@@ -1379,3 +1379,22 @@ WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp
 Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	Salva solo quando c'è suono (come uno squelch): il silenzio viene tagliato, con un breve inizio e coda
 One file per transmission: a new file starts after 3 s of silence	Un file per trasmissione: dopo 3 s di silenzio ne inizia uno nuovo
 Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Continua a registrare quando cambiano modo o frequenza. Disattivato: la registrazione si ferma.
+Monitor audio	Monitor audio
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Ascolta il canale sintonizzato in qualsiasi modo per riconoscere un segnale: i campioni della radio sono demodulati come USB, LSB, FM stretta o AM. Muto mentre il modo riproduce il proprio audio.
+Auto: USB below 30 MHz, narrow FM above	Auto: USB sotto i 30 MHz, FM stretta sopra
+Volume of the monitor	Volume del monitor
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Regolazione fine rispetto alla frequenza sintonizzata, in Hz (un segnale SSB si sente 1-2 kHz sopra o sotto la portante)
+(the mode plays)	(il modo suona)
+Audio...	Audio...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	Dispositivi di uscita del monitor, una seconda uscita (ad es. un cavo audio virtuale per fldigi o WSJT-X) e uno stream di rete locale
+System default	Predefinito di sistema
+Output 1	Uscita 1
+Output 2	Uscita 2
+Delay (ms)	Ritardo (ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Audio in coda prima della riproduzione: meno è più veloce, più regge un computer occupato
+Stay silent while the mode plays	Muto mentre il modo suona
+Network audio stream	Stream audio di rete
+WAV header	Intestazione WAV
+Allow other computers	Consenti altri computer
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	Stereo a 16 bit, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORTA, o un lettore WAV con l'intestazione. Sicurezza: chiunque raggiunga la porta può ascoltare; lascia 'Consenti altri computer' disattivato se non serve.
+Listeners:	Ascoltatori:

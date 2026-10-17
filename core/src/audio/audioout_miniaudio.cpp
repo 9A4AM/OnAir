@@ -32,6 +32,12 @@ bool open(Backend* b, AudioOut::Impl* I, int rate, const ma_backend* backends, m
     dc.playback.format = ma_format_f32;
     dc.playback.channels = 2;
     dc.sampleRate = (ma_uint32)rate;
+    ma_device_id chosen{};
+    if (!I->device.empty()) {   // a named output device; not found: the default
+        ma_device_info* pb = nullptr; ma_uint32 npb = 0;
+        if (ma_context_get_devices(&b->ctx, &pb, &npb, nullptr, nullptr) == MA_SUCCESS)
+            for (ma_uint32 i = 0; i < npb; i++) if (I->device == pb[i].name) { chosen = pb[i].id; dc.playback.pDeviceID = &chosen; break; }
+    }
     dc.dataCallback = dataCb;
     dc.pUserData = I;
     if (ma_device_init(&b->ctx, &dc, &b->dev) != MA_SUCCESS) return false;
@@ -44,6 +50,16 @@ void close(Backend* b) {
     if (b->haveCtx) ma_context_uninit(&b->ctx);
     b->haveDev = b->haveCtx = false;
 }
+}
+
+std::vector<std::string> audioListOutputs() {
+    std::vector<std::string> v;
+    ma_context ctx;
+    if (ma_context_init(nullptr, 0, nullptr, &ctx) != MA_SUCCESS) return v;
+    ma_device_info* pb = nullptr; ma_uint32 npb = 0;
+    if (ma_context_get_devices(&ctx, &pb, &npb, nullptr, nullptr) == MA_SUCCESS) for (ma_uint32 i = 0; i < npb; i++) v.push_back(pb[i].name);
+    ma_context_uninit(&ctx);
+    return v;
 }
 
 bool audioMiniaudioStart(AudioOut::Impl* I, int rate) {

@@ -1397,3 +1397,22 @@ WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp
 Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	仅在有声音时保存（类似静噪）：静音被剪掉，保留很短的前导和尾部
 One file per transmission: a new file starts after 3 s of silence	每次发射一个文件：静音 3 秒后开始新文件
 Keeps recording when the mode or the frequency changes. Off: the recording stops then.	模式或频率改变时继续录制。关闭：此时停止录制。
+Monitor audio	监听音频
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	在任何模式下收听已调谐的频道以识别信号:无线电采样按USB、LSB、窄带FM或AM解调。模式播放自身声音时保持静音。
+Auto: USB below 30 MHz, narrow FM above	自动:30 MHz以下USB,以上窄带FM
+Volume of the monitor	监听音量
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	相对调谐频率的微调,单位Hz(SSB信号在载波上方或下方1至2 kHz处听到)
+(the mode plays)	(模式正在播放)
+Audio...	音频...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	监听的输出设备、第二路输出(例如供fldigi或WSJT-X使用的虚拟音频线)和本地网络流
+System default	系统默认
+Output 1	输出1
+Output 2	输出2
+Delay (ms)	延迟(毫秒)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	播放前排队的音频:越小越快,越大越能应对繁忙的电脑
+Stay silent while the mode plays	模式播放时保持静音
+Network audio stream	网络音频流
+WAV header	WAV文件头
+Allow other computers	允许其他电脑
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16位立体声,48 kHz。ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:端口,或带文件头的WAV播放器。安全:能访问该端口的人都可以收听;不需要时请保持“允许其他电脑”关闭。
+Listeners:	听众:

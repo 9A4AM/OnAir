@@ -1397,3 +1397,22 @@ WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp
 Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	Įrašo tik kol yra garso (kaip triukšmo slopintuvas): tyla iškerpama, paliekant trumpą pradžią ir pabaigą
 One file per transmission: a new file starts after 3 s of silence	Vienas failas vienam perdavimui: po 3 s tylos pradedamas naujas failas
 Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Tęsia įrašymą pasikeitus režimui ar dažniui. Išjungta: tada įrašymas sustoja.
+Monitor audio	Garso stebėjimas
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Klausykitės suderinto kanalo bet kuriuo režimu, kad atpažintumėte signalą: radijo mėginiai demoduliuojami kaip USB, LSB, siaura FM arba AM. Tylu, kol režimas groja savo garsą.
+Auto: USB below 30 MHz, narrow FM above	Auto: USB žemiau 30 MHz, siaura FM aukščiau
+Volume of the monitor	Stebėjimo garsas
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Tikslus derinimas nuo suderinto dažnio, Hz (SSB signalas girdimas 1–2 kHz virš ar žemiau nešlio)
+(the mode plays)	(režimas groja)
+Audio...	Garsas...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	Stebėjimo išvesties įrenginiai, antra išvestis (pvz., virtualus garso kabelis fldigi ar WSJT-X) ir vietinis tinklo srautas
+System default	Sistemos numatytasis
+Output 1	Išvestis 1
+Output 2	Išvestis 2
+Delay (ms)	Vėlinimas (ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Garsas eilėje prieš grojimą: mažiau greičiau, daugiau atlaiko apkrautą kompiuterį
+Stay silent while the mode plays	Tylu, kol režimas groja
+Network audio stream	Tinklo garso srautas
+WAV header	WAV antraštė
+Allow other computers	Leisti kitus kompiuterius
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16 bitų stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORTAS arba WAV grotuvas su antraštė. Sauga: klausytis gali kiekvienas, pasiekiantis prievadą; neįjunkite „Leisti kitus kompiuterius“ be reikalo.
+Listeners:	Klausytojai:

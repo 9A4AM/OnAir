@@ -1382,3 +1382,22 @@ WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp
 Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	Csak akkor ment, amikor van hang (mint egy zajzár): a csend kimarad, rövid előzmény és lecsengés marad
 One file per transmission: a new file starts after 3 s of silence	Adásonként egy fájl: 3 s csend után új fájl kezdődik
 Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Folytatja a felvételt, ha a mód vagy a frekvencia változik. Kikapcsolva: ilyenkor leáll a felvétel.
+Monitor audio	Hang figyelése
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Hallgasd a behangolt csatornát bármely módban egy jel felismeréséhez: a rádió mintáit USB, LSB, keskeny FM vagy AM szerint demodulálja. Néma, amíg a mód saját hangot játszik.
+Auto: USB below 30 MHz, narrow FM above	Auto: USB 30 MHz alatt, keskeny FM felette
+Volume of the monitor	A figyelés hangereje
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Finomhangolás a behangolt frekvenciához képest, Hz-ben (az SSB jel 1–2 kHz-cel a vivő felett vagy alatt hallható)
+(the mode plays)	(a mód játszik)
+Audio...	Hang...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	A figyelés kimeneti eszközei, egy második kimenet (pl. virtuális audiokábel fldigihez vagy WSJT-X-hez) és helyi hálózati adatfolyam
+System default	Rendszer alapértelmezett
+Output 1	1. kimenet
+Output 2	2. kimenet
+Delay (ms)	Késleltetés (ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Lejátszás előtt sorban álló hang: kevesebb gyorsabb, több kibírja a terhelt gépet
+Stay silent while the mode plays	Néma, amíg a mód játszik
+Network audio stream	Hálózati hangfolyam
+WAV header	WAV-fejléc
+Allow other computers	Más gépek engedélyezése
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16 bites sztereó, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, vagy fejléces WAV-lejátszó. Biztonság: bárki hallgathat, aki eléri a portot; ne kapcsold be a „Más gépek engedélyezése” opciót, ha nem kell.
+Listeners:	Hallgatók:

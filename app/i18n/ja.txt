@@ -1397,3 +1397,22 @@ WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp
 Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	音がある間だけ保存します（スケルチのように）。無音は削除され、前後に短い余白が付きます
 One file per transmission: a new file starts after 3 s of silence	送信ごとに1ファイル：3秒の無音の後に新しいファイルを開始します
 Keeps recording when the mode or the frequency changes. Off: the recording stops then.	モードや周波数が変わっても録音を続けます。オフの場合、その時点で録音を停止します。
+Monitor audio	音声モニター
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	どのモードでも同調したチャンネルを聞いて信号を識別できます。無線のサンプルをUSB、LSB、狭帯域FM、AMとして復調します。モードが自分の音を出している間は無音です。
+Auto: USB below 30 MHz, narrow FM above	自動: 30 MHz未満はUSB、以上は狭帯域FM
+Volume of the monitor	モニターの音量
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	同調周波数からの微調整(Hz)。SSB信号はキャリアの1〜2 kHz上または下で聞こえます
+(the mode plays)	(モードが再生中)
+Audio...	音声...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	モニターの出力デバイス、2つ目の出力(fldigiやWSJT-X用の仮想オーディオケーブルなど)、ローカルネットワークストリーム
+System default	システム既定
+Output 1	出力1
+Output 2	出力2
+Delay (ms)	遅延(ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	再生前にためる音声: 小さいほど速く、大きいほど負荷の高いPCに強い
+Stay silent while the mode plays	モードが再生中は無音
+Network audio stream	ネットワーク音声ストリーム
+WAV header	WAVヘッダー
+Allow other computers	他のコンピューターを許可
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16ビットステレオ、48 kHz。ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:ポート、またはヘッダー付きWAVプレーヤー。セキュリティ: ポートに到達できる人は誰でも聞けます。必要がなければ「他のコンピューターを許可」はオフのままにしてください。
+Listeners:	リスナー:

@@ -1397,3 +1397,22 @@ WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp
 Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	Zapisuje tylko gdy jest dźwięk (jak squelch): cisza jest wycinana, z krótkim początkiem i końcem
 One file per transmission: a new file starts after 3 s of silence	Jeden plik na transmisję: po 3 s ciszy zaczyna się nowy plik
 Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Nagrywa dalej po zmianie trybu lub częstotliwości. Wyłączone: nagrywanie wtedy się zatrzymuje.
+Monitor audio	Podsłuch audio
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Słuchaj dostrojonego kanału w dowolnym trybie, by rozpoznać sygnał: próbki radia są demodulowane jako USB, LSB, wąskie FM lub AM. Cisza, gdy tryb gra własny dźwięk.
+Auto: USB below 30 MHz, narrow FM above	Auto: USB poniżej 30 MHz, wąskie FM powyżej
+Volume of the monitor	Głośność podsłuchu
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Dostrojenie względem częstotliwości w Hz (sygnał SSB słychać 1–2 kHz nad lub pod nośną)
+(the mode plays)	(tryb gra)
+Audio...	Audio...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	Urządzenia wyjściowe podsłuchu, drugie wyjście (np. wirtualny kabel audio dla fldigi lub WSJT-X) i lokalny strumień sieciowy
+System default	Domyślne systemowe
+Output 1	Wyjście 1
+Output 2	Wyjście 2
+Delay (ms)	Opóźnienie (ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Dźwięk w kolejce przed odtwarzaniem: mniej jest szybciej, więcej znosi obciążony komputer
+Stay silent while the mode plays	Cisza, gdy tryb gra
+Network audio stream	Sieciowy strumień audio
+WAV header	Nagłówek WAV
+Allow other computers	Zezwól innym komputerom
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	Stereo 16 bit, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT lub odtwarzacz WAV z nagłówkiem. Bezpieczeństwo: każdy, kto dotrze do portu, może słuchać; zostaw 'Zezwól innym komputerom' wyłączone, jeśli nie trzeba.
+Listeners:	Słuchacze:

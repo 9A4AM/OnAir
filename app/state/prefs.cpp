@@ -314,6 +314,12 @@ void loadPrefs(App& a) {
     a.recSigmf = d.getB("recSigmf", true);
     a.audioRecFmt = std::max(0, std::min(2, (int)d.getI("audioRecFmt", 0)));
     a.audioRecGate = d.getB("audioRecGate", false); a.audioRecSplit = d.getB("audioRecSplit", false); a.audioRecKeep = d.getB("audioRecKeep", false);
+    a.monOn = d.getB("monOn", false); a.monDemod = std::max(0, std::min(4, (int)d.getI("monDemod", 4)));
+    a.monVol = (float)d.getD("monVol", 1.0); a.monVol2 = (float)d.getD("monVol2", 1.0);
+    a.monLatency = std::max(20, std::min(1000, (int)d.getI("monLatency", 100))); a.monYield = d.getB("monYield", true);
+    a.monDev = d.getS("monDev", ""); a.monDev2 = d.getS("monDev2", ""); a.monOut2 = d.getB("monOut2", false);
+    a.monNet = d.getB("monNet", false); a.monPort = std::max(1024, std::min(65535, (int)d.getI("monPort", 7355)));
+    a.monBindAll = d.getB("monBindAll", false); a.monWav = d.getB("monWav", true);
     a.tvBufMb = (int)d.getI("tvBufMb", 256); a.engine.player().setBufferMB(a.tvBufMb); a.tvBufMb = a.engine.player().bufferMB();
     a.tvRecMin = std::max(0, (int)d.getI("tvRecMin", 0));
     a.tvRecAtOn = d.getB("tvRecAtOn", false);
