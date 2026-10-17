@@ -2346,6 +2346,34 @@ Current setting: %.2f ppm	Текущая настройка: %.2f ppm
 No measurements of this radio yet.	Измерений этого радио пока нет.
 History of this radio (ppm)	История этого радио (ppm)
 Drift: %+.3f ppm per minute	Дрейф: %+.3f ppm в минуту
+Band from (kHz)	Полоса от (кГц)
+Calibrate from two landmarks	Калибровка по двум ориентирам
+Calibrated.	Калибровка выполнена.
+Camera snapshot URL (JPEG)	URL снимка с камеры (JPEG)
+Cannot load the picture.	Не удаётся загрузить изображение.
+Cannot save the snapshot.	Не удаётся сохранить снимок.
+Centre azimuth	Центральный азимут
+Click the picture to set the column of the selected landmark.	Щёлкните по изображению, чтобы задать столбец выбранного ориентира.
+Demo skyline (no camera)	Демонстрационный горизонт (без камеры)
+Enable RF camera	Включить РЧ-камеру
+Field of view	Поле зрения
+Heat strength	Яркость тепловой карты
+No picture.	Нет изображения.
+Normal camera lens	Обычный объектив камеры
+Panorama (equirectangular)	Панорама (равнопромежуточная)
+Picture	Изображение
+Picture or panorama file	Файл изображения или панорамы
+Projection	Проекция
+RF camera	РЧ-камера
+Save snapshot	Сохранить снимок
+Snapshot saved: %s	Снимок сохранён: %s
+Sub-bands	Поддиапазоны
+The two landmarks do not fit a picture.	Два ориентира не подходят к изображению.
+Weakest shown	Самый слабый показываемый
+azimuth	азимут
+azimuth only; the picture is just a backdrop	только азимут; изображение служит лишь фоном
+column	столбец
+to (kHz)	до (кГц)
 Translate to English	Переводить на английский
 Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	Речь на другом языке дополнительно переводится на английский, офлайн, рядом с оригиналом. Нужна многоязычная модель; требует примерно в 1,5 раза больше времени процессора; пропускается, если движок не успевает. Ничего не отправляется. Перевода на другие языки нет.
 The loaded model is English only: translation needs a multilingual model.	Загружена модель только для английского: для перевода нужна многоязычная модель.
@@ -2403,3 +2431,159 @@ Tracks	Треки
 Two recordings (reference, surveillance)	Две записи (опорная, обзорная)
 Two-channel recording (cf32)	Двухканальная запись (cf32)
 Waiting for data.	Ожидание данных.
+FM broadcast	FM-радио
+Airband	Авиадиапазон
+DAB / VHF band III	DAB / VHF диапазон III
+UHF TV	ТВ UHF
+868 MHz ISM	ISM 868 МГц
+ADS-B 1090 MHz	ADS-B 1090 МГц
+Measuring %s (%d/%d)	Измерение: %s (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	Сначала выберите радио (тестовый сигнал и файлы измерить нельзя)
+None of the measuring bands is inside this radio's range	Ни один из диапазонов измерения не попадает в диапазон этого радио
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s: АЦП перегружен (%.2f%% отсчётов обрезается). Уменьшите усиление или добавьте аттенюатор.
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s: сильный сигнал (на %.0f дБ выше уровня шума) перегружает АЦП, а другие диапазоны при таком усилении слишком слабы. Вместо уменьшения усиления поставьте для этого диапазона заграждающий фильтр (для диапазона FM — FM-режектор).
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s: уровень АЦП высокий (%.1f dBFS ск.), для сильных сигналов остаётся мало запаса. Немного уменьшите усиление.
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s: шум приёмника всего на %.1f дБ выше шума самого АЦП, поэтому слабые сигналы теряются. Увеличьте усиление.
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s: шум приёмника всего на %.1f дБ выше шума самого АЦП, а усиление уже максимальное. Поставьте малошумящий усилитель (LNA) рядом с антенной.
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s: усиление можно уменьшить примерно на %.0f дБ без потери чувствительности, это даст больше запаса для сильных сигналов.
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s: уровень шума на %.0f дБ выше, чем в самом тихом диапазоне. Найдите местный источник помех (LED-освещение, импульсные блоки питания, компьютеры), уберите антенну подальше или наденьте ферритовое кольцо на кабель.
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	Станции %s не найдены, хотя обычно они есть. Проверьте антенну и кабель; возможно, в вашем районе диапазон пуст.
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	Самая сильная станция %s всего на %.0f дБ выше шума (хорошая антенна даёт не менее %.0f дБ). Поднимите антенну выше или вынесите наружу, либо добавьте полосовой фильтр и LNA.
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	Часы радио уходят на %+.1f ppm. Введите %+.1f как поправку частоты (ppm) в настройках радио.
+The radio's clock is %+.1f ppm off: fine.	Часы радио уходят на %+.1f ppm: нормально.
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	Дальность ADS-B мала: самый далёкий самолёт был на расстоянии %.0f nm (открытая наружная антенна берёт 150 nm и больше); самое слабое направление около %.0f градусов. Поднимите антенну выше, чтобы было видно небо.
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	Ни одного самолёта в %.0f секторах по 10 градусов, начиная с %.0f градусов, хотя соседние направления берут далеко: там что-то закрывает обзор (стена, холм, здание).
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	Дальность ADS-B: позиций пока мало. Запустите режим ADS-B на несколько минут с заданным положением антенны и повторите отчёт.
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	Ничего плохого не найдено. Усиление, уровень шума и эталонные станции в порядке.
+Station health report	Отчёт о состоянии станции
+Gain: %.0f dB	Усиление: %.0f дБ
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s: уровень шума %.1f dBFS на ячейку, запас АЦП %.1f дБ, самый сильный сигнал на %.0f дБ выше шума, уровень АЦП %.1f dBFS, обрезка %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   найдено станций %s: %d, самая сильная на %.0f дБ выше шума
+The numbers are relative to the receiver itself (not calibrated to dBm).	Числа относительные, по самому приёмнику (не откалиброваны в dBm).
+Station health	Состояние станции
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	Измеряет уровень шума и АЦП в нескольких диапазонах, ищет станции FM, DAB и DVB-T и подсказывает, что изменить у антенны. На время измерения приёмник останавливается (около минуты).
+known carrier MHz (optional)	известная несущая, МГц (необязательно)
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	Несущая, чьей частоте вы доверяете (пилот ATSC, маяк вышки сотовой связи, сигнал точного времени). По ней отчёт даёт ошибку часов радио в ppm. Оставьте 0, чтобы пропустить.
+Save report...	Сохранить отчёт...
+Save as JSON...	Сохранить как JSON...
+Noise floor	Уровень шума
+ADC margin	Запас АЦП
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f дБ
+none found	не найдено
+%s: %d, best %.0f dB	%s: %d, лучшая %.0f дБ
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	Ошибка часов: %+.2f ppm (%+.0f Гц на %.4f МГц)
+No carrier found at the frequency given	На указанной частоте несущая не найдена
+What to do	Что делать
+ADS-B range by direction	Дальность ADS-B по направлениям
+Check station	Проверить станцию
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	Уровень шума, уровень АЦП и эталонные станции по диапазонам, с понятными советами по усилению, фильтрам и размещению антенны
+# interference hunter
+Unknown	Неизвестно
+Switching power supply	Импульсный блок питания
+LED lamp or driver	Светодиодная лампа или драйвер
+Powerline (PLC)	Силовая сеть (PLC)
+Local oscillator or clock leak	Утечка гетеродина или тактового сигнала
+Cannot open the GPS device or file.	Не удаётся открыть GPS-устройство или файл.
+Waiting for a position fix.	Ожидание определения позиции.
+Interference gone	Помеха исчезла
+The noise floor rose by %.1f dB	Шумовой порог вырос на %.1f дБ
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	Новый широкополосный шум %.2f - %.2f МГц, %.0f дБ: %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	Новый сигнал на %.4f МГц, на %.0f дБ выше базового уровня: %s
+Demo (simulated sweeps)	Демо (имитация сканирования)
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	Гребёнке линий нужен шаг не менее 5 ячеек, чтобы отличить её от широкого сигнала: более мелкие ячейки покажут более частые линии
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	Пауза между проходами: мониторинг может работать часами с длинными паузами; для обхода нужны проходы подряд
+spur threshold %.0f dB	порог линий %.0f дБ
+floor alert %.0f dB	тревога по шуму %.0f дБ
+confirm in %d sweeps	подтверждать за %d проходов
+floor change dB	изменение шума дБ
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	Обучение базового уровня: %d из %d проходов. Оставьте диапазон в обычном состоянии.
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	Идёт наблюдение. Шум %.1f дБFS, базовый уровень %.1f дБFS, известных сигналов: %zu.
+Press Start. The first sweeps become the baseline: what is normal in this band.	Нажмите «Пуск». Первые проходы станут базовым уровнем: тем, что нормально для этого диапазона.
+Learn the baseline again	Обучить базовый уровень заново
+What is there now is normal	То, что есть сейчас, — норма
+Adds the interference that has been reported to the baseline, so it raises no more alerts	Добавляет обнаруженную помеху в базовый уровень, и тревог по ней больше не будет
+Save the alerts...	Сохранить тревоги...
+Save the noise floor log...	Сохранить журнал шумового порога...
+Interference now	Текущие помехи
+Likely source	Вероятный источник
+To MHz	До МГц
+Spacing kHz	Шаг кГц
+Alerts	Тревоги
+Event	Событие
+dB above baseline	дБ выше базового
+new signal	новый сигнал
+noise floor up	шум вырос
+new broadband noise	новый широкополосный шум
+gone	исчезло
+no position	без позиции
+the receiver position (set for ADS-B)	положение приёмника (заданное для ADS-B)
+type a position	ввести позицию
+GPS device or NMEA file	GPS-устройство или файл NMEA
+latitude	широта
+longitude	долгота
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	Последовательный GPS (например, /dev/cu.usbmodem1101 или COM3 на ПК; 9600 бод) или текстовый файл с предложениями NMEA
+Reconnect	Переподключить
+Readings are logged at %.5f, %.5f	Измерения записываются в точке %.5f, %.5f
+Readings are logged without a position.	Измерения записываются без позиции.
+%+.1f dB above the quiet level	%+.1f дБ относительно тихого уровня
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	Нажмите «Пуск» и идите. Шкала заполнится, когда помеха на 25 дБ выше самого тихого места.
+Quiet	Тихо
+Some interference	Есть помехи
+Loud	Громко
+- getting louder	- растёт
+- getting quieter	- слабеет
+- steady	- стабильно
+strongest spur %.4f MHz, %.0f dB	самая сильная линия %.4f МГц, %.0f дБ
+This is the quiet level	Это тихий уровень
+Leave out the signals seen now	Исключить видимые сейчас сигналы
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	Известные несущие вещания и устройства исключаются из шкалы: сделайте это в тихом месте перед обходом
+Clear the readings	Очистить измерения
+Save as CSV...	Сохранить как CSV...
+Save as GPX...	Сохранить как GPX...
+reading	измерение
+dB above the quiet level	дБ относительно тихого уровня
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	Самое сильное измерение: %+.1f дБ в точке %.5f, %.5f (%s)
+Loudest reading: %+.1f dB (%s), no position	Самое сильное измерение: %+.1f дБ (%s), без позиции
+Strongest spur MHz	Самая сильная линия МГц
+Interference hunter	Охотник за помехами
+Monitor	Мониторинг
+Walk	Обход
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Следите за диапазоном на предмет новых помех, определяйте их тип и находите источник пешком по шкале «громко / тихо»
+The watchlist file could not be read:	Не удалось прочитать файл списков наблюдения:
+APRS call signs	Позывные APRS
+Words in messages	Слова в сообщениях
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	По одному в строке: шестнадцатеричный адрес ICAO (4840D6), бортовой номер (A6-EDA) или позывной (KLM1023). * в конце означает начало (KLM*). Принимается по ADS-B, ACARS, VDL2 и HFDL.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	По одному в строке: номер MMSI, название судна или позывной. * в конце означает начало (2190*). Принимается по AIS и DSC.
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	По одному в строке: позывной. Без SSID (LY1ABC) подходит любой SSID, с SSID (LY1ABC-9) только он.
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	По одной в строке: частота в МГц (162.025), с единицей (162025 kHz) или диапазон (144-146). Учитывается всё, что декодировано на ней.
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	По одному в строке: слово или фраза (регистр не важен). * в конце означает начало слова (fire*). Поиск идёт в сообщениях пейджеров, ACARS, APRS и другом декодированном тексте.
+New list...	Новый список...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	Создайте список слева: самолёты, суда, позывные APRS, частоты или слова. OnAir сообщит, когда что-то из него будет принято.
+On	Вкл.
+Tolerance (kHz)	Допуск (кГц)
+entries	записей
+Delete list	Удалить список
+Desktop notification	Уведомление на рабочем столе
+Sound (follows Mute)	Звук (учитывает Без звука)
+WAV file, empty = three beeps	Файл WAV, пусто = три сигнала
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	Push-уведомления отправляются выбранному вами сервису по указанному адресу и с указанным токеном. Они хранятся в вашей папке данных и никогда не пишутся в журнал.
+optional	необязательно
+optional, sent as a Bearer token	необязательно, отправляется как токен Bearer
+Send a test alert	Отправить тестовое оповещение
+Most alerts per hour (0 = no limit)	Максимум оповещений в час (0 = без ограничений)
+Same station again after (minutes)	Та же станция снова через (минут)
+Quiet hours (no alerts, still listed in the history)	Тихие часы (без оповещений, остаются в истории)
+From	С
+Until	До
+Local time of this computer.	Местное время этого компьютера.
+alerts sent	оповещений отправлено
+Heard	Принято
+What happened	Что произошло
+held back: quiet hours	задержано: тихие часы
+held back: rate limit	задержано: достигнут лимит
+Watchlists	Списки наблюдения
+Watch for these	Следить за этими
+Lists	Списки
+Watchlists...	Списки наблюдения...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Оповещения, когда принимаются перечисленные самолёты, суда, позывные, частоты или слова: уведомление, звук, ntfy, Telegram или вебхук

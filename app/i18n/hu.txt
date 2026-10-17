@@ -2349,6 +2349,34 @@ Current setting: %.2f ppm	Jelenlegi beállítás: %.2f ppm
 No measurements of this radio yet.	Ehhez a rádióhoz még nincs mérés.
 History of this radio (ppm)	A rádió előzményei (ppm)
 Drift: %+.3f ppm per minute	Sodródás: %+.3f ppm percenként
+Band from (kHz)	Sáv ettől (kHz)
+Calibrate from two landmarks	Kalibrálás két tereptárgy alapján
+Calibrated.	Kalibrálva.
+Camera snapshot URL (JPEG)	Kamera pillanatkép-URL (JPEG)
+Cannot load the picture.	A kép nem tölthető be.
+Cannot save the snapshot.	A pillanatkép nem menthető.
+Centre azimuth	Középső azimut
+Click the picture to set the column of the selected landmark.	Kattints a képre a kijelölt tereptárgy oszlopának beállításához.
+Demo skyline (no camera)	Demó látkép (kamera nélkül)
+Enable RF camera	RF-kamera bekapcsolása
+Field of view	Látómező
+Heat strength	Hőtérkép erőssége
+No picture.	Nincs kép.
+Normal camera lens	Normál kameraobjektív
+Panorama (equirectangular)	Panoráma (egyenközű hengerleképezés)
+Picture	Kép
+Picture or panorama file	Kép- vagy panorámafájl
+Projection	Vetítés
+RF camera	RF-kamera
+Save snapshot	Pillanatkép mentése
+Snapshot saved: %s	Pillanatkép elmentve: %s
+Sub-bands	Részsávok
+The two landmarks do not fit a picture.	A két tereptárgy nem illik egy képhez.
+Weakest shown	Leggyengébb megjelenítve
+azimuth	azimut
+azimuth only; the picture is just a backdrop	csak azimut; a kép csupán háttér
+column	oszlop
+to (kHz)	eddig (kHz)
 Translate to English	Fordítás angolra
 Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	A más nyelven elhangzó beszédet a program offline angolra is lefordítja, az eredeti mellett. Többnyelvű modellt igényel, és kb. 1,5-szer több processzoridőbe kerül; kimarad, ha a motor nem bírja tartani a lépést. Semmi sem kerül elküldésre. Más nyelvekre fordítás nem érhető el.
 The loaded model is English only: translation needs a multilingual model.	A betöltött modell csak angol: a fordításhoz többnyelvű modell kell.
@@ -2406,3 +2434,159 @@ Tracks	Pályák
 Two recordings (reference, surveillance)	Két felvétel (referencia, megfigyelő)
 Two-channel recording (cf32)	Kétcsatornás felvétel (cf32)
 Waiting for data.	Adatra várakozás.
+FM broadcast	FM rádió
+Airband	Repülőrádió
+DAB / VHF band III	DAB / VHF III. sáv
+UHF TV	UHF tévé
+868 MHz ISM	868 MHz ISM
+ADS-B 1090 MHz	ADS-B 1090 MHz
+Measuring %s (%d/%d)	Mérés: %s (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	Először válassz rádiót (a tesztjel és a fájlok nem mérhetők)
+None of the measuring bands is inside this radio's range	A mérősávok egyike sincs a rádió tartományában
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s: az ADC túlvezérelt (a minták %.2f%%-a levágódik). Csökkentsd az erősítést, vagy tegyél be csillapítót.
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s: egy erős jel (%.0f dB-lel a zajszint felett) túlvezérli az ADC-t, miközben más sávok ennél az erősítésnél túl gyengék. Ehhez a sávhoz sávzáró szűrőt használj (az FM sávhoz FM-notch szűrőt) az erősítés csökkentése helyett.
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s: az ADC szintje magas (%.1f dBFS eff.), kevés tartalék marad az erős jelekre. Csökkentsd egy kicsit az erősítést.
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s: a vevő zaja csak %.1f dB-lel van az ADC saját zaja felett, ezért a gyenge jelek elvesznek. Növeld az erősítést.
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s: a vevő zaja csak %.1f dB-lel van az ADC saját zaja felett, és az erősítés már a maximumon van. Tegyél kisebb zajú erősítőt (LNA) az antenna mellé.
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s: az erősítés kb. %.0f dB-lel lehetne kisebb az érzékenység elvesztése nélkül, ami több tartalékot ad az erős jelek ellen.
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s: a zajszint %.0f dB-lel magasabb, mint a legcsendesebb sávban. Keress helyi zajforrást (LED-világítás, kapcsolóüzemű tápegységek, számítógépek), vidd távolabb az antennát, vagy tegyél ferritgyűrűt a kábelre.
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	Nem található %s adó, pedig általában van. Ellenőrizd az antennát és a kábelt; az is lehet, hogy a sáv üres a környéken.
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	A legerősebb %s adó csak %.0f dB-lel van a zaj felett (egy jó antenna legalább %.0f dB-t ad). Tedd magasabbra vagy a szabadba az antennát, vagy tegyél be sávszűrőt és LNA-t.
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	A rádió órajele %+.1f ppm-mel eltér. Add meg a %+.1f értéket frekvenciakorrekcióként (ppm) a rádió beállításaiban.
+The radio's clock is %+.1f ppm off: fine.	A rádió órajele %+.1f ppm-mel eltér: rendben van.
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	Az ADS-B hatótáv rövid: a legtávolabbi repülő %.0f nm-re volt (egy szabad kültéri antenna 150 nm-ig vagy tovább ér el); a leggyengébb irány kb. %.0f fok. Tedd magasabbra az antennát, szabad rálátással az égre.
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	Egyetlen repülő sem %.0f darab 10 fokos szektorban %.0f foktól kezdve, miközben a szomszédos irányok messzire elérnek: valami eltakarja a kilátást (fal, domb, épület).
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	ADS-B hatótáv: még nincs elég pozíció. Futtasd az ADS-B módot néhány percig megadott antennapozícióval, majd készítsd el újra a jelentést.
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	Semmi hibát nem találtam. Az erősítés, a zajszint és a referenciaadók egészségesnek látszanak.
+Station health report	Állomás-jelentés
+Gain: %.0f dB	Erősítés: %.0f dB
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s: zajszint %.1f dBFS sávonként, ADC-tartalék %.1f dB, legerősebb jel %.0f dB a zajszint felett, ADC-szint %.1f dBFS, levágás %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   talált %s adók: %d, a legerősebb %.0f dB a zajszint felett
+The numbers are relative to the receiver itself (not calibrated to dBm).	A számok magához a vevőhöz viszonyítottak (nincsenek dBm-re kalibrálva).
+Station health	Állomás állapota
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	Néhány sávon megméri a zajszintet és az ADC szintjét, FM, DAB és DVB-T adókat keres, és megmondja, mit változtass az antennán. A vevő leáll a mérés alatt (kb. egy perc).
+known carrier MHz (optional)	ismert vivő MHz (nem kötelező)
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	Egy vivő, amelynek a frekvenciájában megbízol (ATSC pilot, mobiltorony jeladója, időjel). A jelentés ebből megadja a rádió órahibáját ppm-ben. Hagyd 0-n a kihagyáshoz.
+Save report...	Jelentés mentése...
+Save as JSON...	Mentés JSON-ként...
+Noise floor	Zajszint
+ADC margin	ADC-tartalék
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f dB
+none found	nincs találat
+%s: %d, best %.0f dB	%s: %d, legjobb %.0f dB
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	Órahiba: %+.2f ppm (%+.0f Hz %.4f MHz-en)
+No carrier found at the frequency given	A megadott frekvencián nem található vivő
+What to do	Mit tegyél
+ADS-B range by direction	ADS-B hatótáv irányonként
+Check station	Állomás ellenőrzése
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	Zajszint, ADC-szint és referenciaadók sávonként, egyszerű tanácsokkal az erősítésről, szűrőkről és az antenna helyéről
+# interference hunter
+Unknown	Ismeretlen
+Switching power supply	Kapcsolóüzemű tápegység
+LED lamp or driver	LED-lámpa vagy meghajtója
+Powerline (PLC)	Hálózati adatátvitel (PLC)
+Local oscillator or clock leak	Oszillátor- vagy órajel-szivárgás
+Cannot open the GPS device or file.	A GPS-eszköz vagy a fájl nem nyitható meg.
+Waiting for a position fix.	Várakozás helymeghatározásra.
+Interference gone	A zavarás megszűnt
+The noise floor rose by %.1f dB	A zajszint %.1f dB-lel emelkedett
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	Új szélessávú zaj %.2f - %.2f MHz, %.0f dB: %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	Új jel %.4f MHz-en, %.0f dB-lel az alapszint felett: %s
+Demo (simulated sweeps)	Demó (szimulált söprések)
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	A vonalsor megkülönböztetéséhez egy széles jeltől legalább 5 bin távolság kell: finomabb binekkel sűrűbb vonalak is látszanak
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	Szünet a söprések között: a figyelő hosszú szünetekkel órákig futhat; a sétához szünet nélkül kell
+spur threshold %.0f dB	vonalküszöb %.0f dB
+floor alert %.0f dB	zajszint-riasztás %.0f dB
+confirm in %d sweeps	megerősítés %d söpréssel
+floor change dB	zajszint-változás dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	Alapszint tanulása: %d / %d söprés. A sáv legyen a szokásos állapotában.
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	Figyelés. Zajszint %.1f dBFS, alapszint %.1f dBFS, %zu ismert jel.
+Press Start. The first sweeps become the baseline: what is normal in this band.	Nyomja meg az Indítást. Az első söprések lesznek az alapszint: ami ebben a sávban normális.
+Learn the baseline again	Alapszint újratanulása
+What is there now is normal	Ami most van, az normális
+Adds the interference that has been reported to the baseline, so it raises no more alerts	A jelzett zavarást hozzáadja az alapszinthez, így nem riaszt többet
+Save the alerts...	Riasztások mentése...
+Save the noise floor log...	Zajszint-napló mentése...
+Interference now	Jelenlegi zavarások
+Likely source	Valószínű forrás
+To MHz	Eddig MHz
+Spacing kHz	Távolság kHz
+Alerts	Riasztások
+Event	Esemény
+dB above baseline	dB az alapszint felett
+new signal	új jel
+noise floor up	zajszint emelkedett
+new broadband noise	új szélessávú zaj
+gone	megszűnt
+no position	nincs helyzet
+the receiver position (set for ADS-B)	a vevő helyzete (az ADS-B-hez beállított)
+type a position	helyzet megadása
+GPS device or NMEA file	GPS-eszköz vagy NMEA-fájl
+latitude	szélesség
+longitude	hosszúság
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	Soros GPS (például /dev/cu.usbmodem1101, PC-n COM3; 9600 baud) vagy NMEA-mondatokat tartalmazó szövegfájl
+Reconnect	Újracsatlakozás
+Readings are logged at %.5f, %.5f	A mérések naplózása itt: %.5f, %.5f
+Readings are logged without a position.	A mérések helyzet nélkül kerülnek a naplóba.
+%+.1f dB above the quiet level	%+.1f dB a csendes szint felett
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	Nyomja meg az Indítást, és induljon el. A mérő akkor tele, ha a zavarás 25 dB-lel a eddigi legcsendesebb hely felett van.
+Quiet	Csendes
+Some interference	Némi zavarás
+Loud	Hangos
+- getting louder	- erősödik
+- getting quieter	- gyengül
+- steady	- állandó
+strongest spur %.4f MHz, %.0f dB	legerősebb vonal %.4f MHz, %.0f dB
+This is the quiet level	Ez a csendes szint
+Leave out the signals seen now	A most látott jelek kihagyása
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	Az ismert műsorszóró vivők és eszközök kimaradnak a mérőből: induláskor, egy csendes helyen végezze el
+Clear the readings	Mérések törlése
+Save as CSV...	Mentés CSV-ként...
+Save as GPX...	Mentés GPX-ként...
+reading	mérés
+dB above the quiet level	dB a csendes szint felett
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	Leghangosabb mérés: %+.1f dB itt: %.5f, %.5f (%s)
+Loudest reading: %+.1f dB (%s), no position	Leghangosabb mérés: %+.1f dB (%s), helyzet nélkül
+Strongest spur MHz	Legerősebb vonal MHz
+Interference hunter	Zavarvadász
+Monitor	Figyelő
+Walk	Séta
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Egy sáv figyelése új zavarásokra, a típus megállapítása, és a forrás megkeresése sétálva hangos / csendes mérővel
+The watchlist file could not be read:	A figyelőlista-fájlt nem sikerült beolvasni:
+APRS call signs	APRS hívójelek
+Words in messages	Szavak az üzenetekben
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Soronként egy: ICAO hexa cím (4840D6), lajstromjel (A6-EDA) vagy hívójel (KLM1023). A végén lévő * az elejére illeszkedik (KLM*). ADS-B, ACARS, VDL2 és HFDL jelzéseiből.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Soronként egy: MMSI szám, hajónév vagy hívójel. A végén lévő * az elejére illeszkedik (2190*). AIS és DSC jelzéseiből.
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Soronként egy hívójel. SSID nélkül (LY1ABC) minden SSID egyezik, SSID-vel (LY1ABC-9) csak az az egy.
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Soronként egy: frekvencia MHz-ben (162.025), mértékegységgel (162025 kHz) vagy tartomány (144-146). Minden dekódolt jel számít rajta.
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Soronként egy: szó vagy kifejezés (kis- és nagybetű nem számít). A végén lévő * a szókezdetekre illeszkedik (fire*). Keresés a személyhívó, ACARS, APRS és más dekódolt szövegekben.
+New list...	Új lista...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	Hozz létre egy listát balra: repülők, hajók, APRS hívójelek, frekvenciák vagy szavak. Az OnAir szól, ha valamelyik hallható.
+On	Be
+Tolerance (kHz)	Tűrés (kHz)
+entries	bejegyzés
+Delete list	Lista törlése
+Desktop notification	Asztali értesítés
+Sound (follows Mute)	Hang (követi a némítást)
+WAV file, empty = three beeps	WAV fájl, üres = három sípszó
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	A push riasztások az általad választott szolgáltatásnak mennek, a megadott címmel és tokennel. Az adatmappádban tárolódnak, naplóba soha nem kerülnek.
+optional	nem kötelező
+optional, sent as a Bearer token	nem kötelező, Bearer tokenként küldve
+Send a test alert	Teszt riasztás küldése
+Most alerts per hour (0 = no limit)	Legfeljebb ennyi riasztás óránként (0 = nincs korlát)
+Same station again after (minutes)	Ugyanaz az állomás újra ennyi perc után
+Quiet hours (no alerts, still listed in the history)	Csendes órák (nincs riasztás, az előzményekben megmarad)
+From	Ettől
+Until	Eddig
+Local time of this computer.	Ennek a gépnek a helyi ideje.
+alerts sent	riasztás elküldve
+Heard	Hallott
+What happened	Mi történt
+held back: quiet hours	visszatartva: csendes órák
+held back: rate limit	visszatartva: korlát elérve
+Watchlists	Figyelőlisták
+Watch for these	Ezek figyelése
+Lists	Listák
+Watchlists...	Figyelőlisták...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Riasztás, ha a listán szereplő repülőt, hajót, hívójelet, frekvenciát vagy szót hallja: értesítés, hang, ntfy, Telegram vagy webhook

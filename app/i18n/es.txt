@@ -2363,6 +2363,34 @@ Current setting: %.2f ppm	Ajuste actual: %.2f ppm
 No measurements of this radio yet.	Aún no hay mediciones de esta radio.
 History of this radio (ppm)	Historial de esta radio (ppm)
 Drift: %+.3f ppm per minute	Deriva: %+.3f ppm por minuto
+Band from (kHz)	Banda desde (kHz)
+Calibrate from two landmarks	Calibrar con dos puntos de referencia
+Calibrated.	Calibrado.
+Camera snapshot URL (JPEG)	URL de captura de la cámara (JPEG)
+Cannot load the picture.	No se puede cargar la imagen.
+Cannot save the snapshot.	No se puede guardar la captura.
+Centre azimuth	Acimut central
+Click the picture to set the column of the selected landmark.	Haz clic en la imagen para fijar la columna del punto de referencia seleccionado.
+Demo skyline (no camera)	Horizonte de demostración (sin cámara)
+Enable RF camera	Activar la cámara RF
+Field of view	Campo de visión
+Heat strength	Intensidad del mapa de calor
+No picture.	Sin imagen.
+Normal camera lens	Objetivo de cámara normal
+Panorama (equirectangular)	Panorama (equirrectangular)
+Picture	Imagen
+Picture or panorama file	Archivo de imagen o panorama
+Projection	Proyección
+RF camera	Cámara RF
+Save snapshot	Guardar captura
+Snapshot saved: %s	Captura guardada: %s
+Sub-bands	Subbandas
+The two landmarks do not fit a picture.	Los dos puntos de referencia no encajan con una imagen.
+Weakest shown	Más débil mostrado
+azimuth	acimut
+azimuth only; the picture is just a backdrop	solo acimut; la imagen es solo un fondo
+column	columna
+to (kHz)	hasta (kHz)
 Translate to English	Traducir al inglés
 Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	El habla en otro idioma también se traduce al inglés, sin conexión, junto al original. Necesita un modelo multilingüe y cuesta unas 1,5 veces más tiempo de procesador; se omite si el motor no da abasto. No se envía nada. No hay traducción a otros idiomas.
 The loaded model is English only: translation needs a multilingual model.	El modelo cargado es solo inglés: la traducción necesita un modelo multilingüe.
@@ -2420,3 +2448,159 @@ Tracks	Trazas
 Two recordings (reference, surveillance)	Dos grabaciones (referencia, vigilancia)
 Two-channel recording (cf32)	Grabación de dos canales (cf32)
 Waiting for data.	Esperando datos.
+FM broadcast	Radio FM
+Airband	Banda aérea
+DAB / VHF band III	DAB / VHF banda III
+UHF TV	TV UHF
+868 MHz ISM	ISM 868 MHz
+ADS-B 1090 MHz	ADS-B 1090 MHz
+Measuring %s (%d/%d)	Midiendo %s (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	Elige primero una radio (la señal de prueba y los archivos no se pueden medir)
+None of the measuring bands is inside this radio's range	Ninguna de las bandas de medida está dentro del rango de esta radio
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s: el ADC está sobrecargado (se recorta el %.2f%% de las muestras). Baja la ganancia o añade un atenuador.
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s: una señal fuerte (%.0f dB sobre el suelo de ruido) sobrecarga el ADC mientras otras bandas quedan sin señal con esta ganancia. Añade un filtro de rechazo de banda para esa banda (un filtro notch de FM para la banda FM) en lugar de bajar la ganancia.
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s: el nivel del ADC es alto (%.1f dBFS rms) y queda poco margen para señales fuertes. Baja un poco la ganancia.
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s: el ruido del receptor está solo %.1f dB por encima del propio ADC, por eso se pierden las señales débiles. Sube la ganancia.
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s: el ruido del receptor está solo %.1f dB por encima del propio ADC y la ganancia ya está al máximo. Añade un amplificador de bajo ruido (LNA) junto a la antena.
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s: la ganancia podría ser unos %.0f dB menor sin perder sensibilidad, lo que da más margen frente a señales fuertes.
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s: el suelo de ruido está %.0f dB más alto que en la banda más tranquila. Busca una fuente local de ruido (iluminación LED, fuentes conmutadas, ordenadores), aleja la antena de ella o pon un ferrita en el cable.
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	No se encontró ninguna emisora de %s, aunque normalmente hay algunas. Revisa la antena y el cable; también puede que la banda esté vacía en tu zona.
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	La emisora de %s más fuerte está solo %.0f dB sobre el ruido (una buena antena da al menos %.0f dB). Sube la antena o ponla en el exterior, o añade un filtro de banda y un LNA.
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	El reloj de la radio está desviado %+.1f ppm. Introduce %+.1f como corrección de frecuencia (ppm) en los ajustes de la radio.
+The radio's clock is %+.1f ppm off: fine.	El reloj de la radio está desviado %+.1f ppm: correcto.
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	El alcance ADS-B es corto: el avión más lejano estaba a %.0f nm (una antena exterior despejada llega a 150 nm o más); la dirección más débil está hacia los %.0f grados. Sube la antena, con vista libre al cielo.
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	Ningún avión en %.0f sectores de 10 grados a partir de %.0f grados, mientras las direcciones vecinas llegan lejos: algo tapa la vista ahí (un muro, una colina, un edificio).
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	Alcance ADS-B: aún no hay suficientes posiciones. Usa el modo ADS-B unos minutos con la posición de la antena indicada y vuelve a ejecutar el informe.
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	No se encontró nada anormal. La ganancia, el suelo de ruido y las emisoras de referencia parecen sanos.
+Station health report	Informe de la estación
+Gain: %.0f dB	Ganancia: %.0f dB
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s: suelo de ruido %.1f dBFS por bin, margen del ADC %.1f dB, señal más fuerte %.0f dB sobre el suelo, nivel del ADC %.1f dBFS, recorte %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   emisoras de %s encontradas: %d, la más fuerte %.0f dB sobre el suelo
+The numbers are relative to the receiver itself (not calibrated to dBm).	Los números son relativos al propio receptor (no están calibrados en dBm).
+Station health	Estado de la estación
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	Mide el suelo de ruido y el nivel del ADC en varias bandas, busca emisoras FM, DAB y DVB-T y te dice qué cambiar en la antena. El receptor se detiene mientras mide (cerca de un minuto).
+known carrier MHz (optional)	portadora conocida MHz (opcional)
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	Una portadora cuya frecuencia conoces bien (un piloto ATSC, la baliza de una torre de telefonía, una señal horaria). El informe da con ella el error del reloj de la radio en ppm. Déjalo en 0 para omitirlo.
+Save report...	Guardar informe...
+Save as JSON...	Guardar como JSON...
+Noise floor	Suelo de ruido
+ADC margin	Margen del ADC
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f dB
+none found	ninguna
+%s: %d, best %.0f dB	%s: %d, la mejor %.0f dB
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	Error de reloj: %+.2f ppm (%+.0f Hz a %.4f MHz)
+No carrier found at the frequency given	No se encontró ninguna portadora en la frecuencia indicada
+What to do	Qué hacer
+ADS-B range by direction	Alcance ADS-B por dirección
+Check station	Revisar estación
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	Suelo de ruido, nivel del ADC y emisoras de referencia por banda, con consejos claros sobre ganancia, filtros y colocación de la antena
+# interference hunter
+Unknown	Desconocido
+Switching power supply	Fuente conmutada
+LED lamp or driver	Lámpara LED o su driver
+Powerline (PLC)	Línea eléctrica (PLC)
+Local oscillator or clock leak	Fuga de oscilador o reloj
+Cannot open the GPS device or file.	No se puede abrir el dispositivo GPS o el archivo.
+Waiting for a position fix.	Esperando una posición.
+Interference gone	La interferencia ha desaparecido
+The noise floor rose by %.1f dB	El piso de ruido subió %.1f dB
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	Nuevo ruido de banda ancha %.2f - %.2f MHz, %.0f dB: %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	Nueva señal en %.4f MHz, %.0f dB sobre la línea base: %s
+Demo (simulated sweeps)	Demostración (barridos simulados)
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	Un peine de espurias necesita una separación de al menos 5 bins para distinguirse de una señal ancha: use bins más finos para ver espurias más cercanas
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	Pausa entre barridos: el monitor puede funcionar horas con pausas largas; el paseo necesita barridos seguidos
+spur threshold %.0f dB	umbral de espurias %.0f dB
+floor alert %.0f dB	alerta de piso %.0f dB
+confirm in %d sweeps	confirmar en %d barridos
+floor change dB	cambio del piso dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	Aprendiendo la línea base: %d de %d barridos. Deje la banda como está normalmente.
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	Vigilando. Piso de ruido %.1f dBFS, línea base %.1f dBFS, %zu señales conocidas.
+Press Start. The first sweeps become the baseline: what is normal in this band.	Pulse Iniciar. Los primeros barridos se convierten en la línea base: lo normal en esta banda.
+Learn the baseline again	Aprender la línea base de nuevo
+What is there now is normal	Lo que hay ahora es normal
+Adds the interference that has been reported to the baseline, so it raises no more alerts	Añade a la línea base la interferencia ya notificada, para que no genere más alertas
+Save the alerts...	Guardar las alertas...
+Save the noise floor log...	Guardar el registro del piso de ruido...
+Interference now	Interferencia actual
+Likely source	Fuente probable
+To MHz	Hasta MHz
+Spacing kHz	Separación kHz
+Alerts	Alertas
+Event	Evento
+dB above baseline	dB sobre la línea base
+new signal	señal nueva
+noise floor up	piso de ruido más alto
+new broadband noise	nuevo ruido de banda ancha
+gone	desaparecido
+no position	sin posición
+the receiver position (set for ADS-B)	la posición del receptor (fijada para ADS-B)
+type a position	escribir una posición
+GPS device or NMEA file	dispositivo GPS o archivo NMEA
+latitude	latitud
+longitude	longitud
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	Un GPS serie (por ejemplo /dev/cu.usbmodem1101 o COM3 en un PC; 9600 baudios) o un archivo de texto con sentencias NMEA
+Reconnect	Reconectar
+Readings are logged at %.5f, %.5f	Las lecturas se registran en %.5f, %.5f
+Readings are logged without a position.	Las lecturas se registran sin posición.
+%+.1f dB above the quiet level	%+.1f dB sobre el nivel tranquilo
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	Pulse Iniciar y camine. El medidor se llena cuando la interferencia está 25 dB sobre el lugar más tranquilo hasta ahora.
+Quiet	Tranquilo
+Some interference	Algo de interferencia
+Loud	Fuerte
+- getting louder	- aumenta
+- getting quieter	- disminuye
+- steady	- estable
+strongest spur %.4f MHz, %.0f dB	espuria más fuerte %.4f MHz, %.0f dB
+This is the quiet level	Este es el nivel tranquilo
+Leave out the signals seen now	Excluir las señales vistas ahora
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	Las portadoras de radiodifusión y los equipos conocidos se excluyen del medidor: hágalo en un sitio tranquilo antes de caminar
+Clear the readings	Borrar las lecturas
+Save as CSV...	Guardar como CSV...
+Save as GPX...	Guardar como GPX...
+reading	lectura
+dB above the quiet level	dB sobre el nivel tranquilo
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	Lectura más fuerte: %+.1f dB en %.5f, %.5f (%s)
+Loudest reading: %+.1f dB (%s), no position	Lectura más fuerte: %+.1f dB (%s), sin posición
+Strongest spur MHz	Espuria más fuerte MHz
+Interference hunter	Cazador de interferencias
+Monitor	Monitor
+Walk	Paseo
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Vigile una banda por nuevas interferencias, sepa de qué tipo son y encuéntrelas caminando con un medidor fuerte / tranquilo
+The watchlist file could not be read:	No se pudo leer el archivo de listas de vigilancia:
+APRS call signs	Indicativos APRS
+Words in messages	Palabras en mensajes
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Una por línea: una dirección ICAO hexadecimal (4840D6), una matrícula (A6-EDA) o un indicativo (KLM1023). Un * al final coincide con el comienzo (KLM*). Se oye por ADS-B, ACARS, VDL2 y HFDL.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Una por línea: un número MMSI, un nombre de barco o un indicativo. Un * al final coincide con el comienzo (2190*). Se oye por AIS y DSC.
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Una por línea: un indicativo. Sin SSID (LY1ABC) coincide cualquier SSID; con SSID (LY1ABC-9) solo ese.
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Una por línea: una frecuencia en MHz (162.025), con unidad (162025 kHz) o un rango (144-146). Cuenta todo lo que se decodifique en ella.
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Una por línea: una palabra o frase (sin distinguir mayúsculas). Un * al final coincide con comienzos de palabra (fire*). Se busca en buscapersonas, ACARS, APRS y otros textos decodificados.
+New list...	Nueva lista...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	Crea una lista a la izquierda: aeronaves, barcos, indicativos APRS, frecuencias o palabras. OnAir te avisa cuando se oye algo de ella.
+On	Activo
+Tolerance (kHz)	Tolerancia (kHz)
+entries	entradas
+Delete list	Eliminar lista
+Desktop notification	Notificación de escritorio
+Sound (follows Mute)	Sonido (respeta Silencio)
+WAV file, empty = three beeps	Archivo WAV, vacío = tres pitidos
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	Las alertas push van a un servicio que eliges, con la dirección y el token que indiques. Se guardan en tu carpeta de datos y nunca se escriben en un registro.
+optional	opcional
+optional, sent as a Bearer token	opcional, se envía como token Bearer
+Send a test alert	Enviar una alerta de prueba
+Most alerts per hour (0 = no limit)	Máximo de alertas por hora (0 = sin límite)
+Same station again after (minutes)	La misma estación otra vez tras (minutos)
+Quiet hours (no alerts, still listed in the history)	Horas de silencio (sin alertas, siguen en el historial)
+From	Desde
+Until	Hasta
+Local time of this computer.	Hora local de este equipo.
+alerts sent	alertas enviadas
+Heard	Oído
+What happened	Qué pasó
+held back: quiet hours	retenida: horas de silencio
+held back: rate limit	retenida: límite alcanzado
+Watchlists	Listas de vigilancia
+Watch for these	Vigilar estos
+Lists	Listas
+Watchlists...	Listas de vigilancia...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alertas cuando se oyen aeronaves, barcos, indicativos, frecuencias o palabras de las listas: notificación, sonido, ntfy, Telegram o webhook
