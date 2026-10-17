@@ -1763,3 +1763,25 @@ Audio history	Historia dźwięku
 Decoded rows history	Historia zdekodowanych wierszy
 Uses about %.1f MB now	Obecnie zajmuje około %.1f MB
 Decoded rows are kept from the results tables you have open.	Zdekodowane wiersze są zapamiętywane z otwartych tabel wyników.
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	Hasło
+blank if the owner set none	puste, jeśli właściciel go nie ustawił
+Find KiwiSDR…	Znajdź KiwiSDR…
+pick a public receiver from the list	wybierz publiczny odbiornik z listy
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	KiwiSDR to odbiornik w internecie obejmujący 0–30 MHz; OnAir pobiera jego strumień IQ 12 kHz. Odbiorniki publiczne mają niewiele miejsc dla użytkowników, a wiele kończy sesję po około 30 minutach: używaj jednego połączenia na odbiornik i rozłącz się, gdy skończysz. Hasło jest zapisane w ustawieniach OnAir.
+S-meter %.0f dBm%s	S-metr %.0f dBm%s
+, ADC overload	, przesterowanie ADC
+Find KiwiSDR	Znajdź KiwiSDR
+Download the public list	Pobierz listę publiczną
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	Po kliknięciu pobiera z internetu listę publicznych odbiorników KiwiSDR (jedno żądanie, nigdy przy uruchamianiu).
+downloading the list…	pobieranie listy…
+filter by name, place or antenna	filtruj według nazwy, miejsca lub anteny
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	Odbiorniki publiczne mają niewiele miejsc dla użytkowników, a wiele kończy sesję po około 30 minutach. Wybierz taki, który nie jest pełny, i rozłącz się, gdy skończysz.
+Location	Lokalizacja
+Users	Użytkownicy
+Distance	Odległość
+offline	offline
+full	pełny
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Dodaje ten odbiornik do radiów sieciowych (nie łączy się, dopóki nie wybierzesz go jako radia).
+The downloaded list has no receivers OnAir can read.	Pobrana lista nie zawiera odbiorników, które OnAir potrafi odczytać.
+Could not download the list. Check the internet connection.	Nie udało się pobrać listy. Sprawdź połączenie z internetem.

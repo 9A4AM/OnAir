@@ -1763,3 +1763,25 @@ Audio history	音频历史
 Decoded rows history	解码行历史
 Uses about %.1f MB now	目前约占用 %.1f MB
 Decoded rows are kept from the results tables you have open.	解码行取自你已打开的结果表。
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	密码
+blank if the owner set none	如果所有者没有设置则留空
+Find KiwiSDR…	查找 KiwiSDR…
+pick a public receiver from the list	从列表中选择公共接收机
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	KiwiSDR 是互联网上的接收机，覆盖 0 到 30 MHz；OnAir 使用它的 12 kHz IQ 流。公共接收机的用户名额很少，许多会在约 30 分钟后结束会话：每台接收机只用一个连接，用完请断开。密码保存在 OnAir 的设置中。
+S-meter %.0f dBm%s	S 表 %.0f dBm%s
+, ADC overload	，ADC 过载
+Find KiwiSDR	查找 KiwiSDR
+Download the public list	下载公共列表
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	点击时从互联网下载公共 KiwiSDR 接收机列表（只发一次请求，绝不在启动时下载）。
+downloading the list…	正在下载列表…
+filter by name, place or antenna	按名称、地点或天线筛选
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	公共接收机的用户名额很少，许多会在约 30 分钟后结束会话。请选择没有满员的，用完请断开。
+Location	位置
+Users	用户
+Distance	距离
+offline	离线
+full	已满
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	把此接收机添加到网络电台（在你把它选为电台之前不会连接）。
+The downloaded list has no receivers OnAir can read.	下载的列表中没有 OnAir 能读取的接收机。
+Could not download the list. Check the internet connection.	无法下载列表。请检查网络连接。

@@ -12,6 +12,10 @@
 #include <memory>
 #include <thread>
 #include "toolbar_internal.h"
+#include "../platform/platform.h"
+#include <cstdio>
+#include <fstream>
+#include <sstream>
 
 // The three texts of soapyRemoteModuleHelpFor() (core/src/net/netradio.cpp): listed here so the catalogs carry them; the error line below passes the text through tr().
 [[maybe_unused]] static const char* const kSoapyRemoteModuleTexts[] = {
@@ -52,6 +56,7 @@ static void netRadioPoll(App& a) {
             }
             a.netAddErr.clear();
             a.netAddOpen = false;
+            memset(a.netAddPass, 0, sizeof a.netAddPass);
         } else a.netAddErr = pr->err;
     }
     // a search that finished: the address of the first radio found (one not in use by another program first), unless one was typed
@@ -106,6 +111,11 @@ static void netRadioList(App& a) {
         if (ImGui::SmallButton(tr("Remove"))) drop = i;
         ImGui::SameLine();
         ImGui::TextUnformatted(netRadioDeviceName(a.netRadios[i]).c_str());
+        if (a.netRadios[i].type == NetRadio::KiwiSdr) {   // what the receiver reports while it streams (the password is never shown)
+            const KiwiStatus ks = kiwiStatus(netRadioHostPort(a.netRadios[i]));
+            if (ks.connected) { ImGui::SameLine(); ImGui::TextDisabled(tr("S-meter %.0f dBm%s"), ks.rssiDbm, ks.adcOverload ? tr(", ADC overload") : ""); }
+            else if (!ks.message.empty()) { ImGui::SameLine(); ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "%s", ks.message.c_str()); }
+        }
         ImGui::PopID();
     }
     ImGui::EndDisabled();
@@ -131,7 +141,7 @@ void netRadioWindow(App& a) {
     if (!ImGui::Begin(trw("Network radios"), &a.netAddOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) { ImGui::End(); return; }
     const bool busy = a.netAddProbe != nullptr;
     ImGui::BeginDisabled(busy);
-    static const char* kTypes[] = {"PlutoSDR (by IP)", "rtl_tcp", "SoapyRemote", "SpyServer", "Hermes Lite 2", "Red Pitaya", "SDR++ server", "SDRplay nRSP-ST (SDRconnect)"};
+    static const char* kTypes[] = {"PlutoSDR (by IP)", "rtl_tcp", "SoapyRemote", "SpyServer", "Hermes Lite 2", "Red Pitaya", "SDR++ server", "SDRplay nRSP-ST (SDRconnect)", "KiwiSDR"};
     ImGui::SetNextItemWidth(200 * gUi);
     if (ImGui::Combo("Type", &a.netAddType, kTypes, IM_ARRAYSIZE(kTypes))) {
         const auto t = (NetRadio::Type)a.netAddType;
@@ -158,6 +168,18 @@ void netRadioWindow(App& a) {
     if (a.netAddType == NetRadio::NrspSt)
         ImGui::TextDisabled("%s", tr("The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, "
                                      "and type that computer's address. No password is needed or stored."));
+    if (a.netAddType == NetRadio::KiwiSdr) {
+        ImGui::SetNextItemWidth(200 * gUi);
+        ImGui::InputTextWithHint(tr("Password"), tr("blank if the owner set none"), a.netAddPass, sizeof a.netAddPass, ImGuiInputTextFlags_Password);
+        if (ImGui::Button(tr("Find KiwiSDR…"))) a.kiwiFindOpen = true;
+        ImGui::SameLine();
+        ImGui::TextDisabled("%s", tr("pick a public receiver from the list"));
+        ImGui::PushTextWrapPos(400 * gUi);
+        ImGui::TextDisabled("%s", tr("A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. "
+                                     "Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. "
+                                     "The password is kept in OnAir's settings."));
+        ImGui::PopTextWrapPos();
+    }
     if (a.netAddType == NetRadio::SoapyRemote && !soapySupported()) ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "%s", tr("This build has no SoapySDR, which SoapyRemote needs."));
     if (a.netAddType == NetRadio::SoapyRemote) {
         ImGui::InputTextWithHint(tr("Remote driver"), "mirisdr  (empty: list what the server offers)", a.netAddRemote, sizeof a.netAddRemote);
@@ -166,6 +188,7 @@ void netRadioWindow(App& a) {
     if (ImGui::Button(tr("Connect"))) {
         NetRadio r;
         if (a.netAddType == NetRadio::SoapyRemote) r.remote = a.netAddRemote;
+        if (a.netAddType == NetRadio::KiwiSdr) r.remote = a.netAddPass;
         r.type = (NetRadio::Type)a.netAddType;
         r.host = a.netAddHost;
         r.port = a.netAddPort;
@@ -414,4 +437,110 @@ void hamlibFollowRig(App& a) {
         a.peak.clear();
         savePrefs(a);
     }
+}
+
+// ---- Find KiwiSDR -----------------------------------------------------------------------------------------------------------------------------
+// The public list of KiwiSDR receivers, downloaded when the user clicks Download (never at startup, one request), shown with the nearest first when the
+// receiver location is known (View > Map), one click adds a receiver to Network radios (no connection is made until it is picked as the radio).
+// The address is the public listing's machine-readable file; it can be changed here if the listing moves.
+static const char* kKiwiListUrl = "http://rx.linkfanel.net/kiwisdr_com.js";   // ASSUMED: the feed the public map uses; kiwisdr.com itself could not be read when this was written
+
+static void kiwiStartFetch(App& a) {
+    if (a.kiwiFetch) return;
+    auto f = std::make_shared<App::KiwiFetch>();
+    a.kiwiFetch = f;
+    const std::string url = a.kiwiListUrl[0] ? a.kiwiListUrl : kKiwiListUrl;
+    const std::string tmp = plat::cacheDir() + "/kiwisdr_list.part";
+    std::thread([f, url, tmp] {
+        if (!plat::fetchUrl(url, tmp, std::string("OnAir/") + ONAIR_VERSION + " (KiwiSDR list)")) { f->err = "download"; f->done = true; return; }
+        std::ifstream in(tmp, std::ios::binary);
+        std::stringstream ss;
+        ss << in.rdbuf();
+        in.close();
+        std::remove(tmp.c_str());
+        f->list = parseKiwiList(ss.str().substr(0, 32u << 20));
+        f->ok = !f->list.empty();
+        if (!f->ok) f->err = "parse";
+        f->done = true;
+    }).detach();
+}
+
+void kiwiFindWindow(App& a) {
+    if (a.kiwiFetch && a.kiwiFetch->done) {
+        auto f = a.kiwiFetch;
+        a.kiwiFetch.reset();
+        if (f->ok) {
+            a.kiwiList = f->list;
+            double lat = 0, lon = 0;
+            receiverLocation(lat, lon);
+            kiwiSortByDistance(a.kiwiList, lat, lon);
+            a.netAddErr.clear();
+        } else a.netAddErr = f->err == "parse" ? N_("The downloaded list has no receivers OnAir can read.") : N_("Could not download the list. Check the internet connection.");
+    }
+    if (!a.kiwiFindOpen) return;
+    if (a.kiwiListUrl[0] == 0) snprintf(a.kiwiListUrl, sizeof a.kiwiListUrl, "%s", kKiwiListUrl);
+    ImGui::SetNextWindowSize(ImVec2(760 * gUi, 420 * gUi), ImGuiCond_Appearing);
+    if (!ImGui::Begin(trw("Find KiwiSDR"), &a.kiwiFindOpen, ImGuiWindowFlags_NoCollapse)) { ImGui::End(); return; }
+    ImGui::BeginDisabled(a.kiwiFetch != nullptr);
+    if (ImGui::Button(tr("Download the public list"))) kiwiStartFetch(a);
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup)."));
+    if (a.kiwiFetch) { ImGui::SameLine(); ImGui::TextDisabled("%s", tr("downloading the list…")); }
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(200 * gUi);
+    ImGui::InputTextWithHint("##kiwifilter", tr("filter by name, place or antenna"), a.kiwiFilter, sizeof a.kiwiFilter);
+    if (!a.netAddErr.empty() && a.kiwiList.empty()) ImGui::TextColored(ImVec4(1.f, 0.45f, 0.4f, 1), "%s", tr(a.netAddErr.c_str()));
+    ImGui::TextDisabled("%s", tr("Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done."));
+    std::string flt = a.kiwiFilter;
+    for (auto& c : flt) c = (char)tolower((unsigned char)c);
+    auto matches = [&](const KiwiServer& k) {
+        if (flt.empty()) return true;
+        std::string t = k.name + " " + k.location + " " + k.antenna + " " + k.host;
+        for (auto& c : t) c = (char)tolower((unsigned char)c);
+        return t.find(flt) != std::string::npos;
+    };
+    if (!a.kiwiList.empty() && ImGui::BeginTable("##kiwis", 7, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp, ImVec2(0, 0))) {
+        ImGui::TableSetupScrollFreeze(0, 1);
+        ImGui::TableSetupColumn(tr("Name"), ImGuiTableColumnFlags_None, 3.f);
+        ImGui::TableSetupColumn(tr("Location"), ImGuiTableColumnFlags_None, 2.f);
+        ImGui::TableSetupColumn(tr("Users"), ImGuiTableColumnFlags_None, 0.8f);
+        ImGui::TableSetupColumn(tr("Antenna"), ImGuiTableColumnFlags_None, 3.f);
+        ImGui::TableSetupColumn(tr("SNR"), ImGuiTableColumnFlags_None, 0.7f);
+        ImGui::TableSetupColumn(tr("Distance"), ImGuiTableColumnFlags_None, 1.f);
+        ImGui::TableSetupColumn("##add", ImGuiTableColumnFlags_WidthFixed, 70 * gUi);
+        ImGui::TableHeadersRow();
+        int shown = 0;
+        for (size_t i = 0; i < a.kiwiList.size() && shown < 400; i++) {
+            const KiwiServer& k = a.kiwiList[i];
+            if (!matches(k)) continue;
+            shown++;
+            ImGui::PushID((int)i);
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(k.name.c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(k.location.c_str());
+            ImGui::TableNextColumn();
+            if (k.offline) ImGui::TextDisabled("%s", tr("offline"));
+            else if (k.full()) ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "%d/%d %s", k.users, k.usersMax, tr("full"));
+            else ImGui::Text("%d/%d", k.users, k.usersMax);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(k.antenna.c_str());
+            ImGui::TableNextColumn(); if (k.snr > 0) ImGui::Text("%.0f", k.snr); else ImGui::TextDisabled("-");
+            ImGui::TableNextColumn(); if (k.distanceKm >= 0) ImGui::Text("%.0f km", k.distanceKm); else ImGui::TextDisabled("-");
+            ImGui::TableNextColumn();
+            ImGui::BeginDisabled(k.offline);
+            if (ImGui::SmallButton(tr("Add"))) {
+                NetRadio r;
+                r.type = NetRadio::KiwiSdr;
+                r.host = k.host;
+                r.port = k.port == 8073 ? 0 : k.port;
+                if (std::find(a.netRadios.begin(), a.netRadios.end(), r) == a.netRadios.end()) a.netRadios.push_back(r);
+                savePrefs(a);
+                if (!a.engine.running()) refreshDevices(a);
+            }
+            ImGui::EndDisabled();
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Adds this receiver to the Network radios (it does not connect until you pick it as the radio)."));
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+    ImGui::End();
 }

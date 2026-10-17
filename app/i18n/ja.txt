@@ -1763,3 +1763,25 @@ Audio history	音声の履歴
 Decoded rows history	デコード済み行の履歴
 Uses about %.1f MB now	現在およそ %.1f MB 使用
 Decoded rows are kept from the results tables you have open.	デコード済みの行は、開いている結果テーブルから保持されます。
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	パスワード
+blank if the owner set none	所有者が設定していなければ空欄
+Find KiwiSDR…	KiwiSDR を探す…
+pick a public receiver from the list	リストから公開レシーバーを選ぶ
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	KiwiSDR はインターネット上の 0〜30 MHz をカバーするレシーバーで、OnAir はその 12 kHz の IQ ストリームを使います。公開レシーバーはユーザー枠が少なく、約 30 分でセッションを終了するものが多いです。1 台につき接続は 1 つだけにし、使い終わったら切断してください。パスワードは OnAir の設定に保存されます。
+S-meter %.0f dBm%s	Sメーター %.0f dBm%s
+, ADC overload	、ADC オーバーロード
+Find KiwiSDR	KiwiSDR を探す
+Download the public list	公開リストをダウンロード
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	クリックしたときに、公開 KiwiSDR レシーバーのリストをインターネットからダウンロードします（リクエストは 1 回、起動時には行いません）。
+downloading the list…	リストをダウンロード中…
+filter by name, place or antenna	名前・場所・アンテナで絞り込み
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	公開レシーバーはユーザー枠が少なく、約 30 分でセッションを終了するものが多いです。満員でないものを選び、使い終わったら切断してください。
+Location	場所
+Users	ユーザー
+Distance	距離
+offline	オフライン
+full	満員
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	このレシーバーをネットワークラジオに追加します（ラジオとして選ぶまで接続しません）。
+The downloaded list has no receivers OnAir can read.	ダウンロードしたリストに OnAir が読めるレシーバーがありません。
+Could not download the list. Check the internet connection.	リストをダウンロードできませんでした。インターネット接続を確認してください。

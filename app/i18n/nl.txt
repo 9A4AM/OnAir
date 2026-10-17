@@ -1763,3 +1763,25 @@ Audio history	Audiogeschiedenis
 Decoded rows history	Geschiedenis van gedecodeerde rijen
 Uses about %.1f MB now	Gebruikt nu ongeveer %.1f MB
 Decoded rows are kept from the results tables you have open.	Gedecodeerde rijen worden bewaard uit de resultaattabellen die je open hebt.
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	Wachtwoord
+blank if the owner set none	leeg als de eigenaar er geen heeft ingesteld
+Find KiwiSDR…	KiwiSDR zoeken…
+pick a public receiver from the list	kies een openbare ontvanger uit de lijst
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	Een KiwiSDR is een ontvanger op internet die 0 tot 30 MHz bestrijkt; OnAir gebruikt zijn 12 kHz IQ-stroom. Openbare ontvangers hebben weinig gebruikersplaatsen en veel beëindigen een sessie na ongeveer 30 minuten: gebruik één verbinding per ontvanger en stop als je klaar bent. Het wachtwoord wordt bewaard in de instellingen van OnAir.
+S-meter %.0f dBm%s	S-meter %.0f dBm%s
+, ADC overload	, ADC-overbelasting
+Find KiwiSDR	KiwiSDR zoeken
+Download the public list	Openbare lijst downloaden
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	Downloadt bij een klik de lijst met openbare KiwiSDR-ontvangers van internet (één verzoek, nooit bij het opstarten).
+downloading the list…	lijst wordt gedownload…
+filter by name, place or antenna	filter op naam, plaats of antenne
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	Openbare ontvangers hebben weinig gebruikersplaatsen en veel beëindigen een sessie na ongeveer 30 minuten. Kies er een die niet vol is en stop als je klaar bent.
+Location	Locatie
+Users	Gebruikers
+Distance	Afstand
+offline	offline
+full	vol
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Voegt deze ontvanger toe aan de netwerkradio's (hij maakt pas verbinding als je hem als radio kiest).
+The downloaded list has no receivers OnAir can read.	De gedownloade lijst bevat geen ontvangers die OnAir kan lezen.
+Could not download the list. Check the internet connection.	De lijst kon niet worden gedownload. Controleer de internetverbinding.

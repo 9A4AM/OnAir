@@ -1763,3 +1763,25 @@ Audio history	Garso istorija
 Decoded rows history	Dekoduotų eilučių istorija
 Uses about %.1f MB now	Dabar naudoja apie %.1f MB
 Decoded rows are kept from the results tables you have open.	Dekoduotos eilutės saugomos iš atidarytų rezultatų lentelių.
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	Slaptažodis
+blank if the owner set none	palikite tuščią, jei savininkas nenustatė
+Find KiwiSDR…	Rasti KiwiSDR…
+pick a public receiver from the list	pasirinkti viešą imtuvą iš sąrašo
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	KiwiSDR yra internete esantis imtuvas, apimantis 0–30 MHz; OnAir naudoja jo 12 kHz IQ srautą. Vieši imtuvai turi mažai vartotojų vietų, o daugelis užbaigia seansą po maždaug 30 minučių: naudokite tik vieną ryšį su imtuvu ir išeikite, kai baigsite. Slaptažodis saugomas OnAir nustatymuose.
+S-meter %.0f dBm%s	S-metras %.0f dBm%s
+, ADC overload	, ADC perkrova
+Find KiwiSDR	Rasti KiwiSDR
+Download the public list	Atsisiųsti viešą sąrašą
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	Spustelėjus atsisiunčia viešų KiwiSDR imtuvų sąrašą iš interneto (viena užklausa, niekada paleidžiant).
+downloading the list…	sąrašas atsisiunčiamas…
+filter by name, place or antenna	filtruoti pagal pavadinimą, vietą ar anteną
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	Vieši imtuvai turi mažai vartotojų vietų, o daugelis užbaigia seansą po maždaug 30 minučių. Pasirinkite nepilną imtuvą ir išeikite, kai baigsite.
+Location	Vieta
+Users	Vartotojai
+Distance	Atstumas
+offline	neprisijungęs
+full	pilnas
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Prideda šį imtuvą prie tinklo radijų (jis neprisijungs, kol nepasirinksite jo kaip radijo).
+The downloaded list has no receivers OnAir can read.	Atsisiųstame sąraše nėra imtuvų, kuriuos OnAir gali perskaityti.
+Could not download the list. Check the internet connection.	Nepavyko atsisiųsti sąrašo. Patikrinkite interneto ryšį.

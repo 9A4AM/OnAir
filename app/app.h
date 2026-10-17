@@ -22,6 +22,7 @@
 #include "dect2/t2/t2rx.h"
 #include "dect2/net/nettuner.h"
 #include "dect2/net/netradio.h"
+#include "dect2/net/kiwisdr.h"
 #include "dect2/source/hamlib_rig.h"
 #include "dect2/source/rig_setup.h"
 #include "platform/airplay.h"
@@ -315,6 +316,14 @@ struct App {
     char netAddHost[128] = "";
     int netAddPort = 1234;
     char netAddRemote[128] = "";   // SoapyRemote: the server radio to ask for ("mirisdr", "driver=sdrplay,serial=1")
+    char netAddPass[128] = "";     // KiwiSDR: the receiver's password (blank: none); wiped after the radio is added, never logged
+    // "Find KiwiSDR": the public list, downloaded only when the user clicks (kiwiFindWindow, toolbar_rig.cpp)
+    struct KiwiFetch { std::atomic<bool> done{false}; bool ok = false; std::string err; std::vector<KiwiServer> list; };
+    std::shared_ptr<KiwiFetch> kiwiFetch;
+    std::vector<KiwiServer> kiwiList;
+    bool kiwiFindOpen = false;
+    char kiwiFilter[64] = "";
+    char kiwiListUrl[256] = "";
     std::string netAddErr;
     // a search for Hermes Lite 2 radios (a discovery broadcast) running on a worker thread, and what the last one found
     struct NetDiscovery { std::atomic<bool> done{false}; std::vector<FoundNetRadio> found; };
@@ -749,6 +758,7 @@ int subIndexOf(const char* id);                // 1 .. kNumSubModes, 0 when not 
 int modeSlot(const App& a);                    // index of famFreq / famGain for the current entry
 int engineStd(const App& a);
 void refreshDevices(App& a);
+void kiwiFindWindow(App& a);    // the "Find KiwiSDR" window (toolbar_rig.cpp)
 void netRadioWindow(App& a);   // the "Add network radio" window (toolbar_rig.cpp)
 void hamlibRigWindow(App& a);  // the "Add Hamlib rig" window (toolbar_rig.cpp)
 void applyBandwidth(App& a);

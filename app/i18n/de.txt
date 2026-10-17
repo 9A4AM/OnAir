@@ -1763,3 +1763,25 @@ Audio history	Audio-Verlauf
 Decoded rows history	Verlauf dekodierter Zeilen
 Uses about %.1f MB now	Belegt jetzt etwa %.1f MB
 Decoded rows are kept from the results tables you have open.	Dekodierte Zeilen werden aus den Ergebnistabellen übernommen, die du geöffnet hast.
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	Passwort
+blank if the owner set none	leer, wenn der Besitzer keines gesetzt hat
+Find KiwiSDR…	KiwiSDR suchen…
+pick a public receiver from the list	einen öffentlichen Empfänger aus der Liste wählen
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	Ein KiwiSDR ist ein Empfänger im Internet, der 0 bis 30 MHz abdeckt; OnAir nimmt seinen 12-kHz-IQ-Strom. Öffentliche haben nur wenige Nutzerplätze, und viele beenden eine Sitzung nach etwa 30 Minuten: Nutze pro Empfänger nur eine Verbindung und geh wieder, wenn du fertig bist. Das Passwort wird in den Einstellungen von OnAir gespeichert.
+S-meter %.0f dBm%s	S-Meter %.0f dBm%s
+, ADC overload	, ADC übersteuert
+Find KiwiSDR	KiwiSDR suchen
+Download the public list	Öffentliche Liste herunterladen
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	Lädt die Liste der öffentlichen KiwiSDR-Empfänger beim Klick aus dem Internet (eine Anfrage, nie beim Start).
+downloading the list…	Liste wird heruntergeladen …
+filter by name, place or antenna	nach Name, Ort oder Antenne filtern
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	Öffentliche Empfänger haben nur wenige Nutzerplätze, und viele beenden eine Sitzung nach etwa 30 Minuten. Wähle einen, der nicht voll ist, und geh wieder, wenn du fertig bist.
+Location	Standort
+Users	Nutzer
+Distance	Entfernung
+offline	offline
+full	voll
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Fügt diesen Empfänger den Netzwerk-Radios hinzu (er verbindet erst, wenn du ihn als Radio wählst).
+The downloaded list has no receivers OnAir can read.	Die heruntergeladene Liste enthält keine Empfänger, die OnAir lesen kann.
+Could not download the list. Check the internet connection.	Die Liste konnte nicht heruntergeladen werden. Prüfe die Internetverbindung.

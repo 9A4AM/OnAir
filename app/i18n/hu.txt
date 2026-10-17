@@ -1749,3 +1749,25 @@ Audio history	Hangelőzmények
 Decoded rows history	Dekódolt sorok előzményei
 Uses about %.1f MB now	Jelenleg kb. %.1f MB-ot használ
 Decoded rows are kept from the results tables you have open.	A dekódolt sorokat a megnyitott eredménytáblákból őrzi meg.
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	Jelszó
+blank if the owner set none	üresen hagyható, ha a tulajdonos nem állított be
+Find KiwiSDR…	KiwiSDR keresése…
+pick a public receiver from the list	nyilvános vevő kiválasztása a listából
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	A KiwiSDR egy az interneten elérhető vevő, amely 0–30 MHz-et fed le; az OnAir a 12 kHz-es IQ-adatfolyamát veszi. A nyilvánosaknak kevés felhasználói helyük van, és sokan körülbelül 30 perc után megszakítják a munkamenetet: vevőnként egy kapcsolatot használj, és ha végeztél, lépj ki. A jelszót az OnAir beállításai tárolják.
+S-meter %.0f dBm%s	S-mérő %.0f dBm%s
+, ADC overload	, ADC túlvezérlés
+Find KiwiSDR	KiwiSDR keresése
+Download the public list	Nyilvános lista letöltése
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	Kattintásra letölti a nyilvános KiwiSDR vevők listáját az internetről (egy kérés, soha nem indításkor).
+downloading the list…	a lista letöltése…
+filter by name, place or antenna	szűrés név, hely vagy antenna szerint
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	A nyilvános vevőknek kevés felhasználói helyük van, és sokan körülbelül 30 perc után megszakítják a munkamenetet. Válassz egyet, amelyik nem tele, és ha végeztél, lépj ki.
+Location	Hely
+Users	Felhasználók
+Distance	Távolság
+offline	offline
+full	tele
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Hozzáadja ezt a vevőt a hálózati rádiókhoz (addig nem csatlakozik, amíg rádiónak nem választod).
+The downloaded list has no receivers OnAir can read.	A letöltött listában nincs olyan vevő, amelyet az OnAir olvasni tud.
+Could not download the list. Check the internet connection.	A listát nem sikerült letölteni. Ellenőrizd az internetkapcsolatot.

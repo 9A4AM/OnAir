@@ -627,6 +627,13 @@ DeviceInfo nrspStDevice(const std::string& host, int port);
 std::unique_ptr<IqSource> makeNrspSt(const DeviceInfo& d);
 bool nrspStProbe(const std::string& host, int port, int timeoutMs, std::string& err);
 void nrspStCaps(DeviceInfo& d);
+// A KiwiSDR (source_kiwisdr.cpp, docs/kiwisdr.md), WebSocket port 8073: kiwiProbe connects, authenticates and waits for sample_rate, then lets the slot go.
+// The source delivers the Kiwi's 12 kHz IQ interpolated to 21 x (252 kHz) or 84 x (1.008 MHz). kiwiSetBackoffForTest: the pauses before a new connection.
+DeviceInfo kiwiSdrDevice(const std::string& host, int port);
+std::unique_ptr<IqSource> makeKiwiSdr(const DeviceInfo& d);
+bool kiwiProbe(const std::string& host, int port, int timeoutMs, std::string& err);
+void kiwiSdrCaps(DeviceInfo& d);
+void kiwiSetBackoffForTest(int minMs, int maxMs);
 bool nrspParseMessage(const std::string& json, std::map<std::string, std::string>& out);
 std::string nrspMessage(const char* event, const std::string& prop, const std::string& value);
 // One control of the server's menu (SmGui's draw list), as OnAir reads it

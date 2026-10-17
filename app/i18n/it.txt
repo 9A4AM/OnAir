@@ -1746,3 +1746,25 @@ Audio history	Cronologia audio
 Decoded rows history	Cronologia delle righe decodificate
 Uses about %.1f MB now	Ora usa circa %.1f MB
 Decoded rows are kept from the results tables you have open.	Le righe decodificate vengono conservate dalle tabelle dei risultati aperte.
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	Password
+blank if the owner set none	vuota se il proprietario non l'ha impostata
+Find KiwiSDR…	Trova KiwiSDR…
+pick a public receiver from the list	scegli un ricevitore pubblico dall'elenco
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	Un KiwiSDR è un ricevitore su internet che copre da 0 a 30 MHz; OnAir ne usa il flusso IQ a 12 kHz. Quelli pubblici hanno pochi posti utente e molti chiudono la sessione dopo circa 30 minuti: usa una sola connessione per ricevitore ed esci quando hai finito. La password è salvata nelle impostazioni di OnAir.
+S-meter %.0f dBm%s	S-meter %.0f dBm%s
+, ADC overload	, sovraccarico ADC
+Find KiwiSDR	Trova KiwiSDR
+Download the public list	Scarica l'elenco pubblico
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	Scarica da internet l'elenco dei ricevitori KiwiSDR pubblici quando fai clic (una sola richiesta, mai all'avvio).
+downloading the list…	scaricamento dell'elenco…
+filter by name, place or antenna	filtra per nome, luogo o antenna
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	I ricevitori pubblici hanno pochi posti utente e molti chiudono la sessione dopo circa 30 minuti. Scegline uno non pieno ed esci quando hai finito.
+Location	Posizione
+Users	Utenti
+Distance	Distanza
+offline	offline
+full	pieno
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Aggiunge questo ricevitore alle radio di rete (non si collega finché non lo scegli come radio).
+The downloaded list has no receivers OnAir can read.	L'elenco scaricato non contiene ricevitori che OnAir sappia leggere.
+Could not download the list. Check the internet connection.	Impossibile scaricare l'elenco. Controlla la connessione a internet.
