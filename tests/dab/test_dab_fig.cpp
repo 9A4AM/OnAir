@@ -127,7 +127,7 @@ static void testInfo() {
     CHECK(i.subLanguage.at(3) == 15, "0/5 info");
     CHECK(i.freqs.size() == 2 && i.freqs[0].id == 0xCE15 && i.freqs[0].kHz.size() == 1 && std::fabs(i.freqs[0].kHz[0] - 225648) < 1, "0/21 DAB");
     CHECK(i.freqs.size() == 2 && i.freqs[1].rm == 8 && i.freqs[1].kHz.size() == 1 && std::fabs(i.freqs[1].kHz[0] - 88500) < 1, "0/21 FM");
-    // FIG 0/22: main identifier 5 at 54.7, 25.3; sub identifier 3 of it 0.1 degrees north and 0.05 west, 40 us later
+    // FIG 0/22: main identifier 5 at 54.7, 25.3; sub identifier 3 of it 0.1 degrees north and 0.1 west, 40 us later
     DabFicAnalysis b;
     b.figs.push_back(rec(0, 22, 0, 0, 0, {22, 5, 77, 203, 17, 253, 188}));
     b.figs.push_back(rec(0, 22, 0, 0, 0, {22, 133, 1, 24, 40, 2, 70, 254, 221}));
@@ -136,7 +136,7 @@ static void testInfo() {
     const DabFicInfo j = dabFicInfo(b);
     CHECK(j.transmitters.size() == 1 && j.transmitters[0].mainId == 5 && std::fabs(j.transmitters[0].lat - 54.7) < 0.001 && std::fabs(j.transmitters[0].lng - 25.3) < 0.001, "0/22 main");
     CHECK(j.subTransmitters.size() == 2 && j.subTransmitters[0].subId == 3 && j.subTransmitters[0].delayUs == 40 && j.subTransmitters[0].placed &&
-              std::fabs(j.subTransmitters[0].lat - 54.8) < 0.001 && std::fabs(j.subTransmitters[0].lng - 25.25) < 0.001, "0/22 sub");
+              std::fabs(j.subTransmitters[0].lat - 54.8) < 0.001 && std::fabs(j.subTransmitters[0].lng - 25.2) < 0.001, "0/22 sub");
     CHECK(j.subTransmitters.size() == 2 && !j.subTransmitters[1].placed, "0/22 sub without its main id");
 }
 
