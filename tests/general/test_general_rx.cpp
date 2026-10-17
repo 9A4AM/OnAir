@@ -251,6 +251,36 @@ int main() {
         CHECK(pOff > 1e-6 && pLp < 0.5 * pOff, "low-pass reduces the audio power");
     }
 
+    // single-file recording: with the squelch on only the burst + pre-roll + hang is written; with it off everything is
+    {
+        SynthConfig on, off;
+        on.mode = 57; on.snrDb = 30; off.mode = 57; off.snrDb = 30; off.modeOpt[1] = 1;
+        auto len = [&](bool sq) {
+            auto sOn = makeGeneralSynth(on, kRate), sOff = makeGeneralSynth(off, kRate);
+            GeneralReceiver r;
+            r.configure(kRate); r.setSignalOffset(-generalTuning().tuneOffsetHz); r.setSilent(true);
+            r.setDemod(GenNfm); r.setSquelch(sq, true, -60);
+            r.setTransmissionGate(0.5, 0.5, false, false);
+            const std::string path = "general_rx_sqrec.wav";
+            r.startRecording(path);
+            std::vector<cf32> buf(20000);
+            auto feedSecs = [&](std::unique_ptr<ModeSynth>& syn, double secs) {
+                for (double t = 0; t < secs; t += buf.size() / kRate) { syn->generate(buf.data(), buf.size()); r.feed(buf.data(), buf.size()); }
+            };
+            feedSecs(sOff, 1.0); feedSecs(sOn, 1.5); feedSecs(sOff, 4.0);
+            r.stopRecording();
+            FILE* f = fopen(path.c_str(), "rb");
+            long size = 0;
+            if (f) { fseek(f, 0, SEEK_END); size = ftell(f); fclose(f); }
+            remove(path.c_str());
+            return (size - 44) / 2.0 / 48000.0;
+        };
+        const double gated = len(true), all = len(false);
+        printf("  squelch-gated single file: %.2f s (squelch on), %.2f s (off)\n", gated, all);
+        CHECK(gated > 1.5 && gated < 4.0, "squelch on: file %.2f s, expected about 2.5", gated);
+        CHECK(all > 6.0, "squelch off: file %.2f s, expected all 6.5", all);
+    }
+
     // pre-roll and hang: two transmissions 0.8 s apart stay one file, the file is longer than the open time, and a
     // channel-IQ sibling plus a CSV line are written beside a name that carries the time, the frequency and the mode
     {
