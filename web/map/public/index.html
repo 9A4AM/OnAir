@@ -7,8 +7,8 @@
   <title>Map · OnAir</title>
   <meta name="description" content="Positions decoded in OnAir. Shared only when the user opts in, and only if the signal carried a location.">
   <link href="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.css" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css?v=16">
-  <link rel="stylesheet" href="/mobile.css?v=16" media="(max-width: 860px)">
+  <link rel="stylesheet" href="/styles.css?v=17">
+  <link rel="stylesheet" href="/mobile.css?v=17" media="(max-width: 860px)">
 </head>
 <body>
   <div id="map"></div>
@@ -44,6 +44,8 @@
     </div>
     <div id="layers" role="group" aria-label="Layers"></div>
     <div class="ptitle">Key</div>
+    <label class="altopt"><input type="checkbox" id="altColor"><span>Colour aircraft by altitude</span></label>
+    <div class="altlegend" id="altLegend" hidden><i id="altBar"></i><div><span>0</span><span>10k</span><span>20k</span><span>30k</span><span>40k ft</span></div></div>
     <div class="key">
       <div><i style="background:#e6e8ea"></i>ADS-B</div>
       <div><i style="background:#5096dc"></i>Satellite</div>
@@ -78,6 +80,6 @@
   </div>
 
   <script src="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.js"></script>
-  <script type="module" src="/app.js?v=16"></script>
+  <script type="module" src="/app.js?v=17"></script>
 </body>
 </html>

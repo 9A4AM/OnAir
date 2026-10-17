@@ -15,7 +15,7 @@ proxies OSM tiles and serves `/meta` (aircraft type, airline and route from adsb
 - `public/trail.js` - merges the hub's trail with the points the page saw live.
 - `public/geo.js` - pure maths: distance, ETA, progress, departure estimate, squawk meanings, formatting.
 - `public/types.js` - pure mapping from ICAO type / ADS-B category / AIS type to an icon shape.
-- `public/shapes.js`, `icons.js` - icon geometry (SVG paths) and lazy canvas rendering at device resolution.
+- `public/shapes.js`, `icons.js` - original hand-authored vector icons (SVG paths) and the lazy canvas rendering at device resolution; `icons.js` also holds the altitude colour scale and the image ids. `test/icon-sheet.html` shows every icon on a dark and a light map (serve `web/map` and open it).
 - `public/airports.js` - ~290 major airports (fallback coordinates when the route lookup has none).
 - `public/demo.js` - `?demo=1` synthetic data.
 - `test/` - `node --test` tests for the pure modules.
@@ -87,3 +87,11 @@ Monthly (x 43,200 min), billing units beyond the included amounts: DO requests 1
 
 ### App side (not changed, read only)
 `app/map/map_send.cpp` posts at most every 4 s (`kMinInterval`) and every 60 s as a heartbeat, up to 250 tracks, each with up to 60 path points: about 130-230 KB per post with 250 tracks. The hub only needs the path for a track it has not seen yet (it keeps its own), so sending `path` only on a track's first post and every Nth post would cut the upload by roughly 80 %; the hub already ignores a one-point path (`mergePath`). This needs a native build and test, so it is left for a separate change. zlib deflate is not available in the app (`inflate.h` is a reader only).
+
+## Icons
+- 50 hand-drawn shapes in `shapes.js` (nothing copied from other maps or icon sets): 14 aircraft families seen from above (narrow-body, wide twin, four-engine, regional jet, business jet, turboprop, light single, light twin, helicopter with rotor disc, fighter, delta, transport, glider, balloon, airship), UAVs (quad with rotor discs, Remote ID quad with a status ring, fixed wing), a generic dart for unknown aircraft, ground vehicle and obstacle, 13 ship hulls by AIS type (cargo, tanker, passenger, high-speed twin hull, tug, fishing, sailing, pleasure, military, SAR, pilot, dredger, other) each with a dashed course-over-ground vector ahead of the bow, radiosonde (balloon, cord, parachute, payload), satellite and GNSS satellite (coloured per constellation), APRS types (car, truck, house, weather station, digipeater, balloon, boat), amateur, buoy, DSC, station.
+- Choice of shape (`types.js`, tested in `test/types.test.js`): ICAO type code from the card's aircraft lookup, then ADS-B emitter category (A1-A7, B1-B6, C1-C5), military hex, ICAO wake class, then speed / altitude (jet cruise = airliner, slow and low = light aircraft), else the generic dart. Ships by AIS code or text; size from a length in the text ("183 m") or the type's typical size.
+- Drawing: crisp 1.2 px outline, faint sheen on the fill, readable at 16-28 px; sprites are made at 3x, once per (shape, colour, theme) and handed to MapLibre, which packs them into one GPU atlas and draws every track in ONE symbol layer (no per-marker DOM). With more than 150 tracks only those near the screen are handed to the renderer (re-evaluated on move). Dark / light variants follow `prefers-color-scheme` (outline colour, label colours). Stale tracks are grey; the selected track gets a ring (no glow) and a label; callsigns show only for the selected track and from zoom 7.5 (collisions are dropped by the renderer).
+- Heading changes ease toward the new course by the shortest arc (no jumps); `prefers-reduced-motion` snaps.
+- Filters sheet: "Colour aircraft by altitude" (remembered) with a legend 0-45,000 ft; the colours are quantised to 2,000 ft bands so the atlas stays small.
+- `?view=lat,lon,zoom` opens the map at a place (used for screenshots; works for shared links too).

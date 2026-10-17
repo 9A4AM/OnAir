@@ -2,15 +2,18 @@
 // Modules: geo.js (maths), types.js (type -> icon shape), shapes.js + icons.js (map icons), airports.js,
 // card.js (info card), demo.js (?demo=1 preview data). Everything here is browser-only glue.
 
-import { iconId, installLazyIcons, paintMini } from "./icons.js";
+import { iconId, installLazyIcons, paintMini, altitudeColor, altitudeGradientCss, ALT_STOPS } from "./icons.js";
 import { SHAPES } from "./shapes.js";
-import { iconShape } from "./types.js";
+import { iconShape, vesselScale } from "./types.js";
 import { createCard } from "./card.js";
 import { generateDemo, stepDemo } from "./demo.js";
-import { watchMapTheme } from "./theme.js";
+import { watchMapTheme, themeKey, onThemeChange } from "./theme.js";
 import { mergeTrails, appendLive, toLine } from "./trail.js";
 
 const DEMO = new URLSearchParams(location.search).get("demo") === "1";
+// ?view=lat,lon,zoom opens the map there (used for screenshots and shared links)
+const VIEW = (new URLSearchParams(location.search).get("view") || "").split(",").map(Number);
+const HAS_VIEW = VIEW.length === 3 && VIEW.every(Number.isFinite);
 const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = (id) => document.getElementById(id);
 
@@ -20,13 +23,13 @@ const KINDS = [
   { id: "sonde", name: "Sondes", color: "#cc94c7", shape: "sonde" },
   { id: "aprs", name: "APRS", color: "#8ccc9e", shape: "aprs_car" },
   { id: "ham", name: "Amateur", color: "#8ccc9e", shape: "ham" },
-  { id: "drone", name: "Drones", color: "#e0ad6b", shape: "drone" },
+  { id: "drone", name: "Drones", color: "#e0ad6b", shape: "drone_rid" },
   { id: "flarm", name: "FLARM", color: "#6ccc7a", shape: "glider" },
   { id: "sat", name: "Satellites", color: "#c0c2c4", shape: "sat" },
   { id: "buoy", name: "Buoys", color: "#7aa8d4", shape: "buoy" },
   { id: "dsc", name: "DSC", color: "#e0ad6b", shape: "dsc" },
   { id: "station", name: "Stations", color: "#e0d48f", shape: "station" },
-  { id: "gnss", name: "GNSS satellites", color: "#9ad0f0", shape: "sat" },
+  { id: "gnss", name: "GNSS satellites", color: "#9ad0f0", shape: "sat_gnss" },
 ];
 
 const on = Object.fromEntries(KINDS.map((k) => [k.id, true]));
@@ -42,6 +45,8 @@ let followId = null;      // id being followed (map kept centred)
 let showTrack = true;     // draw the selected track's trail (remembered across reloads)
 try { if (localStorage.getItem("onair.map.showTrack") === "0") showTrack = false; } catch { /* storage blocked */ }
 let demoMeta = {};
+let altMode = false;      // colour aircraft by altitude (remembered)
+try { altMode = localStorage.getItem("onair.map.altColor") === "1"; } catch { /* storage blocked */ }
 
 const map = new maplibregl.Map({
   container: "map",
@@ -72,14 +77,15 @@ const map = new maplibregl.Map({
       } },
     ],
   },
-  center: [12, 28],
-  zoom: 2.15,
+  center: HAS_VIEW ? [VIEW[1], VIEW[0]] : [12, 28],
+  zoom: HAS_VIEW ? VIEW[2] : 2.15,
   minZoom: 1.2,
   fadeDuration: 0,
   attributionControl: false,
 });
 map.addControl(new maplibregl.NavigationControl({ showCompass: false, visualizePitch: false }), "bottom-right");
 installLazyIcons(map);
+if (DEMO) window.__onairMap = map;   // handle for screenshots / debugging of the demo
 
 function graticule() {
   const features = [];
@@ -147,7 +153,13 @@ function colorOf(kind, t) {
     const src = srcOf(t);
     if (src) {
       const spec = SRC[src];
-      return ageSec(t) > spec.stale ? STALE : spec.color;
+      if (ageSec(t) > spec.stale) return STALE;
+      if (altMode && kind === "aircraft") {
+        if (t.alt != null && t.alt <= 100 && (t.speed == null || t.speed < 40)) return "#9aa0a6";   // on the ground
+        const c = altitudeColor(t.alt);
+        if (c) return c;
+      }
+      return spec.color;
     }
   }
   return (kindOf[kind] || {}).color || "#c8cacc";
@@ -255,22 +267,48 @@ function destPoint(t, fromLonLat) {
 }
 
 
-/** Shape name (and colour) for a track; the image id "shape|colour" is created lazily by installLazyIcons. */
+/** Shape name (and colour) for a track; the image id "shape|colour|theme" is created lazily by installLazyIcons. */
 function shapeFor(t) {
   const ity = (t.meta && t.meta.icaoType) || "";
-  const key = t.kind + "|" + (t.cat || "") + "|" + ity + "|" + (t.extra || "") + "|" + (t.sub || "");
+  // aircraft with neither a type nor a category are guessed from speed and altitude: re-evaluate when those change a lot
+  const guess = t.kind === "aircraft" && !ity && !t.cat ? Math.round((t.alt || 0) / 6000) + "/" + Math.round((t.speed || 0) / 80) : "";
+  const key = t.kind + "|" + (t.cat || "") + "|" + ity + "|" + (t.extra || "") + "|" + (t.sub || "") + "|" + guess;
   if (t._shapeKey !== key) {
     t._shapeKey = key;
-    t._shape = iconShape({ kind: t.kind, cat: t.cat, extra: t.extra, sub: t.sub, label: t.label, icaoType: ity, hex: icaoOf(t) });
+    t._shape = iconShape({ kind: t.kind, cat: t.cat, extra: t.extra, sub: t.sub, label: t.label, src: t.src, icaoType: ity, hex: icaoOf(t),
+      wake: t.meta && t.meta.wake, speed: t.speed, alt: t.alt });
+    t._scale = t.kind === "vessel" ? vesselScale({ shape: t._shape, cat: t.cat, extra: t.extra, sub: t.sub }) : 1;
   }
   return t._shape;
 }
 function shapeRotates(shape) { return !!(SHAPES[shape] && SHAPES[shape].rotates); }
 
+/** Course for drawing: eases toward the reported one by the shortest arc, so icons turn smoothly instead of jumping. */
+function easedHeading(t, hdg) {
+  if (hdg == null) return 0;
+  if (REDUCED || t._dh == null) { t._dh = hdg; return hdg; }
+  const d = ((hdg - t._dh + 540) % 360) - 180;
+  if (Math.abs(d) < 0.5) t._dh = hdg; else t._dh = (t._dh + d * 0.4 + 360) % 360;
+  return t._dh;
+}
+
+/** Returns a (lon, lat) => bool for the padded viewport, or null when everything is in view anyway (few tracks, world view). */
+function viewTest() {
+  if (tracks.size <= 150 || !map.loaded() || map.getZoom() < 3) return null;
+  const b = map.getBounds();
+  const w = b.getWest(), e = b.getEast(), s = b.getSouth(), n = b.getNorth();
+  if (e - w >= 300) return null;
+  const cx = (w + e) / 2, cy = (s + n) / 2, hx = (e - w) / 2 * 1.3 + 0.2, hy = (n - s) / 2 * 1.3 + 0.2;
+  return (lon, lat) => Math.abs(((lon - cx + 540) % 360 + 360) % 360 - 180) <= hx && Math.abs(lat - cy) <= hy;
+}
+
 function geojson() {
   const features = [];
+  const theme = themeKey();
+  const inView = viewTest();   // beyond ~150 tracks only what is on (or near) the screen is handed to the renderer
   for (const t of tracks.values()) {
     if (!on[t.kind]) continue;
+    if (inView && t.id !== selected && !inView(t.lon, t.lat)) continue;
     const hdg = effectiveHeading(t);
     const dot = datalinkDotUntilHeading(t, hdg);
     const shape = shapeFor(t);
@@ -281,10 +319,11 @@ function geojson() {
       properties: {
         id: t.id,
         kind: t.kind,
-        icon: iconId(shape, color),
+        icon: iconId(shape, color, theme),
         label: t.label || "",
         color,
-        heading: hdg != null ? hdg : 0,
+        heading: dot ? 0 : easedHeading(t, hdg),
+        scale: t._scale || 1,
         sym: dot ? 0 : 1,
         dot: dot ? 1 : 0,
         iconRot: shapeRotates(shape) && hdg != null && !dot ? 1 : 0,
@@ -434,11 +473,11 @@ function esc(s) {
 const miniCache = new Map();
 /** Data URL of a small icon (cached per shape+colour) so lists use <img> instead of redrawing canvases. */
 function miniUrl(shape, color) {
-  const k = shape + color;
+  const k = shape + color + themeKey();
   let u = miniCache.get(k);
   if (!u) {
     const c = document.createElement("canvas");
-    paintMini(c, shape, color, 18);
+    paintMini(c, shape, color, 18, themeKey());
     u = c.toDataURL();
     miniCache.set(k, u);
   }
@@ -505,7 +544,7 @@ function renderList() {
     return;
   }
   const now = Date.now();
-  el.innerHTML = list.slice(0, 400).map((t) => `
+  el.innerHTML = list.slice(0, 200).map((t) => `
     <button type="button" data-id="${esc(t.id)}" class="${t.id === selected ? "sel" : ""}">
       <img class="sym" alt="" src="${miniUrl(shapeFor(t), colorOf(t.kind, t))}" width="18" height="18" loading="lazy">
       <span class="lab">${esc(t.label || t.id)}</span>
@@ -757,9 +796,9 @@ map.on("load", () => {
     paint: {
       "circle-radius": 20,
       "circle-color": ["get", "color"],
-      "circle-opacity": 0.2,
-      "circle-blur": 0.7,
-      "circle-stroke-width": 1.5,
+      "circle-opacity": 0.1,
+      "circle-blur": 0,
+      "circle-stroke-width": 1.6,
       "circle-stroke-color": ["get", "color"],
       "circle-stroke-opacity": 0.9,
     },
@@ -786,10 +825,32 @@ map.on("load", () => {
       "icon-allow-overlap": true,
       "icon-ignore-placement": true,
       "icon-anchor": "center",
-      "icon-size": ["interpolate", ["linear"], ["zoom"], 1.5, 0.5, 4, 0.7, 8, 0.95, 12, 1.25],
+      "icon-size": ["interpolate", ["linear"], ["zoom"], 1.5, ["*", 0.5, ["get", "scale"]], 4, ["*", 0.7, ["get", "scale"]], 8, ["*", 0.95, ["get", "scale"]], 12, ["*", 1.25, ["get", "scale"]]],
       "symbol-sort-key": ["to-number", ["get", "sel"]],
     },
     paint: { "icon-opacity": ["case", ["==", ["to-number", ["get", "est"]], 1], 0.5, 1] },
+  });
+  // callsigns: only for the selected track, and for everything once zoomed in (the renderer drops labels that would collide)
+  const labelLayout = {
+    "text-field": ["get", "label"],
+    "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+    "text-size": 11,
+    "text-anchor": "top",
+    "text-offset": [0, 1.5],
+    "text-optional": true,
+  };
+  const dark = themeKey() === "d";
+  map.addLayer({
+    id: "lab", type: "symbol", source: "live", minzoom: 7.5,
+    filter: ["all", ["!=", ["get", "label"], ""], ["==", ["to-number", ["get", "sel"]], 0], ["!=", ["get", "kind"], "gnss"]],
+    layout: { ...labelLayout, "text-allow-overlap": false, "text-ignore-placement": false },
+    paint: { "text-color": dark ? "#dfe2e5" : "#14181c", "text-halo-color": dark ? "#0b0c0d" : "#ffffff", "text-halo-width": 1.4, "text-opacity": 0.92 },
+  });
+  map.addLayer({
+    id: "lab_sel", type: "symbol", source: "live",
+    filter: [">", ["to-number", ["get", "sel"]], 0],
+    layout: { ...labelLayout, "text-size": 12, "text-allow-overlap": true, "text-ignore-placement": true, "text-offset": [0, 1.9] },
+    paint: { "text-color": dark ? "#ffffff" : "#000000", "text-halo-color": dark ? "#0b0c0d" : "#ffffff", "text-halo-width": 1.6 },
   });
   const hit = ["dot", "sym"];
   /** Nearest feature to the click within a 14 px box, so thin icons are easy to hit on touch screens too. */
@@ -817,6 +878,9 @@ map.on("load", () => {
   apply();
   ensureMotionLoop();
 });
+
+// the visible part of the map changed: hand the renderer the tracks that are now near the screen
+map.on("moveend", () => { const src = map.getSource("live"); if (src && tracks.size > 150) src.setData(geojson()); });
 
 // user panning cancels follow mode
 for (const ev of ["dragstart", "wheel", "touchstart"]) {
@@ -1030,15 +1094,60 @@ function ensureMotionLoop() {
 
 /** Fill the collapsible icon guide (what each shape means). */
 function renderIconGuide() {
-  const rows = [
-    ["narrow", "Narrow-body jet"], ["wide", "Wide-body jet"], ["quad", "Four-engine (A380 / 747)"], ["regional", "Regional / business jet"],
-    ["turboprop", "Turboprop"], ["light", "Light aircraft"], ["heli", "Helicopter"], ["military", "Military / fighter"],
-    ["glider", "Glider"], ["balloon", "Balloon"], ["drone", "Drone"], ["ship_cargo", "Cargo ship"], ["ship_tanker", "Tanker"],
-    ["ship_passenger", "Passenger ship"], ["ship_fishing", "Fishing"], ["ship_sailing", "Sailing"], ["ship_tug", "Tug"],
-    ["sonde", "Radiosonde"], ["sat", "Satellite"], ["aprs_car", "APRS vehicle"], ["aprs_house", "APRS home / weather"], ["aprs_digi", "APRS digipeater"],
-  ];
-  $("iconkey").innerHTML = rows.map(([s, n]) => `<div><img alt="" src="${miniUrl(s, "#c8cacc")}" width="18" height="18">${n}</div>`).join("");
+  const g = (title, rows) => `<h4>${title}</h4>` + rows.map(([s, n]) => `<div><img alt="" src="${miniUrl(s, "#c8cacc")}" width="22" height="22">${n}</div>`).join("");
+  $("iconkey").innerHTML =
+    g("Aircraft", [
+      ["narrow", "Narrow-body jet"], ["wide", "Wide-body twin"], ["quad", "Four-engine (A380 / 747)"], ["regional", "Regional jet"], ["bizjet", "Business jet"],
+      ["turboprop", "Turboprop"], ["light", "Light aircraft"], ["lighttwin", "Light twin"], ["heli", "Helicopter"], ["fighter", "Fighter"],
+      ["delta", "Delta-wing fighter"], ["transport", "Military transport"], ["glider", "Glider"], ["balloon", "Balloon"], ["airship", "Airship"],
+      ["uav", "Fixed-wing UAV"], ["plane", "Unknown aircraft"], ["vehicle", "Ground vehicle"],
+    ])
+    + g("Ships (the dashed line is the course)", [
+      ["ship_cargo", "Cargo"], ["ship_tanker", "Tanker"], ["ship_passenger", "Passenger / ferry"], ["ship_hsc", "High-speed craft"], ["ship_tug", "Tug"],
+      ["ship_fishing", "Fishing"], ["ship_sailing", "Sailing"], ["ship_pleasure", "Pleasure craft"], ["ship_military", "Military"], ["ship_sar", "Search and rescue"],
+      ["ship_pilot", "Pilot"], ["ship_dredger", "Dredger"], ["ship_other", "Other / unknown"],
+    ])
+    + g("Other", [
+      ["drone", "Drone"], ["drone_rid", "Drone with Remote ID"], ["sonde", "Radiosonde"], ["sat", "Satellite"], ["sat_gnss", "GNSS satellite"],
+      ["aprs_car", "APRS vehicle"], ["aprs_truck", "APRS truck"], ["aprs_house", "APRS home"], ["aprs_wx", "APRS weather station"],
+      ["aprs_digi", "APRS digipeater"], ["aprs_balloon", "APRS balloon"], ["aprs_ship", "APRS boat"], ["ham", "Amateur station"], ["buoy", "Buoy"],
+    ]);
 }
+
+// altitude colouring: option + legend in the Filters sheet
+function syncAltUi() {
+  const box = $("altColor");
+  if (box) box.checked = altMode;
+  const lg = $("altLegend");
+  if (lg) lg.hidden = !altMode;
+  const bar = $("altBar");
+  if (bar) bar.style.background = altitudeGradientCss();
+}
+$("altColor")?.addEventListener("change", (e) => {
+  altMode = e.target.checked;
+  try { localStorage.setItem("onair.map.altColor", altMode ? "1" : "0"); } catch { /* storage blocked */ }
+  syncAltUi();
+  apply();
+});
+syncAltUi();
+
+// the map theme flipped: icons get the other outline colour, labels and the small icons follow
+onThemeChange((k) => {
+  const dark = k === "d";
+  for (const [id, light] of [["lab", "#dfe2e5"], ["lab_sel", "#ffffff"]]) {
+    try {
+      map.setPaintProperty(id, "text-color", dark ? light : (id === "lab" ? "#14181c" : "#000000"));
+      map.setPaintProperty(id, "text-halo-color", dark ? "#0b0c0d" : "#ffffff");
+    } catch { /* layers not added yet */ }
+  }
+  for (const k2 of KINDS) {
+    const img = document.querySelector(`#layers label[data-k="${k2.id}"] img.ico`);
+    if (img) img.src = miniUrl(k2.shape, k2.color);
+  }
+  renderIconGuide();
+  renderListSoon();
+  apply();
+});
 
 // ---------- start ----------
 
