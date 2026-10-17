@@ -279,7 +279,7 @@ bool DabPacketDemux::packet(const uint8_t* p, size_t len, std::vector<uint8_t>& 
     if (first) { asm_.clear(); on_ = true; }
     else if (!on_) return true;
     asm_.insert(asm_.end(), p + 3, p + 3 + ul);
-    if (asm_.size() > kMaxField + 4 + 8) { on_ = false; asm_.clear(); return true; }
+    if (asm_.size() > (maxLen_ ? maxLen_ : (size_t)kMaxField + 4 + 8)) { on_ = false; asm_.clear(); return true; }
     if (last) { out.swap(asm_); asm_.clear(); on_ = false; }
     return true;
 }

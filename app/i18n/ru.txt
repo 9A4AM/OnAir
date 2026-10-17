@@ -579,10 +579,6 @@ Region %s, %s wide	Область %s, шириной %s
 collecting samples	сбор отсчётов
 Working it out...	Вычисление...
 Nothing to identify here.	Здесь нечего определять.
-Looks like: %s	Похоже на: %s
-Looks like: %s (frame sync found %dx)	Похоже на: %s (синхронизация кадров найдена %dx)
-No mode fits well.	Ни один режим не подходит.
-Open %s on this frequency	Открыть %s на этой частоте
 Switch to %s and tune to %s	Переключиться на %s и настроиться на %s
 Candidates	Кандидаты
 (sync %dx)	(синхр. %dx)
@@ -2035,6 +2031,37 @@ How to install	Как установить
 The services, signal information and data work without it.	Службы, информация о сигнале и данные работают и без него.
 Interface and windows	Интерфейс и окна
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Меню «Вид» переключает компоновку (Sidebar, Scope, Tiles, Faceplate, Panel), классический интерфейс, размер текста и палитру; сенсорный интерфейс находится в разделе «Инструменты». Окна «Частоты», «Сканер-обзор», «Пеленгатор» и «Автоматизации» открываются отсюда.
+# programme guide (SPI)
+Guide	Телегид
+until	до
+Genre	Жанр
+Saved	Сохранено
+Now	Сейчас
+objects	объекты
+services	службы
+programmes	передачи
+scheduled	в расписании
+objects decoded	декодированные объекты
+Guide data	Данные гида
+last update	последнее обновление
+no update yet	обновлений пока нет
+not collecting	не собирается
+from the cache	из кэша
+cached data, expires with time	данные из кэша, со временем устаревают
+waiting for the carousel directory...	ожидание каталога карусели...
+Export XMLTV	Экспорт XMLTV
+Collect the guide in the background	Собирать гид в фоне
+Could not write the file.	Не удалось записать файл.
+Listen to this station	Слушать эту станцию
+search title or description	поиск по названию или описанию
+Nothing matches.	Ничего не найдено.
+No description in the guide.	В гиде нет описания.
+Click a programme in the grid or the search results to see its details.	Нажмите на передачу в сетке или в результатах поиска, чтобы увидеть подробности.
+Start the receiver on a DAB channel to see the guide.	Запустите приёмник на канале DAB, чтобы увидеть гид.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Этот ансамбль не объявляет программный гид (SPI, пользовательское приложение 0x007).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	Гид этого ансамбля передаётся в PAD станции: включите эту станцию, чтобы собрать его.
+The broadcaster sends service information (names, logos) but no programme schedule.	Вещатель передаёт сведения о службах (названия, логотипы), но не программу передач.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Программа передач ещё не получена. Оборот карусели гида может занять несколько минут.
 Air-interface encryption: %s	Шифрование радиоинтерфейса: %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu сигнальных PDU с режимом шифрования (не расшифровано); %llu нечитаемых блоков (ошибка CRC)
 none advertised	не объявлено
@@ -2108,9 +2135,7 @@ Not enough tuners: this overlaps a recording on another multiplex and will not b
 No description broadcast.	Описание не передаётся.
 Waiting for the service list...	Ожидание списка служб...
 Search title or description	Поиск по названию или описанию
-Now	Сейчас
 This multiplex only	Только этот мультиплекс
-programmes	передач
 time zone:	часовой пояс:
 this computer	этот компьютер
 No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Информация о программе пока не получена. Вещатели передают её в таблицах EIT, которые повторяются каждые несколько секунд (сейчас/далее) или минут (расписание). Некоторые мультиплексы не передают её вовсе.
@@ -2129,7 +2154,6 @@ conflict	конфликт
 any multiplex	любой мультиплекс
 series	сериал
 waiting for the tuner	ожидание тюнера
-scheduled	запланировано
 Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Ничего не запланировано. Выберите передачу в телегиде или добавьте запись вручную ниже.
 Manual recording	Запись вручную
 Starts at this clock time (today, or tomorrow when it has passed), no padding.	Начинается в это время (сегодня, а если оно прошло – завтра), без запаса.
@@ -2150,3 +2174,44 @@ Save teletext subtitles next to recordings (.srt, .vtt)	Сохранять су�
 Tune to a scheduled recording's channel when it starts	Настраиваться на канал запланированной записи при её начале
 Timeshift buffer on disk	Буфер таймшифта на диске
 minutes	минут
+Propagation	Прохождение
+open	открыт
+marginal	на грани
+closed	закрыт
+Best band now	Лучший диапазон сейчас
+Stations	Станции
+Best SNR	Лучший SNR
+Farthest	Самая дальняя
+Heard from	Слышно из
+Forget the history	Очистить историю
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Что этот приёмник слышал по диапазонам: маяки (NCDXF/IARU, Long Dashes, одиночные буквы, несущие) и станции FT8 / FT4 / FT2 / WSPR, декодированные на экране HF-цифры. Диапазон открыт, если за последние 30 минут услышаны не менее 3 станций. Только свой приёмник: ничего не скачивается, поэтому нет солнечного потока и K-индекса.
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	За последние 30 минут ничего не слышно: запустите HF-маяки или экран HF-цифры и оставьте работать.
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Последние 24 часа (UTC), ячейки по 15 минут, темнее: меньше станций
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f бод
+, %s wide	, ширина %s
+, bursts (%.0f %% on)	, пакеты (включён %.0f %%)
+, every %.3g ms	, каждые %.3g мс
+, useful symbol %.4g us	, полезный символ %.4g мкс
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Оценка — доля подтверждающихся признаков; проценты откалиброваны по собственным тестовым сигналам OnAir, а не по всем реальным сигналам.
+Add to memory	Добавить в Memory
+Best guess	Лучшая догадка
+Copy as text	Копировать как текст
+Could be %s (%.0f %%) or %s (%.0f %%).	Возможно, %s (%.0f %%) или %s (%.0f %%).
+Could not open this mode.	Не удалось открыть этот режим.
+Evidence for %s:	Признаки для %s:
+I do not know what this is: nothing I know fits well enough to say.	Не знаю, что это: ничто из известного мне не подходит достаточно хорошо.
+Identify all signals	Определить все сигналы
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Определение: щёлкните сигнал или проведите по нему мышью. Esc или I выходит из режима.
+Measured	Измерено
+Most likely %s, %.0f %% sure.	Скорее всего %s, уверенность %.0f %%.
+No signal stands out of the noise here.	Здесь ни один сигнал не выделяется из шума.
+Open in %s	Открыть в %s
+Opened %s	Открыт %s
+Perhaps %s (%.0f %%).	Возможно, %s (%.0f %%).
+Signals in the view	Сигналы в окне
+The frequency list has here:	В списке частот здесь есть:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Что это? Щёлкните сигнал или проведите по нему мышью, и OnAir скажет, что это и насколько он уверен. Клавиша I. Shift+перетаскивание работает и без режима.
+Why?	Почему?
+Identify selected	Определить выбранный
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Настроить радио на выбранный сигнал и сказать, что это (приёмник должен работать в режиме, частота дискретизации которого его покрывает)

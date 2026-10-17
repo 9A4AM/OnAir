@@ -600,10 +600,6 @@ Region %s, %s wide	Zone %s, %s de large
 collecting samples	collecte des échantillons
 Working it out...	Analyse en cours...
 Nothing to identify here.	Rien à identifier ici.
-Looks like: %s	Ressemble à : %s
-Looks like: %s (frame sync found %dx)	Ressemble à : %s (synchro de trame trouvée %dx)
-No mode fits well.	Aucun mode ne correspond bien.
-Open %s on this frequency	Ouvrir %s sur cette fréquence
 Switch to %s and tune to %s	Passer à %s et accorder sur %s
 Candidates	Candidats
 (sync %dx)	(synchro %dx)
@@ -2052,6 +2048,37 @@ How to install	Comment installer
 The services, signal information and data work without it.	Les services, les informations du signal et les données fonctionnent sans lui.
 Interface and windows	Interface et fenêtres
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Affichage change la disposition (Sidebar, Scope, Tiles, Faceplate, Panel), l'interface classique, la taille du texte et la palette ; l'interface tactile est sous Outils. Des fenêtres comme Fréquences, Scanner de balayage, Radiogoniomètre et Automatisations s'ouvrent d'ici.
+# programme guide (SPI)
+Guide	Guide
+until	jusqu'à
+Genre	Genre
+Saved	Enregistré
+Now	Maintenant
+objects	objets
+services	services
+programmes	programmes
+scheduled	programmés
+objects decoded	objets décodés
+Guide data	Données du guide
+last update	dernière mise à jour
+no update yet	pas encore de mise à jour
+not collecting	pas de collecte
+from the cache	depuis le cache
+cached data, expires with time	données en cache, expirent avec le temps
+waiting for the carousel directory...	attente du répertoire du carrousel...
+Export XMLTV	Exporter en XMLTV
+Collect the guide in the background	Collecter le guide en arrière-plan
+Could not write the file.	Impossible d'écrire le fichier.
+Listen to this station	Écouter cette station
+search title or description	rechercher dans le titre ou la description
+Nothing matches.	Aucun résultat.
+No description in the guide.	Pas de description dans le guide.
+Click a programme in the grid or the search results to see its details.	Cliquez sur un programme de la grille ou des résultats pour voir ses détails.
+Start the receiver on a DAB channel to see the guide.	Démarrez le récepteur sur un canal DAB pour voir le guide.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Ce multiplex n'annonce pas de guide des programmes (SPI, application utilisateur 0x007).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	Le guide de ce multiplex est diffusé dans le PAD d'une station : écoutez cette station pour le collecter.
+The broadcaster sends service information (names, logos) but no programme schedule.	Le diffuseur envoie des informations de service (noms, logos) mais pas de grille des programmes.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Aucune grille reçue pour l'instant. Un carrousel de guide peut mettre plusieurs minutes à faire un tour.
 Air-interface encryption: %s	Chiffrement de l'interface air : %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu PDU de signalisation avec un mode de chiffrement (non déchiffrées) ; %llu blocs illisibles (CRC faux)
 none advertised	aucun annoncé
@@ -2125,9 +2152,7 @@ Not enough tuners: this overlaps a recording on another multiplex and will not b
 No description broadcast.	Aucune description diffusée.
 Waiting for the service list...	En attente de la liste des services...
 Search title or description	Rechercher titre ou description
-Now	Maintenant
 This multiplex only	Ce multiplex seulement
-programmes	émissions
 time zone:	fuseau horaire :
 this computer	cet ordinateur
 No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Aucune information de programme reçue pour l'instant. Les diffuseurs l'envoient dans les tables EIT, répétées toutes les quelques secondes (maintenant/suivant) à quelques minutes (programmation). Certains multiplex n'en envoient aucune.
@@ -2146,7 +2171,6 @@ conflict	conflit
 any multiplex	n'importe quel multiplex
 series	série
 waiting for the tuner	attente du tuner
-scheduled	planifié
 Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Rien de planifié. Choisissez une émission dans le guide ou ajoutez un enregistrement manuel ci-dessous.
 Manual recording	Enregistrement manuel
 Starts at this clock time (today, or tomorrow when it has passed), no padding.	Démarre à cette heure (aujourd'hui, ou demain si elle est passée), sans marge.
@@ -2167,3 +2191,44 @@ Save teletext subtitles next to recordings (.srt, .vtt)	Enregistrer les sous-tit
 Tune to a scheduled recording's channel when it starts	Se syntoniser sur la chaîne d'un enregistrement planifié à son début
 Timeshift buffer on disk	Tampon timeshift sur disque
 minutes	minutes
+Propagation	Propagation
+open	ouverte
+marginal	limite
+closed	fermée
+Best band now	Meilleure bande maintenant
+Stations	Stations
+Best SNR	Meilleur SNR
+Farthest	Plus lointaine
+Heard from	Entendu depuis
+Forget the history	Effacer l'historique
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Ce que ce récepteur a entendu, par bande : balises (NCDXF/IARU, Long Dashes, lettres seules, porteuses) et stations FT8 / FT4 / FT2 / WSPR décodées dans l'écran HF numérique. Une bande est ouverte quand au moins 3 stations ont été entendues ces 30 dernières minutes. Récepteur propre uniquement : rien n'est téléchargé, donc ni flux solaire ni indice K.
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Rien entendu ces 30 dernières minutes : lancez les balises HF ou l'écran HF numérique et laissez-le tourner.
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	24 dernières heures (UTC), cellules de 15 minutes, plus sombre : moins de stations
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f bauds
+, %s wide	, %s de large
+, bursts (%.0f %% on)	, salves (%.0f %% actif)
+, every %.3g ms	, toutes les %.3g ms
+, useful symbol %.4g us	, symbole utile %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Un score est la part des indices qui se vérifient ; les pourcentages sont calibrés sur les signaux de test d'OnAir, pas sur tous les signaux réels.
+Add to memory	Ajouter à Memory
+Best guess	Meilleure hypothèse
+Copy as text	Copier en texte
+Could be %s (%.0f %%) or %s (%.0f %%).	Peut-être %s (%.0f %%) ou %s (%.0f %%).
+Could not open this mode.	Impossible d'ouvrir ce mode.
+Evidence for %s:	Indices pour %s :
+I do not know what this is: nothing I know fits well enough to say.	Je ne sais pas ce que c'est : rien de ce que je connais ne correspond assez bien.
+Identify all signals	Identifier tous les signaux
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Identifier : cliquez sur un signal ou faites glisser dessus. Échap ou I quitte l'outil.
+Measured	Mesuré
+Most likely %s, %.0f %% sure.	Très probablement %s, sûr à %.0f %%.
+No signal stands out of the noise here.	Aucun signal ne se détache du bruit ici.
+Open in %s	Ouvrir dans %s
+Opened %s	%s ouvert
+Perhaps %s (%.0f %%).	Peut-être %s (%.0f %%).
+Signals in the view	Signaux dans la vue
+The frequency list has here:	La liste de fréquences indique ici :
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Qu'est-ce que c'est ? Cliquez sur un signal ou faites glisser dessus : OnAir dit ce que c'est et avec quelle certitude. Touche I. Maj+glisser le fait sans l'outil.
+Why?	Pourquoi ?
+Identify selected	Identifier la sélection
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Accorde la radio sur le signal sélectionné et dit ce que c'est (le récepteur doit être dans un mode dont le taux d'échantillonnage le couvre)

@@ -4,6 +4,7 @@
 #include "dab_journaline.h"
 #include "dab_fig.h"
 #include "dab_pad.h"
+#include "dab_spi.h"
 #include "dab_tel.h"
 #include "dect2/common/ring.h"
 #include <cstdint>
@@ -88,6 +89,14 @@ public:
     // the objects collect in journaline(). select() ends it.
     void selectJournaline(int subId, int packetAddress, int extHeader);
     JournalineDecoder& journaline();
+    // SPI, the programme guide (TS 102 371): decode the packet mode sub-channel `subId` (packet address `packetAddress`) next to the selected service, or with
+    // packetAddress -2 take the SPI objects from the PAD of the selected service. subId -1 stops. The result collects in spi().
+    void selectSpi(int subId, int packetAddress);
+    int spiSelected() const;
+    DabSpiDecoder& spi();
+    // The packet layer of the SPI sub-channel: packets good / bad CRC / lost (continuity index), data units delivered / dropped
+    struct SpiLink { uint64_t packets = 0, bad = 0, lost = 0, orphan = 0, other = 0, empty = 0, unitsOk = 0, unitsDropped = 0; };
+    SpiLink spiLink() const;
     void setPacketCallback(std::function<void(const uint8_t* pk, size_t n, double secs)> cb);
     // Called with every logical frame of the selected sub-channel (after Viterbi and descrambling), for tests
     void setFrameTap(std::function<void(int sub, const uint8_t* bytes, int n)> cb);
@@ -129,6 +138,7 @@ public:
     void setVolume(float v);
     void setMuted(bool m);
     // Tests: receives every access unit with a good CRC (raw AAC frame) and its superframe header
+    void setMotSink(std::function<void(const MotObject&)> cb);   // the MOT objects other than pictures heard in the PAD (SPI)
     void setDataGroupSink(std::function<void(const uint8_t* g, size_t n)> cb);   // the MSC data groups of types 0 and 6 heard in the PAD (Journaline)
     void setAuTap(std::function<void(const uint8_t* au, int n, uint8_t header)> cb);
     void setSilent(bool s);                               // decode but do not open the audio device (tests)

@@ -593,10 +593,6 @@ Region %s, %s wide	範囲 %s、幅 %s
 collecting samples	サンプル収集中
 Working it out...	解析中...
 Nothing to identify here.	ここには識別できるものがありません。
-Looks like: %s	推定: %s
-Looks like: %s (frame sync found %dx)	推定: %s (フレーム同期を %d 回検出)
-No mode fits well.	よく合うモードがありません。
-Open %s on this frequency	この周波数で %s を開く
 Switch to %s and tune to %s	%s に切り替えて %s に同調
 Candidates	候補
 (sync %dx)	(同期 %d 回)
@@ -2052,6 +2048,37 @@ How to install	インストール方法
 The services, signal information and data work without it.	サービス、信号情報、データはアドオンなしでも動作します。
 Interface and windows	インターフェースとウィンドウ
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	表示メニューでは、レイアウト（Sidebar、Scope、Tiles、Faceplate、Panel）、クラシックインターフェース、文字サイズ、パレットを切り替えられます。タッチインターフェースは「ツール」にあります。周波数、スイープスキャナー、方向探知、オートメーションなどのウィンドウもここから開きます。
+# programme guide (SPI)
+Guide	番組ガイド
+until	終了
+Genre	ジャンル
+Saved	保存しました
+Now	現在
+objects	オブジェクト
+services	サービス
+programmes	番組
+scheduled	放送予定
+objects decoded	デコード済みオブジェクト
+Guide data	ガイドデータ
+last update	最終更新
+no update yet	まだ更新なし
+not collecting	収集していません
+from the cache	キャッシュから
+cached data, expires with time	キャッシュデータ（時間とともに期限切れ）
+waiting for the carousel directory...	カルーセルのディレクトリを待っています...
+Export XMLTV	XMLTVをエクスポート
+Collect the guide in the background	バックグラウンドでガイドを収集
+Could not write the file.	ファイルを書き込めませんでした。
+Listen to this station	この局を聴く
+search title or description	タイトルまたは説明で検索
+Nothing matches.	一致するものはありません。
+No description in the guide.	ガイドに説明はありません。
+Click a programme in the grid or the search results to see its details.	グリッドまたは検索結果の番組をクリックすると詳細が表示されます。
+Start the receiver on a DAB channel to see the guide.	ガイドを見るにはDABチャンネルで受信を開始してください。
+This ensemble does not announce a programme guide (SPI, user application 0x007).	このアンサンブルは番組ガイド（SPI、ユーザーアプリケーション0x007）を告知していません。
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	このアンサンブルのガイドは局のPADで送信されています。その局を再生すると収集できます。
+The broadcaster sends service information (names, logos) but no programme schedule.	放送局はサービス情報（名前、ロゴ）を送っていますが、番組表はありません。
+No programme schedule received yet. A guide carousel can take several minutes to come round.	番組表はまだ受信していません。ガイドのカルーセルが一周するのに数分かかることがあります。
 Air-interface encryption: %s	エア・インターフェース暗号化: %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	暗号化モードが設定された信号PDU %llu 個 (復号なし)、読み取れないブロック %llu 個 (CRC不一致)
 none advertised	通知なし
@@ -2125,9 +2152,7 @@ Not enough tuners: this overlaps a recording on another multiplex and will not b
 No description broadcast.	説明は放送されていません。
 Waiting for the service list...	サービス一覧を待っています...
 Search title or description	タイトルまたは説明を検索
-Now	現在
 This multiplex only	このマルチプレックスのみ
-programmes	番組
 time zone:	タイムゾーン:
 this computer	このコンピューター
 No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	番組情報はまだ受信されていません。放送局はEITテーブルで送信し、数秒ごと(現在/次)から数分ごと(番組表)に繰り返されます。まったく送信しないマルチプレックスもあります。
@@ -2146,7 +2171,6 @@ conflict	競合
 any multiplex	任意のマルチプレックス
 series	シリーズ
 waiting for the tuner	チューナー待ち
-scheduled	予約済み
 Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	予約はありません。番組表から番組を選ぶか、下で手動録画を追加してください。
 Manual recording	手動録画
 Starts at this clock time (today, or tomorrow when it has passed), no padding.	この時刻に開始します(過ぎていれば翌日)。余裕時間はありません。
@@ -2167,3 +2191,44 @@ Save teletext subtitles next to recordings (.srt, .vtt)	テレテキスト字幕
 Tune to a scheduled recording's channel when it starts	予約録画の開始時にそのチャンネルへ合わせる
 Timeshift buffer on disk	ディスク上のタイムシフトバッファ
 minutes	分
+Propagation	伝搬
+open	オープン
+marginal	限界
+closed	クローズ
+Best band now	今のベストバンド
+Stations	局数
+Best SNR	最良SNR
+Farthest	最遠
+Heard from	受信元
+Forget the history	履歴を消去
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	この受信機がバンド別に聞いたもの:ビーコン(NCDXF/IARU、Long Dashes、単文字、キャリア)と、HFデジタル画面でデコードしたFT8 / FT4 / FT2 / WSPR局。直近30分に3局以上が聞こえたバンドはオープンです。自分の受信機のみ:何もダウンロードしないため、太陽フラックスやKインデックスはありません。
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	直近30分は何も聞こえていません:HFビーコンまたはHFデジタル画面を起動したままにしてください。
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	直近24時間(UTC)、15分ごとのセル、濃いほど局が少ない
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f ボー
+, %s wide	, 幅 %s
+, bursts (%.0f %% on)	, バースト (オン %.0f %%)
+, every %.3g ms	, %.3g ms ごと
+, useful symbol %.4g us	, 有効シンボル %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	スコアは当てはまる根拠の割合です。パーセントは OnAir 自身のテスト信号で較正したもので、すべての実際の信号で検証したものではありません。
+Add to memory	Memory に追加
+Best guess	最有力候補
+Copy as text	テキストとしてコピー
+Could be %s (%.0f %%) or %s (%.0f %%).	%s (%.0f %%) または %s (%.0f %%) かもしれません。
+Could not open this mode.	このモードを開けませんでした。
+Evidence for %s:	%s の根拠:
+I do not know what this is: nothing I know fits well enough to say.	これが何かは分かりません。既知のどれも十分には当てはまりません。
+Identify all signals	すべての信号を識別
+Identify: click a signal or drag across it. Esc or I leaves the tool.	識別: 信号をクリックするか、その上をドラッグします。Esc または I でツールを終了します。
+Measured	測定値
+Most likely %s, %.0f %% sure.	おそらく %s (確度 %.0f %%)。
+No signal stands out of the noise here.	ここにはノイズから突き出た信号がありません。
+Open in %s	%s で開く
+Opened %s	%s を開きました
+Perhaps %s (%.0f %%).	たぶん %s (%.0f %%)。
+Signals in the view	表示内の信号
+The frequency list has here:	周波数リストにはここに次があります:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	これは何? 信号をクリックするかその上をドラッグすると、OnAir が正体と確度を示します。キー I。Shift+ドラッグならツールなしでも使えます。
+Why?	なぜ?
+Identify selected	選択を識別
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	選択した信号に無線機を合わせて、その正体を示します (サンプルレートが信号をカバーするモードでレシーバーが動作している必要があります)

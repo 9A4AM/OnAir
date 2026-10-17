@@ -426,7 +426,7 @@ std::vector<cf32> encodeL1Post(L1Pre& pre, const L1Post& post, int nP2, bool fef
     return out;
 }
 
-L1Result decodeL1Post(const std::vector<cf32>& y, float n0, const L1Pre& pre, int nP2, bool fef, L1Post& out) {
+L1Result decodeL1Post(const std::vector<cf32>& y, float n0, const L1Pre& pre, int nP2, bool fef, L1Post& out, const std::vector<float>* n0v) {
     L1Result r;
     const int mod = pre.l1Mod;
     if (mod < 0 || mod > 3 || pre.l1Cod != 0 || pre.l1Fec != 0) return r; // only rate 1/2, short FEC frames
@@ -439,9 +439,10 @@ L1Result decodeL1Post(const std::vector<cf32>& y, float n0, const L1Pre& pre, in
     // demap to a bit-LLR stream in transmit-interleaved order
     std::vector<float> lt(d.npost, 0.f);
     float tmp[6];
+    auto nz = [&](int c) { return n0v && c < (int)n0v->size() ? (*n0v)[c] : n0; };
     if (mod == 0 || mod == 1) {
         for (int c = 0; c < d.npost / eta; c++) {
-            demapCell(mod, y[c], n0, tmp);
+            demapCell(mod, y[c], nz(c), tmp);
             for (int i = 0; i < nb; i++) lt[c * nb + i] = tmp[i];
         }
     } else {
@@ -449,7 +450,7 @@ L1Result decodeL1Post(const std::vector<cf32>& y, float n0, const L1Pre& pre, in
         int grp = 2 * nb;
         for (int g = 0, c = 0; g + grp <= d.npost; g += grp, c += 2) {
             for (int h = 0; h < 2; h++) {
-                demapCell(mod, y[c + h], n0, tmp);
+                demapCell(mod, y[c + h], nz(c + h), tmp);
                 for (int e = 0; e < nb; e++) lt[g + mux[h * nb + e]] = tmp[e];
             }
         }

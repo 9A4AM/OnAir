@@ -588,10 +588,6 @@ Region %s, %s wide	Régió %s, %s széles
 collecting samples	minták gyűjtése
 Working it out...	Kiszámítás...
 Nothing to identify here.	Itt nincs mit azonosítani.
-Looks like: %s	Úgy tűnik: %s
-Looks like: %s (frame sync found %dx)	Úgy tűnik: %s (keretszinkron %dx találva)
-No mode fits well.	Egyik üzemmód sem illik jól.
-Open %s on this frequency	%s megnyitása ezen a frekvencián
 Switch to %s and tune to %s	Váltás erre: %s, és hangolás: %s
 Candidates	Jelöltek
 (sync %dx)	(szinkron %dx)
@@ -2038,6 +2034,37 @@ How to install	Telepítés menete
 The services, signal information and data work without it.	A szolgáltatások, a jelinformációk és az adatok enélkül is működnek.
 Interface and windows	Felület és ablakok
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	A Nézet menüben váltható az elrendezés (Sidebar, Scope, Tiles, Faceplate, Panel), a klasszikus felület, a szövegméret és a paletta; az érintőfelület az Eszközök alatt van. Az olyan ablakok, mint a Frekvenciák, a Végigsöprő szkenner, az Iránykereső és az Automatizálások innen nyílnak.
+# programme guide (SPI)
+Guide	Műsorfüzet
+until	eddig:
+Genre	Műfaj
+Saved	Mentve
+Now	Most
+objects	objektum
+services	szolgáltatás
+programmes	műsor
+scheduled	ütemezett
+objects decoded	dekódolt objektum
+Guide data	Műsorfüzet-adatok
+last update	utolsó frissítés
+no update yet	még nincs frissítés
+not collecting	nem gyűjt
+from the cache	a gyorsítótárból
+cached data, expires with time	gyorsítótárazott adat, idővel lejár
+waiting for the carousel directory...	várakozás a körhinta könyvtárára...
+Export XMLTV	XMLTV exportálása
+Collect the guide in the background	Műsorfüzet gyűjtése a háttérben
+Could not write the file.	A fájl nem írható.
+Listen to this station	Az adó meghallgatása
+search title or description	keresés cím vagy leírás alapján
+Nothing matches.	Nincs találat.
+No description in the guide.	Nincs leírás a műsorfüzetben.
+Click a programme in the grid or the search results to see its details.	Kattintson egy műsorra a rácson vagy a találatok között a részletekhez.
+Start the receiver on a DAB channel to see the guide.	Indítsa el a vevőt egy DAB csatornán a műsorfüzet megtekintéséhez.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Ez az egyveleg nem jelez műsorfüzetet (SPI, 0x007 felhasználói alkalmazás).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	Ennek az egyvelegnek a műsorfüzete egy adó PAD-jében megy: játssza le azt az adót a gyűjtéshez.
+The broadcaster sends service information (names, logos) but no programme schedule.	A műsorszóró szolgáltatásinformációt (nevek, logók) küld, de műsorrendet nem.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Még nem érkezett műsorrend. Egy műsorfüzet-körhinta több percig is eltarthat egy körrel.
 Air-interface encryption: %s	Légi interfész titkosítása: %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu jelzés-PDU titkosítási móddal (nincs visszafejtve); %llu olvashatatlan blokk (hibás CRC)
 none advertised	nincs hirdetve
@@ -2111,9 +2138,7 @@ Not enough tuners: this overlaps a recording on another multiplex and will not b
 No description broadcast.	Nincs leírás a adásban.
 Waiting for the service list...	Várakozás a szolgáltatáslistára...
 Search title or description	Cím vagy leírás keresése
-Now	Most
 This multiplex only	Csak ez a multiplex
-programmes	műsor
 time zone:	időzóna:
 this computer	ez a számítógép
 No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Még nem érkezett műsorinformáció. A műsorszolgáltatók az EIT táblákban küldik, amelyek néhány másodpercenként (most/következő) vagy néhány percenként (műsorrend) ismétlődnek. Egyes multiplexek egyáltalán nem küldenek.
@@ -2132,7 +2157,6 @@ conflict	ütközés
 any multiplex	bármely multiplex
 series	sorozat
 waiting for the tuner	várakozik a tunerre
-scheduled	ütemezve
 Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Nincs ütemezve semmi. Válassz műsort az útmutatóban, vagy adj hozzá kézi felvételt lent.
 Manual recording	Kézi felvétel
 Starts at this clock time (today, or tomorrow when it has passed), no padding.	Ekkor kezdődik (ma, vagy holnap, ha már elmúlt), ráhagyás nélkül.
@@ -2153,3 +2177,44 @@ Save teletext subtitles next to recordings (.srt, .vtt)	Teletext feliratok ment�
 Tune to a scheduled recording's channel when it starts	Ütemezett felvétel indulásakor az adott csatornára hangolás
 Timeshift buffer on disk	Időeltolás puffer a lemezen
 minutes	perc
+Propagation	Terjedés
+open	nyitott
+marginal	határeset
+closed	zárt
+Best band now	Legjobb sáv most
+Stations	Állomások
+Best SNR	Legjobb SNR
+Farthest	Legtávolabbi
+Heard from	Hallva innen
+Forget the history	Előzmények törlése
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Amit ez a vevő hallott, sávonként: jeladók (NCDXF/IARU, Long Dashes, egybetűs jeladók, vivők) és a HF digitális képernyőn dekódolt FT8 / FT4 / FT2 / WSPR állomások. Egy sáv nyitott, ha az utolsó 30 percben legalább 3 állomást hallottunk. Csak a saját vevő: semmit nem töltünk le, ezért nincs napsugárzási fluxus és K-index.
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Az utolsó 30 percben semmi nem hallatszott: indítsd el a HF jeladókat vagy a HF digitális képernyőt, és hagyd futni.
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Utolsó 24 óra (UTC), 15 perces cellák, sötétebb: kevesebb állomás
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f baud
+, %s wide	, %s széles
+, bursts (%.0f %% on)	, impulzusok (%.0f %% aktív)
+, every %.3g ms	, %.3g ms-onként
+, useful symbol %.4g us	, hasznos szimbólum %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	A pontszám a teljesülő bizonyítékok aránya; a százalékokat az OnAir saját tesztjelein kalibráltuk, nem minden valódi jelen.
+Add to memory	Hozzáadás a Memoryhoz
+Best guess	Legjobb tipp
+Copy as text	Másolás szövegként
+Could be %s (%.0f %%) or %s (%.0f %%).	Lehet %s (%.0f %%) vagy %s (%.0f %%).
+Could not open this mode.	Ezt a módot nem sikerült megnyitni.
+Evidence for %s:	%s mellett szóló bizonyítékok:
+I do not know what this is: nothing I know fits well enough to say.	Nem tudom, mi ez: semmi, amit ismerek, nem illik elég jól.
+Identify all signals	Minden jel azonosítása
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Azonosítás: kattints egy jelre, vagy húzd át rajta. Esc vagy I kilép az eszközből.
+Measured	Mért
+Most likely %s, %.0f %% sure.	Valószínűleg %s, %.0f %% biztos.
+No signal stands out of the noise here.	Itt egy jel sem emelkedik ki a zajból.
+Open in %s	Megnyitás: %s
+Opened %s	%s megnyitva
+Perhaps %s (%.0f %%).	Talán %s (%.0f %%).
+Signals in the view	Jelek a nézetben
+The frequency list has here:	A frekvencialista itt ezt tartalmazza:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Mi ez? Kattints egy jelre, vagy húzd át rajta, és az OnAir megmondja, mi az és mennyire biztos. I billentyű. A Shift+húzás az eszköz nélkül is működik.
+Why?	Miért?
+Identify selected	A kijelölt azonosítása
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	A rádiót a kijelölt jelre hangolja, és megmondja, mi az (a vevőnek olyan módban kell lennie, amelynek mintavételi sebessége lefedi)

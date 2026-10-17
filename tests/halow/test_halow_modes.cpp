@@ -163,5 +163,27 @@ int main() {
         r.telemetry(t, 0);
         CHECK(t.blocksOk == 0 && t.nets.empty() && t.sigOk == 0 && t.preambles < 10, "noise / tone: %llu frames, %llu SIG, %llu detections", (unsigned long long)t.blocksOk, (unsigned long long)t.sigOk, (unsigned long long)t.preambles);
     }
+    {   // 1 MHz beacons off the centre of a 4 Msps capture (the primary channel of a wider BSS): found by the sub-channel scan without the dial being set
+        for (double dial : {-1.5e6, -0.5e6, 0.5e6, 1.5e6, -2.5e6, 2.5e6}) {
+            const double rate = std::abs(dial) > 2e6 ? 8e6 : std::abs(dial) > 1e6 ? 6e6 : 4e6;
+            BssSpec b;
+            const uint8_t mac[6] = {0x0C, 0xBF, 0x74, 1, 2, 3};   // a Morse Micro OUI
+            memcpy(b.bssid, mac, 6); b.ssid = "MorseNet"; b.security = Wpa3Sae; b.opWidthMhz = 4; b.primaryWidthMhz = 1;
+            HalowGenFrame f;
+            f.psdu = makeS1gBeacon(b); f.width = W1; f.mcs = 0;
+            HalowGenConfig c;
+            c.rate = rate; c.snrDb = 30; c.dialOffsetHz = dial; c.frames = {f, f, f, f, f, f};
+            HalowGenerator g(c);
+            HalowReceiver r;
+            r.configure(rate);
+            r.setCenterHz(905e6);
+            std::vector<cf32> buf(16384);
+            for (size_t done = 0; done < (size_t)(0.6 * rate); done += buf.size()) { g.generate(buf.data(), buf.size()); r.feed(buf.data(), buf.size()); }
+            r.flush();
+            HalowTelemetry t;
+            r.telemetry(t, 0);
+            CHECK(t.nets.size() == 1 && t.nets[0].ssid == "MorseNet" && t.nets[0].security == "WPA3-SAE" && t.blocksBad == 0, "dial %+.1f MHz: %zu networks, %llu good", dial / 1e6, t.nets.size(), (unsigned long long)t.blocksOk);
+        }
+    }
     return testSummary("halow modes");
 }
