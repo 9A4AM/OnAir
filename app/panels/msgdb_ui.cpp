@@ -2,6 +2,7 @@
 // retention settings. The database is fed by a tap on the automation event bus; voice and encrypted content never reaches it.
 #include "../app.h"
 #include "dect2/common/u8file.h"
+#include "dect2/automation/engine.h"
 #include "dect2/msgdb/msgdb.h"
 #include <cmath>
 #include <ctime>
