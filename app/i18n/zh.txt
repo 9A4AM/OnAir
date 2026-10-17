@@ -1297,3 +1297,21 @@ The audio frequency of the signal's centre in the sound card, for example 12000 
 Mirror the spectrum: for a receiver whose output is the other sideband.	镜像频谱：用于输出为另一边带的接收机。
 The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	声卡采样率，8 至 192 kHz。更高的采样率可显示更多中频。在接收机启动时生效。
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	用于 WebSDR、虚拟声卡线（VAC）或把电台扬声器/线路接入电脑。需要兆赫带宽时不能代替 SDR。
+# the touch interface (app/ui/touch*.cpp)
+Touch	触控
+Switch to the touch interface (big buttons, on-screen keypad). You can switch back at any time.	切换到触控界面（大按钮、屏幕数字键盘）。随时可以切换回来。
+Touch interface	触控界面
+For tablets and touch screens: big buttons, an on-screen keypad for the frequency, a full-screen mode picker.	适用于平板和触摸屏：大按钮、用于输入频率的屏幕数字键盘、全屏模式选择。
+now %s MHz	当前 %s MHz
+Tuning step	调谐步进
+Stop the receiver to change the mode.	请先停止接收机再切换模式。
+Menu	菜单
+Desktop interface	桌面界面
+Receive view	接收视图
+Transmit view	发射视图
+Volume	音量
+More	更多
+Status	状态
+Running	运行中
+Step	步进
+Keyboard	键盘

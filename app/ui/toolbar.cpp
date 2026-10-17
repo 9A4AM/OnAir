@@ -2,6 +2,7 @@
 // classic bar and the side panels, and the tuning helpers (tuneFreq, spectrumTune, the second-mode control) live here.
 // The source, rig windows, status bar and mode selection are in toolbar_source.cpp, toolbar_rig.cpp, statusbar.cpp and mode_select.cpp.
 #include "../app.h"
+#include "touch.h"
 #include "dect2/engine/rate_choice.h"
 #include "dect2/source/antenna_ports.h"
 #include "dect2/hdr/hdr_rx.h"
@@ -185,7 +186,7 @@ static void toolbarGain(App& a, bool vertical, bool running, bool& retune) {
     if (generic) {
         // in the side panel the slider gets its own row (on the header's row it pushed AGC and Auto-tune past the panel edge)
         if (vertical) { ImGui::TextDisabled("%s", tr("Gain")); ImGui::SameLine(54 * gUi); } else ImGui::SameLine();
-        ImGui::SetNextItemWidth(150 * gUi);
+        ImGui::SetNextItemWidth(touch::on() ? -FLT_MIN : 150 * gUi);   // touch: the sheet's full width
         float gdb = (float)a.tune.gainDb;
         ImGui::SliderFloat("##gain", &gdb, (float)curDev.gainMinDb, (float)std::max(curDev.gainMaxDb, curDev.gainMinDb + 1.0), "%.0f dB");
         a.tune.gainDb = std::round(gdb);
@@ -193,7 +194,7 @@ static void toolbarGain(App& a, bool vertical, bool running, bool& retune) {
     } else {
     ImGui::TextDisabled("%s", tr("LNA"));
     ImGui::SameLine(vertical ? 54 * gUi : 0);
-    ImGui::SetNextItemWidth((vertical ? 150 : 78) * gUi);
+    ImGui::SetNextItemWidth(touch::on() ? -FLT_MIN : (vertical ? 150 : 78) * gUi);
     int lna = a.tune.lnaDb;
     ImGui::SliderInt("##lna", &lna, 0, 40, "%d dB");
     a.tune.lnaDb = (lna + 4) / 8 * 8; // hardware steps are 8 dB
@@ -201,7 +202,7 @@ static void toolbarGain(App& a, bool vertical, bool running, bool& retune) {
     if (!vertical) flowNext();
     ImGui::TextDisabled("%s", tr("VGA"));
     ImGui::SameLine(vertical ? 54 * gUi : 0);
-    ImGui::SetNextItemWidth((vertical ? 150 : 78) * gUi);
+    ImGui::SetNextItemWidth(touch::on() ? -FLT_MIN : (vertical ? 150 : 78) * gUi);
     int vga = a.tune.vgaDb;
     ImGui::SliderInt("##vga", &vga, 0, 62, "%d dB");
     a.tune.vgaDb = (vga + 1) / 2 * 2; // 2 dB steps

@@ -1,6 +1,7 @@
 // Our own plotting on top of Dear ImGui's draw lists. See plot.h.
 #include "plot.h"
 #include "plot_batch.h"
+#include "../ui/touch.h"
 #include "imgui_internal.h"
 #include <algorithm>
 #include <chrono>
@@ -247,6 +248,20 @@ void finishSetup() {
                 clampAxis(a, n0, n1);
                 if (smooth) { C.st->tgt[a][0] = n0; C.st->tgt[a][1] = n1; C.st->hasTgt[a] = true; }
                 else { C.st->lim[a][0] = n0; C.st->lim[a][1] = n1; }
+            }
+        }
+        // touch: two fingers pinch (zoom about their centre) and pan together (ui/touch.h; a one-finger drag is the pan above)
+        if (touch::on() && hov && touch::gesture().pinching) {
+            const touch::GestureFrame& g = touch::gesture();
+            const double f = 1.0 / std::max(0.2f, std::min(5.f, g.scale));
+            const double mx = (g.cx - C.plot.Min.x) / C.plot.GetWidth(), my = 1.0 - (g.cy - C.plot.Min.y) / C.plot.GetHeight();
+            for (int a = 0; a < 2; a++) {
+                if (!(movable[a] && C.ax[a].scale == Scale_Linear)) continue;
+                const double m = a == 0 ? mx : my, r = C.st->lim[a][1] - C.st->lim[a][0], p = C.st->lim[a][0] + m * r;
+                const double pan = a == 0 ? -g.panDx / C.plot.GetWidth() * r * f : g.panDy / C.plot.GetHeight() * r * f;
+                double n0 = p - m * r * f + pan, n1 = p + (1 - m) * r * f + pan;
+                clampAxis(a, n0, n1);
+                C.st->lim[a][0] = n0; C.st->lim[a][1] = n1; C.st->hasTgt[a] = false;
             }
         }
         if (smooth) {   // ease towards the target: about 80 ms to cover most of the way, whatever the frame rate

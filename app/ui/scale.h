@@ -3,3 +3,4 @@
 // (On macOS the window is measured in points and the Retina scaling is handled by the framebuffer, so it stays 1.)
 #pragma once
 inline float gUi = 1.f;
+inline int gStyleEpoch = 0;   // bumped when main.cpp rebuilds the ImGui style from the scale-1 base (a new scale, the touch interface on or off): ui2_theme.cpp then re-applies the theme

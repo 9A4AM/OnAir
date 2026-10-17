@@ -1279,3 +1279,21 @@ The audio frequency of the signal's centre in the sound card, for example 12000 
 Mirror the spectrum: for a receiver whose output is the other sideband.	Specchia lo spettro: per un ricevitore la cui uscita è l'altra banda laterale.
 The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	La frequenza di campionamento della scheda audio, da 8 a 192 kHz. Una frequenza maggiore mostra più di una FI. Vale all'avvio del ricevitore.
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	Per WebSDR, un cavo audio virtuale (VAC) o l'altoparlante/linea di una radio nel computer. Non sostituisce un SDR quando servono megahertz di banda.
+# the touch interface (app/ui/touch*.cpp)
+Touch	Touch
+Switch to the touch interface (big buttons, on-screen keypad). You can switch back at any time.	Passa all'interfaccia touch (pulsanti grandi, tastierino numerico a schermo). Puoi tornare indietro in qualsiasi momento.
+Touch interface	Interfaccia touch
+For tablets and touch screens: big buttons, an on-screen keypad for the frequency, a full-screen mode picker.	Per tablet e schermi touch: pulsanti grandi, un tastierino numerico a schermo per la frequenza, un selettore di modo a schermo intero.
+now %s MHz	ora %s MHz
+Tuning step	Passo di sintonia
+Stop the receiver to change the mode.	Ferma il ricevitore per cambiare modo.
+Menu	Menu
+Desktop interface	Interfaccia desktop
+Receive view	Vista ricezione
+Transmit view	Vista trasmissione
+Volume	Volume
+More	Altro
+Status	Stato
+Running	In funzione
+Step	Passo
+Keyboard	Tastiera

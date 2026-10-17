@@ -270,6 +270,9 @@ OnAir writes the bits only and never decodes voice (the AMBE codec is patented).
 - A single **quality score**, and an **echo (multipath) detector**.
 - **DAB transmitter map:** OnAir reads the transmitter identification (TII) that DAB networks send and lists the transmitters heard.
 
+**Tablets and touch screens**
+- **Touch interface** (View side panel > Touch interface, or `--touch`): 48 px targets, a bottom dock with Start / Stop, tuning, gain, volume and tuner, a numeric keypad for the frequency (MHz, kHz, GHz), a full-screen mode picker in the mode list's colours, bottom-sheet dialogs, drag and fling scrolling, swipe between tabs, long press for the context menu, portrait and landscape.
+
 **Get the best reception**
 - A **channel scanner**, **automatic gain tuning**, a **gain optimiser**, and a **direction finder** that helps you aim the antenna; a **pass planner** for satellites.
 - **Your radio, set up properly:** every antenna input is its own entry in the source list, with per-radio settings.

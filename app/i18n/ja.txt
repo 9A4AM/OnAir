@@ -1297,3 +1297,21 @@ The audio frequency of the signal's centre in the sound card, for example 12000 
 Mirror the spectrum: for a receiver whose output is the other sideband.	スペクトルを反転：出力が反対側のサイドバンドの受信機用。
 The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	サウンドカードのサンプルレート（8〜192 kHz）。高いほどIFをより広く表示します。受信機の開始時に適用されます。
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	WebSDR、仮想オーディオケーブル（VAC）、無線機のスピーカー／ライン入力用。MHz単位の帯域が必要なときのSDRの代わりにはなりません。
+# the touch interface (app/ui/touch*.cpp)
+Touch	タッチ
+Switch to the touch interface (big buttons, on-screen keypad). You can switch back at any time.	タッチ操作用の画面に切り替えます（大きなボタン、画面上のテンキー）。いつでも元に戻せます。
+Touch interface	タッチ操作画面
+For tablets and touch screens: big buttons, an on-screen keypad for the frequency, a full-screen mode picker.	タブレットやタッチ画面向け：大きなボタン、周波数用の画面テンキー、全画面のモード選択。
+now %s MHz	現在 %s MHz
+Tuning step	チューニングステップ
+Stop the receiver to change the mode.	モードを変えるには受信を停止してください。
+Menu	メニュー
+Desktop interface	デスクトップ画面
+Receive view	受信表示
+Transmit view	送信表示
+Volume	音量
+More	その他
+Status	状態
+Running	動作中
+Step	ステップ
+Keyboard	キーボード

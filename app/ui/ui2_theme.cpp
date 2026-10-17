@@ -118,8 +118,13 @@ static void applyHighContrast() {
     p.PlotBg = black; p.Border = white; p.Grid = ImVec4(0.8f, 0.8f, 0.8f, 0.40f); p.Text = white;
 }
 
+static void applyUiThemeAccent(App& a);
 void applyUiTheme(App& a) {
     applyUiThemeBase(a);
+    applyUiThemeAccent(a);
+    touch::applyMetrics(ImGui::GetStyle());   // last, and only ever raises sizes, so it is safe to repeat every frame
+}
+static void applyUiThemeAccent(App& a) {
     loadUserAccent();
     if (a.highContrast) { applyHighContrast(); return; }   // its yellow, not the user's accent
     if (!gUserAccent.on) return;
@@ -139,10 +144,11 @@ static void applyUiThemeBase(App& a) {
     static bool have = false;
     static int key = -1;
     static float scale = 0;
+    static int epoch = -1;
     if (!have) { classic = ImGui::GetStyle(); classicPlot = plt::GetStyle(); classicAccent = pal::accentRef(); have = true; scale = gUi; }
     // the window went to a monitor with another display scale: main.cpp has just reset the style to the classic one at that scale
     // (taken again as the classic style), and the chosen theme is applied again with its sizes at the new scale
-    if (gUi != scale) { classic = ImGui::GetStyle(); classicPlot.Scale = gUi; scale = gUi; key = -1; }
+    if (gUi != scale || epoch != gStyleEpoch) { classic = ImGui::GetStyle(); classicPlot.Scale = gUi; scale = gUi; epoch = gStyleEpoch; key = -1; }
     if (gAccentDirty) { key = -1; gAccentDirty = false; }
     const int want = (a.newUi ? 1 + a.uiTheme : 0) + (a.highContrast ? 8 : 0);   // High contrast: its own key so leaving it restores the palette
     if (want == key) return;

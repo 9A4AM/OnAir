@@ -88,6 +88,7 @@ const std::vector<PrefKey>& keyTable() {
         early(text("gainDev", AT(a.gainDev))),
         early(flagB("amp", AT(a.tune.ampOn), false)),
         shared(scaled("uiTextScale", AT(a.uiTextScale), 100, 100, 0.8, 2, true)),
+        shared(flagI("touchUi", AT(a.touchUi), false)), shared(scaled("touchScale", AT(a.touchScale), 100, 135, 1.0, 2, true)),
         num("wfMap", AT(a.wf.map), -1, -1, (int)Waterfall::NumMaps - 1, true),
         flagB("wfAuto", AT(a.wf.autoTrack), false),
         real("specZoom", AT(a.specZoom), 0, 1, true),

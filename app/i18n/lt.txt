@@ -1297,3 +1297,21 @@ The audio frequency of the signal's centre in the sound card, for example 12000 
 Mirror the spectrum: for a receiver whose output is the other sideband.	Atspindi spektrą: imtuvui, kurio išvestis yra kita juosta.
 The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	Garso plokštės mėginių dažnis, 8–192 kHz. Didesnis rodo daugiau IF. Taikomas paleidus imtuvą.
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	WebSDR, virtualiam garso kabeliui (VAC) arba radijo garsiakalbiui / linijai į kompiuterį. Ne SDR pakaitalas, kai reikia megahercų juostos.
+# the touch interface (app/ui/touch*.cpp)
+Touch	Jutiklis
+Switch to the touch interface (big buttons, on-screen keypad). You can switch back at any time.	Perjungti į jutiklinę sąsają (dideli mygtukai, ekrano skaičių klaviatūra). Bet kada galite grįžti.
+Touch interface	Jutiklinė sąsaja
+For tablets and touch screens: big buttons, an on-screen keypad for the frequency, a full-screen mode picker.	Planšetėms ir jutikliniams ekranams: dideli mygtukai, ekrano skaičių klaviatūra dažniui, viso ekrano režimo parinkiklis.
+now %s MHz	dabar %s MHz
+Tuning step	Derinimo žingsnis
+Stop the receiver to change the mode.	Sustabdykite imtuvą, kad pakeistumėte režimą.
+Menu	Meniu
+Desktop interface	Darbalaukio sąsaja
+Receive view	Priėmimo vaizdas
+Transmit view	Siuntimo vaizdas
+Volume	Garsumas
+More	Daugiau
+Status	Būsena
+Running	Veikia
+Step	Žingsnis
+Keyboard	Klaviatūra
