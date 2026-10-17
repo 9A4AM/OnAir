@@ -741,7 +741,7 @@ void passesWindow(App& a) {
     if (a.passesOpen) window(a);
 }
 
-// The Globalstar activity monitor's overlay: every Globalstar satellite above the horizon at this time with the Doppler shift its downlink would have
+// The Globalstar activity monitor's overlay: every Globalstar satellite above the horizon at this time with the Doppler shift a link to it would have
 // at freqHz for the receiver's position (names and Doppler, empty without TLEs).
 std::vector<std::pair<std::string, double>> passesGlobalstarDoppler(double unixSec, double freqHz) {
     loadState();

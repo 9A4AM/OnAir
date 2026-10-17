@@ -328,6 +328,8 @@ static const SubMode kSubModes[] = {
     {"thor",       "THOR",       27, 32, 3, 14.0770, {29, 0, 0}},
     {"dominoex",   "DominoEX",   27, 32, 4, 14.0715, {30, 0, 0}},
     {"hell",       "Hellschreiber", 27, 32, 5, 14.0630, {31, 0, 0}},
+    // AM broadcast (MW / SW): the general receiver (57) opened in AM with the MW and SW presets; the plain General receiver stays its own entry
+    {"am",         "AM broadcast", 57, 0, 0, 0.999, {0, 0, 0}},
 };
 const SubMode* subModes(int& count) { count = (int)(sizeof kSubModes / sizeof *kSubModes); return kSubModes; }
 const SubMode* subModeById(const std::string& id) {

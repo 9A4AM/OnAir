@@ -847,7 +847,7 @@ std::string generalSummary(const GeneralTelemetry& t) {
 ModeTuning generalTuning() {
     ModeTuning t;
     t.stdMode = 57; t.id = "general"; t.name = "General receiver";
-    t.minMhz = 1; t.maxMhz = 6000; t.defMhz = 145.500;
+    t.minMhz = 0.1; t.maxMhz = 6000;   // down to long wave: the AM broadcast entry starts on medium wave (an HF / direct-sampling radio) t.defMhz = 145.500;
     t.sampleRate = 2000000;
     t.basebandHz = 1750000;
     t.bandwidthMhz = 1.6;

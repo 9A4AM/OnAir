@@ -264,7 +264,39 @@ static void testUtf8Labels() {
     CHECK(seen, "assembled label in the FIC tab");
 }
 
+// #179: ensemble A, then ensemble B on the same receiver (a new mux, and a retune through reset()): only B's services remain
+static void feedEnsemble(DabReceiver& rx, uint16_t eid, uint32_t sidBase, const char* label) {
+    dabgen::TxConfig tc;
+    tc.utcSeconds = 1700000000;
+    tc.eid = eid;
+    tc.ensembleLabel = label;
+    tc.services = dabgen::defaultServices();
+    tc.services.resize(2);
+    tc.services[0].sid = sidBase; tc.services[1].sid = sidBase + 1;
+    SynthConfig sc;
+    const double rate = 2.048e6;
+    auto syn = makeDabSynth(tc, sc, rate);
+    if (!syn) { CHECK(false, "no generator"); return; }
+    std::vector<cf32> x(65536);
+    for (size_t done = 0; done < (size_t)(6.0 * rate); done += x.size()) { syn->generate(x.data(), x.size()); rx.feed(x.data(), x.size()); }
+}
+
+static void testEnsembleChange() {
+    DabReceiver rx;
+    rx.configure(2.048e6);
+    rx.audio().setSilent(true);
+    feedEnsemble(rx, 0xCE15, 0xCE01, "Mux A");
+    CHECK(rx.ensemble().services.count(0xCE01) == 1, "ensemble A services");
+    feedEnsemble(rx, 0xC222, 0xC201, "Mux B");
+    const DabEnsemble e = rx.ensemble();
+    CHECK(e.eid == 0xC222, "eid B %04X", e.eid);
+    CHECK(e.services.size() == 2 && e.services.count(0xC201) == 1 && e.services.count(0xCE01) == 0, "only B's services (%zu)", e.services.size());
+    rx.reset();
+    CHECK(rx.ensemble().services.empty(), "reset clears the services");
+}
+
 int main() {
+    testEnsembleChange();
     testDecoders();
     testInfo();
     testReceiver();
