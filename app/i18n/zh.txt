@@ -2063,3 +2063,28 @@ Save CADU	保存 CADU
 Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	把每个通过 Reed-Solomon 的帧按 1024 字节 CADU 写入 <数据文件夹>/goes/frames.cadu(与 SatDump 写出的文件同类),用于比较解码器
 Open CADU	打开 CADU
 Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	把 .cadu 文件(1024 字节帧,来自本程序或 SatDump)依次送过 Reed-Solomon、数据包和文件解码;GOES HRIT 必须在运行
+Messages	消息
+Messages...	消息...
+Every decoded message in one searchable database, with filters and export	所有解码的消息集中在一个可搜索的数据库中,支持筛选和导出
+The message database could not be opened:	无法打开消息数据库:
+Search text (words, prefix*)	搜索文本(单词,前缀*)
+Identity	标识
+All modes	所有模式
+With position	有位置
+matching	条匹配
+stored	条已存储
+Newer	较新
+Older	较旧
+Export CSV	导出 CSV
+Export JSON	导出 JSON
+Export ADIF	导出 ADIF
+Storage	存储
+Record decoded messages	记录解码的消息
+Most rows (thousands, 0 = no limit)	最大行数(千,0 = 不限)
+Size cap in MB (0 = none)	大小上限(MB,0 = 无)
+Keep days (0 = forever)	保留天数(0 = 永久)
+Apply limits now	立即应用限制
+Clear all...	全部清除...
+Really clear	确认清除
+The database file:	数据库文件:
+Voice audio and encrypted traffic are never stored.	语音音频和加密通信从不存储。

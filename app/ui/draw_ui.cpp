@@ -190,6 +190,7 @@ static void floatingWindows(App& a, ImVec2 disp) {
     a.engine.setMultiChannel(a.mtvOn && a.family == 0, a.mtvMax, a.mtvGrid);
     feedsWindow(a);
     automationWindow(a);
+    msgdbWindow(a);
     txTick(a);
     shareTick(a);
     remoteApiTick(a);
