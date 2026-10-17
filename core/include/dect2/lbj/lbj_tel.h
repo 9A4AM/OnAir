@@ -37,7 +37,9 @@ struct LbjTelemetry {
     float snrDb = 0;
     float levelDb = -200;
     bool dataValid = false;
-    uint64_t blocksOk = 0, blocksBad = 0;
+    uint64_t blocksOk = 0, blocksBad = 0;   // messages shown / LBJ pages that failed the checks
+    uint64_t bursts = 0;                    // bursts with a POCSAG sync word (any address)
+    uint64_t emptyFrames = 0;               // short messages with every field blank
     double timeSec = 0;
     double inputRate = 0;
     double centerHz = 0;

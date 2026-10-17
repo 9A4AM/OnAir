@@ -1382,3 +1382,20 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+# LBJ (Chinese railway train warning)
+What LBJ carries	Cosa trasmette l'LBJ
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	L'LBJ è l'avviso cinese di avvicinamento dei treni su circa 821,2375 MHz. Ogni locomotiva invia pagine numeriche POCSAG a 1200 bit/s: ogni pochi secondi un messaggio breve con numero del treno, velocità (km/h) e progressiva chilometrica, e messaggi più lunghi con tipo e numero della locomotiva e linea.\n\nOnAir decodifica le pagine da solo (solo ricezione). Un valore vuoto aveva cifre danneggiate; una riga grigia aveva errori corretti, quindi confrontala con il messaggio successivo dello stesso treno.
+tune to about 821.2375 MHz and start the receiver	sintonizza circa 821,2375 MHz e avvia il ricevitore
+FM, 1200 bit/s FSK, %.2f Msps	FM, FSK a 1200 bit/s, %.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu messaggi, %llu parole di sincronismo, %llu vuoti, %llu controlli falliti
+listening (level %.0f dBFS, offset %+.0f Hz)	in ascolto (livello %.0f dBFS, scostamento %+.0f Hz)
+Train	Treno
+Speed km/h	Velocità km/h
+Km post	Progr. km
+Direction	Direzione
+Locomotive	Locomotiva
+Route	Linea
+Up	Ascendente
+Down	Discendente
+Some digits were corrected or lost: check this row against the next message of the train	Alcune cifre sono state corrette o perse: confronta questa riga con il messaggio successivo del treno
+Train warning, 821 MHz	Avviso treni, 821 MHz

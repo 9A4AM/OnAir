@@ -1400,3 +1400,20 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+# LBJ (Chinese railway train warning)
+What LBJ carries	Wat LBJ uitzendt
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	LBJ is de Chinese waarschuwing voor naderende treinen op ongeveer 821,2375 MHz. Elke locomotief verstuurt numerieke POCSAG-pagina's van 1200 bit/s: om de paar seconden een kort bericht met treinnummer, snelheid (km/u) en kilometerpaal, en langere berichten met locomotieftype en -nummer en de route.\n\nOnAir decodeert de pagina's zelf (alleen ontvangen). Een lege waarde had beschadigde cijfers; een grijze regel had gecorrigeerde fouten, vergelijk hem dus met het volgende bericht van dezelfde trein.
+tune to about 821.2375 MHz and start the receiver	stem af op ongeveer 821,2375 MHz en start de ontvanger
+FM, 1200 bit/s FSK, %.2f Msps	FM, 1200 bit/s FSK, %.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu berichten, %llu syncwoorden, %llu leeg, %llu mislukte controles
+listening (level %.0f dBFS, offset %+.0f Hz)	luistert (niveau %.0f dBFS, afwijking %+.0f Hz)
+Train	Trein
+Speed km/h	Snelheid km/u
+Km post	Km-paal
+Direction	Richting
+Locomotive	Locomotief
+Route	Route
+Up	Op
+Down	Neer
+Some digits were corrected or lost: check this row against the next message of the train	Sommige cijfers zijn gecorrigeerd of verloren: vergelijk deze regel met het volgende bericht van de trein
+Train warning, 821 MHz	Treinwaarschuwing, 821 MHz

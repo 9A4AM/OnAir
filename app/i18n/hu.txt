@@ -1385,3 +1385,20 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+# LBJ (Chinese railway train warning)
+What LBJ carries	Mit visz az LBJ
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	Az LBJ a kínai vonat-közeledési figyelmeztetés kb. 821,2375 MHz-en. Minden mozdony 1200 bit/s sebességű numerikus POCSAG-üzeneteket küld: néhány másodpercenként rövid üzenetet a vonatszámmal, a sebességgel (km/h) és a kilométerszelvénnyel, valamint hosszabb üzeneteket a mozdony típusával, számával és az útvonallal.\n\nAz OnAir maga dekódolja az üzeneteket (csak vétel). Az üres érték sérült számjegyeket jelent; a szürke sorban javított hibák voltak, ezért ellenőrizd ugyanannak a vonatnak a következő üzenetével.
+tune to about 821.2375 MHz and start the receiver	hangolj kb. 821,2375 MHz-re és indítsd el a vevőt
+FM, 1200 bit/s FSK, %.2f Msps	FM, 1200 bit/s FSK, %.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu üzenet, %llu szinkronszó, %llu üres, %llu sikertelen ellenőrzés
+listening (level %.0f dBFS, offset %+.0f Hz)	figyel (szint %.0f dBFS, eltérés %+.0f Hz)
+Train	Vonat
+Speed km/h	Sebesség km/h
+Km post	Szelvény km
+Direction	Irány
+Locomotive	Mozdony
+Route	Útvonal
+Up	Fel
+Down	Le
+Some digits were corrected or lost: check this row against the next message of the train	Néhány számjegyet javítottunk vagy elveszett: ellenőrizd ezt a sort a vonat következő üzenetével
+Train warning, 821 MHz	Vonatfigyelmeztetés, 821 MHz
