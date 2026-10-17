@@ -2124,3 +2124,50 @@ Forget the history	Geschiedenis wissen
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Wat deze ontvanger heeft gehoord, per band: bakens (NCDXF/IARU, Long Dashes, losse letters, dragers) en de FT8- / FT4- / FT2- / WSPR-stations die in het HF-digitaalscherm zijn gedecodeerd. Een band is open als in de laatste 30 minuten minstens 3 stations zijn gehoord. Alleen de eigen ontvanger: er wordt niets gedownload, dus geen zonneflux of K-index.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Niets gehoord in de laatste 30 minuten: start de HF-bakens of het HF-digitaalscherm en laat het draaien.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Laatste 24 uur (UTC), cellen van 15 minuten, donkerder: minder stations
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s vraagt deze rechten:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	Een crash of vastloper van de plug-in beëindigt dan alleen het hulpproces. Geldt vanaf de volgende start van de plug-in.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Voeg decoders en acties toe zonder OnAir opnieuw te bouwen: plug-ins installeren, inschakelen en instellen
+Add-ons	Uitbreidingen
+Allow	Toestaan
+Asks for	Vraagt om
+Asks for no permissions.	Vraagt geen rechten.
+Community plugins	Community-plug-ins
+Do not allow	Niet toestaan
+Enabled	Ingeschakeld
+Files: read and write its own data folder	Bestanden: zijn eigen gegevensmap lezen en schrijven
+Install from file...	Installeren vanuit bestand...
+Installed	Geïnstalleerd
+Kind	Soort
+Map points	Kaartpunten
+Modes (in the mode list, group PLUGINS)	Modi (in de modelijst, groep PLUGINS)
+Network: talk to other computers	Netwerk: met andere computers communiceren
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Geen plug-ins geïnstalleerd. Gebruik Installeren vanuit bestand of kopieer een plug-inmap naar de plug-inmap. Een plug-in is een .onairplugin-bestand.
+Not installed	Niet geïnstalleerd
+Open its folder	Zijn map openen
+PLUGINS	PLUG-INS
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	Rechten bepalen wat OnAir aan de plug-in geeft. Een plug-in die binnen OnAir draait kan het systeem nog steeds zelf gebruiken: installeer alleen vertrouwde plug-ins of draai ze in een hulpproces.
+Plugin idle	Plug-in inactief
+Plugin log	Plug-inlogboek
+Plugin modes run on receiver 1.	Plug-inmodi draaien op ontvanger 1.
+Plugin running	Plug-in actief
+Plugins	Plug-ins
+Plugins are not available on this receiver.	Plug-ins zijn op deze ontvanger niet beschikbaar.
+Plugins...	Plug-ins...
+Programs: start other programs	Programma's: andere programma's starten
+Recording: save audio or IQ	Opname: audio of IQ opslaan
+Refresh	Vernieuwen
+Results the plugin sent beyond the limits	Resultaten van de plug-in boven de limieten
+Run in a helper process	In een hulpproces uitvoeren
+Safe mode (no plugins)	Veilige modus (geen plug-ins)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	Veilige modus staat aan: plug-ins zijn uitgeschakeld. Open de modus Plug-ins om hem te verlaten.
+Safe mode: all plugins are switched off.	Veilige modus: alle plug-ins zijn uitgeschakeld.
+Select a plugin.	Kies een plug-in.
+Sound: play audio through the program	Geluid: audio afspelen via het programma
+The plugin was switched off after a failure. See its log in the Plugins mode.	De plug-in is na een fout uitgeschakeld. Zie het logboek in de modus Plug-ins.
+This plugin is off.	Deze plug-in staat uit.
+This plugin mode is not installed any more.	Deze plug-inmodus is niet meer geïnstalleerd.
+Try plugins again	Plug-ins opnieuw proberen
+Turn it on	Inschakelen
+blocks	blokken
+by	door

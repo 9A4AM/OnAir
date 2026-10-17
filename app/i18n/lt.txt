@@ -2124,3 +2124,50 @@ Forget the history	Išvalyti istoriją
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Ką šis imtuvas girdėjo pagal diapazoną: švyturiai (NCDXF/IARU, Long Dashes, pavienės raidės, nešlys) ir HF skaitmeniniame ekrane dekoduotos FT8 / FT4 / FT2 / WSPR stotys. Diapazonas atidarytas, kai per paskutines 30 minučių išgirstos bent 3 stotys. Tik savo imtuvas: nieko neatsisiunčiama, todėl nėra saulės srauto ir K indekso.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Per paskutines 30 minučių nieko negirdėta: paleiskite HF švyturius arba HF skaitmeninį ekraną ir palikite veikti.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Paskutinės 24 valandos (UTC), 15 minučių langeliai, tamsiau: mažiau stočių
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s prašo šių leidimų:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	Įskiepio strigimas ar luzimas tada nutraukia tik jo pagalbinį procesą. Įsigalioja kitą kartą paleidus įskiepį.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Pridėkite dekoderių ir veiksmų neperkompiliuodami OnAir: įdiekite, įjunkite ir sukonfigūruokite įskiepius
+Add-ons	Papildiniai
+Allow	Leisti
+Asks for	Prašo
+Asks for no permissions.	Neprašo jokių leidimų.
+Community plugins	Bendruomenės įskiepiai
+Do not allow	Neleisti
+Enabled	Įjungta
+Files: read and write its own data folder	Failai: skaityti ir rašyti savo duomenų aplanke
+Install from file...	Įdiegti iš failo...
+Installed	Įdiegta
+Kind	Rūšis
+Map points	Žemėlapio taškai
+Modes (in the mode list, group PLUGINS)	Režimai (režimų sąraše, grupė PLUGINS)
+Network: talk to other computers	Tinklas: bendrauti su kitais kompiuteriais
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Įskiepių neįdiegta. Naudokite „Įdiegti iš failo“ arba nukopijuokite įskiepio aplanką į įskiepių aplanką. Įskiepis yra .onairplugin failas.
+Not installed	Neįdiegta
+Open its folder	Atidaryti jo aplanką
+PLUGINS	ĮSKIEPIAI
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	Leidimai nusako, ką OnAir suteikia įskiepiui. OnAir viduje veikiantis įskiepis vis tiek gali pats naudotis sistema: diekite tik patikimus įskiepius arba paleiskite juos pagalbiniame procese.
+Plugin idle	Įskiepis neveikia
+Plugin log	Įskiepio žurnalas
+Plugin modes run on receiver 1.	Įskiepių režimai veikia 1 imtuve.
+Plugin running	Įskiepis veikia
+Plugins	Įskiepiai
+Plugins are not available on this receiver.	Šiame imtuve įskiepiai nepasiekiami.
+Plugins...	Įskiepiai...
+Programs: start other programs	Programos: paleisti kitas programas
+Recording: save audio or IQ	Įrašymas: išsaugoti garsą ar IQ
+Refresh	Atnaujinti
+Results the plugin sent beyond the limits	Įskiepio rezultatai virš ribų
+Run in a helper process	Vykdyti pagalbiniame procese
+Safe mode (no plugins)	Saugusis režimas (be įskiepių)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	Saugusis režimas įjungtas: įskiepiai išjungti. Norėdami išeiti, atidarykite režimą Įskiepiai.
+Safe mode: all plugins are switched off.	Saugusis režimas: visi įskiepiai išjungti.
+Select a plugin.	Pasirinkite įskiepį.
+Sound: play audio through the program	Garsas: leisti garsą per programą
+The plugin was switched off after a failure. See its log in the Plugins mode.	Įskiepis po gedimo išjungtas. Jo žurnalą rasite režime Įskiepiai.
+This plugin is off.	Šis įskiepis išjungtas.
+This plugin mode is not installed any more.	Šis įskiepio režimas nebeįdiegtas.
+Try plugins again	Bandyti įskiepius dar kartą
+Turn it on	Įjungti
+blocks	blokai
+by	autorius

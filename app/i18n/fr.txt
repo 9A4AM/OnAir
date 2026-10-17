@@ -2124,3 +2124,50 @@ Forget the history	Effacer l'historique
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Ce que ce récepteur a entendu, par bande : balises (NCDXF/IARU, Long Dashes, lettres seules, porteuses) et stations FT8 / FT4 / FT2 / WSPR décodées dans l'écran HF numérique. Une bande est ouverte quand au moins 3 stations ont été entendues ces 30 dernières minutes. Récepteur propre uniquement : rien n'est téléchargé, donc ni flux solaire ni indice K.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Rien entendu ces 30 dernières minutes : lancez les balises HF ou l'écran HF numérique et laissez-le tourner.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	24 dernières heures (UTC), cellules de 15 minutes, plus sombre : moins de stations
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s demande ces autorisations :
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	Un plantage ou un blocage du plugin ne termine alors que son processus auxiliaire. Pris en compte au prochain démarrage du plugin.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Ajouter des décodeurs et des actions sans recompiler OnAir : installer, activer et configurer des plugins
+Add-ons	Extensions
+Allow	Autoriser
+Asks for	Demande
+Asks for no permissions.	Ne demande aucune autorisation.
+Community plugins	Plugins de la communauté
+Do not allow	Ne pas autoriser
+Enabled	Activé
+Files: read and write its own data folder	Fichiers : lire et écrire son propre dossier de données
+Install from file...	Installer depuis un fichier...
+Installed	Installé
+Kind	Type
+Map points	Points de la carte
+Modes (in the mode list, group PLUGINS)	Modes (dans la liste des modes, groupe PLUGINS)
+Network: talk to other computers	Réseau : communiquer avec d'autres ordinateurs
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Aucun plugin installé. Utilisez « Installer depuis un fichier » ou copiez un dossier de plugin dans le dossier des plugins. Un plugin est un fichier .onairplugin.
+Not installed	Non installé
+Open its folder	Ouvrir son dossier
+PLUGINS	PLUGINS
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	Les autorisations définissent ce qu'OnAir donne au plugin. Un plugin exécuté dans OnAir peut malgré tout utiliser lui-même le système : installez des plugins de confiance ou exécutez-les dans un processus auxiliaire.
+Plugin idle	Plugin inactif
+Plugin log	Journal du plugin
+Plugin modes run on receiver 1.	Les modes de plugin s'exécutent sur le récepteur 1.
+Plugin running	Plugin en cours
+Plugins	Plugins
+Plugins are not available on this receiver.	Les plugins ne sont pas disponibles sur ce récepteur.
+Plugins...	Plugins...
+Programs: start other programs	Programmes : lancer d'autres programmes
+Recording: save audio or IQ	Enregistrement : sauvegarder l'audio ou l'IQ
+Refresh	Actualiser
+Results the plugin sent beyond the limits	Résultats du plugin au-delà des limites
+Run in a helper process	Exécuter dans un processus auxiliaire
+Safe mode (no plugins)	Mode sans échec (sans plugins)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	Le mode sans échec est actif : les plugins sont désactivés. Ouvrez le mode Plugins pour en sortir.
+Safe mode: all plugins are switched off.	Mode sans échec : tous les plugins sont désactivés.
+Select a plugin.	Sélectionnez un plugin.
+Sound: play audio through the program	Son : lire de l'audio via le programme
+The plugin was switched off after a failure. See its log in the Plugins mode.	Le plugin a été désactivé après une défaillance. Voir son journal dans le mode Plugins.
+This plugin is off.	Ce plugin est désactivé.
+This plugin mode is not installed any more.	Ce mode de plugin n'est plus installé.
+Try plugins again	Réessayer les plugins
+Turn it on	L'activer
+blocks	blocs
+by	par

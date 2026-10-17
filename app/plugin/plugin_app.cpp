@@ -450,7 +450,7 @@ void summary(const App& a, std::string& l1, std::string& l2) {
     }
 }
 
-void statusBar(App&) {
+void pluginStatus(App&) {
     if (!P.inited) return;
     ImGui::TextDisabled("%s", P.error.empty() ? (P.active ? tr("Plugin running") : tr("Plugin idle")) : P.error.c_str());
 }
@@ -463,7 +463,7 @@ const ModeUi kPluginUi = {
     .tabName = "Plugin",
     .tabIcon = Ic::Link,
     .tab = tab,
-    .status = statusBar,
+    .status = pluginStatus,
     .summary = summary,
 };
 

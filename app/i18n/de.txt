@@ -2124,3 +2124,50 @@ Forget the history	Verlauf löschen
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Was dieser Empfänger gehört hat, nach Band: Baken (NCDXF/IARU, Long Dashes, Einzelbuchstaben, Träger) und die im HF-Digital-Bildschirm dekodierten FT8-/FT4-/FT2-/WSPR-Stationen. Ein Band gilt als offen, wenn in den letzten 30 Minuten mindestens 3 Stationen gehört wurden. Nur der eigene Empfänger: nichts wird heruntergeladen, also kein Solar-Flux und kein K-Index.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	In den letzten 30 Minuten nichts gehört: HF-Baken oder den HF-Digital-Bildschirm starten und laufen lassen.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Letzte 24 Stunden (UTC), Zellen zu 15 Minuten, dunkler: weniger Stationen
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s verlangt diese Berechtigungen:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	Ein Absturz oder Hänger des Plugins beendet dann nur seinen Hilfsprozess. Gilt ab dem nächsten Start des Plugins.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Decoder und Aktionen hinzufügen, ohne OnAir neu zu bauen: Plugins installieren, aktivieren und einrichten
+Add-ons	Erweiterungen
+Allow	Erlauben
+Asks for	Verlangt
+Asks for no permissions.	Verlangt keine Berechtigungen.
+Community plugins	Community-Plugins
+Do not allow	Nicht erlauben
+Enabled	Aktiviert
+Files: read and write its own data folder	Dateien: seinen eigenen Datenordner lesen und beschreiben
+Install from file...	Aus Datei installieren...
+Installed	Installiert
+Kind	Art
+Map points	Kartenpunkte
+Modes (in the mode list, group PLUGINS)	Modi (in der Modusliste, Gruppe PLUGINS)
+Network: talk to other computers	Netzwerk: mit anderen Computern kommunizieren
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Keine Plugins installiert. Nutzen Sie „Aus Datei installieren“ oder kopieren Sie einen Plugin-Ordner in den Plugin-Ordner. Ein Plugin ist eine .onairplugin-Datei.
+Not installed	Nicht installiert
+Open its folder	Seinen Ordner öffnen
+PLUGINS	PLUGINS
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	Berechtigungen bestimmen, was OnAir dem Plugin bereitstellt. Ein Plugin, das in OnAir läuft, kann das System trotzdem selbst nutzen: Installieren Sie nur vertrauenswürdige Plugins oder führen Sie sie in einem Hilfsprozess aus.
+Plugin idle	Plugin inaktiv
+Plugin log	Plugin-Protokoll
+Plugin modes run on receiver 1.	Plugin-Modi laufen auf Empfänger 1.
+Plugin running	Plugin läuft
+Plugins	Plugins
+Plugins are not available on this receiver.	Plugins sind auf diesem Empfänger nicht verfügbar.
+Plugins...	Plugins...
+Programs: start other programs	Programme: andere Programme starten
+Recording: save audio or IQ	Aufnahme: Audio oder IQ speichern
+Refresh	Aktualisieren
+Results the plugin sent beyond the limits	Ergebnisse des Plugins über den Grenzen
+Run in a helper process	In einem Hilfsprozess ausführen
+Safe mode (no plugins)	Abgesicherter Modus (keine Plugins)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	Abgesicherter Modus ist an: Plugins sind ausgeschaltet. Öffnen Sie den Modus „Plugins“, um ihn zu beenden.
+Safe mode: all plugins are switched off.	Abgesicherter Modus: Alle Plugins sind ausgeschaltet.
+Select a plugin.	Wählen Sie ein Plugin.
+Sound: play audio through the program	Ton: Audio über das Programm wiedergeben
+The plugin was switched off after a failure. See its log in the Plugins mode.	Das Plugin wurde nach einem Fehler ausgeschaltet. Sein Protokoll steht im Modus „Plugins“.
+This plugin is off.	Dieses Plugin ist aus.
+This plugin mode is not installed any more.	Dieser Plugin-Modus ist nicht mehr installiert.
+Try plugins again	Plugins erneut versuchen
+Turn it on	Einschalten
+blocks	Blöcke
+by	von

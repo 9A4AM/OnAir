@@ -2124,3 +2124,50 @@ Forget the history	履歴を消去
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	この受信機がバンド別に聞いたもの:ビーコン(NCDXF/IARU、Long Dashes、単文字、キャリア)と、HFデジタル画面でデコードしたFT8 / FT4 / FT2 / WSPR局。直近30分に3局以上が聞こえたバンドはオープンです。自分の受信機のみ:何もダウンロードしないため、太陽フラックスやKインデックスはありません。
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	直近30分は何も聞こえていません:HFビーコンまたはHFデジタル画面を起動したままにしてください。
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	直近24時間(UTC)、15分ごとのセル、濃いほど局が少ない
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s は次の権限を要求しています:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	プラグインがクラッシュまたはフリーズしても、ヘルパープロセスが終了するだけです。次回プラグインを起動したときに有効になります。
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	OnAir を再ビルドせずにデコーダーやアクションを追加: プラグインのインストール、有効化、設定
+Add-ons	拡張
+Allow	許可
+Asks for	要求する権限
+Asks for no permissions.	権限は要求しません。
+Community plugins	コミュニティのプラグイン
+Do not allow	許可しない
+Enabled	有効
+Files: read and write its own data folder	ファイル: 専用のデータフォルダーの読み書き
+Install from file...	ファイルからインストール...
+Installed	インストールしました
+Kind	種類
+Map points	地図上の点
+Modes (in the mode list, group PLUGINS)	モード(モード一覧の PLUGINS グループ)
+Network: talk to other computers	ネットワーク: 他のコンピューターと通信
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	インストールされたプラグインはありません。「ファイルからインストール」を使うか、プラグインのフォルダーをプラグインフォルダーにコピーしてください。プラグインは .onairplugin ファイルです。
+Not installed	インストールできませんでした
+Open its folder	そのフォルダーを開く
+PLUGINS	プラグイン
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	権限は OnAir がプラグインに渡す機能を決めるものです。OnAir 内で動くプラグインは、それでもシステムを直接使える可能性があります。信頼できるプラグインだけをインストールするか、ヘルパープロセスで実行してください。
+Plugin idle	プラグインは待機中
+Plugin log	プラグインのログ
+Plugin modes run on receiver 1.	プラグインのモードは受信機 1 で動作します。
+Plugin running	プラグイン実行中
+Plugins	プラグイン
+Plugins are not available on this receiver.	このレシーバーではプラグインを使えません。
+Plugins...	プラグイン...
+Programs: start other programs	プログラム: 他のプログラムの起動
+Recording: save audio or IQ	録音: 音声または IQ の保存
+Refresh	更新
+Results the plugin sent beyond the limits	上限を超えてプラグインが送った結果
+Run in a helper process	ヘルパープロセスで実行
+Safe mode (no plugins)	セーフモード(プラグインなし)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	セーフモードがオンです。プラグインは無効です。解除するには「プラグイン」モードを開いてください。
+Safe mode: all plugins are switched off.	セーフモード: すべてのプラグインが無効です。
+Select a plugin.	プラグインを選んでください。
+Sound: play audio through the program	サウンド: プログラム経由で音声を再生
+The plugin was switched off after a failure. See its log in the Plugins mode.	プラグインは障害のため無効にされました。ログは「プラグイン」モードで確認できます。
+This plugin is off.	このプラグインはオフです。
+This plugin mode is not installed any more.	このプラグインのモードはもうインストールされていません。
+Try plugins again	プラグインを再試行
+Turn it on	オンにする
+blocks	ブロック
+by	作者:
