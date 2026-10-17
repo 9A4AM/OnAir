@@ -1386,3 +1386,14 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 1500 MHz neerwaartse converter voor ongeveer 1,5 tot 3 GHz (2,4 GHz, 2,3/3,4 GHz). Sluit hem aan tussen antenne en radio; de radio ziet RF - 1500 MHz. Onder 1500 MHz wordt niet ondersteund.
+Record audio	Audio opnemen
+Only audio	Alleen audio
+Split	Splitsen
+Keep going	Doorgaan
+Show recording	Opname tonen
+Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)	Slaat het geluid dat je hoort in elke modus op in een bestand (vóór het volume, dus het niveau hangt er niet van af)
+MP3 needs the LAME library (libmp3lame), which is not installed	MP3 heeft de LAME-bibliotheek (libmp3lame) nodig, die niet is geïnstalleerd
+WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo.	WAV: 16 bit, groot. FLAC: verliesvrij, ongeveer half zo groot. MP3: klein (heeft libmp3lame nodig). FM-stereo blijft stereo.
+Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	Slaat alleen op zolang er geluid is (zoals een squelch): stilte wordt weggelaten, met een korte aanloop en uitloop
+One file per transmission: a new file starts after 3 s of silence	Eén bestand per uitzending: na 3 s stilte begint een nieuw bestand
+Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Blijft opnemen als de modus of frequentie verandert. Uit: dan stopt de opname.

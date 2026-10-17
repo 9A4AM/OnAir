@@ -312,6 +312,8 @@ void loadPrefs(App& a) {
     loadKeys(d, a, true);   // the Hamlib picker, the frequency and the gains
     a.recFormat = fixRecFormat((int)d.getI("recFormat", 0));
     a.recSigmf = d.getB("recSigmf", true);
+    a.audioRecFmt = std::max(0, std::min(2, (int)d.getI("audioRecFmt", 0)));
+    a.audioRecGate = d.getB("audioRecGate", false); a.audioRecSplit = d.getB("audioRecSplit", false); a.audioRecKeep = d.getB("audioRecKeep", false);
     a.tvBufMb = (int)d.getI("tvBufMb", 256); a.engine.player().setBufferMB(a.tvBufMb); a.tvBufMb = a.engine.player().bufferMB();
     a.tvRecMin = std::max(0, (int)d.getI("tvRecMin", 0));
     a.tvRecAtOn = d.getB("tvRecAtOn", false);

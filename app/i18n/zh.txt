@@ -1386,3 +1386,14 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 1500 MHz 下变频器,适用于约 1.5 至 3 GHz (2.4 GHz、2.3/3.4 GHz)。接在天线和电台之间;电台看到的是 RF - 1500 MHz。低于 1500 MHz 不支持。
+Record audio	录制音频
+Only audio	仅有声时
+Split	分割
+Keep going	持续录制
+Show recording	显示录音
+Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)	在任何模式下，把你听到的声音保存到文件（在音量之前，所以电平与音量无关）
+MP3 needs the LAME library (libmp3lame), which is not installed	MP3 需要 LAME 库（libmp3lame），但尚未安装
+WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo.	WAV：16 位，较大。FLAC：无损，约一半大小。MP3：较小（需要 libmp3lame）。FM 立体声保持立体声。
+Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	仅在有声音时保存（类似静噪）：静音被剪掉，保留很短的前导和尾部
+One file per transmission: a new file starts after 3 s of silence	每次发射一个文件：静音 3 秒后开始新文件
+Keeps recording when the mode or the frequency changes. Off: the recording stops then.	模式或频率改变时继续录制。关闭：此时停止录制。

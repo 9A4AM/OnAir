@@ -1,4 +1,5 @@
 #include "audioout_impl.h"
+#include "dect2/audio/audio_rec.h"
 #include <algorithm>
 #include <cstring>
 #include <cstdint>
@@ -87,6 +88,7 @@ int AudioOut::write(const float* s, int frames) {
     }
     p_->w.store(w + n, std::memory_order_release);
     p_->written.fetch_add(n);
+    AudioRecorder::offer(this, s, n, rate_);   // "Record audio": the sound before the volume, from any mode
     return n;
 }
 

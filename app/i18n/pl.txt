@@ -1386,3 +1386,14 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: konwerter obniżający 1500 MHz dla ok. 1,5-3 GHz (2,4 GHz, 2,3/3,4 GHz). Podłącz go między antenę a radio; radio widzi RF - 1500 MHz. Poniżej 1500 MHz nie jest obsługiwane.
+Record audio	Nagraj dźwięk
+Only audio	Tylko dźwięk
+Split	Dziel
+Keep going	Kontynuuj
+Show recording	Pokaż nagranie
+Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)	Zapisuje do pliku dźwięk, który słyszysz, w każdym trybie (przed regulacją głośności, więc poziom od niej nie zależy)
+MP3 needs the LAME library (libmp3lame), which is not installed	MP3 wymaga biblioteki LAME (libmp3lame), która nie jest zainstalowana
+WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo.	WAV: 16 bitów, duży. FLAC: bezstratny, około połowy rozmiaru. MP3: mały (wymaga libmp3lame). Stereo FM zostaje stereo.
+Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	Zapisuje tylko gdy jest dźwięk (jak squelch): cisza jest wycinana, z krótkim początkiem i końcem
+One file per transmission: a new file starts after 3 s of silence	Jeden plik na transmisję: po 3 s ciszy zaczyna się nowy plik
+Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Nagrywa dalej po zmianie trybu lub częstotliwości. Wyłączone: nagrywanie wtedy się zatrzymuje.
