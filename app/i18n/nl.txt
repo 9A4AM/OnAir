@@ -1934,7 +1934,7 @@ Choose what to tell apart in "separately for each" so every thing has its own st
 Columns (optional)	Kolommen (optioneel)
 Confirm this rule...	Deze regel bevestigen...
 Confirmed	Bevestigd
-Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Definieer function on_event(e). e.type, e.mode, e.freq, e.time en de velden van de gebeurtenis (e.callsign, e.squawk ...).\n\nActies: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHulpjes: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTekst: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Geen io, os, load, require, pcall of patroonherkenning; 1 miljoen instructies, 250 ms en 16 MB per script.
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Definieer function on_event(e). e.type, e.mode, e.freq, e.time en de velden van de gebeurtenis (e.callsign, e.squawk ...).\n\nActies: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHulpjes: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTekst: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Geen io, os, load, require, pcall of patroonherkenning; 1 miljoen instructies, 250 ms en 16 MB per script.
 Delete...	Verwijderen...
 Distance, km	Afstand, km
 Does not fire for the sample event:	Gaat niet af voor de voorbeeldgebeurtenis:
@@ -2394,3 +2394,21 @@ Tracks	Sporen
 Two recordings (reference, surveillance)	Twee opnames (referentie, bewaking)
 Two-channel recording (cf32)	Tweekanaalsopname (cf32)
 Waiting for data.	Wachten op gegevens.
+Rewind	Terugspoelen
+Keeps the last seconds of the radio's raw samples in memory, so the signal from just before something happened can be saved too	Bewaart de laatste seconden van de ruwe samples van de radio in het geheugen, zodat ook het signaal vlak vóór een gebeurtenis kan worden opgeslagen
+A file source is already there: nothing to keep	Een bestandsbron is er al: niets om te bewaren
+Keep a rolling memory of the raw samples	Een doorlopend geheugen van de ruwe samples bijhouden
+Reaches back (s)	Reikt terug (s)
+Memory limit (MB)	Geheugenlimiet (MB)
+Full rate	Volledige snelheid
+Samples kept	Bewaarde samples
+1 / 4 averages every 4 samples: the memory then reaches 4 times as far back, but only the middle quarter of the band is kept. The settings can be changed while it is off.	1 / 4 middelt elke 4 samples: het geheugen reikt dan 4 keer zo ver terug, maar alleen het middelste kwart van de band blijft over. De instellingen kunnen worden gewijzigd zolang het uit staat.
+Reaches back %s using %d MB; %s in memory now (%.3f Msps)	Reikt %s terug met %d MB; nu %s in het geheugen (%.3f Msps)
+The memory limit shortens the window; raise it or keep fewer samples.	De geheugenlimiet verkort het venster; verhoog hem of bewaar minder samples.
+Save the last (s)	De laatste (s) opslaan
+Then keep recording (s)	Daarna doorgaan met opnemen (s)
+Save when the General receiver's squelch opens	Opslaan als de squelch van de Algemene ontvanger opent
+In the General receiver mode; for other events use an automation rule with the action "Save the rewind"	In de modus Algemene ontvanger; gebruik voor andere gebeurtenissen een automatiseringsregel met de actie "Terugspoelen opslaan"
+Save now	Nu opslaan
+Save the rewind	Terugspoelen opslaan
+Seconds to keep after the event	Seconden bewaren na de gebeurtenis

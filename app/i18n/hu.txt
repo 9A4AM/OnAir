@@ -1920,7 +1920,7 @@ Choose what to tell apart in "separately for each" so every thing has its own st
 Columns (optional)	Oszlopok (nem kötelező)
 Confirm this rule...	Szabály megerősítése...
 Confirmed	Megerősítve
-Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Definiáld a function on_event(e) függvényt. e.type, e.mode, e.freq, e.time és az esemény mezői (e.callsign, e.squawk ...).\n\nMűveletek: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nSegédek: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nSzöveg: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Nincs io, os, load, require, pcall és mintaillesztés; szkriptenként 1 millió utasítás, 250 ms és 16 MB.
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Definiáld a function on_event(e) függvényt. e.type, e.mode, e.freq, e.time és az esemény mezői (e.callsign, e.squawk ...).\n\nMűveletek: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nSegédek: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nSzöveg: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Nincs io, os, load, require, pcall és mintaillesztés; szkriptenként 1 millió utasítás, 250 ms és 16 MB.
 Delete...	Törlés...
 Distance, km	Távolság, km
 Does not fire for the sample event:	A mintaesemény nem váltja ki:
@@ -2380,3 +2380,21 @@ Tracks	Pályák
 Two recordings (reference, surveillance)	Két felvétel (referencia, megfigyelő)
 Two-channel recording (cf32)	Kétcsatornás felvétel (cf32)
 Waiting for data.	Adatra várakozás.
+Rewind	Visszatekerés
+Keeps the last seconds of the radio's raw samples in memory, so the signal from just before something happened can be saved too	Memóriában tartja a rádió nyers mintáinak utolsó másodperceit, így az esemény előtti jel is menthető
+A file source is already there: nothing to keep	A fájlforrás már megvan: nincs mit megtartani
+Keep a rolling memory of the raw samples	Folyamatos memória a nyers mintákhoz
+Reaches back (s)	Ennyire nyúlik vissza (mp)
+Memory limit (MB)	Memóriakorlát (MB)
+Full rate	Teljes mintavétel
+Samples kept	Megtartott minták
+1 / 4 averages every 4 samples: the memory then reaches 4 times as far back, but only the middle quarter of the band is kept. The settings can be changed while it is off.	Az 1 / 4 minden 4 mintát átlagol: a memória 4-szer messzebbre nyúlik vissza, de csak a sáv középső negyede marad meg. A beállítások kikapcsolt állapotban módosíthatók.
+Reaches back %s using %d MB; %s in memory now (%.3f Msps)	%s-ig nyúlik vissza %d MB-tal; most %s van a memóriában (%.3f Msps)
+The memory limit shortens the window; raise it or keep fewer samples.	A memóriakorlát rövidíti az ablakot; emelje meg, vagy tartson meg kevesebb mintát.
+Save the last (s)	Az utolsó (mp) mentése
+Then keep recording (s)	Utána tovább rögzít (mp)
+Save when the General receiver's squelch opens	Mentés, ha az Általános vevő zajzára kinyit
+In the General receiver mode; for other events use an automation rule with the action "Save the rewind"	Az Általános vevő módban; más eseményekhez használjon automatizálási szabályt a "Visszatekerés mentése" művelettel
+Save now	Mentés most
+Save the rewind	Visszatekerés mentése
+Seconds to keep after the event	Az esemény után megtartott másodpercek

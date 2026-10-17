@@ -1934,7 +1934,7 @@ Choose what to tell apart in "separately for each" so every thing has its own st
 Columns (optional)	列（任意）
 Confirm this rule...	このルールを確認...
 Confirmed	確認済み
-Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	function on_event(e) を定義します。e.type、e.mode、e.freq、e.time とイベントのフィールド（e.callsign、e.squawk など）が使えます。\n\nアクション: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...)。\n補助: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table)。\n文字列: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b)。io、os、load、require、pcall、パターン照合は使えません。1スクリプトあたり100万命令、250 ms、16 MB。
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	function on_event(e) を定義します。e.type、e.mode、e.freq、e.time とイベントのフィールド（e.callsign、e.squawk など）が使えます。\n\nアクション: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...)。\n補助: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table)。\n文字列: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b)。io、os、load、require、pcall、パターン照合は使えません。1スクリプトあたり100万命令、250 ms、16 MB。
 Delete...	削除...
 Distance, km	距離 (km)
 Does not fire for the sample event:	サンプルイベントでは実行されません:
@@ -2394,3 +2394,21 @@ Tracks	トラック
 Two recordings (reference, surveillance)	2つの録音（参照、監視）
 Two-channel recording (cf32)	2チャンネルの録音 (cf32)
 Waiting for data.	データを待っています。
+Rewind	巻き戻し
+Keeps the last seconds of the radio's raw samples in memory, so the signal from just before something happened can be saved too	無線機の生サンプルの直近数秒をメモリに保持し、何かが起きる直前の信号も保存できるようにします
+A file source is already there: nothing to keep	ファイルソースは既にあります。保持するものはありません
+Keep a rolling memory of the raw samples	生サンプルを連続してメモリに保持する
+Reaches back (s)	遡る時間（秒）
+Memory limit (MB)	メモリ上限（MB）
+Full rate	フルレート
+Samples kept	保持するサンプル
+1 / 4 averages every 4 samples: the memory then reaches 4 times as far back, but only the middle quarter of the band is kept. The settings can be changed while it is off.	1 / 4 は4サンプルごとに平均します。メモリは4倍遡れますが、帯域の中央4分の1だけが残ります。設定はオフの間に変更できます。
+Reaches back %s using %d MB; %s in memory now (%.3f Msps)	%s 遡れます（%d MB 使用）。現在メモリに %s（%.3f Msps）
+The memory limit shortens the window; raise it or keep fewer samples.	メモリ上限により範囲が短くなっています。上限を上げるか、保持するサンプルを減らしてください。
+Save the last (s)	直近の（秒）を保存
+Then keep recording (s)	その後も録音を続ける（秒）
+Save when the General receiver's squelch opens	汎用受信機のスケルチが開いたら保存
+In the General receiver mode; for other events use an automation rule with the action "Save the rewind"	汎用受信機モードの場合です。他のイベントには、アクション「巻き戻しを保存」を持つ自動化ルールを使ってください
+Save now	今すぐ保存
+Save the rewind	巻き戻しを保存
+Seconds to keep after the event	イベント後に保持する秒数

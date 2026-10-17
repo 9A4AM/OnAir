@@ -50,6 +50,7 @@ static void tickReceiver(App& a) {
     }
     if (!a.engine.running()) { a.epg.clear(); }
     tvRecTick(a);
+    timeMachineTick(a);
     gainControl(a);
     followBandwidth(a);
     feedDirection(a);

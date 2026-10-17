@@ -145,6 +145,7 @@ int l_notify(lua_State* L) { return doAct(L, "notify", {{"title", argText(L, 1)}
 int l_sound(lua_State* L) { return doAct(L, "sound", {{"file", argText(L, 1)}}); }
 int l_record_iq(lua_State* L) { return doAct(L, "record_iq", {{"seconds", seconds(L, 1)}}); }
 int l_record_audio(lua_State* L) { return doAct(L, "record_audio", {{"seconds", seconds(L, 1)}}); }
+int l_save_rewind(lua_State* L) { return doAct(L, "save_rewind", {{"seconds", seconds(L, 1)}}); }
 int l_tune(lua_State* L) {
     char b[48];
     snprintf(b, sizeof b, "%.6f", luaL_checknumber(L, 1) / 1e6);
@@ -294,7 +295,7 @@ void openSandbox(Impl* m) {
     // the strings' metatable stays, with __index = the reduced string table
     lua_pushlightuserdata(L, m);
     lua_setfield(L, LUA_REGISTRYINDEX, "onair_impl");
-    setFn(L, m, "notify", l_notify); setFn(L, m, "sound", l_sound); setFn(L, m, "record_iq", l_record_iq); setFn(L, m, "record_audio", l_record_audio);
+    setFn(L, m, "notify", l_notify); setFn(L, m, "sound", l_sound); setFn(L, m, "record_iq", l_record_iq); setFn(L, m, "record_audio", l_record_audio); setFn(L, m, "save_rewind", l_save_rewind);
     setFn(L, m, "tune", l_tune); setFn(L, m, "memory", l_memory); setFn(L, m, "screenshot", l_screenshot); setFn(L, m, "webhook", l_webhook);
     setFn(L, m, "log", l_log); setFn(L, m, "print", l_print); setFn(L, m, "log_row", l_log_row); setFn(L, m, "distance_km", l_distance); setFn(L, m, "bearing_deg", l_bearing);
     setFn(L, m, "now", l_now); setFn(L, m, "hour", l_hour); setFn(L, m, "json", l_json);

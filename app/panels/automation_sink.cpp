@@ -159,6 +159,11 @@ std::pair<bool, std::string> doOnUi(App& a, const Pending& p) {
         gIqStop = now + sec;
         return {true, "recording for " + std::to_string(sec) + " s"};
     }
+    if (p.kind == "save_rewind") {
+        std::string note;
+        const bool ok = timeMachineSaveNow(a, std::max(0, std::min(600, atoi(get("seconds").c_str()))), note);
+        return {ok, note};
+    }
     if (p.kind == "record_audio") {
         int sec = std::max(1, std::min(3600, atoi(get("seconds").c_str())));
         auto& rec = dect2::AudioRecorder::instance();

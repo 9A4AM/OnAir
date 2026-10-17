@@ -1917,7 +1917,7 @@ Choose what to tell apart in "separately for each" so every thing has its own st
 Columns (optional)	Столбцы (необязательно)
 Confirm this rule...	Подтвердить это правило...
 Confirmed	Подтверждено
-Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Определите function on_event(e). Доступны e.type, e.mode, e.freq, e.time и поля события (e.callsign, e.squawk ...).\n\nДействия: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nПомощники: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nТекст: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Нет io, os, load, require, pcall и поиска по шаблону; на скрипт 1 млн инструкций, 250 мс и 16 МБ.
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Определите function on_event(e). Доступны e.type, e.mode, e.freq, e.time и поля события (e.callsign, e.squawk ...).\n\nДействия: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nПомощники: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nТекст: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Нет io, os, load, require, pcall и поиска по шаблону; на скрипт 1 млн инструкций, 250 мс и 16 МБ.
 Delete...	Удалить...
 Distance, km	Расстояние, км
 Does not fire for the sample event:	Не срабатывает на примере события:
@@ -2377,3 +2377,21 @@ Tracks	Треки
 Two recordings (reference, surveillance)	Две записи (опорная, обзорная)
 Two-channel recording (cf32)	Двухканальная запись (cf32)
 Waiting for data.	Ожидание данных.
+Rewind	Перемотка назад
+Keeps the last seconds of the radio's raw samples in memory, so the signal from just before something happened can be saved too	Хранит в памяти последние секунды необработанных отсчётов приёмника, чтобы можно было сохранить и сигнал за миг до события
+A file source is already there: nothing to keep	Файловый источник уже есть: хранить нечего
+Keep a rolling memory of the raw samples	Постоянно хранить в памяти необработанные отсчёты
+Reaches back (s)	Глубина (с)
+Memory limit (MB)	Лимит памяти (МБ)
+Full rate	Полная частота
+Samples kept	Сохраняемые отсчёты
+1 / 4 averages every 4 samples: the memory then reaches 4 times as far back, but only the middle quarter of the band is kept. The settings can be changed while it is off.	1 / 4 усредняет каждые 4 отсчёта: память охватывает в 4 раза больше времени, но сохраняется только центральная четверть полосы. Настройки можно менять, пока функция выключена.
+Reaches back %s using %d MB; %s in memory now (%.3f Msps)	Глубина %s при %d МБ; сейчас в памяти %s (%.3f Msps)
+The memory limit shortens the window; raise it or keep fewer samples.	Лимит памяти сокращает окно; увеличьте его или храните меньше отсчётов.
+Save the last (s)	Сохранить последние (с)
+Then keep recording (s)	Затем продолжать запись (с)
+Save when the General receiver's squelch opens	Сохранять, когда открывается шумоподавитель Универсального приёмника
+In the General receiver mode; for other events use an automation rule with the action "Save the rewind"	В режиме Универсального приёмника; для других событий используйте правило автоматизации с действием «Сохранить перемотку»
+Save now	Сохранить сейчас
+Save the rewind	Сохранить перемотку
+Seconds to keep after the event	Секунд хранить после события

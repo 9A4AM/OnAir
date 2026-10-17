@@ -1934,7 +1934,7 @@ Choose what to tell apart in "separately for each" so every thing has its own st
 Columns (optional)	Spalten (optional)
 Confirm this rule...	Diese Regel bestätigen...
 Confirmed	Bestätigt
-Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Definiere function on_event(e). e.type, e.mode, e.freq, e.time und die Felder des Ereignisses (e.callsign, e.squawk ...).\n\nAktionen: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHilfen: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Kein io, os, load, require, pcall und keine Mustersuche; 1 Million Befehle, 250 ms und 16 MB pro Skript.
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Definiere function on_event(e). e.type, e.mode, e.freq, e.time und die Felder des Ereignisses (e.callsign, e.squawk ...).\n\nAktionen: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHilfen: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Kein io, os, load, require, pcall und keine Mustersuche; 1 Million Befehle, 250 ms und 16 MB pro Skript.
 Delete...	Löschen...
 Distance, km	Entfernung, km
 Does not fire for the sample event:	Löst für das Beispielereignis nicht aus:
@@ -2394,3 +2394,21 @@ Tracks	Spuren
 Two recordings (reference, surveillance)	Zwei Aufnahmen (Referenz, Überwachung)
 Two-channel recording (cf32)	Zweikanal-Aufnahme (cf32)
 Waiting for data.	Warte auf Daten.
+Rewind	Rückspulen
+Keeps the last seconds of the radio's raw samples in memory, so the signal from just before something happened can be saved too	Hält die letzten Sekunden der Rohsamples des Funkgeräts im Speicher, damit auch das Signal kurz vor einem Ereignis gespeichert werden kann
+A file source is already there: nothing to keep	Eine Dateiquelle ist schon vorhanden: nichts zu behalten
+Keep a rolling memory of the raw samples	Rohsamples fortlaufend im Speicher halten
+Reaches back (s)	Reicht zurück (s)
+Memory limit (MB)	Speichergrenze (MB)
+Full rate	Volle Rate
+Samples kept	Gehaltene Samples
+1 / 4 averages every 4 samples: the memory then reaches 4 times as far back, but only the middle quarter of the band is kept. The settings can be changed while it is off.	1 / 4 mittelt je 4 Samples: der Speicher reicht dann 4-mal so weit zurück, behält aber nur das mittlere Viertel des Bandes. Die Einstellungen lassen sich ändern, solange es aus ist.
+Reaches back %s using %d MB; %s in memory now (%.3f Msps)	Reicht %s zurück bei %d MB; jetzt %s im Speicher (%.3f Msps)
+The memory limit shortens the window; raise it or keep fewer samples.	Die Speichergrenze verkürzt das Fenster; erhöhen Sie sie oder behalten Sie weniger Samples.
+Save the last (s)	Die letzten (s) speichern
+Then keep recording (s)	Danach weiter aufnehmen (s)
+Save when the General receiver's squelch opens	Speichern, wenn die Rauschsperre des Allgemeinempfängers öffnet
+In the General receiver mode; for other events use an automation rule with the action "Save the rewind"	Im Modus Allgemeinempfänger; für andere Ereignisse eine Automatisierungsregel mit der Aktion "Rückspulen speichern" verwenden
+Save now	Jetzt speichern
+Save the rewind	Rückspulen speichern
+Seconds to keep after the event	Sekunden nach dem Ereignis behalten

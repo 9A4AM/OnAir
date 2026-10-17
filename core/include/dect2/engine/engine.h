@@ -7,6 +7,7 @@
 #include "dect2/source/delivery_check.h"
 #include "dect2/source/source.h"
 #include "dect2/source/iq_record.h"
+#include "dect2/source/time_machine.h"
 #include "dect2/dsp/spectrum.h"
 #include "dect2/t2/t2rx.h"
 #include "dect2/dvbt/dvbt_rx.h"
@@ -200,6 +201,13 @@ public:
         iqTap_ = std::move(f);
         iqTapOn_.store((bool)iqTap_);
     }
+    // Time machine (time_machine.h): the last seconds of the raw samples are kept in memory; timeMachineSave() writes the window around now to a file.
+    // setTimeMachine: seconds <= 0 is off; applied now when the radio runs, and again at every start. Returns the window the memory budget allows.
+    double setTimeMachine(double seconds, int decimate, int memBudgetMB);
+    // Saves the window around now (preSeconds back, postSeconds ahead) to path (name it with timeMachineName()). Returns at once.
+    bool timeMachineSaveTo(const std::string& path, double preSeconds, double postSeconds, std::string& err);
+    TimeMachineStats timeMachineStats() const { return tm_.stats(); }
+    std::string timeMachineName() const;
     void setRecordSigmf(bool on) { recSigmf_ = on; }   // SigMF metadata beside the recordings (default on)
     RecordingStats recordingStats() const { return rec_.stats(); }
     // A file name for a recording of what the radio is tuned to right now (see recordingFileName())
@@ -529,6 +537,9 @@ private:
     std::vector<std::string> log_;
     std::chrono::steady_clock::time_point t0_;
     IqRecorder rec_;
+    TimeMachine tm_;
+    double tmSeconds_ = 0;
+    int tmDecim_ = 1, tmBudgetMB_ = 512;
     std::mutex iqTapMu_;
     std::function<void(const std::complex<float>*, size_t, double)> iqTap_;
     std::atomic<bool> iqTapOn_{false};

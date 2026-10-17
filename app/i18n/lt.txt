@@ -1934,7 +1934,7 @@ Choose what to tell apart in "separately for each" so every thing has its own st
 Columns (optional)	Stulpeliai (nebūtina)
 Confirm this rule...	Patvirtinti šią taisyklę...
 Confirmed	Patvirtinta
-Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Apibrėžkite function on_event(e). e.type, e.mode, e.freq, e.time ir įvykio laukai (e.callsign, e.squawk ...).\n\nVeiksmai: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nPagalbinės: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTekstas: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Nėra io, os, load, require, pcall ir šablonų paieškos; 1 milijonas instrukcijų, 250 ms ir 16 MB vienam skriptui.
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Apibrėžkite function on_event(e). e.type, e.mode, e.freq, e.time ir įvykio laukai (e.callsign, e.squawk ...).\n\nVeiksmai: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nPagalbinės: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTekstas: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Nėra io, os, load, require, pcall ir šablonų paieškos; 1 milijonas instrukcijų, 250 ms ir 16 MB vienam skriptui.
 Delete...	Ištrinti...
 Distance, km	Atstumas, km
 Does not fire for the sample event:	Pavyzdiniam įvykiui nesuveikia:
@@ -2394,3 +2394,21 @@ Tracks	Trasos
 Two recordings (reference, surveillance)	Du įrašai (atraminis, stebėjimo)
 Two-channel recording (cf32)	Dviejų kanalų įrašas (cf32)
 Waiting for data.	Laukiama duomenų.
+Rewind	Atsukti atgal
+Keeps the last seconds of the radio's raw samples in memory, so the signal from just before something happened can be saved too	Laiko atmintyje paskutines radijo neapdorotų pavyzdžių sekundes, kad būtų galima išsaugoti ir signalą prieš pat įvykį
+A file source is already there: nothing to keep	Failo šaltinis jau yra: nėra ką saugoti
+Keep a rolling memory of the raw samples	Nuolat laikyti neapdorotus pavyzdžius atmintyje
+Reaches back (s)	Siekia atgal (s)
+Memory limit (MB)	Atminties riba (MB)
+Full rate	Pilnas dažnis
+Samples kept	Laikomi pavyzdžiai
+1 / 4 averages every 4 samples: the memory then reaches 4 times as far back, but only the middle quarter of the band is kept. The settings can be changed while it is off.	1 / 4 vidurkina kas 4 pavyzdžius: atmintis siekia 4 kartus toliau, bet išsaugomas tik vidurinis juostos ketvirtadalis. Nustatymus galima keisti, kol išjungta.
+Reaches back %s using %d MB; %s in memory now (%.3f Msps)	Siekia %s atgal naudojant %d MB; dabar atmintyje %s (%.3f Msps)
+The memory limit shortens the window; raise it or keep fewer samples.	Atminties riba sutrumpina langą; padidinkite ją arba laikykite mažiau pavyzdžių.
+Save the last (s)	Išsaugoti paskutines (s)
+Then keep recording (s)	Tada toliau įrašyti (s)
+Save when the General receiver's squelch opens	Išsaugoti, kai atsidaro Bendrojo imtuvo triukšmo slopintuvas
+In the General receiver mode; for other events use an automation rule with the action "Save the rewind"	Bendrojo imtuvo režimu; kitiems įvykiams naudokite automatizavimo taisyklę su veiksmu „Išsaugoti atsukimą atgal“
+Save now	Išsaugoti dabar
+Save the rewind	Išsaugoti atsukimą atgal
+Seconds to keep after the event	Sekundės, kurias laikyti po įvykio

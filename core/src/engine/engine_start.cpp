@@ -82,6 +82,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     srcRate_ = src_->sampleRate();
     rate_ = srcRate_;
     live_ = src_->realtimeHardware();
+    if (tmSeconds_ > 0 && dev.kind != DeviceInfo::File) tm_.configure(tmSeconds_, srcRate_, tmDecim_, tmBudgetMB_);   // the time machine (time_machine.h)
     // FT8 / WSPR slots: a live radio follows the system clock; a recording or the test signal starts anywhere in a slot, so the
     // slots are found from the signals
     hfdig().ftx().setSlotSearch(!live_.load());

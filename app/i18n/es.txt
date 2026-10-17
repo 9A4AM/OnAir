@@ -1934,7 +1934,7 @@ Choose what to tell apart in "separately for each" so every thing has its own st
 Columns (optional)	Columnas (opcional)
 Confirm this rule...	Confirmar esta regla...
 Confirmed	Confirmada
-Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Define function on_event(e). e.type, e.mode, e.freq, e.time y los campos del evento (e.callsign, e.squawk ...).\n\nAcciones: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nAyudas: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTexto: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Sin io, os, load, require, pcall ni patrones; 1 millón de instrucciones, 250 ms y 16 MB por script.
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Define function on_event(e). e.type, e.mode, e.freq, e.time y los campos del evento (e.callsign, e.squawk ...).\n\nAcciones: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nAyudas: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTexto: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Sin io, os, load, require, pcall ni patrones; 1 millón de instrucciones, 250 ms y 16 MB por script.
 Delete...	Eliminar...
 Distance, km	Distancia, km
 Does not fire for the sample event:	No se dispara con el evento de ejemplo:
@@ -2394,3 +2394,21 @@ Tracks	Trazas
 Two recordings (reference, surveillance)	Dos grabaciones (referencia, vigilancia)
 Two-channel recording (cf32)	Grabación de dos canales (cf32)
 Waiting for data.	Esperando datos.
+Rewind	Rebobinar
+Keeps the last seconds of the radio's raw samples in memory, so the signal from just before something happened can be saved too	Guarda en memoria los últimos segundos de las muestras en bruto de la radio, para poder guardar también la señal de justo antes de que pasara algo
+A file source is already there: nothing to keep	Una fuente de archivo ya existe: no hay nada que conservar
+Keep a rolling memory of the raw samples	Mantener una memoria continua de las muestras en bruto
+Reaches back (s)	Alcanza hacia atrás (s)
+Memory limit (MB)	Límite de memoria (MB)
+Full rate	Frecuencia completa
+Samples kept	Muestras conservadas
+1 / 4 averages every 4 samples: the memory then reaches 4 times as far back, but only the middle quarter of the band is kept. The settings can be changed while it is off.	1 / 4 promedia cada 4 muestras: la memoria llega 4 veces más atrás, pero solo se conserva el cuarto central de la banda. Los ajustes se pueden cambiar mientras está apagado.
+Reaches back %s using %d MB; %s in memory now (%.3f Msps)	Alcanza %s hacia atrás con %d MB; ahora hay %s en memoria (%.3f Msps)
+The memory limit shortens the window; raise it or keep fewer samples.	El límite de memoria acorta la ventana; súbelo o conserva menos muestras.
+Save the last (s)	Guardar los últimos (s)
+Then keep recording (s)	Luego seguir grabando (s)
+Save when the General receiver's squelch opens	Guardar cuando se abra el silenciador del receptor General
+In the General receiver mode; for other events use an automation rule with the action "Save the rewind"	En el modo del receptor General; para otros eventos usa una regla de automatización con la acción "Guardar el rebobinado"
+Save now	Guardar ahora
+Save the rewind	Guardar el rebobinado
+Seconds to keep after the event	Segundos a conservar tras el evento

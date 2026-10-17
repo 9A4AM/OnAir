@@ -1934,7 +1934,7 @@ Choose what to tell apart in "separately for each" so every thing has its own st
 Columns (optional)	列（可选）
 Confirm this rule...	确认此规则...
 Confirmed	已确认
-Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	定义 function on_event(e)。可用 e.type、e.mode、e.freq、e.time 以及事件字段（e.callsign、e.squawk 等）。\n\n动作：notify(title, text)、sound(file)、record_iq(seconds)、record_audio(seconds)、tune(hz, mode)、memory(name)、webhook(url, text_or_table)、screenshot()、log(text)、log_row(file, a, b, ...)。\n辅助：distance_km(lat, lon)、bearing_deg(lat, lon)、now()、hour()、json(table)。\n文本：s:contains(x)、s:starts_with(x)、s:ends_with(x)、s:matches('a*b')、s:replace(a, b)。没有 io、os、load、require、pcall 和模式匹配；每个脚本限 100 万条指令、250 毫秒和 16 MB。
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	定义 function on_event(e)。可用 e.type、e.mode、e.freq、e.time 以及事件字段（e.callsign、e.squawk 等）。\n\n动作：notify(title, text)、sound(file)、record_iq(seconds)、record_audio(seconds)、tune(hz, mode)、memory(name)、webhook(url, text_or_table)、screenshot()、log(text)、log_row(file, a, b, ...)。\n辅助：distance_km(lat, lon)、bearing_deg(lat, lon)、now()、hour()、json(table)。\n文本：s:contains(x)、s:starts_with(x)、s:ends_with(x)、s:matches('a*b')、s:replace(a, b)。没有 io、os、load、require、pcall 和模式匹配；每个脚本限 100 万条指令、250 毫秒和 16 MB。
 Delete...	删除...
 Distance, km	距离（公里）
 Does not fire for the sample event:	示例事件不会触发：
@@ -2394,3 +2394,21 @@ Tracks	航迹
 Two recordings (reference, surveillance)	两个录音（参考、监视）
 Two-channel recording (cf32)	双通道录音 (cf32)
 Waiting for data.	正在等待数据。
+Rewind	回溯
+Keeps the last seconds of the radio's raw samples in memory, so the signal from just before something happened can be saved too	在内存中保留电台原始采样的最近几秒，这样事件发生前一刻的信号也能保存
+A file source is already there: nothing to keep	已有文件源：无需保留
+Keep a rolling memory of the raw samples	持续在内存中保留原始采样
+Reaches back (s)	回溯时长（秒）
+Memory limit (MB)	内存上限（MB）
+Full rate	完整采样率
+Samples kept	保留的采样
+1 / 4 averages every 4 samples: the memory then reaches 4 times as far back, but only the middle quarter of the band is kept. The settings can be changed while it is off.	1 / 4 表示每 4 个采样取平均：内存可回溯 4 倍的时长，但只保留频带中间的四分之一。关闭时可更改这些设置。
+Reaches back %s using %d MB; %s in memory now (%.3f Msps)	可回溯 %s，占用 %d MB；当前内存中有 %s（%.3f Msps）
+The memory limit shortens the window; raise it or keep fewer samples.	内存上限缩短了窗口；请调高上限或保留更少的采样。
+Save the last (s)	保存最近（秒）
+Then keep recording (s)	之后继续录制（秒）
+Save when the General receiver's squelch opens	通用接收机的静噪打开时保存
+In the General receiver mode; for other events use an automation rule with the action "Save the rewind"	适用于通用接收机模式；其他事件请使用带有“保存回溯”动作的自动化规则
+Save now	立即保存
+Save the rewind	保存回溯
+Seconds to keep after the event	事件后保留的秒数

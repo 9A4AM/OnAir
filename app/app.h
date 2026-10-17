@@ -1037,6 +1037,10 @@ void guideTab(App& a);
 void tvGuideTab(App& a);            // tvrec_ui.cpp: the programme guide grid, search, record / remind
 void tvRecordingsTab(App& a);       // scheduled and finished recordings, recorder settings
 void tvPlaybackBar(App& a);         // timeshift pause / rewind / live and the controls of a recording being played
+void timeMachineLoad(App& a);       // timemachine_ui.cpp: the "Rewind" memory's settings from the preferences (before the first start)
+void timeMachineUi(App& a);         // the button in the diagnostics row and its window
+void timeMachineTick(App& a);       // every frame: the squelch trigger, the end of a save
+bool timeMachineSaveNow(App& a, double postSeconds, std::string& note);   // an automation rule's "Save the rewind"
 void tvRecTick(App& a);             // every frame: the recorder's clock, the schedule, the guide cache
 void tvRecOverrideTs(App& a);       // while a recording plays, a.ts is that stream's service list
 void tvRecShutdown(App& a);         // before the engine goes: finishes the recordings that run

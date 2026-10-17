@@ -68,6 +68,7 @@ bool Engine::offsetAllowed() const {
 void Engine::ingest(cf32* x, size_t n) {
     if (convSwap_.load(std::memory_order_relaxed)) swapIq(x, n);   // a converter that mirrors the spectrum: the signal reads the right way round from here on
     rec_.push(x, n);   // the raw samples, before anything touches them
+    tm_.push(x, n);    // the time machine's rolling memory (a copy into a ring, nothing else)
     if (iqTapOn_.load(std::memory_order_relaxed)) { std::lock_guard<std::mutex> lk(iqTapMu_); if (iqTap_) iqTap_(x, n, srcRate_); }   // selfcal
     ShareServer::get().offer(x, n);   // "Share my radio": the same samples to the rtl_tcp clients (nothing while sharing is off)
     dropNonFinite(x, n);
@@ -104,6 +105,7 @@ void Engine::stop() {
     { std::shared_ptr<MultiTv> m; { std::lock_guard<std::mutex> lk(mtvMu_); m.swap(mtv_); } }   // the channels' receivers stop with the radio
     mtvKeyRate_ = -1;
     rec_.stop();   // a recording ends with the radio (the analysis thread is gone, nothing pushes any more)
+    tm_.off();     // the rolling memory too (the next start() sets it up again)
     {
         std::lock_guard<std::mutex> lk(specQMu_);
         specStop_ = true;
@@ -147,7 +149,30 @@ std::string Engine::recordingName(FileFormat fmt) const {
     return recordingFileName(recordingModeId(stdMode_.load()), radioTune(t).centerHz, srcRate_, fmt);
 }
 
+double Engine::setTimeMachine(double seconds, int decimate, int memBudgetMB) {
+    tmSeconds_ = seconds; tmDecim_ = decimate; tmBudgetMB_ = memBudgetMB;
+    if (!running_ || !src_ || srcRate_ <= 0) return 0;
+    DeviceInfo::Kind kind;
+    { std::lock_guard<std::mutex> lk(tuneMu_); kind = lastDev_.kind; }
+    if (kind == DeviceInfo::File) { tm_.off(); return 0; }   // a file is already there
+    return tm_.configure(seconds, srcRate_, decimate, memBudgetMB);
+}
+
+std::string Engine::timeMachineName() const {
+    TuneSettings t;
+    { std::lock_guard<std::mutex> lk(tuneMu_); t = lastTune_; }
+    return recordingFileName("rewind-" + recordingModeId(stdMode_.load()), radioTune(t).centerHz, tm_.storedRate(), FileFormat::CS8);
+}
+
+bool Engine::timeMachineSaveTo(const std::string& path, double preSeconds, double postSeconds, std::string& err) {
+    TuneSettings t;
+    DeviceInfo::Kind kind;
+    { std::lock_guard<std::mutex> lk(tuneMu_); t = lastTune_; kind = lastDev_.kind; }
+    return tm_.trigger(path, preSeconds, postSeconds, kind == DeviceInfo::Synthetic ? 0.0 : radioTune(t).centerHz, recSigmf_, err);
+}
+
 void Engine::applyReset() {
+    tm_.discard();   // the history is at the old centre frequency
     std::lock_guard<std::mutex> secLk(secFeedMu_);   // the second mode's receiver is reset with the rest, never while it takes a block
     {
         std::lock_guard<std::mutex> lk(secQMu_);

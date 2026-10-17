@@ -612,6 +612,8 @@ void radioMessagesUi(App& a, bool vertical) {
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Saves one zip file with the diagnostics, the log and the last crash report: attach it to a GitHub issue"));
     flowNext(6 * gUi);
     recordUi(a);
+    flowNext(6 * gUi);
+    timeMachineUi(a);
     flowNext(10 * gUi);
     audioRecordUi(a);
     flowNext(6 * gUi);

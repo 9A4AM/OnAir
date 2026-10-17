@@ -329,6 +329,7 @@ void loadPrefs(App& a) {
     a.tvRecAtH = std::max(0, std::min(23, (int)d.getI("tvRecAtH", 0)));
     a.tvRecAtM = std::max(0, std::min(59, (int)d.getI("tvRecAtM", 0)));
     a.engine.setRecordSigmf(a.recSigmf);
+    timeMachineLoad(a);
     loadModeAndGains(d, a);
     loadKeys(d, a, false);
     loadSpectrumRanges(d, a);
