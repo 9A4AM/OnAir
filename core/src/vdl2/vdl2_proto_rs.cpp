@@ -1,6 +1,5 @@
-// VDL Mode 2 bit layer, HDLC and AVLC on top of the Rust crate rust/onair_vdl2 (DECT2_RUST_VDL2): the same functions as vdl2_proto.cpp, which keeps the C++
-// under #ifndef DECT2_RUST_VDL2 together with the burst / HDLC / frame builders for the test signal and the ACARS reader. Empty when the crate is not built.
-#ifdef DECT2_RUST_VDL2
+// VDL Mode 2 bit layer, HDLC and AVLC on top of the Rust crate rust/onair_vdl2: the functions of vdl2_proto.h;
+// vdl2_proto.cpp keeps the burst / HDLC / frame builders for the test signal and the ACARS reader.
 #include "dect2/vdl2/vdl2_proto.h"
 #include <memory>
 #include "dect2/rs/vdl2.h"
@@ -111,4 +110,3 @@ bool vdl2ParseFrame(const uint8_t* f, size_t n, Vdl2Message& m) {
 }
 
 } // namespace dect2
-#endif

@@ -1498,26 +1498,7 @@ if(DECT2_BUILD_TESTS)
     add_test(NAME fuzz_wisun_proto COMMAND fuzz_wisun_proto)
   endif()
 
-  # VDL Mode 2 layers: a frozen copy of vdl2_proto.cpp (namespace dect2_vdl2_ref) against the Rust-backed real one; links dect2core for the ACARS / aero code, the
-  # test's own objects come first
-  if(ONAIR_RUST_VDL2)
-    set(_dir ${CMAKE_BINARY_DIR}/vdl2_ref)
-    add_custom_command(OUTPUT ${_dir}/vdl2_proto_ref.h ${_dir}/vdl2_proto_ref.cpp
-      COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${_dir} -DNAME=vdl2_proto -DHDR=dect2/vdl2/vdl2_proto.h -DCPP=vdl2/vdl2_proto.cpp -DDEF=DECT2_RUST_VDL2
-              "-DFROM=namespace dect2 {" "-DTO=namespace dect2_vdl2_ref {" "-DEXTRA= using namespace dect2;" -P ${ONAIR_ROOT}/cmake/gen_rs_ref.cmake
-      DEPENDS core/include/dect2/vdl2/vdl2_proto.h core/src/vdl2/vdl2_proto.cpp cmake/gen_rs_ref.cmake VERBATIM)
-    set(_real core/src/vdl2/vdl2_proto.cpp core/src/vdl2/vdl2_proto_rs.cpp)
-    set_source_files_properties(${_real} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_VDL2)
-    add_executable(test_vdl2_proto_rs tests/vdl2/test_vdl2_proto_rs.cpp ${_dir}/vdl2_proto_ref.cpp ${_real})
-    target_include_directories(test_vdl2_proto_rs PRIVATE core/include core/src/vdl2 ${_dir} ${ONAIR_ROOT}/core/include/dect2/vdl2)
-    target_link_libraries(test_vdl2_proto_rs PRIVATE dect2core onair_rs)
-    add_test(NAME vdl2_proto_rs COMMAND test_vdl2_proto_rs)
-    add_executable(fuzz_vdl2_proto tests/vdl2/fuzz_vdl2_proto.cpp ${_real})
-    target_include_directories(fuzz_vdl2_proto PRIVATE core/include core/src/vdl2)
-    target_compile_definitions(fuzz_vdl2_proto PRIVATE DECT2_RUST_VDL2)
-    target_link_libraries(fuzz_vdl2_proto PRIVATE dect2core onair_rs)
-    add_test(NAME fuzz_vdl2_proto COMMAND fuzz_vdl2_proto)
-  endif()
+  onair_rust_golden_tests(vdl2 core/src/vdl2 ${ONAIR_ROOT}/core/include/dect2/vdl2)
 
   # HFDL layers: a frozen copy of hfdl_proto.cpp (namespace dect2_hfdl_ref) against the Rust-backed real one; links dect2core for the ACARS / aero code, the test's own
   # objects come first. -ffp-contract=off keeps the Viterbi / coordinate arithmetic identical in both copies
