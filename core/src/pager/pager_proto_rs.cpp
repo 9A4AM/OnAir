@@ -1,6 +1,5 @@
-// The POCSAG / FLEX code word, text and phase layer on top of the Rust crate rust/onair_pager (DECT2_RUST_PAGER): the same functions as the
-// #ifndef DECT2_RUST_PAGER part of pager_proto.cpp, which keeps the generators and the POCSAG message assembler. Empty when the crate is not built.
-#ifdef DECT2_RUST_PAGER
+// The POCSAG / FLEX code word, text and phase layer on top of the Rust crate rust/onair_pager: the functions of pager_proto.h;
+// pager_proto.cpp keeps the generators and the POCSAG message assembler.
 #include "dect2/pager/pager_proto.h"
 #include "dect2/rs/pager.h"
 #include <cstdio>
@@ -107,4 +106,3 @@ void flexDecodePhase(const uint8_t* bits, std::vector<PagerMessage>& out, FlexPh
 
 } // namespace pager
 } // namespace dect2
-#endif

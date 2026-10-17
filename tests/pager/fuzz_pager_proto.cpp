@@ -1,4 +1,4 @@
-// Seeded mutation run of the pager layer (the Rust one under DECT2_RUST_PAGER), meant for DECT2_SANITIZE=ON: code words, text readers, the POCSAG
+// Seeded mutation run of the pager layer, meant for DECT2_SANITIZE=ON: code words, text readers, the POCSAG
 // parser and the FLEX phase decoder must never crash or hang on any bits. Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/pager/pager_proto.h"
 #include <cstdio>
