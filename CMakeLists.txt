@@ -208,6 +208,18 @@ target_link_libraries(dect2_automation PUBLIC dect2_lua)
 find_package(Threads REQUIRED)
 target_link_libraries(dect2_automation PUBLIC Threads::Threads)
 target_link_libraries(dect2core PUBLIC dect2_automation)
+
+# the message database: SQLite (public-domain amalgamation, FTS5) behind a small C++ store
+add_library(dect2_sqlite STATIC third_party/sqlite/sqlite3.c)
+target_include_directories(dect2_sqlite PUBLIC third_party/sqlite)
+target_compile_definitions(dect2_sqlite PRIVATE SQLITE_ENABLE_FTS5 SQLITE_OMIT_LOAD_EXTENSION SQLITE_THREADSAFE=1 SQLITE_DEFAULT_MEMSTATUS=0 SQLITE_OMIT_DEPRECATED SQLITE_OMIT_SHARED_CACHE)
+target_compile_options(dect2_sqlite PRIVATE -w)
+find_package(Threads REQUIRED)
+target_link_libraries(dect2_sqlite PUBLIC Threads::Threads ${CMAKE_DL_LIBS})
+add_library(dect2_msgdb STATIC core/src/msgdb/msgdb.cpp)
+target_include_directories(dect2_msgdb PUBLIC core/include)
+target_link_libraries(dect2_msgdb PUBLIC dect2_sqlite dect2_automation)
+target_link_libraries(dect2core PUBLIC dect2_msgdb)
 # codec2 (FreeDV and M17 speech, LGPL-2.1): built from third_party/codec2 as its own shared library next to the programs and loaded at run
 # time, so the speech works without installing anything. An installed libcodec2 or one in a codecs folder is still found (docs/CODECS.md).
 option(DECT2_BUNDLE_CODEC2 "Build codec2 as a shared library next to OnAir" ON)
@@ -360,7 +372,7 @@ if(DECT2_BUILD_APP)
   set(IMGUI_SOURCES
     third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_tables.cpp third_party/imgui/imgui_widgets.cpp
     third_party/imgui/backends/imgui_impl_glfw.cpp)
-  set(APP_SOURCES app/main.cpp app/main_window.cpp app/main_start.cpp app/ui/draw_ui.cpp app/ui/touch.cpp app/ui/touch_sheets.cpp app/ui/touch_shell.cpp app/ui/main_tabs.cpp app/ui/light_theme.cpp app/state/app_state.cpp app/state/prefs.cpp app/ui/widgets.cpp app/ui/toolbar.cpp app/ui/toolbar_source.cpp app/ui/toolbar_rig.cpp app/ui/statusbar.cpp app/ui/mode_table.cpp app/ui/mode_select.cpp app/ui/ui_common.cpp app/panels/radio_ui.cpp app/gfx/plots.cpp app/panels/analysis_tabs.cpp app/panels/tv.cpp app/panels/subs_ui.cpp app/scan/scan_outputs.cpp app/panels/antenna.cpp app/fm/fm_ui.cpp app/ui/ui2.cpp app/ui/ui2_theme.cpp app/ui/ui2_widgets.cpp app/ui/ui2_shell.cpp app/ui/ui2_faces.cpp app/panels/modeui.cpp app/atsc3/atsc3_ui.cpp app/isdbt/isdbt_ui.cpp app/panels/update_ui.cpp app/scan/scan_db_ui.cpp app/panels/diag_ui.cpp app/ui/wizard.cpp app/gfx/plot.cpp app/gfx/gfx_png.cpp app/ui/popout.cpp app/panels/codec_help.cpp app/platform/discord_rpc.cpp app/panels/passes_ui.cpp app/df/df_ui.cpp app/panels/feeds_ui.cpp app/scan/scanner_ui.cpp app/memory/memory_options.cpp app/memory/memory_ui.cpp app/memory/memory_edit.cpp app/memory/memory_selftest.cpp app/map/map_ui.cpp app/map/map_send.cpp app/panels/rotator_ui.cpp app/panels/results_ui.cpp app/state/rx_prefs.cpp app/state/receivers.cpp app/panels/fixit.cpp app/panels/gallery_ui.cpp app/state/results_export.cpp app/state/results_export_ui.cpp app/panels/credits_ui.cpp app/bandplan/bandplan_ui.cpp app/sweep/sweep_ui.cpp app/freqdb/freqdb_ui.cpp app/ui/tour.cpp app/clips/clips_core.cpp app/clips/clips_gen.cpp app/clips/clips_ui.cpp app/transcribe/transcribe_app.cpp app/panels/automation_ui.cpp app/panels/automation_sink.cpp app/platform/spawn.cpp)
+  set(APP_SOURCES app/main.cpp app/main_window.cpp app/main_start.cpp app/ui/draw_ui.cpp app/ui/touch.cpp app/ui/touch_sheets.cpp app/ui/touch_shell.cpp app/ui/main_tabs.cpp app/ui/light_theme.cpp app/state/app_state.cpp app/state/prefs.cpp app/ui/widgets.cpp app/ui/toolbar.cpp app/ui/toolbar_source.cpp app/ui/toolbar_rig.cpp app/ui/statusbar.cpp app/ui/mode_table.cpp app/ui/mode_select.cpp app/ui/ui_common.cpp app/panels/radio_ui.cpp app/gfx/plots.cpp app/panels/analysis_tabs.cpp app/panels/tv.cpp app/panels/subs_ui.cpp app/scan/scan_outputs.cpp app/panels/antenna.cpp app/fm/fm_ui.cpp app/ui/ui2.cpp app/ui/ui2_theme.cpp app/ui/ui2_widgets.cpp app/ui/ui2_shell.cpp app/ui/ui2_faces.cpp app/panels/modeui.cpp app/atsc3/atsc3_ui.cpp app/isdbt/isdbt_ui.cpp app/panels/update_ui.cpp app/scan/scan_db_ui.cpp app/panels/diag_ui.cpp app/ui/wizard.cpp app/gfx/plot.cpp app/gfx/gfx_png.cpp app/ui/popout.cpp app/panels/codec_help.cpp app/platform/discord_rpc.cpp app/panels/passes_ui.cpp app/df/df_ui.cpp app/panels/feeds_ui.cpp app/scan/scanner_ui.cpp app/memory/memory_options.cpp app/memory/memory_ui.cpp app/memory/memory_edit.cpp app/memory/memory_selftest.cpp app/map/map_ui.cpp app/map/map_send.cpp app/panels/rotator_ui.cpp app/panels/results_ui.cpp app/state/rx_prefs.cpp app/state/receivers.cpp app/panels/fixit.cpp app/panels/gallery_ui.cpp app/state/results_export.cpp app/state/results_export_ui.cpp app/panels/credits_ui.cpp app/bandplan/bandplan_ui.cpp app/sweep/sweep_ui.cpp app/freqdb/freqdb_ui.cpp app/ui/tour.cpp app/clips/clips_core.cpp app/clips/clips_gen.cpp app/clips/clips_ui.cpp app/transcribe/transcribe_app.cpp app/panels/automation_ui.cpp app/panels/automation_sink.cpp app/panels/msgdb_ui.cpp app/platform/spawn.cpp)
   foreach(m ${DECT2_MODES})   # app/<mode>/*.cpp: the screens of a mode added after FM
     file(GLOB DECT2_MODE_UI CONFIGURE_DEPENDS app/${m}/*.cpp)
     list(APPEND APP_SOURCES ${DECT2_MODE_UI})
@@ -487,6 +499,9 @@ if(DECT2_BUILD_TESTS)
 
   add_executable(test_results_export tests/results/test_results_export.cpp app/state/results_export.cpp)
   add_test(NAME results_export COMMAND test_results_export)
+  add_executable(test_msgdb tests/msgdb/test_msgdb.cpp)
+  target_link_libraries(test_msgdb PRIVATE dect2_msgdb)
+  add_test(NAME msgdb COMMAND test_msgdb)
 
   add_executable(test_clips tests/clips/test_clips.cpp app/clips/clips_core.cpp app/clips/clips_gen.cpp app/state/results_export.cpp core/src/audio/clip_ring.cpp core/src/common/png.cpp core/src/common/inflate.cpp)
   target_include_directories(test_clips PRIVATE core/include)
