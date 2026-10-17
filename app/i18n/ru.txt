@@ -2138,3 +2138,50 @@ Forget the history	Очистить историю
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Что этот приёмник слышал по диапазонам: маяки (NCDXF/IARU, Long Dashes, одиночные буквы, несущие) и станции FT8 / FT4 / FT2 / WSPR, декодированные на экране HF-цифры. Диапазон открыт, если за последние 30 минут услышаны не менее 3 станций. Только свой приёмник: ничего не скачивается, поэтому нет солнечного потока и K-индекса.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	За последние 30 минут ничего не слышно: запустите HF-маяки или экран HF-цифры и оставьте работать.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Последние 24 часа (UTC), ячейки по 15 минут, темнее: меньше станций
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	%d бинов помечено в последнем спектре
+Add spectrum at the target l	Добавить спектр при l цели
+Az %.1f  El %.1f   site %.3f, %.3f	Аз %.1f  Выс %.1f   место %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	Тело                  Аз     Выс    кульминация (UTC)  восход  заход
+Calibration / RFI	Калибровка / RFI
+Capture cold	Снять холодную
+Capture hot	Снять горячую
+Cassiopeia A	Кассиопея A
+Clear map	Очистить карту
+Compute	Вычислить
+Custom (RA / Dec)	Своя (RA / Dec)
+Cygnus A	Лебедь A
+Elevation of the selected body over the UTC day (hours)	Высота выбранного тела за сутки UTC (часы)
+Fit lines	Подогнать линии
+Flag and interpolate RFI	Помечать и интерполировать RFI
+Galactic position	Галактическая позиция
+IAU standard solar motion (off: Schoenrich 2010)	Стандартное движение Солнца МАС (выкл.: Schoenrich 2010)
+LSR axis	Ось LSR
+Moon	Луна
+No processed spectrum yet.	Обработанного спектра пока нет.
+Nothing logged yet.	В журнале пока пусто.
+Open session	Открыть сеанс
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	Наведите антенну на каждую галактическую долготу l при b = 0 (задаётся во вкладке Скорость), накопите и добавьте спектр сюда.
+Pointing	Наведение
+R0 kpc	R0 кпк
+Sagittarius A*	Стрелец A*
+Save CSV	Сохранить CSV
+Save FITS	Сохранить FITS
+Save SigMF text	Сохранить текст SigMF
+Save session	Сохранить сеанс
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	Место — положение приёмника (Вид > Карта). Время — часы компьютера, UTC.
+Sun	Солнце
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	Для кривой вращения нужны спектры на нескольких долготах между 0 и 90 (или 270 и 360).
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	К цели: вращение Земли %+.2f, орбита %+.2f, Солнце %+.2f; всего %+.2f км/с (добавить к топоцентрической скорости)
+Tsys K	Tsys K
+V0 km/s	V0 км/с
+Velocity	Скорость
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   приёмник %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Y-фактор: снимите спектр на горячей нагрузке (поглотитель при комнатной температуре), затем на холодной (или холодном небе), указав их температуры.
+cold K	холод. K
+fit rms %.3f K	СКО подгонки %.3f K
+hot K	горяч. K
+no positions yet	позиций пока нет
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	пик K, центр км/с (LSR), FWHM км/с, площадь K км/с; один сигма
+sigma	сигма
+sky + spill K	небо + переливание K

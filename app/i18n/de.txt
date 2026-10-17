@@ -2155,3 +2155,50 @@ Forget the history	Verlauf löschen
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Was dieser Empfänger gehört hat, nach Band: Baken (NCDXF/IARU, Long Dashes, Einzelbuchstaben, Träger) und die im HF-Digital-Bildschirm dekodierten FT8-/FT4-/FT2-/WSPR-Stationen. Ein Band gilt als offen, wenn in den letzten 30 Minuten mindestens 3 Stationen gehört wurden. Nur der eigene Empfänger: nichts wird heruntergeladen, also kein Solar-Flux und kein K-Index.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	In den letzten 30 Minuten nichts gehört: HF-Baken oder den HF-Digital-Bildschirm starten und laufen lassen.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Letzte 24 Stunden (UTC), Zellen zu 15 Minuten, dunkler: weniger Stationen
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	%d Bins im letzten Spektrum markiert
+Add spectrum at the target l	Spektrum bei Ziel-l hinzufügen
+Az %.1f  El %.1f   site %.3f, %.3f	Az %.1f  El %.1f   Standort %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	Objekt                Az     El     Kulmination (UTC)  Aufgang  Untergang
+Calibration / RFI	Kalibrierung / RFI
+Capture cold	Kalt erfassen
+Capture hot	Heiß erfassen
+Cassiopeia A	Cassiopeia A
+Clear map	Karte leeren
+Compute	Berechnen
+Custom (RA / Dec)	Eigene (RA / Dec)
+Cygnus A	Cygnus A
+Elevation of the selected body over the UTC day (hours)	Höhe des gewählten Objekts über den UTC-Tag (Stunden)
+Fit lines	Linien anpassen
+Flag and interpolate RFI	RFI markieren und interpolieren
+Galactic position	Galaktische Position
+IAU standard solar motion (off: Schoenrich 2010)	IAU-Standardsonnenbewegung (aus: Schoenrich 2010)
+LSR axis	LSR-Achse
+Moon	Mond
+No processed spectrum yet.	Noch kein verarbeitetes Spektrum.
+Nothing logged yet.	Noch nichts protokolliert.
+Open session	Sitzung öffnen
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	Antenne auf jede galaktische Länge l bei b = 0 richten (in Geschwindigkeit einstellen), integrieren, dann das Spektrum hier hinzufügen.
+Pointing	Ausrichtung
+R0 kpc	R0 kpc
+Sagittarius A*	Sagittarius A*
+Save CSV	CSV speichern
+Save FITS	FITS speichern
+Save SigMF text	SigMF-Text speichern
+Save session	Sitzung speichern
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	Standort ist der Empfängerstandort (Ansicht > Karte). Zeit ist die Computeruhr, UTC.
+Sun	Sonne
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	Die Rotationskurve braucht Spektren bei mehreren Längen zwischen 0 und 90 (oder 270 und 360).
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	Zum Ziel hin: Erdrotation %+.2f, Bahn %+.2f, Sonne %+.2f; gesamt %+.2f km/s (zur topozentrischen Geschwindigkeit addieren)
+Tsys K	Tsys K
+V0 km/s	V0 km/s
+Velocity	Geschwindigkeit
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   Empfänger %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Y-Faktor: ein Spektrum an einer heißen Last (Absorber bei Raumtemperatur), dann an einer kalten Last (oder dem kalten Himmel) erfassen, mit deren Temperaturen.
+cold K	kalt K
+fit rms %.3f K	Anpassungs-RMS %.3f K
+hot K	heiß K
+no positions yet	noch keine Positionen
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	Spitze K, Mitte km/s (LSR), FWHM km/s, Fläche K km/s; ein Sigma
+sigma	Sigma
+sky + spill K	Himmel + Spill K

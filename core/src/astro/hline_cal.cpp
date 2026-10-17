@@ -279,7 +279,7 @@ std::vector<GaussComp> guessComponents(const std::vector<double>& x, const std::
         if (fwhm <= 0) fwhm = 2 * std::fabs(x[1] - x[0]);
         GaussComp g; g.amp = pk; g.centre = x[(size_t)k]; g.sigma = fwhm / 2.354820045;
         out.push_back(g);
-        for (int i = 0; i < n; i++) { const double t = (x[(size_t)i] - g.centre) / g.sigma; r[(size_t)i] -= pk * std::exp(-0.5 * t * t); }
+        for (int i = 0; i < n; i++) if (std::fabs(x[(size_t)i] - g.centre) < 1.5 * fwhm) r[(size_t)i] = 0;   // the component's neighbourhood is done (a blend is left to the fit)
     }
     return out;
 }

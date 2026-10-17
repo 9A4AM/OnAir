@@ -2155,3 +2155,50 @@ Forget the history	清除历史
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	本接收机按波段听到的内容:信标(NCDXF/IARU、Long Dashes、单字母、载波)以及在 HF 数字界面解码的 FT8 / FT4 / FT2 / WSPR 电台。最近 30 分钟内至少听到 3 个电台即视为波段开放。仅使用自己的接收机:不下载任何数据,因此没有太阳通量和 K 指数。
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	最近 30 分钟没有听到任何信号:请启动 HF 信标或 HF 数字界面并保持运行。
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	最近 24 小时(UTC),每格 15 分钟,颜色越深电台越少
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	最近一次频谱中标记了 %d 个频点
+Add spectrum at the target l	在目标 l 处添加频谱
+Az %.1f  El %.1f   site %.3f, %.3f	方位 %.1f  仰角 %.1f   站点 %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	天体                  方位   仰角   中天 (UTC)  升起   落下
+Calibration / RFI	校准 / RFI
+Capture cold	采集冷负载
+Capture hot	采集热负载
+Cassiopeia A	仙后座 A
+Clear map	清除地图
+Compute	计算
+Custom (RA / Dec)	自定义 (赤经 / 赤纬)
+Cygnus A	天鹅座 A
+Elevation of the selected body over the UTC day (hours)	所选天体在 UTC 一天内的仰角 (小时)
+Fit lines	拟合谱线
+Flag and interpolate RFI	标记并插值 RFI
+Galactic position	银道位置
+IAU standard solar motion (off: Schoenrich 2010)	IAU 标准太阳运动 (关闭: Schoenrich 2010)
+LSR axis	LSR 轴
+Moon	月球
+No processed spectrum yet.	尚无处理后的频谱。
+Nothing logged yet.	尚无日志。
+Open session	打开会话
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	将天线依次指向 b = 0 的各银经 l (在“速度”中设置),积分后在此添加频谱。
+Pointing	指向
+R0 kpc	R0 kpc
+Sagittarius A*	人马座 A*
+Save CSV	保存 CSV
+Save FITS	保存 FITS
+Save SigMF text	保存 SigMF 文本
+Save session	保存会话
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	站点为接收机位置 (视图 > 地图),时间为电脑时钟 (UTC)。
+Sun	太阳
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	旋转曲线需要 0 到 90 (或 270 到 360) 之间多个银经的频谱。
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	朝向目标: 地球自转 %+.2f、公转 %+.2f、太阳 %+.2f;合计 %+.2f km/s (加到站心速度上)
+Tsys K	Tsys K
+V0 km/s	V0 km/s
+Velocity	速度
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   接收机 %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Y 因子: 分别在热负载 (室温吸收体) 和冷负载 (或冷天空) 下采集频谱,并填入各自温度。
+cold K	冷 K
+fit rms %.3f K	拟合 rms %.3f K
+hot K	热 K
+no positions yet	尚无位置
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	峰值 K,中心 km/s (LSR),FWHM km/s,面积 K km/s;一个 sigma
+sigma	sigma
+sky + spill K	天空 + 溢出 K

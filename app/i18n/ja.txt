@@ -2155,3 +2155,50 @@ Forget the history	履歴を消去
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	この受信機がバンド別に聞いたもの:ビーコン(NCDXF/IARU、Long Dashes、単文字、キャリア)と、HFデジタル画面でデコードしたFT8 / FT4 / FT2 / WSPR局。直近30分に3局以上が聞こえたバンドはオープンです。自分の受信機のみ:何もダウンロードしないため、太陽フラックスやKインデックスはありません。
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	直近30分は何も聞こえていません:HFビーコンまたはHFデジタル画面を起動したままにしてください。
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	直近24時間(UTC)、15分ごとのセル、濃いほど局が少ない
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	直近のスペクトルで %d ビンをフラグ
+Add spectrum at the target l	目標の l にスペクトルを追加
+Az %.1f  El %.1f   site %.3f, %.3f	方位 %.1f  仰角 %.1f   地点 %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	天体                  方位   仰角   南中 (UTC)  出     入
+Calibration / RFI	校正 / RFI
+Capture cold	低温を取得
+Capture hot	高温を取得
+Cassiopeia A	カシオペヤ座A
+Clear map	マップを消去
+Compute	計算
+Custom (RA / Dec)	カスタム (RA / Dec)
+Cygnus A	はくちょう座A
+Elevation of the selected body over the UTC day (hours)	選択した天体の UTC 一日の仰角 (時間)
+Fit lines	線をフィット
+Flag and interpolate RFI	RFI をフラグして補間
+Galactic position	銀河座標
+IAU standard solar motion (off: Schoenrich 2010)	IAU 標準太陽運動 (オフ: Schoenrich 2010)
+LSR axis	LSR 軸
+Moon	月
+No processed spectrum yet.	処理済みスペクトルはまだありません。
+Nothing logged yet.	まだ記録はありません。
+Open session	セッションを開く
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	アンテナを b = 0 の各銀経 l に向け (速度タブで設定)、積分してからここにスペクトルを追加します。
+Pointing	ポインティング
+R0 kpc	R0 kpc
+Sagittarius A*	いて座A*
+Save CSV	CSV を保存
+Save FITS	FITS を保存
+Save SigMF text	SigMF テキストを保存
+Save session	セッションを保存
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	地点は受信機の位置 (表示 > マップ)、時刻はコンピュータの時計 (UTC) です。
+Sun	太陽
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	回転曲線には 0〜90 (または 270〜360) の複数の銀経のスペクトルが必要です。
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	目標方向: 地球自転 %+.2f、公転 %+.2f、太陽 %+.2f、合計 %+.2f km/s (トポセントリック速度に加算)
+Tsys K	Tsys K
+V0 km/s	V0 km/s
+Velocity	速度
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   受信機 %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Y ファクター: 高温負荷 (室温の吸収体) と低温負荷 (または冷たい空) のスペクトルをそれぞれの温度とともに取得します。
+cold K	低温 K
+fit rms %.3f K	フィット rms %.3f K
+hot K	高温 K
+no positions yet	位置はまだありません
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	ピーク K、中心 km/s (LSR)、FWHM km/s、面積 K km/s; 1 シグマ
+sigma	シグマ
+sky + spill K	空 + スピルオーバー K

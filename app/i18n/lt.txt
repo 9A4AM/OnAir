@@ -2155,3 +2155,50 @@ Forget the history	Išvalyti istoriją
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Ką šis imtuvas girdėjo pagal diapazoną: švyturiai (NCDXF/IARU, Long Dashes, pavienės raidės, nešlys) ir HF skaitmeniniame ekrane dekoduotos FT8 / FT4 / FT2 / WSPR stotys. Diapazonas atidarytas, kai per paskutines 30 minučių išgirstos bent 3 stotys. Tik savo imtuvas: nieko neatsisiunčiama, todėl nėra saulės srauto ir K indekso.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Per paskutines 30 minučių nieko negirdėta: paleiskite HF švyturius arba HF skaitmeninį ekraną ir palikite veikti.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Paskutinės 24 valandos (UTC), 15 minučių langeliai, tamsiau: mažiau stočių
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	%d kanalų pažymėta paskutiniame spektre
+Add spectrum at the target l	Pridėti spektrą ties tikslo l
+Az %.1f  El %.1f   site %.3f, %.3f	Az %.1f  El %.1f   vieta %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	Kūnas                 Az     El     kulminacija (UTC)  tekėjimas  leidimasis
+Calibration / RFI	Kalibravimas / RFI
+Capture cold	Užfiksuoti šaltą
+Capture hot	Užfiksuoti karštą
+Cassiopeia A	Kasiopėja A
+Clear map	Išvalyti žemėlapį
+Compute	Skaičiuoti
+Custom (RA / Dec)	Pasirinkta (RA / Dec)
+Cygnus A	Gulbė A
+Elevation of the selected body over the UTC day (hours)	Pasirinkto kūno aukštis per UTC parą (valandos)
+Fit lines	Pritaikyti linijas
+Flag and interpolate RFI	Pažymėti ir interpoliuoti RFI
+Galactic position	Galaktikos padėtis
+IAU standard solar motion (off: Schoenrich 2010)	SAS standartinis Saulės judėjimas (išjungta: Schoenrich 2010)
+LSR axis	LSR ašis
+Moon	Mėnulis
+No processed spectrum yet.	Dar nėra apdoroto spektro.
+Nothing logged yet.	Dar nieko nėra žurnale.
+Open session	Atidaryti seansą
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	Nukreipkite anteną į kiekvieną galaktinę ilgumą l, kai b = 0 (nustatoma skiltyje Greitis), integruokite ir pridėkite spektrą čia.
+Pointing	Nukreipimas
+R0 kpc	R0 kpc
+Sagittarius A*	Šaulys A*
+Save CSV	Įrašyti CSV
+Save FITS	Įrašyti FITS
+Save SigMF text	Įrašyti SigMF tekstą
+Save session	Įrašyti seansą
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	Vieta yra imtuvo vieta (Rodymas > Žemėlapis). Laikas – kompiuterio laikrodis, UTC.
+Sun	Saulė
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	Sukimosi kreivei reikia spektrų keliose ilgumose tarp 0 ir 90 (arba 270 ir 360).
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	Link tikslo: Žemės sukimasis %+.2f, orbita %+.2f, Saulė %+.2f; iš viso %+.2f km/s (pridėti prie toposcentrinio greičio)
+Tsys K	Tsys K
+V0 km/s	V0 km/s
+Velocity	Greitis
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   imtuvas %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Y koeficientas: užfiksuokite spektrą su karšta apkrova (kambario temperatūros sugėriklis), paskui su šalta apkrova (ar šaltu dangumi), nurodydami temperatūras.
+cold K	šalta K
+fit rms %.3f K	pritaikymo rms %.3f K
+hot K	karšta K
+no positions yet	dar nėra padėčių
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	viršūnė K, centras km/s (LSR), FWHM km/s, plotas K km/s; vienas sigma
+sigma	sigma
+sky + spill K	dangus + išsiliejimas K

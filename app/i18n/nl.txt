@@ -2155,3 +2155,50 @@ Forget the history	Geschiedenis wissen
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Wat deze ontvanger heeft gehoord, per band: bakens (NCDXF/IARU, Long Dashes, losse letters, dragers) en de FT8- / FT4- / FT2- / WSPR-stations die in het HF-digitaalscherm zijn gedecodeerd. Een band is open als in de laatste 30 minuten minstens 3 stations zijn gehoord. Alleen de eigen ontvanger: er wordt niets gedownload, dus geen zonneflux of K-index.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Niets gehoord in de laatste 30 minuten: start de HF-bakens of het HF-digitaalscherm en laat het draaien.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Laatste 24 uur (UTC), cellen van 15 minuten, donkerder: minder stations
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	%d kanalen gemarkeerd in het laatste spectrum
+Add spectrum at the target l	Spectrum toevoegen bij doel-l
+Az %.1f  El %.1f   site %.3f, %.3f	Az %.1f  El %.1f   locatie %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	Object                Az     El     doorgang (UTC)  opkomst  ondergang
+Calibration / RFI	Kalibratie / RFI
+Capture cold	Koud vastleggen
+Capture hot	Warm vastleggen
+Cassiopeia A	Cassiopeia A
+Clear map	Kaart wissen
+Compute	Berekenen
+Custom (RA / Dec)	Eigen (RA / Dec)
+Cygnus A	Cygnus A
+Elevation of the selected body over the UTC day (hours)	Hoogte van het gekozen object over de UTC-dag (uren)
+Fit lines	Lijnen fitten
+Flag and interpolate RFI	RFI markeren en interpoleren
+Galactic position	Galactische positie
+IAU standard solar motion (off: Schoenrich 2010)	IAU-standaard zonnebeweging (uit: Schoenrich 2010)
+LSR axis	LSR-as
+Moon	Maan
+No processed spectrum yet.	Nog geen verwerkt spectrum.
+Nothing logged yet.	Nog niets gelogd.
+Open session	Sessie openen
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	Richt de antenne op elke galactische lengte l bij b = 0 (instellen bij Snelheid), integreer en voeg het spectrum hier toe.
+Pointing	Richting
+R0 kpc	R0 kpc
+Sagittarius A*	Boogschutter A*
+Save CSV	CSV opslaan
+Save FITS	FITS opslaan
+Save SigMF text	SigMF-tekst opslaan
+Save session	Sessie opslaan
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	Locatie is de ontvangerlocatie (Beeld > Kaart). Tijd is de computerklok, UTC.
+Sun	Zon
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	De rotatiecurve heeft spectra nodig op meerdere lengtes tussen 0 en 90 (of 270 en 360).
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	Naar het doel: aardrotatie %+.2f, baan %+.2f, zon %+.2f; totaal %+.2f km/s (optellen bij de topocentrische snelheid)
+Tsys K	Tsys K
+V0 km/s	V0 km/s
+Velocity	Snelheid
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   ontvanger %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Y-factor: leg een spectrum vast op een warme belasting (absorber op kamertemperatuur), daarna op een koude belasting (of de koude hemel), met hun temperaturen.
+cold K	koud K
+fit rms %.3f K	fit-rms %.3f K
+hot K	warm K
+no positions yet	nog geen posities
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	piek K, midden km/s (LSR), FWHM km/s, oppervlak K km/s; één sigma
+sigma	sigma
+sky + spill K	hemel + spillover K

@@ -2138,3 +2138,50 @@ Forget the history	Cancella la cronologia
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Cosa ha sentito questo ricevitore, per banda: radiofari (NCDXF/IARU, Long Dashes, lettere singole, portanti) e stazioni FT8 / FT4 / FT2 / WSPR decodificate nella schermata HF digitale. Una banda è aperta quando negli ultimi 30 minuti sono state sentite almeno 3 stazioni. Solo il ricevitore proprio: non si scarica nulla, quindi niente flusso solare né indice K.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Nulla sentito negli ultimi 30 minuti: avvia i radiofari HF o la schermata HF digitale e lasciala in esecuzione.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Ultime 24 ore (UTC), celle da 15 minuti, più scuro: meno stazioni
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	%d canali segnalati nell'ultimo spettro
+Add spectrum at the target l	Aggiungi spettro alla l del bersaglio
+Az %.1f  El %.1f   site %.3f, %.3f	Az %.1f  El %.1f   sito %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	Corpo                 Az     El     transito (UTC)  sorge   tramonta
+Calibration / RFI	Calibrazione / RFI
+Capture cold	Acquisisci freddo
+Capture hot	Acquisisci caldo
+Cassiopeia A	Cassiopea A
+Clear map	Cancella mappa
+Compute	Calcola
+Custom (RA / Dec)	Personalizzato (AR / Dec)
+Cygnus A	Cigno A
+Elevation of the selected body over the UTC day (hours)	Elevazione del corpo scelto nel giorno UTC (ore)
+Fit lines	Adatta le righe
+Flag and interpolate RFI	Segnala e interpola RFI
+Galactic position	Posizione galattica
+IAU standard solar motion (off: Schoenrich 2010)	Moto solare standard IAU (spento: Schoenrich 2010)
+LSR axis	Asse LSR
+Moon	Luna
+No processed spectrum yet.	Nessuno spettro elaborato.
+Nothing logged yet.	Nulla registrato.
+Open session	Apri sessione
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	Punta l'antenna a ogni longitudine galattica l con b = 0 (si imposta in Velocità), integra, poi aggiungi qui lo spettro.
+Pointing	Puntamento
+R0 kpc	R0 kpc
+Sagittarius A*	Sagittarius A*
+Save CSV	Salva CSV
+Save FITS	Salva FITS
+Save SigMF text	Salva testo SigMF
+Save session	Salva sessione
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	Il sito è la posizione del ricevitore (Vista > Mappa). L'ora è l'orologio del computer, UTC.
+Sun	Sole
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	La curva di rotazione richiede spettri a più longitudini tra 0 e 90 (o 270 e 360).
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	Verso il bersaglio: rotazione terrestre %+.2f, orbita %+.2f, Sole %+.2f; totale %+.2f km/s (da sommare alla velocità topocentrica)
+Tsys K	Tsys K
+V0 km/s	V0 km/s
+Velocity	Velocità
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   ricevitore %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Fattore Y: acquisisci uno spettro su un carico caldo (assorbitore a temperatura ambiente), poi su un carico freddo (o il cielo freddo), con le loro temperature.
+cold K	freddo K
+fit rms %.3f K	rms dell'adattamento %.3f K
+hot K	caldo K
+no positions yet	nessuna posizione
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	picco K, centro km/s (LSR), FWHM km/s, area K km/s; un sigma
+sigma	sigma
+sky + spill K	cielo + spillover K
