@@ -162,6 +162,7 @@ onair_rust_use(dect2core)   # -DDECT2_RUST_<MODULE> for every active module (cor
 # clang and gcc do both by default (arm64, macOS), Rust never does, and the two builds (DECT2_RUST ON and OFF) should give the same numbers bit for bit
 set_source_files_properties(core/src/tv/dvbsub.cpp core/src/tv/dvbsub_rs.cpp core/src/adsb/adsb_msg.cpp core/src/dmr/dmr_fec.cpp core/src/p25/p25_proto.cpp core/src/tetra/tetra_pdu.cpp core/src/tetra/tetra_pdu_rs.cpp core/src/packet/packet_aprs.cpp core/src/packet/packet_aprs_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
 target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp core/src/df/df.cpp core/src/df/source.cpp core/src/df/position.cpp)
+target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/engine/sig_known.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp)
 target_sources(dect2core PRIVATE core/src/net/remote_api.cpp core/src/results/rx_json.cpp core/src/source/gain_opt.cpp core/src/mesh/mesh_report.cpp core/src/source/rotator.cpp)   # remote-control API server, telemetry JSON, gain optimiser, mesh report text, antenna rotator
 target_sources(dect2core PRIVATE core/src/tx/tx.cpp core/src/tx/tx_payload.cpp core/src/tx/tx_voice.cpp core/src/audio/audioin.cpp core/src/audio/videoin.cpp core/src/audio/neural_nr.cpp)   # transmit: modes, payloads, live voice/video, the TX session (tx.h)
 foreach(m ${DECT2_MODES})
@@ -1533,6 +1534,13 @@ if(DECT2_BUILD_TESTS)
       target_link_libraries(${m}tool PRIVATE dect2core)
     endif()
   endforeach()
+  # the signal identifier: the whole matrix (every mode's test signal at 10 / 20 / 30 dB SNR, with and without the frequency known) is slow; the quick one
+  # (20 dB, no frequency) runs with the rest (tests/specx/test_specx_idmatrix.cpp, docs/signal-id.md)
+  if(TARGET test_specx_idmatrix)
+    set_tests_properties(specx_idmatrix PROPERTIES LABELS slow TIMEOUT 3000)
+    add_test(NAME specx_idmatrix_quick COMMAND test_specx_idmatrix --quick)
+    set_tests_properties(specx_idmatrix_quick PROPERTIES TIMEOUT 600)
+  endif()
   # a fake mbelib (no codec) for the tests of the runtime loader; the real one is installed by the user (docs/CODECS.md)
   add_library(fake_mbelib MODULE tests/p25/fake_mbelib.c)
   set_target_properties(fake_mbelib PROPERTIES PREFIX "" C_VISIBILITY_PRESET hidden)

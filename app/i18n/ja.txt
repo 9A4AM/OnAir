@@ -593,10 +593,6 @@ Region %s, %s wide	範囲 %s、幅 %s
 collecting samples	サンプル収集中
 Working it out...	解析中...
 Nothing to identify here.	ここには識別できるものがありません。
-Looks like: %s	推定: %s
-Looks like: %s (frame sync found %dx)	推定: %s (フレーム同期を %d 回検出)
-No mode fits well.	よく合うモードがありません。
-Open %s on this frequency	この周波数で %s を開く
 Switch to %s and tune to %s	%s に切り替えて %s に同調
 Candidates	候補
 (sync %dx)	(同期 %d 回)
@@ -2202,3 +2198,31 @@ no positions yet	位置はまだありません
 peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	ピーク K、中心 km/s (LSR)、FWHM km/s、面積 K km/s; 1 シグマ
 sigma	シグマ
 sky + spill K	空 + スピルオーバー K
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f ボー
+, %s wide	, 幅 %s
+, bursts (%.0f %% on)	, バースト (オン %.0f %%)
+, every %.3g ms	, %.3g ms ごと
+, useful symbol %.4g us	, 有効シンボル %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	スコアは当てはまる根拠の割合です。パーセントは OnAir 自身のテスト信号で較正したもので、すべての実際の信号で検証したものではありません。
+Add to memory	Memory に追加
+Best guess	最有力候補
+Copy as text	テキストとしてコピー
+Could be %s (%.0f %%) or %s (%.0f %%).	%s (%.0f %%) または %s (%.0f %%) かもしれません。
+Could not open this mode.	このモードを開けませんでした。
+Evidence for %s:	%s の根拠:
+I do not know what this is: nothing I know fits well enough to say.	これが何かは分かりません。既知のどれも十分には当てはまりません。
+Identify all signals	すべての信号を識別
+Identify: click a signal or drag across it. Esc or I leaves the tool.	識別: 信号をクリックするか、その上をドラッグします。Esc または I でツールを終了します。
+Measured	測定値
+Most likely %s, %.0f %% sure.	おそらく %s (確度 %.0f %%)。
+No signal stands out of the noise here.	ここにはノイズから突き出た信号がありません。
+Open in %s	%s で開く
+Opened %s	%s を開きました
+Perhaps %s (%.0f %%).	たぶん %s (%.0f %%)。
+Signals in the view	表示内の信号
+The frequency list has here:	周波数リストにはここに次があります:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	これは何? 信号をクリックするかその上をドラッグすると、OnAir が正体と確度を示します。キー I。Shift+ドラッグならツールなしでも使えます。
+Why?	なぜ?
+Identify selected	選択を識別
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	選択した信号に無線機を合わせて、その正体を示します (サンプルレートが信号をカバーするモードでレシーバーが動作している必要があります)

@@ -593,10 +593,6 @@ Region %s, %s wide	Zakres %s, szerokość %s
 collecting samples	zbieranie próbek
 Working it out...	Analizowanie...
 Nothing to identify here.	Nie ma tu nic do zidentyfikowania.
-Looks like: %s	Wygląda na: %s
-Looks like: %s (frame sync found %dx)	Wygląda na: %s (synchronizacja ramek znaleziona %dx)
-No mode fits well.	Żaden tryb dobrze nie pasuje.
-Open %s on this frequency	Otwórz %s na tej częstotliwości
 Switch to %s and tune to %s	Przełącz na %s i dostrój do %s
 Candidates	Kandydaci
 (sync %dx)	(synchronizacja %dx)
@@ -2202,3 +2198,31 @@ no positions yet	brak pozycji
 peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	szczyt K, środek km/s (LSR), FWHM km/s, pole K km/s; jedno sigma
 sigma	sigma
 sky + spill K	niebo + spillover K
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f bodów
+, %s wide	, szerokość %s
+, bursts (%.0f %% on)	, impulsy (%.0f %% aktywny)
+, every %.3g ms	, co %.3g ms
+, useful symbol %.4g us	, symbol użyteczny %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Wynik to część dowodów, które się zgadzają; procenty skalibrowano na własnych sygnałach testowych OnAir, a nie na każdym prawdziwym sygnale.
+Add to memory	Dodaj do Memory
+Best guess	Najlepsze przypuszczenie
+Copy as text	Kopiuj jako tekst
+Could be %s (%.0f %%) or %s (%.0f %%).	Może to być %s (%.0f %%) lub %s (%.0f %%).
+Could not open this mode.	Nie udało się otworzyć tego trybu.
+Evidence for %s:	Dowody dla %s:
+I do not know what this is: nothing I know fits well enough to say.	Nie wiem, co to jest: nic z tego, co znam, nie pasuje wystarczająco dobrze.
+Identify all signals	Zidentyfikuj wszystkie sygnały
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Identyfikacja: kliknij sygnał lub przeciągnij po nim. Esc lub I kończy narzędzie.
+Measured	Zmierzone
+Most likely %s, %.0f %% sure.	Najpewniej %s, pewność %.0f %%.
+No signal stands out of the noise here.	Żaden sygnał nie wyróżnia się tu z szumu.
+Open in %s	Otwórz w %s
+Opened %s	Otwarto %s
+Perhaps %s (%.0f %%).	Może %s (%.0f %%).
+Signals in the view	Sygnały w widoku
+The frequency list has here:	Lista częstotliwości zawiera tu:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Co to jest? Kliknij sygnał lub przeciągnij po nim, a OnAir powie, co to jest i jak jest tego pewny. Klawisz I. Shift+przeciąganie działa także bez narzędzia.
+Why?	Dlaczego?
+Identify selected	Zidentyfikuj zaznaczony
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Strojenie radia na zaznaczony sygnał i podanie, co to jest (odbiornik musi pracować w trybie, którego częstotliwość próbkowania go obejmuje)

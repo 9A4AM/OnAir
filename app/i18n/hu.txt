@@ -588,10 +588,6 @@ Region %s, %s wide	Régió %s, %s széles
 collecting samples	minták gyűjtése
 Working it out...	Kiszámítás...
 Nothing to identify here.	Itt nincs mit azonosítani.
-Looks like: %s	Úgy tűnik: %s
-Looks like: %s (frame sync found %dx)	Úgy tűnik: %s (keretszinkron %dx találva)
-No mode fits well.	Egyik üzemmód sem illik jól.
-Open %s on this frequency	%s megnyitása ezen a frekvencián
 Switch to %s and tune to %s	Váltás erre: %s, és hangolás: %s
 Candidates	Jelöltek
 (sync %dx)	(szinkron %dx)
@@ -2188,3 +2184,31 @@ no positions yet	még nincs pozíció
 peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	csúcs K, közép km/s (LSR), FWHM km/s, terület K km/s; egy szigma
 sigma	szigma
 sky + spill K	ég + túlcsordulás K
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f baud
+, %s wide	, %s széles
+, bursts (%.0f %% on)	, impulzusok (%.0f %% aktív)
+, every %.3g ms	, %.3g ms-onként
+, useful symbol %.4g us	, hasznos szimbólum %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	A pontszám a teljesülő bizonyítékok aránya; a százalékokat az OnAir saját tesztjelein kalibráltuk, nem minden valódi jelen.
+Add to memory	Hozzáadás a Memoryhoz
+Best guess	Legjobb tipp
+Copy as text	Másolás szövegként
+Could be %s (%.0f %%) or %s (%.0f %%).	Lehet %s (%.0f %%) vagy %s (%.0f %%).
+Could not open this mode.	Ezt a módot nem sikerült megnyitni.
+Evidence for %s:	%s mellett szóló bizonyítékok:
+I do not know what this is: nothing I know fits well enough to say.	Nem tudom, mi ez: semmi, amit ismerek, nem illik elég jól.
+Identify all signals	Minden jel azonosítása
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Azonosítás: kattints egy jelre, vagy húzd át rajta. Esc vagy I kilép az eszközből.
+Measured	Mért
+Most likely %s, %.0f %% sure.	Valószínűleg %s, %.0f %% biztos.
+No signal stands out of the noise here.	Itt egy jel sem emelkedik ki a zajból.
+Open in %s	Megnyitás: %s
+Opened %s	%s megnyitva
+Perhaps %s (%.0f %%).	Talán %s (%.0f %%).
+Signals in the view	Jelek a nézetben
+The frequency list has here:	A frekvencialista itt ezt tartalmazza:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Mi ez? Kattints egy jelre, vagy húzd át rajta, és az OnAir megmondja, mi az és mennyire biztos. I billentyű. A Shift+húzás az eszköz nélkül is működik.
+Why?	Miért?
+Identify selected	A kijelölt azonosítása
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	A rádiót a kijelölt jelre hangolja, és megmondja, mi az (a vevőnek olyan módban kell lennie, amelynek mintavételi sebessége lefedi)

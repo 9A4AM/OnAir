@@ -6,6 +6,15 @@
 #include "dect2/p25/p25_proto.h"
 #include "dect2/p25/p25_rx.h"
 #include "dect2/p25/p25_tel.h"
+#include "dect2/p25/trunk.h"
+#include "dect2/audio/audio_rec.h"
+#include "dect2/common/u8file.h"
+#include "platform/platform.h"
+#include <chrono>
+#include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <algorithm>
 #include <cstdarg>
 #include <cstdio>
@@ -16,11 +25,41 @@
 namespace {
 
 struct State {
-    int view = 0;                        // 0 now, 1 calls, 2 trunking, 3 talkgroups, 4 messages
+    int view = 0;                        // 0 now, 1 calls, 2 trunking, 3 talkgroups, 4 messages, 5 follow
     bool wasRunning = false;
+    float hang = 2.0f;
     float pushedVol = -1; bool pushedMute = false;
 };
 State S;
+
+// ---------------------------------------------------------------- the trunking follower (core/src/p25/trunk_*.cpp, docs/trunking.md)
+struct Trunk {
+    dect2::trunk::Controller ctl;
+    bool on = false, loaded = false, dirty = false;
+    uint64_t tsbkSeen = 0;
+    int forcedSel = 0;
+    uint64_t recCall = 0;
+    std::string status;
+    char csvPath[300] = "";
+};
+Trunk T;
+
+double nowSec() { using namespace std::chrono; return duration<double>(steady_clock::now().time_since_epoch()).count(); }
+std::string tgFile() { return plat::dataDir() + "/trunk_talkgroups.csv"; }
+
+void tgLoad(const std::string& path, bool merge) {
+    std::ifstream f(std::filesystem::u8path(path), std::ios::binary);
+    if (!f) { T.status = "cannot open " + path; return; }
+    std::stringstream ss; ss << f.rdbuf();
+    std::string err; int skipped = 0;
+    const int n = T.ctl.tgs.importCsv(ss.str(), &err, &skipped, merge);
+    T.status = std::to_string(n) + " talkgroups read" + (skipped ? ", " + std::to_string(skipped) + " rows skipped. " + err : std::string());
+}
+void tgSave(const std::string& path) {
+    std::ofstream f(std::filesystem::u8path(path), std::ios::binary);
+    if (f) f << T.ctl.tgs.exportCsv();
+    else T.status = "cannot write " + path;
+}
 
 bool live(const App& a) { return a.rx.standard == 51; }   // the engine reports its standard code minus one
 
@@ -218,7 +257,161 @@ void messageView(App& a) {
 
 // ---------------------------------------------------------------- hooks
 
+void trunkTick(App& a) {
+    if (!T.loaded) { T.loaded = true; if (std::filesystem::exists(std::filesystem::u8path(tgFile()))) tgLoad(tgFile(), false); }
+    if (!T.on || !live(a)) return;
+    using namespace dect2::trunk;
+    const double now = nowSec();
+    const dect2::P25Telemetry& t = a.rx.p25;
+    for (const auto& r : t.tsbks) {
+        if (r.seq <= T.tsbkSeen) continue;
+        T.tsbkSeen = r.seq;
+        dect2::p25::Tsbk k; k.opcode = r.opcode; k.mfid = r.mfid; k.args = r.args;
+        T.ctl.onTsbk(k, r.nac, now);
+    }
+    T.ctl.setCapture(radioCenterMhz(a) * 1e6, wideActive(a) ? t.inputRate : 0);
+    T.ctl.tick(now);
+    for (const Action& ac : T.ctl.takeActions()) {
+        switch (ac.kind) {
+        case Action::Retune: tuneFreq(a, ac.freqHz / 1e6); break;
+        case Action::Notice: T.ctl.messages.push_back(ac.text); break;
+        case Action::RecordStart: {
+            dect2::AudioRecorder& rec = dect2::AudioRecorder::instance();
+            if (!dect2::p25ImbeAvailable() || rec.active()) break;   // no vocoder: there is no sound to save
+            dect2::AudioRecOptions o; o.gated = true;
+            char nm[96]; time_t tt = time(nullptr); struct tm g;
+#ifdef _WIN32
+            localtime_s(&g, &tt);
+#else
+            localtime_r(&tt, &g);
+#endif
+            char ts[32]; strftime(ts, sizeof ts, "%Y%m%d-%H%M%S", &g);
+            snprintf(nm, sizeof nm, "/recordings/trunk_%s_%s.wav", ac.text.c_str(), ts);
+            std::string err;
+            if (rec.start(plat::dataDir() + nm, o, err)) { T.recCall = ac.callId; if (auto* r = T.ctl.log.byId(ac.callId)) r->audioPath = plat::dataDir() + nm; }
+            break;
+        }
+        case Action::RecordStop:
+            if (T.recCall == ac.callId) { dect2::AudioRecorder::instance().stop(); T.recCall = 0; }
+            break;
+        default: break;
+        }
+    }
+    if (wideActive(a)) {   // the sound follows the call that should be heard
+        const uint64_t id = T.ctl.follower.audibleCall();
+        const CallRecord* r = id ? T.ctl.log.byId(id) : nullptr;
+        if (r) {
+            const double ctr = radioCenterMhz(a) * 1e6;
+            const dect2::WideCarrier* best = nullptr;
+            for (const auto& c : a.rx.wide) if (std::fabs(ctr + c.hz - r->freqHz) < 7000 && (!best || c.levelDb > best->levelDb)) best = &c;
+            if (best) { a.wideSel = best->id; T.forcedSel = best->id; }
+        } else if (T.forcedSel) { a.wideSel = 0; T.forcedSel = 0; }
+    }
+    if (T.dirty) { T.dirty = false; tgSave(tgFile()); }
+}
+
+void followView(App& a) {
+    using namespace dect2::trunk;
+    ImGui::Checkbox("Follow calls", &T.on);
+    ImGui::SameLine(0, 10 * gUi);
+    ImGui::TextDisabled("(?)");
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Follows the voice grants of a P25 control channel. Inside a wide capture every channel is decoded and the sound moves to the call you should hear;\n"
+                          "outside it the one radio leaves the control channel for the call and comes back. Encrypted calls are logged as encrypted and never followed.\n"
+                          "Sound needs your own mbelib; the talkgroups and the call log work without it. See docs/trunking.md.");
+    if (!T.on) { ImGui::TextDisabled("%s", live(a) ? "off: the control channel is only decoded, nothing is followed" : "start the receiver first"); }
+    const double now = nowSec();
+    const ControllerStatus st = T.ctl.status(now);
+    kvRow(a, "state", "%s%s", followStateName(st.state), st.controlLocked ? "" : " (no control channel message lately)");
+    kvRow(a, "control channel", "%llu good, %llu bad (%.0f %% ok), %u calls on air, %llu not followed",
+          (unsigned long long)st.tsbkGood, (unsigned long long)st.tsbkBad, st.crcOkPct, (unsigned)st.activeCalls, (unsigned long long)st.missed);
+    const SiteInfo& si = T.ctl.sys.site();
+    if (si.valid) kvRow(a, "site", "WACN %05X system %03X RFSS %d site %d NAC %03X", si.wacn < 0 ? 0 : si.wacn, si.sysId < 0 ? 0 : si.sysId, si.rfss, si.site, si.nac < 0 ? 0 : si.nac);
+    if (wideActive(a)) ImGui::TextDisabled("wide capture: calls inside the span are followed by the carrier decoders (up to %d at once)", T.ctl.follower.config().maxSlices);
+    else ImGui::TextDisabled("single channel: the radio leaves the control channel for each call (turn on whole-span decoding to follow inside the capture)");
+    FollowConfig fc = T.ctl.follower.config();
+    ImGui::SetNextItemWidth(110 * gUi); bool ch = ImGui::SliderInt("simultaneous calls", &fc.maxSlices, 1, 4);
+    ImGui::SameLine(0, 10 * gUi); ImGui::SetNextItemWidth(110 * gUi); ch |= ImGui::SliderFloat("hang time s", &S.hang, 0.5f, 6.f, "%.1f");
+    fc.hangSec = S.hang;
+    ch |= ImGui::Checkbox("retune the radio", &fc.allowRetune);
+    ImGui::SameLine(0, 10 * gUi);
+    bool so = T.ctl.tgs.scanOnly();
+    if (ImGui::Checkbox("scan list only", &so)) T.ctl.tgs.setScanOnly(so);
+    if (ch) T.ctl.follower.setConfig(fc);
+    ImGui::Spacing();
+    ImGui::TextDisabled("Now talking");
+    const auto nt = T.ctl.nowTalking();
+    if (nt.empty()) ImGui::TextDisabled("  nobody");
+    else if (ImGui::BeginTable("##tnow", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV)) {
+        ImGui::TableSetupColumn("Talkgroup"); ImGui::TableSetupColumn("Name"); ImGui::TableSetupColumn("Unit"); ImGui::TableSetupColumn("Channel"); ImGui::TableSetupColumn("Notes", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableHeadersRow();
+        for (const CallRecord* r : nt) {
+            const TgEntry* e = T.ctl.tgs.find(r->tg);
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::Text("%s%d", r->group ? "" : "unit ", r->tg);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(e ? e->alpha.c_str() : "");
+            ImGui::TableNextColumn(); ImGui::Text("%d", r->src);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(mhz(r->freqHz).c_str());
+            ImGui::TableNextColumn();
+            if (r->encrypted) ImGui::TextColored(pal::warnAmber(), "encrypted: not followed");
+            else if (r->followed) ImGui::TextColored(pal::okGreen(), "following");
+            else ImGui::TextDisabled("%s", r->note.c_str());
+        }
+        ImGui::EndTable();
+    }
+    ImGui::Spacing();
+    ImGui::TextDisabled("Talkgroup list");
+    if (ImGui::Button("Import CSV")) { const std::string p = openFileDialog(); if (!p.empty()) { tgLoad(p, true); T.dirty = true; } }
+    ImGui::SameLine();
+    if (ImGui::Button("Export CSV")) { const std::string p = saveFileDialog("talkgroups.csv"); if (!p.empty()) tgSave(p); }
+    ImGui::SameLine();
+    if (ImGui::Button("Add heard")) { for (const auto& g : a.rx.p25.talkgroups) T.ctl.tgs.upsert(g.tg); T.dirty = true; }
+    if (!T.status.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", T.status.c_str()); }
+    if (ImGui::BeginTable("##ttg", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, ImVec2(0, 170 * gUi))) {
+        ImGui::TableSetupScrollFreeze(0, 1);
+        ImGui::TableSetupColumn("Talkgroup"); ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch); ImGui::TableSetupColumn("Listen"); ImGui::TableSetupColumn("Lockout");
+        ImGui::TableSetupColumn("Priority"); ImGui::TableSetupColumn("Tag");
+        ImGui::TableHeadersRow();
+        std::vector<TgEntry>& v = const_cast<std::vector<TgEntry>&>(T.ctl.tgs.entries());
+        for (TgEntry& e : v) {
+            ImGui::PushID(e.id);
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::Text("%d", e.id);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(e.alpha.c_str());
+            ImGui::TableNextColumn(); if (ImGui::Checkbox("##l", &e.listen)) T.dirty = true;
+            ImGui::TableNextColumn(); if (ImGui::Checkbox("##x", &e.lockout)) T.dirty = true;
+            ImGui::TableNextColumn(); ImGui::SetNextItemWidth(70 * gUi); if (ImGui::DragInt("##p", &e.priority, 0.1f, 0, 10, e.priority ? "%d" : "none")) T.dirty = true;
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(e.tag.c_str());
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+    ImGui::Spacing();
+    ImGui::TextDisabled("Call log");
+    if (ImGui::Button("Export log CSV")) { const std::string p = saveFileDialog("call_log.csv"); if (!p.empty()) { std::ofstream f(std::filesystem::u8path(p), std::ios::binary); f << T.ctl.log.exportCsv(&T.ctl.tgs); } }
+    if (ImGui::BeginTable("##tlog", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, ImVec2(0, std::max(120.f * gUi, ImGui::GetContentRegionAvail().y)))) {
+        ImGui::TableSetupScrollFreeze(0, 1);
+        ImGui::TableSetupColumn("Time UTC"); ImGui::TableSetupColumn("Talkgroup"); ImGui::TableSetupColumn("Unit"); ImGui::TableSetupColumn("Length"); ImGui::TableSetupColumn("Channel");
+        ImGui::TableSetupColumn("Encrypted"); ImGui::TableSetupColumn("Notes", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableHeadersRow();
+        const auto& rs = T.ctl.log.records();
+        for (size_t i = rs.size(); i-- > 0;) {
+            const CallRecord& r = rs[i];
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(clock(r.wallTime).c_str());
+            ImGui::TableNextColumn(); ImGui::Text("%d", r.tg);
+            ImGui::TableNextColumn(); ImGui::Text("%d", r.src);
+            ImGui::TableNextColumn(); ImGui::Text("%.1f s", r.active ? std::max(r.durSec, r.lastSec - r.startSec) : r.durSec);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(mhz(r.freqHz).c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(r.encrypted ? "yes" : "");
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(r.note.c_str());
+        }
+        ImGui::EndTable();
+    }
+}
+
 void tick(App& a) {
+    trunkTick(a);
     if (!a.engine.running()) { S.wasRunning = false; return; }
     dect2::P25Receiver& r = a.engine.p25();
     if (!S.wasRunning || a.volume != S.pushedVol || a.muted != S.pushedMute) {   // the sound controls are shared with the other modes
@@ -229,8 +422,8 @@ void tick(App& a) {
 }
 
 void tab(App& a) {
-    subNav("p25v", S.view, {"Now", "Calls", "Trunking", "Talkgroups", "Messages"});
-    if (S.view == 0) nowView(a); else if (S.view == 1) callsView(a); else if (S.view == 2) trunkingView(a); else if (S.view == 3) talkgroupView(a); else messageView(a);
+    subNav("p25v", S.view, {"Now", "Calls", "Trunking", "Talkgroups", "Messages", "Follow"});
+    if (S.view == 0) nowView(a); else if (S.view == 1) callsView(a); else if (S.view == 2) trunkingView(a); else if (S.view == 3) talkgroupView(a); else if (S.view == 4) messageView(a); else followView(a);
 }
 
 void list(App& a) {

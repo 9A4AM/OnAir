@@ -579,10 +579,6 @@ Region %s, %s wide	Область %s, шириной %s
 collecting samples	сбор отсчётов
 Working it out...	Вычисление...
 Nothing to identify here.	Здесь нечего определять.
-Looks like: %s	Похоже на: %s
-Looks like: %s (frame sync found %dx)	Похоже на: %s (синхронизация кадров найдена %dx)
-No mode fits well.	Ни один режим не подходит.
-Open %s on this frequency	Открыть %s на этой частоте
 Switch to %s and tune to %s	Переключиться на %s и настроиться на %s
 Candidates	Кандидаты
 (sync %dx)	(синхр. %dx)
@@ -2185,3 +2181,31 @@ no positions yet	позиций пока нет
 peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	пик K, центр км/с (LSR), FWHM км/с, площадь K км/с; один сигма
 sigma	сигма
 sky + spill K	небо + переливание K
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f бод
+, %s wide	, ширина %s
+, bursts (%.0f %% on)	, пакеты (включён %.0f %%)
+, every %.3g ms	, каждые %.3g мс
+, useful symbol %.4g us	, полезный символ %.4g мкс
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Оценка — доля подтверждающихся признаков; проценты откалиброваны по собственным тестовым сигналам OnAir, а не по всем реальным сигналам.
+Add to memory	Добавить в Memory
+Best guess	Лучшая догадка
+Copy as text	Копировать как текст
+Could be %s (%.0f %%) or %s (%.0f %%).	Возможно, %s (%.0f %%) или %s (%.0f %%).
+Could not open this mode.	Не удалось открыть этот режим.
+Evidence for %s:	Признаки для %s:
+I do not know what this is: nothing I know fits well enough to say.	Не знаю, что это: ничто из известного мне не подходит достаточно хорошо.
+Identify all signals	Определить все сигналы
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Определение: щёлкните сигнал или проведите по нему мышью. Esc или I выходит из режима.
+Measured	Измерено
+Most likely %s, %.0f %% sure.	Скорее всего %s, уверенность %.0f %%.
+No signal stands out of the noise here.	Здесь ни один сигнал не выделяется из шума.
+Open in %s	Открыть в %s
+Opened %s	Открыт %s
+Perhaps %s (%.0f %%).	Возможно, %s (%.0f %%).
+Signals in the view	Сигналы в окне
+The frequency list has here:	В списке частот здесь есть:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Что это? Щёлкните сигнал или проведите по нему мышью, и OnAir скажет, что это и насколько он уверен. Клавиша I. Shift+перетаскивание работает и без режима.
+Why?	Почему?
+Identify selected	Определить выбранный
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Настроить радио на выбранный сигнал и сказать, что это (приёмник должен работать в режиме, частота дискретизации которого его покрывает)

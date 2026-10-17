@@ -371,6 +371,7 @@ struct App {
     int atvNbtv = 0;          // analog TV: 0 television, 1 NBTV / mechanical TV on AM, 2 the same on narrow FM (the audio is the picture)
     int atvNbtvLines = 32;    // NBTV / mechanical: lines (24 .. 240) and pictures a second; 32 at 12.5 is the NBTVA standard
     float atvNbtvFps = 12.5f;
+    bool identifyTool = false;   // the Identify tool (key I): a click or a drag on the spectrum identifies the signal instead of tuning (never saved)
     bool wideDecode = false;  // "Whole span": decode every carrier in the visible span, not only the tuned one (only for modes that opt in: modeSupportsWide)
     uint64_t wideFamMask = 0; // the switch per mode family (bit = family); wideDecode is the current mode's bit
     int wideSel = 0;          // the carrier the sound and the detail follow (0: the best locked one)
@@ -955,6 +956,10 @@ void specxDrawBookmarks(ImDrawList* dl, double loHz, double hiHz, float x0, floa
 // has at sampleCentreRadioHz (rfOfCentreHz: its RF, for the bands); identifyAt: the signal under a click on the spectrum (MHz)
 void identifyStart(App& a, double sampleCentreRadioHz, double offHz, double widthHz, double rfOfCentreHz);
 void identifyAt(App& a, double clickMhz);
+void identifyRegion(App& a, double loMhz, double hiMhz);   // a dragged region (MHz)
+void identifyAll(App& a);                                  // every signal in the capture, in a table
+void identifyTuned(App& a, double freqHz, double bwHz);    // tunes the radio to a signal found by the sweep and identifies it there
+bool identifyRegionMhz(double& loMhz, double& hiMhz);      // the region of the open card, to draw it on the plots
 void identifyWindow(App& a);   // every frame: the window while it is open
 // general_ui.cpp: the general receiver's channel marker on the spectrum (plotId 0) and the waterfall (1): a click puts the channel
 // there (inside the band, without retuning the radio), its filter edges can be dragged
