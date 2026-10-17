@@ -44,6 +44,7 @@ struct LimeApi {
     const char* (DECT2_CALL* last_error)(void) = nullptr;                          // optional
     int (DECT2_CALL* get_lo_range)(lms_device_t*, bool, range_t*) = nullptr;      // optional
     int (DECT2_CALL* get_sample_rate)(lms_device_t*, bool, size_t, double*, double*) = nullptr;   // optional
+    int (DECT2_CALL* set_clock_freq)(lms_device_t*, size_t, double) = nullptr;     // optional: LMS_SetClockFreq (the external reference)
     bool ok = false;
     DynLib lib;
     static std::vector<std::string> names() { return libNames("LimeSuite", {".23.11-1", ".22.09-1", ".20.10-1", ".20.01-1", ".19.04-1", ".18.06-1", ""}, {"libLimeSuite.dll", "LimeSuite.dll"}); }
@@ -56,7 +57,7 @@ struct LimeApi {
              lib.get(set_gain_db, "LMS_SetGaindB") && lib.get(calibrate, "LMS_Calibrate") && lib.get(setup_stream, "LMS_SetupStream") &&
              lib.get(destroy_stream, "LMS_DestroyStream") && lib.get(start_stream, "LMS_StartStream") && lib.get(stop_stream, "LMS_StopStream") &&
              lib.get(recv_stream, "LMS_RecvStream");
-        if (ok) { lib.opt(get_clock_freq, "LMS_GetClockFreq"); lib.opt(last_error, "LMS_GetLastErrorMessage"); lib.opt(get_lo_range, "LMS_GetLOFrequencyRange"); lib.opt(get_sample_rate, "LMS_GetSampleRate"); }
+        if (ok) { lib.opt(get_clock_freq, "LMS_GetClockFreq"); lib.opt(last_error, "LMS_GetLastErrorMessage"); lib.opt(get_lo_range, "LMS_GetLOFrequencyRange"); lib.opt(get_sample_rate, "LMS_GetSampleRate"); lib.opt(set_clock_freq, "LMS_SetClockFreq"); }
     }
     std::string text() const {   // LimeSuite's own words for the last failure
         const char* t = last_error ? last_error() : nullptr;
@@ -75,6 +76,10 @@ LimeApi& lime() {
 }
 
 namespace {
+
+// LMS_CLOCK_EXTREF (LimeSuite.h): the external reference clock, LMS_SetClockFreq(dev, LMS_CLOCK_EXTREF, Hz). Not LMS_CLOCK_REF (0), which is
+// the reference LimeSuite believes the board has and is read-only here.
+constexpr size_t kLmsClockExtRef = 0x2000;
 
 std::string mhz(double hz) {
     char b[32];
@@ -116,6 +121,17 @@ protected:
             if (lime().open(&dev_, info_.c_str(), nullptr) != 0 || !dev_) { dev_ = nullptr; err = "LimeSDR: cannot open the radio again after a reference clock misdetection" + lime().text(); return false; }
         }
         if (lime().init(dev_) != 0) { err = "LimeSDR: initialisation failed" + lime().text() + limeOpenHint(board_, kOnWindows); return false; }
+        // the reference clock (TuneSettings "clock", "extref"): the board's own VCTCXO unless the user picked an external one. After LMS_Init,
+        // before the sample rate: the clock generator is programmed from it. "internal" makes no call (the board starts on its own oscillator).
+        if (radioOption(s, "clock", "internal") == "external") {
+            const double hz = std::atof(radioOption(s, "extref", "10").c_str()) * 1e6;
+            if (!limeHasExtRef(board_) || !lime().set_clock_freq || lime().set_clock_freq(dev_, kLmsClockExtRef, hz) != 0) {
+                err = "LimeSDR: the external reference clock (" + mhz(hz) + " MHz) was refused" + (lime().set_clock_freq ? lime().text() : std::string(" (this LimeSuite cannot set it)")) +
+                      (limeHasExtRef(board_) ? "" : ". This board has no reference clock input");
+                openFailure_ = OpenFailure::Final;
+                return false;
+            }
+        }
         if (lime().enable_channel(dev_, false, 0, true) != 0) { err = "LimeSDR: cannot enable the receiver" + lime().text(); return false; }
         lo_ = hi_ = 0;
         LimeApi::range_t fr{0, 0, 0};
@@ -307,6 +323,16 @@ void listLime(std::vector<DeviceInfo>& out) {
         }
         d.gainMinDb = 0; d.gainMaxDb = 73;
         d.settings = {ppmSetting(0.01)};
+        if (limeHasExtRef(b) && lime().set_clock_freq) {
+            d.settings.push_back(choiceSetting("clock", "Reference clock",
+                                               "Internal: the board's own oscillator (the default). External: a reference on the CLK IN connector (3.3 V logic or a\n"
+                                               "sine, not above 3.3 V); without one the board does not run. Takes effect when the radio is started.",
+                                               {"internal", "external"}, {"Internal", "External"}, "internal", true));
+            d.settings.push_back(choiceSetting("extref", "External reference frequency",
+                                               "The frequency of the signal on the reference input, when the reference clock is External. It must match: a wrong value\n"
+                                               "shifts every frequency by the same ratio.",
+                                               {"10", "20", "30.72", "40"}, {"10 MHz", "20 MHz", "30.72 MHz", "40 MHz"}, "10", true));
+        }
         {   // the range the library gave when this radio was last opened, else the data sheet's (the Mini's tuner starts higher)
             std::lock_guard<std::mutex> lk(gRangeMu);
             auto it = gRange.find(info);

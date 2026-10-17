@@ -41,6 +41,11 @@ inline LimeBoard limeBoard(const std::string& info) {
     return b;
 }
 
+// Which boards take an external reference clock through LMS_SetClockFreq(LMS_CLOCK_EXTREF). The LimeSDR-USB (and the LimeNET boards) have a
+// CLK IN connector. The LimeSDR Mini (1.x and 2.x) has no reference input socket, so the option is not offered for it. A Soapy-listed XTRX
+// or LimeSDR-USB is covered by the generic SoapySDR clock-source setting instead.
+inline bool limeHasExtRef(const LimeBoard& b) { return !b.mini; }
+
 // The rates the Mini offers. The ADC runs at 30.72 Msps at most (its FT601 USB 3 link is the limit too); LimeSuite reaches the lower ones by
 // decimation. A pair per rate: the driver picks the smallest one at or above what a mode asks for.
 inline std::vector<std::pair<double, double>> limeMiniRates() {

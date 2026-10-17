@@ -52,6 +52,7 @@ int main(int argc, char** argv) {
         CHECK(limeAutoAntenna(a, 100e6, n) == 3 && limeAutoAntenna(a, 1699e6, n) == 3 && limeAutoAntenna(a, 1700e6, n) == 1 && limeAutoAntenna(a, 3400e6, n) == 1, "Mini input by frequency");
         const std::vector<std::string> m = {"NONE", "LNAH", "LNAL", "LNAW"};
         CHECK(limeAutoAntenna(u, 522e6, m) == 2 && limeAutoAntenna(u, 1499e6, m) == 2 && limeAutoAntenna(u, 1500e6, m) == 1, "LimeSDR-USB input by frequency");
+        CHECK(!limeHasExtRef(a) && !limeHasExtRef(b) && limeHasExtRef(u), "reference clock option: Mini none, LimeSDR-USB yes");
         CHECK(limeAutoAntenna(a, 100e6, {"NONE"}) == -1, "no usable input");
         CHECK(limeGainDb(-5) == 0 && limeGainDb(30.4) == 30 && limeGainDb(30.6) == 31 && limeGainDb(200) == 73, "gain mapping");
         CHECK(has(limeOpenHint(a, false), "LimeUtil --update") && !has(limeOpenHint(a, false), "FTDI") && has(limeOpenHint(a, true), "FTDI") && !has(limeOpenHint(u, true), "FTDI"), "open hint");

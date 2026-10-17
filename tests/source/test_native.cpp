@@ -945,7 +945,26 @@ static void radioSettingsChecks(const char* dir, const char* ext) {
         e.clear();
         const bool ok = src->start(t, ring, e);
         CHECK(ok && std::fabs(st("lime.freq") - 522e6 / (1 - 3e-6)) < 1e-3, "LimeSDR -3 ppm: freq %.3f", st("lime.freq"));
+        CHECK(st("lime.extrefCalls") == kNone, "LimeSDR defaults: reference clock calls %.0f", st("lime.extrefCalls"));
         if (ok) src->stop();
+        {   // the reference clock: offered for the LimeSDR-USB, written as LMS_CLOCK_EXTREF at the picked frequency
+            const DeviceInfo d = first("lime");
+            bool hasClock = false, hasRef = false;
+            for (const auto& r : d.settings) { hasClock |= r.key == "clock"; hasRef |= r.key == "extref"; }
+            CHECK(hasClock && hasRef, "LimeSDR-USB: clock settings offered (%d %d)", hasClock, hasRef);
+            TuneSettings x = t;
+            x.radio = {{"clock", "external"}, {"extref", "30.72"}};
+            auto ext = makeSource(d);
+            e.clear();
+            const bool ok2 = ext->start(x, ring, e);
+            CHECK(ok2 && st("lime.extref") == 30.72e6, "LimeSDR external reference: %.0f Hz (%s)", st("lime.extref"), e.c_str());
+            if (ok2) ext->stop();
+            setenv("FAKE_LIME_NO_EXTREF", "1", 1);
+            auto bad = makeSource(d);
+            e.clear();
+            CHECK(!bad->start(x, ring, e) && has(e, "external reference"), "a refused reference clock is reported: %s", e.c_str());
+            unsetenv("FAKE_LIME_NO_EXTREF");
+        }
     }
 
     if (use(lib("uhd").c_str())) {
@@ -965,6 +984,12 @@ static void radioSettingsChecks(const char* dir, const char* ext) {
         ok = ext->start(t, ring, e);
         CHECK(ok && st("usrp.clock") == 2 && st("usrp.clockMb") == 0 && std::fabs(st("usrp.freq") - 522e6 / 1.000001) < 1e-3, "USRP external reference, 1 ppm: clock %.0f freq %.3f", st("usrp.clock"), st("usrp.freq"));
         if (ok) ext->stop();
+        t.radio = {{"time", "mimo"}};
+        auto tsrc = makeSource(d);
+        e.clear();
+        ok = tsrc->start(t, ring, e);
+        CHECK(ok && st("usrp.time") == 4 && st("usrp.timeCalls") == 1, "USRP time source mimo: %.0f", st("usrp.time"));
+        if (ok) tsrc->stop();
     }
     fakeState = nullptr;
 }

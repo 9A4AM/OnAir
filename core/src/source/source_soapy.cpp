@@ -102,6 +102,24 @@ std::string soapyBool(const std::string& v) {
     for (auto& c : l) c = (char)tolower((unsigned char)c);
     return l == "true" || l == "1" || l == "on" || l == "yes" ? "1" : "0";
 }
+// The clock and time (PPS) sources the driver lists (setClockSource / setTimeSource), offered only when there is a choice. The default is what the
+// radio has now. Applied when the radio is started (the setting restarts it): switching the reference under a running stream would glitch it.
+const char kClockKey[] = "clocksrc", kTimeKey[] = "timesrc";
+RadioSetting sourceSetting(const char* key, const char* label, const char* help, const std::vector<std::string>& list, const std::string& now) {
+    std::vector<std::string> names;
+    for (const auto& n : list) names.push_back(n == "gpsdo" ? "GPSDO" : n == "mimo" ? "MIMO cable" : n == "external" ? "External" : n == "internal" ? "Internal" : n);
+    return choiceSetting(key, label, help, list, names, std::find(list.begin(), list.end(), now) != list.end() ? now : list.front(), true);
+}
+void sourceSettings(SoapySDR::Device* dev, std::vector<RadioSetting>& out) {
+    try {
+        const auto l = dev->listClockSources();
+        if (l.size() > 1) out.push_back(sourceSetting(kClockKey, "Reference clock", "Where the radio takes its reference clock from (internal oscillator, an external 10 MHz input, a GPSDO ...), as the SoapySDR driver lists it.\nTakes effect when the radio is started.", l, dev->getClockSource()));
+    } catch (...) {}
+    try {
+        const auto l = dev->listTimeSources();
+        if (l.size() > 1) out.push_back(sourceSetting(kTimeKey, "Time source (PPS)", "Where the radio takes its one-pulse-per-second time reference from, as the SoapySDR driver lists it.\nTakes effect when the radio is started.", l, dev->getTimeSource()));
+    } catch (...) {}
+}
 std::vector<RadioSetting> soapySettings(SoapySDR::Device* dev, const std::string& biasKey) {
     std::vector<RadioSetting> out;
     SoapySDR::ArgInfoList infos;
@@ -222,6 +240,7 @@ void rememberRanges(const std::string& key, SoapySDR::Device* dev) {
     try { r.antennas = dev->listAntennas(SOAPY_SDR_RX, 0); } catch (...) {}
     r.settings = soapySettings(dev, r.biasKey);
     if (rfStage(dev)) r.settings.insert(r.settings.begin(), rfSetting(dev));
+    sourceSettings(dev, r.settings);
     std::lock_guard<std::mutex> lk(gRangesMu);
     gRanges[key] = r;
 }
@@ -330,6 +349,20 @@ private:
                     dev_->setBandwidth(SOAPY_SDR_RX, ch, nearestRate(bws, want));
                 }
             } catch (...) {}
+        }
+        if (!live) {   // the clock and time sources the user picked; the radio's own choice stays when none was
+            std::vector<RadioSetting> src;
+            sourceSettings(dev_, src);
+            for (const auto& r : src) {
+                const std::string want = radioOption(s, r.key, r.def);
+                if (want == r.def) continue;
+                try {
+                    if (r.key == kClockKey) dev_->setClockSource(want); else dev_->setTimeSource(want);
+                } catch (const std::exception& e) {
+                    err = std::string("SoapySDR: the ") + (r.key == kClockKey ? "reference clock" : "time source") + " \"" + want + "\" was refused: " + e.what();
+                    return false;
+                }
+            }
         }
         // the driver's own settings the user changed (TuneSettings "soapy.<key>"), before the frequency: some move the tuning (direct sampling)
         for (const auto& kv : s.radio) {
