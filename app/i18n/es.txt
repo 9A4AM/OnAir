@@ -1573,3 +1573,6 @@ Copy VLC command	Copy VLC command
 Copy mpv command	Copy mpv command
 Copy ffplay command	Copy ffplay command
 Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).
+clear picture	borrar imagen
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Borra la imagen y las líneas que ha reunido el decodificador, y empieza una imagen nueva con el siguiente tono de inicio o fase. Las imágenes que ya están en la lista de la derecha se conservan.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Borra las listas NAVTEX y DSC y la imagen del fax meteorológico.

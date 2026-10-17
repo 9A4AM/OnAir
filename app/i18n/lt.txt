@@ -1573,3 +1573,6 @@ Copy VLC command	Kopijuoti VLC komandą
 Copy mpv command	Kopijuoti mpv komandą
 Copy ffplay command	Kopijuoti ffplay komandą
 Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Pirmiausia įjunkite UDP srautą, tada paleiskite komandą. Ar grotuvas rodys vaizdą, priklauso nuo jo paties versijos (docs/AVSPLUS.md).
+clear picture	išvalyti vaizdą
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Išvalo vaizdą ir dekoderio surinktas eilutes, o kitu pradžios tonu ar fazavimu pradeda naują vaizdą. Dešiniajame sąraše jau esantys vaizdai lieka.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Išvalo NAVTEX ir DSC sąrašus bei orų fakso vaizdą.

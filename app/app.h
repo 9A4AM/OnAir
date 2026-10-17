@@ -961,6 +961,7 @@ void updateButton(App& a);
 void supportButton();
 void creditsWindow(App& a);   // Help, Credits and licences: the projects OnAir uses (app/panels/credits_ui.cpp)
 void clearAllButton(App& a);   // top bar, next to the version: empties every decoded list, after an "are you sure"
+void marineFaxClearUi();     // marine_ui.cpp: empties the weather fax picture on screen and in the saved copy (engine side: MarineReceiver::clearFax)
 bool updateOnExit(App& a);
 void constellationsTab(App& a);
 void channelTab(App& a);
