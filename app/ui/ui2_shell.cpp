@@ -230,6 +230,7 @@ void sidebar(App& a) {
         tool("Data feeds...", a.feedsOpen, "Send decoded data to other programs and services");
         tool("Messages...", a.msgdbOpen, N_("Every decoded message in one searchable database, with filters and export"));
         tool("Automations...", a.automationOpen, N_("Rules and scripts: when something is decoded, notify, record, tune or call a webhook"));
+        tool("Plugins...", a.pluginsOpen, N_("Add decoders and actions without rebuilding OnAir: install, enable and set up plugins"));
         tool("Memory...", a.memoryOpen, "The frequencies you keep, with mode and settings (Ctrl+M)");
         tool("Frequencies...", a.freqOpen, "Known frequencies of every mode (Ctrl+Shift+F)");
         tool("Transmit...", txViewFlag(), N_("Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission."));
@@ -388,6 +389,7 @@ static void viewMenu(App& a) {
         ImGui::MenuItem(tr("Data feeds..."), nullptr, &a.feedsOpen);
         ImGui::MenuItem(tr("Messages..."), nullptr, &a.msgdbOpen);
         ImGui::MenuItem(tr("Automations..."), nullptr, &a.automationOpen);
+        ImGui::MenuItem(tr("Plugins..."), nullptr, &a.pluginsOpen);
         ImGui::MenuItem(tr("Memory..."), "Ctrl+M", &a.memoryOpen);
         ImGui::MenuItem(tr("Frequencies..."), "Ctrl+Shift+F", &a.freqOpen);
         if (ImGui::MenuItem(tr("Show Frequencies as a tab"), nullptr, a.freqTab)) freqdbTabToggle(a);

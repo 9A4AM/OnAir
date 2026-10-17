@@ -13,7 +13,7 @@ namespace {
 
 // one icon per heading of the mode list (kGroupNames order: TV, broadcast, aviation, maritime, satellite, two-way, cellular, pagers, IoT, weather, amateur digital, amateur voice, HF, general)
 Ic groupIcon(int g) {
-    static const Ic ic[kNumGroups] = {Ic::Tv, Ic::Radio, Ic::Antenna, Ic::Compass, Ic::Globe, Ic::Speaker, Ic::Signal, Ic::Bolt, Ic::Chip, Ic::Gauge, Ic::Wave, Ic::Speaker, Ic::Pulse, Ic::Grid};
+    static const Ic ic[kNumGroups] = {Ic::Tv, Ic::Radio, Ic::Antenna, Ic::Compass, Ic::Globe, Ic::Speaker, Ic::Signal, Ic::Bolt, Ic::Chip, Ic::Gauge, Ic::Wave, Ic::Speaker, Ic::Pulse, Ic::Grid, Ic::Link};
     return ic[std::max(0, std::min(kNumGroups - 1, g))];
 }
 

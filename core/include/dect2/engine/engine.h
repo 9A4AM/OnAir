@@ -375,6 +375,10 @@ public:
     MultitoneReceiver& multitone() { return rxMt_; }   // Multitone paging: clear the transmission list (telemetry through latestRx)
     CodarReceiver& codar() { return rxCd_; }   // CODAR / HF ocean radar: clear the station table and the events (telemetry through latestRx)
     DectReceiver& dect() { return rxDect_; }   // DECT: the base station table and log (telemetry through latestRx)
+    // Plugin modes (standard codes of mode_tuning.h kPluginStdBase and up): the samples of the running plugin mode go to this function on the analysis
+    // thread (interleaved float I, Q; it must not block: the plugin host queues them). Empty function removes it.
+    using PluginIqSink = std::function<void(const float* iq, size_t nComplex, double sampleRate)>;
+    void setPluginSink(PluginIqSink f);
     AntReceiver& ant() { return rxAnt_; }   // ANT+ sensors: the sensor table and frame log (telemetry through latestRx)
     SameReceiver& same() { return rxSame_; }   // NOAA weather radio SAME: the alert list, country, Listen (telemetry through latestRx)
     HalowReceiver& halow() { return rxHl_; }   // Wi-Fi HaLow / 802.11ah: clear the network table and the frame log (telemetry through latestRx)
@@ -610,6 +614,7 @@ private:
     DatawellReceiver rxDw_;
     SameReceiver rxSame_;
     AntReceiver rxAnt_;
+    std::shared_ptr<const PluginIqSink> pluginSink_;   // read with std::atomic_load
     DectReceiver rxDect_;
     TetrapolReceiver rxTetrapol_;
     MultitoneReceiver rxMt_;

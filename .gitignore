@@ -39,3 +39,5 @@ logo-concepts/
 packaging/docker/.env
 rust/Cargo.lock
 rust/target/
+sdk/rust/**/target/
+sdk/rust/**/Cargo.lock
