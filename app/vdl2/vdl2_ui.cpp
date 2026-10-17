@@ -3,6 +3,8 @@
 #include "../adsb/adsb_map.h"
 #include "app.h"
 #include "map/pos_predict.h"
+#include "map/derived_kin.h"
+#include "state/results_export.h"
 #include "dect2/adsb/adsb_tel.h"
 #include "dect2/vdl2/vdl2_tel.h"
 #include <algorithm>
@@ -131,6 +133,13 @@ void feedEstimates(const dect2::Vdl2Telemetry& t) {
     }
     gTextSerial = newest;
     gPred.hub.purge(t.nowSec, 3 * 3600);
+}
+
+// speed, track and vertical rate: the ADS-C earth reference when there is one, else the filter's, else from the last two positions (~)
+derivedkin::Info kinOf(const dect2::Vdl2Aircraft& c, double now) {
+    dect2::geo::KinMeasured m;
+    if (c.hasKin) { m.hasGs = true; m.gsKt = c.groundKt; m.hasVs = true; m.vsFpm = c.vsFpm; if (c.hasTrack) { m.hasTrack = true; m.trackDeg = c.trackDeg; } }
+    return derivedkin::compute(c.track, m, derivedkin::estimated(gPred.hub, gPred.predict, dect2::track::keyFromIcao(c.icao), now, c.track.size()));
 }
 
 // the position to show for an aircraft: the estimate when prediction is on, else the old dead reckoning
@@ -413,7 +422,13 @@ void mapSide(App& a) {
         positionNow(*c, t.nowSec, plat, plon, altFt, pred);
         if (pred) kv("position", "~ %.4f %.4f (fix %.4f %.4f, %s ago)", plat, plon, c->lat, c->lon, ago(t.nowSec, c->posTime).c_str());
         else kv("position", "%.4f %.4f", plat, plon);
-        if (pred && c->hasKin) kv("motion", "track %.0f deg, %.0f kt%s", c->trackDeg, c->groundKt, c->vsFpm ? (", VS " + std::to_string(c->vsFpm) + " fpm").c_str() : "");
+        {
+            derivedkin::Lines L;
+            if (derivedkin::lines(kinOf(*c, t.nowSec), L)) {
+                kv("speed", "%s", L.gs.c_str()); kv("track", "%s", L.track.c_str()); kv("v. rate", "%s", L.vs.c_str());
+                if (!L.note.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", L.note.c_str()); ImGui::PopTextWrapPos(); }
+            }
+        }
     }
     if (c->hasAlt) kv("altitude", "%d ft", c->altFt);
     if (!c->posKind.empty()) kv("fix source", "%s", c->posKind.c_str());
@@ -439,10 +454,25 @@ void mapView(App& a) {
 
 void aircraftView(const App& a) {
     const dect2::Vdl2Telemetry& t = a.rx.vdl2;
-    if (!ImGui::BeginTable("##vdair", 9, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
+    {
+        static std::string note;
+        resexp::Table x; x.cols = {"icao", "registration", "flight", "lat", "lon", "alt_ft", "gs_kt", "track_deg", "gs_derived_kt", "track_derived_deg", "vrate_derived_fpm", "derived_dt_s"};
+        if (live(a)) for (const auto& c : t.aircraft) {
+            if (!c.hasPos) continue;
+            const derivedkin::Info k = kinOf(c, t.nowSec);
+            x.add({hex6(c.icao), c.reg, c.flight, resexp::num(c.lat, 5), resexp::num(c.lon, 5), c.hasAlt ? std::to_string(c.altFt) : "",
+                   c.hasKin ? resexp::num(c.groundKt, 0) : "", c.hasKin && c.hasTrack ? resexp::num(c.trackDeg, 0) : "",
+                   k.d.ok ? resexp::num(k.d.gsKt, 0) : "", k.d.ok && k.d.hasTrack ? resexp::num(k.d.trackDeg, 0) : "", k.d.ok && k.d.hasVs ? resexp::num(k.d.vsFpm, 0) : "",
+                   k.d.ok ? resexp::num(k.d.dtSec, 0) : ""});
+        }
+        resexp::saveButton(x, "vdl2_aircraft", note, "svvdair");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
+    if (!ImGui::BeginTable("##vdair", 12, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
     ImGui::TableSetupColumn("ICAO"); ImGui::TableSetupColumn("Reg"); ImGui::TableSetupColumn("Flight"); ImGui::TableSetupColumn("ADS-B");
     ImGui::TableSetupColumn("Frames"); ImGui::TableSetupColumn("MHz"); ImGui::TableSetupColumn("Last heard"); ImGui::TableSetupColumn("Ground st."); ImGui::TableSetupColumn("Position");
+    ImGui::TableSetupColumn("Speed"); ImGui::TableSetupColumn("Track"); ImGui::TableSetupColumn("V/S");
     ImGui::TableHeadersRow();
     if (live(a))
         for (const auto& c : t.aircraft) {
@@ -463,6 +493,10 @@ void aircraftView(const App& a) {
                 positionNow(c, t.nowSec, plat, plon, altFt, pred);
                 ImGui::Text("%s%.3f %.3f%s", pred ? "~" : "", plat, plon, (c.hasAlt || altFt) ? (" " + std::to_string(pred ? altFt : c.altFt) + " ft").c_str() : "");
             } else ImGui::TextUnformatted("-");
+            const derivedkin::Info k = c.hasPos ? kinOf(c, t.nowSec) : derivedkin::Info();
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(derivedkin::gsText(k.v).c_str()); if (ImGui::IsItemHovered() && !derivedkin::explain(k).empty()) ImGui::SetTooltip("%s", derivedkin::explain(k).c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(derivedkin::trackText(k.v).c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(derivedkin::vsText(k.v).c_str());
         }
     ImGui::EndTable();
 }
@@ -654,6 +688,9 @@ bool vdl2EstimatedPosition(uint32_t icao, double now, double& lat, double& lon, 
     lat = pe.lat; lon = pe.lon; ageSec = pe.ageSec;
     return true;
 }
+
+// For the map upload (app/map/map_send.cpp)
+derivedkin::Info vdl2Kinematics(const dect2::Vdl2Aircraft& c, double now) { return kinOf(c, now); }
 
 extern const ModeUi kVdl2Ui;
 const ModeUi kVdl2Ui = {

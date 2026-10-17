@@ -1763,3 +1763,9 @@ Audio history	Historique audio
 Decoded rows history	Historique des lignes décodées
 Uses about %.1f MB now	Utilise actuellement environ %.1f Mo
 Decoded rows are kept from the results tables you have open.	Les lignes décodées viennent des tableaux de résultats que vous avez ouverts.
+# derived speed, track and vertical rate
+%s%.0f deg (average)	%s%.0f degrés (moyenne)
+Reported by the aircraft.	Transmis par l'aéronef.
+Estimated by the position filter from the position reports (not broadcast by the aircraft).	Estimé par le filtre de position à partir des comptes rendus de position (non diffusé par l'aéronef).
+Derived from 2 positions %s apart: an average over that time; a curved path is longer than the straight line, so the real speed may be higher. The track is the average bearing.	Déduit de 2 positions espacées de %s : une moyenne sur cette durée ; une trajectoire courbe est plus longue que la ligne droite, la vitesse réelle peut donc être plus élevée. La route est le relèvement moyen.
+Derived from 2 positions %s apart (distance on the WGS-84 ellipsoid divided by the time). The aircraft did not report a speed.	Déduit de 2 positions espacées de %s (distance sur l'ellipsoïde WGS-84 divisée par le temps). L'aéronef n'a pas transmis de vitesse.

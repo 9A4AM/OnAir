@@ -1,5 +1,6 @@
 // Server > Send data to map server: opted-in POST of decoded positions to map.on-air.dev /ingest.
 // Only positions the signal itself sent (no TLE catalogue, receiver GNSS, RID operator, FLARM stealth, cell towers, synthetic test signal).
+#include "derived_kin.h"
 #include "../app.h"
 #include "../state/receivers.h"
 #include "map_ask.h"
@@ -25,6 +26,9 @@
 
 bool vdl2EstimatedPosition(uint32_t icao, double now, double& lat, double& lon, double& ageSec);   // app/vdl2/vdl2_ui.cpp
 bool hfdlEstimatedPosition(uint32_t key, double now, double& lat, double& lon, double& ageSec);   // app/hfdl/hfdl_ui.cpp
+derivedkin::Info acarsKinematics(const dect2::AcarsAircraft& c, double now);   // app/acars/acars_ui.cpp
+derivedkin::Info vdl2Kinematics(const dect2::Vdl2Aircraft& c, double now);     // app/vdl2/vdl2_ui.cpp
+derivedkin::Info hfdlKinematics(const dect2::HfdlAircraft& c, double now);     // app/hfdl/hfdl_ui.cpp
 
 namespace {
 
@@ -174,10 +178,24 @@ struct Track {
     double alt = 0, hdg = 0, spd = 0, vrate = 0, age = 0;
     int squawk = 0;
     double dfFreq = 0, dfSigma = 0, dfConf = 0;   // kind "doa": frequency (Hz), bearing sigma (deg) and confidence (0..1) sent next to hdg
+    bool dv = false;                 // speed / heading / vertical rate are derived from position reports (or estimated), not broadcast: sent as "dv":1
     bool est = false;                // the position is an estimate (dead reckoning, core/src/track), not a received fix: sent as "est":1
     std::vector<std::pair<double, double>> path;
     std::vector<dect2::AcarsLogEntry> msgs;   // interesting ACARS messages not sent yet (only when the user chose to share them)
 };
+
+// Speed, heading and vertical rate of a track that only has positions: the measured ones stay; the others come from the estimator or from
+// two position reports (core/include/dect2/geo/kinematics.h) and are flagged. The heading is sent only when it is good enough to turn an icon.
+void applyKin(Track& t, const derivedkin::Info& k, bool measuredGs, bool measuredTrack) {
+    if (!measuredTrack) t.hasHdg = false;
+    if (!measuredGs) t.hasSpd = false;
+    const dect2::geo::KinValue& v = k.v;
+    bool flagged = false;
+    if (!measuredGs && v.hasGs) { t.hasSpd = true; t.spd = v.gsKt; flagged = true; }
+    if (!measuredTrack && v.hasTrack && v.trackOk) { t.hasHdg = true; t.hdg = v.trackDeg; flagged = true; }
+    if (!t.hasVrate && v.hasVs && v.src != dect2::geo::KinSource::Measured) { t.hasVrate = true; t.vrate = v.vsFpm; flagged = true; }
+    if (flagged) t.dv = true;
+}
 
 struct RunGate {
     uint64_t epoch = 0;
@@ -320,8 +338,9 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
             t.lat = a.lat; t.lon = a.lon; t.age = acars.nowSec - a.lastHeardSec;
             t.hasHeard = true; t.heardAt = a.lastHeardSec;
             if (a.hasAlt) { t.hasAlt = true; t.alt = a.altFt; }
-            if (a.hasTrack) { t.hasHdg = true; t.hdg = a.trackDeg; }
+            if (a.hasTrack && a.hasSpeed) { t.hasHdg = true; t.hdg = a.trackDeg; }
             if (a.hasSpeed) { t.hasSpd = true; t.spd = a.speedKt; }
+            applyKin(t, acarsKinematics(a, acars.nowSec), a.hasSpeed, a.hasTrack && a.hasSpeed);
             t.cat = a.posKind;
             for (const auto& p : a.track) t.path.push_back({p.lat, p.lon});
             addTrack(v, seen, std::move(t));
@@ -356,6 +375,7 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
             t.hasHeard = true; t.heardAt = a.lastHeardSec;
             { double la, lo, ag; if (hfdlEstimatedPosition(a.icao ? a.icao : a.key, hfdl.nowSec, la, lo, ag)) { t.lat = la; t.lon = lo; t.est = true; t.age = 0; t.heardAt = hfdl.nowSec; } }
             if (a.hasAlt) { t.hasAlt = true; t.alt = a.altFt; }
+            applyKin(t, hfdlKinematics(a, hfdl.nowSec), false, false);
             t.cat = a.posKind;
             for (const auto& p : a.track) t.path.push_back({p.lat, p.lon});
             addTrack(v, seen, std::move(t));
@@ -372,6 +392,12 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
             t.hasHeard = true; t.heardAt = a.lastHeardSec;
             { double la, lo, ag; if (vdl2EstimatedPosition(a.icao, vdl.nowSec, la, lo, ag)) { t.lat = la; t.lon = lo; t.est = true; t.age = 0; t.heardAt = vdl.nowSec; } }
             if (a.hasAlt) { t.hasAlt = true; t.alt = a.altFt; }
+            if (a.hasKin) {   // ADS-C earth reference: measured
+                t.hasSpd = true; t.spd = a.groundKt;
+                if (a.hasTrack) { t.hasHdg = true; t.hdg = a.trackDeg; }
+                t.hasVrate = true; t.vrate = a.vsFpm;
+            }
+            applyKin(t, vdl2Kinematics(a, vdl.nowSec), a.hasKin, a.hasKin && a.hasTrack);
             t.cat = a.posKind;
             for (const auto& p : a.track) t.path.push_back({p.lat, p.lon});
             addTrack(v, seen, std::move(t));
@@ -529,6 +555,7 @@ std::string buildJson(const std::string& station, const std::vector<Track>& trac
         snprintf(b, sizeof b, ",\"age\":%.1f", t.age); j += b;
         if (t.dfFreq > 0) { snprintf(b, sizeof b, ",\"freq\":%.0f,\"sigma\":%.1f,\"conf\":%.2f", t.dfFreq, t.dfSigma, t.dfConf); j += b; }
         if (t.est) j += ",\"est\":1";
+        if (t.dv && (t.hasSpd || t.hasHdg || t.hasVrate)) j += ",\"dv\":1";
         if (!t.src.empty()) { j += ",\"src\":\""; j += jsonEsc(t.src); j += '"'; }
         if (!t.cat.empty()) { j += ",\"cat\":\""; j += jsonEsc(t.cat); j += '"'; }
         if (!t.extra.empty()) { j += ",\"extra\":\""; j += jsonEsc(t.extra); j += '"'; }

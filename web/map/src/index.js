@@ -274,6 +274,7 @@ export class MapHub {
     add("age", "REAL");
     add("path", "TEXT");
     add("est", "INTEGER");   // 1: the position is an estimate (dead reckoning) the app sent, not a received fix
+    add("dv", "INTEGER");    // 1: speed / heading / vertical rate are derived from position reports (or estimated), not broadcast
     this.ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS meta (
         k TEXT PRIMARY KEY,
@@ -304,7 +305,7 @@ export class MapHub {
       id: t.id, kind: t.kind, label: t.label, sub: t.sub,
       lat: t.lat, lon: t.lon, alt: t.alt, heading: t.heading, speed: t.speed,
       extra: t.extra, t: t.t, squawk: t.squawk, cat: t.cat, vrate: t.vrate,
-      src: t.src, age: t.age, est: t.est ? 1 : 0,
+      src: t.src, age: t.age, est: t.est ? 1 : 0, dv: t.dv ? 1 : 0,
     };
   }
 
@@ -369,7 +370,7 @@ export class MapHub {
       let t = sanitize(raw, now, station);
       if (!t) continue;
       const prev = this.ctx.storage.sql.exec(
-        "SELECT t, age, path, heading, speed, label, sub, src, squawk FROM tracks WHERE id = ?",
+        "SELECT t, age, path, heading, speed, label, sub, src, squawk, dv FROM tracks WHERE id = ?",
         t.id,
       ).toArray()[0];
       if (!fresherPosition(t.age, prev, now)) continue;
@@ -378,22 +379,22 @@ export class MapHub {
       else merged.path = [];
       const trailHdg = t.kind === "gnss" || t.kind === "doa" ? null : headingFromTrail(merged.path, merged.lon, merged.lat, merged.heading);
       if (trailHdg != null) merged.heading = trailHdg;
-      else if (merged.heading == null && prev && prev.heading != null) merged.heading = prev.heading;
-      if (merged.speed == null && prev && prev.speed != null) merged.speed = prev.speed;
+      else if (merged.heading == null && prev && prev.heading != null) { merged.heading = prev.heading; if (prev.dv) merged.dv = 1; }
+      if (merged.speed == null && prev && prev.speed != null) { merged.speed = prev.speed; if (prev.dv) merged.dv = 1; }
       t = merged;
       let pathArr = [];
       try { pathArr = JSON.parse(t.path); } catch { pathArr = []; }
       this.ctx.storage.sql.exec(
-        `INSERT INTO tracks (id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, path, est)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO tracks (id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, path, est, dv)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            kind=excluded.kind, label=excluded.label, sub=excluded.sub,
            lat=excluded.lat, lon=excluded.lon, alt=excluded.alt,
            heading=excluded.heading, speed=excluded.speed, extra=excluded.extra, t=excluded.t,
            squawk=excluded.squawk, cat=excluded.cat, vrate=excluded.vrate, src=excluded.src,
-           age=excluded.age, path=excluded.path, est=excluded.est`,
+           age=excluded.age, path=excluded.path, est=excluded.est, dv=excluded.dv`,
         t.id, t.kind, t.label, t.sub, t.lat, t.lon, t.alt, t.heading, t.speed, t.extra, t.t,
-        t.squawk, t.cat, t.vrate, t.src, t.age, t.path, t.est ? 1 : 0,
+        t.squawk, t.cat, t.vrate, t.src, t.age, t.path, t.est ? 1 : 0, t.dv ? 1 : 0,
       );
       // Same synchronous run as the track upsert, so the DO commits both in one storage transaction.
       this.trails.record(t.id, {
@@ -481,13 +482,13 @@ export class MapHub {
     }
     const tracks = [];
     for (const row of this.ctx.storage.sql.exec(
-      "SELECT id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, est FROM tracks",
+      "SELECT id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, est, dv FROM tracks",
     )) {
       tracks.push({
         id: row.id, kind: row.kind, label: row.label, sub: row.sub,
         lat: row.lat, lon: row.lon, alt: row.alt, heading: row.heading, speed: row.speed,
         extra: row.extra, t: row.t, squawk: row.squawk, cat: row.cat, vrate: row.vrate,
-        src: row.src, age: row.age, est: row.est ? 1 : 0,
+        src: row.src, age: row.age, est: row.est ? 1 : 0, dv: row.dv ? 1 : 0,
       });
     }
     for (const f of this.currentFixes(now)) tracks.push(this.trackWire(f));
@@ -605,6 +606,7 @@ export function sanitize(raw, now, station) {
     sub: String(raw.sub || "").slice(0, 32),
     lat, lon, alt, heading, speed, vrate, age,
     est: raw.est === 1 || raw.est === true ? 1 : 0,
+    dv: (raw.dv === 1 || raw.dv === true) && (speed != null || heading != null || vrate != null) ? 1 : 0,   // additive: old clients never send it
     squawk,
     src: String(raw.src || "").slice(0, 16),
     cat: String(raw.cat || "").slice(0, 48),

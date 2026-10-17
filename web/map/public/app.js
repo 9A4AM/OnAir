@@ -347,7 +347,7 @@ function mergePathClient(prev, t) {
   const hdg = effectiveHeading({ ...t, path, heading: t.heading });
   if (hdg != null) t.heading = hdg;
   if (t.heading == null && prev && prev.heading != null) t.heading = prev.heading;
-  if (t.speed == null && prev && prev.speed != null) t.speed = prev.speed;
+  if (t.speed == null && prev && prev.speed != null) { t.speed = prev.speed; if (prev.dv) t.dv = 1; }
   if (prev && prev.meta && !t.meta) t.meta = prev.meta;
   // first sighting (this page) feeds the "first seen" and departure estimate on the card
   t.first = (prev && prev.first) || t.first || { ms: positionTimeMs(t), altFt: t.kind === "aircraft" ? t.alt : null, lat: t.lat, lon: t.lon };
@@ -412,7 +412,7 @@ function fmtAlt(t) {
 }
 
 function fmtSpeed(t) {
-  if (t.kind === "aircraft" || t.kind === "flarm") return Math.round(t.speed) + " kt";
+  if (t.kind === "aircraft" || t.kind === "flarm") return (t.dv ? "~" : "") + Math.round(t.speed) + " kt";
   if (t.kind === "vessel") return Number(t.speed).toFixed(1) + " kn";
   return Number(t.speed).toFixed(1);
 }
