@@ -1413,3 +1413,18 @@ The HD Radio sound library cannot be used	Biblioteki dźwięku HD Radio nie moż
 OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	OnAir znalazł bibliotekę dla HDC, ale nie jest to wersja FAAD2 z poprawką HDC, którą OnAir potrafi wywołać, więc została pominięta.
 Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Zbuduj bibliotekę ponownie z FAAD2 2.10 lub 2.11 z poprawką nrsc5, jak opisuje pełna instrukcja.
 Replace the file in the OnAir codecs folder (button below).	Zamień plik w folderze kodeków OnAir (przycisk poniżej).
+# band plans (scan tab, TV channel list)
+Band plan	Plan pasm
+None (built-in ranges)	Brak (wbudowane zakresy)
+My band plans	Moje plany pasm
+Export...	Eksportuj...
+Really delete?	Na pewno usunąć?
+Replaced band plan "%s" (%zu bands).	Plan pasm „%s” zastąpiony (%zu pasm).
+Imported band plan "%s" (%zu bands).	Plan pasm „%s” zaimportowany (%zu pasm).
+Deleted band plan %s.	Plan pasm %s usunięty.
+Not fully verified: %s	Nie w pełni zweryfikowany: %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	Siatka kanałów Twojego kraju: kanały TV dla skanowania i listy kanałów, i więcej. Automatyczny wybiera plan według języka interfejsu i regionu systemu.
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	Wczytuje plan pasm z pliku CSV lub JSON (format w docs/band-plans.md), sprawdza go i zapisuje w folderze ustawień. Gdy plik ma błąd, nic się nie zmienia; komunikat mówi, gdzie.
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	Zapisuje plan jako plik JSON, a gdy nazwa kończy się na .csv, jako CSV. Wbudowany plan to dobry punkt wyjścia dla własnego.
+Deletes one of your own band plans. The built-in plans stay.	Usuwa jeden z Twoich planów pasm. Plany wbudowane zostają.
+TV channels of the band plan %s (change it in the Scan tab).	Kanały TV planu pasm %s (zmiana na karcie Skanowanie).

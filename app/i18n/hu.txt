@@ -1398,3 +1398,18 @@ The HD Radio sound library cannot be used	A HD Radio hangkönyvtár nem használ
 OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	Az OnAir talált egy HDC-könyvtárat, de ez nem olyan FAAD2-fordítás HDC-javítással, amelyet az OnAir hívni tud, ezért nem használta.
 Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Fordítsd le újra a könyvtárat a FAAD2 2.10 vagy 2.11 változatából az nrsc5 javításával, ahogy a teljes útmutató leírja.
 Replace the file in the OnAir codecs folder (button below).	Cseréld ki a fájlt az OnAir kodekmappájában (gomb alul).
+# band plans (scan tab, TV channel list)
+Band plan	Sávterv
+None (built-in ranges)	Nincs (beépített tartományok)
+My band plans	Saját sávterveim
+Export...	Exportálás...
+Really delete?	Biztosan törli?
+Replaced band plan "%s" (%zu bands).	A(z) "%s" sávterv lecserélve (%zu sáv).
+Imported band plan "%s" (%zu bands).	A(z) "%s" sávterv importálva (%zu sáv).
+Deleted band plan %s.	A(z) %s sávterv törölve.
+Not fully verified: %s	Nem teljesen ellenőrzött: %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	Az Ön országának csatornakiosztása: TV-csatornák a kereséshez és a csatornalistához, és más. Az Automatikus a felület nyelve és a rendszer régiója alapján választ tervet.
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	Sávtervet olvas be CSV- vagy JSON-fájlból (formátum: docs/band-plans.md), ellenőrzi, és a beállítások mappájában tárolja. Hibás fájlnál semmi sem változik; az üzenet megmondja, hol a hiba.
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	A tervet JSON-fájlként menti, vagy CSV-ként, ha a név .csv-re végződik. A beépített terv jó kiindulópont a sajátodhoz.
+Deletes one of your own band plans. The built-in plans stay.	Töröl egy saját sávtervet. A beépített tervek megmaradnak.
+TV channels of the band plan %s (change it in the Scan tab).	A(z) %s sávterv TV-csatornái (a Keresés fülön módosítható).

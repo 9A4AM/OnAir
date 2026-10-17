@@ -1413,3 +1413,18 @@ The HD Radio sound library cannot be used	HD Radio 音声ライブラリは使�
 OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	OnAir は HDC 用のライブラリを見つけましたが、OnAir が呼び出せる HDC パッチ付き FAAD2 のビルドではないため、使用しませんでした。
 Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	完全な手順の説明に従って、FAAD2 2.10 または 2.11 と nrsc5 のパッチでライブラリをビルドし直してください。
 Replace the file in the OnAir codecs folder (button below).	OnAir のコーデックフォルダのファイルを置き換えてください (下のボタン)。
+# band plans (scan tab, TV channel list)
+Band plan	バンドプラン
+None (built-in ranges)	なし（内蔵の範囲）
+My band plans	マイバンドプラン
+Export...	エクスポート...
+Really delete?	本当に削除しますか？
+Replaced band plan "%s" (%zu bands).	バンドプラン「%s」を置き換えました（%zu バンド）。
+Imported band plan "%s" (%zu bands).	バンドプラン「%s」をインポートしました（%zu バンド）。
+Deleted band plan %s.	バンドプラン %s を削除しました。
+Not fully verified: %s	完全には検証されていません: %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	お住まいの国のチャンネル配置です。スキャンとチャンネル一覧のテレビチャンネルなどに使います。「自動」は表示言語とシステムの地域からプランを選びます。
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	CSV または JSON ファイル（形式は docs/band-plans.md）からバンドプランを読み込み、検査して設定フォルダーに保存します。ファイルに誤りがあれば何も変更されず、メッセージに場所が示されます。
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	プランを JSON ファイルとして、名前が .csv で終わる場合は CSV として保存します。内蔵プランは自作プランの出発点に最適です。
+Deletes one of your own band plans. The built-in plans stay.	自分のバンドプランを 1 つ削除します。内蔵プランは残ります。
+TV channels of the band plan %s (change it in the Scan tab).	バンドプラン %s のテレビチャンネル（スキャンタブで変更できます）。

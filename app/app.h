@@ -522,6 +522,7 @@ struct App {
     Scanner scanner;
     ScanConfig scanCfg;
     int scanPreset = 0;
+    std::string bandPlan;     // the active band plan (bandplan_ui.cpp): empty = automatic from the language and region, "none" = the built-in ranges
     bool scanWasRunning = false;
     std::unique_ptr<Updater> upd;      // update check and installer
     bool updCheck = true, updAuto = true, updPre = false, updStarted = false;   // official updates on; betas off until asked
@@ -1003,6 +1004,12 @@ void drawUI(App& a, ImVec2 disp, bool draw = true);   // draw = false: only the 
 // dab_ui.cpp
 const char* dabChannelName(double mhz);
 bool dabChannelCombo(App& a);
+// bandplan_ui.cpp: band plans (channel rasters of a country). The picker with import / export / delete returns true when the active plan changed;
+// the channel list of the TV modes sets a.freqMhz; the scan ranges are the TV bands of the active plan for the mode (empty: use the built-in lists)
+struct TvRange { std::string label; double startMhz = 0, stopMhz = 0, stepMhz = 0, bwMhz = 0; };
+bool bandPlanPicker(App& a);
+bool tvChannelCombo(App& a);
+std::vector<TvRange> tvBandRanges(App& a);
 void dabStatus(App& a);
 void dabHistory(App& a);
 void dabPanels(App& a);

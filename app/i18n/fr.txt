@@ -1413,3 +1413,18 @@ The HD Radio sound library cannot be used	La bibliothèque son HD Radio ne peut 
 OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	OnAir a trouvé une bibliothèque pour HDC, mais ce n'est pas une version de FAAD2 avec le correctif HDC qu'OnAir sait appeler ; elle a donc été laissée de côté.
 Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Recompilez la bibliothèque à partir de FAAD2 2.10 ou 2.11 avec le correctif nrsc5, comme l'expliquent les instructions complètes.
 Replace the file in the OnAir codecs folder (button below).	Remplacez le fichier dans le dossier des codecs d'OnAir (bouton ci-dessous).
+# band plans (scan tab, TV channel list)
+Band plan	Plan de bandes
+None (built-in ranges)	Aucun (plages intégrées)
+My band plans	Mes plans de bandes
+Export...	Exporter...
+Really delete?	Vraiment supprimer ?
+Replaced band plan "%s" (%zu bands).	Plan de bandes "%s" remplacé (%zu bandes).
+Imported band plan "%s" (%zu bands).	Plan de bandes "%s" importé (%zu bandes).
+Deleted band plan %s.	Plan de bandes %s supprimé.
+Not fully verified: %s	Pas entièrement vérifié : %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	La trame de canaux de votre pays : canaux TV pour le balayage et la liste des canaux, et plus. Automatique choisit un plan selon la langue de l'interface et la région du système.
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	Lit un plan de bandes depuis un fichier CSV ou JSON (format dans docs/band-plans.md), le vérifie et le garde dans votre dossier de réglages. Rien ne change si le fichier contient une erreur ; le message indique où.
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	Enregistre le plan en JSON, ou en CSV si le nom finit par .csv. Un plan intégré est un bon point de départ pour le vôtre.
+Deletes one of your own band plans. The built-in plans stay.	Supprime l'un de vos plans de bandes. Les plans intégrés restent.
+TV channels of the band plan %s (change it in the Scan tab).	Canaux TV du plan de bandes %s (à changer dans l'onglet Balayage).

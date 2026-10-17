@@ -1413,3 +1413,18 @@ The HD Radio sound library cannot be used	HD Radio garso bibliotekos naudoti neg
 OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	„OnAir“ rado HDC biblioteką, bet tai nėra FAAD2 versija su HDC pataisa, kurią „OnAir“ moka iškviesti, todėl ji nenaudota.
 Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Iš naujo sukompiliuokite biblioteką iš FAAD2 2.10 arba 2.11 su nrsc5 pataisa, kaip aiškinama visose instrukcijose.
 Replace the file in the OnAir codecs folder (button below).	Pakeiskite failą „OnAir“ kodekų aplanke (mygtukas žemiau).
+# band plans (scan tab, TV channel list)
+Band plan	Dažnių planas
+None (built-in ranges)	Nėra (įtaisyti diapazonai)
+My band plans	Mano dažnių planai
+Export...	Eksportuoti...
+Really delete?	Tikrai ištrinti?
+Replaced band plan "%s" (%zu bands).	Dažnių planas „%s“ pakeistas (%zu juostos).
+Imported band plan "%s" (%zu bands).	Dažnių planas „%s“ importuotas (%zu juostos).
+Deleted band plan %s.	Dažnių planas %s ištrintas.
+Not fully verified: %s	Ne visiškai patikrinta: %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	Jūsų šalies kanalų tinklelis: TV kanalai skenavimui ir kanalų sąrašui bei kita. Automatiškai pasirenka planą pagal sąsajos kalbą ir sistemos regioną.
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	Nuskaito dažnių planą iš CSV arba JSON failo (formatas docs/band-plans.md), patikrina ir saugo nustatymų aplanke. Jei faile klaida, niekas nekeičiama; pranešime nurodoma vieta.
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	Išsaugo planą kaip JSON failą arba kaip CSV, jei pavadinimas baigiasi .csv. Įtaisytas planas yra geras pradžios taškas savajam.
+Deletes one of your own band plans. The built-in plans stay.	Ištrina vieną jūsų pačių dažnių planą. Įtaisytieji planai lieka.
+TV channels of the band plan %s (change it in the Scan tab).	Dažnių plano %s TV kanalai (keičiama skirtuke Skenavimas).

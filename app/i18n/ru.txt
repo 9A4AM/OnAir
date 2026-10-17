@@ -1395,3 +1395,18 @@ The HD Radio sound library cannot be used	Звуковую библиотеку 
 OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	OnAir нашёл библиотеку для HDC, но это не сборка FAAD2 с патчем HDC, которую OnAir умеет вызывать, поэтому она не использована.
 Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Соберите библиотеку заново из FAAD2 2.10 или 2.11 с патчем nrsc5, как объясняется в полной инструкции.
 Replace the file in the OnAir codecs folder (button below).	Замените файл в папке кодеков OnAir (кнопка ниже).
+# band plans (scan tab, TV channel list)
+Band plan	Частотный план
+None (built-in ranges)	Нет (встроенные диапазоны)
+My band plans	Мои частотные планы
+Export...	Экспорт...
+Really delete?	Точно удалить?
+Replaced band plan "%s" (%zu bands).	Частотный план «%s» заменён (диапазонов: %zu).
+Imported band plan "%s" (%zu bands).	Частотный план «%s» импортирован (диапазонов: %zu).
+Deleted band plan %s.	Частотный план %s удалён.
+Not fully verified: %s	Проверен не полностью: %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	Сетка каналов вашей страны: ТВ-каналы для сканирования и списка каналов и не только. «Автоматически» выбирает план по языку интерфейса и региону системы.
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	Читает частотный план из файла CSV или JSON (формат в docs/band-plans.md), проверяет его и сохраняет в папке настроек. Если в файле ошибка, ничего не меняется; сообщение указывает место.
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	Сохраняет план как файл JSON или как CSV, если имя оканчивается на .csv. Встроенный план — хорошая основа для собственного.
+Deletes one of your own band plans. The built-in plans stay.	Удаляет один из ваших частотных планов. Встроенные планы остаются.
+TV channels of the band plan %s (change it in the Scan tab).	ТВ-каналы частотного плана %s (меняется на вкладке «Сканирование»).
