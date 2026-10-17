@@ -1,5 +1,6 @@
 // SGP4 (near-earth), look angles, pass search and Doppler: see passes.h
 #include "dect2/geo/passes.h"
+#include "dect2/files/files_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -16,73 +17,24 @@ constexpr double kMu = 398600.8, kRe = 6378.135, kJ2 = 0.001082616, kJ3 = -0.000
 const double kXke = 60.0 / std::sqrt(kRe * kRe * kRe / kMu);
 constexpr double kC = 299792.458, kOmegaE = 7.292115e-5;
 
-std::string trim(const std::string& s) { return dect2::str::trimChars(s, " \t\r\n"); }
-bool num(const std::string& s, size_t pos, size_t len, double& v) {
-    if (s.size() < pos + len) return false;
-    std::string f = trim(s.substr(pos, len));
-    if (f.empty()) { v = 0; return true; }
-    char* e = nullptr;
-    v = std::strtod(f.c_str(), &e);
-    return e && *e == 0;
-}
-// "-12345-6" (an implied leading decimal point and a power of ten) as in the B* and second derivative fields
-bool expField(const std::string& s, size_t pos, size_t len, double& v) {
-    if (s.size() < pos + len) return false;
-    std::string f = trim(s.substr(pos, len));
-    if (f.empty()) { v = 0; return true; }
-    double sign = 1;
-    if (f[0] == '-' || f[0] == '+') { if (f[0] == '-') sign = -1; f = f.substr(1); }
-    size_t ep = f.find_first_of("+-", 1);
-    std::string mant = ep == std::string::npos ? f : f.substr(0, ep), ex = ep == std::string::npos ? "0" : f.substr(ep);
-    char* e = nullptr;
-    const double m = std::strtod(("0." + trim(mant)).c_str(), &e);
-    if (!e || *e) return false;
-    const long x = std::strtol(ex.c_str(), &e, 10);
-    if (!e || *e) return false;
-    v = sign * m * std::pow(10.0, (double)x);
-    return true;
-}
-bool checksumOk(const std::string& l) {
-    if (l.size() < 69) return l.size() >= 68;   // some sources drop the checksum
-    int sum = 0;
-    for (size_t i = 0; i < 68; i++) { char c = l[i]; if (c >= '0' && c <= '9') sum += c - '0'; else if (c == '-') sum++; }
-    return l[68] < '0' || l[68] > '9' || sum % 10 == l[68] - '0';
-}
-double jdOfYearStart(int y) {   // Julian date of 1 January 0h UTC
-    return 367.0 * y - std::floor(7.0 * y / 4.0) + std::floor(275.0 / 9.0) + 1 + 1721013.5;
-}
 }
 
+// the parsing is core/src/files/files_proto.cpp (C++) or the Rust crate onair_files
 bool parseTle(const std::string& a, const std::string& b, Tle& t, const std::string& name) {
-    const std::string l1 = trim(a), l2 = trim(b);
-    if (l1.size() < 64 || l2.size() < 63 || l1[0] != '1' || l2[0] != '2' || !checksumOk(l1) || !checksumOk(l2)) return false;
-    double norad = 0, yr = 0, day = 0, bstar = 0;
-    if (!num(l1, 2, 5, norad) || !num(l1, 18, 2, yr) || !num(l1, 20, 12, day) || !expField(l1, 53, 8, bstar)) return false;
-    double inc, raan, ecc, argp, ma, mm;
-    if (!num(l2, 8, 8, inc) || !num(l2, 17, 8, raan) || !num(l2, 34, 8, argp) || !num(l2, 43, 8, ma) || !num(l2, 52, 11, mm)) return false;
-    if (!num(l2, 26, 7, ecc)) return false;
-    double n2chk = 0; if (!num(l2, 2, 5, n2chk) || n2chk != norad) return false;
-    const int year = (int)yr < 57 ? 2000 + (int)yr : 1900 + (int)yr;
-    t.name = trim(name);
-    if (!t.name.empty() && t.name.size() > 2 && t.name[0] == '0' && t.name[1] == ' ') t.name = trim(t.name.substr(2));   // the "0 NAME" 3LE form
-    t.norad = (int)norad;
-    t.epochJd = jdOfYearStart(year) + day - 1;
-    t.bstar = bstar; t.inclDeg = inc; t.raanDeg = raan; t.ecc = ecc * 1e-7; t.argpDeg = argp; t.meanAnomDeg = ma; t.meanMotion = mm;
-    if (t.name.empty()) t.name = std::to_string(t.norad);
-    return mm > 0 && t.ecc < 1;
+    const filesp::TleData d = filesp::tleParse(a, b, name);
+    if (d.status == 1) return false;   // not a TLE: t is left as it was
+    t.name = d.name; t.norad = d.norad; t.epochJd = d.epochJd;
+    t.bstar = d.bstar; t.inclDeg = d.inclDeg; t.raanDeg = d.raanDeg; t.ecc = d.ecc; t.argpDeg = d.argpDeg; t.meanAnomDeg = d.meanAnomDeg; t.meanMotion = d.meanMotion;
+    return d.status == 0;
 }
 
 std::vector<Tle> parseTleText(const std::string& text) {
-    std::vector<std::string> lines;
-    std::istringstream is(text);
-    for (std::string l; std::getline(is, l);) { l = trim(l); if (!l.empty()) lines.push_back(l); }
     std::vector<Tle> out;
-    for (size_t i = 0; i + 1 < lines.size(); i++) {
-        if (lines[i][0] == '1' && lines[i + 1][0] == '2') {
-            Tle t;
-            const std::string name = i > 0 && lines[i - 1][0] != '1' && lines[i - 1][0] != '2' ? lines[i - 1] : "";
-            if (parseTle(lines[i], lines[i + 1], t, name)) { out.push_back(t); i++; }
-        }
+    for (const filesp::TleData& d : filesp::tleScan(text)) {
+        Tle t;
+        t.name = d.name; t.norad = d.norad; t.epochJd = d.epochJd;
+        t.bstar = d.bstar; t.inclDeg = d.inclDeg; t.raanDeg = d.raanDeg; t.ecc = d.ecc; t.argpDeg = d.argpDeg; t.meanAnomDeg = d.meanAnomDeg; t.meanMotion = d.meanMotion;
+        out.push_back(t);
     }
     return out;
 }

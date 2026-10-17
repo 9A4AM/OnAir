@@ -1,5 +1,6 @@
 // DAB channel coding: tables, CRCs, energy dispersal, the rate 1/4 convolutional code with puncturing (FIC and EEP sub-channels),
 // and the Reed-Solomon code of DAB+. Conventions verified against a live Band III ensemble.
+#include "dect2/fec/fec_proto.h"
 #include "dect2/dab/dab.h"
 #include "dect2/dsp/simd.h"
 #include <algorithm>
@@ -333,102 +334,9 @@ bool uepPuncture(const uint8_t* mother, int index, uint8_t* out) {
     return ok && have - k < 64;
 }
 
-// ------------------------------------------------------------------ Reed-Solomon (120,110) over GF(256), generator roots alpha^0 .. alpha^9
-
-namespace {
-struct Gf {
-    uint8_t exp[512];
-    int log[256];
-    uint8_t gen[11];   // generator polynomial, highest power first
-    Gf() {
-        int x = 1;
-        for (int i = 0; i < 255; i++) { exp[i] = (uint8_t)x; log[x] = i; x <<= 1; if (x & 0x100) x ^= 0x11d; }
-        for (int i = 255; i < 512; i++) exp[i] = exp[i - 255];
-        log[0] = 0;
-        int g[11] = {1};
-        int deg = 0;
-        for (int r = 0; r < 10; r++) {   // multiply by (x + alpha^r)
-            for (int i = deg + 1; i >= 1; i--) g[i] = g[i - 1] ^ mul(g[i], exp[r]);
-            g[0] = mul(g[0], exp[r]);
-            deg++;
-        }
-        // g[] now holds lowest power first
-        for (int i = 0; i <= 10; i++) gen[i] = (uint8_t)g[10 - i];
-    }
-    int mul(int a, int b) const { return (a && b) ? exp[log[a] + log[b]] : 0; }
-    int inv(int a) const { return exp[255 - log[a]]; }
-};
-const Gf& gf() { static const Gf g; return g; }
-} // namespace
-
-void rsEncode120(const uint8_t* data, uint8_t* cw) {
-    const Gf& G = gf();
-    uint8_t rem[10] = {0};
-    for (int i = 0; i < 110; i++) {
-        cw[i] = data[i];
-        const int fb = data[i] ^ rem[0];
-        for (int j = 0; j < 9; j++) rem[j] = (uint8_t)(rem[j + 1] ^ G.mul(fb, G.gen[j + 1]));
-        rem[9] = (uint8_t)G.mul(fb, G.gen[10]);
-    }
-    for (int j = 0; j < 10; j++) cw[110 + j] = rem[j];
-}
-
-int rsDecode120(uint8_t* cw) {
-    const Gf& G = gf();
-    const int n = 120, nr = 10;
-    int syn[10];
-    bool any = false;
-    for (int i = 0; i < nr; i++) {
-        int s = 0;
-        for (int j = 0; j < n; j++) s = G.mul(s, G.exp[i]) ^ cw[j];
-        syn[i] = s;
-        any |= s != 0;
-    }
-    if (!any) return 0;
-    // Berlekamp-Massey
-    int C[11] = {1}, B[11] = {1}, L = 0, m = 1, b = 1;
-    for (int k = 0; k < nr; k++) {
-        int d = syn[k];
-        for (int i = 1; i <= L; i++) d ^= G.mul(C[i], syn[k - i]);
-        if (d == 0) { m++; continue; }
-        int T[11];
-        std::memcpy(T, C, sizeof T);
-        const int coef = G.mul(d, G.inv(b));
-        for (int i = 0; i + m <= nr; i++) C[i + m] ^= G.mul(coef, B[i]);
-        if (2 * L <= k) { L = k + 1 - L; std::memcpy(B, T, sizeof B); b = d; m = 1; } else m++;
-    }
-    if (L > 5) return -1;
-    // Chien search over the 120 positions (power of alpha = n - 1 - position)
-    int pos[10], np = 0;
-    for (int j = 0; j < n; j++) {
-        const int p = n - 1 - j;
-        const int xinv = (255 - p) % 255;   // log of alpha^-p
-        int v = 0;
-        for (int i = 0; i <= L; i++) v ^= G.mul(C[i], G.exp[(xinv * i) % 255]);
-        if (v == 0) { if (np < 10) pos[np] = j; np++; }
-    }
-    if (np != L) return -1;
-    int omega[10] = {0};
-    for (int i = 0; i < nr; i++) for (int j = 0; j <= i; j++) omega[i] ^= G.mul(syn[j], C[i - j]);
-    uint8_t out[120];
-    std::memcpy(out, cw, sizeof out);
-    for (int e = 0; e < np; e++) {
-        const int p = n - 1 - pos[e];
-        const int xinv = (255 - p) % 255;
-        int num = 0, den = 0;
-        for (int i = 0; i < nr; i++) num ^= G.mul(omega[i], G.exp[(xinv * i) % 255]);
-        for (int i = 1; i <= L; i += 2) den ^= G.mul(C[i], G.exp[(xinv * (i - 1)) % 255]);
-        if (den == 0) return -1;
-        out[pos[e]] ^= (uint8_t)G.mul(G.mul(num, G.inv(den)), G.exp[p % 255]);
-    }
-    for (int i = 0; i < nr; i++) {   // verify
-        int s = 0;
-        for (int j = 0; j < n; j++) s = G.mul(s, G.exp[i]) ^ out[j];
-        if (s) return -1;
-    }
-    std::memcpy(cw, out, sizeof out);
-    return np;
-}
+// ------------------------------------------------------------------ Reed-Solomon (120,110): core/src/fec/fec_proto.cpp (C++) or the Rust crate onair_fec
+void rsEncode120(const uint8_t* data, uint8_t* cw) { fecp::rs120Encode(data, cw); }
+int rsDecode120(uint8_t* cw) { return fecp::rs120Decode(cw); }
 
 } // namespace dab
 } // namespace dect2

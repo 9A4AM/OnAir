@@ -12,6 +12,7 @@
 #include "../net/tcp_client.h"
 #include "native_common.h"
 #include "dect2/net/netradio.h"
+#include "dect2/net/net_proto.h"
 #include <cmath>
 #include <map>
 #include <mutex>
@@ -22,7 +23,6 @@ namespace native {
 
 namespace {
 
-constexpr uint32_t kProtocolVersion = (2u << 24) | (0u << 16) | 1700u;
 enum : uint32_t { kCmdHello = 0, kCmdSetSetting = 2 };
 enum : uint32_t {
     kSetStreamingMode = 0, kSetStreamingEnabled = 1, kSetGain = 2,
@@ -32,24 +32,12 @@ enum : uint32_t { kStreamIq = 1, kModeIqOnly = kStreamIq };
 enum : uint32_t { kFmtUint8 = 1, kFmtInt16 = 2, kFmtInt24 = 3, kFmtFloat = 4 };
 enum : uint32_t { kMsgDeviceInfo = 0, kMsgClientSync = 1, kMsgIqUint8 = 100, kMsgIqInt16 = 101, kMsgIqInt24 = 102, kMsgIqFloat = 103 };
 enum : uint32_t { kDevInvalid = 0, kDevAirspyOne = 1, kDevAirspyHf = 2, kDevRtlSdr = 3 };
-constexpr uint32_t kMaxBody = 1u << 20;
 constexpr int kConnectMs = 3000, kStallMs = 3000;
 
-uint32_t le32(const unsigned char* p) { return (uint32_t)dect2::endian::loadLe32(p); }
-void put32(unsigned char* p, uint32_t v) { dect2::endian::storeLe32(p, v); }
 
-const char* devName(uint32_t t) {
-    switch (t) { case kDevAirspyOne: return "Airspy"; case kDevAirspyHf: return "Airspy HF+"; case kDevRtlSdr: return "RTL-SDR"; default: return "radio"; }
-}
+std::string devName(uint32_t t) { return netp::spyDevName(t); }
 
-bool splitHostPort(const std::string& a, std::string& host, int& port) {
-    const size_t c = a.rfind(':');
-    if (c == std::string::npos || c == 0) return false;
-    host = a.substr(0, c);
-    if (host.size() > 2 && host.front() == '[' && host.back() == ']') host = host.substr(1, host.size() - 2);
-    port = atoi(a.c_str() + c + 1);
-    return port > 0 && port < 65536;
-}
+bool splitHostPort(const std::string& a, std::string& host, int& port) { return netp::splitHostPort(a, host, port); }
 
 // what the server said about itself (DEVICE_INFO and the latest CLIENT_SYNC)
 struct SpyInfo {
@@ -67,42 +55,34 @@ SpyInfo infoFor(const std::string& addr) { std::lock_guard<std::mutex> lk(gInfoM
 void noteInfo(const std::string& addr, const SpyInfo& i) { std::lock_guard<std::mutex> lk(gInfoMu); gInfo[addr] = i; }
 
 void parseDeviceInfo(const unsigned char* b, uint32_t n, SpyInfo& i) {
-    uint32_t v[12] = {};
-    for (uint32_t k = 0; k < 12 && 4 * k + 4 <= n; k++) v[k] = le32(b + 4 * k);
+    uint32_t v[12];
+    netp::spyDeviceInfo(b, n, v);
     i.devType = v[0]; i.serial = v[1]; i.maxRate = v[2]; i.maxBw = v[3]; i.decStages = v[4]; i.gainStages = v[5]; i.maxGainIndex = v[6];
     i.minFreq = v[7]; i.maxFreq = v[8]; i.resolution = v[9]; i.minDec = v[10]; i.forcedFormat = v[11];
     i.known = true;
 }
 void parseClientSync(const unsigned char* b, uint32_t n, SpyInfo& i) {
-    uint32_t v[9] = {};
-    for (uint32_t k = 0; k < 9 && 4 * k + 4 <= n; k++) v[k] = le32(b + 4 * k);
+    uint32_t v[9];
+    netp::spyClientSync(b, n, v);
     i.canControl = v[0] != 0; i.gain = v[1]; i.devCenter = v[2]; i.iqCenter = v[3]; i.minIqCenter = v[5]; i.maxIqCenter = v[6];
     i.synced = true;
 }
 
 bool sendCommand(sock_t s, uint32_t type, const unsigned char* body, uint32_t n) {
-    std::vector<unsigned char> b(8 + n);
-    put32(b.data(), type);
-    put32(b.data() + 4, n);
-    if (n) memcpy(b.data() + 8, body, n);
+    const std::string b = netp::spyCommand(type, body, n);
     return sockSendAll(s, b.data(), b.size());
 }
 bool sendHello(sock_t s) {
-    static const char kName[] = "OnAir";
-    unsigned char b[4 + sizeof kName - 1];
-    put32(b, kProtocolVersion);
-    memcpy(b + 4, kName, sizeof kName - 1);
-    return sendCommand(s, kCmdHello, b, sizeof b);
+    const std::string b = netp::spyHello();
+    return sockSendAll(s, b.data(), b.size());
 }
 
 // one message: the header's fields and its body; false when the connection failed or stalled, or the message makes no sense
 bool readMessage(sock_t s, uint32_t& type, uint32_t& flags, std::vector<unsigned char>& body) {
     unsigned char h[20];
     if (!sockRecvAll(s, h, sizeof h)) return false;
-    const uint32_t mt = le32(h + 4), size = le32(h + 16);
-    if (size > kMaxBody) return false;
-    type = mt & 0xffff;
-    flags = mt >> 16;
+    uint32_t size = 0;
+    if (!netp::spyHeader(h, type, flags, size)) return false;
     body.resize(size);
     return size == 0 || sockRecvAll(s, body.data(), size);
 }
@@ -125,12 +105,7 @@ bool handshake(sock_t s, SpyInfo& info, const std::string& addr, std::string& er
 }
 
 // the rates the server offers: its radio's full rate / 2^n for its decimation stages, the fastest first
-std::vector<double> ratesOf(const SpyInfo& i) {
-    std::vector<double> r;
-    const uint32_t stages = std::max<uint32_t>(i.decStages, i.minDec + 1);
-    for (uint32_t d = i.minDec; d < stages && d < 20; d++) r.push_back((double)i.maxRate / (double)(1u << d));
-    return r;
-}
+std::vector<double> ratesOf(const SpyInfo& i) { return netp::spyRates(i.maxRate, i.decStages, i.minDec); }
 
 // an unknown server is listed as an Airspy R2 (10 Msps, 9 decimation stages, 24 to 1800 MHz, 21 gains) until it has been seen
 SpyInfo orDefault(SpyInfo i) {
@@ -157,19 +132,12 @@ void setCaps(DeviceInfo& d, const SpyInfo& known) {
 
 // The wire format without a socket (for the unit test): a command is type, body size (32-bit little endian each) and the body
 std::vector<unsigned char> spyServerEncodeCommand(uint32_t type, const std::vector<unsigned char>& body) {
-    std::vector<unsigned char> b(8 + body.size());
-    put32(b.data(), type);
-    put32(b.data() + 4, (uint32_t)body.size());
-    if (!body.empty()) memcpy(b.data() + 8, body.data(), body.size());
-    return b;
+    const std::string b = netp::spyCommand(type, body.data(), (uint32_t)body.size());
+    return std::vector<unsigned char>(b.begin(), b.end());
 }
 // A message from the server starts with 20 bytes: protocol version, type | flags << 16, stream type, sequence number, body size
 bool spyServerDecodeHeader(const unsigned char* h, uint32_t& type, uint32_t& flags, uint32_t& size) {
-    const uint32_t mt = le32(h + 4);
-    size = le32(h + 16);
-    type = mt & 0xffff;
-    flags = mt >> 16;
-    return size <= kMaxBody;
+    return netp::spyHeader(h, type, flags, size);
 }
 bool spyServerDecodeDeviceInfo(const unsigned char* b, uint32_t n, uint32_t& devType, uint32_t& maxRate, uint32_t& decStages, uint32_t& maxGainIndex) {
     if (n < 48) return false;
@@ -212,7 +180,7 @@ protected:
         noteInfo(addr_, info);
         { std::lock_guard<std::mutex> lk(infoMu_); info_ = info; }
         sockRecvTimeout(sock_, kStallMs);
-        fprintf(stderr, "SpyServer: connected to %s (%s, serial %08X, %.3f Msps, %s)\n", addr_.c_str(), devName(info.devType), (unsigned)info.serial,
+        fprintf(stderr, "SpyServer: connected to %s (%s, serial %08X, %.3f Msps, %s)\n", addr_.c_str(), devName(info.devType).c_str(), (unsigned)info.serial,
                 info.maxRate / 1e6, info.canControl ? "in control" : "read only: it keeps its own frequency and gain");
         fflush(stderr);
         if (lostAt_.time_since_epoch().count() != 0) {
@@ -326,11 +294,9 @@ protected:
 
 private:
     bool setting(uint32_t id, uint32_t v) {
-        unsigned char b[8];
-        put32(b, id);
-        put32(b + 4, v);
+        const std::string c = netp::spySetSetting(id, v);
         std::lock_guard<std::mutex> lk(sendMu_);
-        return sock_ != kBadSock && sendCommand(sock_, kCmdSetSetting, b, sizeof b);
+        return sock_ != kBadSock && sockSendAll(sock_, c.data(), c.size());
     }
 
     std::string addr_;

@@ -4,6 +4,7 @@
 #include <mutex>
 #include "dect2/dsp/ldpc.h"
 #include "dect2/common/ring.h"
+#include "dect2/fec/fec_proto.h"
 #include <cstdint>
 #include <vector>
 
@@ -30,20 +31,14 @@ const LdpcCode& ldpcFor(const PlpFec& f);
 class BchCode {
 public:
     BchCode(bool shortFrame, int t);
-    int parityBits() const { return deg_; }
+    int parityBits() const { return bch_.parityBits(); }
     // bits[0..k) hold the message; parity is appended so that bits has k + parityBits() entries
     void encode(std::vector<uint8_t>& bits, int k) const;
     // Corrects up to t errors in place. Returns the number of corrected bits, or -1 if uncorrectable.
     int decode(std::vector<uint8_t>& bits) const;
 
 private:
-    int m_, t_, deg_;
-    std::vector<uint32_t> exp_, log_;
-    std::vector<uint8_t> gen_; // generator polynomial, gen_[i] = coefficient of x^i
-    mutable std::vector<uint64_t> tab_; // byte-wise remainder table (built on first use)
-    mutable std::mutex tabMu_;
-    int fieldMul(int a, int b) const;
-    void remainder(const std::vector<uint8_t>& bits, std::vector<uint8_t>& rem) const;
+    fecp::Bch bch_;   // the code itself is core/src/fec/fec_proto.cpp (C++) or the Rust crate onair_fec
 };
 const BchCode& bchFor(const PlpFec& f);
 

@@ -6,6 +6,7 @@
 // Plain structs (aggregates, C arrays inside them too) are walked field by field with no list to keep in step: see results_fields.h.
 #pragma once
 #include "results_fields.h"
+#include "dect2/files/files_proto.h"
 #include <array>
 #include <complex>
 #include <cstdint>
@@ -26,7 +27,7 @@
 
 namespace dect2::results {
 
-constexpr uint32_t kFormat = 1;   // the encoding itself: raise it when put()/get() change
+constexpr uint32_t kFormat = 1;   // the encoding itself: raise it when put()/get() change (and in core/src/files/files_proto.cpp and rust/onair_files/src/container.rs, which write and check the header)
 
 namespace detail {
 
@@ -187,16 +188,12 @@ template <class T> void sig(std::string& s, int depth = 0) {
     else static_assert(kNever<T>, "results: a type that cannot be saved (add it to results_io.h)");
 }
 
-inline uint64_t fnv1a(const std::string& s) {
-    uint64_t h = 1469598103934665603ull;
-    for (unsigned char c : s) { h ^= c; h *= 1099511628211ull; }
-    return h;
-}
+inline uint64_t fnv1a(const std::string& s) { return filesp::fnv1a(s); }   // FNV-1a 64 bit of a blob (what each saved file holds)
 
 template <class... T> uint64_t signatureHash() {
     std::string s;
     (sig<std::remove_cvref_t<T>>(s), ...);
-    return fnv1a(s) ^ kFormat;
+    return filesp::signatureHash(s);   // FNV-1a of the signature text xor kFormat: core/src/files/files_proto.cpp (C++) or the Rust crate onair_files
 }
 
 template <class Tup, size_t... I, class... T> void moveOut(Tup& tmp, std::index_sequence<I...>, T&... v) { ((v = std::move(std::get<I>(tmp))), ...); }
@@ -208,10 +205,7 @@ template <class... T> std::string signature() { std::string s; (detail::sig<std:
 
 template <class... T> std::string pack(const T&... v) {
     detail::Writer w;
-    w.raw("OARS", 4);
-    w.u32(kFormat);
-    const uint64_t h = detail::signatureHash<T...>();
-    w.raw(&h, 8);
+    w.s = filesp::containerHeader(detail::signatureHash<T...>());   // OARS, kFormat, the signature hash
     (detail::put(w, v), ...);
     return std::move(w.s);
 }
@@ -219,13 +213,9 @@ template <class... T> std::string pack(const T&... v) {
 // Every value is read into a copy first: a damaged or foreign blob leaves the targets as they were
 template <class... T> bool unpack(const std::string& blob, T&... v) {
     detail::Reader r;
-    r.p = blob.data(); r.e = blob.data() + blob.size();
-    char magic[4] = {};
-    uint32_t fmt = 0;
-    uint64_t h = 0;
-    if (!r.raw(magic, 4) || std::memcmp(magic, "OARS", 4) != 0) return false;
-    if (!r.raw(&fmt, 4) || fmt != kFormat) return false;
-    if (!r.raw(&h, 8) || h != detail::signatureHash<T...>()) return false;
+    const size_t off = filesp::containerCheck(blob, detail::signatureHash<T...>());   // magic, format and signature hash
+    if (off == SIZE_MAX) return false;
+    r.p = blob.data() + off; r.e = blob.data() + blob.size();
     std::tuple<std::remove_cvref_t<T>...> tmp;
     std::apply([&](auto&... x) { (detail::get(r, x), ...); }, tmp);
     if (!r.ok || r.p != r.e) return false;

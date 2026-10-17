@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 #include "dect2/common/endian.h"
+#include "dect2/files/files_proto.h"
 
 namespace dect2 {
 
@@ -33,16 +34,15 @@ public:
         f_ = fopen(path.c_str(), "rb");
         if (!f_) return fail(err, "cannot open the file");
         uint8_t h[100];
-        if (fread(h, 1, 100, f_) != 100 || memcmp(h, "SQLite format 3", 16) != 0) return closeFail(err, "not an SQLite file");
-        pageSize_ = (h[16] << 8) | h[17];
-        if (pageSize_ == 1) pageSize_ = 65536;
-        if (pageSize_ < 512 || pageSize_ > 65536 || (pageSize_ & (pageSize_ - 1))) return closeFail(err, "bad SQLite page size");
-        reserved_ = h[20];
-        usable_ = pageSize_ - reserved_;
-        if (usable_ < 480) return closeFail(err, "bad SQLite page layout");
-        if (h[18] == 2 || h[19] == 2) return closeFail(err, "WAL-mode file: open it once in a tool that checkpoints it");
-        const uint32_t enc = be32(h + 56);
-        if (enc != 0 && enc != 1) return closeFail(err, "text is not UTF-8");
+        // the 100 byte header: core/src/files/files_proto.cpp (C++) or the Rust crate onair_files
+        if (fread(h, 1, 100, f_) != 100) return closeFail(err, "not an SQLite file");
+        const filesp::DbHeader dh = filesp::dbHeader(h, 100);
+        if (dh.status == 1) return closeFail(err, "not an SQLite file");
+        if (dh.status == 2) return closeFail(err, "bad SQLite page size");
+        if (dh.status == 3) return closeFail(err, "bad SQLite page layout");
+        if (dh.status == 4) return closeFail(err, "WAL-mode file: open it once in a tool that checkpoints it");
+        if (dh.status == 5) return closeFail(err, "text is not UTF-8");
+        pageSize_ = dh.pageSize; reserved_ = dh.reserved; usable_ = dh.usable;
         fseek(f_, 0, SEEK_END);
         const long sz = ftell(f_);
         pages_ = sz > 0 ? (uint32_t)(sz / pageSize_) : 0;
@@ -63,10 +63,8 @@ public:
     bool tile(int z, int x, int y, std::vector<uint8_t>& out) {
         std::lock_guard<std::mutex> lk(mu_);
         out.clear();
-        if (!f_ || z < 0 || z > 30 || x < 0 || y < 0) return false;
-        const int64_t n = (int64_t)1 << z;
-        if (x >= n || y >= n) return false;
-        const int64_t row = n - 1 - y;
+        int64_t row = 0;
+        if (!f_ || !filesp::tileRow(z, x, y, row)) return false;
         if (indexRoot_) {
             int64_t rowid = 0;
             if (!indexFind(z, x, row, rowid)) return false;
@@ -81,28 +79,14 @@ public:
         return std::string();
     }
     // True when the bytes are a picture the raster map can draw (PNG or JPEG), not a vector tile
-    static bool isRaster(const std::vector<uint8_t>& d) {
-        if (d.size() >= 8 && d[0] == 0x89 && d[1] == 'P' && d[2] == 'N' && d[3] == 'G') return true;
-        if (d.size() >= 3 && d[0] == 0xFF && d[1] == 0xD8 && d[2] == 0xFF) return true;
-        return false;
-    }
-    static bool isPng(const std::vector<uint8_t>& d) { return d.size() >= 8 && d[0] == 0x89 && d[1] == 'P' && d[2] == 'N' && d[3] == 'G'; }
+    static bool isRaster(const std::vector<uint8_t>& d) { return filesp::isRaster(d); }
+    static bool isPng(const std::vector<uint8_t>& d) { return filesp::isPng(d); }
 
     // varint of the SQLite record format: up to 9 bytes. Returns the bytes used (0 when it runs past `end`).
-    static int varint(const uint8_t* p, const uint8_t* end, uint64_t& v) {
-        v = 0;
-        for (int i = 0; i < 8; i++) {
-            if (p + i >= end) return 0;
-            v = (v << 7) | (p[i] & 0x7F);
-            if (!(p[i] & 0x80)) return i + 1;
-        }
-        if (p + 8 >= end) return 0;
-        v = (v << 8) | p[8];
-        return 9;
-    }
+    static int varint(const uint8_t* p, const uint8_t* end, uint64_t& v) { return filesp::varint(p, end, v); }
 
 private:
-    struct Col { bool isNull = true, isInt = false, isBlob = false; int64_t i = 0; std::string s; std::vector<uint8_t> b; };
+    using Col = filesp::Col;
 
     FILE* f_ = nullptr;
     std::mutex mu_;
@@ -125,18 +109,13 @@ private:
     // One b-tree cell's payload, overflow pages followed. `p` points into `pg`; payload starts at `at`.
     bool payload(const std::vector<uint8_t>& pg, size_t at, uint64_t total, bool indexTree, std::vector<uint8_t>& out) {
         out.clear();
-        if (total > (1u << 28)) return false;
         const uint64_t U = usable_;
-        const uint64_t X = indexTree ? ((U - 12) * 64 / 255) - 23 : U - 35;
-        uint64_t local = total;
-        if (total > X) {
-            const uint64_t M = ((U - 12) * 32 / 255) - 23;
-            const uint64_t K = M + ((total - M) % (U - 4));
-            local = K <= X ? K : M;
-        }
-        if (at + local + (total > X ? 4 : 0) > pg.size()) return false;
+        uint64_t local = 0;
+        bool overflow = false;
+        if (!filesp::payloadLocal(total, U, indexTree, local, overflow)) return false;   // how much is on this page
+        if (at + local + (overflow ? 4 : 0) > pg.size()) return false;
         out.assign(pg.begin() + at, pg.begin() + at + local);
-        if (total > X) {
+        if (overflow) {
             uint32_t next = be32(&pg[at + local]);
             std::vector<uint8_t> ov;
             int hops = 0;
@@ -151,44 +130,7 @@ private:
     }
 
     // A record -> its columns (blobs only copied when wantBlob)
-    static bool record(const std::vector<uint8_t>& r, std::vector<Col>& cols, bool wantBlob = true) {
-        cols.clear();
-        const uint8_t* p = r.data(); const uint8_t* end = p + r.size();
-        uint64_t hs;
-        int n = varint(p, end, hs);
-        if (!n || hs > r.size() || hs < (uint64_t)n) return false;
-        const uint8_t* h = p + n; const uint8_t* he = p + hs;
-        const uint8_t* d = he;
-        while (h < he) {
-            uint64_t t;
-            const int m = varint(h, he, t);
-            if (!m) return false;
-            h += m;
-            Col c;
-            size_t len = 0;
-            if (t == 0) { c.isNull = true; }
-            else if (t >= 1 && t <= 6) {
-                static const int sz[] = {0, 1, 2, 3, 4, 6, 8};
-                len = sz[t];
-                if (d + len > end) return false;
-                int64_t v = (int8_t)d[0];
-                for (size_t k = 1; k < len; k++) v = (v << 8) | d[k];
-                c.isNull = false; c.isInt = true; c.i = v;
-            } else if (t == 7) { len = 8; if (d + len > end) return false; c.isNull = false; }
-            else if (t == 8) { c.isNull = false; c.isInt = true; c.i = 0; }
-            else if (t == 9) { c.isNull = false; c.isInt = true; c.i = 1; }
-            else if (t >= 12) {
-                len = (size_t)((t - 12) / 2);
-                if (d + len > end) return false;
-                c.isNull = false;
-                if (t & 1) c.s.assign((const char*)d, len);
-                else { c.isBlob = true; if (wantBlob) c.b.assign(d, d + len); }
-            } else return false;
-            d += len;
-            cols.push_back(std::move(c));
-        }
-        return true;
-    }
+    static bool record(const std::vector<uint8_t>& r, std::vector<Col>& cols, bool wantBlob = true) { return filesp::record(r, cols, wantBlob); }
 
     // Visit every row of a table b-tree (rowid, record); stops when fn returns false. Depth limited against loops.
     using RowFn = std::function<bool(int64_t, const std::vector<uint8_t>&)>;
@@ -197,35 +139,24 @@ private:
         std::vector<uint8_t> pg;
         if (!page(root, pg)) return false;
         const size_t base = root == 1 ? 100 : 0;
-        const uint8_t type = pg[base];
-        const unsigned cells = be16(&pg[base + 3]);
+        uint8_t type; unsigned cells; uint32_t rightMost;
+        if (!filesp::pageHeader(pg, base, type, cells, rightMost)) return false;
         if (type == 13) {
             for (unsigned i = 0; i < cells; i++) {
-                const size_t ptrAt = base + 8 + 2 * i;
-                if (ptrAt + 2 > pg.size()) return false;
-                size_t o = be16(&pg[ptrAt]);
-                if (o >= pg.size()) return false;
-                uint64_t total, rowid;
-                int a = varint(&pg[o], pg.data() + pg.size(), total); if (!a) return false;
-                int b = varint(&pg[o + a], pg.data() + pg.size(), rowid); if (!b) return false;
+                filesp::CellInfo c;
+                if (!filesp::cell(pg, filesp::kTableLeaf, base, i, cells, c)) return false;
                 std::vector<uint8_t> rec;
-                if (!payload(pg, o + a + b, total, false, rec)) return false;
-                if (!fn((int64_t)rowid, rec)) return true;
+                if (!payload(pg, c.payloadOff, c.total, false, rec)) return false;
+                if (!fn((int64_t)c.key, rec)) return true;
             }
             return true;
         }
         if (type == 5) {
             for (unsigned i = 0; i <= cells; i++) {
-                uint32_t child;
-                if (i < cells) {
-                    const size_t ptrAt = base + 12 + 2 * i;
-                    if (ptrAt + 2 > pg.size()) return false;
-                    const size_t o = be16(&pg[ptrAt]);
-                    if (o + 4 > pg.size()) return false;
-                    child = be32(&pg[o]);
-                } else child = be32(&pg[base + 8]);
+                filesp::CellInfo c;
+                if (!filesp::cell(pg, filesp::kTableInterior, base, i, cells, c)) return false;
                 bool stop = false;
-                if (!walkTable(child, [&](int64_t id, const std::vector<uint8_t>& r) { if (!fn(id, r)) { stop = true; return false; } return true; }, depth + 1)) return false;
+                if (!walkTable(c.child, [&](int64_t id, const std::vector<uint8_t>& r) { if (!fn(id, r)) { stop = true; return false; } return true; }, depth + 1)) return false;
                 if (stop) return true;
             }
             return true;
@@ -251,19 +182,12 @@ private:
             return true;
         });
         if (!ok || !tilesRoot_) return false;
-        auto squash = [](std::string s) { std::string o; for (char ch : s) if (ch != ' ' && ch != '\n' && ch != '\t' && ch != '"' && ch != '`' && ch != '[' && ch != ']') o += (char)tolower((unsigned char)ch); return o; };
         // The column order of the table must be the standard one for the row decoding below
-        const std::string ts = squash(tilesSql);
-        const size_t lp = ts.find('(');
-        if (lp == std::string::npos || ts.compare(lp + 1, 38, "zoom_level,tile_column,tile_row,tile_d") != 0) {
-            // allow "zoom_level integer, tile_column integer, ..." forms: only the names in order
-            size_t a = ts.find("zoom_level"), b = ts.find("tile_column"), c2 = ts.find("tile_row"), d = ts.find("tile_data");
-            if (a == std::string::npos || !(a < b && b < c2 && c2 < d)) return false;
-        }
+        std::string ts;
+        if (!filesp::tilesSchemaOk(tilesSql, ts)) return false;
         for (const Idx& i : idx) {
-            const std::string s = squash(i.sql);
-            if (s.find("(zoom_level,tile_column,tile_row)") != std::string::npos) { indexRoot_ = i.root; break; }
-            if (i.sql.empty() && ts.find("(zoom_level,tile_column,tile_row)") != std::string::npos) { indexRoot_ = i.root; break; }   // autoindex of a PRIMARY KEY/UNIQUE
+            // an index on (zoom_level, tile_column, tile_row), or the automatic index of a PRIMARY KEY / UNIQUE constraint of the table
+            if (filesp::indexCovers(i.sql, ts)) { indexRoot_ = i.root; break; }
         }
         if (metaRoot) {
             walkTable(metaRoot, [&](int64_t, const std::vector<uint8_t>& r) {
@@ -288,43 +212,35 @@ private:
         for (int depth = 0; depth < 20; depth++) {
             std::vector<uint8_t> pg;
             if (!page(no, pg)) return false;
-            const uint8_t type = pg[0];
-            const unsigned cells = be16(&pg[3]);
+            uint8_t type; unsigned cells; uint32_t rightMost;
+            if (!filesp::pageHeader(pg, 0, type, cells, rightMost)) return false;
             const bool leaf = type == 10;
             if (type != 10 && type != 2) return false;
-            const size_t hdr = leaf ? 8 : 12;
-            uint32_t next = leaf ? 0 : be32(&pg[8]);   // right-most child unless a cell says otherwise
+            const int kind = leaf ? filesp::kIndexLeaf : filesp::kIndexInterior;
+            uint32_t next = leaf ? 0 : rightMost;   // right-most child unless a cell says otherwise
             // binary search over the cells
             int lo = 0, hi = (int)cells - 1;
-            bool descended = false;
             while (lo <= hi) {
                 const int mid = (lo + hi) / 2;
-                const size_t ptrAt = hdr + 2 * (size_t)mid;
-                if (ptrAt + 2 > pg.size()) return false;
-                size_t o = be16(&pg[ptrAt]);
-                uint32_t child = 0;
-                if (!leaf) { if (o + 4 > pg.size()) return false; child = be32(&pg[o]); o += 4; }
-                uint64_t total;
-                const int a = varint(&pg[o], pg.data() + pg.size(), total);
-                if (!a) return false;
+                filesp::CellInfo ci;
+                if (!filesp::cell(pg, kind, 0, (size_t)mid, cells, ci)) return false;
                 std::vector<uint8_t> rec;
-                if (!payload(pg, o + a, total, true, rec)) return false;
+                if (!payload(pg, ci.payloadOff, ci.total, true, rec)) return false;
                 std::vector<Col> c;
                 if (!record(rec, c, false) || c.size() < 4 || !c[0].isInt || !c[1].isInt || !c[2].isInt || !c[3].isInt) return false;
                 const int k = cmp3(z, x, row, c[0].i, c[1].i, c[2].i);
                 if (k == 0) { rowid = c[3].i; return true; }   // interior cells carry entries too
-                if (k < 0) { hi = mid - 1; next = child; }
+                if (k < 0) { hi = mid - 1; next = ci.child; }
                 else lo = mid + 1;
             }
             if (leaf) return false;
             // the child to enter: the left child of the first cell greater than the key, else the right-most
             if (lo < (int)cells) {
-                const size_t o = be16(&pg[hdr + 2 * (size_t)lo]);
-                if (o + 4 > pg.size()) return false;
-                next = be32(&pg[o]);
-            } else next = be32(&pg[8]);
-            descended = true;
-            (void)descended;
+                filesp::CellInfo ci;
+                // an interior index cell is (child pointer, payload): only the pointer is needed here, so the table interior decoder (pointer inside the page) serves
+                if (!filesp::cell(pg, filesp::kTableInterior, 0, (size_t)lo, cells, ci)) return false;
+                next = ci.child;
+            } else next = rightMost;
             no = next;
         }
         return false;
@@ -343,18 +259,14 @@ private:
         for (int depth = 0; depth < 20; depth++) {
             std::vector<uint8_t> pg;
             if (!page(no, pg)) return false;
-            const uint8_t type = pg[0];
-            const unsigned cells = be16(&pg[3]);
+            uint8_t type; unsigned cells; uint32_t rightMost;
+            if (!filesp::pageHeader(pg, 0, type, cells, rightMost)) return false;
             if (type == 5) {
-                uint32_t next = be32(&pg[8]);
+                uint32_t next = rightMost;
                 for (unsigned i = 0; i < cells; i++) {
-                    const size_t ptrAt = 12 + 2 * (size_t)i;
-                    if (ptrAt + 2 > pg.size()) return false;
-                    const size_t o = be16(&pg[ptrAt]);
-                    if (o + 5 > pg.size()) return false;
-                    uint64_t key;
-                    if (!varint(&pg[o + 4], pg.data() + pg.size(), key)) return false;
-                    if ((int64_t)key >= rowid) { next = be32(&pg[o]); break; }
+                    filesp::CellInfo c;
+                    if (!filesp::cell(pg, filesp::kTableInteriorKey, 0, i, cells, c)) return false;
+                    if ((int64_t)c.key >= rowid) { next = c.child; break; }
                 }
                 no = next;
                 continue;
@@ -363,18 +275,13 @@ private:
             int lo = 0, hi = (int)cells - 1;
             while (lo <= hi) {
                 const int mid = (lo + hi) / 2;
-                const size_t ptrAt = 8 + 2 * (size_t)mid;
-                if (ptrAt + 2 > pg.size()) return false;
-                const size_t o = be16(&pg[ptrAt]);
-                if (o >= pg.size()) return false;
-                uint64_t total, id;
-                const int a = varint(&pg[o], pg.data() + pg.size(), total); if (!a) return false;
-                const int b = varint(&pg[o + a], pg.data() + pg.size(), id); if (!b) return false;
-                if ((int64_t)id == rowid) {
+                filesp::CellInfo c;
+                if (!filesp::cell(pg, filesp::kTableLeaf, 0, (size_t)mid, cells, c)) return false;
+                if ((int64_t)c.key == rowid) {
                     std::vector<uint8_t> rec;
-                    return payload(pg, o + a + b, total, false, rec) && rowToTile(rec, out);
+                    return payload(pg, c.payloadOff, c.total, false, rec) && rowToTile(rec, out);
                 }
-                if ((int64_t)id < rowid) lo = mid + 1; else hi = mid - 1;
+                if ((int64_t)c.key < rowid) lo = mid + 1; else hi = mid - 1;
             }
             return false;
         }

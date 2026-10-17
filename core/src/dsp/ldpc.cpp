@@ -1,4 +1,5 @@
 #include "dect2/dsp/ldpc.h"
+#include "dect2/fec/fec_proto.h"
 #include "dect2/dsp/simd.h"
 #include <algorithm>
 #include <cmath>
@@ -44,33 +45,21 @@ DECT2_SIMD_BODY void minSumApplyBody(float* __restrict Lj, float* __restrict mj,
 #endif
 
 LdpcCode::LdpcCode(int k, int n, const std::vector<std::vector<int>>& rows) : k_(k), n_(n), m_(n - k) {
-    const int q = m_ / 360;
-    q_ = q;
+    // the parity-check tables: core/src/fec/fec_proto.cpp (C++) or the Rust crate onair_fec
+    fecp::LdpcTables t;
+    if (!fecp::ldpcBuild(k, n, rows, t)) {   // an unusable code (n <= k, fewer than 360 parity bits, a negative address) stays empty
+        k_ = n_ = m_ = 0;
+        chkStart_.assign(1, 0);
+        return;
+    }
+    q_ = t.q;
     groups_ = (int)rows.size();
-    layers_.assign(q, {});
-    for (int g = 0; g < groups_; g++) for (int a : rows[g]) layers_[a % q].push_back({g, a / q});
-    std::vector<std::vector<int>> chk(m_);
-    int im = 0;
-    for (auto& row : rows) {
-        for (int c = 0; c < 360; c++, im++) {
-            for (int a : row) {
-                int p = (a + c * q) % m_;
-                encP_.push_back(p);
-                encD_.push_back(im);
-                chk[p].push_back(im);
-            }
-        }
-    }
-    // zig-zag parity structure: check j involves parity bits j and j-1
-    for (int j = 0; j < m_; j++) {
-        chk[j].push_back(k_ + j);
-        if (j > 0) chk[j].push_back(k_ + j - 1);
-    }
-    chkStart_.resize(m_ + 1);
-    chkStart_[0] = 0;
-    for (int j = 0; j < m_; j++) chkStart_[j + 1] = chkStart_[j] + (int)chk[j].size();
-    chkVar_.reserve(chkStart_[m_]);
-    for (int j = 0; j < m_; j++) chkVar_.insert(chkVar_.end(), chk[j].begin(), chk[j].end());
+    layers_.assign(t.q, {});
+    for (int l = 0; l < t.q; l++) for (int e = t.layerStart[l]; e < t.layerStart[l + 1]; e++) layers_[l].push_back({t.layerGroup[e], t.layerShift[e]});
+    chkStart_ = std::move(t.chkStart);
+    chkVar_ = std::move(t.chkVar);
+    encP_ = std::move(t.encP);
+    encD_ = std::move(t.encD);
 }
 
 void LdpcCode::encode(std::vector<uint8_t>& bits) const {

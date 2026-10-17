@@ -1,4 +1,5 @@
 #include "dect2/atsc/atsc.h"
+#include "dect2/fec/fec_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -64,136 +65,9 @@ void Randomizer::apply(uint8_t* data, size_t n) {
     }
 }
 
-// ---------------------------------------------------------------- Reed-Solomon (207,187)
-namespace {
-struct Gf {
-    uint8_t exp[512], log[256];
-    Gf() {
-        unsigned x = 1;
-        for (int i = 0; i < 255; i++) { exp[i] = (uint8_t)x; log[x] = (uint8_t)i; x <<= 1; if (x & 0x100) x ^= 0x11d; }
-        for (int i = 255; i < 512; i++) exp[i] = exp[i - 255];
-        log[0] = 0;
-    }
-    uint8_t mul(uint8_t a, uint8_t b) const { return (a && b) ? exp[log[a] + log[b]] : 0; }
-    uint8_t inv(uint8_t a) const { return exp[255 - log[a]]; }
-};
-const Gf& gf() { static const Gf g; return g; }
-constexpr int kRoots = 20;
-constexpr int kN = 207;
-struct RsGen {
-    uint8_t g[kRoots + 1];   // g[0] x^20 + ... (highest degree first)
-    RsGen() {
-        const Gf& f = gf();
-        uint8_t p[kRoots + 1] = {1};
-        int deg = 0;
-        for (int i = 0; i < kRoots; i++) {   // multiply by (x + alpha^i)
-            uint8_t q[kRoots + 1] = {};
-            for (int j = 0; j <= deg; j++) { q[j] ^= p[j]; q[j + 1] ^= f.mul(p[j], f.exp[i]); }
-            deg++;
-            memcpy(p, q, sizeof p);
-        }
-        memcpy(g, p, sizeof g);
-    }
-};
-}
-
-namespace {
-// fb * g[j + 1] for every feedback byte fb: one row of 24 bytes (20 used, zero padded) per value, so that one division step is three
-// 64-bit exclusive ors
-struct RsRows {
-    alignas(8) uint8_t row[256][24];
-    RsRows() {
-        const Gf& f = gf();
-        const RsGen gen;
-        memset(row, 0, sizeof row);
-        for (int v = 0; v < 256; v++) for (int j = 0; j < kRoots; j++) row[v][j] = f.mul((uint8_t)v, gen.g[j + 1]);
-    }
-};
-const RsRows& rsRows() { static const RsRows r; return r; }
-
-// remainder of the 207 bytes in `b` (highest degree first) divided by the generator polynomial, written to rem[20]; `b` must have 24 bytes of
-// room behind it (it is the working copy: its first 187 bytes are consumed)
-inline void rsRemainder(uint8_t* b, uint8_t* rem) {
-    const RsRows& R = rsRows();
-    for (int i = 0; i < 187; i++) {
-        const uint8_t fb = b[i];
-        if (!fb) continue;
-        uint64_t x[3], y[3];
-        memcpy(x, b + i + 1, 24); memcpy(y, R.row[fb], 24);
-        x[0] ^= y[0]; x[1] ^= y[1]; x[2] ^= y[2];
-        memcpy(b + i + 1, x, 24);
-    }
-    memcpy(rem, b + 187, kRoots);
-}
-}
-
-void rsEncode(const uint8_t* in, uint8_t* out) {
-    uint8_t b[187 + 24 + 8] = {};
-    memcpy(b, in, 187);
-    uint8_t rem[kRoots];
-    rsRemainder(b, rem);
-    memcpy(out, in, 187);
-    memcpy(out + 187, rem, kRoots);
-}
-
-int rsDecode(uint8_t* r) {
-    const Gf& f = gf();
-    uint8_t S[kRoots];
-    bool any = false;
-    {   // syndromes: the remainder of r(x) modulo g(x) is zero exactly when all of them are, and S_i = rem(alpha^i)
-        uint8_t w[kN + 24 + 8] = {}, rem[kRoots];
-        memcpy(w, r, kN);
-        rsRemainder(w, rem);
-        for (int j = 0; j < kRoots; j++) any |= rem[j] != 0;
-        if (!any) return 0;
-        for (int i = 0; i < kRoots; i++) {
-            uint8_t s = 0;
-            for (int j = 0; j < kRoots; j++) s = f.mul(s, f.exp[i]) ^ rem[j];
-            S[i] = s;
-        }
-    }
-    uint8_t C[kRoots + 1] = {1}, B[kRoots + 1] = {1};
-    int L = 0, m = 1;
-    uint8_t b = 1;
-    for (int n = 0; n < kRoots; n++) {
-        uint8_t d = S[n];
-        for (int i = 1; i <= L; i++) d ^= f.mul(C[i], S[n - i]);
-        if (d == 0) { m++; continue; }
-        uint8_t T[kRoots + 1];
-        memcpy(T, C, sizeof T);
-        const uint8_t coef = f.mul(d, f.inv(b));
-        for (int i = 0; i + m <= kRoots; i++) C[i + m] ^= f.mul(coef, B[i]);
-        if (2 * L <= n) { L = n + 1 - L; memcpy(B, T, sizeof B); b = d; m = 1; } else m++;
-    }
-    if (L > kRoots / 2) return -1;
-    int pos[kRoots / 2], cnt = 0;
-    for (int p = 0; p < kN; p++) {
-        const uint8_t x = f.exp[(255 - p) % 255];
-        uint8_t v = 0;
-        for (int i = L; i >= 0; i--) v = f.mul(v, x) ^ C[i];
-        if (v == 0) { if (cnt >= kRoots / 2) return -1; pos[cnt++] = p; }
-    }
-    if (cnt != L) return -1;
-    uint8_t om[kRoots] = {};
-    for (int i = 0; i < kRoots; i++) { uint8_t s = 0; for (int j = 0; j <= std::min(i, L); j++) s ^= f.mul(C[j], S[i - j]); om[i] = s; }
-    for (int k = 0; k < cnt; k++) {
-        const int p = pos[k];
-        const uint8_t X = f.exp[p % 255], xi = f.exp[(255 - p) % 255];
-        uint8_t num = 0;
-        for (int i = kRoots - 1; i >= 0; i--) num = f.mul(num, xi) ^ om[i];
-        uint8_t den = 0;
-        for (int i = 1; i <= L; i += 2) den ^= f.mul(C[i], f.exp[((255 - p) * (i - 1)) % 255]);
-        if (den == 0) return -1;
-        r[kN - 1 - p] ^= f.mul(f.mul(num, X), f.inv(den));
-    }
-    {
-        uint8_t w[kN + 24 + 8] = {}, rem[kRoots];
-        memcpy(w, r, kN);
-        rsRemainder(w, rem);
-        for (int j = 0; j < kRoots; j++) if (rem[j]) return -1;
-    }
-    return cnt;
-}
+// ---------------------------------------------------------------- Reed-Solomon (207,187): core/src/fec/fec_proto.cpp (C++) or the Rust crate onair_fec
+void rsEncode(const uint8_t* in, uint8_t* out) { fecp::rs207Encode(in, out); }
+int rsDecode(uint8_t* r) { return fecp::rs207Decode(r); }
 
 // ---------------------------------------------------------------- byte interleaver
 ByteInterleaver::ByteInterleaver(bool inverse) : inverse_(inverse) {

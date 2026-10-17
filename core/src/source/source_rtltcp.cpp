@@ -7,6 +7,7 @@
 #include "../net/tcp_client.h"
 #include "native_common.h"
 #include "dect2/net/netradio.h"
+#include "dect2/net/net_proto.h"
 #include <map>
 #include <mutex>
 #include <set>
@@ -26,32 +27,10 @@ constexpr int kConnectMs = 3000;   // an unreachable server is reported after th
 constexpr int kGreetingMs = 10000; // a server still closing the previous client can take seconds to greet
 constexpr int kStallMs = 3000;     // no samples for this long: the connection is taken as lost
 
-// The tuner's gains in tenths of a dB, as librtlsdr's tuner drivers list them (what rtlsdr_get_tuner_gains gives the server)
-std::vector<int> tunerGains(int tuner) {
-    switch (tuner) {
-    case kE4000: return {-10, 15, 40, 65, 90, 115, 140, 165, 190, 215, 240, 290, 340, 420};
-    case kFC0012: return {-99, -40, 71, 179, 192};
-    case kFC0013: return {-99, -73, -65, -63, -60, -58, -54, 58, 61, 63, 65, 67, 68, 70, 71, 179, 181, 182, 184, 186, 188, 191, 197};
-    case kFC2580: return {0};
-    default:   // R820T, R828D (and an unknown tuner: the most common one)
-        return {0, 9, 14, 27, 37, 77, 87, 125, 144, 157, 166, 197, 207, 229, 254, 280, 297, 328, 338, 364, 372, 386, 402, 421, 434, 439, 445, 480, 496};
-    }
-}
-const char* tunerName(int t) {
-    switch (t) {
-    case kE4000: return "E4000"; case kFC0012: return "FC0012"; case kFC0013: return "FC0013"; case kFC2580: return "FC2580";
-    case kR820T: return "R820T"; case kR828D: return "R828D"; default: return "unknown tuner";
-    }
-}
-
-bool splitHostPort(const std::string& a, std::string& host, int& port) {
-    const size_t c = a.rfind(':');
-    if (c == std::string::npos || c == 0) return false;
-    host = a.substr(0, c);
-    if (host.size() > 2 && host.front() == '[' && host.back() == ']') host = host.substr(1, host.size() - 2);   // [::1]:1234
-    port = atoi(a.c_str() + c + 1);
-    return port > 0 && port < 65536;
-}
+// The tuner's gains, its name and the "host:port" form: net_proto.h (C++ or the Rust crate onair_net)
+std::vector<int> tunerGains(int tuner) { return netp::rtlTunerGains(tuner); }
+std::string tunerName(int t) { return netp::rtlTunerName(t); }
+bool splitHostPort(const std::string& a, std::string& host, int& port) { return netp::splitHostPort(a, host, port); }
 
 uint32_t be32(const unsigned char* p) { return (uint32_t)dect2::endian::loadBe32(p); }
 
@@ -70,11 +49,10 @@ void setCaps(DeviceInfo& d, bool other) {
 } // namespace
 
 bool rtlTcpGreeting(const unsigned char* hdr, std::string& magic, bool& other) {
-    for (int i = 0; i < 4; i++) if (hdr[i] < 0x20 || hdr[i] > 0x7e) return false;
-    const uint32_t tuner = be32(hdr + 4), nGains = be32(hdr + 8);
-    if (tuner > 0xffff || nGains > 0xffff) return false;   // not a greeting
-    magic.assign((const char*)hdr, 4);
-    other = magic != "RTL0" || tuner < kE4000 || tuner > kR828D;
+    netp::RtlGreeting g;
+    if (!netp::rtlGreeting(hdr, 12, g)) return false;
+    magic = g.magic;
+    other = g.other;
     return true;
 }
 void rtlTcpNoteServer(const std::string& addr, bool other) {
@@ -108,7 +86,7 @@ protected:
         sockRecvTimeout(sock_, kStallMs);
         if (detected_) fprintf(stderr, "rtl_tcp: connected to %s (\"%s\", tuner type %d, %u gains): not an RTL-SDR, any rate up to 20 Msps\n", addr_.c_str(),
                                magic.c_str(), tuner_, (unsigned)nGains);
-        else fprintf(stderr, "rtl_tcp: connected to %s (%s, %u gains)\n", addr_.c_str(), tunerName(tuner_), (unsigned)nGains);
+        else fprintf(stderr, "rtl_tcp: connected to %s (%s, %u gains)\n", addr_.c_str(), tunerName(tuner_).c_str(), (unsigned)nGains);
         fflush(stderr);
         // the samples missed while the connection was down (the receiver sees a gap of that many)
         if (lostAt_.time_since_epoch().count() != 0) {
@@ -220,9 +198,9 @@ public:
 
 private:
     bool command(uint8_t cmd, uint32_t v) {
-        const unsigned char c[5] = {cmd, (unsigned char)(v >> 24), (unsigned char)(v >> 16), (unsigned char)(v >> 8), (unsigned char)v};
+        const std::string c = netp::rtlCommand(cmd, v);
         std::lock_guard<std::mutex> lk(sendMu_);
-        return sock_ != kBadSock && sockSendAll(sock_, c, 5);
+        return sock_ != kBadSock && sockSendAll(sock_, c.data(), c.size());
     }
     void convert(const unsigned char* b, size_t bytes) {
         const size_t n = bytes / 2;
