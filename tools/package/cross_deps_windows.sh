@@ -93,6 +93,17 @@ PC
   cmake -S SoapySDR-soapy-sdr-0.8.1 -B soapy-build "-DCMAKE_TOOLCHAIN_FILE=$TC" -DCMAKE_INSTALL_PREFIX=$P -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DENABLE_TESTS=OFF -DENABLE_APPS=OFF -DENABLE_PYTHON=OFF -DENABLE_PYTHON3=OFF -DENABLE_DOCS=OFF >/dev/null
   cmake --build soapy-build -j$JOBS >/dev/null && cmake --install soapy-build >/dev/null; }
 
+# SoapyRemote client module (libremoteSupport.dll, issue #84 SoapySDR over LAN), BSL-1.0. Source: soapy-remote-0.5.3 (newest tag, 2026-10),
+#   https://github.com/pothosware/SoapyRemote/archive/refs/tags/soapy-remote-0.5.3.tar.gz  (74563 bytes, put it in build-windows-deps/src/soapyremote-0.5.3.tar.gz)
+#   SHA-256 de5bdf209dc93bf7c341077e1e21353037fc387e7c6a9ee41eace3390669dcc1
+# The upstream sources only build with MSVC (_MSC_VER guards): the patch makes them build with MinGW. No mDNS (Avahi) on Windows; Winsock and IP Helper are system DLLs.
+[ -f "$P/lib/SoapySDR/modules0.8/libremoteSupport.dll" ] || { step SoapyRemote; unpack soapyremote-0.5.3.tar.gz SoapyRemote-soapy-remote-0.5.3
+  (cd SoapyRemote-soapy-remote-0.5.3 && patch -p1 -N -s < "$ROOT/tools/package/patches/soapyremote-0.5.3-mingw.patch" || true)
+  cmake -S SoapyRemote-soapy-remote-0.5.3 -B soapyremote-build "-DCMAKE_TOOLCHAIN_FILE=$TC" -DCMAKE_INSTALL_PREFIX=$P -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+    -DENABLE_AVAHI=OFF -DENABLE_APPS=OFF "-DSoapySDR_DIR=$P/share/cmake/SoapySDR" "-DCMAKE_CXX_STANDARD_LIBRARIES=-liphlpapi -lws2_32" >/dev/null
+  cmake --build soapyremote-build -j$JOBS >/dev/null && cmake --install soapyremote-build >/dev/null
+  mkdir -p "$P/licenses"; cp SoapyRemote-soapy-remote-0.5.3/LICENSE_1_0.txt "$P/licenses/SoapyRemote-LICENSE_1_0.txt"; }
+
 # --- librtlsdr and libairspy as DLLs of their own (libusb inside): the native drivers of OnAir load rtlsdr.dll / airspy.dll by name from the program's folder
 [ -f "$P/bin/librtlsdr.dll" ] || { step "librtlsdr.dll"
   cmake rtl-build "-DCMAKE_SHARED_LINKER_FLAGS=-L$P/lib" >/dev/null && cmake --build rtl-build -j$JOBS --target rtlsdr >/dev/null && cp rtl-build/src/librtlsdr.dll "$P/bin/"; }

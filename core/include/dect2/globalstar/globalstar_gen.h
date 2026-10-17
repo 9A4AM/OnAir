@@ -1,6 +1,6 @@
 // Globalstar test signal. Nothing is transmitted: the samples only exist in memory or in a file.
 //
-// makeGlobalstarSynth(): band-limited noise of 1.23 MHz (the look of a CDMA downlink) on the channels of the band that the sample rate covers.
+// makeGlobalstarSynth(): band-limited noise of 1.23 MHz (the look of a CDMA terminal uplink) on the channels of the band that the sample rate covers.
 // SynthConfig: snrDb = signal to noise in the channel bandwidth; cfoHz = extra Doppler on every channel; modeVal[0] = time scale (0 = 1: 10 plays a
 // pass in a tenth of the time); modeOpt[0] = scenario: 0 a pass (one channel is active throughout and its Doppler sweeps from +30 kHz to
 // -30 kHz over 40 s, a second channel carries bursts of 300 ms every 800 ms), 1 steady (one channel, constant Doppler = cfoHz),

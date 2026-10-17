@@ -16,6 +16,7 @@ P=$ONAIR_WIN_PREFIX
 if [ -z "$ONAIR_WIN_PARTIAL" ]; then
   missing=""
   for f in libSoapySDR librtlsdr libairspy libairspyhf libbladeRF libLimeSuite libiio FTD3XX; do [ -f "$P/bin/$f.dll" ] || missing="$missing bin/$f.dll"; done
+  [ -f "$P/lib/SoapySDR/modules0.8/libremoteSupport.dll" ] || missing="$missing lib/SoapySDR/modules0.8/libremoteSupport.dll"
   for f in libusb-1.0 libstdc++-6 libgcc_s_seh-1 libwinpthread-1; do [ -f "$P/redist/$f.dll" ] || missing="$missing redist/$f.dll"; done
   [ -z "$missing" ] || { echo "error: not in $P:$missing"; echo "run tools/package/cross_deps_windows.sh first (or set ONAIR_WIN_PARTIAL=1 to package without them)"; exit 1; }
 fi

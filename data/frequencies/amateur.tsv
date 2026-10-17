@@ -1,0 +1,88 @@
+# VHF/UHF amateur: calling channels, APRS, digital voice, packet, satellites
+# freq_mhz|name|bandwidth_khz|notes[|mode|region|category]   @mode / @region / @category / @source set the defaults for the lines below
+@region GLOBAL
+@category amateur
+@source IARU Region 1/2/3 band plans; ARRL and national APRS frequency lists; AMSAT and satellite operator published downlinks
+@mode packet
+144.800|APRS (Europe, Africa)|12|AFSK 1200 baud AX.25|packet|EU|
+144.390|APRS (North America)|12||packet|NA|
+144.640|APRS (Japan, Russia)|12||packet|JP|
+144.575|APRS (New Zealand)|12||packet|NZ|
+145.175|APRS (Australia)|12||packet|AU|
+145.570|APRS (Brazil)|12||packet|BR|
+432.500|APRS UHF|12|Used for APRS in several countries and by some digipeaters|packet|GLOBAL|
+10.1515|HF APRS 30 m|0.5|300 baud AFSK, USB dial|packet|GLOBAL|
+145.825|ISS / satellite APRS digipeater|12|ARISS packet digipeater when active|packet|GLOBAL|
+@mode loraaprs
+433.775|LoRa APRS|125|Europe 433.775 MHz, SF12 BW125|loraaprs|EU|
+@mode meshcom
+433.175|MeshCom 433 MHz|125||meshcom|EU|
+@mode dstar
+145.375|D-STAR / digital voice calling (2 m)|12.5|IARU Region 1 DV calling channel|dstar|R1|
+145.670|D-STAR simplex calling|12.5|Common simplex frequency in several countries|dstar|GLOBAL|
+433.475|D-STAR simplex 70 cm|12.5||dstar|R1|
+@mode m17
+433.475|M17 70 cm (IARU R1 suggestion)|9|IARU VHF+ newsletter 92, June 2023|m17|R1|
+@mode dmr
+446.10625|PMR446 digital DMR channel 1|12.5|DMR tier 1, licence-free|dmr|EU|pmr
+446.11875|PMR446 digital DMR channel 2|12.5|DMR tier 1, licence-free|dmr|EU|pmr
+446.13125|PMR446 digital DMR channel 3|12.5|DMR tier 1, licence-free|dmr|EU|pmr
+446.14375|PMR446 digital DMR channel 4|12.5|DMR tier 1, licence-free|dmr|EU|pmr
+446.15625|PMR446 digital DMR channel 5|12.5|DMR tier 1, licence-free|dmr|EU|pmr
+446.16875|PMR446 digital DMR channel 6|12.5|DMR tier 1, licence-free|dmr|EU|pmr
+446.18125|PMR446 digital DMR channel 7|12.5|DMR tier 1, licence-free|dmr|EU|pmr
+446.19375|PMR446 digital DMR channel 8|12.5|DMR tier 1, licence-free|dmr|EU|pmr
+@mode dpmr
+446.103125|PMR446 digital dPMR channel 1|6.25|Licence-free|dpmr|EU|pmr
+446.109375|PMR446 digital dPMR channel 2|6.25|Licence-free|dpmr|EU|pmr
+446.115625|PMR446 digital dPMR channel 3|6.25|Licence-free|dpmr|EU|pmr
+446.121875|PMR446 digital dPMR channel 4|6.25|Licence-free|dpmr|EU|pmr
+446.128125|PMR446 digital dPMR channel 5|6.25|Licence-free|dpmr|EU|pmr
+446.134375|PMR446 digital dPMR channel 6|6.25|Licence-free|dpmr|EU|pmr
+446.140625|PMR446 digital dPMR channel 7|6.25|Licence-free|dpmr|EU|pmr
+446.146875|PMR446 digital dPMR channel 8|6.25|Licence-free|dpmr|EU|pmr
+446.153125|PMR446 digital dPMR channel 9|6.25|Licence-free|dpmr|EU|pmr
+446.159375|PMR446 digital dPMR channel 10|6.25|Licence-free|dpmr|EU|pmr
+446.165625|PMR446 digital dPMR channel 11|6.25|Licence-free|dpmr|EU|pmr
+446.171875|PMR446 digital dPMR channel 12|6.25|Licence-free|dpmr|EU|pmr
+446.178125|PMR446 digital dPMR channel 13|6.25|Licence-free|dpmr|EU|pmr
+446.184375|PMR446 digital dPMR channel 14|6.25|Licence-free|dpmr|EU|pmr
+446.190625|PMR446 digital dPMR channel 15|6.25|Licence-free|dpmr|EU|pmr
+446.196875|PMR446 digital dPMR channel 16|6.25|Licence-free|dpmr|EU|pmr
+@mode nxdn
+446.10625|PMR446 digital (NXDN-capable)|6.25||nxdn|EU|pmr
+@mode general
+145.500|FM calling channel 2 m (R1)|12.5|NFM|general|R1|amateur
+146.520|FM calling frequency 2 m|12.5|NFM|general|US|amateur
+144.300|SSB calling frequency 2 m|12.5|USB|general|GLOBAL|amateur
+144.050|CW / meteor scatter calling 2 m|12.5|NFM|general|GLOBAL|amateur
+432.200|SSB / CW calling 70 cm|12.5|USB|general|GLOBAL|amateur
+433.500|FM calling channel 70 cm (R1)|12.5|NFM|general|R1|amateur
+446.000|FM calling frequency 70 cm (R2)|12.5|NFM|general|NA|amateur
+50.200|SSB calling 6 m|12.5|USB|general|GLOBAL|amateur
+50.110|DX calling 6 m|12.5|NFM|general|GLOBAL|amateur
+29.600|FM calling 10 m|12.5|NFM|general|GLOBAL|amateur
+28.400|SSB centre of activity 10 m|12.5|USB|general|GLOBAL|amateur
+1296.200|SSB calling 23 cm|12.5|USB|general|GLOBAL|amateur
+2320.200|SSB calling 13 cm|12.5|USB|general|GLOBAL|amateur
+10368.100|SSB calling 3 cm|12.5|USB|general|GLOBAL|amateur
+223.500|FM calling 1.25 m (R2)|12.5|NFM|general|NA|amateur
+@mode cubesat
+@category satellite
+145.825|ISS APRS / digital uplink-downlink|15||cubesat|GLOBAL|
+145.800|ISS voice and SSTV downlink|15|FM voice, SSTV events; also Mode FM repeater|cubesat|GLOBAL|
+437.800|ISS cross-band repeater downlink|15|Uplink 145.200 MHz (R1) / 145.990 MHz|cubesat|GLOBAL|
+145.850|SO-50 uplink / voice repeater|15|Downlink 436.795 MHz|cubesat|GLOBAL|
+436.795|SO-50 downlink|15|FM; uplink 145.850 MHz with 67 Hz access tone|cubesat|GLOBAL|
+145.960|AO-91 downlink|15|FM voice repeater; uplink 435.250 MHz|cubesat|GLOBAL|
+145.880|AO-92 downlink|15|FM voice repeater; uplink 435.350 MHz|cubesat|GLOBAL|
+145.980|AO-85 downlink|15|FM voice; uplink 435.180 MHz|cubesat|GLOBAL|
+435.800|FO-29 downlink|25|Linear transponder 435.800 MHz centre|cubesat|GLOBAL|
+435.605|RS-44 beacon|25|Linear transponder 435.610-435.640 MHz; uplink 145.935-145.995 MHz|cubesat|GLOBAL|
+145.935|AO-73 (FUNcube-1) beacon|15|BPSK 1k2 telemetry|cubesat|GLOBAL|
+@mode qo100
+@category satellite
+@source AMSAT-DL / Es'hail-2 QO-100 narrowband and wideband transponder plan; the receiver tunes the first IF behind a 9750 MHz LNB (frequency here is the RF downlink)
+10489.500|QO-100 narrowband transponder, lower edge|2700|Narrowband transponder 10489.500-10489.990 MHz; uplink 2400.050-2400.300 MHz|qo100|GLOBAL|
+10489.750|QO-100 narrowband beacon|2|NB beacon|qo100|GLOBAL|
+10491.500|QO-100 wideband beacon|1500|DATV wideband transponder starts 10491 MHz; uplink 2401.5-2409.5 MHz|qo100|GLOBAL|

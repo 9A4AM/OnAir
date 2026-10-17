@@ -3,6 +3,7 @@
 // The decoder must keep going (skip what is broken) and must recover on its own. Headless: nothing is played.
 #include "../../core/src/cdr/cdr_audio.h"
 #include "cdr_dra_clip.h"
+#include "cdr_dra_ext_units.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
@@ -58,6 +59,19 @@ int main() {
     // units cut at other places and very short ones
     const uint64_t odd = run(37, [](auto&) {});
     CHECK(odd >= clean * 9 / 10, "unit size must not matter (%llu of %llu)", (unsigned long long)odd, (unsigned long long)clean);
+
+    // real units with extension bytes behind each frame: every one must give its sound (the old path lost 1 in 10: a false sync in the tail)
+    {
+        CdrAudio a(true);
+        CdrTelemetry t;
+        for (const auto& raw : kDraExtUnits) {
+            std::vector<cdr::AudioUnit> v(1);
+            v[0].data.assign(raw, raw + sizeof raw);
+            a.play(1, 1, v, 1.f, true, t);
+        }
+        printf("48 units with extension bytes: %llu samples\n", (unsigned long long)t.draPcmFrames);
+        CHECK(t.draPcmFrames == 48 * 1024, "each unit gives one frame (%llu of %d samples)", (unsigned long long)t.draPcmFrames, 48 * 1024);
+    }
 
     if (fails) { printf("%d check(s) failed\n", fails); return 1; }
     printf("OK\n");

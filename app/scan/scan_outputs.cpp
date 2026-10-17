@@ -30,27 +30,44 @@ void scanTabCommon(App& a) {
     if (hw < 0) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("Scanning needs a radio (HackRF, Airspy, SDRplay, ...)."); ImGui::PopTextWrapPos(); } return; }
     static std::string scanErr;
     ImGui::BeginDisabled(pr.running);
-    const char* presetsDvb[] = {"UHF 474-858 MHz (8 MHz)", "VHF III 174-230 MHz (7 MHz)", "Custom"};
-    const char* presetsAtsc[] = {"US UHF ch 14-36 (470-608 MHz)", "US VHF high ch 7-13 (174-216 MHz)", "Custom"};
-    const char* presetsIsdbt[] = {"UHF ch 13-62 (473-767 MHz)", "VHF high ch 7-13 (177-213 MHz)", "Custom"};
-    const char* presetsDtmb[] = {"China UHF 474-858 MHz (8 MHz)", "China VHF high ch 6-12 (171-219 MHz)", "Cuba UHF ch 14-51 (473-695 MHz, 6 MHz)", "Custom"};   // Hong Kong and Macau use channels of the same 8 MHz raster
+    // The ranges come from the band plan (Scan tab > Band plan: a country, or the user's own file); "None" keeps the lists below.
+    const bool planChanged = bandPlanPicker(a);
+    const std::vector<TvRange> planned = tvBandRanges(a);
+    const char* presetsDvb[] = {"UHF TV 474-858 MHz (8 MHz)", "VHF TV 174-230 MHz (7 MHz)", "Custom"};
+    const char* presetsAtsc[] = {"US UHF TV ch 14-36 (470-608 MHz)", "US VHF TV ch 7-13 (174-216 MHz)", "Custom"};
+    const char* presetsIsdbt[] = {"UHF TV ch 13-62 (473-767 MHz)", "VHF TV ch 7-13 (177-213 MHz)", "Custom"};
+    const char* presetsDtmb[] = {"China UHF TV 474-858 MHz (8 MHz)", "China VHF TV ch 6-12 (171-219 MHz)", "Cuba UHF TV ch 14-51 (473-695 MHz, 6 MHz)", "Custom"};   // Hong Kong and Macau use channels of the same 8 MHz raster
+    auto setRange = [&](double lo, double hi, double step, double bw) { a.scanCfg.startMHz = lo; a.scanCfg.stopMHz = hi; a.scanCfg.stepMHz = step; a.scanCfg.bwMhz = bw; };
     ImGui::SetNextItemWidth(std::min(260 * gUi, ImGui::GetContentRegionAvail().x));
+    if (!planned.empty()) {
+        std::vector<const char*> names;
+        for (const TvRange& r : planned) names.push_back(r.label.c_str());
+        names.push_back("Custom");
+        auto apply = [&](int i) {
+            const TvRange& r = planned[(size_t)i];
+            setRange(r.startMhz, r.stopMhz, r.stepMhz, r.bwMhz);
+            if (dtmb) { a.dtmbBwMhz = r.bwMhz < 7 ? 6 : 8; applyBandwidth(a); savePrefs(a); }   // DTMB is scanned with the channel width set in its tuner
+        };
+        if (a.scanPreset < 0 || a.scanPreset > (int)planned.size()) a.scanPreset = 0;
+        if (planChanged) { a.scanPreset = 0; apply(0); }
+        if (ImGui::Combo("##range", &a.scanPreset, names.data(), (int)names.size()) && a.scanPreset < (int)planned.size()) apply(a.scanPreset);
+    } else
     if (ImGui::Combo("##range", &a.scanPreset, dtmb ? presetsDtmb : a.isdbtMode ? presetsIsdbt : a.atscMode ? presetsAtsc : presetsDvb, dtmb ? 4 : 3)) {
         if (dtmb) {   // the centres of the 8 MHz channels
-            if (a.scanPreset == 0) { a.scanCfg.startMHz = 474; a.scanCfg.stopMHz = 858; a.scanCfg.stepMHz = 8; a.scanCfg.bwMhz = 8; }
-            if (a.scanPreset == 1) { a.scanCfg.startMHz = 171; a.scanCfg.stopMHz = 219; a.scanCfg.stepMHz = 8; a.scanCfg.bwMhz = 8; }
+            if (a.scanPreset == 0) setRange(474, 858, 8, 8);
+            if (a.scanPreset == 1) setRange(171, 219, 8, 8);
             // Cuba: DTMB in the American 6 MHz raster (the DTMB channel width follows: the receiver is set to 6 MHz)
-            if (a.scanPreset == 2) { a.scanCfg.startMHz = 473; a.scanCfg.stopMHz = 695; a.scanCfg.stepMHz = 6; a.scanCfg.bwMhz = 6; }
+            if (a.scanPreset == 2) setRange(473, 695, 6, 6);
             if (a.scanPreset <= 2) { a.dtmbBwMhz = a.scanPreset == 2 ? 6 : 8; applyBandwidth(a); savePrefs(a); }
         } else if (a.isdbtMode) {   // the centres of the 6 MHz channels are 1/7 MHz above a whole number
-            if (a.scanPreset == 0) { a.scanCfg.startMHz = 473.143; a.scanCfg.stopMHz = 767.143; a.scanCfg.stepMHz = 6; a.scanCfg.bwMhz = 6; }
-            if (a.scanPreset == 1) { a.scanCfg.startMHz = 177.143; a.scanCfg.stopMHz = 213.143; a.scanCfg.stepMHz = 6; a.scanCfg.bwMhz = 6; }
+            if (a.scanPreset == 0) setRange(473.143, 767.143, 6, 6);
+            if (a.scanPreset == 1) setRange(177.143, 213.143, 6, 6);
         } else if (a.atscMode) {
-            if (a.scanPreset == 0) { a.scanCfg.startMHz = 473; a.scanCfg.stopMHz = 605; a.scanCfg.stepMHz = 6; a.scanCfg.bwMhz = 6; }
-            if (a.scanPreset == 1) { a.scanCfg.startMHz = 177; a.scanCfg.stopMHz = 213; a.scanCfg.stepMHz = 6; a.scanCfg.bwMhz = 6; }
+            if (a.scanPreset == 0) setRange(473, 605, 6, 6);
+            if (a.scanPreset == 1) setRange(177, 213, 6, 6);
         } else {
-            if (a.scanPreset == 0) { a.scanCfg.startMHz = 474; a.scanCfg.stopMHz = 858; a.scanCfg.stepMHz = 8; a.scanCfg.bwMhz = 8; }
-            if (a.scanPreset == 1) { a.scanCfg.startMHz = 177.5; a.scanCfg.stopMHz = 226.5; a.scanCfg.stepMHz = 7; a.scanCfg.bwMhz = 7; }
+            if (a.scanPreset == 0) setRange(474, 858, 8, 8);
+            if (a.scanPreset == 1) setRange(177.5, 226.5, 7, 7);
         }
     }
     // the row wraps in a narrow window, each label with its field

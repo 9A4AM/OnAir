@@ -388,6 +388,12 @@ kbd {
 .rows > div:last-child { border-bottom: 0; }
 .rows .alert dd, .rows .alert dt { color: var(--alert); font-weight: 600; }
 .c-extra { margin: 0; padding: 0 12px 10px; color: var(--dim); }
+.c-msgs { padding: 0 12px 10px; }
+.c-msgs h3 { margin: 8px 0 4px; font-size: 13px; font-weight: 600; }
+.c-msgs-list { margin: 0; padding: 0; list-style: none; max-height: 220px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.c-msgs-list li { padding: 6px 0; border-top: 1px solid rgba(128, 128, 128, .25); }
+.c-msgs-list .m-head { color: var(--dim); font-size: 11px; }
+.c-msgs-list .m-text { white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
 .pic { margin: 0; position: relative; background: linear-gradient(#1d2a3a, #121820); border-bottom: 1px solid var(--edge); }
 .pic.generic { background: linear-gradient(#222629, #15181a); }
 .pic-art { display: grid; place-items: center; height: 118px; }

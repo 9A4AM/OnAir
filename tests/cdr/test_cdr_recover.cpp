@@ -144,6 +144,27 @@ int main() {
         auto m = play(*fresh(p), x, [&](CdrReceiver& r, double t) { if (!done && t >= 8.0) { done = true; r.reset(); } });
         window("after the retune", m, 12.0, 17.5, 5, 70);
     });
+    jobs.add([] {   // an overloaded input (gain too high, samples at full scale): the receiver says so, and still decodes what it can
+        auto x = clean(14);
+        double pw = 0;
+        for (auto& v : x) pw += std::norm(v);
+        const float g = 0.9f / (float)std::sqrt(pw / (double)x.size());      // rms 0.9 of full scale on each axis ~0.64: well into the limiter
+        for (auto& v : x) v = cf32(std::max(-1.f, std::min(1.f, v.real() * g)), std::max(-1.f, std::min(1.f, v.imag() * g)));
+        CdrReceiver rx; rx.configure(kRate);
+        std::atomic<int> said{0};
+        rx.setLogCallback([&](const std::string& s) { if (s.find("overloaded") != std::string::npos) said++; });
+        play(rx, x, none);
+        CdrTelemetry t; rx.telemetry(t, 0);
+        jprintf("overloaded input: %.1f %% clipped, message said %d time(s)\n", t.clipPct, said.load());
+        CHECK(t.clipPct > 2.f, "clipping measured (%.1f %%)", t.clipPct);
+        CHECK(said >= 1, "an overload message must be logged");
+        auto y = clean(6);
+        CdrReceiver r2; r2.configure(kRate);
+        std::atomic<int> said2{0};
+        r2.setLogCallback([&](const std::string& s) { if (s.find("overloaded") != std::string::npos) said2++; });
+        play(r2, y, none);
+        CHECK(said2 == 0, "no overload message on a clean signal");
+    });
     jobs.run();
     if (fails) { printf("%d check(s) failed\n", fails.load()); return 1; }
     printf("OK\n");

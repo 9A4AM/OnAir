@@ -1,0 +1,238 @@
+# Aviation: ADS-B, UAT, ACARS, VDL, HFDL, airband, navigation aids
+# freq_mhz|name|bandwidth_khz|notes[|mode|region|category]   @mode / @region / @category / @source set the defaults for the lines below
+@region GLOBAL
+@category aviation
+@source ICAO Annex 10 (vol. III, V); ETSI EN 301 842; RTCA DO-260B / DO-282B; public ACARS and VDL2 frequency allocations (ARINC 618/631)
+@mode adsb
+1090|ADS-B / Mode S extended squitter|2000|1090ES, 1 Mbit/s PPM; all aircraft worldwide
+@mode uplink
+1030|Secondary radar interrogations (Mode S uplink)|2000|SSR / TCAS interrogation frequency
+@mode uat
+@region US
+978|UAT ADS-B|1300|General aviation below FL180 in the US; carries FIS-B weather and TIS-B
+@mode flarm
+@region EU
+@category aviation
+868.2|FLARM (Europe)|200|868.2 and 868.4 MHz, 868.0-868.6 SRD band; gliders and light aircraft
+868.4|FLARM (Europe) channel 2|200|
+917|FLARM (North America)|300|FLARM hops over the 902-928 MHz band|flarm|US|
+@mode acars
+@region GLOBAL
+131.550|ACARS primary (worldwide)|25|AM MSK 2400 baud
+131.525|ACARS secondary|25|
+131.725|ACARS Europe primary|25||acars|EU|
+131.825|ACARS Europe|25||acars|EU|
+130.025|ACARS secondary (US)|25||acars|US|
+130.425|ACARS (US)|25||acars|US|
+130.450|ACARS (US)|25||acars|US|
+131.475|ACARS (US)|25||acars|US|
+129.125|ACARS (US)|25||acars|US|
+131.450|ACARS Japan|25||acars|JP|
+136.900|ACARS (global)|25|Also seen as a VDL channel
+136.925|ACARS (global)|25|
+136.975|ACARS / VDL2 common signalling|25|VDL Mode 2 CSC worldwide
+@mode vdl2
+136.975|VDL Mode 2 common signalling channel|25|D8PSK 31.5 kbit/s; worldwide CSC
+136.725|VDL Mode 2 (Europe)|25|
+136.775|VDL Mode 2 (Europe)|25|
+136.825|VDL Mode 2 (Europe)|25|
+136.875|VDL Mode 2 (Europe)|25|
+136.925|VDL Mode 2 (Europe, US)|25|
+136.650|VDL Mode 2|25|
+136.700|VDL Mode 2|25|
+136.800|VDL Mode 2|25|
+131.525|VDL Mode 2 (Europe)|25|
+131.725|VDL Mode 2 (Europe)|25|
+131.825|VDL Mode 2 (Europe)|25|
+@mode vdl4
+136.925|VDL Mode 4|25|Band 136.9-136.975 reserved for VDL4 in the ICAO plan; little traffic
+@mode hfdl
+@source ICAO HFDL (ARINC 635) ground-station frequency assignments, public (assigned carrier; the receiver is tuned to the assigned frequency)
+2.998|HFDL 2998 kHz|3|
+3.007|HFDL 3007 kHz|3|
+3.455|HFDL 3455 kHz|3|
+3.497|HFDL 3497 kHz|3|
+4.654|HFDL 4654 kHz|3|
+4.66|HFDL 4660 kHz|3|
+4.681|HFDL 4681 kHz|3|
+4.687|HFDL 4687 kHz|3|
+5.451|HFDL 5451 kHz|3|
+5.502|HFDL 5502 kHz|3|
+5.508|HFDL 5508 kHz|3|
+5.514|HFDL 5514 kHz|3|
+5.529|HFDL 5529 kHz|3|
+5.538|HFDL 5538 kHz|3|
+5.544|HFDL 5544 kHz|3|
+5.547|HFDL 5547 kHz|3|
+5.583|HFDL 5583 kHz|3|
+5.589|HFDL 5589 kHz|3|
+5.622|HFDL 5622 kHz|3|
+5.652|HFDL 5652 kHz|3|
+5.655|HFDL 5655 kHz|3|
+5.72|HFDL 5720 kHz|3|
+6.529|HFDL 6529 kHz|3|
+6.535|HFDL 6535 kHz|3|
+6.559|HFDL 6559 kHz|3|
+6.565|HFDL 6565 kHz|3|
+6.589|HFDL 6589 kHz|3|
+6.596|HFDL 6596 kHz|3|
+6.619|HFDL 6619 kHz|3|
+6.628|HFDL 6628 kHz|3|
+6.646|HFDL 6646 kHz|3|
+6.652|HFDL 6652 kHz|3|
+6.661|HFDL 6661 kHz|3|
+8.825|HFDL 8825 kHz|3|
+8.834|HFDL 8834 kHz|3|
+8.843|HFDL 8843 kHz|3|
+8.885|HFDL 8885 kHz|3|
+8.886|HFDL 8886 kHz|3|
+8.894|HFDL 8894 kHz|3|
+8.912|HFDL 8912 kHz|3|
+8.921|HFDL 8921 kHz|3|
+8.927|HFDL 8927 kHz|3|
+8.936|HFDL 8936 kHz|3|
+8.939|HFDL 8939 kHz|3|
+8.942|HFDL 8942 kHz|3|
+8.948|HFDL 8948 kHz|3|
+8.957|HFDL 8957 kHz|3|
+8.977|HFDL 8977 kHz|3|
+10.018|HFDL 10018 kHz|3|
+10.027|HFDL 10027 kHz|3|
+10.06|HFDL 10060 kHz|3|
+10.063|HFDL 10063 kHz|3|
+10.066|HFDL 10066 kHz|3|
+10.075|HFDL 10075 kHz|3|
+10.081|HFDL 10081 kHz|3|
+10.084|HFDL 10084 kHz|3|
+10.087|HFDL 10087 kHz|3|
+10.093|HFDL 10093 kHz|3|
+11.184|HFDL 11184 kHz|3|
+11.306|HFDL 11306 kHz|3|
+11.312|HFDL 11312 kHz|3|
+11.318|HFDL 11318 kHz|3|
+11.321|HFDL 11321 kHz|3|
+11.327|HFDL 11327 kHz|3|
+11.348|HFDL 11348 kHz|3|
+11.354|HFDL 11354 kHz|3|
+11.384|HFDL 11384 kHz|3|
+11.387|HFDL 11387 kHz|3|
+13.264|HFDL 13264 kHz|3|
+13.27|HFDL 13270 kHz|3|
+13.276|HFDL 13276 kHz|3|
+13.303|HFDL 13303 kHz|3|
+13.312|HFDL 13312 kHz|3|
+13.315|HFDL 13315 kHz|3|
+13.321|HFDL 13321 kHz|3|
+13.324|HFDL 13324 kHz|3|
+13.342|HFDL 13342 kHz|3|
+13.351|HFDL 13351 kHz|3|
+13.354|HFDL 13354 kHz|3|
+15.025|HFDL 15025 kHz|3|
+17.901|HFDL 17901 kHz|3|
+17.912|HFDL 17912 kHz|3|
+17.916|HFDL 17916 kHz|3|
+17.919|HFDL 17919 kHz|3|
+21.928|HFDL 21928 kHz|3|
+21.931|HFDL 21931 kHz|3|
+21.934|HFDL 21934 kHz|3|
+21.937|HFDL 21937 kHz|3|
+21.949|HFDL 21949 kHz|3|
+21.955|HFDL 21955 kHz|3|
+21.982|HFDL 21982 kHz|3|
+21.99|HFDL 21990 kHz|3|
+21.997|HFDL 21997 kHz|3|
+@source ICAO Annex 10 (vol. V) and national aeronautical information publications; ITU Radio Regulations Appendix 27
+@mode airband
+@category aviation
+@region GLOBAL
+121.500|International air distress (guard)|25|AM; emergency locator transmitters also use 406 MHz
+123.100|SAR on-scene coordination|25|
+123.450|Air-to-air (informal, widely used)|25|Not an ICAO allocation but used worldwide
+122.750|General aviation air-to-air|25||airband|US|
+122.800|UNICOM (uncontrolled airports)|25||airband|US|
+122.900|MULTICOM|25||airband|US|
+122.000|Flight Service (en-route)|25||airband|US|
+123.025|Helicopter air-to-air|25||airband|US|
+123.400|Gliding (Europe)|25||airband|EU|
+118.000|Airband start|25|VHF comm band 118.000-136.975 MHz, AM
+136.975|Airband end|25|Top channel of the VHF comm band
+243.000|Military distress (UHF guard)|25|AM; NATO UHF emergency|airband|GLOBAL|public-safety
+225.000|Military UHF air band start|25|225-400 MHz, AM|airband|GLOBAL|aviation
+400.000|Military UHF air band end|25||airband|GLOBAL|aviation
+@mode general
+406.025|COSPAS-SARSAT distress beacons (406 MHz)|3|EPIRB/ELT/PLB bursts at 406.025-406.076; not decoded|general|GLOBAL|satellite
+@mode general
+3.413|Shannon VOLMET (HF)|3|USB; weather broadcasts for airports|general|EU|aviation
+5.505|Shannon VOLMET (HF)|3|USB|general|EU|aviation
+8.957|Shannon VOLMET (HF)|3|USB|general|EU|aviation
+13.264|Shannon VOLMET (HF)|3|USB|general|EU|aviation
+3.485|Gander VOLMET (HF)|3|USB|general|NA|aviation
+6.604|Gander VOLMET (HF)|3|USB|general|NA|aviation
+10.051|Gander VOLMET (HF)|3|USB|general|NA|aviation
+13.270|Gander VOLMET (HF)|3|USB|general|NA|aviation
+@mode vor
+@category navigation
+@region GLOBAL
+108.000|VOR band start|30|VOR 108.00-117.95 MHz (even tenths below 112 are ILS localizers)
+117.950|VOR band end|30|
+@mode ils
+108.100|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+108.150|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+108.300|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+108.350|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+108.500|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+108.550|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+108.700|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+108.750|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+108.900|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+108.950|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+109.100|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+109.150|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+109.300|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+109.350|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+109.500|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+109.550|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+109.700|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+109.750|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+109.900|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+109.950|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+110.100|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+110.150|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+110.300|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+110.350|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+110.500|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+110.550|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+110.700|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+110.750|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+110.900|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+110.950|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+111.100|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+111.150|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+111.300|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+111.350|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+111.500|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+111.550|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+111.700|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+111.750|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+111.900|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+111.950|ILS localizer|30|Localizer 108.10-111.95 MHz (odd tenths)
+@mode ndb
+0.190|NDB band start|3|190-535 kHz non-directional beacons, NDB mode demodulates the ident tone|ndb|GLOBAL|navigation
+0.350|NDB band centre|3||ndb|GLOBAL|navigation
+0.530|NDB band end|3||ndb|GLOBAL|navigation
+@mode rid
+@category aviation
+@source ASTM F3411 / ASD-STAN prEN 4709-002 (drone Remote ID): Wi-Fi beacon on 2437 MHz and Bluetooth 5 long range / BLE advertising
+2437|Remote ID (Wi-Fi beacon, channel 6)|20|Broadcast Remote ID over Wi-Fi NAN / beacon
+2426|Remote ID (Bluetooth advertising channel 38)|2000|
+2402|Remote ID (Bluetooth advertising channel 37)|2000|
+2480|Remote ID (Bluetooth advertising channel 39)|2000|
+@mode dji
+@source FCC / CE equipment authorisations of consumer drones (2.4 and 5.8 GHz ISM bands), band centres only
+2441.5|Drone control/video link, 2.4 GHz ISM band centre|40000|2400-2483.5 MHz
+5787.5|Drone control/video link, 5.8 GHz band centre|125000|5725-5850 MHz
+@mode multitone
+@category data
+@region GLOBAL
+@source CEPT/ECC and ITU allocations (no particular network)
+446.475|Multitone paging example|12.5|App default; on-site multitone systems are licence specific

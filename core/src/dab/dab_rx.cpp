@@ -449,7 +449,11 @@ struct DabReceiver::Impl {
         if ((d[0] & 0x80) && (ext == 1 || ext == 2)) return;
         if (ext == 0) {
             int eid;
-            if (dabp::fig0Eid(d, n, eid)) ens.eid = (uint16_t)eid;
+            if (dabp::fig0Eid(d, n, eid)) {
+                // a different ensemble id on the same tuning (a new mux): drop what the previous one told us, the sub-channel ids are only valid per ensemble
+                if (ens.eid != 0 && ens.eid != (uint16_t)eid) { ens = DabEnsemble(); ptyInfo.clear(); annSup.clear(); annSw.clear(); fig2Segs.clear(); fig2Done.clear(); }
+                ens.eid = (uint16_t)eid;
+            }
         } else if (ext == 1) {
             for (const dabp::Fig01Sub& e : dabp::fig0Subchannels(d, n)) {
                 DabSubchannel s;
@@ -685,6 +689,7 @@ struct DabReceiver::Impl {
         buf.clear(); base = 0; state = 0; mirror = false; cfo = 0; searchNext = 0; searchFails = 0; cc.reset(); missed = 0; framesDone = 0; rs.reset(); tii.reset();
         std::lock_guard<std::mutex> lk(mu);
         telSeq++;
+        ens = DabEnsemble();   // services of the previous mux must not survive a retune (#179)
         tel = DabTelemetry(); tel.seq = telSeq;
         hist.assign(16, {}); cifCount = 0;
         ptyInfo.clear(); annSup.clear(); annSw.clear(); fig2Segs.clear(); fig2Done.clear();

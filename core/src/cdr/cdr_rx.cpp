@@ -213,6 +213,9 @@ struct CdrReceiver::Impl {
     double nextReport = 0;
     double power = 0;
     int64_t nPower = 0;
+    int64_t nClip = 0;           // samples of this report period at or near full scale (the ADC is overloaded: the SNR collapses, the audio breaks up)
+    int clipRuns = 0;            // reports in a row with more than 2 % clipped
+    double nextClipSay = 0;
     ExactResampler rs;
     std::vector<cf32> rsOut;
     // 816 ksps samples: buf[i] has the absolute index buf0 + i
@@ -868,7 +871,15 @@ struct CdrReceiver::Impl {
         tel.cfoHz = cfo + (mirror ? -1 : 1) * cc.offsetHz();
         if (!locked) tel.state = 0;
         if (tel.status.empty() || tel.state != 0) tel.status = locked ? cdrStateText(tel.state) : "searching for a CDR beacon";
-        power = 0; nPower = 0;
+        tel.clipPct = nPower ? (float)(100.0 * (double)nClip / (double)nPower) : 0.f;
+        clipRuns = tel.clipPct > 2.f ? clipRuns + 1 : 0;
+        if (clipRuns >= 4 && tel.timeSec >= nextClipSay) {     // one second of it: say so, then again after half a minute
+            nextClipSay = tel.timeSec + 30;
+            char b[160];
+            snprintf(b, sizeof b, "CDR: the input is overloaded (%.0f%% of the samples at full scale): lower the gain, the signal is distorted", tel.clipPct);
+            say(b);
+        }
+        power = 0; nPower = 0; nClip = 0;
         std::lock_guard<std::mutex> lk(mu);
         pub = tel;
     }
@@ -934,6 +945,7 @@ void CdrReceiver::feed(const cf32* x, size_t n) {
         const size_t chunk = std::min(n - done, (size_t)std::max<int64_t>(1, (int64_t)(m.nextReport - (double)m.nIn) + 1));
         // a signal away from the middle of the sample band (beyond the +-100 kHz of the beacon search) is moved there first
         m.cin.assign(x + done, x + done + chunk);
+        for (size_t i = 0; i < chunk; i++) if (std::fabs(x[done + i].real()) > 0.98f || std::fabs(x[done + i].imag()) > 0.98f) m.nClip++;
         m.cc.process(m.cin.data(), chunk, m.locked && m.tel.siValid);
         if (m.cc.takeChanged()) {
             m.buf0 = m.bufEnd(); m.buf.clear(); m.searchFloor = m.buf0;

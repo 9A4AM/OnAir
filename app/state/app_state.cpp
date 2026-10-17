@@ -66,6 +66,7 @@ int subIndexOf(const char* id) {
     return 0;
 }
 int firstSubOf(int f) {   // HF digital, mesh, pagers and marine are only listed as their protocols: 0 for the other families
+    for (const auto& m : allModes()) if (m.family == f && !m.subId) return 0;   // a family with a plain entry of its own (the general receiver next to AM broadcast) keeps it
     int n = 0;
     const SubMode* t = subModes(n);
     for (int i = 0; i < n; i++) if (t[i].stdMode == f + 2) return i + 1;

@@ -29,6 +29,9 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+#include <unistd.h>
 #endif
 
 namespace dect2 {
@@ -50,6 +53,28 @@ void soapyLocateModules() {
                 if (const char* old = getenv("SOAPY_SDR_PLUGIN_PATH")) fprintf(stderr, "SoapySDR: ignoring SOAPY_SDR_PLUGIN_PATH=%s\n", old);
                 _putenv_s("SOAPY_SDR_ROOT", dir.c_str());
                 _putenv_s("SOAPY_SDR_PLUGIN_PATH", "");   // an empty value removes it
+            }
+        }
+        return true;
+    }();
+    (void)once;
+#elif defined(__APPLE__)
+    // macOS app bundle: the SoapyRemote client module is bundled in Contents/Frameworks/SoapySDR/modules0.8 (tools/package/bundle_macos.py). Homebrew's own
+    // module folder is still searched by SoapySDR, so a development build without the bundle keeps working.
+    static const bool once = [] {
+        char path[4096] = {0};
+        uint32_t n = sizeof path;
+        if (_NSGetExecutablePath(path, &n) == 0) {
+            std::string dir = path;
+            const size_t cut = dir.find_last_of('/');
+            if (cut != std::string::npos) {
+                dir.resize(cut);   // .../OnAir.app/Contents/MacOS
+                const std::string mods = dir + "/../Frameworks/SoapySDR/modules0.8";
+                if (access(mods.c_str(), R_OK) == 0) {
+                    const char* old = getenv("SOAPY_SDR_PLUGIN_PATH");
+                    const std::string v = old && *old ? mods + ":" + old : mods;
+                    setenv("SOAPY_SDR_PLUGIN_PATH", v.c_str(), 1);
+                }
             }
         }
         return true;

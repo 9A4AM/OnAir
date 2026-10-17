@@ -1,7 +1,8 @@
 // HD Radio receiver telemetry, shared by the receiver and the UI.
 // The first members are copied into RxTelemetry (history plot, top bar): keep them and their meaning.
-// Sound: HD Radio audio uses the patented HDC codec, which OnAir does not decode. The receiver counts the audio packets and their bit rate;
-// everything else on the signal (station information, program data, pictures and other data services) is decoded.
+// Sound: HD Radio audio uses the patented HDC codec, which OnAir does not ship. The receiver counts the audio packets and their bit rate;
+// with the user's own patched FAAD2 installed (hdr_hdc.h, docs/CODECS.md) it plays the selected program. Everything else on the signal
+// (station information, program data, pictures and other data services) is decoded either way.
 #pragma once
 #include <cstdint>
 #include <complex>
@@ -17,11 +18,11 @@ struct HdrProgram {
     std::string name;               // from the station information guide (SIG), may be empty
     int type = -1;                  // program type (news, rock, ...): from the PDU header or the station information service
     int access = 0;                 // 0 public, 1 restricted
-    int codecMode = -1;             // audio codec mode of the PDU headers (HDC, not decoded)
+    int codecMode = -1;             // audio codec mode of the PDU headers (HDC)
     int blend = -1;                 // blend control of the PDU header (MPS)
     int soundExp = -1;              // sound experience of the SIS service descriptor
     double kbps = 0;                // audio bit rate measured from the packets of the last frames
-    uint64_t packetsOk = 0, packetsBad = 0;   // audio packets with a good / bad CRC (not decoded)
+    uint64_t packetsOk = 0, packetsBad = 0;   // audio packets with a good / bad CRC
     bool inSis = false, inSig = false, onAir = false;   // listed in the SIS, the SIG, and audio PDUs seen
     // program service data (ID3)
     uint64_t psdCount = 0;          // PSD messages received
@@ -103,6 +104,12 @@ struct HdrTelemetry {
     std::vector<HdrDataService> dataServices;
     std::vector<HdrLotInfo> lots;         // newest first
     uint64_t lotVersion = 0;     // changes when any LOT object completes
+    // sound (the user's patched FAAD2, hdr_hdc.h)
+    bool hdcFound = false;       // the library was found and is usable
+    std::string hdcPath, hdcProblem;   // where; why a library that was found cannot be used ("" when none was found at all)
+    int soundProgram = 0;        // the program being played (0 = HD1)
+    bool hdcPlaying = false;     // a packet was decoded within the last second of signal
+    uint64_t hdcDecoded = 0, hdcErrors = 0, hdcLost = 0, hdcResets = 0;   // packets decoded / failed, empty slots (silence), decoder restarts
 };
 
 const char* hdrProgramTypeName(int type);   // "Rock", "News", ... or "" for an unknown code

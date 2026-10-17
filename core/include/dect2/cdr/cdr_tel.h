@@ -39,6 +39,7 @@ struct CdrTelemetry {
     double cfoHz = 0;            // carrier error
     float snrDb = 0;
     float levelDb = -200;        // power of the whole input, dBFS (-200 = nothing measured yet)
+    float clipPct = 0;           // share of the input samples at full scale in the last report period (overload: lower the gain)
     bool dataValid = false;      // something has been decoded
     uint64_t blocksOk = 0;       // LDPC code words of the service data: decoded / failed
     uint64_t blocksBad = 0;

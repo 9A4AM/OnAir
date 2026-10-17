@@ -16,6 +16,8 @@ pub const HERMES_LITE2: u32 = 4;
 pub const RED_PITAYA: u32 = 5;
 /// SDR++ server.
 pub const SDRPP_SERVER: u32 = 6;
+/// SDRplay nRSP-ST (SDRconnect WebSocket API).
+pub const NRSP_ST: u32 = 7;
 
 /// The key of a type in the settings text (an unknown type is written as rtl_tcp).
 pub fn type_key(t: u32) -> &'static str {
@@ -26,6 +28,7 @@ pub fn type_key(t: u32) -> &'static str {
         HERMES_LITE2 => "hl2",
         RED_PITAYA => "redpitaya",
         SDRPP_SERVER => "sdrpp",
+        NRSP_ST => "nrspst",
         _ => "rtltcp",
     }
 }
@@ -39,6 +42,7 @@ pub fn type_name(t: u32) -> &'static str {
         HERMES_LITE2 => "Hermes Lite 2",
         RED_PITAYA => "Red Pitaya",
         SDRPP_SERVER => "SDR++ server",
+        NRSP_ST => "SDRplay nRSP-ST (SDRconnect)",
         _ => "rtl_tcp",
     }
 }
@@ -51,6 +55,7 @@ pub fn default_port(t: u32) -> i32 {
         SPY_SERVER => 5555,
         HERMES_LITE2 | RED_PITAYA => 1024,
         SDRPP_SERVER => 5259,
+        NRSP_ST => 5454,
         _ => 1234,
     }
 }
@@ -128,6 +133,7 @@ fn type_from_key(t: &[u8]) -> Option<u32> {
         b"hl2" => HERMES_LITE2,
         b"redpitaya" => RED_PITAYA,
         b"sdrpp" => SDRPP_SERVER,
+        b"nrspst" => NRSP_ST,
         _ => return None,
     })
 }

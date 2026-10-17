@@ -1406,3 +1406,176 @@ uncertainty	incertitude
 Draws the uncertainty ellipse (95 percent) of every estimated position.	Dessine l'ellipse d'incertitude (95 pour cent) de chaque position estimée.
 predicted from the last position %s ago, +-%.1f NM	prédite à partir de la dernière position il y a %s, +-%.1f NM
 estimated from the ground station only, within about %.0f NM	estimée à partir de la station sol seule, à environ %.0f NM près
+Hear this receiver	Écouter ce récepteur
+Close receiver	Fermer le récepteur
+Radio: %s	Radio : %s
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	Le son HD Radio nécessite le codec HDC, que vous installez vous-même (cliquez sur ?)
+HDC sound codec cannot be used: %s	Le codec son HDC ne peut pas être utilisé : %s
+HDC sound codec not installed (no sound; click ? for the steps)	Codec son HDC non installé (pas de son ; cliquez sur ? pour les étapes)
+sound: HD%d (HDC)	son : HD%d (HDC)
+sound: HD%d, waiting for audio	son : HD%d, en attente d'audio
+The HD Radio sound codec (HDC) is not installed	Le codec son HD Radio (HDC) n'est pas installé
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	La station, les données du programme et les images sont affichées, mais le son HD Radio reste muet tant que vous n'avez pas installé le codec vous-même. OnAir ne le fournit pas (HDC est breveté et appartient à Xperi).
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	Compilez le FAAD2 avec le correctif HDC comme l'expliquent les instructions complètes (il faut le correctif open source de nrsc5).
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	Placez la bibliothèque (libfaad_hdc) dans le dossier des codecs d'OnAir (bouton ci-dessous).
+The HD Radio sound library cannot be used	La bibliothèque son HD Radio ne peut pas être utilisée
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	OnAir a trouvé une bibliothèque pour HDC, mais ce n'est pas une version de FAAD2 avec le correctif HDC qu'OnAir sait appeler ; elle a donc été laissée de côté.
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Recompilez la bibliothèque à partir de FAAD2 2.10 ou 2.11 avec le correctif nrsc5, comme l'expliquent les instructions complètes.
+Replace the file in the OnAir codecs folder (button below).	Remplacez le fichier dans le dossier des codecs d'OnAir (bouton ci-dessous).
+# band plans (scan tab, TV channel list)
+Band plan	Plan de bandes
+None (built-in ranges)	Aucun (plages intégrées)
+My band plans	Mes plans de bandes
+Export...	Exporter...
+Really delete?	Vraiment supprimer ?
+Replaced band plan "%s" (%zu bands).	Plan de bandes "%s" remplacé (%zu bandes).
+Imported band plan "%s" (%zu bands).	Plan de bandes "%s" importé (%zu bandes).
+Deleted band plan %s.	Plan de bandes %s supprimé.
+Not fully verified: %s	Pas entièrement vérifié : %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	La trame de canaux de votre pays : canaux TV pour le balayage et la liste des canaux, et plus. Automatique choisit un plan selon la langue de l'interface et la région du système.
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	Lit un plan de bandes depuis un fichier CSV ou JSON (format dans docs/band-plans.md), le vérifie et le garde dans votre dossier de réglages. Rien ne change si le fichier contient une erreur ; le message indique où.
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	Enregistre le plan en JSON, ou en CSV si le nom finit par .csv. Un plan intégré est un bon point de départ pour le vôtre.
+Deletes one of your own band plans. The built-in plans stay.	Supprime l'un de vos plans de bandes. Les plans intégrés restent.
+TV channels of the band plan %s (change it in the Scan tab).	Canaux TV du plan de bandes %s (à changer dans l'onglet Balayage).
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	Équipage
+Operations	Exploitation
+Company	Compagnie
+Maintenance	Maintenance
+Fault	Panne
+Show all messages	Afficher tous les messages
+ACARS messages	Messages ACARS
+%d ACARS messages	%d messages ACARS
+Copy these messages as text	Copier ces messages en texte
+No ACARS messages heard from this aircraft	Aucun message ACARS reçu de cet avion
+Also share interesting ACARS messages (text becomes public on the map)	Partager aussi les messages ACARS intéressants (le texte devient public sur la carte)
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	Messages qu'un avion a envoyés par ACARS (texte libre, messages d'équipage, d'exploitation, de compagnie et de maintenance), affichés pendant 48 heures sur la fiche de cet avion sur la carte publique. Les numéros de téléphone et les adresses e-mail sont retirés avant. Les comptes rendus de position et les tests de liaison n'en font pas partie. Vous pouvez le désactiver à tout moment.
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	Les messages que les avions envoient par ACARS (texte libre et messages d'équipage, d'exploitation, de compagnie et de maintenance) peuvent aussi apparaître sur la fiche de l'avion, sans numéros de téléphone ni adresses e-mail. C'est un choix à part, modifiable dans le menu Serveur.
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s, %d sauts, %d moyennes, %.0f ms par balayage
+pick a radio first (the test signal and files cannot sweep)	choisissez d'abord une radio (le signal de test et les fichiers ne se balayent pas)
+Save scan...	Enregistrer le balayage...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	CSV compatible rtl_power : s'ouvre dans Heatmap.py, les outils rtl_power_fftw et les tableurs
+Load as baseline...	Charger comme référence...
+Keep this scan as baseline	Garder ce balayage comme référence
+Save signal log...	Enregistrer le journal des signaux...
+Sweep scanner	Scanner à balayage
+from MHz	de MHz
+to MHz	à MHz
+bin %.0f kHz	bin %.0f kHz
+dwell %.0f ms	palier %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Temps passé sur chaque saut : plus long, plus de FFT moyennées (plancher plus stable, signaux faibles visibles) mais balayage plus lent
+measure retune time	mesurer le temps de réaccord
+settle %.0f ms	stabilisation %.0f ms
+rate: radio's best	débit : le meilleur de la radio
+rate: 10 Msps	débit : 10 Msps
+rate: 5 Msps	débit : 5 Msps
+rate: 2.4 Msps	débit : 2,4 Msps
+gain %.0f dB	gain %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Pause entre balayages : un balayage toutes les n secondes ménage le processeur et la batterie
+threshold floor+%.0f dB	seuil plancher+%.0f dB
+floor percentile %.0f	percentile du plancher %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	Le plancher de bruit est ce percentile de la puissance des bins à chaque saut (50 = médiane). Baissez-le dans les bandes chargées, montez-le dans les vides
+retune settle %.1f ms	stabilisation %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	plancher de bruit %.1f dBFS par bin (bins de %.0f kHz), seuil %.1f dBFS, %zu signaux dans ce balayage
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	par rapport à la référence : plancher %+.1f dB, plus forte hausse %+.1f dB à %.3f MHz
+Signals found	Signaux trouvés
+mode: as it is	mode : tel quel
+Tune to selected	Accorder sur la sélection
+Bandwidth kHz	Bande passante kHz
+Peak dBFS	Crête dBFS
+Best SNR dB	Meilleur SNR dB
+Sweep	Balayer
+every %.0f s	toutes les %.0f s
+back to back	en continu
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Balayage large bande rapide avec mesure du plancher de bruit, journal des signaux et cascade
+Record audio	Enregistrer l'audio
+Only audio	Audio seul
+Split	Découper
+Keep going	Continuer
+Show recording	Afficher l'enregistrement
+Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)	Enregistre dans un fichier le son que vous entendez, dans tous les modes (avant le volume, le niveau n'en dépend donc pas)
+MP3 needs the LAME library (libmp3lame), which is not installed	MP3 nécessite la bibliothèque LAME (libmp3lame), qui n'est pas installée
+WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo.	WAV : 16 bits, volumineux. FLAC : sans perte, environ moitié moins gros. MP3 : petit (nécessite libmp3lame). La FM stéréo reste en stéréo.
+Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	N'enregistre que lorsqu'il y a du son (comme un squelch) : le silence est supprimé, avec une courte amorce et une courte fin
+One file per transmission: a new file starts after 3 s of silence	Un fichier par émission : un nouveau fichier commence après 3 s de silence
+Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Continue d'enregistrer quand le mode ou la fréquence change. Désactivé : l'enregistrement s'arrête alors.
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir, and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	Le module SoapyRemote manque dans cette installation d'OnAir, donc il ne peut pas joindre une radio distante. Réinstallez OnAir, et signalez-le si cela se reproduit. L'ordinateur de la radio doit exécuter SoapySDRServer --bind.
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir (or run brew install soapyremote), and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	Le module SoapyRemote manque dans cette installation d'OnAir, donc il ne peut pas joindre une radio distante. Réinstallez OnAir (ou lancez brew install soapyremote), et signalez-le si cela se reproduit. L'ordinateur de la radio doit exécuter SoapySDRServer --bind.
+SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install it (Debian/Ubuntu: sudo apt install soapysdr-module-remote; other systems: github.com/pothosware/SoapyRemote), then restart OnAir. The radio's computer must run SoapySDRServer --bind.	Ce SoapySDR n'a pas de module client SoapyRemote, donc il ne peut pas joindre une radio distante. Installez-le (Debian/Ubuntu : sudo apt install soapysdr-module-remote ; autres systèmes : github.com/pothosware/SoapyRemote), puis redémarrez OnAir. L'ordinateur de la radio doit exécuter SoapySDRServer --bind.
+# frequency database
+%zu built in, %zu yours	%zu intégrées, %zu à vous
+Add entry...	Ajouter une entrée...
+Add frequency	Ajouter une fréquence
+Add to Memory	Ajouter à Memory
+Added to Memory.	Ajouté à Memory.
+Already in Memory.	Déjà dans Memory.
+An entry with this frequency and mode exists already.	Une entrée avec cette fréquence et ce mode existe déjà.
+Category	Catégorie
+Could not save 	Impossible d'enregistrer 
+Could not tune to this entry.	Impossible de s'accorder sur cette entrée.
+Exports your own entries (not the built-in ones)	Exporte vos propres entrées (pas celles intégrées)
+Frequencies	Fréquences
+Frequencies...	Fréquences...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	%zu entrées importées, %zu ignorées (doublons ou lignes sans fréquence).
+Keeps this entry in the Memory panel	Garde cette entrée dans le panneau Memory
+Known frequencies (%zu)	Fréquences connues (%zu)
+Mine	Les miennes
+Nothing matches. Clear the search or the filters.	Rien ne correspond. Effacez la recherche ou les filtres.
+Nothing to import in this file.	Rien à importer dans ce fichier.
+Only the entries you added or imported	Seulement les entrées que vous avez ajoutées ou importées
+Open the Frequencies panel...	Ouvrir le panneau des fréquences...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	Lit un fichier CSV ou JSON écrit par Exporter (ou par le panneau Memory), ou une simple liste de lignes « fréquence,nom » (MHz). Les entrées dont la fréquence et le mode existent déjà sont ignorées.
+Search name, notes, mode, frequency (162.4)	Rechercher nom, notes, mode, fréquence (162.4)
+Show Frequencies as a tab	Afficher Fréquences comme onglet
+Source...	Source...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Passe au mode de l'entrée, applique son accord et s'accorde sur la fréquence. Un double-clic sur une ligne fait de même. Un récepteur en marche redémarre quand le mode change.
+Tuned: %s  %s MHz	Accordé : %s  %s MHz
+Well-known frequencies of this mode: pick one to tune to it	Fréquences connues de ce mode : choisissez-en une pour vous y accorder
+Carrier	Carrier
+Stop scan##dsc	Stop scan##dsc
+Scan band##dsc	Scan band##dsc
+DECT carrier %d, %.3f MHz	DECT carrier %d, %.3f MHz
+Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.	Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.
+US / Canada 1920-1930 MHz (DECT 6.0)	US / Canada 1920-1930 MHz (DECT 6.0)
+Brazil 1910-1920 MHz	Brazil 1910-1920 MHz
+Latin America 1910-1930 MHz	Latin America 1910-1930 MHz
+US ISM 902-928 MHz (DECT in ISM)	US ISM 902-928 MHz (DECT in ISM)
+Europe 1880-1900 MHz	Europe 1880-1900 MHz
+USA, Canada: the UPCS band, DECT 6.0 phones	USA, Canada: the UPCS band, DECT 6.0 phones
+Brazil	Brazil
+Several Latin American countries	Several Latin American countries
+USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT	USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT
+Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
+Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
+The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	Le nRSP-ST est atteint via SDRconnect : lancez SDRconnect (ou sa version headless) sur un ordinateur avec le serveur WebSocket activé (port 5454) et son nRSP-ST sélectionné, puis saisissez l'adresse de cet ordinateur. Aucun mot de passe n'est nécessaire ni enregistré.
+Monitor audio	Écoute audio
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Écoute le canal accordé dans n'importe quel mode pour reconnaître un signal : les échantillons de la radio sont démodulés en USB, LSB, FM étroite ou AM. Silencieux tant que le mode joue son propre son.
+Auto: USB below 30 MHz, narrow FM above	Auto : USB sous 30 MHz, FM étroite au-dessus
+Volume of the monitor	Volume de l'écoute
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Réglage fin par rapport à la fréquence accordée, en Hz (un signal SSB s'entend 1 à 2 kHz au-dessus ou au-dessous de sa porteuse)
+(the mode plays)	(le mode joue)
+Audio...	Audio...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	Périphériques de sortie de l'écoute, une seconde sortie (par exemple un câble audio virtuel pour fldigi ou WSJT-X) et un flux réseau local
+System default	Par défaut du système
+Output 1	Sortie 1
+Output 2	Sortie 2
+Delay (ms)	Délai (ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Audio en file avant la lecture : moins est plus rapide, plus résiste à un ordinateur chargé
+Stay silent while the mode plays	Silencieux tant que le mode joue
+Network audio stream	Flux audio réseau
+WAV header	En-tête WAV
+Allow other computers	Autoriser d'autres ordinateurs
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	Stéréo 16 bits, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, ou un lecteur WAV avec l'en-tête. Sécurité : quiconque atteint le port peut écouter ; laissez « Autoriser d'autres ordinateurs » désactivé si inutile.
+Listeners:	Auditeurs :
+video	video
+audio	audio
+profile	profile
+Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work	Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work
+Open in an external player	Open in an external player
+Save the transport stream to a file	Save the transport stream to a file
+Stream it as UDP to %s	Stream it as UDP to %s
+Copy VLC command	Copy VLC command
+Copy mpv command	Copy mpv command
+Copy ffplay command	Copy ffplay command
+Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).

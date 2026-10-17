@@ -12,6 +12,12 @@ struct W {
     void put(uint64_t v, int n) { for (int i = n - 1; i >= 0; i--) b.push_back((uint8_t)((v >> i) & 1)); }
 };
 
+} // namespace
+
+// The parsing side (everything that reads a received block) is the C++ implementation under #ifndef DECT2_RUST_TETRA; with DECT2_RUST_TETRA
+// (rust/onair_tetra) tetra_pdu_rs.cpp provides the same functions. The encoders and the generator PDUs stay here either way.
+#ifndef DECT2_RUST_TETRA
+namespace {
 struct R {
     const Bits& b;
     size_t p, end;
@@ -28,6 +34,7 @@ struct R {
 };
 
 } // namespace
+#endif
 
 // ---------------------------------------------------------------- SYNC
 
@@ -39,6 +46,7 @@ Bits encodeSync(const Sync& s) {
     return w.b;
 }
 
+#ifndef DECT2_RUST_TETRA
 bool parseSync(const Bits& b, Sync& s) {
     R r(b, 0, 60);
     s.systemCode = (int)r.get(4); s.colourCode = (int)r.get(6); s.tn = (int)r.get(2) + 1; s.fn = (int)r.get(5); s.mn = (int)r.get(6);
@@ -46,6 +54,8 @@ bool parseSync(const Bits& b, Sync& s) {
     s.mcc = (int)r.get(10); s.mnc = (int)r.get(14); s.nbrBroadcast = (int)r.get(2); s.cellLoad = (int)r.get(2); s.lateEntry = r.bit();
     return r.ok && s.fn >= 1 && s.fn <= 18 && s.mn >= 1 && s.mn <= 60;
 }
+
+#endif
 
 // ---------------------------------------------------------------- SYSINFO
 
@@ -60,6 +70,7 @@ Bits encodeSysinfo(const Sysinfo& s) {
     return w.b;
 }
 
+#ifndef DECT2_RUST_TETRA
 bool parseSysinfo(const Bits& b, Sysinfo& s) {
     R r(b, 0, 124);
     if (r.get(2) != 2 || r.get(2) != 0) return false;
@@ -268,6 +279,7 @@ const char* dlUsageText(int u) {
     default: return "traffic";
     }
 }
+#endif // DECT2_RUST_TETRA
 
 // ---------------------------------------------------------------- generator PDUs
 

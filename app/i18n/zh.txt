@@ -1406,3 +1406,176 @@ uncertainty	不确定度
 Draws the uncertainty ellipse (95 percent) of every estimated position.	绘制每个估计位置的不确定度椭圆(百分之九十五)。
 predicted from the last position %s ago, +-%.1f NM	根据 %s 前的最后位置预测,+-%.1f NM
 estimated from the ground station only, within about %.0f NM	仅根据地面站估计,约 %.0f NM 范围内
+Hear this receiver	收听此接收器
+Close receiver	关闭接收器
+Radio: %s	电台：%s
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	HD Radio 的声音需要 HDC 编解码器,需要您自己安装(点击 ?)
+HDC sound codec cannot be used: %s	无法使用 HDC 声音编解码器:%s
+HDC sound codec not installed (no sound; click ? for the steps)	未安装 HDC 声音编解码器(无声音;点击 ? 查看步骤)
+sound: HD%d (HDC)	声音:HD%d (HDC)
+sound: HD%d, waiting for audio	声音:HD%d,等待音频
+The HD Radio sound codec (HDC) is not installed	未安装 HD Radio 声音编解码器 (HDC)
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	电台、节目数据和图片都会显示,但在您自己安装编解码器之前,HD Radio 的声音保持静音。OnAir 不包含它 (HDC 受专利保护,归 Xperi 所有)。
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	请按完整说明编译带 HDC 补丁的 FAAD2 (需要 nrsc5 的开源补丁)。
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	把库 (libfaad_hdc) 放进 OnAir 的编解码器文件夹 (下方按钮)。
+The HD Radio sound library cannot be used	无法使用 HD Radio 声音库
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	OnAir 找到了一个 HDC 库,但它不是带有 OnAir 能调用的 HDC 补丁的 FAAD2 版本,因此没有使用。
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	请按完整说明,用 FAAD2 2.10 或 2.11 加 nrsc5 补丁重新编译该库。
+Replace the file in the OnAir codecs folder (button below).	替换 OnAir 编解码器文件夹中的文件 (下方按钮)。
+# band plans (scan tab, TV channel list)
+Band plan	频段规划
+None (built-in ranges)	无（内置范围）
+My band plans	我的频段规划
+Export...	导出...
+Really delete?	确定删除？
+Replaced band plan "%s" (%zu bands).	已替换频段规划“%s”（%zu 个频段）。
+Imported band plan "%s" (%zu bands).	已导入频段规划“%s”（%zu 个频段）。
+Deleted band plan %s.	已删除频段规划 %s。
+Not fully verified: %s	尚未完全核实：%s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	你所在国家的频道栅格：用于扫描和频道列表的电视频道等。“自动”根据界面语言和系统区域选择规划。
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	从 CSV 或 JSON 文件读取频段规划（格式见 docs/band-plans.md），检查后保存在设置文件夹中。文件有错误时不会改动任何内容，提示会指出位置。
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	将规划保存为 JSON 文件；文件名以 .csv 结尾时保存为 CSV。内置规划是创建自己规划的好起点。
+Deletes one of your own band plans. The built-in plans stay.	删除你自己的一个频段规划。内置规划会保留。
+TV channels of the band plan %s (change it in the Scan tab).	频段规划 %s 的电视频道（可在“扫描”选项卡中更改）。
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	机组
+Operations	运行
+Company	航空公司
+Maintenance	维护
+Fault	故障
+Show all messages	显示所有消息
+ACARS messages	ACARS 消息
+%d ACARS messages	%d 条 ACARS 消息
+Copy these messages as text	将这些消息复制为文本
+No ACARS messages heard from this aircraft	未收到这架飞机的 ACARS 消息
+Also share interesting ACARS messages (text becomes public on the map)	同时分享有价值的 ACARS 消息（文本将在地图上公开）
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	飞机通过 ACARS 发送的消息（自由文本，以及机组、运行、公司和维护消息）会在公开地图上该飞机的卡片中显示 48 小时。电话号码和电子邮件地址会先被移除。位置报告和链路测试不包括在内。你可以随时关闭。
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	飞机通过 ACARS 发送的消息（自由文本，以及机组、运行、公司和维护消息）也可以显示在飞机卡片上，并已去除电话号码和电子邮件地址。这是一项单独的选择，可在“服务器”菜单中更改。
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s，%d 跳，平均 %d 次，每次扫描 %.0f ms
+pick a radio first (the test signal and files cannot sweep)	请先选择一台电台(测试信号和文件无法扫描)
+Save scan...	保存扫描...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	兼容 rtl_power 的 CSV:可用 Heatmap.py、rtl_power_fftw 工具和电子表格打开
+Load as baseline...	载入为基线...
+Keep this scan as baseline	将此扫描设为基线
+Save signal log...	保存信号日志...
+Sweep scanner	扫频扫描器
+from MHz	起始 MHz
+to MHz	结束 MHz
+bin %.0f kHz	频点 %.0f kHz
+dwell %.0f ms	驻留 %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	每跳停留时间:越长平均的 FFT 越多(底噪更稳、可见弱信号),但扫描更慢
+measure retune time	测量调谐时间
+settle %.0f ms	稳定 %.0f ms
+rate: radio's best	采样率:电台最大值
+rate: 10 Msps	采样率:10 Msps
+rate: 5 Msps	采样率:5 Msps
+rate: 2.4 Msps	采样率:2.4 Msps
+gain %.0f dB	增益 %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	扫描间隔:每隔几秒扫描一次可节省 CPU 和电量
+threshold floor+%.0f dB	阈值 底噪+%.0f dB
+floor percentile %.0f	底噪百分位 %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	底噪取每跳各频点功率的该百分位(50 = 中位数)。拥挤频段调低,空闲频段调高
+retune settle %.1f ms	稳定时间 %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	底噪每频点 %.1f dBFS(频点 %.0f kHz),阈值 %.1f dBFS,本次扫描 %zu 个信号
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	相对基线:底噪 %+.1f dB,最大上升 %+.1f dB(%.3f MHz)
+Signals found	发现的信号
+mode: as it is	模式:保持不变
+Tune to selected	调谐到所选
+Bandwidth kHz	带宽 kHz
+Peak dBFS	峰值 dBFS
+Best SNR dB	最佳信噪比 dB
+Sweep	扫描
+every %.0f s	每 %.0f 秒
+back to back	连续
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	带底噪测量、信号日志和瀑布图的快速宽带扫描
+Record audio	录制音频
+Only audio	仅有声时
+Split	分割
+Keep going	持续录制
+Show recording	显示录音
+Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)	在任何模式下，把你听到的声音保存到文件（在音量之前，所以电平与音量无关）
+MP3 needs the LAME library (libmp3lame), which is not installed	MP3 需要 LAME 库（libmp3lame），但尚未安装
+WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo.	WAV：16 位，较大。FLAC：无损，约一半大小。MP3：较小（需要 libmp3lame）。FM 立体声保持立体声。
+Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	仅在有声音时保存（类似静噪）：静音被剪掉，保留很短的前导和尾部
+One file per transmission: a new file starts after 3 s of silence	每次发射一个文件：静音 3 秒后开始新文件
+Keeps recording when the mode or the frequency changes. Off: the recording stops then.	模式或频率改变时继续录制。关闭：此时停止录制。
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir, and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	此 OnAir 安装缺少 SoapyRemote 模块,因此无法连接远程电台。请重新安装 OnAir。如再次出现,请反馈。电台所在的电脑必须运行 SoapySDRServer --bind。
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir (or run brew install soapyremote), and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	此 OnAir 安装缺少 SoapyRemote 模块,因此无法连接远程电台。请重新安装 OnAir(或运行 brew install soapyremote)。如再次出现,请反馈。电台所在的电脑必须运行 SoapySDRServer --bind。
+SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install it (Debian/Ubuntu: sudo apt install soapysdr-module-remote; other systems: github.com/pothosware/SoapyRemote), then restart OnAir. The radio's computer must run SoapySDRServer --bind.	此 SoapySDR 没有 SoapyRemote 客户端模块,因此无法连接远程电台。请安装(Debian/Ubuntu:sudo apt install soapysdr-module-remote;其他系统:github.com/pothosware/SoapyRemote),然后重启 OnAir。电台所在的电脑必须运行 SoapySDRServer --bind。
+# frequency database
+%zu built in, %zu yours	内置 %zu 条,自己的 %zu 条
+Add entry...	添加条目...
+Add frequency	添加频率
+Add to Memory	添加到 Memory
+Added to Memory.	已添加到 Memory。
+Already in Memory.	已在 Memory 中。
+An entry with this frequency and mode exists already.	已有相同频率和模式的条目。
+Category	类别
+Could not save 	无法保存 
+Could not tune to this entry.	无法调谐到此条目。
+Exports your own entries (not the built-in ones)	导出你自己的条目(不含内置条目)
+Frequencies	频率
+Frequencies...	频率...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	已导入 %zu 条,跳过 %zu 条(重复或没有频率的行)。
+Keeps this entry in the Memory panel	将此条目保存到 Memory 面板
+Known frequencies (%zu)	已知频率 (%zu)
+Mine	我的
+Nothing matches. Clear the search or the filters.	没有匹配项。请清除搜索或筛选。
+Nothing to import in this file.	此文件中没有可导入的内容。
+Only the entries you added or imported	仅显示你添加或导入的条目
+Open the Frequencies panel...	打开频率面板...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	读取由导出(或 Memory 面板)写出的 CSV 或 JSON 文件,或由「频率,名称」行组成的简单列表(MHz)。频率和模式已存在的条目会被跳过。
+Search name, notes, mode, frequency (162.4)	搜索名称、备注、模式、频率 (162.4)
+Show Frequencies as a tab	将频率显示为标签页
+Source...	来源...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	切换到条目的模式,应用其调谐设置并调谐到该频率。双击一行效果相同。模式改变时,正在运行的接收机会重新启动。
+Tuned: %s  %s MHz	已调谐: %s  %s MHz
+Well-known frequencies of this mode: pick one to tune to it	此模式的已知频率:选择一个即可调谐
+Carrier	Carrier
+Stop scan##dsc	Stop scan##dsc
+Scan band##dsc	Scan band##dsc
+DECT carrier %d, %.3f MHz	DECT carrier %d, %.3f MHz
+Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.	Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.
+US / Canada 1920-1930 MHz (DECT 6.0)	US / Canada 1920-1930 MHz (DECT 6.0)
+Brazil 1910-1920 MHz	Brazil 1910-1920 MHz
+Latin America 1910-1930 MHz	Latin America 1910-1930 MHz
+US ISM 902-928 MHz (DECT in ISM)	US ISM 902-928 MHz (DECT in ISM)
+Europe 1880-1900 MHz	Europe 1880-1900 MHz
+USA, Canada: the UPCS band, DECT 6.0 phones	USA, Canada: the UPCS band, DECT 6.0 phones
+Brazil	Brazil
+Several Latin American countries	Several Latin American countries
+USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT	USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT
+Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
+Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
+The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	nRSP-ST 通过 SDRconnect 访问：在已开启 WebSocket 服务器（端口 5454）并选中 nRSP-ST 的电脑上运行 SDRconnect（或其无界面版本），然后输入该电脑的地址。无需密码，也不会保存密码。
+Monitor audio	监听音频
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	在任何模式下收听已调谐的频道以识别信号:无线电采样按USB、LSB、窄带FM或AM解调。模式播放自身声音时保持静音。
+Auto: USB below 30 MHz, narrow FM above	自动:30 MHz以下USB,以上窄带FM
+Volume of the monitor	监听音量
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	相对调谐频率的微调,单位Hz(SSB信号在载波上方或下方1至2 kHz处听到)
+(the mode plays)	(模式正在播放)
+Audio...	音频...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	监听的输出设备、第二路输出(例如供fldigi或WSJT-X使用的虚拟音频线)和本地网络流
+System default	系统默认
+Output 1	输出1
+Output 2	输出2
+Delay (ms)	延迟(毫秒)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	播放前排队的音频:越小越快,越大越能应对繁忙的电脑
+Stay silent while the mode plays	模式播放时保持静音
+Network audio stream	网络音频流
+WAV header	WAV文件头
+Allow other computers	允许其他电脑
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16位立体声,48 kHz。ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:端口,或带文件头的WAV播放器。安全:能访问该端口的人都可以收听;不需要时请保持“允许其他电脑”关闭。
+Listeners:	听众:
+video	video
+audio	audio
+profile	profile
+Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work	Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work
+Open in an external player	Open in an external player
+Save the transport stream to a file	Save the transport stream to a file
+Stream it as UDP to %s	Stream it as UDP to %s
+Copy VLC command	Copy VLC command
+Copy mpv command	Copy mpv command
+Copy ffplay command	Copy ffplay command
+Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).

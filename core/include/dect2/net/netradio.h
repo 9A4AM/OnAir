@@ -10,7 +10,7 @@
 namespace dect2 {
 
 struct NetRadio {
-    enum Type { Pluto = 0, RtlTcp = 1, SoapyRemote = 2, SpyServer = 3, HermesLite2 = 4, RedPitaya = 5, SdrppServer = 6 } type = RtlTcp;
+    enum Type { Pluto = 0, RtlTcp = 1, SoapyRemote = 2, SpyServer = 3, HermesLite2 = 4, RedPitaya = 5, SdrppServer = 6, NrspSt = 7 } type = RtlTcp;
     std::string host;   // name or address ("ip:" in front of a Pluto's is accepted and dropped)
     int port = 0;       // 0 = the type's default (a Pluto: libiio's own, 30431)
     std::string remote; // SoapyRemote only: which of the server's radios to ask for, "mirisdr" or "driver=mirisdr,serial=1" (empty: the ones it lists)
@@ -31,7 +31,8 @@ void setSoapyEnumerator(SoapyEnumerateFn fn);   // nullptr: SoapySDR's own; also
 std::vector<RemoteSoapyDevice> soapyRemoteList(const NetRadio& r, bool includeAudio = false);
 // Whether SoapySDR has SoapyRemote's client module (the "remote" driver); false without SoapySDR. Tests force it: 0 / 1, -1 = real.
 bool soapyRemoteModuleAvailable();
-const char* soapyRemoteModuleHelp();   // where to get it and how to install it
+const char* soapyRemoteModuleHelp();   // what is missing on THIS platform and what to do (Windows/macOS: a damaged install; Linux: apt install soapysdr-module-remote)
+const char* soapyRemoteModuleHelpFor(int platform);   // the same for 0 Windows, 1 macOS, 2 Linux (the app translates these three texts)
 void setSoapyRemoteModuleOverride(int v);
 // The plain-language reason a SoapyRemote radio could not be opened: what the server offers and what to type in "Remote driver". "" for other args.
 std::string soapyRemoteFailureHelp(const std::string& soapyArgs);
