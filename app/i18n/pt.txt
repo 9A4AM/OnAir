@@ -1837,3 +1837,127 @@ Also share transcripts of aircraft radio calls (text becomes public on the map)	
 The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	O texto das chamadas de rádio da banda aeronáutica que um motor de voz neste computador criou a partir do que recebe (janela Transcrições), associado à aeronave pelo indicativo dito e mostrado durante 48 horas no cartão público dessa aeronave no mapa. Pode conter erros. Os números de telefone são removidos antes. Só a banda aeronáutica é partilhada, nunca marítimo, radioamador ou outros canais. Desligado até o escolher, e pode desligá-lo a qualquer momento.
 Transcripts ...	Transcrições ...
 What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	O que é dito na banda aeronáutica e noutros canais de voz, em texto: legendas em direto, pesquisa, exportação. Desligado até o ativar.
+# Automations window
+%d firings. Dropped events: %llu	%d disparos. Eventos descartados: %llu
+(the whole rule)	(toda a regra)
+Add a condition	Adicionar uma condição
+Add a copy	Adicionar uma cópia
+Add an action...	Adicionar uma ação...
+Advanced	Avançado
+Allow running programs	Permitir executar programas
+Allow this rule to run it	Permitir que esta regra o execute
+Any event	Qualquer evento
+Apply	Aplicar
+Arguments, one per line	Argumentos, um por linha
+Arguments:	Argumentos:
+At most per hour (0: no limit)	No máximo por hora (0: sem limite)
+Automations	Automações
+Automations...	Automações...
+Bot token	Token do bot
+Cannot write the file.	Não foi possível gravar o arquivo.
+Chat id	ID do chat
+Choose a rule on the left, or make a new one.	Escolha uma regra à esquerda ou crie uma nova.
+Choose what to tell apart in "separately for each" so every thing has its own state.	Escolha em «separadamente para cada» o que distinguir, para que cada item tenha o seu próprio estado.
+Columns (optional)	Colunas (opcional)
+Confirm this rule...	Confirmar esta regra...
+Confirmed	Confirmada
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Defina function on_event(e). e.type, e.mode, e.freq, e.time e os campos do evento (e.callsign, e.squawk ...).\n\nAções: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nAuxiliares: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTexto: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Sem io, os, load, require, pcall nem padrões; 1 milhão de instruções, 250 ms e 16 MB por script.
+Delete...	Excluir...
+Distance, km	Distância, km
+Does not fire for the sample event:	Não dispara com o evento de exemplo:
+Duplicate	Duplicar
+Edit	Editar
+Edit as text and apply, or copy it to share.	Edite como texto e aplique, ou copie para compartilhar.
+Every event	Todos os eventos
+Expression (and'ed to the conditions above)	Expressão (combinada com E às condições acima)
+Expression is fine.	A expressão está correta.
+Fields, and or not, comparisons, contains startswith endswith matches in, arithmetic, distance_km() within() inside() hour() ...	Campos, and or not, comparações, contains startswith endswith matches in, aritmética, distance_km() within() inside() hour() ...
+File name	Nome do arquivo
+File:	Arquivo:
+Fire with sample event	Disparar com evento de exemplo
+Frequency, MHz	Frequência, MHz
+Generic JSON	JSON genérico
+Imported, switched off. Look it over, then switch it on.	Importada, desativada. Revise e depois ative.
+Insert an example...	Inserir um exemplo...
+Inside an area (polygon)	Dentro de uma área (polígono)
+JSON body (optional)	Corpo JSON (opcional)
+Keep	Manter
+Last error:	Último erro:
+Limits	Limites
+Lua script	Script Lua
+Manage	Gerenciar
+Memory name	Nome da memória
+Mode id (optional)	ID do modo (opcional)
+New rule	Nova regra
+New script	Novo script
+No location test	Sem teste de localização
+No rules yet. Make one, or add a recipe.	Ainda não há regras. Crie uma ou adicione uma receita.
+Not active:	Inativa:
+Not imported:	Não importada:
+Note	Nota
+Nothing has fired yet.	Nada disparou ainda.
+Notification	Notificação
+Off. A rule may start a program only when this is on and you confirmed that rule.	Desativado. Uma regra só pode iniciar um programa quando isto está ativado e você confirmou essa regra.
+Only between these local hours	Somente entre estas horas locais
+Pick one event type to choose its fields from a list.	Escolha um tipo de evento para escolher seus campos de uma lista.
+Points as lat,lon; lat,lon; ...	Pontos como lat,lon; lat,lon; ...
+Program	Programa
+Program:	Programa:
+Quiet after firing, seconds	Silêncio após disparar, segundos
+Ready-made rules and scripts. Adding one makes a copy that you can edit; it starts switched off.	Regras e scripts prontos. Adicionar cria uma cópia editável; ela começa desativada.
+Really delete	Excluir mesmo
+Really does the actions, once, with a made-up event.	Realmente executa as ações, uma vez, com um evento fictício.
+Recall a memory	Recuperar uma memória
+Receives these events	Recebe estes eventos
+Recipes	Receitas
+Recipes...	Receitas...
+Rules and scripts: when something is decoded, notify, record, tune or call a webhook	Regras e scripts: quando algo é decodificado, notificar, gravar, sintonizar ou chamar um webhook
+Rules: when something is decoded (an aircraft squawks 7700, a pager message says fire, a vessel enters an area ...), do something (notify, record, tune, log, call a webhook). Scripts do the same in Lua.	Regras: quando algo é decodificado (uma aeronave emite 7700, uma mensagem de pager diz fogo, uma embarcação entra numa área ...), faça algo (notificar, gravar, sintonizar, registrar, chamar um webhook). Os scripts fazem o mesmo em Lua.
+Run a program (advanced)	Executar um programa (avançado)
+Run a program?	Executar um programa?
+Runs a program on this computer. Off until you allow it below and confirm this rule.	Inicia um programa neste computador. Desativado até você permitir abaixo e confirmar esta regra.
+Save a screenshot	Salvar uma captura de tela
+Saved to	Salvo em
+Seconds	Segundos
+Server (optional)	Servidor (opcional)
+Service	Serviço
+Shows what the rule would do with a made-up event. Nothing is sent or started.	Mostra o que a regra faria com um evento fictício. Nada é enviado ou iniciado.
+Sound alert	Alerta sonoro
+Test (dry run)	Testar (simulação)
+Test with a sample event	Testar com um evento de exemplo
+Text can use:	O texto pode usar:
+The receiver position is not set (ADS-B window).	A posição do receptor não está definida (janela ADS-B).
+The recipe file	O arquivo da receita
+The script ran and did nothing for this event.	O script foi executado e não fez nada para este evento.
+Then do	Então fazer
+This rule will start the program below, on this computer, every time it fires, with text from the decoded signals in its arguments. Anyone who can send such a signal can influence it. Only allow it if you wrote it or trust the one who did.	Esta regra iniciará o programa abaixo neste computador sempre que disparar, com texto dos sinais decodificados nos argumentos. Qualquer pessoa que consiga enviar tal sinal pode influenciá-la. Permita apenas se você a escreveu ou confia em quem a escreveu.
+Topic	Tópico
+WAV file (empty: beeps)	Arquivo WAV (vazio: bipes)
+Webhook	Webhook
+Webhook address	Endereço do webhook
+What can a script do?	O que um script pode fazer?
+When this happens	Quando isto acontece
+Within a distance of a point	A uma distância de um ponto
+Within a distance of my receiver	A uma distância do meu receptor
+Write a CSV log row	Gravar uma linha no registro CSV
+all of the conditions	todas as condições
+and only if	e somente se
+any of the conditions	qualquer uma das condições
+contains	contém
+ends with	termina com
+equals	é igual a
+has a value	tem um valor
+is at least	é pelo menos
+is at most	é no máximo
+is less than	é menor que
+is more than	é maior que
+is not	não é
+is one of (a, b, c)	é um de (a, b, c)
+last fired %s, %d times	último disparo %s, %d vezes
+matches (* ?)	corresponde a (* ?)
+only as it comes in	somente ao entrar
+separately for each	separadamente para cada
+starts with	começa com
+to	às
+when it is inside	quando está dentro
+when it is outside	quando está fora

@@ -308,7 +308,10 @@ int main(int argc, char** argv) {
             perfLog(tUi0);
             const bool shotNow = o.shotPath && (o.shotAfter > 0 ? glfwGetTime() > o.shotAfter : ++o.shotFrame == (o.hackrfStart ? (app.playReq >= 0 || app.engine.player().selected() >= 0 ? 2400 : 900) : 400));
             statusLog(app);
-            gfxBackend->endFrame(ImGui::GetDrawData(), shotNow ? o.shotPath : nullptr);
+            const bool autoShot = !shotNow && !gAutomationShotPath.empty();   // the Automations' screenshot action: the program's own window
+            const std::string autoPath = autoShot ? gAutomationShotPath : std::string();
+            if (autoShot) gAutomationShotPath.clear();
+            gfxBackend->endFrame(ImGui::GetDrawData(), shotNow ? o.shotPath : autoShot ? autoPath.c_str() : nullptr);
             popOutPresent();
             if (shotNow) {
                 shotReport(app);

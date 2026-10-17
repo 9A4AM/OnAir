@@ -1854,3 +1854,127 @@ Also share transcripts of aircraft radio calls (text becomes public on the map)	
 The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	本机语音引擎根据你接收到的内容生成的航空频段通话文字（转录窗口），按其中说出的呼号关联到飞机，并在地图上该飞机的公开卡片中显示 48 小时。可能含有错误。电话号码会先被移除。只共享航空频段，绝不共享海事、业余无线电或其他信道。在你选择之前保持关闭，并且可随时关闭。
 Transcripts ...	转录 ...
 What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	航空频段和其他语音信道上说的话，以文字显示：实时字幕、搜索、导出。在你开启之前保持关闭。
+# Automations window
+%d firings. Dropped events: %llu	已触发 %d 次。丢弃的事件：%llu
+(the whole rule)	（整条规则）
+Add a condition	添加条件
+Add a copy	添加副本
+Add an action...	添加动作...
+Advanced	高级
+Allow running programs	允许运行程序
+Allow this rule to run it	允许此规则运行它
+Any event	任何事件
+Apply	应用
+Arguments, one per line	参数，每行一个
+Arguments:	参数：
+At most per hour (0: no limit)	每小时最多（0：不限）
+Automations	自动化
+Automations...	自动化...
+Bot token	机器人令牌
+Cannot write the file.	无法写入文件。
+Chat id	聊天 ID
+Choose a rule on the left, or make a new one.	在左侧选择一条规则，或新建一条。
+Choose what to tell apart in "separately for each" so every thing has its own state.	请在“分别针对每个”中选择区分依据，使每个对象有各自的状态。
+Columns (optional)	列（可选）
+Confirm this rule...	确认此规则...
+Confirmed	已确认
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	定义 function on_event(e)。可用 e.type、e.mode、e.freq、e.time 以及事件字段（e.callsign、e.squawk 等）。\n\n动作：notify(title, text)、sound(file)、record_iq(seconds)、record_audio(seconds)、tune(hz, mode)、memory(name)、webhook(url, text_or_table)、screenshot()、log(text)、log_row(file, a, b, ...)。\n辅助：distance_km(lat, lon)、bearing_deg(lat, lon)、now()、hour()、json(table)。\n文本：s:contains(x)、s:starts_with(x)、s:ends_with(x)、s:matches('a*b')、s:replace(a, b)。没有 io、os、load、require、pcall 和模式匹配；每个脚本限 100 万条指令、250 毫秒和 16 MB。
+Delete...	删除...
+Distance, km	距离（公里）
+Does not fire for the sample event:	示例事件不会触发：
+Duplicate	复制
+Edit	编辑
+Edit as text and apply, or copy it to share.	可作为文本编辑后应用，或复制后分享。
+Every event	每个事件
+Expression (and'ed to the conditions above)	表达式（与上面的条件取“且”）
+Expression is fine.	表达式没有问题。
+Fields, and or not, comparisons, contains startswith endswith matches in, arithmetic, distance_km() within() inside() hour() ...	字段、and or not、比较、contains startswith endswith matches in、算术、distance_km() within() inside() hour() ...
+File name	文件名
+File:	文件：
+Fire with sample event	用示例事件触发
+Frequency, MHz	频率（MHz）
+Generic JSON	通用 JSON
+Imported, switched off. Look it over, then switch it on.	已导入，处于关闭状态。请检查后再开启。
+Insert an example...	插入示例...
+Inside an area (polygon)	区域（多边形）内
+JSON body (optional)	JSON 正文（可选）
+Keep	保留
+Last error:	最近的错误：
+Limits	限制
+Lua script	Lua 脚本
+Manage	管理
+Memory name	存储名称
+Mode id (optional)	模式 ID（可选）
+New rule	新建规则
+New script	新建脚本
+No location test	不检查位置
+No rules yet. Make one, or add a recipe.	还没有规则。请新建一条，或添加一个配方。
+Not active:	未启用：
+Not imported:	未导入：
+Note	备注
+Nothing has fired yet.	尚未触发任何规则。
+Notification	通知
+Off. A rule may start a program only when this is on and you confirmed that rule.	已关闭。仅当此项开启且你已确认该规则时，规则才可启动程序。
+Only between these local hours	仅在这些本地小时之间
+Pick one event type to choose its fields from a list.	选择一种事件类型后，可从列表中选择其字段。
+Points as lat,lon; lat,lon; ...	点的格式：纬度,经度; 纬度,经度; ...
+Program	程序
+Program:	程序：
+Quiet after firing, seconds	触发后静默（秒）
+Ready-made rules and scripts. Adding one makes a copy that you can edit; it starts switched off.	现成的规则和脚本。添加会生成可编辑的副本，初始为关闭状态。
+Really delete	确认删除
+Really does the actions, once, with a made-up event.	用虚构事件真正执行一次这些动作。
+Recall a memory	调用存储
+Receives these events	接收这些事件
+Recipes	配方
+Recipes...	配方...
+Rules and scripts: when something is decoded, notify, record, tune or call a webhook	规则和脚本：解码到内容时，通知、录制、调谐或调用 Webhook
+Rules: when something is decoded (an aircraft squawks 7700, a pager message says fire, a vessel enters an area ...), do something (notify, record, tune, log, call a webhook). Scripts do the same in Lua.	规则：当解码到某些内容时（飞机发出 7700、寻呼消息提到火警、船舶进入某区域等），执行某些操作（通知、录制、调谐、记录、调用 Webhook）。脚本可用 Lua 做同样的事。
+Run a program (advanced)	运行程序（高级）
+Run a program?	要运行程序吗？
+Runs a program on this computer. Off until you allow it below and confirm this rule.	在此电脑上启动程序。在下方允许并确认此规则之前保持关闭。
+Save a screenshot	保存截图
+Saved to	已保存到
+Seconds	秒
+Server (optional)	服务器（可选）
+Service	服务
+Shows what the rule would do with a made-up event. Nothing is sent or started.	显示规则对虚构事件会做什么。不会发送或启动任何东西。
+Sound alert	声音提醒
+Test (dry run)	测试（试运行）
+Test with a sample event	用示例事件测试
+Text can use:	文本可使用：
+The receiver position is not set (ADS-B window).	未设置接收机位置（ADS-B 窗口）。
+The recipe file	配方文件
+The script ran and did nothing for this event.	脚本已运行，但对此事件没有执行任何操作。
+Then do	则执行
+This rule will start the program below, on this computer, every time it fires, with text from the decoded signals in its arguments. Anyone who can send such a signal can influence it. Only allow it if you wrote it or trust the one who did.	每次触发时，此规则都会在这台电脑上启动下面的程序，并把解码信号中的文本放入参数。任何能发出此类信号的人都可能影响它。仅在你自己编写或信任作者时才允许。
+Topic	主题
+WAV file (empty: beeps)	WAV 文件（留空：蜂鸣）
+Webhook	Webhook
+Webhook address	Webhook 地址
+What can a script do?	脚本能做什么？
+When this happens	当发生以下情况
+Within a distance of a point	距某点一定范围内
+Within a distance of my receiver	距我的接收机一定范围内
+Write a CSV log row	写入一行 CSV 日志
+all of the conditions	全部条件
+and only if	并且仅当
+any of the conditions	任一条件
+contains	包含
+ends with	以…结尾
+equals	等于
+has a value	有值
+is at least	至少为
+is at most	至多为
+is less than	小于
+is more than	大于
+is not	不等于
+is one of (a, b, c)	是 (a, b, c) 之一
+last fired %s, %d times	上次触发 %s，共 %d 次
+matches (* ?)	匹配 (* ?)
+only as it comes in	仅在进入时
+separately for each	分别针对每个
+starts with	以…开头
+to	至
+when it is inside	在内部时
+when it is outside	在外部时

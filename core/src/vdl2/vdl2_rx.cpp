@@ -1,5 +1,6 @@
 // VDL Mode 2 receiver: see vdl2_rx.h.
 #include "dect2/vdl2/vdl2_rx.h"
+#include "dect2/automation/engine.h"
 #include "dect2/results/results_io.h"
 #include "dect2/net/feeds.h"
 #include "dect2/vdl2/vdl2_proto.h"
@@ -508,6 +509,14 @@ struct Vdl2Receiver::Impl {
             if (tel.stations.size() > 64) tel.stations.pop_back();
         }
         if (Feeds::get().wantVdl2()) Feeds::get().vdl2(m);   // the data feed out (feeds.h)
+        if (automation::wants(automation::FVdl2)) {   // the automations (automation/engine.h)
+            automation::Event ev("vdl2.message");
+            char a[8], b[8];
+            snprintf(a, sizeof a, "%06X", m.src & 0xFFFFFF); snprintf(b, sizeof b, "%06X", m.dst & 0xFFFFFF);
+            ev.at(automation::wallNow(), "VDL2", m.freqHz);
+            ev.str("src", a).str("dst", b).flag("from_air", m.fromAir).str("proto", m.proto).str("summary", m.summary).str("frame", m.frameName);
+            automation::emit(std::move(ev));
+        }
         tel.messages.insert(tel.messages.begin(), std::move(m));
         if (tel.messages.size() > kVdl2MsgMax) tel.messages.pop_back();
         seq++;

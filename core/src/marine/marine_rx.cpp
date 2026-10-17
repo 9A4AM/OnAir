@@ -1,4 +1,5 @@
 #include "../audio/ham_listen.h"
+#include "dect2/automation/engine.h"
 #include "dect2/marine/marine_rx.h"
 #include "dect2/marine/marine_dsc.h"
 #include "dect2/marine/marine_dsp.h"
@@ -123,6 +124,14 @@ struct MarineReceiver::Impl {
         DscCall c = c0;
         c.vhf = vhfPath;
         c.rxSec = secs(); c.rxTime = wallNow();
+        if (automation::wants(automation::FDsc)) {   // the automations (automation/engine.h)
+            automation::Event ev("dsc.call");
+            ev.at(automation::wallNow(), "Marine", vhfPath ? 156.525e6 : 0);
+            std::string sum = c.formatName + (c.categoryName.empty() ? "" : ", " + c.categoryName) + (c.distress ? ", " + c.natureName : "");
+            ev.str("category", c.distress ? "distress" : c.categoryName).str("from_mmsi", c.fromMmsi).str("to_mmsi", c.to).str("summary", sum);
+            if (c.hasPos) ev.num("lat", c.lat).num("lon", c.lon);
+            automation::emit(std::move(ev));
+        }
         std::lock_guard<std::mutex> lk(telMu);
         tel.dsc.push_back(c);
         if (tel.dsc.size() > 100) tel.dsc.erase(tel.dsc.begin());

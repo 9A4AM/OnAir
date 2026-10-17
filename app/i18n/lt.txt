@@ -1854,3 +1854,127 @@ Also share transcripts of aircraft radio calls (text becomes public on the map)	
 The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	Aviacijos juostos radijo skambučių tekstas, kurį šio kompiuterio kalbos variklis sudarė iš to, ką priimate (langas Transkripcijos), susiejamas su orlaiviu pagal jame pasakytą šaukinį ir 48 valandas viešai rodomas to orlaivio kortelėje žemėlapyje. Gali būti klaidų. Telefono numeriai prieš tai pašalinami. Dalijamasi tik aviacijos juosta, niekada jūrų, mėgėjų ar kitais kanalais. Išjungta, kol nepasirinksite, ir bet kada galite išjungti.
 Transcripts ...	Transkripcijos ...
 What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	Kas sakoma aviacijos juostoje ir kituose kalbos kanaluose, kaip tekstas: tiesioginiai subtitrai, paieška, eksportas. Išjungta, kol neįjungsite.
+# Automations window
+%d firings. Dropped events: %llu	%d suveikimų. Atmesti įvykiai: %llu
+(the whole rule)	(visa taisyklė)
+Add a condition	Pridėti sąlygą
+Add a copy	Pridėti kopiją
+Add an action...	Pridėti veiksmą...
+Advanced	Išplėstiniai
+Allow running programs	Leisti paleisti programas
+Allow this rule to run it	Leisti šiai taisyklei tai paleisti
+Any event	Bet koks įvykis
+Apply	Taikyti
+Arguments, one per line	Argumentai, po vieną eilutėje
+Arguments:	Argumentai:
+At most per hour (0: no limit)	Daugiausia per valandą (0: be ribos)
+Automations	Automatizavimas
+Automations...	Automatizavimas...
+Bot token	Roboto žetonas
+Cannot write the file.	Nepavyksta įrašyti failo.
+Chat id	Pokalbio ID
+Choose a rule on the left, or make a new one.	Pasirinkite taisyklę kairėje arba sukurkite naują.
+Choose what to tell apart in "separately for each" so every thing has its own state.	Pasirinkite lauke „atskirai kiekvienam“, kas skiriama, kad kiekvienas turėtų savo būseną.
+Columns (optional)	Stulpeliai (nebūtina)
+Confirm this rule...	Patvirtinti šią taisyklę...
+Confirmed	Patvirtinta
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Apibrėžkite function on_event(e). e.type, e.mode, e.freq, e.time ir įvykio laukai (e.callsign, e.squawk ...).\n\nVeiksmai: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nPagalbinės: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTekstas: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Nėra io, os, load, require, pcall ir šablonų paieškos; 1 milijonas instrukcijų, 250 ms ir 16 MB vienam skriptui.
+Delete...	Ištrinti...
+Distance, km	Atstumas, km
+Does not fire for the sample event:	Pavyzdiniam įvykiui nesuveikia:
+Duplicate	Dubliuoti
+Edit	Redaguoti
+Edit as text and apply, or copy it to share.	Redaguokite kaip tekstą ir taikykite arba nukopijuokite, kad pasidalintumėte.
+Every event	Kiekvienas įvykis
+Expression (and'ed to the conditions above)	Reiškinys (su pirmiau esančiomis sąlygomis sujungtas IR)
+Expression is fine.	Reiškinys tinkamas.
+Fields, and or not, comparisons, contains startswith endswith matches in, arithmetic, distance_km() within() inside() hour() ...	Laukai, and or not, palyginimai, contains startswith endswith matches in, aritmetika, distance_km() within() inside() hour() ...
+File name	Failo pavadinimas
+File:	Failas:
+Fire with sample event	Suaktyvinti su pavyzdiniu įvykiu
+Frequency, MHz	Dažnis, MHz
+Generic JSON	Bendras JSON
+Imported, switched off. Look it over, then switch it on.	Importuota, išjungta. Peržiūrėkite ir tada įjunkite.
+Insert an example...	Įterpti pavyzdį...
+Inside an area (polygon)	Srities (daugiakampio) viduje
+JSON body (optional)	JSON turinys (nebūtina)
+Keep	Palikti
+Last error:	Paskutinė klaida:
+Limits	Apribojimai
+Lua script	Lua skriptas
+Manage	Tvarkyti
+Memory name	Atminties pavadinimas
+Mode id (optional)	Režimo ID (nebūtina)
+New rule	Nauja taisyklė
+New script	Naujas skriptas
+No location test	Be vietos tikrinimo
+No rules yet. Make one, or add a recipe.	Taisyklių dar nėra. Sukurkite arba pridėkite receptą.
+Not active:	Neaktyvi:
+Not imported:	Neimportuota:
+Note	Pastaba
+Nothing has fired yet.	Dar niekas nesuveikė.
+Notification	Pranešimas
+Off. A rule may start a program only when this is on and you confirmed that rule.	Išjungta. Taisyklė gali paleisti programą tik kai tai įjungta ir jūs patvirtinote tą taisyklę.
+Only between these local hours	Tik tarp šių vietos valandų
+Pick one event type to choose its fields from a list.	Pasirinkite vieną įvykio tipą, kad rinktumėte jo laukus iš sąrašo.
+Points as lat,lon; lat,lon; ...	Taškai kaip plat,ilg; plat,ilg; ...
+Program	Programa
+Program:	Programa:
+Quiet after firing, seconds	Tyla po suveikimo, sekundės
+Ready-made rules and scripts. Adding one makes a copy that you can edit; it starts switched off.	Paruošti taisyklės ir skriptai. Pridėjus sukuriama redaguojama kopija; ji pradeda išjungta.
+Really delete	Tikrai ištrinti
+Really does the actions, once, with a made-up event.	Tikrai atlieka veiksmus vieną kartą su išgalvotu įvykiu.
+Recall a memory	Iškviesti atmintį
+Receives these events	Gauna šiuos įvykius
+Recipes	Receptai
+Recipes...	Receptai...
+Rules and scripts: when something is decoded, notify, record, tune or call a webhook	Taisyklės ir skriptai: kai kas nors iškoduojama, pranešti, įrašyti, derinti ar iškviesti webhook
+Rules: when something is decoded (an aircraft squawks 7700, a pager message says fire, a vessel enters an area ...), do something (notify, record, tune, log, call a webhook). Scripts do the same in Lua.	Taisyklės: kai kas nors iškoduojama (orlaivis siunčia 7700, pranešimas pageriu mini gaisrą, laivas įplaukia į sritį ...), atlikite veiksmą (pranešti, įrašyti, derinti, žurnalas, iškviesti webhook). Skriptai tą patį daro Lua kalba.
+Run a program (advanced)	Paleisti programą (pažengusiems)
+Run a program?	Paleisti programą?
+Runs a program on this computer. Off until you allow it below and confirm this rule.	Paleidžia programą šiame kompiuteryje. Išjungta, kol neleisite žemiau ir nepatvirtinsite šios taisyklės.
+Save a screenshot	Įrašyti ekrano nuotrauką
+Saved to	Įrašyta į
+Seconds	Sekundės
+Server (optional)	Serveris (nebūtina)
+Service	Paslauga
+Shows what the rule would do with a made-up event. Nothing is sent or started.	Parodo, ką taisyklė darytų su išgalvotu įvykiu. Niekas nesiunčiama ir nepaleidžiama.
+Sound alert	Garso signalas
+Test (dry run)	Tikrinti (be veiksmų)
+Test with a sample event	Išbandyti su pavyzdiniu įvykiu
+Text can use:	Tekste galima naudoti:
+The receiver position is not set (ADS-B window).	Imtuvo vieta nenustatyta (ADS-B langas).
+The recipe file	Recepto failas
+The script ran and did nothing for this event.	Skriptas veikė ir šiam įvykiui nieko nepadarė.
+Then do	Tada daryti
+This rule will start the program below, on this computer, every time it fires, with text from the decoded signals in its arguments. Anyone who can send such a signal can influence it. Only allow it if you wrote it or trust the one who did.	Ši taisyklė kaskart suveikusi paleis žemiau nurodytą programą šiame kompiuteryje, o argumentuose bus iškoduotų signalų tekstas. Bet kas, galintis siųsti tokį signalą, gali tai paveikti. Leiskite tik jei patys ją parašėte arba pasitikite autoriumi.
+Topic	Tema
+WAV file (empty: beeps)	WAV failas (tuščias: pyptelėjimai)
+Webhook	Webhook
+Webhook address	Webhook adresas
+What can a script do?	Ką gali skriptas?
+When this happens	Kai įvyksta tai
+Within a distance of a point	Per atstumą nuo taško
+Within a distance of my receiver	Per atstumą nuo mano imtuvo
+Write a CSV log row	Įrašyti CSV žurnalo eilutę
+all of the conditions	visos sąlygos
+and only if	ir tik jei
+any of the conditions	bet kuri sąlyga
+contains	turi
+ends with	baigiasi
+equals	lygu
+has a value	turi reikšmę
+is at least	yra bent
+is at most	yra daugiausia
+is less than	mažiau nei
+is more than	daugiau nei
+is not	nėra
+is one of (a, b, c)	yra viena iš (a, b, c)
+last fired %s, %d times	paskutinį kartą %s, %d kartų
+matches (* ?)	atitinka (* ?)
+only as it comes in	tik įėjus
+separately for each	atskirai kiekvienam
+starts with	prasideda
+to	iki
+when it is inside	kai yra viduje
+when it is outside	kai yra išorėje

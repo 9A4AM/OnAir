@@ -2,6 +2,7 @@
 // Windows: the standard Open/Save dialogs, settings in %APPDATA%\\OnAir\\settings.conf.
 #include "platform.h"
 #include "dect2/common/png.h"
+#include <atomic>
 #include <cstdio>
 #include <filesystem>
 #include <iterator>
@@ -56,7 +57,8 @@ bool fetchUrl(const std::string& url, const std::string& file, const std::string
 }
 
 bool postJson(const std::string& url, const std::string& json, const std::string& userAgent) {
-    const std::string file = cacheDir() + "/map_ingest.json";
+    static std::atomic<unsigned> counter{0};   // the map upload and the automations' webhooks may post at the same time
+    const std::string file = cacheDir() + "/post_" + std::to_string(counter++ % 1000) + ".json";
 #ifdef _WIN32
     {
         FILE* f = _wfopen(wide(file).c_str(), L"wb");

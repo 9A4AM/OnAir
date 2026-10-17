@@ -48,6 +48,7 @@ struct RidDrone {
     float rssi = -200;
     std::vector<float> rssiHist;
     double firstSec = 0, lastSec = 0;  // signal time
+    double autoEmitSec = -1e9;         // the automations: signal time of the last report of this drone
     int64_t firstWall = 0, lastWall = 0;
     uint64_t messages = 0;
     uint32_t typeMask = 0;             // 1 << message type heard
