@@ -1513,8 +1513,9 @@ void selectMode(App& a, int fam, const char* subId) {
     const int sub = subIndexOf(subId);
     if (fam == a.family && (sub == a.sub || !sub)) return;
     // Switch in one action: stop the old decoder before updating the mode, then
-    // restart using the new mode\x27s own frequency, sample rate and bandwidth.
+    // restart using the new mode's own frequency, sample rate and bandwidth.
     const bool wasRunning = a.engine.running();
+    if (wasRunning && a.engine.recordingStats().active) { a.engine.log("stop the recording before switching mode"); return; }   // stopping the radio would end it
     if (wasRunning) a.engine.stop();
     setMode(a, fam, sub);
     savePrefs(a);
