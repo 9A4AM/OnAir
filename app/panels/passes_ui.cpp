@@ -6,6 +6,7 @@
 #include "gallery.h"
 #include "dect2/geo/passes.h"
 #include "dect2/geo/doppler_fit.h"
+#include "dect2/geo/pass_sched.h"
 #include "dect2/automation/engine.h"
 #include <algorithm>
 #include <atomic>
@@ -86,6 +87,13 @@ struct State {
     // tracking
     bool inPass = false, weStarted = false, weRecord = false, recTried = false;
     std::string passName;               // the satellite of the pass under way
+    // the scheduler (Schedule passes by itself): one SDR, the passes of the ticked groups taken one at a time by priority
+    bool sched = false;
+    int prio[NumGroups] = {3, 2, 0, 1, 0};                  // per group: higher wins an overlap
+    bool resv = false; int resvFrom = 2, resvTo = 6;        // hours of the day the SDR is kept free for other jobs
+    dect2::SchedPlan plan;
+    double planAt = 0, planRowsAt = 0; bool planDirty = true;
+    bool hasSlot = false; Row slotRow{}; dect2::Pass slotPass;   // the slot being waited for or received (slotRow: the part taken, lead included)
     double passLos = 0, lastTune = 0, nominalMhz = 0;
     // TLE data
     bool showPaste = false;
@@ -167,6 +175,7 @@ void buildSats() {
     for (int i = 0; i < (int)S.sats.size(); i++) if (!S.selName.empty() && S.sats[i].name == S.selName) S.selSat = i;
     S.rows.clear();
     S.dirty = true;
+    S.plan = dect2::SchedPlan(); S.planDirty = true; S.hasSlot = false;
 }
 
 // Custom source URLs are saved separately from the downloaded TLE files.
@@ -224,6 +233,9 @@ void loadState() {
     S.autoTle = p.getB("passTleAuto", true);
     D.measure = p.getB("passDopMeasure", false); D.useDerived = p.getB("passUseDerived", false);
     S.notifyMin = (float)p.getD("passNotifyMin", 5);
+    S.sched = p.getB("passSched", false); S.resv = p.getB("passResv", false);
+    S.resvFrom = (int)p.getD("passResvFrom", 2); S.resvTo = (int)p.getD("passResvTo", 6);
+    for (int g = 0; g < NumGroups; g++) { char k[24]; snprintf(k, sizeof k, "passPrio%d", g); S.prio[g] = std::max(0, std::min(9, (int)p.getD(k, S.prio[g]))); }
     for (int g = 0; g < NumGroups; g++) { char k[24]; snprintf(k, sizeof k, "passShow%d", g); S.show[g] = p.getB(k, true); }
     loadCubes();
     loadCustomSources();
@@ -351,17 +363,68 @@ void endPass(App& a, bool los) {
     if (los) disarmOnce();
 }
 
+constexpr double kSchedLead = 20;   // seconds: the receiver is up this long before a scheduled slot
+
+void replan(double now) {
+    std::vector<dect2::SchedPass> ps;
+    for (const Row& r : S.rows) {
+        const Sat& s = S.sats[r.sat];
+        if (S.show[s.group]) ps.push_back({r.sat, S.prio[s.group], r.p});
+    }
+    std::vector<dect2::BusyWindow> busy;
+    if (S.resv) {
+        const std::time_t tt = (std::time_t)now;
+        std::tm lt = *std::localtime(&tt);
+        busy = dect2::dailyBusy(S.resvFrom * 60, S.resvTo * 60, now - 86400, now + 2 * 86400, (double)lt.tm_gmtoff);
+    }
+    dect2::SchedParams prm; prm.leadSec = kSchedLead;
+    S.plan = dect2::planPasses(ps, busy, now, prm);
+    S.planAt = now; S.planRowsAt = S.computedAt; S.planDirty = false;
+}
+
+// The status of a listed pass in the plan (null when the scheduler is off or the pass is not in the plan)
+const char* planStatus(int sat, double aos) {
+    for (const dect2::SchedSlot& sl : S.plan.slots)
+        if (sl.sp.sat == sat && std::fabs(sl.sp.pass.aos - aos) < 1) return sl.trimmed ? N_("trimmed") : N_("planned");
+    for (const dect2::SchedDropped& d : S.plan.dropped)
+        if (d.sp.sat == sat && std::fabs(d.sp.pass.aos - aos) < 1)
+            return d.why == dect2::DropReason::Busy ? N_("skipped: SDR reserved") : d.why == dect2::DropReason::TooShort ? N_("skipped: too short") : N_("skipped: higher priority");
+    return nullptr;
+}
+
+// The scheduler picks the next slot (the one under way is kept to its end) and aims the tracking below at it
+void schedSelect(double now) {
+    if (S.inPass) return;
+    if (S.planDirty || now - S.planAt > 20 || S.planRowsAt != S.computedAt) replan(now);
+    S.hasSlot = false;
+    for (const dect2::SchedSlot& sl : S.plan.slots) {
+        if (sl.end <= now || sl.sp.sat < 0 || sl.sp.sat >= (int)S.sats.size()) continue;
+        S.hasSlot = true;
+        S.slotPass = sl.sp.pass;
+        S.slotRow.sat = sl.sp.sat; S.slotRow.p = sl.sp.pass;
+        S.slotRow.p.aos = sl.start - kSchedLead; S.slotRow.p.los = sl.end;
+        S.selSat = sl.sp.sat; S.selAos = sl.sp.pass.aos; S.selName = S.sats[sl.sp.sat].name;
+        break;
+    }
+}
+
 // once a frame, open or not: follow the tracked satellite's pass
 void trackTick(App& a) {
-    const bool have = S.selSat >= 0 && S.selSat < (int)S.sats.size();
     const double now = nowSec();
+    const bool sch = S.sched && !S.sats.empty();
+    if (sch) schedSelect(now);
+    const bool have = S.selSat >= 0 && S.selSat < (int)S.sats.size();
+    const bool track = S.track || sch, autoStart = S.autoStart || sch, autoRecord = S.autoRecord || sch;
     if (S.once && !S.track) { S.once = false; S.autoStart = S.prevStart; S.autoRecord = S.prevRec; }   // Track was switched off by hand
-    if (S.inPass && (!have || !S.track || S.sats[S.selSat].name != S.passName)) { endPass(a, false); return; }
+    if (S.inPass && (!have || !track || S.sats[S.selSat].name != S.passName)) { endPass(a, false); return; }
     if (S.inPass && now > S.passLos) { endPass(a, true); return; }
-    if (!have || !S.track) return;
+    if (!have || !track) return;
     const Sat& sat = S.sats[S.selSat];
     const Row* r = nullptr;
-    if (S.once) {   // armed for the chosen pass only, not for the satellite's next one
+    if (sch) {
+        if (S.hasSlot && S.slotRow.sat == S.selSat) r = &S.slotRow;
+        else if (!S.inPass) return;
+    } else if (S.once) {   // armed for the chosen pass only, not for the satellite's next one
         for (const Row& x : S.rows) if (x.sat == S.selSat && std::fabs(x.p.aos - S.selAos) < 1 && x.p.los >= now) r = &x;
         if (!r && !S.inPass) { disarmOnce(); return; }   // it has gone (the list was rebuilt without it)
     } else r = activeOrNext(S.selSat);
@@ -369,6 +432,10 @@ void trackTick(App& a) {
     if (active && !S.inPass) {   // AOS
         S.inPass = true; S.passLos = r->p.los; S.passName = sat.name; S.weStarted = false; S.weRecord = false; S.recTried = false; S.nominalMhz = sat.mhz; S.lastTune = 0;
         a.engine.log("pass of " + sat.name + " begins (AOS)");
+        {   // pictures taken now are labelled with the pass (kept for ten minutes after LOS: the decoders finish a picture late)
+            const dect2::Pass& pp = sch ? S.slotPass : r->p;
+            gallery::setPassContext(sat.name, pp.aos, pp.maxElDeg, r->p.los + 600);
+        }
         if (dect2::automation::wants(dect2::automation::FSatellite)) {   // the automations (satellite.aos)
             dect2::automation::Event ev("satellite.aos");
             ev.at(dect2::automation::wallNow(), "", sat.mhz * 1e6);
@@ -376,20 +443,20 @@ void trackTick(App& a) {
             dect2::automation::emit(std::move(ev));
         }
         if (sat.family == kCubesat) a.engine.cubesat().setTracked(sat.norad, sat.name);   // names the frames of the pass
-        if (S.autoStart && !a.engine.running()) {
+        if (autoStart && !a.engine.running()) {
             if (a.family != sat.family) selectMode(a, sat.family);
             a.freqMhz = sat.mhz;
             startReceiver(a);
             S.weStarted = a.engine.running();
-        } else if (S.autoStart && a.family != sat.family) a.engine.log("the receiver runs another mode: the pass is tracked, the mode not changed");
+        } else if (autoStart && a.family != sat.family) a.engine.log("the receiver runs another mode: the pass is tracked, the mode not changed");
     }
     if (!S.inPass) return;
-    if (S.autoRecord && !S.recTried && a.engine.running() && !a.engine.recordingStats().active && a.devices[a.devIdx].isRadio()) {
+    if (autoRecord && !S.recTried && a.engine.running() && !a.engine.recordingStats().active && a.devices[a.devIdx].isRadio()) {
         S.recTried = true;
         const FileFormat f = a.recFormat == 1 ? FileFormat::CF32 : FileFormat::CS8;
         const std::string path = plat::dataDir() + "/recordings/" + a.engine.recordingName(f);
         std::string err;
-        if (a.engine.startRecording(path, f, err)) { S.weRecord = true; a.recDonePath.clear(); }
+        if (a.engine.startRecording(path, f, err)) { S.weRecord = true; a.recDonePath.clear(); a.engine.log("pass of " + sat.name + ": recording IQ to " + path); }
         else a.engine.log("recording failed: " + err);
     }
     if (now - S.lastTune >= 1.0) {   // Doppler: about once a second
@@ -711,6 +778,79 @@ void dopplerSection(App& a) {
     }
 }
 
+// The next 24 hours as a strip: the passes the scheduler takes on the top lane (amber: trimmed), the ones it skips below
+void calendarStrip(double now) {
+    const float w = std::max(200.f, ImGui::GetContentRegionAvail().x), h = 52 * gUi;
+    const ImVec2 p0 = ImGui::GetCursorScreenPos();
+    ImGui::InvisibleButton("##cal", ImVec2(w, h));
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const ImU32 bg = ImGui::GetColorU32(ImGuiCol_FrameBg), dim = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+    dl->AddRectFilled(p0, ImVec2(p0.x + w, p0.y + h), bg, 3.f);
+    const double span = 86400;
+    auto xOf = [&](double t) { return p0.x + (float)((std::max(now, std::min(now + span, t)) - now) / span) * w; };
+    {   // hour ticks in local time
+        const std::time_t tt = (std::time_t)now;
+        std::tm lt = *std::localtime(&tt);
+        const double first = now + (3600 - (lt.tm_min * 60 + lt.tm_sec));
+        for (int i = 0; i < 24; i++) {
+            const double t = first + i * 3600.0;
+            const std::time_t t2 = (std::time_t)t;
+            std::tm l2 = *std::localtime(&t2);
+            const float x = xOf(t);
+            const bool lab = l2.tm_hour % 3 == 0;
+            dl->AddLine(ImVec2(x, p0.y + h - (lab ? 12 : 5) * gUi), ImVec2(x, p0.y + h), dim);
+            if (lab) { char b[8]; snprintf(b, sizeof b, "%d", l2.tm_hour); dl->AddText(ImVec2(x + 2, p0.y + h - 14 * gUi), dim, b); }
+        }
+    }
+    const float laneH = 14 * gUi;
+    const dect2::SchedSlot* hov = nullptr; const dect2::SchedDropped* hovD = nullptr;
+    const ImVec2 mp = ImGui::GetIO().MousePos;
+    for (const dect2::SchedDropped& d : S.plan.dropped) {
+        if (d.sp.pass.los <= now || d.sp.pass.aos >= now + span) continue;
+        const ImVec2 a(xOf(d.sp.pass.aos), p0.y + 3 * gUi + laneH + 2), b(std::max(xOf(d.sp.pass.los), xOf(d.sp.pass.aos) + 2), p0.y + 3 * gUi + 2 * laneH);
+        dl->AddRectFilled(a, b, (dim & 0x00FFFFFF) | 0x80000000, 2.f);
+        if (ImGui::IsItemHovered() && mp.x >= a.x && mp.x <= b.x && mp.y >= a.y && mp.y <= b.y) hovD = &d;
+    }
+    for (const dect2::SchedSlot& sl : S.plan.slots) {
+        if (sl.end <= now || sl.start >= now + span) continue;
+        const ImVec2 a(xOf(sl.start), p0.y + 3 * gUi), b(std::max(xOf(sl.end), xOf(sl.start) + 2), p0.y + 3 * gUi + laneH);
+        dl->AddRectFilled(a, b, ImGui::GetColorU32(sl.trimmed ? pal::warnAmber() : pal::okGreen()), 2.f);
+        if (ImGui::IsItemHovered() && mp.x >= a.x && mp.x <= b.x && mp.y >= a.y && mp.y <= b.y) hov = &sl;
+    }
+    dl->AddLine(ImVec2(p0.x, p0.y), ImVec2(p0.x, p0.y + h), ImGui::GetColorU32(ImGuiCol_Text), 2.f);
+    const dect2::SchedPass* hp = hov ? &hov->sp : hovD ? &hovD->sp : nullptr;
+    if (hp && hp->sat >= 0 && hp->sat < (int)S.sats.size()) {
+        const double a0 = hov ? hov->start : hp->pass.aos, a1 = hov ? hov->end : hp->pass.los;
+        ImGui::SetTooltip(tr("%s - %s, max %.0f deg"), (S.sats[hp->sat].name + "  " + timeText(a0)).c_str(), timeText(a1).c_str(), hp->pass.maxElDeg);
+    }
+}
+
+void schedControls() {
+    plat::Prefs& pr = plat::prefs();
+    if (ImGui::Checkbox(tr("Schedule passes by itself"), &S.sched)) { pr.setB("passSched", S.sched); S.planDirty = true; }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone."));
+    if (!S.sched) return;
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("%s", tr("Priority (higher wins)"));
+    for (int g = 0; g < NumGroups; g++) {
+        ImGui::SameLine();
+        ImGui::TextUnformatted(tr(kGroupLabel[g]));
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(60 * gUi);
+        char id[16]; snprintf(id, sizeof id, "##prio%d", g);
+        if (ImGui::SliderInt(id, &S.prio[g], 0, 9)) { char k[24]; snprintf(k, sizeof k, "passPrio%d", g); pr.setD(k, S.prio[g]); S.planDirty = true; }
+    }
+    if (ImGui::Checkbox(tr("Keep the SDR free every day"), &S.resv)) { pr.setB("passResv", S.resv); S.planDirty = true; }
+    if (S.resv) {
+        ImGui::SameLine(); ImGui::SetNextItemWidth(90 * gUi);
+        if (ImGui::SliderInt("##rf", &S.resvFrom, 0, 23, tr("from %d:00"))) { pr.setD("passResvFrom", S.resvFrom); S.planDirty = true; }
+        ImGui::SameLine(); ImGui::SetNextItemWidth(90 * gUi);
+        if (ImGui::SliderInt("##rt", &S.resvTo, 0, 24, tr("to %d:00"))) { pr.setD("passResvTo", S.resvTo); S.planDirty = true; }
+    }
+    if (S.plan.slots.empty()) ImGui::TextDisabled("%s", tr("Nothing planned."));
+    else calendarStrip(nowSec());
+}
+
 void window(App& a) {
     ImGui::SetNextWindowSize(ImVec2(820 * gUi, 560 * gUi), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin(trw("Passes"), &a.passesOpen)) { ImGui::End(); return; }
@@ -735,13 +875,14 @@ void window(App& a) {
         if (ImGui::SliderFloat("##minel", &S.minEl, 0, 45, "min el %.0f deg")) { S.dirty = true; plat::prefs().setD("passMinEl", S.minEl); ch = true; }
         if (ch) savePrefs(a);
     }
+    schedControls();
     compute(a);
     const float plotW = 250 * gUi;
     const double now = nowSec();
     // the table of passes
     ImGui::BeginChild("##passlist", ImVec2(std::max(200.f, ImGui::GetContentRegionAvail().x - plotW - 8 * gUi), 0));
     const ImGuiTableFlags tf = ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit;
-    if (ImGui::BeginTable("##passes", 7, tf)) {
+    if (ImGui::BeginTable("##passes", S.sched ? 8 : 7, tf)) {
         ImGui::TableSetupScrollFreeze(0, 1);
         ImGui::TableSetupColumn(tr("Satellite"), ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn(tr("AOS"));
@@ -750,6 +891,7 @@ void window(App& a) {
         ImGui::TableSetupColumn(tr("Duration"));
         ImGui::TableSetupColumn(tr("Frequency"));
         ImGui::TableSetupColumn(tr("Mode"));
+        if (S.sched) ImGui::TableSetupColumn(tr("Status"));
         ImGui::TableHeadersRow();
         int shown = 0;
         for (const Row& r : S.rows) {
@@ -772,6 +914,7 @@ void window(App& a) {
             ImGui::TableNextColumn(); ImGui::Text("%.3f", s.mhz);
             ImGui::TableNextColumn(); ImGui::TextUnformatted(s.mode.c_str());
             if (ImGui::IsItemHovered() && s.family == kSpecx) ImGui::SetTooltip("%s", tr("OnAir has no decoder for this: auto start opens the Spectrum explorer, and Auto record keeps the IQ"));
+            if (S.sched) { ImGui::TableNextColumn(); const char* st = planStatus(r.sat, r.p.aos); ImGui::TextUnformatted(st ? tr(st) : ""); }
         }
         ImGui::EndTable();
         if (!shown) ImGui::TextDisabled("%s", tr(S.tles.empty() ? "No TLEs: open TLE data above." : "No passes in the next 24 hours."));
@@ -802,7 +945,7 @@ void window(App& a) {
     }
     ImGui::Separator();
     const bool haveSel = S.selSat >= 0 && S.selSat < (int)S.sats.size();
-    ImGui::BeginDisabled(!haveSel);
+    ImGui::BeginDisabled(!haveSel || S.sched);
     std::string tl = haveSel ? std::string(tr("Track")) + " " + S.sats[S.selSat].name : std::string(tr("Track (choose a pass)"));
     ImGui::Checkbox(tl.c_str(), &S.track);
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("During each pass of this satellite, retune about once a second for the Doppler shift"));
@@ -818,7 +961,7 @@ void window(App& a) {
     ImGui::EndDisabled();
     {   // one pass, everything armed
         const bool canArm = r && r->p.los > now && !S.inPass;
-        ImGui::BeginDisabled(!canArm && !S.once);
+        ImGui::BeginDisabled((!canArm && !S.once) || S.sched);
         const bool armed = S.once;
         if (ImGui::Button(tr(armed ? "Cancel recording this pass" : "Record this pass"))) {
             if (armed) { disarmOnce(); }
@@ -871,9 +1014,9 @@ void passesMapSatellites(std::vector<MapSatRef>& out) {
 
 void passesWindow(App& a) {
     loadState();
-    if (!S.sats.empty() && (S.track || a.passesOpen)) compute(a);
+    if (!S.sats.empty() && (S.track || S.sched || a.passesOpen)) compute(a);
     pollDownload();
-    autoUpdateTle(a.passesOpen || S.track);
+    autoUpdateTle(a.passesOpen || S.track || S.sched);
     trackTick(a);
     dopplerCollect(a);
     aosBanner(a);

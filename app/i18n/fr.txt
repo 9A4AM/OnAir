@@ -2363,3 +2363,15 @@ Current setting: %.2f ppm	Réglage actuel : %.2f ppm
 No measurements of this radio yet.	Pas encore de mesures de cette radio.
 History of this radio (ppm)	Historique de cette radio (ppm)
 Drift: %+.3f ppm per minute	Dérive : %+.3f ppm par minute
+Schedule passes by itself	Planifier les passages automatiquement
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Prend les passages des groupes cochés un par un, par priorité décroissante, et démarre, accorde et enregistre chacun sans vous. Les passages qui se chevauchent sont raccourcis ou ignorés ; un récepteur que vous avez lancé vous-même n'est pas touché.
+Priority (higher wins)	Priorité (la plus haute gagne)
+Keep the SDR free every day	Garder le SDR libre chaque jour
+from %d:00	de %d:00
+to %d:00	à %d:00
+Nothing planned.	Rien de prévu.
+planned	prévu
+trimmed	raccourci
+skipped: SDR reserved	ignoré : SDR réservé
+skipped: too short	ignoré : trop court
+skipped: higher priority	ignoré : priorité supérieure

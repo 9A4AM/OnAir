@@ -2363,3 +2363,15 @@ Current setting: %.2f ppm	Dabartinis nustatymas: %.2f ppm
 No measurements of this radio yet.	Šio radijo matavimų dar nėra.
 History of this radio (ppm)	Šio radijo istorija (ppm)
 Drift: %+.3f ppm per minute	Dreifas: %+.3f ppm per minutę
+Schedule passes by itself	Praskridimus planuoti automatiškai
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Paimia pažymėtų grupių praskridimus po vieną, pirma aukščiausio prioriteto, ir pats paleidžia, sutaiko bei įrašo kiekvieną. Persidengiantys praskridimai sutrumpinami arba praleidžiami; pats paleistas imtuvas neliečiamas.
+Priority (higher wins)	Prioritetas (didesnis laimi)
+Keep the SDR free every day	Kasdien laikyti SDR laisvą
+from %d:00	nuo %d:00
+to %d:00	iki %d:00
+Nothing planned.	Nieko neplanuota.
+planned	suplanuota
+trimmed	sutrumpinta
+skipped: SDR reserved	praleista: SDR rezervuotas
+skipped: too short	praleista: per trumpas
+skipped: higher priority	praleista: aukštesnis prioritetas

@@ -2349,3 +2349,15 @@ Current setting: %.2f ppm	Jelenlegi beállítás: %.2f ppm
 No measurements of this radio yet.	Ehhez a rádióhoz még nincs mérés.
 History of this radio (ppm)	A rádió előzményei (ppm)
 Drift: %+.3f ppm per minute	Sodródás: %+.3f ppm percenként
+Schedule passes by itself	Átvonulások automatikus ütemezése
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	A bejelölt csoportok átvonulásait egymás után veszi, a legnagyobb prioritásúval kezdve, és mindegyiket magától indítja, hangolja és rögzíti. Az átfedő átvonulásokat lerövidíti vagy kihagyja; a te indította vevőhöz nem nyúl.
+Priority (higher wins)	Prioritás (a magasabb nyer)
+Keep the SDR free every day	SDR szabadon tartása naponta
+from %d:00	%d:00-tól
+to %d:00	%d:00-ig
+Nothing planned.	Nincs betervezve semmi.
+planned	betervezve
+trimmed	lerövidítve
+skipped: SDR reserved	kihagyva: az SDR le van foglalva
+skipped: too short	kihagyva: túl rövid
+skipped: higher priority	kihagyva: magasabb prioritás

@@ -2363,3 +2363,15 @@ Current setting: %.2f ppm	現在の設定: %.2f ppm
 No measurements of this radio yet.	このラジオの測定はまだありません。
 History of this radio (ppm)	このラジオの履歴(ppm)
 Drift: %+.3f ppm per minute	ドリフト: 毎分 %+.3f ppm
+Schedule passes by itself	通過を自動でスケジュール
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	チェックしたグループの通過を優先度の高い順に1つずつ取り、操作なしで開始・同調・録音します。重なる通過は短縮またはスキップされ、自分で起動した受信機には手を触れません。
+Priority (higher wins)	優先度(高い方が優先)
+Keep the SDR free every day	毎日SDRを空けておく
+from %d:00	%d:00から
+to %d:00	%d:00まで
+Nothing planned.	予定なし。
+planned	予定済み
+trimmed	短縮
+skipped: SDR reserved	スキップ: SDR予約中
+skipped: too short	スキップ: 短すぎる
+skipped: higher priority	スキップ: 優先度が高い通過あり
