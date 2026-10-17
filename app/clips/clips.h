@@ -55,6 +55,7 @@ public:
     void observe(const std::string& kind, const resexp::Table& t, double now);   // rate limited to once a second per kind; unknown rows get `now`
     resexp::Table range(Range r, std::string* kindsOut = nullptr) const;         // all kinds, rows first seen inside r, with a "table" column first
     size_t bytes() const { return bytes_; }
+    double oldest() const;                                                       // first-seen time of the oldest row, 0 when none
     void clear();
 private:
     struct Row { double t; std::vector<std::string> cells; uint64_t key; };
@@ -106,4 +107,9 @@ struct Written { std::string dir, html, zip; std::vector<std::string> files; uin
 // Writes the clip folder `parent/<stem>/` (files per the Want flags) and the zip next to it. Never throws.
 Written writeClip(const Content& c, const std::string& parent);
 
+}  // namespace clips
+
+namespace clips {
+WfHistory& wfHistory();   // the app's one history (UI thread only)
+TableLog& tableLog();
 }  // namespace clips

@@ -134,6 +134,9 @@ void TableLog::configure(bool on, double maxSeconds, size_t maxBytes) {
     on_ = on; maxSec_ = maxSeconds; maxBytes_ = maxBytes;
     if (!on) clear();
 }
+double TableLog::oldest() const { double o = 0; for (const auto& k : kinds_) if (!k.rows.empty() && (o == 0 || k.rows.front().t < o)) o = k.rows.front().t; return o; }
+WfHistory& wfHistory() { static WfHistory h; return h; }
+TableLog& tableLog() { static TableLog t; return t; }
 void TableLog::clear() { kinds_.clear(); bytes_ = 0; }
 void TableLog::observe(const std::string& kind, const resexp::Table& t, double now) {
     if (!on_ || t.rows.empty()) return;
