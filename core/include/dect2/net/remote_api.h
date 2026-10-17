@@ -17,16 +17,20 @@
 
 namespace dect2 {
 
+struct JsonVal;
+
 struct RemoteApiConfig {
     bool on = false;
     int port = 8765;          // 0: any free port (tests); config() then tells which
     bool lan = false;         // listen on every address (else 127.0.0.1 only); needs a token
     std::string token;        // >= 16 characters; required from every non-loopback peer (Authorization: Bearer <token>, or ?token=)
+    std::string tlsCert, tlsKey;   // PEM files: serve HTTPS / wss instead of HTTP / ws (needs a build with OpenSSL; both or neither)
 };
 
 struct RemoteApiStatus {
     bool listening = false;
     std::string lastError;
+    bool tls = false;                     // listening with TLS
     int httpClients = 0, wsClients = 0;   // connections open now
     uint64_t requests = 0, rejected = 0;  // handled / refused (bad auth, bad request, too many connections)
 };
@@ -47,6 +51,15 @@ public:
     virtual bool setFrequencyHz(double hz, std::string& err) = 0;
     virtual bool setSampleRateHz(double hz, std::string& err) = 0;   // 0: automatic
     virtual bool setGainDb(double db, std::string& err) = 0;
+    // ---- optional (headless server): a built-in web page, the spectrum as bytes, audio for WebSocket clients
+    virtual std::string indexHtml() { return std::string(); }     // served at GET / and /index.html (empty: 404)
+    // The latest spectrum line as one binary WebSocket message: [0x01][u32 seq][f32 centreHz][f32 rateHz][f32 floorDb][f32 topDb][bins bytes, 0 = floorDb, 255 = topDb], little endian.
+    virtual bool spectrumBinary(int, uint64_t&, std::string&) { return false; }
+    virtual int audioOpen(int /*rateHz*/) { return -1; }           // a listener at this rate (mono, 16 bit); -1: the host has no audio
+    virtual bool audioRead(int, std::string& /*pcm16le*/) { return false; }   // the audio since the last call (empty: none yet); false: the listener is gone
+    virtual void audioClose(int) {}
+    // GET / POST under /api/v1/x/ (the program's own extras). Returns the HTTP status (0: not handled, the server answers 404) and the JSON body in `json`.
+    virtual int handleExtra(const std::string& /*method*/, const std::string& /*path*/, const std::map<std::string, JsonVal>& /*body*/, std::string& /*json*/) { return 0; }
 };
 
 class RemoteApiServer {

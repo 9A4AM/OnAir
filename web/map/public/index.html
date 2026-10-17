@@ -54,6 +54,8 @@
       <span class="acts"><button type="button" id="layersAll">All</button><button type="button" id="layersNone">None</button><button type="button" id="railClose" class="rclose" aria-label="Close filters">Done</button></span>
     </div>
     <div id="layers" role="group" aria-label="Layers"></div>
+    <label class="altopt"><input type="checkbox" id="gpsJam"><span>GPS interference (community)</span></label>
+    <div class="altlegend" id="jamLegend" hidden><div id="jamBar" class="jambar"></div><div class="jamnote">Share of aircraft reporting a degraded GPS position per 0.5&deg; cell, last 2 h, cells with 3+ aircraft. An indicator, not proof of jamming.</div></div>
     <div class="ptitle">Key</div>
     <label class="altopt"><input type="checkbox" id="altColor"><span>Colour aircraft by altitude</span></label>
     <div class="altlegend" id="altLegend" hidden><i id="altBar"></i><div><span>0</span><span>10k</span><span>20k</span><span>30k</span><span>40k ft</span></div></div>
@@ -91,6 +93,6 @@
   </div>
 
   <script src="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.js"></script>
-  <script type="module" src="/app.js?v=23"></script>
+  <script type="module" src="/app.js?v=24"></script>
 </body>
 </html>

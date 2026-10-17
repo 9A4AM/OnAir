@@ -17,7 +17,9 @@ struct TranscriptEntry {
     std::string mode;            // "airband", "marine", "audio" (the sound of any other mode)
     std::string channel;         // "118.700 Tower"
     double durSec = 0;
-    std::string text;
+    std::string text;            // as spoken
+    std::string lang;            // language of `text` ("de"), "" when not known
+    std::string translation;     // English translation of `text` (live translation), "" when none
     float confidence = 0;        // 0..1, mean probability of the words
     int turn = 0;                // transmission counter on this channel since the start
     std::string speaker;         // a guess from the wording: "ATC" (starts with the callsign), "Aircraft" (ends with it), "" (unknown)

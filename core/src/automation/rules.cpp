@@ -32,7 +32,7 @@ std::string getp(const ActionSpec& a, const char* k) {
 }  // namespace
 
 const std::vector<std::string>& actionTypes() {
-    static const std::vector<std::string> v = {"notify", "sound", "record_iq", "record_audio", "tune", "memory", "log", "webhook", "screenshot", "run"};
+    static const std::vector<std::string> v = {"notify", "sound", "record_iq", "record_audio", "save_rewind", "tune", "memory", "log", "webhook", "screenshot", "run"};
     return v;
 }
 

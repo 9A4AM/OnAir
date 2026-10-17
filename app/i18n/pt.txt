@@ -1917,7 +1917,7 @@ Choose what to tell apart in "separately for each" so every thing has its own st
 Columns (optional)	Colunas (opcional)
 Confirm this rule...	Confirmar esta regra...
 Confirmed	Confirmada
-Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Defina function on_event(e). e.type, e.mode, e.freq, e.time e os campos do evento (e.callsign, e.squawk ...).\n\nAções: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nAuxiliares: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTexto: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Sem io, os, load, require, pcall nem padrões; 1 milhão de instruções, 250 ms e 16 MB por script.
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Defina function on_event(e). e.type, e.mode, e.freq, e.time e os campos do evento (e.callsign, e.squawk ...).\n\nAções: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nAuxiliares: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTexto: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Sem io, os, load, require, pcall nem padrões; 1 milhão de instruções, 250 ms e 16 MB por script.
 Delete...	Excluir...
 Distance, km	Distância, km
 Does not fire for the sample event:	Não dispara com o evento de exemplo:
@@ -2121,6 +2121,59 @@ Peak dB above floor	Pico dB acima do ruído
 Quietest slots	Faixas mais calmas
 From MHz	De MHz
 Width kHz	Largura kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Escolha um programa para ver os detalhes.
+Cancel recording	Cancelar gravação
+Record	Gravar
+Stop series	Parar série
+Record series	Gravar série
+The broadcaster sends no series identifier for this programme.	A emissora não envia identificador de série para este programa.
+No reminder	Sem lembrete
+Remind me	Lembrar-me
+Watch	Assistir
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	Sintonizadores insuficientes: coincide com uma gravação noutro múltiplex e não será gravado.
+No description broadcast.	Nenhuma descrição transmitida.
+Waiting for the service list...	A aguardar a lista de serviços...
+Search title or description	Procurar título ou descrição
+This multiplex only	Apenas este múltiplex
+time zone:	fuso horário:
+this computer	este computador
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Ainda não foi recebida informação de programação. As emissoras enviam-na nas tabelas EIT, repetidas a cada poucos segundos (agora/seguinte) ou minutos (programação). Alguns múltiplex não enviam nenhuma.
+Opening the recording...	A abrir a gravação...
+Pause (timeshift)	Pausa (timeshift)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Congela a TV em direto e continua a gravá-la no disco, para retomar ou recuar.
+buffered	em buffer
+Timeshift	Timeshift
+Play	Reproduzir
+behind live	atrás do direto
+Live	Direto
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	As gravações só funcionam com o OnAir aberto e o computador ativo; um computador em suspensão não grava nada. Os serviços cifrados são gravados tal como chegam, sem serem decifrados. Apenas para uso pessoal.
+Scheduled	Agendadas
+recording	a gravar
+conflict	conflito
+any multiplex	qualquer múltiplex
+series	série
+waiting for the tuner	a aguardar o sintonizador
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Nada agendado. Escolha um programa no guia ou adicione uma gravação manual abaixo.
+Manual recording	Gravação manual
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Começa a esta hora (hoje, ou amanhã se já passou), sem margem.
+Recorded	Gravadas
+No recordings yet.	Ainda não há gravações.
+Export	Exportar
+Delete this recording and its subtitle files?	Eliminar esta gravação e os seus ficheiros de legendas?
+free	livres
+Recorder settings	Definições do gravador
+Folder	Pasta
+Start earlier (s)	Começar mais cedo (s)
+End later (s)	Terminar mais tarde (s)
+Tuners	Sintonizadores
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Quantos múltiplex diferentes podem ser recebidos ao mesmo tempo. Os serviços do mesmo múltiplex gravam-se sempre em conjunto.
+Keep free (GB)	Manter livre (GB)
+Stop after signal loss (s, 0 = never)	Parar após perda de sinal (s, 0 = nunca)
+Save teletext subtitles next to recordings (.srt, .vtt)	Guardar legendas de teletexto junto às gravações (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Sintonizar o canal de uma gravação agendada quando começa
+Timeshift buffer on disk	Buffer de timeshift em disco
+minutes	minutos
 Propagation	Propagação
 open	aberta
 marginal	marginal
@@ -2134,6 +2187,100 @@ Forget the history	Apagar o histórico
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	O que este recetor ouviu, por banda: balizas (NCDXF/IARU, Long Dashes, letras soltas, portadoras) e as estações FT8 / FT4 / FT2 / WSPR descodificadas no ecrã HF digital. Uma banda está aberta quando foram ouvidas pelo menos 3 estações nos últimos 30 minutos. Só o recetor próprio: nada é descarregado, por isso não há fluxo solar nem índice K.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Nada ouvido nos últimos 30 minutos: inicie as balizas HF ou o ecrã HF digital e deixe-o a funcionar.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Últimas 24 horas (UTC), células de 15 minutos, mais escuro: menos estações
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s pede estas permissões:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	Uma falha ou bloqueio do plugin termina apenas o seu processo auxiliar. Aplica-se na próxima vez que o plugin iniciar.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Adicione decodificadores e ações sem recompilar o OnAir: instale, ative e configure plugins
+Add-ons	Extensões
+Allow	Permitir
+Asks for	Pede
+Asks for no permissions.	Não pede permissões.
+Community plugins	Plugins da comunidade
+Do not allow	Não permitir
+Enabled	Ativado
+Files: read and write its own data folder	Ficheiros: ler e escrever na sua própria pasta de dados
+Install from file...	Instalar a partir de um ficheiro...
+Installed	Instalado
+Kind	Tipo
+Map points	Pontos do mapa
+Modes (in the mode list, group PLUGINS)	Modos (na lista de modos, grupo PLUGINS)
+Network: talk to other computers	Rede: comunicar com outros computadores
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Nenhum plugin instalado. Use «Instalar a partir de um ficheiro» ou copie a pasta de um plugin para a pasta de plugins. Um plugin é um ficheiro .onairplugin.
+Not installed	Não instalado
+Open its folder	Abrir a sua pasta
+PLUGINS	PLUGINS
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	As permissões definem o que o OnAir entrega ao plugin. Um plugin executado dentro do OnAir ainda pode usar o sistema por si: instale plugins de confiança ou execute-os num processo auxiliar.
+Plugin idle	Plugin inativo
+Plugin log	Registo do plugin
+Plugin modes run on receiver 1.	Os modos de plugin funcionam no receptor 1.
+Plugin running	Plugin em execução
+Plugins	Plugins
+Plugins are not available on this receiver.	Os plugins não estão disponíveis neste receptor.
+Plugins...	Plugins...
+Programs: start other programs	Programas: iniciar outros programas
+Recording: save audio or IQ	Gravação: guardar áudio ou IQ
+Refresh	Atualizar
+Results the plugin sent beyond the limits	Resultados do plugin acima dos limites
+Run in a helper process	Executar num processo auxiliar
+Safe mode (no plugins)	Modo seguro (sem plugins)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	O modo seguro está ativo: os plugins estão desligados. Abra o modo Plugins para sair.
+Safe mode: all plugins are switched off.	Modo seguro: todos os plugins estão desligados.
+Select a plugin.	Selecione um plugin.
+Sound: play audio through the program	Som: reproduzir áudio através do programa
+The plugin was switched off after a failure. See its log in the Plugins mode.	O plugin foi desligado após uma falha. Veja o seu registo no modo Plugins.
+This plugin is off.	Este plugin está desligado.
+This plugin mode is not installed any more.	Este modo de plugin já não está instalado.
+Try plugins again	Tentar os plugins novamente
+Turn it on	Ativá-lo
+blocks	blocos
+by	por
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	%d canais marcados no último espectro
+Add spectrum at the target l	Adicionar espectro na l do alvo
+Az %.1f  El %.1f   site %.3f, %.3f	Az %.1f  El %.1f   local %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	Corpo                 Az     El     trânsito (UTC)  nascer  ocaso
+Calibration / RFI	Calibração / RFI
+Capture cold	Capturar frio
+Capture hot	Capturar quente
+Cassiopeia A	Cassiopeia A
+Clear map	Limpar mapa
+Compute	Calcular
+Custom (RA / Dec)	Personalizado (AR / Dec)
+Cygnus A	Cisne A
+Elevation of the selected body over the UTC day (hours)	Elevação do corpo escolhido ao longo do dia UTC (horas)
+Fit lines	Ajustar linhas
+Flag and interpolate RFI	Marcar e interpolar RFI
+Galactic position	Posição galáctica
+IAU standard solar motion (off: Schoenrich 2010)	Movimento solar padrão da IAU (desligado: Schoenrich 2010)
+LSR axis	Eixo LSR
+Moon	Lua
+No processed spectrum yet.	Ainda não há espectro processado.
+Nothing logged yet.	Nada registado ainda.
+Open session	Abrir sessão
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	Aponte a antena a cada longitude galáctica l com b = 0 (defina em Velocidade), integre e adicione aqui o espectro.
+Pointing	Apontamento
+R0 kpc	R0 kpc
+Sagittarius A*	Sagitário A*
+Save CSV	Guardar CSV
+Save FITS	Guardar FITS
+Save SigMF text	Guardar texto SigMF
+Save session	Guardar sessão
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	O local é a posição do recetor (Ver > Mapa). A hora é o relógio do computador, UTC.
+Sun	Sol
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	A curva de rotação precisa de espectros em várias longitudes entre 0 e 90 (ou 270 e 360).
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	Para o alvo: rotação da Terra %+.2f, órbita %+.2f, Sol %+.2f; total %+.2f km/s (somar à velocidade topocêntrica)
+Tsys K	Tsys K
+V0 km/s	V0 km/s
+Velocity	Velocidade
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   recetor %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Fator Y: capture um espectro numa carga quente (absorvedor à temperatura ambiente) e depois numa carga fria (ou no céu frio), com as suas temperaturas.
+cold K	frio K
+fit rms %.3f K	rms do ajuste %.3f K
+hot K	quente K
+no positions yet	ainda sem posições
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	pico K, centro km/s (LSR), FWHM km/s, área K km/s; um sigma
+sigma	sigma
+sky + spill K	céu + spillover K
 # identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
 , %.0f baud	, %.0f baud
 , %s wide	, %s de largura
@@ -2206,7 +2353,6 @@ Readings that could fit this packet	Leituras que poderiam servir a este pacote
 No fields.	Sem campos.
 C constant, N counter, K check value, E few values, V varying; one letter per byte from the start of the sync word.	C constante, N contador, K valor de verificação, E poucos valores, V variável; uma letra por byte desde o início da palavra de sincronização.
 Byte	Byte
-Kind	Tipo
 Entropy (bits per byte)	Entropia (bits por byte)
 Distinct values	Valores distintos
 adds %d each packet	soma %d a cada pacote
@@ -2241,7 +2387,302 @@ The bit file has one packet per line; tools such as Universal Radio Hacker can o
 Bytes	Bytes
 Fields	Campos
 Compare	Comparar
-Export	Exportar
 Protocol lab	Laboratório de protocolos
 Protocol lab...	Laboratório de protocolos...
 Work out an unknown digital signal: modulation, baud rate, sync word, CRC and fields, with an export	Descobrir a estrutura de um sinal digital desconhecido: modulação, baud, palavra de sincronização, CRC e campos, com exportação
+Orbit from Doppler	Órbita a partir do Doppler
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	Segue a portadora do satélite seguido durante uma passagem e ajusta a sua órbita à curva Doppler. Precisa de uma referência de frequência estável (um recetor sincronizado por GPS ou bem calibrado); o erro do relógio do recetor é ajustado como um desvio constante.
+Measure the carrier during tracked passes	Medir a portadora nas passagens seguidas
+gate +-%.0f kHz	janela +-%.0f kHz
+How far from the predicted carrier the peak is looked for	A que distância da portadora prevista se procura o pico
+%d measurements of %s	%d medições de %s
+Fit orbit	Ajustar órbita
+Save refined TLE	Guardar TLE refinado
+saved in %s	guardado em %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	Escreve os elementos refinados num ficheiro à parte, marcado como derivado desta medição; os TLE descarregados não são alterados
+Use the derived elements for predictions	Usar os elementos derivados nas previsões
+no measurements yet	ainda sem medições
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	cinzento: previsto pelos elementos descarregados, azul: refinado, verde: medido, âmbar: resíduo da curva refinada
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	resíduo %.1f Hz -> %.1f Hz (%d usadas, %d rejeitadas); desvio do recetor %+.0f Hz
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	anomalia média %+.3f graus, movimento médio %+.5f rev/dia, inclinação %+.4f graus, RAAN %+.4f graus
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	erro de tempo estimado da previsão: %.1f s antes, %.1f s depois (1 sigma)
+Also share GPS interference cells (counts per area, no aircraft)	Partilhar também células de interferência GPS (contagens por zona, sem aeronaves)
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	Para cada quadrado de 0,5 graus (cerca de 55 km) à volta do seu recetor ADS-B: quantas aeronaves foram ouvidas na última hora e quantas indicaram uma má posição GPS. Só estes dois números por quadrado são enviados, nunca identidades de aeronaves, rastos nem a sua localização. Alimenta a camada de interferência GPS do mapa público e é um indício, não uma prova de interferência. Desligado até o escolher.
+Calibrate...	Calibrar...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	Medir o erro de frequência deste rádio com uma estação FM ou uma portadora de frequência conhecida
+Frequency calibration	Calibração de frequência
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Mede quanto o relógio deste rádio se desvia de um sinal de frequência conhecida e define a correção em ppm.
+Not with a converter in front of the radio.	Não com um conversor à frente do rádio.
+Start the receiver first.	Inicie primeiro o recetor.
+FM station (stereo pilot) at the tuned frequency	Estação FM (piloto estéreo) na frequência sintonizada
+Carrier of known frequency (MHz)	Portadora de frequência conhecida (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Sintonize primeiro uma estação FM forte. O piloto de uma estação nem sempre é exato: repita em duas ou três estações.
+Ready.	Pronto.
+Looking for a reference signal.	A procurar um sinal de referência.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	A medir: %+.2f ppm, incerteza %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Concluído: %+.2f ppm (incerteza %.2f ppm).
+No usable reference signal was found.	Não foi encontrado nenhum sinal de referência utilizável.
+Apply %+.2f ppm	Aplicar %+.2f ppm
+Current setting: %.2f ppm	Definição atual: %.2f ppm
+No measurements of this radio yet.	Ainda não há medições deste rádio.
+History of this radio (ppm)	Histórico deste rádio (ppm)
+Drift: %+.3f ppm per minute	Deriva: %+.3f ppm por minuto
+Band from (kHz)	Banda de (kHz)
+Calibrate from two landmarks	Calibrar com dois pontos de referência
+Calibrated.	Calibrado.
+Camera snapshot URL (JPEG)	URL do instantâneo da câmara (JPEG)
+Cannot load the picture.	Não é possível carregar a imagem.
+Cannot save the snapshot.	Não é possível guardar o instantâneo.
+Centre azimuth	Azimute central
+Click the picture to set the column of the selected landmark.	Clique na imagem para definir a coluna do ponto de referência selecionado.
+Demo skyline (no camera)	Horizonte de demonstração (sem câmara)
+Enable RF camera	Ativar a câmara RF
+Field of view	Campo de visão
+Heat strength	Intensidade do mapa de calor
+No picture.	Sem imagem.
+Normal camera lens	Objetiva de câmara normal
+Panorama (equirectangular)	Panorama (equirretangular)
+Picture	Imagem
+Picture or panorama file	Ficheiro de imagem ou panorama
+Projection	Projeção
+RF camera	Câmara RF
+Save snapshot	Guardar instantâneo
+Snapshot saved: %s	Instantâneo guardado: %s
+Sub-bands	Sub-bandas
+The two landmarks do not fit a picture.	Os dois pontos de referência não se ajustam a uma imagem.
+Weakest shown	Mais fraco mostrado
+azimuth	azimute
+azimuth only; the picture is just a backdrop	apenas azimute; a imagem é só um fundo
+column	coluna
+to (kHz)	até (kHz)
+Translate to English	Traduzir para inglês
+Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	A fala noutro idioma também é traduzida para inglês, offline, junto ao original. Requer um modelo multilingue e custa cerca de 1,5 vezes mais tempo de processador; é ignorada quando o motor não acompanha. Nada é enviado. A tradução para outros idiomas não está disponível.
+The loaded model is English only: translation needs a multilingual model.	O modelo carregado é apenas inglês: a tradução requer um modelo multilingue.
+Live: stop the room	Ao vivo: parar a sala
+Copy room link	Copiar link da sala
+Host PIN (to moderate on the room page):	PIN do anfitrião (para moderar na página da sala):
+Go live (Live rooms)...	Entrar ao vivo (Salas ao vivo)...
+Could not create the room	Não foi possível criar a sala
+Lost the connection to the rooms server	Ligação ao servidor de salas perdida
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Salas ao vivo: enquanto estiver ao vivo, qualquer pessoa com o link da sala pode ver a cascata deste recetor, o modo e a frequência sintonizada, e conversar entre si. A lista de salas na web também mostra o título. Nada é enviado antes de carregar em Entrar ao vivo e nada é guardado depois de a sala terminar. A sua localização, o seu nome e o áudio nunca são enviados.
+Room title	Título da sala
+Also show decoded ACARS text in the room (public)	Mostrar também o texto ACARS descodificado na sala (público)
+Needs Server > Send data to map server and Also share interesting ACARS messages.	Requer Servidor > Enviar dados ao servidor do mapa e Partilhar também mensagens ACARS interessantes.
+Go live	Entrar ao vivo
+Schedule passes by itself	Agendar passagens automaticamente
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Pega as passagens dos grupos marcados uma de cada vez, da maior prioridade para a menor, e inicia, sintoniza e grava cada uma sem você. Passagens sobrepostas são encurtadas ou ignoradas; um receptor iniciado por você não é tocado.
+Priority (higher wins)	Prioridade (a maior vence)
+Keep the SDR free every day	Manter o SDR livre todos os dias
+from %d:00	das %d:00
+to %d:00	às %d:00
+Nothing planned.	Nada agendado.
+planned	agendada
+trimmed	encurtada
+skipped: SDR reserved	ignorada: SDR reservado
+skipped: too short	ignorada: curta demais
+skipped: higher priority	ignorada: prioridade maior
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Aviões a partir dos ecos de um emissor de radiodifusão, com dois canais coerentes
+Baseline %.1f km, transmitter bearing %.0f degrees	Linha de base %.1f km, rumo do emissor %.0f graus
+Cancellation taps	Coeficientes de cancelamento
+Cannot open the recording.	Não é possível abrir a gravação.
+Clutter cancelled by %.0f dB, %d detections	Clutter cancelado em %.0f dB, %d deteções
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Complexo float32, canal 0 referência e canal 1 vigilância, sincronizados por amostra.
+Doppler Hz	Doppler Hz
+Doppler over time	Doppler ao longo do tempo
+Echo level (dB)	Nível do eco (dB)
+End of the recording.	Fim da gravação.
+Enter the illuminator position.	Introduza a posição do iluminador.
+False alarm rate 1e-x	Taxa de falsos alarmes 1e-x
+Illuminator	Iluminador
+NLMS instead of ECA	NLMS em vez de ECA
+Noise-like waveform (DVB-T)	Forma de onda tipo ruído (DVB-T)
+Passive radar	Radar passivo
+Processing	Processamento
+Range km	Distância km
+Range rate (m/s)	Variação da distância (m/s)
+Range-Doppler map	Mapa distância-Doppler
+Rate m/s	Velocidade m/s
+Saved illuminators	Iluminadores guardados
+Second target	Segundo alvo
+Target range (km)	Distância do alvo (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Os alvos mais próximos do que o número de coeficientes, em amostras de distância, ficam ocultos pelo cancelamento.
+The receiver position is the one set for ADS-B.	A posição do receptor é a definida para o ADS-B.
+Tracks	Pistas
+Two recordings (reference, surveillance)	Duas gravações (referência, vigilância)
+Two-channel recording (cf32)	Gravação de dois canais (cf32)
+Waiting for data.	A aguardar dados.
+Rewind	Retroceder
+Keeps the last seconds of the radio's raw samples in memory, so the signal from just before something happened can be saved too	Mantém na memória os últimos segundos das amostras brutas do rádio, para que também seja possível guardar o sinal de logo antes de algo acontecer
+A file source is already there: nothing to keep	Já existe uma fonte de ficheiro: nada a guardar
+Keep a rolling memory of the raw samples	Manter uma memória contínua das amostras brutas
+Reaches back (s)	Recua (s)
+Memory limit (MB)	Limite de memória (MB)
+Full rate	Taxa completa
+Samples kept	Amostras guardadas
+1 / 4 averages every 4 samples: the memory then reaches 4 times as far back, but only the middle quarter of the band is kept. The settings can be changed while it is off.	1 / 4 faz a média de cada 4 amostras: a memória recua 4 vezes mais, mas só se guarda o quarto central da banda. As definições podem ser alteradas enquanto está desligado.
+Reaches back %s using %d MB; %s in memory now (%.3f Msps)	Recua %s com %d MB; agora há %s em memória (%.3f Msps)
+The memory limit shortens the window; raise it or keep fewer samples.	O limite de memória encurta a janela; aumente-o ou guarde menos amostras.
+Save the last (s)	Guardar os últimos (s)
+Then keep recording (s)	Depois continuar a gravar (s)
+Save when the General receiver's squelch opens	Guardar quando o squelch do recetor Geral abrir
+In the General receiver mode; for other events use an automation rule with the action "Save the rewind"	No modo recetor Geral; para outros eventos use uma regra de automação com a ação "Guardar o retrocesso"
+Save now	Guardar agora
+Save the rewind	Guardar o retrocesso
+Seconds to keep after the event	Segundos a manter após o evento
+FM broadcast	Rádio FM
+Airband	Banda aeronáutica
+DAB / VHF band III	DAB / VHF banda III
+UHF TV	TV UHF
+868 MHz ISM	ISM 868 MHz
+ADS-B 1090 MHz	ADS-B 1090 MHz
+Measuring %s (%d/%d)	A medir %s (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	Escolha primeiro um rádio (o sinal de teste e os ficheiros não podem ser medidos)
+None of the measuring bands is inside this radio's range	Nenhuma das bandas de medição está dentro do alcance deste rádio
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s: o ADC está sobrecarregado (%.2f%% das amostras são cortadas). Baixe o ganho ou adicione um atenuador.
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s: um sinal forte (%.0f dB acima do piso de ruído) sobrecarrega o ADC enquanto outras bandas ficam fracas com este ganho. Adicione um filtro rejeita-banda para essa banda (um filtro notch de FM para a banda FM) em vez de baixar o ganho.
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s: o nível do ADC está alto (%.1f dBFS rms) e sobra pouca margem para sinais fortes. Baixe um pouco o ganho.
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s: o ruído do receptor está apenas %.1f dB acima do próprio ADC, por isso os sinais fracos perdem-se. Aumente o ganho.
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s: o ruído do receptor está apenas %.1f dB acima do próprio ADC e o ganho já está no máximo. Adicione um amplificador de baixo ruído (LNA) junto à antena.
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s: o ganho poderia ser cerca de %.0f dB menor sem perder sensibilidade, o que dá mais margem contra sinais fortes.
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s: o piso de ruído está %.0f dB acima do da banda mais calma. Procure uma fonte local de ruído (iluminação LED, fontes comutadas, computadores), afaste a antena dela ou ponha uma ferrite no cabo.
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	Não foi encontrada nenhuma estação %s, embora normalmente haja. Verifique a antena e o cabo; a banda também pode estar vazia na sua zona.
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	A estação %s mais forte está apenas %.0f dB acima do ruído (uma boa antena dá pelo menos %.0f dB). Ponha a antena mais alta ou no exterior, ou adicione um filtro de banda e um LNA.
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	O relógio do rádio está desviado %+.1f ppm. Introduza %+.1f como correção de frequência (ppm) nas definições do rádio.
+The radio's clock is %+.1f ppm off: fine.	O relógio do rádio está desviado %+.1f ppm: está bem.
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	O alcance ADS-B é curto: o avião mais distante estava a %.0f nm (uma antena exterior desimpedida chega a 150 nm ou mais); a direção mais fraca é cerca de %.0f graus. Ponha a antena mais alta, com vista livre para o céu.
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	Nenhum avião em %.0f setores de 10 graus a partir de %.0f graus, enquanto as direções vizinhas chegam longe: algo bloqueia a vista aí (uma parede, uma colina, um edifício).
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	Alcance ADS-B: ainda não há posições suficientes. Use o modo ADS-B durante alguns minutos com a posição da antena definida e execute o relatório de novo.
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	Nada de errado encontrado. O ganho, o piso de ruído e as estações de referência parecem saudáveis.
+Station health report	Relatório da estação
+Gain: %.0f dB	Ganho: %.0f dB
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s: piso de ruído %.1f dBFS por bin, margem do ADC %.1f dB, sinal mais forte %.0f dB acima do piso, nível do ADC %.1f dBFS, corte %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   estações %s encontradas: %d, a mais forte %.0f dB acima do piso
+The numbers are relative to the receiver itself (not calibrated to dBm).	Os números são relativos ao próprio receptor (não calibrados em dBm).
+Station health	Estado da estação
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	Mede o piso de ruído e o nível do ADC em algumas bandas, procura estações FM, DAB e DVB-T e diz o que mudar na antena. O receptor pára durante a medição (cerca de um minuto).
+known carrier MHz (optional)	portadora conhecida MHz (opcional)
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	Uma portadora cuja frequência conhece bem (um piloto ATSC, o farol de uma torre móvel, um sinal horário). O relatório dá daí o erro do relógio do rádio em ppm. Deixe em 0 para saltar.
+Save report...	Guardar relatório...
+Save as JSON...	Guardar como JSON...
+Noise floor	Piso de ruído
+ADC margin	Margem do ADC
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f dB
+none found	nenhuma encontrada
+%s: %d, best %.0f dB	%s: %d, melhor %.0f dB
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	Erro do relógio: %+.2f ppm (%+.0f Hz a %.4f MHz)
+No carrier found at the frequency given	Não foi encontrada nenhuma portadora na frequência indicada
+What to do	O que fazer
+ADS-B range by direction	Alcance ADS-B por direção
+Check station	Verificar estação
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	Piso de ruído, nível do ADC e estações de referência por banda, com conselhos claros sobre ganho, filtros e colocação da antena
+# interference hunter
+Unknown	Desconhecido
+Switching power supply	Fonte chaveada
+LED lamp or driver	Lâmpada LED ou seu driver
+Powerline (PLC)	Rede elétrica (PLC)
+Local oscillator or clock leak	Vazamento de oscilador ou clock
+Cannot open the GPS device or file.	Não foi possível abrir o dispositivo GPS ou o arquivo.
+Waiting for a position fix.	Aguardando uma posição.
+Interference gone	A interferência desapareceu
+The noise floor rose by %.1f dB	O piso de ruído subiu %.1f dB
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	Novo ruído de banda larga %.2f - %.2f MHz, %.0f dB: %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	Novo sinal em %.4f MHz, %.0f dB acima da linha de base: %s
+Demo (simulated sweeps)	Demonstração (varreduras simuladas)
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	Um pente de espúrios precisa de um espaçamento de pelo menos 5 bins para ser distinguido de um sinal largo: bins mais finos mostram espúrios mais próximos
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	Pausa entre varreduras: o monitor pode funcionar por horas com pausas longas; a caminhada precisa de varreduras seguidas
+spur threshold %.0f dB	limiar de espúrios %.0f dB
+floor alert %.0f dB	alerta de piso %.0f dB
+confirm in %d sweeps	confirmar em %d varreduras
+floor change dB	variação do piso dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	Aprendendo a linha de base: %d de %d varreduras. Deixe a banda como normalmente está.
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	Vigiando. Piso de ruído %.1f dBFS, linha de base %.1f dBFS, %zu sinais conhecidos.
+Press Start. The first sweeps become the baseline: what is normal in this band.	Pressione Iniciar. As primeiras varreduras viram a linha de base: o que é normal nesta banda.
+Learn the baseline again	Aprender a linha de base de novo
+What is there now is normal	O que há agora é normal
+Adds the interference that has been reported to the baseline, so it raises no more alerts	Adiciona a interferência notificada à linha de base, para que não gere mais alertas
+Save the alerts...	Salvar os alertas...
+Save the noise floor log...	Salvar o registro do piso de ruído...
+Interference now	Interferência atual
+Likely source	Fonte provável
+To MHz	Até MHz
+Spacing kHz	Espaçamento kHz
+Alerts	Alertas
+Event	Evento
+dB above baseline	dB acima da linha de base
+new signal	novo sinal
+noise floor up	piso de ruído subiu
+new broadband noise	novo ruído de banda larga
+gone	desapareceu
+no position	sem posição
+the receiver position (set for ADS-B)	a posição do receptor (definida para ADS-B)
+type a position	digitar uma posição
+GPS device or NMEA file	dispositivo GPS ou arquivo NMEA
+latitude	latitude
+longitude	longitude
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	Um GPS serial (por exemplo /dev/cu.usbmodem1101 ou COM3 em um PC; 9600 baud) ou um arquivo de texto com sentenças NMEA
+Reconnect	Reconectar
+Readings are logged at %.5f, %.5f	As leituras são registradas em %.5f, %.5f
+Readings are logged without a position.	As leituras são registradas sem posição.
+%+.1f dB above the quiet level	%+.1f dB acima do nível calmo
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	Pressione Iniciar e ande. O medidor enche quando a interferência está 25 dB acima do lugar mais silencioso até agora.
+Quiet	Silencioso
+Some interference	Alguma interferência
+Loud	Forte
+- getting louder	- aumentando
+- getting quieter	- diminuindo
+- steady	- estável
+strongest spur %.4f MHz, %.0f dB	espúrio mais forte %.4f MHz, %.0f dB
+This is the quiet level	Este é o nível calmo
+Leave out the signals seen now	Excluir os sinais vistos agora
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	As portadoras de radiodifusão e os dispositivos conhecidos ficam fora do medidor: faça isso em um lugar silencioso, antes de caminhar
+Clear the readings	Limpar as leituras
+Save as CSV...	Salvar como CSV...
+Save as GPX...	Salvar como GPX...
+reading	leitura
+dB above the quiet level	dB acima do nível calmo
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	Leitura mais forte: %+.1f dB em %.5f, %.5f (%s)
+Loudest reading: %+.1f dB (%s), no position	Leitura mais forte: %+.1f dB (%s), sem posição
+Strongest spur MHz	Espúrio mais forte MHz
+Interference hunter	Caçador de interferências
+Monitor	Monitor
+Walk	Caminhada
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Vigie uma banda em busca de novas interferências, descubra o tipo e encontre-as caminhando com um medidor forte / silencioso
+The watchlist file could not be read:	Não foi possível ler o arquivo das listas de vigilância:
+APRS call signs	Indicativos APRS
+Words in messages	Palavras em mensagens
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Um por linha: um endereço ICAO hexadecimal (4840D6), uma matrícula (A6-EDA) ou um indicativo (KLM1023). Um * no fim corresponde ao início (KLM*). Ouvido por ADS-B, ACARS, VDL2 e HFDL.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Um por linha: um número MMSI, o nome de um navio ou um indicativo. Um * no fim corresponde ao início (2190*). Ouvido por AIS e DSC.
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Um por linha: um indicativo. Sem SSID (LY1ABC) qualquer SSID corresponde; com SSID (LY1ABC-9) apenas esse.
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Uma por linha: uma frequência em MHz (162.025), com unidade (162025 kHz) ou uma faixa (144-146). Conta tudo o que for decodificado nela.
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Uma por linha: uma palavra ou frase (sem distinguir maiúsculas). Um * no fim corresponde a inícios de palavra (fire*). Procurado em pagers, ACARS, APRS e outros textos decodificados.
+New list...	Nova lista...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	Crie uma lista à esquerda: aeronaves, navios, indicativos APRS, frequências ou palavras. O OnAir avisa quando algo dela for ouvido.
+On	Ativa
+Tolerance (kHz)	Tolerância (kHz)
+entries	entradas
+Delete list	Excluir lista
+Desktop notification	Notificação na área de trabalho
+Sound (follows Mute)	Som (respeita Silenciar)
+WAV file, empty = three beeps	Arquivo WAV, vazio = três bipes
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	Os alertas push vão para um serviço à sua escolha, com o endereço e o token que você informar. Ficam guardados na sua pasta de dados e nunca são gravados em um registro.
+optional	opcional
+optional, sent as a Bearer token	opcional, enviado como token Bearer
+Send a test alert	Enviar um alerta de teste
+Most alerts per hour (0 = no limit)	Máximo de alertas por hora (0 = sem limite)
+Same station again after (minutes)	A mesma estação de novo após (minutos)
+Quiet hours (no alerts, still listed in the history)	Horas de silêncio (sem alertas, continuam no histórico)
+From	De
+Until	Até
+Local time of this computer.	Hora local deste computador.
+alerts sent	alertas enviados
+Heard	Ouvido
+What happened	O que aconteceu
+held back: quiet hours	retido: horas de silêncio
+held back: rate limit	retido: limite atingido
+Watchlists	Listas de vigilância
+Watch for these	Vigiar estes
+Lists	Listas
+Watchlists...	Listas de vigilância...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alertas quando aeronaves, navios, indicativos, frequências ou palavras da lista são ouvidos: notificação, som, ntfy, Telegram ou webhook

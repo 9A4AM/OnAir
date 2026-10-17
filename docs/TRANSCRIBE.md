@@ -53,6 +53,19 @@ Search the text (all words must be found), filter by frequency, aircraft (callsi
 channel name or the text). Click a line to copy it. **Export TXT / SRT / JSON / CSV** save the lines shown (SRT times are offsets from the first line;
 CSV opens in Excel as UTF-8). **Copy all shown** puts the text on the clipboard.
 
+## Live translation (optional)
+
+With a **multilingual** model (tiny, base or small without `.en`) tick **Translate to English** in the Transcripts settings. Speech that is not English is
+transcribed in its own language and then translated to English by the same model (whisper's "translate" task), offline. The Transcripts window and the
+aircraft voice log show the original and the English line together; the detected language is stored with each entry, and the TXT, SRT (a second
+`[EN]` line per cue), JSON and CSV (columns `language`, `text`, `translation`) exports carry both. Search also looks in the translation.
+
+- It is a second pass over each foreign-language transmission, so it costs about 1.5 times the processor time. English speech is not translated.
+  **Performance guard:** when the engine's average speed is already slower than 0.8 x real time, the translation pass is skipped (the original is still
+  kept) and the skip is counted.
+- English-only models ignore the option.
+- **Out of scope:** translation into languages other than English. Nothing is ever sent to a cloud service.
+
 ## Sharing to the public map (optional)
 
 In the **Server** menu, once sending to the map is on: **Also share transcripts of aircraft radio calls (text becomes public on the map)**, **off by

@@ -294,13 +294,34 @@ void Transcriber::process(Job& j) {
     if (be->englishOnly()) so.language = "en";
     const auto t0 = std::chrono::steady_clock::now();
     SpeechResult r = be->transcribe(j.seg.pcm16k.data(), j.seg.pcm16k.size(), so);
-    const double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    const double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();   // the guard looks at the first pass only
+    // live translation: a second pass in the "translate" task, only for foreign speech, and not when the engine is already too slow
+    std::string translation;
+    bool wantTr = false, trSkipped = false;
+    if (cfg.translate && !be->englishOnly() && r.ok && so.language != "en" && r.lang != "en") {
+        double rtf;
+        { std::lock_guard<std::mutex> lk(mu_); rtf = st_.avgRtf; }
+        if (rtf > cfg.translateMaxRtf) trSkipped = true;
+        else wantTr = true;
+    }
     const double audioSec = (double)j.seg.pcm16k.size() / 16000.0;
     std::string text = r.text;
     std::string why = r.ok ? filterHallucination(text, r, j.seg.durSec, cfg.filter) : "error";
+    if (wantTr && why.empty()) {
+        SpeechOptions to = so;
+        to.translate = true;
+        if (to.language == "auto" && !r.lang.empty()) to.language = r.lang;   // no second detection
+        SpeechResult tr = be->transcribe(j.seg.pcm16k.data(), j.seg.pcm16k.size(), to);
+        if (tr.ok) {
+            std::string t2 = tr.text;
+            if (filterHallucination(t2, tr, j.seg.durSec, cfg.filter).empty()) translation = t2;
+        }
+    }
     {
         std::lock_guard<std::mutex> lk(mu_);
         st_.done++;
+        if (!translation.empty()) st_.translated++;
+        if (trSkipped) st_.translateSkipped++;
         if (audioSec > 0) {
             st_.lastRtf = el / audioSec;
             st_.avgRtf = st_.avgRtf == 0 ? st_.lastRtf : st_.avgRtf * 0.8 + st_.lastRtf * 0.2;
@@ -318,6 +339,8 @@ void Transcriber::process(Job& j) {
     e.channel = j.src.channel;
     e.durSec = j.seg.durSec;
     e.text = text;
+    e.lang = r.lang.empty() && so.language != "auto" ? so.language : r.lang;
+    e.translation = translation;
     e.confidence = r.confidence;
     e.turn = j.turn;
     std::function<std::string(const CallsignHit&)> res;

@@ -1,4 +1,5 @@
 // application state: preferences, device list, bandwidth, ingesting spectrum and receiver telemetry, channel list
+#include "../rooms/rooms.h"
 #include "../app.h"
 #include "../clips/clips_ui.h"
 #include <cstring>
@@ -377,6 +378,7 @@ void ingestSpectrum(App& a) {
     if (a.holdDecay > 0) for (size_t i = 0; i < n; i++) pk[i] = std::max(pk[i] - fall, in[i]);
     else for (size_t i = 0; i < n; i++) pk[i] = std::max(pk[i], in[i]);
     if (a.wf.offer(f.dbfs, now)) a.wf.stamp(now);
+    roomsFeedRow(f.dbfs, a.wf.minDb, a.wf.maxDb);   // Live rooms (a flag check when not live)
     clipsui::feed(f.dbfs);   // radio clips: the retroactive history
     if (a.wf.autoTrack && !a.wf.paused && now - a.wf.trackT > 0.25) { a.wf.trackT = now; a.wf.fitRange(a.smooth, false); }
 }
@@ -399,7 +401,7 @@ void setDbmOffset(const App& a, float db) {
 void ingestRx(App& a) {
     double now = glfwGetTime();
     if (a.engine.running() && now - a.tsT > 0.25) {
-        a.ts = a.engine.tsSnapshot(); a.bb = a.engine.bbStats(); a.tsT = now;
+        a.ts = a.engine.tsSnapshot(); tvRecOverrideTs(a); a.bb = a.engine.bbStats(); a.tsT = now;
         if (a.engine.multiChannelActive()) a.mtvSvc = a.engine.multiServices(); else a.mtvSvc.clear();
     }
     RxTelemetry t;

@@ -226,17 +226,22 @@ void sidebar(App& a) {
         };
         tool("Passes", a.passesOpen, "Satellite passes and automatic tuning");
         tool("Direction finder", a.dfOpen, N_("Bearing and position of a transmitter from an antenna array such as the KrakenSDR"));
+        tool("Interference hunter", a.rfiOpen, N_("Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter"));
+        tool("Passive radar", a.passiveRadarOpen, N_("Aircraft from the echoes of a broadcast transmitter, with two coherent channels"));
         tool("Images", a.galleryOpen, "The pictures the receivers have decoded");
         tool("Data feeds...", a.feedsOpen, "Send decoded data to other programs and services");
         tool("Messages...", a.msgdbOpen, N_("Every decoded message in one searchable database, with filters and export"));
         tool("Protocol lab...", a.protolabOpen, N_("Work out an unknown digital signal: modulation, baud rate, sync word, CRC and fields, with an export"));
+        tool("Watchlists...", a.watchlistOpen, N_("Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook"));
         tool("Automations...", a.automationOpen, N_("Rules and scripts: when something is decoded, notify, record, tune or call a webhook"));
+        tool("Plugins...", a.pluginsOpen, N_("Add decoders and actions without rebuilding OnAir: install, enable and set up plugins"));
         tool("Memory...", a.memoryOpen, "The frequencies you keep, with mode and settings (Ctrl+M)");
         tool("Frequencies...", a.freqOpen, "Known frequencies of every mode (Ctrl+Shift+F)");
         tool("Transmit...", txViewFlag(), N_("Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission."));
         tool("Map", a.mapOpen, "A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location");
         tool("Antenna rotator...", a.rotatorOpen, "Connect a GS-232-compatible rotator (serial or TCP), set azimuth and elevation");
         tool("Sweep scanner", a.sweepOpen, N_("Fast wideband sweep with a noise-floor measurement, signal log and waterfall"));
+        tool("Station health", a.stationHealthOpen, N_("Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement"));
         tool("Scanner (highly experimental)", a.scannerOpen, "HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity");
         ImGui::Separator();
         themeChoice(a, false);
@@ -385,11 +390,15 @@ static void viewMenu(App& a) {
         ImGui::Separator();
         if (ImGui::MenuItem(tr("Passes"), nullptr, &a.passesOpen)) {}
         ImGui::MenuItem(tr("Direction finder"), nullptr, &a.dfOpen);
+        ImGui::MenuItem(tr("Interference hunter"), nullptr, &a.rfiOpen);
+        ImGui::MenuItem(tr("Passive radar"), nullptr, &a.passiveRadarOpen);
         ImGui::MenuItem(tr("Images"), nullptr, &a.galleryOpen);
         ImGui::MenuItem(tr("Data feeds..."), nullptr, &a.feedsOpen);
         ImGui::MenuItem(tr("Messages..."), nullptr, &a.msgdbOpen);
         ImGui::MenuItem(tr("Protocol lab..."), nullptr, &a.protolabOpen);
+        ImGui::MenuItem(tr("Watchlists..."), nullptr, &a.watchlistOpen);
         ImGui::MenuItem(tr("Automations..."), nullptr, &a.automationOpen);
+        ImGui::MenuItem(tr("Plugins..."), nullptr, &a.pluginsOpen);
         ImGui::MenuItem(tr("Memory..."), "Ctrl+M", &a.memoryOpen);
         ImGui::MenuItem(tr("Frequencies..."), "Ctrl+Shift+F", &a.freqOpen);
         if (ImGui::MenuItem(tr("Show Frequencies as a tab"), nullptr, a.freqTab)) freqdbTabToggle(a);
@@ -397,6 +406,7 @@ static void viewMenu(App& a) {
         ImGui::MenuItem(tr("Map"), nullptr, &a.mapOpen);
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location"));
         if (ImGui::MenuItem(tr("Sweep scanner"), nullptr, &a.sweepOpen)) {}
+        if (ImGui::MenuItem(tr("Station health"), nullptr, &a.stationHealthOpen)) {}
         if (ImGui::MenuItem(tr("Scanner (highly experimental)"), nullptr, &a.scannerOpen)) {}
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity"));
         ImGui::MenuItem(tr("Antenna rotator..."), nullptr, &a.rotatorOpen);

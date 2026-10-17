@@ -82,6 +82,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     srcRate_ = src_->sampleRate();
     rate_ = srcRate_;
     live_ = src_->realtimeHardware();
+    if (tmSeconds_ > 0 && dev.kind != DeviceInfo::File) tm_.configure(tmSeconds_, srcRate_, tmDecim_, tmBudgetMB_);   // the time machine (time_machine.h)
     // FT8 / WSPR slots: a live radio follows the system clock; a recording or the test signal starts anywhere in a slot, so the
     // slots are found from the signals
     hfdig().ftx().setSlotSearch(!live_.load());
@@ -483,7 +484,7 @@ void Engine::checkRateAndResetState(const DeviceInfo& dev, const TuneSettings& t
         unpack_ = BbUnpacker();
         tsSnap_ = TsSnapshot();
         lastT2Frame_ = -1;
-        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); ttx_.feedTs(pkt); dvbsub_.feedTs(pkt); frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
+        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); if (!playerExternal_) { ttx_.feedTs(pkt); dvbsub_.feedTs(pkt); } frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
     }
     rx_.setPlpCallback([this](const PlpResult& r) { if (plpDump_) plpDump_(r); onPlp(r); });
     {   // DVB-T2 / DVB-T, ATSC and DAB at a rate their receiver cannot use (the telemetry test that stood here never fired: the receiver

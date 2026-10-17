@@ -271,7 +271,10 @@ struct App {
     bool creditsOpen = false;   // the Credits window (Help menu, the "by: ..." button)
     bool galleryOpen = false;           // the picture gallery (View > Images)
     bool dfOpen = false;                // the direction finder window (View > Direction finder; app/df)
+    bool rfiOpen = false;               // the interference hunter window (View > Interference hunter; app/rfi)
+    bool passiveRadarOpen = false;      // the passive radar window (View > Passive radar; app/radar)
     bool passesOpen = false;            // the satellite pass planner window (View > Passes)
+    bool stationHealthOpen = false;     // the station health report window (View > Station health; app/panels/station_health_ui.cpp)
     bool sweepOpen = false;             // the sweep scanner window (View > Sweep scanner)
     bool scannerOpen = false;           // the scanner window (View > Scanner, highly experimental)
     bool memoryOpen = false;            // the Memory window (View > Memory, Ctrl+M; app/memory)
@@ -384,14 +387,17 @@ struct App {
     bool discordOn = false, discordFreq = true;   // View > Show in Discord (opt-in Rich Presence, discord_rpc.cpp) and its "Show the frequency"
     bool mapSend = false, mapConsent = false;     // Server > Send data to map server (opt-in; consent once)
     bool mapVoice = false;                        // Server > also share transcripts of airband radio calls (public text; own choice, off until chosen)
+    bool mapJam = false;                          // Server > also share GPS interference cells (counts per 0.5 degree cell, no aircraft ids); off until chosen
     bool mapMsgs = false;                         // Server > also share interesting ACARS messages (free text becomes public); off until chosen
     std::string mapDeclinedVersion;               // ONAIR_VERSION when "No, do not ask again" was chosen; another version asks again
     bool mapDeclined = false;                     // the start-up question was answered "No, do not ask again" (the Server menu still works)
     std::string mapStationId;                     // client id for /ingest, generated once
     std::string mapServer;                        // empty: https://map.on-air.dev (a local worker URL for developers)
     bool feedsOpen = false;   // View > Data feeds: the window (feeds_ui.cpp)
+    bool watchlistOpen = false;    // View > Watchlists: alerts when listed aircraft, ships, call signs, frequencies or words are heard (watchlist_ui.cpp)
     bool msgdbOpen = false;        // View > Messages: the decoded-message database (msgdb_ui.cpp)
     bool protolabOpen = false;     // View > Protocol lab: reverse-engineering workbench for unknown signals (protolab_ui.cpp)
+    bool pluginsOpen = false;      // View > Plugins: the plugin manager (plugin/plugin_app.cpp)
     bool automationOpen = false;   // View > Automations: rules and scripts (automation_ui.cpp)
     dect2::FeedConfig feeds;  // the data feeds out (all off by default), saved with the preferences
     dect2::ShareConfig share; // "Share my radio": the rtl_tcp server (off by default; feeds_ui.cpp), saved with the preferences
@@ -657,6 +663,7 @@ void setUiLanguage(App& a, const std::string& code);   // empty: the system's la
 extern bool gTightTabs;   // the tabs of mainTabs() get less padding (a narrow pane)
 void toggleFullscreen();
 void handleFullscreenHotkeys();          // F11 and Alt+Enter; ignored while a text field has the keyboard
+std::string adsbJamBody(const std::string& station);   // adsb_ui.cpp: the POST /jam body of the GPS interference cells ("" when there is nothing to share)
 bool adsbFullMap(App& a, ImVec2 disp);           // adsb_ui.cpp: the ADS-B map or radar over the whole window when it is popped out
 void receiverLocation(double& lat, double& lon);  // adsb_ui.cpp: the one receiver position (the ADS-B antenna position)
 bool receiverLocationSet();                        // the user has set it (else it is a placeholder)
@@ -683,6 +690,8 @@ std::string mapSendDiagnosticsBlock(const App& a);  // map.on-air.dev ingest sta
 void passesDevTle(const std::string& path);       // dev (--tle): TLEs from a file, as if pasted
 std::vector<std::pair<std::string, double>> passesGlobalstarDoppler(double unixSec, double freqHz);   // passes_ui.cpp: Globalstar satellites above the horizon and their Doppler (TLEs from the planner)
 struct DfMapLine { double lat = 0, lon = 0, bearing = 0, sigma = 5, conf = 0, freqHz = 0, ageSec = 0; };
+void rfiWindow(App& a);                             // rfi_ui.cpp: the interference hunter window (a.rfiOpen), every frame
+void passiveRadarWindow(App& a);                    // passive_ui.cpp: the passive radar window (a.passiveRadarOpen), every frame
 void dfWindow(App& a);                              // df_ui.cpp: the direction finder window (a.dfOpen), every frame
 bool dfMapLine(const App& a, DfMapLine& out);       // df_ui.cpp: the current bearing as a map line, only when the user chose to share it and it is fresh and confident
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
@@ -698,6 +707,7 @@ void memoryToolbarButton(App& a);                  // memory_ui.cpp: the same qu
 void memoryMenu(App& a);                           // memory_ui.cpp: the "M" menu of the menu bar: open, store, the favourites and the ten most recent
 double generalListenHz(const App& a);
 void generalRecallHz(App& a, double hz);          // general_ui.cpp: a memory's frequency: the dial on hz, the channel marker back on the dial              // general_ui.cpp: the general receiver's listening frequency (the dial plus its offset)
+void stationHealthWindow(App& a);                  // station_health_ui.cpp: the station and antenna health report (a.stationHealthOpen)
 void sweepWindow(App& a);                          // sweep_ui.cpp: the fast sweep scanner window (a.sweepOpen)
 void scannerWindow(App& a);                        // scanner_ui.cpp: the scanner window (a.scannerOpen) and its scan loop, every frame (HIGHLY EXPERIMENTAL)
 void scannerButton(App& a);                        // a button that opens it (the classic interface's Scan tab)
@@ -797,8 +807,12 @@ void remoteApiSavePrefs(const App& a);
 void remoteApiTick(App& a);          // every frame: runs the commands the API queued for the main thread, publishes the telemetry
 void remoteApiSection(App& a);       // the settings panel (in the Data feeds window)
 void shareTick(App& a);             // feeds_ui.cpp: carries out the frequency / gain commands of the clients of "Share my radio" (when allowed)
+void watchlistWindow(App& a);   // app/watchlist/watchlist_ui.cpp: the Watchlists window (View > Watchlists); also starts the alerts
 void msgdbWindow(App& a);   // msgdb_ui.cpp: the Messages window (View > Messages); also starts the database and its feed
 void protolabWindow(App& a);   // protolab_ui.cpp: the Protocol lab window (View > Protocol lab)
+void pluginFrame(App& a);          // plugin/plugin_app.cpp, every frame: discovery at the first call, starts and stops the running plugin mode, ticks the host
+void pluginShutdown();             // at exit: stops the plugins and removes the crash marker
+void pluginManagerWindow(App& a);  // View > Plugins
 void automationWindow(App& a);   // automation_ui.cpp: the Automations window (View > Automations) and, every frame, the engine's actions that touch the receiver
 extern std::string gAutomationShotPath;   // automation_sink.cpp: a screenshot of the program's own window is saved here after the next frame (then cleared)
 void feedsWindow(App& a);          // feeds_ui.cpp: the "Data feeds" window (View > Data feeds)
@@ -866,11 +880,13 @@ extern float gSwitchWidth;
 // The receiver modes (mode_table.cpp). Adding a mode is one row there.
 // subId: one protocol of a shared receiver (dect2::subModes()), a mode of its own with its own settings, decoder and views
 struct ModeDef { int family; const char* name; int group; ImU32 col; const char* blurb; const char* tip; const char* sub; ImVec4 accent; const char* subId = nullptr; const char* keys = nullptr; };
-extern const ModeDef kModes[];
-extern const int kNumModes;
+constexpr int kModeCapacity = 400;   // the built-in rows and the plugins' (mode_table.cpp)
+extern ModeDef kModes[];
+extern int kNumModes;
+bool addPluginModeRow(int family, const std::string& name, const std::string& blurb, const std::string& sub);   // appends a row in the PLUGINS group; false when the table is full
 struct ModeRange { const ModeDef* b; const ModeDef* e; const ModeDef* begin() const { return b; } const ModeDef* end() const { return e; } };
 inline ModeRange allModes() { return {kModes, kModes + kNumModes}; }   // for (const auto& m : allModes())
-constexpr int kNumGroups = 14;   // the headings of the mode lists (mode_table.cpp); UI only, never saved by number
+constexpr int kNumGroups = 15;   // the headings of the mode lists (mode_table.cpp); UI only, never saved by number
 extern const char* const kGroupNames[kNumGroups];
 extern const ImU32 kGroupCols[kNumGroups];
 // The screens of a mode added after FM (family 6 and up). Each mode has one in its app/<mode>_ui.cpp and modeui.cpp lists them; the shell calls whichever
@@ -1026,6 +1042,16 @@ void drawTtxGrid(ImDrawList* dl, ImFont* f, ImVec2 o, float cw, float ch, const 
 void teletextTab(App& a);
 const EpgEvent* epgCurrent(const App& a, int sid, const EpgEvent** next = nullptr);
 void guideTab(App& a);
+void tvGuideTab(App& a);            // tvrec_ui.cpp: the programme guide grid, search, record / remind
+void tvRecordingsTab(App& a);       // scheduled and finished recordings, recorder settings
+void tvPlaybackBar(App& a);         // timeshift pause / rewind / live and the controls of a recording being played
+void timeMachineLoad(App& a);       // timemachine_ui.cpp: the "Rewind" memory's settings from the preferences (before the first start)
+void timeMachineUi(App& a);         // the button in the diagnostics row and its window
+void timeMachineTick(App& a);       // every frame: the squelch trigger, the end of a save
+bool timeMachineSaveNow(App& a, double postSeconds, std::string& note);   // an automation rule's "Save the rewind"
+void tvRecTick(App& a);             // every frame: the recorder's clock, the schedule, the guide cache
+void tvRecOverrideTs(App& a);       // while a recording plays, a.ts is that stream's service list
+void tvRecShutdown(App& a);         // before the engine goes: finishes the recordings that run
 void playerTab(App& a);
 void rightPanel(App& a);
 void tvTab(App& a);

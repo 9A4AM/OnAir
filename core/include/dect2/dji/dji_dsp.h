@@ -31,7 +31,40 @@ public:
     std::vector<cf32> run(const cf32* in, size_t nIn, double start, size_t nOut) const {
         std::vector<cf32> out(nOut);
         const double step = inRate_ / outRate_;
-        for (size_t m = 0; m < nOut; m++) {
+        // Four outputs per pass: each keeps its own sequential sum (so every result is bit-identical to computing it alone), but the four chains
+        // overlap in the CPU instead of waiting on each other's adds. Outputs whose window leaves the input go through the single path.
+        constexpr int W = 4;
+        struct Pos { const float* h0; const float* h1; long first; float a; };
+        size_t m = 0;
+        while (m < nOut) {
+            Pos ps[W];
+            bool inside = m + W <= nOut;
+            for (int k = 0; k < W && inside; k++) {
+                const double pos = start + (double)(m + (size_t)k) * step;
+                const double fl = std::floor(pos);
+                const long j0 = (long)fl;
+                const double ph = (pos - fl) * kPhases;
+                const int p0 = (int)ph;
+                ps[k].a = (float)(ph - p0);
+                ps[k].h0 = &table_[(size_t)p0 * (size_t)taps_];
+                ps[k].h1 = ps[k].h0 + taps_;
+                ps[k].first = j0 - hw_ + 1;
+                if (ps[k].first < 0 || ps[k].first + taps_ > (long)nIn) inside = false;
+            }
+            if (inside) {
+                float re[W] = {0, 0, 0, 0}, im[W] = {0, 0, 0, 0};
+                const cf32* v[W] = {in + ps[0].first, in + ps[1].first, in + ps[2].first, in + ps[3].first};
+                for (int t = 0; t < taps_; t++) {
+                    for (int k = 0; k < W; k++) {
+                        const float h = ps[k].h0[t] + ps[k].a * (ps[k].h1[t] - ps[k].h0[t]);
+                        const cf32 x = v[k][t];
+                        re[k] += h * x.real(); im[k] += h * x.imag();
+                    }
+                }
+                for (int k = 0; k < W; k++) out[m + (size_t)k] = cf32(re[k], im[k]);
+                m += W;
+                continue;
+            }
             const double pos = start + (double)m * step;
             const double fl = std::floor(pos);
             const long j0 = (long)fl;
@@ -50,6 +83,7 @@ public:
                 re += h * v.real(); im += h * v.imag();
             }
             out[m] = cf32(re, im);
+            m++;
         }
         return out;
     }

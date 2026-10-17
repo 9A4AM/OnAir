@@ -175,7 +175,7 @@ const std::vector<TrigOpt>& triggerOptions() {
 }
 
 const char* const kOpLabels[] = {N_("equals"), N_("is not"), N_("is less than"), N_("is at most"), N_("is more than"), N_("is at least"), N_("contains"), N_("starts with"), N_("ends with"), N_("matches (* ?)"), N_("is one of (a, b, c)"), N_("has a value")};
-const char* const kActLabels[] = {N_("Notification"), N_("Sound alert"), N_("Record IQ"), N_("Record audio"), N_("Tune"), N_("Recall a memory"), N_("Write a CSV log row"), N_("Webhook"), N_("Save a screenshot"), N_("Run a program (advanced)")};
+const char* const kActLabels[] = {N_("Notification"), N_("Sound alert"), N_("Record IQ"), N_("Record audio"), N_("Save the rewind"), N_("Tune"), N_("Recall a memory"), N_("Write a CSV log row"), N_("Webhook"), N_("Save a screenshot"), N_("Run a program (advanced)")};
 const char* const kPresets[] = {"generic", "discord", "slack", "ntfy", "telegram"};
 const char* const kPresetLabels[] = {N_("Generic JSON"), "Discord", "Slack", "ntfy.sh", "Telegram"};
 
@@ -224,6 +224,7 @@ void defaultsFor(ActionSpec& a) {
     a.p.clear();
     if (a.type == "notify") { a.p["title"] = "{{rule}}"; a.p["body"] = "{{type}}"; }
     else if (a.type == "record_iq" || a.type == "record_audio") a.p["seconds"] = "60";
+    else if (a.type == "save_rewind") a.p["seconds"] = "10";
     else if (a.type == "log") a.p["file"] = "automation";
     else if (a.type == "webhook") { a.p["preset"] = "generic"; a.p["url"] = "https://"; }
     else if (a.type == "tune") a.p["freq_mhz"] = "100.0";
@@ -245,6 +246,7 @@ void editAction(Edit& e, Rule& r, size_t idx, App& root) {
     if (t == "notify") { editParam(e, a, "title", N_("Title")); editParam(e, a, "body", N_("Text")); }
     else if (t == "sound") editParam(e, a, "file", N_("WAV file (empty: beeps)"));
     else if (t == "record_iq" || t == "record_audio") editParam(e, a, "seconds", N_("Seconds"), 90);
+    else if (t == "save_rewind") editParam(e, a, "seconds", N_("Seconds to keep after the event"), 90);
     else if (t == "tune") { editParam(e, a, "freq_mhz", N_("Frequency, MHz"), 120); editParam(e, a, "mode", N_("Mode id (optional)"), 160); }
     else if (t == "memory") editParam(e, a, "name", N_("Memory name"));
     else if (t == "log") { editParam(e, a, "file", N_("File name"), 200); editParam(e, a, "row", N_("Columns (optional)")); }
@@ -505,7 +507,7 @@ void scriptEditor(Item& it) {
     if (ImGui::SmallButton(tr("What can a script do?"))) ImGui::OpenPopup("scripthelp");
     if (ImGui::BeginPopup("scripthelp")) {
         ImGui::PushTextWrapPos(560 * gUi);
-        ImGui::TextUnformatted(tr("Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script."));
+        ImGui::TextUnformatted(tr("Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script."));
         ImGui::PopTextWrapPos();
         ImGui::EndPopup();
     }

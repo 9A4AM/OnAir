@@ -47,6 +47,7 @@ void loadState() {
     S.refAltM = d.getD("rxAltM", 0);
     S.map.zoom = (int)d.getI("adsbZoom", 7);
     S.winds = d.getB("adsbWinds", false);
+    S.jamLayer = d.getB("adsbGpsJam", false);
     S.units.sys = d.getI("adsbUnits", 0) == 1 ? dect2::adsbu::System::Metric : dect2::adsbu::System::Aviation;
     S.units.spd = d.getI("adsbSpeedUnit", 0) == 1 ? dect2::adsbu::Speed::MS : dect2::adsbu::Speed::KmH;
     S.map.lat = S.refLat; S.map.lon = S.refLon;
@@ -135,6 +136,11 @@ void tick(App& a) {
         if (t.dataValid) { S.snr.push_back(t.snrDb); if (S.snr.size() > 240) S.snr.pop_front(); }
         rangeSetStation(S.range, S.refLat, S.refLon);
         for (const auto& ac : t.aircraft) if (ac.hasPos) rangeFeed(S.range, ac.lat, ac.lon);
+        for (const auto& ac : t.aircraft) {   // accuracy reported by the aircraft, for the GPS interference layer (fresh fixes only)
+            if (!ac.hasPos || ac.ground || ac.posAgeSec > 3) continue;
+            dect2::GpsJamObs o; o.icao = ac.icao; o.lat = ac.lat; o.lon = ac.lon; o.timeSec = ImGui::GetTime(); o.nacp = ac.nacp; o.nic = ac.nic; o.sil = ac.sil;
+            S.jam.observe(o);
+        }
     }
 }
 
@@ -339,6 +345,10 @@ void meters(const App& a, std::vector<ModeMeter>& out) {
 }
 
 }  // namespace adsbui
+
+std::string adsbJamBody(const std::string& station) {
+    return dect2::GpsJamGrid::toJson(station, adsbui::S.jam.cells(ImGui::GetTime()));
+}
 
 extern const ModeUi kAdsbUi;
 

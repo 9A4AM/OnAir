@@ -1,0 +1,15 @@
+{
+  "id": "my-plugin",
+  "name": "My plugin",
+  "version": "0.1.0",
+  "author": "Your name",
+  "license": "MIT",
+  "description": "What it does in one or two sentences.",
+  "kind": "mode",
+  "abi_version": 1,
+  "library": {"macos": "my-plugin.dylib", "linux": "my-plugin.so", "windows": "my-plugin.dll"},
+  "permissions": [],
+  "modes": [
+    {"id": "main", "name": "My plugin", "group": "Plugins", "default_frequency_hz": 100000000, "bandwidth_hz": 200000}
+  ]
+}

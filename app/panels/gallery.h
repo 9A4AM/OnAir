@@ -27,6 +27,10 @@ void publishRgb(const std::string& key, const std::string& source, double unixTi
 // A picture file as received (PNG, JPEG, GIF ...): decoded with the system's decoder
 void publishFile(const std::string& key, const std::string& source, double unixTime, const std::vector<uint8_t>& bytes, const Meta& meta = Meta());
 
+// The pass the scheduler is receiving (or just finished): pictures published from aos to validUntil that name no satellite get it, and
+// all of them get "pass hh:mm, max N deg" added to their detail. An empty sat clears it.
+void setPassContext(const std::string& sat, double aos, double maxElDeg, double validUntil);
+
 }  // namespace gallery
 
 void galleryWindow(App& a);   // gallery_ui.cpp: the window (a.galleryOpen), every frame

@@ -277,80 +277,7 @@ const EpgEvent* epgCurrent(const App& a, int sid, const EpgEvent** next) {
     return cur;
 }
 
-void guideTab(App& a) {
-    const int64_t now = utcNowOf(a);
-    if (a.ts.services.empty()) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("waiting for the service list..."); ImGui::PopTextWrapPos(); } return; }
-    size_t total = 0;
-    for (auto& kv : a.epg) total += kv.second.size();
-    if (total == 0) {
-        ImGui::TextWrapped("No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). "
-                           "Some multiplexes send none at all.");
-        { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("clock: %s%s", fmtLocal(now, "%a %d %b %H:%M").c_str(), a.ts.utcNow ? " (from the broadcast time signal)" : " (this computer's clock)"); ImGui::PopTextWrapPos(); }
-        return;
-    }
-    const int playSid = a.engine.player().selected();
-    if (playSid >= 0 && playSid != a.guidePlaySid) {
-        a.guidePlaySid = playSid;
-        if (a.epg.count(playSid)) { a.guideSid = playSid; a.guideEvent = -1; }
-    } else if (a.guideSid < 0 || !a.epg.count(a.guideSid)) {
-        if (playSid >= 0 && a.epg.count(playSid)) a.guideSid = playSid;
-        else if (!a.epg.empty()) a.guideSid = a.epg.begin()->first;
-    }
-    ImGui::BeginChild("gsv", ImVec2(260 * gUi, 0), ImGuiChildFlags_Borders);
-    for (auto& sv : a.ts.services) {
-        auto it = a.epg.find(sv.id);
-        if (it == a.epg.end()) continue;
-        const EpgEvent* nx = nullptr;
-        const EpgEvent* cur = epgCurrent(a, sv.id, &nx);
-        ImGui::PushID(sv.id);
-        if (ImGui::Selectable(sv.name.empty() ? std::to_string(sv.id).c_str() : sv.name.c_str(), a.guideSid == sv.id)) { a.guideSid = sv.id; a.guideEvent = -1; }
-        ImGui::TextDisabled("  %s", cur ? (fmtLocal(cur->start, "%H:%M") + " " + cur->title).c_str() : "-");
-        ImGui::PopID();
-    }
-    ImGui::EndChild();
-    ImGui::SameLine();
-    ImGui::BeginChild("gev", ImVec2(0, 0));
-    const auto& evs = a.epg[a.guideSid];
-    { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%zu events   local time %s", evs.size(), fmtLocal(now, "%a %d %b %H:%M").c_str()); ImGui::PopTextWrapPos(); }
-    const float detailH = 150;
-    ImGui::BeginChild("evlist", ImVec2(0, -detailH), ImGuiChildFlags_Borders);
-    if (ImGui::BeginTable("evt", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
-        ImGui::TableSetupColumn("time", ImGuiTableColumnFlags_WidthFixed, 150);
-        ImGui::TableSetupColumn("length", ImGuiTableColumnFlags_WidthFixed, 60);
-        ImGui::TableSetupColumn("programme");
-        std::string lastDay;
-        for (size_t i = 0; i < evs.size(); i++) {
-            const EpgEvent& e = evs[i];
-            if (e.end() < now - 1800) continue; // hide what ended more than half an hour ago
-            const bool cur = e.start <= now && now < e.end();
-            const std::string day = fmtLocal(e.start, "%a %d %b");
-            if (day != lastDay) { ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::TextColored(pal::heading(), "%s", day.c_str()); lastDay = day; }
-            ImGui::TableNextRow();
-            if (cur) ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, IM_COL32(40, 110, 60, 110));
-            ImGui::TableNextColumn();
-            char lbl[64]; snprintf(lbl, sizeof lbl, "%s - %s##%d", fmtLocal(e.start, "%H:%M").c_str(), fmtLocal(e.end(), "%H:%M").c_str(), e.eventId);
-            if (ImGui::Selectable(lbl, a.guideEvent == e.eventId, ImGuiSelectableFlags_SpanAllColumns)) a.guideEvent = e.eventId;
-            ImGui::TableNextColumn(); ImGui::Text("%d min", (e.duration + 30) / 60);
-            ImGui::TableNextColumn();
-            if (cur) { const float f = (float)(now - e.start) / (float)e.duration; ImGui::Text("%s", e.title.c_str()); ImGui::SameLine(); ImGui::TextDisabled("  now, %.0f%%", f * 100); }
-            else ImGui::TextUnformatted(e.title.c_str());
-        }
-        ImGui::EndTable();
-    }
-    ImGui::EndChild();
-    ImGui::BeginChild("evdet", ImVec2(0, 0), ImGuiChildFlags_Borders);
-    const EpgEvent* sel = nullptr;
-    for (auto& e : evs) if (e.eventId == a.guideEvent) sel = &e;
-    if (!sel) sel = epgCurrent(a, a.guideSid);
-    if (sel) {
-        ImGui::TextColored(ImVec4(0.95f, 0.85f, 0.4f, 1), "%s", sel->title.c_str());
-        { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s - %s  (%d min)%s%s", fmtLocal(sel->start, "%a %H:%M").c_str(), fmtLocal(sel->end(), "%H:%M").c_str(), (sel->duration + 30) / 60, genreName(sel->genre)[0] ? "   " : "", genreName(sel->genre)); ImGui::PopTextWrapPos(); }
-        if (!sel->text.empty()) ImGui::TextWrapped("%s", sel->text.c_str());
-        if (!sel->extended.empty()) ImGui::TextWrapped("%s", sel->extended.c_str());
-    } else { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("select a programme"); ImGui::PopTextWrapPos(); }
-    ImGui::EndChild();
-    ImGui::EndChild();
-}
+void guideTab(App& a) { tvGuideTab(a); }
 
 // Undecodable video (AVS+ ...): the picture can still be watched by saving the stream or sending it as UDP to an external player
 static void externalPlayerBox(App& a) {
@@ -502,6 +429,8 @@ void playerTab(App& a) {
     subsControls(a);
     flowBreak();
     tvRecordRow(a);
+    flowBreak();
+    tvPlaybackBar(a);
     flowBreak();
     if (pl.selected() >= 0) {   // what is on now, and what comes next
         const EpgEvent* nx = nullptr;
@@ -789,9 +718,10 @@ void rightPanel(App& a) {
 }
 
 void tvTab(App& a) {
-    subNav("tv", a.subTv, {"Player", "Guide", "Teletext"});
+    subNav("tv", a.subTv, {"Player", "Guide", "Recordings", "Teletext"});
     if (a.subTv == 0) playerTab(a);
     else if (a.subTv == 1) guideTab(a);
+    else if (a.subTv == 2) tvRecordingsTab(a);
     else teletextTab(a);
 }
 

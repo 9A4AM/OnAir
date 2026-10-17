@@ -58,6 +58,7 @@ extern const ModeUi kGeneralUi;
 extern const ModeUi kTimeUi;
 extern const ModeUi kCubesatUi;
 extern const ModeUi kGlobalstarUi;
+extern const ModeUi kPluginUi;
 extern const ModeUi kVdesUi;
 extern const ModeUi kZigbeeUi;
 extern const ModeUi kFlarmUi;
@@ -167,7 +168,7 @@ const ModeUi* modeUi(int family) {
     case 57: return &kNrUi;
     case 60: return &kGoesUi;
     case 64: return &kHrptUi;
-    default: return nullptr;
+    default: return family >= 999 ? &kPluginUi : nullptr;   // the Plugins row and every plugin mode (plugin/plugin_app.cpp)
     }
 }
 

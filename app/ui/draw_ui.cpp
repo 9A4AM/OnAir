@@ -49,6 +49,8 @@ static void tickReceiver(App& a) {
         a.epgT = glfwGetTime();
     }
     if (!a.engine.running()) { a.epg.clear(); }
+    tvRecTick(a);
+    timeMachineTick(a);
     gainControl(a);
     followBandwidth(a);
     feedDirection(a);
@@ -174,9 +176,12 @@ static void classicShell(App& a, ImVec2 disp) {
 static void floatingWindows(App& a, ImVec2 disp) {
     passesWindow(a);
     dfWindow(a);
+    passiveRadarWindow(a);
+    rfiWindow(a);
     galleryWindow(a);
     scannerWindow(a);
     sweepWindow(a);
+    stationHealthWindow(a);
     memoryWindow(a);
     freqdbWindow(a);
     // the "add a radio" windows: here, not with the source controls, so they open whichever layout is up and from the setup wizard too
@@ -194,7 +199,10 @@ static void floatingWindows(App& a, ImVec2 disp) {
     feedsWindow(a);
     automationWindow(a);
     protolabWindow(a);
+    pluginFrame(a);
+    pluginManagerWindow(a);
     msgdbWindow(a);
+    watchlistWindow(a);
     txTick(a);
     shareTick(a);
     remoteApiTick(a);

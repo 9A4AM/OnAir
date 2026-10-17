@@ -140,6 +140,8 @@ std::string transcriptToJson(const TranscriptEntry& e) {
     snprintf(b, sizeof b, "\"t\":%lld,\"f\":%.0f,\"d\":%.2f,\"p\":%.3f,\"n\":%d", (long long)e.wall, e.freqHz, e.durSec, (double)e.confidence, e.turn);
     j += b;
     j += ",\"m\":\"" + jesc(e.mode) + "\",\"c\":\"" + jesc(e.channel) + "\",\"x\":\"" + jesc(e.text) + "\"";
+    if (!e.lang.empty()) j += ",\"l\":\"" + jesc(e.lang) + "\"";
+    if (!e.translation.empty()) j += ",\"tr\":\"" + jesc(e.translation) + "\"";
     if (!e.speaker.empty()) j += ",\"s\":\"" + jesc(e.speaker) + "\"";
     if (!e.callsign.empty()) j += ",\"cs\":\"" + jesc(e.callsign) + "\"";
     if (!e.reg.empty()) j += ",\"r\":\"" + jesc(e.reg) + "\"";
@@ -163,6 +165,8 @@ bool transcriptFromJson(const std::string& line, TranscriptEntry& e) {
         else if (k == "m") e.mode = v;
         else if (k == "c") e.channel = v;
         else if (k == "x") { e.text = v; haveX = true; }
+        else if (k == "l") e.lang = v;
+        else if (k == "tr") e.translation = v;
         else if (k == "s") e.speaker = v;
         else if (k == "cs") e.callsign = v;
         else if (k == "r") e.reg = v;
@@ -187,7 +191,7 @@ bool TranscriptStore::matches(const TranscriptEntry& e, const TranscriptFilter& 
         if (lower(e.channel).find(ap) == std::string::npos && lower(e.text).find(ap) == std::string::npos) return false;
     }
     if (!f.query.empty()) {
-        const std::string hay = lower(e.text + " " + e.channel + " " + e.callsign + " " + e.reg + " " + e.aircraft);
+        const std::string hay = lower(e.text + " " + e.translation + " " + e.channel + " " + e.callsign + " " + e.reg + " " + e.aircraft);
         std::istringstream in(lower(f.query));
         std::string w;
         while (in >> w) if (hay.find(w) == std::string::npos) return false;
@@ -318,7 +322,9 @@ std::string transcriptsTxt(std::vector<TranscriptEntry> v) {
         if (!e.speaker.empty()) o += "  " + e.speaker;
         if (!e.callsign.empty()) o += "  " + e.callsign;
         else if (!e.reg.empty()) o += "  " + e.reg;
-        o += "\n" + e.text + "\n\n";
+        o += "\n" + e.text + "\n";
+        if (!e.translation.empty()) o += "(" + (e.lang.empty() ? std::string("EN") : e.lang + " > EN") + ") " + e.translation + "\n";
+        o += "\n";
     }
     return o;
 }
@@ -331,7 +337,7 @@ std::string transcriptsSrt(std::vector<TranscriptEntry> v) {
     int n = 0;
     for (const auto& e : v) {
         const double a = (double)(e.wall - t0), b = a + std::max(1.0, e.durSec);
-        o += std::to_string(++n) + "\n" + clock(a, true) + " --> " + clock(b, true) + "\n[" + label(e) + "] " + e.text + "\n\n";
+        o += std::to_string(++n) + "\n" + clock(a, true) + " --> " + clock(b, true) + "\n[" + label(e) + "] " + e.text + "\n" + (e.translation.empty() ? std::string() : "[EN] " + e.translation + "\n") + "\n";
     }
     return o;
 }
@@ -346,13 +352,13 @@ std::string transcriptsJson(std::vector<TranscriptEntry> v) {
 
 std::string transcriptsCsv(std::vector<TranscriptEntry> v) {
     oldestFirst(v);
-    std::string o = "time_utc,frequency_mhz,mode,channel,duration_s,confidence,speaker,callsign,registration,aircraft,text\r\n";
+    std::string o = "time_utc,frequency_mhz,mode,channel,duration_s,confidence,speaker,callsign,registration,aircraft,language,text,translation\r\n";
     char b[96];
     for (const auto& e : v) {
         snprintf(b, sizeof b, ",%.4f,", e.freqHz / 1e6);
         o += stamp(e.wall) + b + csvField(e.mode) + "," + csvField(e.channel);
         snprintf(b, sizeof b, ",%.2f,%.2f,", e.durSec, (double)e.confidence);
-        o += b + csvField(e.speaker) + "," + csvField(e.callsign) + "," + csvField(e.reg) + "," + csvField(e.aircraft) + "," + csvField(e.text) + "\r\n";
+        o += b + csvField(e.speaker) + "," + csvField(e.callsign) + "," + csvField(e.reg) + "," + csvField(e.aircraft) + "," + csvField(e.lang) + "," + csvField(e.text) + "," + csvField(e.translation) + "\r\n";
     }
     return o;
 }

@@ -193,6 +193,14 @@ std::string fsafe(std::string s) { for (char& c : s) if (!isalnum((unsigned char
 
 namespace gallery {
 
+namespace {
+struct PassCtx { std::string sat; double aos = 0, maxEl = 0, until = 0; } gPassCtx;
+}
+
+void setPassContext(const std::string& sat, double aos, double maxElDeg, double validUntil) {
+    gPassCtx = PassCtx{sat, aos, maxElDeg, validUntil};
+}
+
 void publish(const std::string& key, const std::string& source, double unixTime, int w, int h, const uint8_t* rgba, const Meta& meta) {
     if (w <= 0 || h <= 0 || !rgba) return;
     load();
@@ -203,6 +211,14 @@ void publish(const std::string& key, const std::string& source, double unixTime,
     if (id.empty()) { static int n = 0; id = fileStamp(unixTime) + "-" + fsafe(source) + "-" + std::to_string(n++ % 1000); }
     Item it;
     it.id = id; it.key = key; it.source = source; it.sat = meta.satellite; it.detail = meta.detail; it.time = unixTime; it.w = w; it.h = h;
+    if (!gPassCtx.sat.empty() && unixTime >= gPassCtx.aos - 60 && unixTime <= gPassCtx.until) {   // taken during a scheduled pass
+        if (it.sat.empty()) it.sat = gPassCtx.sat;
+        const std::time_t tt = (std::time_t)gPassCtx.aos;
+        std::tm lt = *std::localtime(&tt);
+        char b[64];
+        std::strftime(b, sizeof b, "pass %H:%M", &lt);
+        it.detail += (it.detail.empty() ? "" : ", ") + std::string(b) + ", max " + std::to_string((int)std::lround(gPassCtx.maxEl)) + " deg";
+    }
     const std::string base = S.dir + "/" + id;
     if (!gfx::writePng((base + ".png").c_str(), rgba, w, h)) { S.msg = "could not write " + base + ".png"; return; }
     it.bytes = fileSize(base + ".png");

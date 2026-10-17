@@ -1920,7 +1920,7 @@ Choose what to tell apart in "separately for each" so every thing has its own st
 Columns (optional)	Oszlopok (nem kötelező)
 Confirm this rule...	Szabály megerősítése...
 Confirmed	Megerősítve
-Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Definiáld a function on_event(e) függvényt. e.type, e.mode, e.freq, e.time és az esemény mezői (e.callsign, e.squawk ...).\n\nMűveletek: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nSegédek: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nSzöveg: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Nincs io, os, load, require, pcall és mintaillesztés; szkriptenként 1 millió utasítás, 250 ms és 16 MB.
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Definiáld a function on_event(e) függvényt. e.type, e.mode, e.freq, e.time és az esemény mezői (e.callsign, e.squawk ...).\n\nMűveletek: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nSegédek: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nSzöveg: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Nincs io, os, load, require, pcall és mintaillesztés; szkriptenként 1 millió utasítás, 250 ms és 16 MB.
 Delete...	Törlés...
 Distance, km	Távolság, km
 Does not fire for the sample event:	A mintaesemény nem váltja ki:
@@ -2124,6 +2124,59 @@ Peak dB above floor	Csúcs dB a zajszint felett
 Quietest slots	Legcsendesebb sávok
 From MHz	Innen (MHz)
 Width kHz	Szélesség kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Válassz egy műsort a részletek megtekintéséhez.
+Cancel recording	Felvétel törlése
+Record	Felvétel
+Stop series	Sorozat leállítása
+Record series	Sorozat felvétele
+The broadcaster sends no series identifier for this programme.	A műsorszolgáltató nem küld sorozatazonosítót ehhez a műsorhoz.
+No reminder	Nincs emlékeztető
+Remind me	Emlékeztess
+Watch	Megnézem
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	Nincs elég tuner: ez egy másik multiplexen zajló felvétellel ütközik, ezért nem lesz rögzítve.
+No description broadcast.	Nincs leírás a adásban.
+Waiting for the service list...	Várakozás a szolgáltatáslistára...
+Search title or description	Cím vagy leírás keresése
+This multiplex only	Csak ez a multiplex
+time zone:	időzóna:
+this computer	ez a számítógép
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Még nem érkezett műsorinformáció. A műsorszolgáltatók az EIT táblákban küldik, amelyek néhány másodpercenként (most/következő) vagy néhány percenként (műsorrend) ismétlődnek. Egyes multiplexek egyáltalán nem küldenek.
+Opening the recording...	Felvétel megnyitása...
+Pause (timeshift)	Szünet (időeltolás)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Megállítja az élő adást, és tovább rögzíti a lemezre, így folytathatod vagy visszatekerhetsz.
+buffered	pufferelve
+Timeshift	Időeltolás
+Play	Lejátszás
+behind live	az élő adás mögött
+Live	Élő
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	A felvételek csak akkor futnak, ha az OnAir meg van nyitva és a számítógép ébren van; alvó gép nem rögzít semmit. A kódolt szolgáltatások úgy kerülnek rögzítésre, ahogy megérkeznek, nem lesznek dekódolva. Kizárólag személyes használatra.
+Scheduled	Ütemezett
+recording	rögzít
+conflict	ütközés
+any multiplex	bármely multiplex
+series	sorozat
+waiting for the tuner	várakozik a tunerre
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Nincs ütemezve semmi. Válassz műsort az útmutatóban, vagy adj hozzá kézi felvételt lent.
+Manual recording	Kézi felvétel
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Ekkor kezdődik (ma, vagy holnap, ha már elmúlt), ráhagyás nélkül.
+Recorded	Felvett
+No recordings yet.	Még nincs felvétel.
+Export	Exportálás
+Delete this recording and its subtitle files?	Törlöd ezt a felvételt és a feliratfájljait?
+free	szabad
+Recorder settings	Felvevő beállításai
+Folder	Mappa
+Start earlier (s)	Korábbi kezdés (mp)
+End later (s)	Későbbi befejezés (mp)
+Tuners	Tunerek
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Hány különböző multiplex fogható egyszerre. Ugyanazon multiplex szolgáltatásai mindig együtt rögzíthetők.
+Keep free (GB)	Szabadon hagyandó (GB)
+Stop after signal loss (s, 0 = never)	Leállítás jelvesztés után (mp, 0 = soha)
+Save teletext subtitles next to recordings (.srt, .vtt)	Teletext feliratok mentése a felvételek mellé (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Ütemezett felvétel indulásakor az adott csatornára hangolás
+Timeshift buffer on disk	Időeltolás puffer a lemezen
+minutes	perc
 Propagation	Terjedés
 open	nyitott
 marginal	határeset
@@ -2137,6 +2190,100 @@ Forget the history	Előzmények törlése
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Amit ez a vevő hallott, sávonként: jeladók (NCDXF/IARU, Long Dashes, egybetűs jeladók, vivők) és a HF digitális képernyőn dekódolt FT8 / FT4 / FT2 / WSPR állomások. Egy sáv nyitott, ha az utolsó 30 percben legalább 3 állomást hallottunk. Csak a saját vevő: semmit nem töltünk le, ezért nincs napsugárzási fluxus és K-index.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Az utolsó 30 percben semmi nem hallatszott: indítsd el a HF jeladókat vagy a HF digitális képernyőt, és hagyd futni.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Utolsó 24 óra (UTC), 15 perces cellák, sötétebb: kevesebb állomás
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s ezeket az engedélyeket kéri:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	A bővítmény összeomlása vagy lefagyása ilyenkor csak a segédfolyamatát állítja le. A bővítmény következő indításakor lép érvénybe.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Dekóderek és műveletek hozzáadása az OnAir újrafordítása nélkül: bővítmények telepítése, engedélyezése és beállítása
+Add-ons	Bővítmények
+Allow	Engedélyez
+Asks for	Kéri
+Asks for no permissions.	Nem kér engedélyt.
+Community plugins	Közösségi bővítmények
+Do not allow	Nem engedélyez
+Enabled	Engedélyezve
+Files: read and write its own data folder	Fájlok: olvashatja és írhatja a saját adatmappáját
+Install from file...	Telepítés fájlból...
+Installed	Telepítve
+Kind	Fajta
+Map points	Térképpontok
+Modes (in the mode list, group PLUGINS)	Módok (a módlistában, PLUGINS csoport)
+Network: talk to other computers	Hálózat: kommunikálhat más számítógépekkel
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Nincs telepített bővítmény. Használja a „Telepítés fájlból” gombot, vagy másoljon egy bővítménymappát a bővítmények mappájába. A bővítmény egy .onairplugin fájl.
+Not installed	Nincs telepítve
+Open its folder	Mappájának megnyitása
+PLUGINS	BŐVÍTMÉNYEK
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	Az engedélyek azt jelentik, mit ad át az OnAir a bővítménynek. Az OnAiren belül futó bővítmény ettől még maga is használhatja a rendszert: csak megbízható bővítményt telepítsen, vagy futtassa segédfolyamatban.
+Plugin idle	A bővítmény tétlen
+Plugin log	Bővítménynapló
+Plugin modes run on receiver 1.	A bővítménymódok az 1. vevőn futnak.
+Plugin running	A bővítmény fut
+Plugins	Bővítmények
+Plugins are not available on this receiver.	A bővítmények ezen a vevőn nem érhetők el.
+Plugins...	Bővítmények...
+Programs: start other programs	Programok: más programokat indíthat
+Recording: save audio or IQ	Felvétel: hang vagy IQ mentése
+Refresh	Frissítés
+Results the plugin sent beyond the limits	A bővítmény határon túli eredményei
+Run in a helper process	Futtatás segédfolyamatban
+Safe mode (no plugins)	Biztonságos mód (bővítmények nélkül)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	A biztonságos mód be van kapcsolva: a bővítmények ki vannak kapcsolva. A kilépéshez nyissa meg a Bővítmények módot.
+Safe mode: all plugins are switched off.	Biztonságos mód: minden bővítmény ki van kapcsolva.
+Select a plugin.	Válasszon egy bővítményt.
+Sound: play audio through the program	Hang: hang lejátszása a programon keresztül
+The plugin was switched off after a failure. See its log in the Plugins mode.	A bővítményt hiba után kikapcsoltuk. A naplója a Bővítmények módban látható.
+This plugin is off.	Ez a bővítmény ki van kapcsolva.
+This plugin mode is not installed any more.	Ez a bővítménymód már nincs telepítve.
+Try plugins again	Bővítmények újrapróbálása
+Turn it on	Bekapcsolás
+blocks	blokk
+by	készítő:
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	%d csatorna megjelölve az utolsó spektrumban
+Add spectrum at the target l	Spektrum hozzáadása a cél l értékén
+Az %.1f  El %.1f   site %.3f, %.3f	Az %.1f  El %.1f   hely %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	Égitest               Az     El     átmenet (UTC)  kelte   nyugta
+Calibration / RFI	Kalibrálás / RFI
+Capture cold	Hideg rögzítése
+Capture hot	Meleg rögzítése
+Cassiopeia A	Cassiopeia A
+Clear map	Térkép törlése
+Compute	Számítás
+Custom (RA / Dec)	Egyéni (RA / Dec)
+Cygnus A	Cygnus A
+Elevation of the selected body over the UTC day (hours)	A kiválasztott égitest magassága az UTC nap során (óra)
+Fit lines	Vonalak illesztése
+Flag and interpolate RFI	RFI jelölése és interpolálása
+Galactic position	Galaktikus pozíció
+IAU standard solar motion (off: Schoenrich 2010)	IAU szabványos naptérmozgás (ki: Schoenrich 2010)
+LSR axis	LSR tengely
+Moon	Hold
+No processed spectrum yet.	Még nincs feldolgozott spektrum.
+Nothing logged yet.	Még nincs naplóbejegyzés.
+Open session	Munkamenet megnyitása
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	Irányítsa az antennát minden l galaktikus hosszúságra b = 0 mellett (a Sebesség fülön állítható), integráljon, majd adja hozzá a spektrumot.
+Pointing	Irányítás
+R0 kpc	R0 kpc
+Sagittarius A*	Sagittarius A*
+Save CSV	CSV mentése
+Save FITS	FITS mentése
+Save SigMF text	SigMF szöveg mentése
+Save session	Munkamenet mentése
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	A hely a vevő helye (Nézet > Térkép). Az idő a számítógép órája, UTC.
+Sun	Nap
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	A forgási görbéhez több hosszúságon kell spektrum 0 és 90 (vagy 270 és 360) között.
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	A cél felé: Föld forgása %+.2f, pálya %+.2f, Nap %+.2f; összesen %+.2f km/s (a topocentrikus sebességhez adandó)
+Tsys K	Tsys K
+V0 km/s	V0 km/s
+Velocity	Sebesség
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   vevő %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Y-tényező: rögzítsen egy spektrumot meleg terhelésen (szobahőmérsékletű elnyelő), majd hideg terhelésen (vagy a hideg égen), a hőmérsékleteikkel.
+cold K	hideg K
+fit rms %.3f K	illesztés rms %.3f K
+hot K	meleg K
+no positions yet	még nincs pozíció
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	csúcs K, közép km/s (LSR), FWHM km/s, terület K km/s; egy szigma
+sigma	szigma
+sky + spill K	ég + túlcsordulás K
 # identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
 , %.0f baud	, %.0f baud
 , %s wide	, %s széles
@@ -2209,7 +2356,6 @@ Readings that could fit this packet	Értelmezések, amelyek illhetnek ehhez a cs
 No fields.	Nincsenek mezők.
 C constant, N counter, K check value, E few values, V varying; one letter per byte from the start of the sync word.	C állandó, N számláló, K ellenőrzőérték, E kevés érték, V változó; bájtonként egy betű a szinkronszó elejétől.
 Byte	Bájt
-Kind	Fajta
 Entropy (bits per byte)	Entrópia (bit bájtonként)
 Distinct values	Különböző értékek
 adds %d each packet	csomagonként %d-et ad hozzá
@@ -2244,7 +2390,302 @@ The bit file has one packet per line; tools such as Universal Radio Hacker can o
 Bytes	Bájtok
 Fields	Mezők
 Compare	Összehasonlítás
-Export	Exportálás
 Protocol lab	Protokollabor
 Protocol lab...	Protokollabor...
 Work out an unknown digital signal: modulation, baud rate, sync word, CRC and fields, with an export	Egy ismeretlen digitális jel felépítésének kiderítése: moduláció, baudráta, szinkronszó, CRC és mezők, exporttal
+Orbit from Doppler	Pálya a Doppler-eltolódásból
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	Egy áthaladás alatt követi a követett műhold vivőjét, és a pályáját a Doppler-görbéhez illeszti. Stabil frekvenciareferencia kell hozzá (GPS-szinkronizált vagy jól kalibrált vevő); a vevő órájának hibáját állandó eltolásként illeszti.
+Measure the carrier during tracked passes	Vivő mérése követett áthaladásoknál
+gate +-%.0f kHz	ablak +-%.0f kHz
+How far from the predicted carrier the peak is looked for	Mekkora távolságra keresi a csúcsot az előrejelzett vivőtől
+%d measurements of %s	%d mérés: %s
+Fit orbit	Pálya illesztése
+Save refined TLE	Finomított TLE mentése
+saved in %s	mentve ide: %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	A finomított elemeket külön fájlba írja, a mérésből származtatottként megjelölve; a letöltött TLE-khez nem nyúl
+Use the derived elements for predictions	Származtatott elemek használata az előrejelzéshez
+no measurements yet	még nincs mérés
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	szürke: a letöltött elemek előrejelzése, kék: finomított, zöld: mért, borostyán: a finomított görbe maradéka
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	maradék %.1f Hz -> %.1f Hz (%d felhasználva, %d elvetve); vevőeltolás %+.0f Hz
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	közepes anomália %+.3f fok, közepes mozgás %+.5f ford./nap, inklináció %+.4f fok, RAAN %+.4f fok
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	az előrejelzés becsült időhibája: %.1f s előtte, %.1f s utána (1 szigma)
+Also share GPS interference cells (counts per area, no aircraft)	GPS-zavarási cellák megosztása is (területenkénti számok, repülők nélkül)
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	Az ADS-B vevője körül minden 0,5 fokos négyzetre (kb. 55 km): hány repülőgépet hallott az elmúlt órában, és közülük hány jelentett rossz GPS-pozíciót. Négyzetenként csak ez a két szám megy el, repülőgép-azonosító, nyomvonal vagy az Ön helye soha. A nyilvános térkép GPS-zavarási rétegét táplálja, és jelzés, nem bizonyíték zavarásra. Kikapcsolva, amíg be nem kapcsolja.
+Calibrate...	Kalibrálás...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	A rádió frekvenciahibájának mérése egy FM-adóhoz vagy ismert frekvenciájú vivőhöz képest
+Frequency calibration	Frekvenciakalibrálás
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Megméri, mennyire tér el a rádió órajele egy ismert frekvenciájú jeltől, és beállítja a ppm-korrekciót.
+Not with a converter in front of the radio.	Nem a rádió előtti konverterrel.
+Start the receiver first.	Előbb indítsa el a vevőt.
+FM station (stereo pilot) at the tuned frequency	FM-adó (sztereó pilot) a beállított frekvencián
+Carrier of known frequency (MHz)	Ismert frekvenciájú vivő (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Előbb hangoljon egy erős FM-adóra. Az adók pilotjele nem mindig pontos: ismételje meg két-három adón.
+Ready.	Kész.
+Looking for a reference signal.	Referenciajel keresése.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	Mérés: %+.2f ppm, bizonytalanság %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Kész: %+.2f ppm (bizonytalanság %.2f ppm).
+No usable reference signal was found.	Nem található használható referenciajel.
+Apply %+.2f ppm	%+.2f ppm alkalmazása
+Current setting: %.2f ppm	Jelenlegi beállítás: %.2f ppm
+No measurements of this radio yet.	Ehhez a rádióhoz még nincs mérés.
+History of this radio (ppm)	A rádió előzményei (ppm)
+Drift: %+.3f ppm per minute	Sodródás: %+.3f ppm percenként
+Band from (kHz)	Sáv ettől (kHz)
+Calibrate from two landmarks	Kalibrálás két tereptárgy alapján
+Calibrated.	Kalibrálva.
+Camera snapshot URL (JPEG)	Kamera pillanatkép-URL (JPEG)
+Cannot load the picture.	A kép nem tölthető be.
+Cannot save the snapshot.	A pillanatkép nem menthető.
+Centre azimuth	Középső azimut
+Click the picture to set the column of the selected landmark.	Kattints a képre a kijelölt tereptárgy oszlopának beállításához.
+Demo skyline (no camera)	Demó látkép (kamera nélkül)
+Enable RF camera	RF-kamera bekapcsolása
+Field of view	Látómező
+Heat strength	Hőtérkép erőssége
+No picture.	Nincs kép.
+Normal camera lens	Normál kameraobjektív
+Panorama (equirectangular)	Panoráma (egyenközű hengerleképezés)
+Picture	Kép
+Picture or panorama file	Kép- vagy panorámafájl
+Projection	Vetítés
+RF camera	RF-kamera
+Save snapshot	Pillanatkép mentése
+Snapshot saved: %s	Pillanatkép elmentve: %s
+Sub-bands	Részsávok
+The two landmarks do not fit a picture.	A két tereptárgy nem illik egy képhez.
+Weakest shown	Leggyengébb megjelenítve
+azimuth	azimut
+azimuth only; the picture is just a backdrop	csak azimut; a kép csupán háttér
+column	oszlop
+to (kHz)	eddig (kHz)
+Translate to English	Fordítás angolra
+Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	A más nyelven elhangzó beszédet a program offline angolra is lefordítja, az eredeti mellett. Többnyelvű modellt igényel, és kb. 1,5-szer több processzoridőbe kerül; kimarad, ha a motor nem bírja tartani a lépést. Semmi sem kerül elküldésre. Más nyelvekre fordítás nem érhető el.
+The loaded model is English only: translation needs a multilingual model.	A betöltött modell csak angol: a fordításhoz többnyelvű modell kell.
+Live: stop the room	Élő: a szoba leállítása
+Copy room link	Szobalink másolása
+Host PIN (to moderate on the room page):	Házigazda PIN (a szoba oldalán történő moderáláshoz):
+Go live (Live rooms)...	Élő adás indítása (Élő szobák)...
+Could not create the room	A szobát nem sikerült létrehozni
+Lost the connection to the rooms server	Megszakadt a kapcsolat a szobaszerverrel
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Élő szobák: amíg élő adásban vagy, a szoba linkjével bárki láthatja ennek a vevőnek a vízesésdiagramját, a módot és a beállított frekvenciát, és csevegni tud másokkal. A weben a szobalista a címét is mutatja. Az Élő adás indítása gomb megnyomása előtt semmi nem kerül elküldésre, és a szoba megszűnése után semmi nem marad tárolva. A helyed, a neved és a hang soha nem kerül elküldésre.
+Room title	Szoba címe
+Also show decoded ACARS text in the room (public)	A dekódolt ACARS-szöveg megjelenítése a szobában (nyilvános)
+Needs Server > Send data to map server and Also share interesting ACARS messages.	Szükséges hozzá: Szerver > Adatok küldése a térképszervernek és Az érdekes ACARS-üzenetek megosztása is.
+Go live	Élő adás indítása
+Schedule passes by itself	Átvonulások automatikus ütemezése
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	A bejelölt csoportok átvonulásait egymás után veszi, a legnagyobb prioritásúval kezdve, és mindegyiket magától indítja, hangolja és rögzíti. Az átfedő átvonulásokat lerövidíti vagy kihagyja; a te indította vevőhöz nem nyúl.
+Priority (higher wins)	Prioritás (a magasabb nyer)
+Keep the SDR free every day	SDR szabadon tartása naponta
+from %d:00	%d:00-tól
+to %d:00	%d:00-ig
+Nothing planned.	Nincs betervezve semmi.
+planned	betervezve
+trimmed	lerövidítve
+skipped: SDR reserved	kihagyva: az SDR le van foglalva
+skipped: too short	kihagyva: túl rövid
+skipped: higher priority	kihagyva: magasabb prioritás
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Repülőgépek egy műsorszóró adó visszaverődéseiből, két koherens csatornával
+Baseline %.1f km, transmitter bearing %.0f degrees	Alapvonal %.1f km, az adó iránya %.0f fok
+Cancellation taps	Kioltási együtthatók
+Cannot open the recording.	A felvétel nem nyitható meg.
+Clutter cancelled by %.0f dB, %d detections	Zavar elnyomva %.0f dB-lel, %d észlelés
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Komplex float32, a 0. csatorna referencia, az 1. megfigyelő, mintaszinkron.
+Doppler Hz	Doppler Hz
+Doppler over time	Doppler az idő függvényében
+Echo level (dB)	Visszhang szintje (dB)
+End of the recording.	A felvétel vége.
+Enter the illuminator position.	Add meg a megvilágító adó helyét.
+False alarm rate 1e-x	Téves riasztás aránya 1e-x
+Illuminator	Megvilágító adó
+NLMS instead of ECA	NLMS az ECA helyett
+Noise-like waveform (DVB-T)	Zajszerű jelalak (DVB-T)
+Passive radar	Passzív radar
+Processing	Feldolgozás
+Range km	Távolság km
+Range rate (m/s)	Távolságváltozás sebessége (m/s)
+Range-Doppler map	Távolság–Doppler térkép
+Rate m/s	Sebesség m/s
+Saved illuminators	Mentett megvilágító adók
+Second target	Második cél
+Target range (km)	Cél távolsága (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Azokat a célokat, amelyek közelebb vannak, mint az együtthatók száma távolságmintákban, elrejti a kioltás.
+The receiver position is the one set for ADS-B.	A vevő helyzete az ADS-B-hez beállított.
+Tracks	Pályák
+Two recordings (reference, surveillance)	Két felvétel (referencia, megfigyelő)
+Two-channel recording (cf32)	Kétcsatornás felvétel (cf32)
+Waiting for data.	Adatra várakozás.
+Rewind	Visszatekerés
+Keeps the last seconds of the radio's raw samples in memory, so the signal from just before something happened can be saved too	Memóriában tartja a rádió nyers mintáinak utolsó másodperceit, így az esemény előtti jel is menthető
+A file source is already there: nothing to keep	A fájlforrás már megvan: nincs mit megtartani
+Keep a rolling memory of the raw samples	Folyamatos memória a nyers mintákhoz
+Reaches back (s)	Ennyire nyúlik vissza (mp)
+Memory limit (MB)	Memóriakorlát (MB)
+Full rate	Teljes mintavétel
+Samples kept	Megtartott minták
+1 / 4 averages every 4 samples: the memory then reaches 4 times as far back, but only the middle quarter of the band is kept. The settings can be changed while it is off.	Az 1 / 4 minden 4 mintát átlagol: a memória 4-szer messzebbre nyúlik vissza, de csak a sáv középső negyede marad meg. A beállítások kikapcsolt állapotban módosíthatók.
+Reaches back %s using %d MB; %s in memory now (%.3f Msps)	%s-ig nyúlik vissza %d MB-tal; most %s van a memóriában (%.3f Msps)
+The memory limit shortens the window; raise it or keep fewer samples.	A memóriakorlát rövidíti az ablakot; emelje meg, vagy tartson meg kevesebb mintát.
+Save the last (s)	Az utolsó (mp) mentése
+Then keep recording (s)	Utána tovább rögzít (mp)
+Save when the General receiver's squelch opens	Mentés, ha az Általános vevő zajzára kinyit
+In the General receiver mode; for other events use an automation rule with the action "Save the rewind"	Az Általános vevő módban; más eseményekhez használjon automatizálási szabályt a "Visszatekerés mentése" művelettel
+Save now	Mentés most
+Save the rewind	Visszatekerés mentése
+Seconds to keep after the event	Az esemény után megtartott másodpercek
+FM broadcast	FM rádió
+Airband	Repülőrádió
+DAB / VHF band III	DAB / VHF III. sáv
+UHF TV	UHF tévé
+868 MHz ISM	868 MHz ISM
+ADS-B 1090 MHz	ADS-B 1090 MHz
+Measuring %s (%d/%d)	Mérés: %s (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	Először válassz rádiót (a tesztjel és a fájlok nem mérhetők)
+None of the measuring bands is inside this radio's range	A mérősávok egyike sincs a rádió tartományában
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s: az ADC túlvezérelt (a minták %.2f%%-a levágódik). Csökkentsd az erősítést, vagy tegyél be csillapítót.
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s: egy erős jel (%.0f dB-lel a zajszint felett) túlvezérli az ADC-t, miközben más sávok ennél az erősítésnél túl gyengék. Ehhez a sávhoz sávzáró szűrőt használj (az FM sávhoz FM-notch szűrőt) az erősítés csökkentése helyett.
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s: az ADC szintje magas (%.1f dBFS eff.), kevés tartalék marad az erős jelekre. Csökkentsd egy kicsit az erősítést.
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s: a vevő zaja csak %.1f dB-lel van az ADC saját zaja felett, ezért a gyenge jelek elvesznek. Növeld az erősítést.
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s: a vevő zaja csak %.1f dB-lel van az ADC saját zaja felett, és az erősítés már a maximumon van. Tegyél kisebb zajú erősítőt (LNA) az antenna mellé.
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s: az erősítés kb. %.0f dB-lel lehetne kisebb az érzékenység elvesztése nélkül, ami több tartalékot ad az erős jelek ellen.
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s: a zajszint %.0f dB-lel magasabb, mint a legcsendesebb sávban. Keress helyi zajforrást (LED-világítás, kapcsolóüzemű tápegységek, számítógépek), vidd távolabb az antennát, vagy tegyél ferritgyűrűt a kábelre.
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	Nem található %s adó, pedig általában van. Ellenőrizd az antennát és a kábelt; az is lehet, hogy a sáv üres a környéken.
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	A legerősebb %s adó csak %.0f dB-lel van a zaj felett (egy jó antenna legalább %.0f dB-t ad). Tedd magasabbra vagy a szabadba az antennát, vagy tegyél be sávszűrőt és LNA-t.
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	A rádió órajele %+.1f ppm-mel eltér. Add meg a %+.1f értéket frekvenciakorrekcióként (ppm) a rádió beállításaiban.
+The radio's clock is %+.1f ppm off: fine.	A rádió órajele %+.1f ppm-mel eltér: rendben van.
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	Az ADS-B hatótáv rövid: a legtávolabbi repülő %.0f nm-re volt (egy szabad kültéri antenna 150 nm-ig vagy tovább ér el); a leggyengébb irány kb. %.0f fok. Tedd magasabbra az antennát, szabad rálátással az égre.
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	Egyetlen repülő sem %.0f darab 10 fokos szektorban %.0f foktól kezdve, miközben a szomszédos irányok messzire elérnek: valami eltakarja a kilátást (fal, domb, épület).
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	ADS-B hatótáv: még nincs elég pozíció. Futtasd az ADS-B módot néhány percig megadott antennapozícióval, majd készítsd el újra a jelentést.
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	Semmi hibát nem találtam. Az erősítés, a zajszint és a referenciaadók egészségesnek látszanak.
+Station health report	Állomás-jelentés
+Gain: %.0f dB	Erősítés: %.0f dB
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s: zajszint %.1f dBFS sávonként, ADC-tartalék %.1f dB, legerősebb jel %.0f dB a zajszint felett, ADC-szint %.1f dBFS, levágás %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   talált %s adók: %d, a legerősebb %.0f dB a zajszint felett
+The numbers are relative to the receiver itself (not calibrated to dBm).	A számok magához a vevőhöz viszonyítottak (nincsenek dBm-re kalibrálva).
+Station health	Állomás állapota
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	Néhány sávon megméri a zajszintet és az ADC szintjét, FM, DAB és DVB-T adókat keres, és megmondja, mit változtass az antennán. A vevő leáll a mérés alatt (kb. egy perc).
+known carrier MHz (optional)	ismert vivő MHz (nem kötelező)
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	Egy vivő, amelynek a frekvenciájában megbízol (ATSC pilot, mobiltorony jeladója, időjel). A jelentés ebből megadja a rádió órahibáját ppm-ben. Hagyd 0-n a kihagyáshoz.
+Save report...	Jelentés mentése...
+Save as JSON...	Mentés JSON-ként...
+Noise floor	Zajszint
+ADC margin	ADC-tartalék
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f dB
+none found	nincs találat
+%s: %d, best %.0f dB	%s: %d, legjobb %.0f dB
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	Órahiba: %+.2f ppm (%+.0f Hz %.4f MHz-en)
+No carrier found at the frequency given	A megadott frekvencián nem található vivő
+What to do	Mit tegyél
+ADS-B range by direction	ADS-B hatótáv irányonként
+Check station	Állomás ellenőrzése
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	Zajszint, ADC-szint és referenciaadók sávonként, egyszerű tanácsokkal az erősítésről, szűrőkről és az antenna helyéről
+# interference hunter
+Unknown	Ismeretlen
+Switching power supply	Kapcsolóüzemű tápegység
+LED lamp or driver	LED-lámpa vagy meghajtója
+Powerline (PLC)	Hálózati adatátvitel (PLC)
+Local oscillator or clock leak	Oszillátor- vagy órajel-szivárgás
+Cannot open the GPS device or file.	A GPS-eszköz vagy a fájl nem nyitható meg.
+Waiting for a position fix.	Várakozás helymeghatározásra.
+Interference gone	A zavarás megszűnt
+The noise floor rose by %.1f dB	A zajszint %.1f dB-lel emelkedett
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	Új szélessávú zaj %.2f - %.2f MHz, %.0f dB: %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	Új jel %.4f MHz-en, %.0f dB-lel az alapszint felett: %s
+Demo (simulated sweeps)	Demó (szimulált söprések)
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	A vonalsor megkülönböztetéséhez egy széles jeltől legalább 5 bin távolság kell: finomabb binekkel sűrűbb vonalak is látszanak
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	Szünet a söprések között: a figyelő hosszú szünetekkel órákig futhat; a sétához szünet nélkül kell
+spur threshold %.0f dB	vonalküszöb %.0f dB
+floor alert %.0f dB	zajszint-riasztás %.0f dB
+confirm in %d sweeps	megerősítés %d söpréssel
+floor change dB	zajszint-változás dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	Alapszint tanulása: %d / %d söprés. A sáv legyen a szokásos állapotában.
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	Figyelés. Zajszint %.1f dBFS, alapszint %.1f dBFS, %zu ismert jel.
+Press Start. The first sweeps become the baseline: what is normal in this band.	Nyomja meg az Indítást. Az első söprések lesznek az alapszint: ami ebben a sávban normális.
+Learn the baseline again	Alapszint újratanulása
+What is there now is normal	Ami most van, az normális
+Adds the interference that has been reported to the baseline, so it raises no more alerts	A jelzett zavarást hozzáadja az alapszinthez, így nem riaszt többet
+Save the alerts...	Riasztások mentése...
+Save the noise floor log...	Zajszint-napló mentése...
+Interference now	Jelenlegi zavarások
+Likely source	Valószínű forrás
+To MHz	Eddig MHz
+Spacing kHz	Távolság kHz
+Alerts	Riasztások
+Event	Esemény
+dB above baseline	dB az alapszint felett
+new signal	új jel
+noise floor up	zajszint emelkedett
+new broadband noise	új szélessávú zaj
+gone	megszűnt
+no position	nincs helyzet
+the receiver position (set for ADS-B)	a vevő helyzete (az ADS-B-hez beállított)
+type a position	helyzet megadása
+GPS device or NMEA file	GPS-eszköz vagy NMEA-fájl
+latitude	szélesség
+longitude	hosszúság
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	Soros GPS (például /dev/cu.usbmodem1101, PC-n COM3; 9600 baud) vagy NMEA-mondatokat tartalmazó szövegfájl
+Reconnect	Újracsatlakozás
+Readings are logged at %.5f, %.5f	A mérések naplózása itt: %.5f, %.5f
+Readings are logged without a position.	A mérések helyzet nélkül kerülnek a naplóba.
+%+.1f dB above the quiet level	%+.1f dB a csendes szint felett
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	Nyomja meg az Indítást, és induljon el. A mérő akkor tele, ha a zavarás 25 dB-lel a eddigi legcsendesebb hely felett van.
+Quiet	Csendes
+Some interference	Némi zavarás
+Loud	Hangos
+- getting louder	- erősödik
+- getting quieter	- gyengül
+- steady	- állandó
+strongest spur %.4f MHz, %.0f dB	legerősebb vonal %.4f MHz, %.0f dB
+This is the quiet level	Ez a csendes szint
+Leave out the signals seen now	A most látott jelek kihagyása
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	Az ismert műsorszóró vivők és eszközök kimaradnak a mérőből: induláskor, egy csendes helyen végezze el
+Clear the readings	Mérések törlése
+Save as CSV...	Mentés CSV-ként...
+Save as GPX...	Mentés GPX-ként...
+reading	mérés
+dB above the quiet level	dB a csendes szint felett
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	Leghangosabb mérés: %+.1f dB itt: %.5f, %.5f (%s)
+Loudest reading: %+.1f dB (%s), no position	Leghangosabb mérés: %+.1f dB (%s), helyzet nélkül
+Strongest spur MHz	Legerősebb vonal MHz
+Interference hunter	Zavarvadász
+Monitor	Figyelő
+Walk	Séta
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Egy sáv figyelése új zavarásokra, a típus megállapítása, és a forrás megkeresése sétálva hangos / csendes mérővel
+The watchlist file could not be read:	A figyelőlista-fájlt nem sikerült beolvasni:
+APRS call signs	APRS hívójelek
+Words in messages	Szavak az üzenetekben
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Soronként egy: ICAO hexa cím (4840D6), lajstromjel (A6-EDA) vagy hívójel (KLM1023). A végén lévő * az elejére illeszkedik (KLM*). ADS-B, ACARS, VDL2 és HFDL jelzéseiből.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Soronként egy: MMSI szám, hajónév vagy hívójel. A végén lévő * az elejére illeszkedik (2190*). AIS és DSC jelzéseiből.
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Soronként egy hívójel. SSID nélkül (LY1ABC) minden SSID egyezik, SSID-vel (LY1ABC-9) csak az az egy.
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Soronként egy: frekvencia MHz-ben (162.025), mértékegységgel (162025 kHz) vagy tartomány (144-146). Minden dekódolt jel számít rajta.
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Soronként egy: szó vagy kifejezés (kis- és nagybetű nem számít). A végén lévő * a szókezdetekre illeszkedik (fire*). Keresés a személyhívó, ACARS, APRS és más dekódolt szövegekben.
+New list...	Új lista...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	Hozz létre egy listát balra: repülők, hajók, APRS hívójelek, frekvenciák vagy szavak. Az OnAir szól, ha valamelyik hallható.
+On	Be
+Tolerance (kHz)	Tűrés (kHz)
+entries	bejegyzés
+Delete list	Lista törlése
+Desktop notification	Asztali értesítés
+Sound (follows Mute)	Hang (követi a némítást)
+WAV file, empty = three beeps	WAV fájl, üres = három sípszó
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	A push riasztások az általad választott szolgáltatásnak mennek, a megadott címmel és tokennel. Az adatmappádban tárolódnak, naplóba soha nem kerülnek.
+optional	nem kötelező
+optional, sent as a Bearer token	nem kötelező, Bearer tokenként küldve
+Send a test alert	Teszt riasztás küldése
+Most alerts per hour (0 = no limit)	Legfeljebb ennyi riasztás óránként (0 = nincs korlát)
+Same station again after (minutes)	Ugyanaz az állomás újra ennyi perc után
+Quiet hours (no alerts, still listed in the history)	Csendes órák (nincs riasztás, az előzményekben megmarad)
+From	Ettől
+Until	Eddig
+Local time of this computer.	Ennek a gépnek a helyi ideje.
+alerts sent	riasztás elküldve
+Heard	Hallott
+What happened	Mi történt
+held back: quiet hours	visszatartva: csendes órák
+held back: rate limit	visszatartva: korlát elérve
+Watchlists	Figyelőlisták
+Watch for these	Ezek figyelése
+Lists	Listák
+Watchlists...	Figyelőlisták...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Riasztás, ha a listán szereplő repülőt, hajót, hívójelet, frekvenciát vagy szót hallja: értesítés, hang, ntfy, Telegram vagy webhook

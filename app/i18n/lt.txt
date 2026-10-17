@@ -1934,7 +1934,7 @@ Choose what to tell apart in "separately for each" so every thing has its own st
 Columns (optional)	Stulpeliai (nebūtina)
 Confirm this rule...	Patvirtinti šią taisyklę...
 Confirmed	Patvirtinta
-Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Apibrėžkite function on_event(e). e.type, e.mode, e.freq, e.time ir įvykio laukai (e.callsign, e.squawk ...).\n\nVeiksmai: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nPagalbinės: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTekstas: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Nėra io, os, load, require, pcall ir šablonų paieškos; 1 milijonas instrukcijų, 250 ms ir 16 MB vienam skriptui.
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Apibrėžkite function on_event(e). e.type, e.mode, e.freq, e.time ir įvykio laukai (e.callsign, e.squawk ...).\n\nVeiksmai: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), save_rewind(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nPagalbinės: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTekstas: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Nėra io, os, load, require, pcall ir šablonų paieškos; 1 milijonas instrukcijų, 250 ms ir 16 MB vienam skriptui.
 Delete...	Ištrinti...
 Distance, km	Atstumas, km
 Does not fire for the sample event:	Pavyzdiniam įvykiui nesuveikia:
@@ -2138,6 +2138,59 @@ Peak dB above floor	Pikas dB virš triukšmo
 Quietest slots	Ramiausi intervalai
 From MHz	Nuo MHz
 Width kHz	Plotis kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Pasirinkite laidą, kad pamatytumėte išsamią informaciją.
+Cancel recording	Atšaukti įrašymą
+Record	Įrašyti
+Stop series	Nutraukti serialą
+Record series	Įrašyti serialą
+The broadcaster sends no series identifier for this programme.	Transliuotojas nesiunčia šios laidos serialo identifikatoriaus.
+No reminder	Be priminimo
+Remind me	Priminti
+Watch	Žiūrėti
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	Nepakanka imtuvų: sutampa su įrašymu kitame multipleksuose, todėl nebus įrašyta.
+No description broadcast.	Aprašymas netransliuojamas.
+Waiting for the service list...	Laukiama paslaugų sąrašo...
+Search title or description	Ieškoti pavadinimo ar aprašymo
+This multiplex only	Tik šis multipleksas
+time zone:	laiko juosta:
+this computer	šis kompiuteris
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Programos informacija dar negauta. Transliuotojai ją siunčia EIT lentelėse, kurios kartojamos kas kelias sekundes (dabar/toliau) ar kas kelias minutes (tvarkaraštis). Kai kurie multipleksai jos nesiunčia visai.
+Opening the recording...	Atidaromas įrašas...
+Pause (timeshift)	Pauzė (laiko poslinkis)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Sustabdo tiesioginę TV ir toliau įrašo ją į diską, kad galėtumėte tęsti ar atsukti atgal.
+buffered	buferyje
+Timeshift	Laiko poslinkis
+Play	Groti
+behind live	atsilieka nuo tiesioginės
+Live	Tiesiogiai
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	Įrašymas vyksta tik kol OnAir atidarytas ir kompiuteris nemiega; miegantis kompiuteris nieko neįrašo. Užšifruotos paslaugos įrašomos tokios, kokios gaunamos, ir neiššifruojamos. Tik asmeniniam naudojimui.
+Scheduled	Suplanuota
+recording	įrašoma
+conflict	konfliktas
+any multiplex	bet kuris multipleksas
+series	serialas
+waiting for the tuner	laukia imtuvo
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Nieko nesuplanuota. Pasirinkite laidą vadove arba apačioje pridėkite rankinį įrašymą.
+Manual recording	Rankinis įrašymas
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Prasideda šiuo laiku (šiandien, o jei jau praėjo – rytoj), be atsargos.
+Recorded	Įrašyta
+No recordings yet.	Įrašų dar nėra.
+Export	Eksportuoti
+Delete this recording and its subtitle files?	Ištrinti šį įrašą ir jo subtitrų failus?
+free	laisva
+Recorder settings	Įrašymo nustatymai
+Folder	Aplankas
+Start earlier (s)	Pradėti anksčiau (s)
+End later (s)	Baigti vėliau (s)
+Tuners	Imtuvai
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Kiek skirtingų multipleksų galima priimti vienu metu. To paties multiplekso paslaugos visada įrašomos kartu.
+Keep free (GB)	Palikti laisvos (GB)
+Stop after signal loss (s, 0 = never)	Sustoti dingus signalui (s, 0 = niekada)
+Save teletext subtitles next to recordings (.srt, .vtt)	Išsaugoti teleteksto subtitrus šalia įrašų (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Prasidėjus suplanuotam įrašymui, persijungti į jo kanalą
+Timeshift buffer on disk	Laiko poslinkio buferis diske
+minutes	minutės
 Propagation	Sklaida
 open	atidaryta
 marginal	ribinė
@@ -2151,6 +2204,100 @@ Forget the history	Išvalyti istoriją
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Ką šis imtuvas girdėjo pagal diapazoną: švyturiai (NCDXF/IARU, Long Dashes, pavienės raidės, nešlys) ir HF skaitmeniniame ekrane dekoduotos FT8 / FT4 / FT2 / WSPR stotys. Diapazonas atidarytas, kai per paskutines 30 minučių išgirstos bent 3 stotys. Tik savo imtuvas: nieko neatsisiunčiama, todėl nėra saulės srauto ir K indekso.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Per paskutines 30 minučių nieko negirdėta: paleiskite HF švyturius arba HF skaitmeninį ekraną ir palikite veikti.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Paskutinės 24 valandos (UTC), 15 minučių langeliai, tamsiau: mažiau stočių
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s prašo šių leidimų:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	Įskiepio strigimas ar luzimas tada nutraukia tik jo pagalbinį procesą. Įsigalioja kitą kartą paleidus įskiepį.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Pridėkite dekoderių ir veiksmų neperkompiliuodami OnAir: įdiekite, įjunkite ir sukonfigūruokite įskiepius
+Add-ons	Papildiniai
+Allow	Leisti
+Asks for	Prašo
+Asks for no permissions.	Neprašo jokių leidimų.
+Community plugins	Bendruomenės įskiepiai
+Do not allow	Neleisti
+Enabled	Įjungta
+Files: read and write its own data folder	Failai: skaityti ir rašyti savo duomenų aplanke
+Install from file...	Įdiegti iš failo...
+Installed	Įdiegta
+Kind	Rūšis
+Map points	Žemėlapio taškai
+Modes (in the mode list, group PLUGINS)	Režimai (režimų sąraše, grupė PLUGINS)
+Network: talk to other computers	Tinklas: bendrauti su kitais kompiuteriais
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Įskiepių neįdiegta. Naudokite „Įdiegti iš failo“ arba nukopijuokite įskiepio aplanką į įskiepių aplanką. Įskiepis yra .onairplugin failas.
+Not installed	Neįdiegta
+Open its folder	Atidaryti jo aplanką
+PLUGINS	ĮSKIEPIAI
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	Leidimai nusako, ką OnAir suteikia įskiepiui. OnAir viduje veikiantis įskiepis vis tiek gali pats naudotis sistema: diekite tik patikimus įskiepius arba paleiskite juos pagalbiniame procese.
+Plugin idle	Įskiepis neveikia
+Plugin log	Įskiepio žurnalas
+Plugin modes run on receiver 1.	Įskiepių režimai veikia 1 imtuve.
+Plugin running	Įskiepis veikia
+Plugins	Įskiepiai
+Plugins are not available on this receiver.	Šiame imtuve įskiepiai nepasiekiami.
+Plugins...	Įskiepiai...
+Programs: start other programs	Programos: paleisti kitas programas
+Recording: save audio or IQ	Įrašymas: išsaugoti garsą ar IQ
+Refresh	Atnaujinti
+Results the plugin sent beyond the limits	Įskiepio rezultatai virš ribų
+Run in a helper process	Vykdyti pagalbiniame procese
+Safe mode (no plugins)	Saugusis režimas (be įskiepių)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	Saugusis režimas įjungtas: įskiepiai išjungti. Norėdami išeiti, atidarykite režimą Įskiepiai.
+Safe mode: all plugins are switched off.	Saugusis režimas: visi įskiepiai išjungti.
+Select a plugin.	Pasirinkite įskiepį.
+Sound: play audio through the program	Garsas: leisti garsą per programą
+The plugin was switched off after a failure. See its log in the Plugins mode.	Įskiepis po gedimo išjungtas. Jo žurnalą rasite režime Įskiepiai.
+This plugin is off.	Šis įskiepis išjungtas.
+This plugin mode is not installed any more.	Šis įskiepio režimas nebeįdiegtas.
+Try plugins again	Bandyti įskiepius dar kartą
+Turn it on	Įjungti
+blocks	blokai
+by	autorius
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	%d kanalų pažymėta paskutiniame spektre
+Add spectrum at the target l	Pridėti spektrą ties tikslo l
+Az %.1f  El %.1f   site %.3f, %.3f	Az %.1f  El %.1f   vieta %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	Kūnas                 Az     El     kulminacija (UTC)  tekėjimas  leidimasis
+Calibration / RFI	Kalibravimas / RFI
+Capture cold	Užfiksuoti šaltą
+Capture hot	Užfiksuoti karštą
+Cassiopeia A	Kasiopėja A
+Clear map	Išvalyti žemėlapį
+Compute	Skaičiuoti
+Custom (RA / Dec)	Pasirinkta (RA / Dec)
+Cygnus A	Gulbė A
+Elevation of the selected body over the UTC day (hours)	Pasirinkto kūno aukštis per UTC parą (valandos)
+Fit lines	Pritaikyti linijas
+Flag and interpolate RFI	Pažymėti ir interpoliuoti RFI
+Galactic position	Galaktikos padėtis
+IAU standard solar motion (off: Schoenrich 2010)	SAS standartinis Saulės judėjimas (išjungta: Schoenrich 2010)
+LSR axis	LSR ašis
+Moon	Mėnulis
+No processed spectrum yet.	Dar nėra apdoroto spektro.
+Nothing logged yet.	Dar nieko nėra žurnale.
+Open session	Atidaryti seansą
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	Nukreipkite anteną į kiekvieną galaktinę ilgumą l, kai b = 0 (nustatoma skiltyje Greitis), integruokite ir pridėkite spektrą čia.
+Pointing	Nukreipimas
+R0 kpc	R0 kpc
+Sagittarius A*	Šaulys A*
+Save CSV	Įrašyti CSV
+Save FITS	Įrašyti FITS
+Save SigMF text	Įrašyti SigMF tekstą
+Save session	Įrašyti seansą
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	Vieta yra imtuvo vieta (Rodymas > Žemėlapis). Laikas – kompiuterio laikrodis, UTC.
+Sun	Saulė
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	Sukimosi kreivei reikia spektrų keliose ilgumose tarp 0 ir 90 (arba 270 ir 360).
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	Link tikslo: Žemės sukimasis %+.2f, orbita %+.2f, Saulė %+.2f; iš viso %+.2f km/s (pridėti prie toposcentrinio greičio)
+Tsys K	Tsys K
+V0 km/s	V0 km/s
+Velocity	Greitis
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   imtuvas %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Y koeficientas: užfiksuokite spektrą su karšta apkrova (kambario temperatūros sugėriklis), paskui su šalta apkrova (ar šaltu dangumi), nurodydami temperatūras.
+cold K	šalta K
+fit rms %.3f K	pritaikymo rms %.3f K
+hot K	karšta K
+no positions yet	dar nėra padėčių
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	viršūnė K, centras km/s (LSR), FWHM km/s, plotas K km/s; vienas sigma
+sigma	sigma
+sky + spill K	dangus + išsiliejimas K
 # identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
 , %.0f baud	, %.0f bodų
 , %s wide	, plotis %s
@@ -2223,7 +2370,6 @@ Readings that could fit this packet	Aiškinimai, kurie galėtų tikti šiam pake
 No fields.	Laukų nėra.
 C constant, N counter, K check value, E few values, V varying; one letter per byte from the start of the sync word.	C pastovus, N skaitiklis, K kontrolinė reikšmė, E mažai reikšmių, V kintantis; viena raidė baitui nuo sinchronizavimo žodžio pradžios.
 Byte	Baitas
-Kind	Rūšis
 Entropy (bits per byte)	Entropija (bitai baitui)
 Distinct values	Skirtingos reikšmės
 adds %d each packet	prideda %d kiekviename pakete
@@ -2258,7 +2404,302 @@ The bit file has one packet per line; tools such as Universal Radio Hacker can o
 Bytes	Baitai
 Fields	Laukai
 Compare	Palyginti
-Export	Eksportuoti
 Protocol lab	Protokolų laboratorija
 Protocol lab...	Protokolų laboratorija...
 Work out an unknown digital signal: modulation, baud rate, sync word, CRC and fields, with an export	Išsiaiškinti nežinomo skaitmeninio signalo sandarą: moduliaciją, spartą, sinchronizavimo žodį, CRC ir laukus, su eksportu
+Orbit from Doppler	Orbita pagal Doplerį
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	Praskridimo metu seka sekamo palydovo nešlį ir pritaiko jo orbitą prie Doplerio kreivės. Reikia stabilaus dažnio etalono (GPS sinchronizuotas arba gerai sukalibruotas imtuvas); imtuvo laikrodžio paklaida pritaikoma kaip pastovus poslinkis.
+Measure the carrier during tracked passes	Matuoti nešlį sekamų praskridimų metu
+gate +-%.0f kHz	langas +-%.0f kHz
+How far from the predicted carrier the peak is looked for	Kiek toli nuo prognozuojamo nešlio ieškoma smailės
+%d measurements of %s	%d matavimų: %s
+Fit orbit	Pritaikyti orbitą
+Save refined TLE	Išsaugoti patikslintą TLE
+saved in %s	išsaugota: %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	Patikslintus elementus įrašo į atskirą failą, pažymėtą kaip išvestą iš šio matavimo; atsisiųsti TLE nekeičiami
+Use the derived elements for predictions	Prognozėms naudoti išvestus elementus
+no measurements yet	matavimų dar nėra
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	pilka: atsisiųstų elementų prognozė, mėlyna: patikslinta, žalia: išmatuota, gintarinė: patikslintos kreivės liekana
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	liekana %.1f Hz -> %.1f Hz (naudota %d, atmesta %d); imtuvo poslinkis %+.0f Hz
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	vidutinė anomalija %+.3f laipsnio, vidutinis judėjimas %+.5f apsisukimo/d., posvyris %+.4f laipsnio, RAAN %+.4f laipsnio
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	numatoma prognozės laiko paklaida: %.1f s prieš, %.1f s po (1 sigma)
+Also share GPS interference cells (counts per area, no aircraft)	Taip pat dalytis GPS trikdžių langeliais (skaičiai pagal plotą, be orlaivių)
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	Kiekvienam 0,5 laipsnio kvadratui (apie 55 km) aplink jūsų ADS-B imtuvą: kiek orlaivių buvo išgirsta per paskutinę valandą ir kiek iš jų pranešė apie blogą GPS padėtį. Siunčiami tik šie du skaičiai kiekvienam kvadratui, niekada orlaivių tapatybės, trasos ar jūsų vieta. Tai maitina viešo žemėlapio GPS trikdžių sluoksnį ir yra požymis, o ne įrodymas, kad slopinama. Išjungta, kol pasirinksite.
+Calibrate...	Kalibruoti...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	Išmatuoti šio radijo dažnio paklaidą pagal FM stotį arba žinomo dažnio nešlį
+Frequency calibration	Dažnio kalibravimas
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Išmatuoja, kiek šio radijo taktas nukrypsta nuo žinomo dažnio signalo, ir nustato ppm pataisą.
+Not with a converter in front of the radio.	Netinka, jei prieš radiją yra keitiklis.
+Start the receiver first.	Pirmiausia paleiskite imtuvą.
+FM station (stereo pilot) at the tuned frequency	FM stotis (stereo pilotas) nustatytu dažniu
+Carrier of known frequency (MHz)	Žinomo dažnio nešlys (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Pirmiausia nustatykite stiprią FM stotį. Stoties pilotas ne visada tikslus: pakartokite su dviem ar trimis stotimis.
+Ready.	Paruošta.
+Looking for a reference signal.	Ieškoma atskaitos signalo.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	Matuojama: %+.2f ppm, neapibrėžtis %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Baigta: %+.2f ppm (neapibrėžtis %.2f ppm).
+No usable reference signal was found.	Tinkamo atskaitos signalo nerasta.
+Apply %+.2f ppm	Taikyti %+.2f ppm
+Current setting: %.2f ppm	Dabartinis nustatymas: %.2f ppm
+No measurements of this radio yet.	Šio radijo matavimų dar nėra.
+History of this radio (ppm)	Šio radijo istorija (ppm)
+Drift: %+.3f ppm per minute	Dreifas: %+.3f ppm per minutę
+Band from (kHz)	Juosta nuo (kHz)
+Calibrate from two landmarks	Kalibruoti pagal du orientyrus
+Calibrated.	Sukalibruota.
+Camera snapshot URL (JPEG)	Kameros momentinės nuotraukos URL (JPEG)
+Cannot load the picture.	Nepavyksta įkelti paveikslo.
+Cannot save the snapshot.	Nepavyksta išsaugoti momentinės nuotraukos.
+Centre azimuth	Vidurio azimutas
+Click the picture to set the column of the selected landmark.	Spustelėkite paveikslą, kad nustatytumėte pasirinkto orientyro stulpelį.
+Demo skyline (no camera)	Demonstracinė panorama (be kameros)
+Enable RF camera	Įjungti RD kamerą
+Field of view	Matymo laukas
+Heat strength	Šilumos žemėlapio stiprumas
+No picture.	Nėra paveikslo.
+Normal camera lens	Įprastas kameros objektyvas
+Panorama (equirectangular)	Panorama (lygiakampė cilindrinė)
+Picture	Paveikslas
+Picture or panorama file	Paveikslo arba panoramos failas
+Projection	Projekcija
+RF camera	RD kamera
+Save snapshot	Išsaugoti momentinę nuotrauką
+Snapshot saved: %s	Momentinė nuotrauka išsaugota: %s
+Sub-bands	Povaisčiai
+The two landmarks do not fit a picture.	Du orientyrai netinka šiam paveikslui.
+Weakest shown	Silpniausias rodomas
+azimuth	azimutas
+azimuth only; the picture is just a backdrop	tik azimutas; paveikslas yra tik fonas
+column	stulpelis
+to (kHz)	iki (kHz)
+Translate to English	Versti į anglų kalbą
+Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	Kita kalba sakoma kalba papildomai verčiama į anglų kalbą, neprisijungus, šalia originalo. Reikia daugiakalbio modelio, procesoriaus laiko sunaudojama apie 1,5 karto daugiau; praleidžiama, kai variklis nespėja. Niekas nesiunčiama. Vertimo į kitas kalbas nėra.
+The loaded model is English only: translation needs a multilingual model.	Įkeltas modelis tik anglų kalbos: vertimui reikia daugiakalbio modelio.
+Live: stop the room	Gyvai: sustabdyti kambarį
+Copy room link	Kopijuoti kambario nuorodą
+Host PIN (to moderate on the room page):	Šeimininko PIN (moderuoti kambario puslapyje):
+Go live (Live rooms)...	Pradėti transliaciją (Gyvi kambariai)...
+Could not create the room	Nepavyko sukurti kambario
+Lost the connection to the rooms server	Prarastas ryšys su kambarių serveriu
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Gyvi kambariai: kol transliuojate, kiekvienas, turintis kambario nuorodą, gali matyti šio imtuvo krioklio diagramą, režimą ir derinamą dažnį bei kalbėtis tarpusavyje. Kambarių sąraše internete rodomas ir jo pavadinimas. Kol nenuspausite Pradėti transliaciją, niekas nesiunčiama, o kambariui pasibaigus nieko nelieka saugoma. Jūsų vieta, vardas ir garsas niekada nesiunčiami.
+Room title	Kambario pavadinimas
+Also show decoded ACARS text in the room (public)	Rodyti kambaryje ir dekoduotą ACARS tekstą (viešai)
+Needs Server > Send data to map server and Also share interesting ACARS messages.	Reikia: Serveris > Siųsti duomenis žemėlapio serveriui ir Dalytis ir įdomiais ACARS pranešimais.
+Go live	Pradėti transliaciją
+Schedule passes by itself	Praskridimus planuoti automatiškai
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Paimia pažymėtų grupių praskridimus po vieną, pirma aukščiausio prioriteto, ir pats paleidžia, sutaiko bei įrašo kiekvieną. Persidengiantys praskridimai sutrumpinami arba praleidžiami; pats paleistas imtuvas neliečiamas.
+Priority (higher wins)	Prioritetas (didesnis laimi)
+Keep the SDR free every day	Kasdien laikyti SDR laisvą
+from %d:00	nuo %d:00
+to %d:00	iki %d:00
+Nothing planned.	Nieko neplanuota.
+planned	suplanuota
+trimmed	sutrumpinta
+skipped: SDR reserved	praleista: SDR rezervuotas
+skipped: too short	praleista: per trumpas
+skipped: higher priority	praleista: aukštesnis prioritetas
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Orlaivai iš transliuojančio siųstuvo aidų, naudojant du koherentinius kanalus
+Baseline %.1f km, transmitter bearing %.0f degrees	Bazinė linija %.1f km, siųstuvo azimutas %.0f laipsnių
+Cancellation taps	Slopinimo koeficientai
+Cannot open the recording.	Nepavyksta atidaryti įrašo.
+Clutter cancelled by %.0f dB, %d detections	Trukdžiai nuslopinti %.0f dB, aptikimų: %d
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Kompleksinis float32, 0 kanalas atraminis, 1 kanalas stebėjimo, sinchroniniai pagal atskaitą.
+Doppler Hz	Doplerio Hz
+Doppler over time	Doplerio dažnis laike
+Echo level (dB)	Aido lygis (dB)
+End of the recording.	Įrašo pabaiga.
+Enter the illuminator position.	Įveskite apšvietėjo (siųstuvo) padėtį.
+False alarm rate 1e-x	Klaidingų aliarmų dažnis 1e-x
+Illuminator	Apšvietėjas
+NLMS instead of ECA	NLMS vietoje ECA
+Noise-like waveform (DVB-T)	Triukšmą primenanti bangos forma (DVB-T)
+Passive radar	Pasyvusis radaras
+Processing	Apdorojimas
+Range km	Atstumas km
+Range rate (m/s)	Atstumo kitimo greitis (m/s)
+Range-Doppler map	Atstumo ir Doplerio žemėlapis
+Rate m/s	Greitis m/s
+Saved illuminators	Išsaugoti apšvietėjai
+Second target	Antras taikinys
+Target range (km)	Taikinio atstumas (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Taikinius, esančius arčiau nei koeficientų skaičius atstumo atskaitomis, slopinimas paslepia.
+The receiver position is the one set for ADS-B.	Imtuvo padėtis yra ta pati, kuri nustatyta ADS-B.
+Tracks	Trasos
+Two recordings (reference, surveillance)	Du įrašai (atraminis, stebėjimo)
+Two-channel recording (cf32)	Dviejų kanalų įrašas (cf32)
+Waiting for data.	Laukiama duomenų.
+Rewind	Atsukti atgal
+Keeps the last seconds of the radio's raw samples in memory, so the signal from just before something happened can be saved too	Laiko atmintyje paskutines radijo neapdorotų pavyzdžių sekundes, kad būtų galima išsaugoti ir signalą prieš pat įvykį
+A file source is already there: nothing to keep	Failo šaltinis jau yra: nėra ką saugoti
+Keep a rolling memory of the raw samples	Nuolat laikyti neapdorotus pavyzdžius atmintyje
+Reaches back (s)	Siekia atgal (s)
+Memory limit (MB)	Atminties riba (MB)
+Full rate	Pilnas dažnis
+Samples kept	Laikomi pavyzdžiai
+1 / 4 averages every 4 samples: the memory then reaches 4 times as far back, but only the middle quarter of the band is kept. The settings can be changed while it is off.	1 / 4 vidurkina kas 4 pavyzdžius: atmintis siekia 4 kartus toliau, bet išsaugomas tik vidurinis juostos ketvirtadalis. Nustatymus galima keisti, kol išjungta.
+Reaches back %s using %d MB; %s in memory now (%.3f Msps)	Siekia %s atgal naudojant %d MB; dabar atmintyje %s (%.3f Msps)
+The memory limit shortens the window; raise it or keep fewer samples.	Atminties riba sutrumpina langą; padidinkite ją arba laikykite mažiau pavyzdžių.
+Save the last (s)	Išsaugoti paskutines (s)
+Then keep recording (s)	Tada toliau įrašyti (s)
+Save when the General receiver's squelch opens	Išsaugoti, kai atsidaro Bendrojo imtuvo triukšmo slopintuvas
+In the General receiver mode; for other events use an automation rule with the action "Save the rewind"	Bendrojo imtuvo režimu; kitiems įvykiams naudokite automatizavimo taisyklę su veiksmu „Išsaugoti atsukimą atgal“
+Save now	Išsaugoti dabar
+Save the rewind	Išsaugoti atsukimą atgal
+Seconds to keep after the event	Sekundės, kurias laikyti po įvykio
+FM broadcast	FM radijas
+Airband	Aviacijos juosta
+DAB / VHF band III	DAB / VHF III juosta
+UHF TV	UHF televizija
+868 MHz ISM	868 MHz ISM
+ADS-B 1090 MHz	ADS-B 1090 MHz
+Measuring %s (%d/%d)	Matuojama: %s (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	Pirmiausia pasirinkite radiją (bandomojo signalo ir failų išmatuoti negalima)
+None of the measuring bands is inside this radio's range	Nė viena matavimo juosta nepatenka į šio radijo diapazoną
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s: ADC perkrautas (%.2f%% atskaitų nukerpama). Sumažinkite stiprinimą arba įdėkite slopintuvą.
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s: stiprus signalas (%.0f dB virš triukšmo lygio) perkrauna ADC, o kitos juostos esant šiam stiprinimui būna per silpnos. Šiai juostai įdėkite slopinimo filtrą (FM juostai FM šalinimo filtrą), užuot mažinę stiprinimą.
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s: ADC lygis aukštas (%.1f dBFS rms), stipriems signalams lieka mažai atsargos. Šiek tiek sumažinkite stiprinimą.
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s: imtuvo triukšmas tik %.1f dB aukštesnis už paties ADC triukšmą, todėl silpni signalai prarandami. Padidinkite stiprinimą.
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s: imtuvo triukšmas tik %.1f dB aukštesnis už paties ADC triukšmą, o stiprinimas jau didžiausias. Šalia antenos įdėkite mažo triukšmo stiprintuvą (LNA).
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s: stiprinimas galėtų būti maždaug %.0f dB mažesnis neprarandant jautrumo, o tai suteikia daugiau atsargos stipriems signalams.
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s: triukšmo lygis %.0f dB aukštesnis nei ramiausioje juostoje. Raskite vietinį triukšmo šaltinį (LED apšvietimą, impulsinius maitinimo šaltinius, kompiuterius), patraukite anteną nuo jo arba uždėkite ferito žiedą ant kabelio.
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	Nerasta nė vienos %s stoties, nors paprastai jų būna. Patikrinkite anteną ir kabelį; gali būti, kad jūsų vietovėje juosta tuščia.
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	Stipriausia %s stotis tik %.0f dB virš triukšmo (gera antena duoda bent %.0f dB). Pakelkite anteną aukščiau arba išneškite į lauką, arba pridėkite juostos filtrą ir LNA.
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	Radijo laikrodis nukrypęs %+.1f ppm. Radijo nustatymuose kaip dažnio pataisą (ppm) įveskite %+.1f.
+The radio's clock is %+.1f ppm off: fine.	Radijo laikrodis nukrypęs %+.1f ppm: tvarkoje.
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	ADS-B nuotolis trumpas: tolimiausias orlaivis buvo už %.0f nm (laisva lauko antena pasiekia 150 nm ar daugiau); silpniausia kryptis apie %.0f laipsnių. Pakelkite anteną aukščiau, kad atsivertų dangus.
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	Nė vieno orlaivio %.0f 10 laipsnių sektoriuose, pradedant %.0f laipsnių, nors gretimos kryptys siekia toli: kažkas ten užstoja vaizdą (siena, kalva, pastatas).
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	ADS-B nuotolis: dar nepakanka pozicijų. Kelias minutes naudokite ADS-B režimą su nustatyta antenos vieta ir ataskaitą paleiskite iš naujo.
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	Nieko blogo nerasta. Stiprinimas, triukšmo lygis ir etaloninės stotys atrodo gerai.
+Station health report	Stoties būklės ataskaita
+Gain: %.0f dB	Stiprinimas: %.0f dB
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s: triukšmo lygis %.1f dBFS vienam dažnio intervalui, ADC atsarga %.1f dB, stipriausias signalas %.0f dB virš triukšmo, ADC lygis %.1f dBFS, nukirpimas %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   rasta %s stočių: %d, stipriausia %.0f dB virš triukšmo
+The numbers are relative to the receiver itself (not calibrated to dBm).	Skaičiai santykiniai paties imtuvo atžvilgiu (nekalibruoti į dBm).
+Station health	Stoties būklė
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	Pamatuoja triukšmo lygį ir ADC lygį keliose juostose, ieško FM, DAB ir DVB-T stočių ir pasako, ką keisti prie antenos. Matuojant imtuvas sustoja (apie minutę).
+known carrier MHz (optional)	žinomas nešlys MHz (nebūtina)
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	Nešlys, kurio dažniu pasitikite (ATSC pilotas, mobiliojo ryšio bokšto švyturys, laiko signalas). Ataskaita pagal jį parodo radijo laikrodžio paklaidą ppm. Palikite 0, jei nereikia.
+Save report...	Išsaugoti ataskaitą...
+Save as JSON...	Išsaugoti kaip JSON...
+Noise floor	Triukšmo lygis
+ADC margin	ADC atsarga
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f dB
+none found	nerasta
+%s: %d, best %.0f dB	%s: %d, geriausia %.0f dB
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	Laikrodžio paklaida: %+.2f ppm (%+.0f Hz ties %.4f MHz)
+No carrier found at the frequency given	Nurodytu dažniu nešlio nerasta
+What to do	Ką daryti
+ADS-B range by direction	ADS-B nuotolis pagal kryptį
+Check station	Tikrinti stotį
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	Triukšmo lygis, ADC lygis ir etaloninės stotys pagal juostas su aiškiais patarimais dėl stiprinimo, filtrų ir antenos vietos
+# interference hunter
+Unknown	Nežinoma
+Switching power supply	Impulsinis maitinimo šaltinis
+LED lamp or driver	LED lempa arba jos valdiklis
+Powerline (PLC)	Elektros tinklas (PLC)
+Local oscillator or clock leak	Generatoriaus ar taktinio signalo nuotėkis
+Cannot open the GPS device or file.	Nepavyksta atidaryti GPS įrenginio ar failo.
+Waiting for a position fix.	Laukiama padėties nustatymo.
+Interference gone	Trukdis išnyko
+The noise floor rose by %.1f dB	Triukšmo lygis pakilo %.1f dB
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	Naujas plačiajuostis triukšmas %.2f - %.2f MHz, %.0f dB: %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	Naujas signalas ties %.4f MHz, %.0f dB virš pagrindo: %s
+Demo (simulated sweeps)	Demonstracija (imituoti skenavimai)
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	Spurų šukoms atskirti nuo plataus signalo reikia bent 5 dažnio intervalų tarpo: smulkesni intervalai parodo tankesnes spuras
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	Pauzė tarp skenavimų: stebėjimas gali veikti valandas su ilgomis pauzėmis; ėjimui reikia be pauzių
+spur threshold %.0f dB	spurų riba %.0f dB
+floor alert %.0f dB	triukšmo aliarmas %.0f dB
+confirm in %d sweeps	patvirtinti per %d skenavimus
+floor change dB	triukšmo pokytis dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	Mokomasi pagrindo: %d iš %d skenavimų. Palikite juostą įprastos būklės.
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	Stebima. Triukšmo lygis %.1f dBFS, pagrindas %.1f dBFS, žinomų signalų: %zu.
+Press Start. The first sweeps become the baseline: what is normal in this band.	Paspauskite Pradėti. Pirmieji skenavimai taps pagrindu: kas šioje juostoje normalu.
+Learn the baseline again	Mokytis pagrindo iš naujo
+What is there now is normal	Tai, kas dabar yra, normalu
+Adds the interference that has been reported to the baseline, so it raises no more alerts	Pridės pranešta trukdį prie pagrindo, kad daugiau nebekeltų aliarmų
+Save the alerts...	Išsaugoti aliarmus...
+Save the noise floor log...	Išsaugoti triukšmo lygio žurnalą...
+Interference now	Dabartiniai trukdžiai
+Likely source	Tikėtinas šaltinis
+To MHz	Iki MHz
+Spacing kHz	Tarpas kHz
+Alerts	Aliarmai
+Event	Įvykis
+dB above baseline	dB virš pagrindo
+new signal	naujas signalas
+noise floor up	triukšmo lygis pakilo
+new broadband noise	naujas plačiajuostis triukšmas
+gone	išnyko
+no position	be padėties
+the receiver position (set for ADS-B)	imtuvo padėtis (nustatyta ADS-B)
+type a position	įvesti padėtį
+GPS device or NMEA file	GPS įrenginys arba NMEA failas
+latitude	platuma
+longitude	ilguma
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	Nuoseklusis GPS (pavyzdžiui, /dev/cu.usbmodem1101 arba COM3 kompiuteryje; 9600 baudų) arba tekstinis NMEA sakinių failas
+Reconnect	Prisijungti iš naujo
+Readings are logged at %.5f, %.5f	Matavimai registruojami ties %.5f, %.5f
+Readings are logged without a position.	Matavimai registruojami be padėties.
+%+.1f dB above the quiet level	%+.1f dB virš ramaus lygio
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	Paspauskite Pradėti ir eikite. Matuoklis pilnas, kai trukdys 25 dB stipresnis už tylią vietą.
+Quiet	Ramu
+Some interference	Šiek tiek trukdžių
+Loud	Stiprus
+- getting louder	- stiprėja
+- getting quieter	- silpnėja
+- steady	- stabilus
+strongest spur %.4f MHz, %.0f dB	stipriausia spura %.4f MHz, %.0f dB
+This is the quiet level	Tai ramus lygis
+Leave out the signals seen now	Praleisti dabar matomus signalus
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	Žinomos transliacijų nešlio bangos ir įrenginiai neįtraukiami į matuoklį: atlikite tai ramioje vietoje prieš pradėdami eiti
+Clear the readings	Išvalyti matavimus
+Save as CSV...	Išsaugoti kaip CSV...
+Save as GPX...	Išsaugoti kaip GPX...
+reading	matavimas
+dB above the quiet level	dB virš ramaus lygio
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	Stipriausias matavimas: %+.1f dB ties %.5f, %.5f (%s)
+Loudest reading: %+.1f dB (%s), no position	Stipriausias matavimas: %+.1f dB (%s), be padėties
+Strongest spur MHz	Stipriausia spura MHz
+Interference hunter	Trukdžių medžiotojas
+Monitor	Stebėjimas
+Walk	Ėjimas
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Stebėkite juostą dėl naujų trukdžių, nustatykite jų rūšį ir eidami suraskite šaltinį pagal stiprus / tylus matuoklį
+The watchlist file could not be read:	Stebėjimo sąrašų failo nepavyko perskaityti:
+APRS call signs	APRS šaukiniai
+Words in messages	Žodžiai pranešimuose
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Po vieną eilutėje: ICAO šešioliktainis adresas (4840D6), registracijos ženklas (A6-EDA) arba šaukinys (KLM1023). Galinė * atitinka pradžią (KLM*). Girdima per ADS-B, ACARS, VDL2 ir HFDL.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Po vieną eilutėje: MMSI numeris, laivo pavadinimas arba šaukinys. Galinė * atitinka pradžią (2190*). Girdima per AIS ir DSC.
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Po vieną eilutėje: šaukinys. Be SSID (LY1ABC) tinka bet kuris SSID, su SSID (LY1ABC-9) tik tas vienas.
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Po vieną eilutėje: dažnis MHz (162.025), su vienetu (162025 kHz) arba intervalas (144-146). Skaičiuojama viskas, kas joje dekoduojama.
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Po vieną eilutėje: žodis arba frazė (didžiosios ir mažosios raidės nesvarbios). Galinė * atitinka žodžių pradžią (fire*). Ieškoma ieškiklių, ACARS, APRS ir kituose dekoduotuose tekstuose.
+New list...	Naujas sąrašas...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	Sukurkite sąrašą kairėje: orlaiviai, laivai, APRS šaukiniai, dažniai arba žodžiai. OnAir praneš, kai kas nors iš jo bus išgirsta.
+On	Įjungta
+Tolerance (kHz)	Paklaida (kHz)
+entries	įrašai
+Delete list	Ištrinti sąrašą
+Desktop notification	Darbalaukio pranešimas
+Sound (follows Mute)	Garsas (laikosi nutildymo)
+WAV file, empty = three beeps	WAV failas, tuščias = trys pyptelėjimai
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	Push pranešimai siunčiami jūsų pasirinktai paslaugai su jūsų nurodytu adresu ir raktu. Jie saugomi jūsų duomenų aplanke ir niekada nerašomi į žurnalą.
+optional	neprivaloma
+optional, sent as a Bearer token	neprivaloma, siunčiama kaip Bearer raktas
+Send a test alert	Siųsti bandomąjį pranešimą
+Most alerts per hour (0 = no limit)	Daugiausia pranešimų per valandą (0 = be ribos)
+Same station again after (minutes)	Ta pati stotis vėl po (minučių)
+Quiet hours (no alerts, still listed in the history)	Tylos valandos (be pranešimų, istorijoje išlieka)
+From	Nuo
+Until	Iki
+Local time of this computer.	Šio kompiuterio vietinis laikas.
+alerts sent	pranešimų išsiųsta
+Heard	Išgirsta
+What happened	Kas įvyko
+held back: quiet hours	sulaikyta: tylos valandos
+held back: rate limit	sulaikyta: pasiekta riba
+Watchlists	Stebėjimo sąrašai
+Watch for these	Stebėti šiuos
+Lists	Sąrašai
+Watchlists...	Stebėjimo sąrašai...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Pranešimai, kai išgirstami sąraše esantys orlaiviai, laivai, šaukiniai, dažniai ar žodžiai: pranešimas, garsas, ntfy, Telegram arba webhook

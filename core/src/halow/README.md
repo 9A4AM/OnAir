@@ -56,10 +56,14 @@ band is full of traffic (measured on a laptop: 0.7 - 1.0 of real time with a PPD
   the 2-encoder parsing at 16 MHz MCS 7 - 9, the 1 MHz LTF1 length, and the operating class numbers other than US 1 - 5 and EU 6 - 7 (frequencies = start + 0.5 MHz x channel
   number are certain; which channels each regulator allows come from public summaries). If a real capture disagrees, these are the first places to look.
 
+## Sub-channel scan
+
+A 1 MHz PPDU can sit anywhere in a wider capture: a Morse Micro or other 2 / 4 / 8 MHz BSS sends its beacons on the 1 MHz primary channel, not at the centre of the BSS. With the dial on the centre and 1 MHz tried, extra 1 MHz-only chains, each behind its own mixer, look at the 1 MHz grid around the centre as far as the radio's rate holds a whole channel: +-0.5 MHz from 3 Msps, +-1.5 from 6 Msps, +-2.5 from 8 Msps. The network's frequency is then centre + that offset. Test: `test_halow_modes` (1 MHz beacon at six dial offsets, dial not set). Not done: a coarse scan of arbitrary offsets, and 2 MHz channels off the centre.
+
 ## Not supported
 
 * LDPC coding (the 802.11 parity-check matrices of Annex F were not available to check): the frame is counted as "LDPC".
 * More than one spatial stream, STBC: one RF channel is one antenna; the streams cannot be separated. Counted from the SIG field.
-* The duplicate formats S1G_DUP_1M / S1G_DUP_2M (a 1 MHz PPDU repeated across a wider channel, used for some beacons and control frames): the preamble of the copies is not matched to the channel layout, so they are not found.
+* The duplicate formats S1G_DUP_1M / S1G_DUP_2M are not matched as such. Each 1 MHz copy of a duplicated beacon is an ordinary S1G_1M PPDU, so the sub-channel scan (below) reads it when it sits on the 1 MHz grid; 2 MHz copies inside a wider capture are not scanned.
 * A-MPDU (the delimiters are not parsed), NDP contents, MU-MIMO (S1G_LONG with group ID), S1G short-MAC-header control frames, TWT / RAW scheduling details beyond presence.
 * Decryption of any kind.
