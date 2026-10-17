@@ -215,8 +215,11 @@ struct HfdlReceiver::Impl {
         return r;
     }
     double coarse(const Chan& k, int64_t s) const {
+        const int64_t i0 = s - k.xBase;   // whole samples: cubicAt() would only return x[i] here, at several times the cost
+        if (i0 < 0 || i0 + (int64_t)(kSearchSyms - 1) * kSps >= (int64_t)k.x.size()) return 0;
+        const cf32* p = &k.x[(size_t)i0];
         double sumA = 0;
-        for (int q = 0; q < kSearchSyms; q++) sumA += std::abs(cubicAt(k.x, (double)(s + q * kSps) - (double)k.xBase));
+        for (int q = 0; q < kSearchSyms; q++) sumA += std::abs(p[q * kSps]);
         if (sumA <= 1e-6 * kSearchSyms) return 0;
         double best = 0;
         for (const auto& ref : coarseRefs()) {
@@ -224,7 +227,7 @@ struct HfdlReceiver::Impl {
             for (int c = 0; c < kSearchSyms / kChunk + 1; c++) {
                 cf32 acc(0, 0);
                 const int k0 = c * kChunk, k1 = std::min(kSearchSyms, k0 + kChunk);
-                for (int q = k0; q < k1; q++) acc += cubicAt(k.x, (double)(s + q * kSps) - (double)k.xBase) * ref[(size_t)q];
+                for (int q = k0; q < k1; q++) acc += p[q * kSps] * ref[(size_t)q];
                 sumC += std::abs(acc);
             }
             best = std::max(best, sumC);
