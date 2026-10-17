@@ -1297,3 +1297,5 @@ Status	Состояние
 Running	Работает
 Step	Шаг
 Keyboard	Клавиатура
+Re-sync	Пересинхронизировать
+Drop the lock and search for the CDR signal again without stopping the radio.\nUse it when the sound stays silent after the signal faded.	Сбросить захват и заново искать сигнал CDR, не останавливая радио.\nИспользуйте, если звук остаётся беззвучным после пропадания сигнала.

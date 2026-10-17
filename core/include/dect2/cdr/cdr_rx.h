@@ -22,6 +22,7 @@ public:
 
     void configure(double inputRateHz);
     bool ready() const;                                  // false when the input rate is too low for this mode
+    void resync();                                       // keep the radio running: forget the lock and the half-decoded frames, search the beacon again
     void reset();                                        // after a retune: forget the signal and the decoded state
     void feed(const cf32* x, size_t n);
     bool telemetry(CdrTelemetry& out, uint64_t lastSeq);

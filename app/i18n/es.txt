@@ -1315,3 +1315,5 @@ Status	Estado
 Running	En marcha
 Step	Paso
 Keyboard	Teclado
+Re-sync	Resincronizar
+Drop the lock and search for the CDR signal again without stopping the radio.\nUse it when the sound stays silent after the signal faded.	Descartar el enganche y buscar de nuevo la señal CDR sin detener la radio.\nÚselo cuando el sonido siga mudo después de que la señal se desvaneciera.

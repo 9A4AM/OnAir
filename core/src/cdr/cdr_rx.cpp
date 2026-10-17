@@ -9,9 +9,8 @@
 // (de-interleaving, Viterbi, descrambling, control multiplex frame) and the service data (de-interleaving of 5.7, LDPC, descrambling,
 // service multiplex frame).
 #include "dect2/cdr/cdr_rx.h"
-#include "dect2/audio/audioout.h"
 #include "dect2/cdr/cdr_defs.h"
-#include "dradec.h"
+#include "cdr_audio.h"
 #include "dect2/cdr/cdr_ldpc.h"
 #include "dect2/cdr/cdr_mux.h"
 #include "dect2/dsp/exact_resampler.h"
@@ -40,6 +39,10 @@ namespace {
 // whole carriers of offset tried at the beacon (about +-19 kHz): 50 ppm in band II, plus the error of a channel found off centre from its
 // spectrum (the analogue FM programme of the hybrid modes shows its middle only to a few kHz)
 constexpr int kMaxShift = 24;
+constexpr double kMinPilotCoh = 0.15, kSurePilotCoh = 0.8;   // pilots that cohere less than kSure: perhaps the analogue FM's lines (seen 0.2-0.4; a real signal 0.9), a probation lock
+constexpr double kRelaxAfterSec = 8;   // without a sure lock for this long (a weak signal): accept doubtful ones on probation
+constexpr int kStallData = 8;       // logical frames (5 s) with system information but no data: the timing or carrier is slightly off for good
+constexpr int kProbationSi = 6, kFirstSi = 12, kStallSi = 8;       // sub-frames without system information after it had decoded: the grid is lost, search again (1.3 s)
 
 using cd = std::complex<double>;
 constexpr int kSearchFft = 2048, kSearchHop = 1024, kSearchDelay = 512;
@@ -196,16 +199,13 @@ struct CdrReceiver::Impl {
     double rate = 0;
     CdrTelemetry pub;
     std::atomic<bool> resetReq{true};
+    std::atomic<bool> resyncReq{false};
     EsSink saveSink;
     std::atomic<int> saveId{-1};
     std::atomic<int> listenId{0};          // service to play; 0: none
     std::atomic<float> volume{1.f};
     std::atomic<bool> muted{false};
-    void* dra = nullptr;
-    int draRate = 0;
-    int playingId = -1;
-    int lastListen = -1;                   // last listenId seen on the feed thread (service switch)
-    std::unique_ptr<AudioOut> audioOut;
+    CdrAudio audio;                        // DRA+ decoder and sound output of the service the user listens to
     // receiver thread
     CdrTelemetry tel;
     double curRate = 0;
@@ -229,7 +229,7 @@ struct CdrReceiver::Impl {
     int tm = 0, sm = 0;
     std::shared_ptr<const Layout> lay;
     double bs = 0;                          // start of the next beacon (absolute index, fractional)
-    double cfo = 0;
+    double cfo = 0, cfoLock = 0;
     bool mirror = false;                    // the input is read conjugated (a mirrored spectrum)
     ChannelCentre cc;                       // moves a signal far from the middle of the sample band there
     std::vector<cf32> cin;
@@ -238,6 +238,16 @@ struct CdrReceiver::Impl {
     int64_t nSub = 0;                       // sub-frames processed since the lock
     double bsAtLock = 0;
     int64_t searchFloor = 0;                // the search does not go back before the beacon of the last lock
+    double goodAt = 0;                      // signal time of the last system information (or of the start): how long the search has been fruitless
+    double searchSec() const { return (curRate > 0 ? (double)nIn / curRate : 0) - goodAt; }
+    int noDataRun = 0;                      // logical frames in a row without one good LDPC code word or service description
+    bool dataSeen = false;                  // something decoded since the lock
+    bool probation = false;                 // locked on weak evidence: it must read the system information soon
+    int noSiRun = 0;                        // sub-frames in a row without a good system information channel (a false lock or a lost timing)
+    int jumpRun = 0;                        // sub-frames in a row that show the same large timing step (samples lost in the link)
+    double jumpLast = 0;
+    struct Rejected { int tm, sm; double f; double at; };   // locks that never produced system information: not tried again for a while
+    std::vector<Rejected> rejected;
     std::map<int, std::unique_ptr<Fft>> ffts;
     // logical frames
     std::array<std::array<SubData, 4>, 4> store;
@@ -274,65 +284,10 @@ struct CdrReceiver::Impl {
         locked = false; lay.reset(); tm = sm = 0;
         for (auto& r : store) for (auto& s2 : r) s2 = SubData();
         svc.clear(); svcOrder.clear(); haveSmct = false; snrAvg = 0;
-        if (dra) { DRADecDestroy(dra); dra = nullptr; }
-        playingId = -1;
-        lastListen = -1;
-        if (audioOut) audioOut->flush();
+        audio.resetAll();
+        noSiRun = 0; jumpRun = 0; rejected.clear(); goodAt = 0;
     }
 
-    ~Impl() { if (dra) DRADecDestroy(dra); }
-
-    void playUnits(uint16_t id, const std::vector<AudioUnit>& units) {
-        const int want = listenId.load();
-        if (want == 0 || (int)id != want || units.empty()) return;
-        if (lastListen != want) {
-            if (dra) { DRADecDestroy(dra); dra = nullptr; }
-            playingId = -1;
-            lastListen = want;
-            if (audioOut) audioOut->flush();
-        }
-        if (playingId != (int)id) {
-            if (dra) { DRADecDestroy(dra); dra = nullptr; }
-            playingId = (int)id;
-            if (audioOut) audioOut->flush();
-        }
-        if (!dra) dra = DRADecCreate();
-        if (!dra) return;
-        for (const auto& u : units) {
-            if (u.data.empty()) continue;
-            if (DRADecSendData(dra, const_cast<unsigned char*>(u.data.data()), (int)u.data.size()) != 0) continue;
-            for (;;) {
-                unsigned char* pcm = nullptr;
-                int len = 0;
-                if (DRADecRecvFrame(dra, &pcm, &len) != 0) break;
-                DRAFrameInfo info;
-                if (DRADecGetFrameInfo(dra, &info) != 0 || info.nSampleRate < 8000 || info.nChannels < 1 || !pcm || len < 4) continue;
-                if (!audioOut || draRate != info.nSampleRate) {
-                    audioOut = std::make_unique<AudioOut>();
-                    audioOut->start(info.nSampleRate);
-                    audioOut->setStartThreshold(info.nSampleRate / 10);
-                    draRate = info.nSampleRate;
-                }
-                audioOut->setVolume(volume.load());
-                audioOut->setMuted(muted.load());
-                const int ch = info.nChannels;
-                int frames = len / (2 * ch);
-                if (frames < 1) continue;
-                // DRA+ PCM arrives in ~640 ms logical-frame bursts; do not flush around 0.5 s or playback drops every frame.
-                if (!audioOut->playing()) audioOut->setStartThreshold(draRate / 10);
-                if (audioOut->bufferedFrames() > draRate * 3 / 2) audioOut->flush();   // catch up when the radio clock runs ahead of the sound card
-                std::vector<float> st((size_t)frames * 2);
-                const int16_t* s = reinterpret_cast<const int16_t*>(pcm);
-                for (int i = 0; i < frames; i++) {
-                    const float L = s[i * ch] / 32768.f;
-                    const float R = ch > 1 ? s[i * ch + 1] / 32768.f : L;
-                    st[(size_t)i * 2] = L;
-                    st[(size_t)i * 2 + 1] = R;
-                }
-                audioOut->write(st.data(), frames);
-            }
-        }
-    }
 
     void startSearch(int64_t from) {
         bands = std::make_unique<SearchBands>();
@@ -395,17 +350,19 @@ struct CdrReceiver::Impl {
             Acq best;
             for (const auto& c : group) {
                 const Acq a = evaluate(c);
-                if (a.ok && a.metric > best.metric) best = a;
+                if (a.ok && !wasRejected(a) && a.metric > best.metric) best = a;
             }
             if (!best.ok) {
                 // a beacon that fits nothing: perhaps the spectrum is mirrored (I and Q swapped by the radio or the file format)
                 mirror = !mirror;
-                for (const auto& c : group) {
+                for (auto c : group) {
+                    c.sumP = std::conj(c.sumP);        // measured on the other orientation: the carrier offset has the other sign
                     const Acq a = evaluate(c);
-                    if (a.ok && a.metric > best.metric) best = a;
+                    if (a.ok && !wasRejected(a) && a.metric > best.metric) best = a;
                 }
                 if (!best.ok) mirror = !mirror;
             }
+            if (best.ok && wasRejected(best)) best = Acq();     // the same false lock again: keep looking
             if (best.ok) { lockOn(best); pending.clear(); return; }
         }
     }
@@ -435,7 +392,14 @@ struct CdrReceiver::Impl {
         return nrm > 0 ? std::abs(d) / nrm : 0;
     }
 
-    struct Acq { bool ok = false; double metric = 0, s1 = 0, f = 0; int tm = 0, sm = 0; int64_t dEnd = 0; };
+    struct Acq { bool ok = false; double coh = 0, metric = 0, s1 = 0, f = 0; int tm = 0, sm = 0; int64_t dEnd = 0; };
+
+    bool wasRejected(const Acq& a) const {
+        const double now = curRate > 0 ? (double)nIn / curRate : 0;
+        for (const auto& r : rejected) if (r.tm == a.tm && r.sm == a.sm && std::fabs(r.f - a.f) < 3000 && now - r.at < 25) return true;
+        return false;
+    }
+
 
     Acq evaluate(const Candidate& c) {
         Acq r;
@@ -473,10 +437,9 @@ struct CdrReceiver::Impl {
             const double m1 = pilotCoherence(*layoutFor(1, bestSm), s1, f), m3 = pilotCoherence(*layoutFor(3, bestSm), s1, f);
             t = m3 > m1 ? 3 : 1;
         }
-        // Hybrid modes beside FM: the sync sequence alone can lock on the analogue sidebands; scattered pilots must cohere.
-        if (bestSm == 9 || bestSm == 10 || bestSm == 22 || bestSm == 23) {
-            if (pilotCoherence(*layoutFor(t, bestSm), s1, f) < 0.15) return r;
-        }
+        // The sync sequence alone can lock on the analogue FM's lines; the scattered pilots must cohere too.
+        r.coh = pilotCoherence(*layoutFor(t, bestSm), s1, f);
+        if (r.coh < (searchSec() > kRelaxAfterSec ? kMinPilotCoh : kSurePilotCoh)) return r;
         r.ok = true; r.metric = best.metric; r.s1 = s1; r.f = f; r.tm = t; r.sm = bestSm; r.dEnd = c.dEnd;
         return r;
     }
@@ -484,13 +447,16 @@ struct CdrReceiver::Impl {
     void lockOn(const Acq& r) {
         lay = layoutFor(r.tm, r.sm);
         tm = r.tm; sm = r.sm;
-        cfo = r.f;
+        cfo = cfoLock = r.f;
         bs = r.s1 - lay->tp->tb;
         while (bs + lay->tp->tbcp / 2 < (double)buf0) bs += kSubframeLen;   // the first beacon began before the samples we have: take the next one
         bsAtLock = bs;
         searchFloor = r.dEnd + 1;
         locked = true;
-        badBeacons = 0; badRun = 0; badSi = 0; nSub = 0; siSeen = false;
+        probation = r.coh < kSurePilotCoh;
+        tel.locks++;
+        badBeacons = 0; badRun = 0; badSi = 0; nSub = 0; siSeen = false; noSiRun = 0; jumpRun = 0; noDataRun = 0; dataSeen = false;
+        audio.resetDecoder();
         tel.tm = tm; tel.sm = sm; tel.ni = lay->ni;
         tel.innerKhz = lay->spec->innerKhz; tel.outerKhz = lay->spec->outerKhz;
         tel.state = std::max(tel.state, 1);
@@ -499,8 +465,29 @@ struct CdrReceiver::Impl {
         say(b);
     }
 
+    // the user's Re-sync: drop the lock and everything half decoded, forget the rejected locks, search again from the newest samples
+    void resyncNow() {
+        tel.resyncs++;
+        locked = false; lay.reset();
+        tel.state = 0; tel.siValid = false;
+        for (auto& r : store) for (auto& s2 : r) s2 = SubData();
+        rejected.clear(); noSiRun = 0; jumpRun = 0; goodAt = curRate > 0 ? (double)nIn / curRate : 0; badBeacons = badRun = badSi = 0;
+        buf0 = bufEnd(); buf.clear();
+        searchFloor = buf0;
+        startSearch(buf0);
+        audio.resetDecoder();
+        audio.flush();
+        say("CDR: re-sync requested, searching again");
+    }
+
     void unlock(const char* why) {
+        tel.unlocks++;
+        if ((!siSeen || !dataSeen) && lay) {      // a lock that never read anything was a false one (analogue FM lines look like a beacon)
+            rejected.push_back({tm, sm, cfo, curRate > 0 ? (double)nIn / curRate : 0});
+            if (rejected.size() > 12) rejected.erase(rejected.begin());
+        }
         locked = false;
+        audio.resetDecoder();
         lay.reset();
         tel.state = 0;
         tel.siValid = false;
@@ -531,13 +518,42 @@ struct CdrReceiver::Impl {
         double terr = 0;
         if (fit.metric > 0.12) {
             const double tau = -fit.phase * nb / (2 * M_PI);
-            terr = std::remainder((double)w0 + tau - ((double)b0 + tp.tbcp), (double)nb);
+            const double raw = std::remainder((double)w0 + tau - ((double)b0 + tp.tbcp), (double)nb);
+            if (std::fabs(raw) < 64) { terr = raw; jumpRun = 0; }
+            else if (fit.metric > 0.5) {
+                // A timing step: samples were lost in the USB link or the recording (or the sample clock hopped). The beacon is clearly there but
+                // at another place, and every sub-frame after the step was read with the old timing (it stayed wrong for good). Follow it
+                // as soon as two sub-frames in a row show the same step.
+                if (jumpRun > 0 && std::fabs(raw - jumpLast) < 24) jumpRun++; else jumpRun = 1;
+                jumpLast = raw;
+                // the beacon repeats every nb samples, so the step is only known modulo nb: the pilots pick the right one
+                double bestStep = raw, bestCoh = -1;
+                for (int k = -1; k <= 1; k++) {
+                    const double cand = raw + k * (double)nb;
+                    if (std::fabs(cand) > 1.2 * nb) continue;
+                    const double coh = pilotCoherence(L, (double)b0 + cand + tp.tb, cfo);
+                    if (coh > bestCoh) { bestCoh = coh; bestStep = cand; }
+                }
+                // clearly confirmed by the pilots: follow at once; otherwise only when the same step shows twice
+                if (bestCoh >= 0.5 || (jumpRun >= 2 && bestCoh >= 0.15)) {
+                    jumpRun = 0;
+                    terr = bestStep;
+                    char b[96]; snprintf(b, sizeof b, "CDR: timing step of %+.0f samples followed", bestStep);
+                    say(b);
+                } else if (jumpRun >= 2) { jumpRun = 0; badRun = 4; }   // nothing fits: search again
+            } else jumpRun = 0;
             const double df = std::arg(half) * kFs / (2 * M_PI * nb);
-            cfo += 0.5 * df;
+            // only a trustworthy beacon steers the carrier: in a deep fade or a gain swing the phase is noise and the estimate wandered
+            // away by hundreds of Hz (never to come back); the step and the total excursion from the locked value are bounded
+            if (fit.metric > 0.3 && std::isfinite(df)) {
+                cfo += 0.5 * std::max(-500.0, std::min(500.0, df));
+                if (nSub < 24) cfoLock = cfo;      // still pulling in (a mirrored spectrum starts with the wrong sign): no limit yet
+                else cfo = std::max(cfoLock - 3000.0, std::min(cfoLock + 3000.0, cfo));
+            }
             badBeacons = std::max(0, badBeacons - 1);
             badRun = 0;
         } else { if (++badBeacons > 12) badBeacons = 12; badRun++; }   // hybrid FM: occasional weak beacons, not instant unlock at 6
-        const double sub0 = (double)b0 + (std::fabs(terr) < 64 ? terr : 0.0);     // this sub-frame's beacon start
+        const double sub0 = (double)b0 + terr;     // this sub-frame's beacon start
         // OFDM symbols
         const int bo = std::max(2, tp.tcp / 4);
         std::vector<cf32> Y((size_t)(sn * cols)), x((size_t)ns);
@@ -623,6 +639,7 @@ struct CdrReceiver::Impl {
             const double sp = sig / snCnt, np = std::max(1e-12, noise / snCnt);
             snr = (float)(10 * std::log10(sp / np + 1e-12));
         } else snr = (float)(10 * std::log10(hp / nvar + 1e-12));
+        if (!std::isfinite(snr)) snr = -30.f;      // never let a bad sub-frame poison the running average
         snrAvg = tel.subframes == 0 ? snr : 0.8f * snrAvg + 0.2f * snr;
         tel.snrDb = snrAvg;
         // channel plot: the middle symbol
@@ -652,7 +669,7 @@ struct CdrReceiver::Impl {
         tel.subframes++;
         if (siFromBits(bits, si) && si.spec == sm && si.alloc >= 1 && si.alloc <= 3) {
             tel.siOk++;
-            badSi = 0;
+            badSi = 0; noSiRun = 0; goodAt = curRate > 0 ? (double)nIn / curRate : 0;
             siSeen = true;
             tel.siValid = true;
             tel.state = std::max(tel.state, 2);
@@ -673,6 +690,7 @@ struct CdrReceiver::Impl {
             }
         } else {
             tel.siBad++;
+            noSiRun++;
             // Hybrid FM: SI CRC can fail while the beacon and service data still track; do not treat that like a lost signal.
             if (fit.metric > 0.5) badSi = std::max(0, badSi - 1);
             else badSi++;
@@ -719,6 +737,7 @@ struct CdrReceiver::Impl {
             ControlFrame cf;
             if (parseControlFrame(bytes.data(), bytes.size(), cf)) {
                 tel.sdcOk++;
+                dataSeen = true;
                 tel.state = 3;
                 tel.tablesOk += (uint64_t)cf.tablesOk; tel.tablesBad += (uint64_t)cf.tablesBad;
                 tel.otherTables = cf.otherTables;
@@ -760,6 +779,7 @@ struct CdrReceiver::Impl {
             if (r.ok) { tel.blocksOk++; okWords++; } else tel.blocksBad++;
         }
         if (okWords > 0) badSi = std::max(0, badSi - 1);
+        if (okWords > 0) { noDataRun = 0; dataSeen = true; } else noDataRun++;
         tel.codewords = cw;
         tel.ldpcIterations = cw ? (float)iters / cw : 0;
         tel.logicalFrames++;
@@ -819,7 +839,7 @@ struct CdrReceiver::Impl {
                 s.streams.push_back(a);
             }
             if (saveId.load() == (int)s.id && saveSink.isOpen()) for (const auto& u : ps.sf.audio) saveSink.write(u.data.data(), u.data.size());
-            if (ps.sf.hasAudio) playUnits(s.id, ps.sf.audio);
+            if (ps.sf.hasAudio) audio.play(listenId.load(), s.id, ps.sf.audio, volume.load(), muted.load(), tel);
             s.audioUnits = (int)ps.sf.audio.size();
             s.audioBytes = 0;
             for (const auto& u : ps.sf.audio) s.audioBytes += (int)u.data.size();
@@ -865,8 +885,13 @@ struct CdrReceiver::Impl {
                 continue;
             }
             processSubframe();
+            if (!std::isfinite(cfo) || !std::isfinite(bs)) { unlock("numeric error"); break; }
             // a run of missing beacons is a timing jump (samples lost in the USB link), not fading: search again at once
-            if (badBeacons >= 12 || badRun >= 4 || badSi >= (siSeen ? 24 : 12)) { unlock(badBeacons >= 12 || badRun >= 4 ? "no beacon" : "no system information"); break; }
+            // noSiRun: the beacon may look fine (a false lock on analogue FM, or timing that was lost) while nothing ever decodes
+            if (badBeacons >= 12 || badRun >= 4 || badSi >= (siSeen ? 24 : 12) || noSiRun >= (siSeen ? kStallSi : probation ? kProbationSi : kFirstSi) || noDataRun >= kStallData) {
+                unlock(badBeacons >= 12 || badRun >= 4 ? "no beacon" : noDataRun >= kStallData ? "no data" : "no system information");
+                break;
+            }
         }
         // keep what the next step still needs
         int64_t keep = locked ? (int64_t)std::llround(bs) - 4096 : std::min(searchNext - kSearchHop, pending.empty() ? searchNext : pending.front().dStart) - 4096;
@@ -889,6 +914,7 @@ bool CdrReceiver::ready() const {
     std::lock_guard<std::mutex> lk(p_->mu);
     return p_->rate >= cdrTuning().minSampleRate - 1;
 }
+void CdrReceiver::resync() { p_->resyncReq = true; }
 void CdrReceiver::reset() {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->resetReq = true;
@@ -900,6 +926,7 @@ void CdrReceiver::reset() {
 void CdrReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
+    if (m.resyncReq.exchange(false) && m.curRate > 0) m.resyncNow();
     if (m.curRate < cdrTuning().minSampleRate - 1) return;
     size_t done = 0;
     while (done < n) {

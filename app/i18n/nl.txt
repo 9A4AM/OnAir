@@ -1315,3 +1315,5 @@ Status	Status
 Running	Actief
 Step	Stap
 Keyboard	Toetsenbord
+Re-sync	Opnieuw synchroniseren
+Drop the lock and search for the CDR signal again without stopping the radio.\nUse it when the sound stays silent after the signal faded.	Laat de vergrendeling los en zoek het CDR-signaal opnieuw zonder de radio te stoppen.\nGebruik dit als het geluid stil blijft nadat het signaal wegviel.

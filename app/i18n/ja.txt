@@ -1315,3 +1315,5 @@ Status	状態
 Running	動作中
 Step	ステップ
 Keyboard	キーボード
+Re-sync	再同期
+Drop the lock and search for the CDR signal again without stopping the radio.\nUse it when the sound stays silent after the signal faded.	ラジオを止めずにロックを破棄してCDR信号を再探索します。\n信号が弱まった後に音が出なくなったときに使います。

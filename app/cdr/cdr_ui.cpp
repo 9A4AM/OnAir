@@ -98,6 +98,13 @@ void tick(App& a) {
     if (t.state > 0) push(S.snr, t.snrDb);
 }
 
+// Re-sync: forget the lock and the half-decoded frames and search the beacon again, the radio keeps running
+void resyncButton(App& a) {
+    if (!a.engine.running()) return;
+    if (ImGui::Button(tr("Re-sync"))) a.engine.cdr().resync();
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Drop the lock and search for the CDR signal again without stopping the radio.\nUse it when the sound stays silent after the signal faded."));
+}
+
 void kvRow(const App& a, const char* k, const std::string& v, float x = 110.f) {
     ImGui::TextDisabled("%s", k); kvColumn(x * gUi);
     ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(v.c_str()); ImGui::PopTextWrapPos(); ImGui::PopFont();
@@ -115,6 +122,7 @@ void details(App& a, float w, float h) {
         { ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(!a.engine.running() ? "stopped" : t.state > 0 ? "reading the multiplex" : "searching for a CDR signal"); ImGui::PopTextWrapPos(); }
         ImGui::PopFont();
         { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", a.engine.running() ? t.status.c_str() : "Start the receiver. Test signal: pick the synthetic source."); ImGui::PopTextWrapPos(); }
+        resyncButton(a);
         ImGui::EndChild();
         return;
     }
@@ -124,6 +132,7 @@ void details(App& a, float w, float h) {
     ImGui::PopStyleColor();
     ImGui::PopFont();
     { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", t.network.empty() ? "network name not received yet" : t.network.c_str()); ImGui::PopTextWrapPos(); }
+    resyncButton(a);
     ImGui::Spacing();
     char b[96];
     snprintf(b, sizeof b, "%04X  (multiplex frame %d, sub-frame %d)", s->id, s->smfId, s->subIndex); kvRow(a, "service id", b);
