@@ -9,6 +9,7 @@
 #include "../adsb/adsb_map.h"
 #include "dect2/channels/channel_db.h"
 #include "dect2/engine/updater.h"
+#include "dect2/dab/dab_fig.h"
 #include <atomic>
 #include <cmath>
 #include <filesystem>
@@ -35,6 +36,10 @@ struct State {
     bool fitted = false;
     double refLat = 0, refLon = 0;
     bool haveRef = false;
+    // the positions the ensemble itself broadcasts (FIG 0/22), refreshed every couple of seconds: key as in sites, own/shared lists win
+    std::map<uint64_t, TxSite> air;
+    uint16_t airEid = 0;
+    double airAt = -10;
 };
 State S;
 
@@ -176,13 +181,28 @@ void dabTransmittersTab(App& a) {
                           "OnAir lists the ones it hears; with a transmitter list it shows where they stand.");
       ImGui::PopTextWrapPos(); }
 
+    // the positions the broadcast itself gives (FIG 0/22: main identifier, and sub identifiers as offsets from it)
+    if (on && (S.airEid != ens.eid || ImGui::GetTime() - S.airAt > 2.0)) {
+        S.airAt = ImGui::GetTime();
+        if (S.airEid != ens.eid) S.air.clear();
+        S.airEid = ens.eid;
+        const DabFicInfo fi = dabFicInfo(a.engine.dabFic());
+        for (const auto& m : fi.transmitters) { TxSite s; s.lat = m.lat; s.lon = m.lng; s.name = "broadcast position"; S.air[key(ens.eid, m.mainId, 0)] = s; }
+        for (const auto& t : fi.subTransmitters) if (t.placed) { TxSite s; s.lat = t.lat; s.lon = t.lng; s.name = "broadcast position"; S.air[key(ens.eid, t.mainId, t.subId)] = s; }
+    }
     // which of the heard ones are in the list
     struct Row { DabTelemetry::Tii t; const TxSite* site; double km = -1, deg = 0; };
     std::vector<Row> rows;
     if (on) for (const auto& t : d.tii) {
         Row r{t, nullptr};
         auto it = S.sites.find(key(ens.eid, t.mainId, t.subId));
-        if (it != S.sites.end()) { r.site = &it->second; if (S.haveRef) distBearing(S.refLat, S.refLon, it->second.lat, it->second.lon, r.km, r.deg); }
+        if (it != S.sites.end()) r.site = &it->second;
+        else {   // not in a list: where the ensemble says it stands (the sub identifier's own position, else the main identifier's)
+            auto b = S.air.find(key(ens.eid, t.mainId, t.subId));
+            if (b == S.air.end()) b = S.air.find(key(ens.eid, t.mainId, 0));
+            if (b != S.air.end()) r.site = &b->second;
+        }
+        if (r.site && S.haveRef) distBearing(S.refLat, S.refLon, r.site->lat, r.site->lon, r.km, r.deg);
         rows.push_back(r);
     }
     const float strongest = rows.empty() ? 0.f : rows.front().t.levelDb;
@@ -250,7 +270,8 @@ void dabTransmittersTab(App& a) {
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("MainId %d (pattern), SubId %d (comb)\n%.1f dB above the noise of the null symbol", r.t.mainId, r.t.subId, r.t.levelDb);
             ImGui::TableNextColumn(); ImGui::Text("%+.1f dB", r.t.levelDb - strongest);
             ImGui::TableNextColumn();
-            if (r.site) { ImGui::TextUnformatted(r.site->name.empty() ? "?" : r.site->name.c_str()); if (r.site->own && ImGui::IsItemHovered()) ImGui::SetTooltip("from your own file"); }
+            if (r.site) { ImGui::TextUnformatted(r.site->name.empty() ? "?" : r.site->name.c_str());
+                if (ImGui::IsItemHovered()) { if (r.site->own) ImGui::SetTooltip("from your own file"); else if (r.site->name == "broadcast position") ImGui::SetTooltip("%.4f, %.4f\nsent by the ensemble itself (FIG 0/22), no site name", r.site->lat, r.site->lon); } }
             else {
                 ImGui::PushID((int)key(ens.eid, r.t.mainId, r.t.subId));
                 // the built-in test signal's transmitters are made up: they must not end up in the public list

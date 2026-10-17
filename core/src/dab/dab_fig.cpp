@@ -246,6 +246,7 @@ DabFicInfo dabFicInfo(const DabFicAnalysis& a) {
                 }
                 break;
             case 22:
+                if (r.oe) break;   // the transmitters of another ensemble are not this one's
                 for (int i = 1; i < len;) {
                     const int ms = f[i] >> 7, main = f[i] & 0x7F;
                     i++;
@@ -254,7 +255,17 @@ DabFicInfo dabFicInfo(const DabFicAnalysis& a) {
                         const int16_t lac = (int16_t)(f[i] << 8 | f[i + 1]), loc = (int16_t)(f[i + 2] << 8 | f[i + 3]);
                         c.transmitters.push_back({main, (double)(((int32_t)lac << 4) | (f[i + 4] >> 4)) * 90 / 524288, (double)(((int32_t)loc << 4) | (f[i + 4] & 15)) * 180 / 524288});
                         i += 5;
-                    } else { if (i >= len) break; i += 1 + (f[i] & 7) * 6; }
+                    } else {
+                        if (i >= len) break;
+                        const int n = f[i] & 7;
+                        i++;
+                        for (int j = 0; j < n && i + 6 <= len; j++, i += 6) {
+                            DabFicInfo::SubTx t;
+                            t.mainId = main; t.subId = f[i] >> 3; t.delayUs = ((f[i] & 3) << 8) | f[i + 1];
+                            t.lat = (int16_t)(f[i + 2] << 8 | f[i + 3]) * 90.0 / 524288; t.lng = (int16_t)(f[i + 4] << 8 | f[i + 5]) * 180.0 / 524288;
+                            c.subTransmitters.push_back(t);
+                        }
+                    }
                 }
                 break;
             case 24:
@@ -270,6 +281,8 @@ DabFicInfo dabFicInfo(const DabFicAnalysis& a) {
             default: break;
         }
     }
+    for (auto& t : c.subTransmitters)   // the offset is from the position of the main identifier
+        for (const auto& m : c.transmitters) if (m.mainId == t.mainId) { t.lat += m.lat; t.lng += m.lng; t.placed = true; break; }
     return c;
 }
 
