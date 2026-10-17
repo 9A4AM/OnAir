@@ -35,6 +35,12 @@ struct HalowReceiver::Impl {
     int loCount = 0;
     bool mixOff = false;                 // the signal is not at the centre: mix it there (no mixing at offset 0)
     std::vector<std::unique_ptr<HalowChain>> chains;
+    // Sub-channel scan: 1 MHz channels sit anywhere in a wider capture (the primary channel of a Morse Micro or other 2 / 4 / 8 MHz BSS, a duplicated beacon),
+    // so extra 1 MHz chains look at the 1 MHz grid around the centre (+-0.5, +-1.5 MHz from 4 Msps, +-2.5 and +-3.5 from 8 Msps), each behind its own mixer
+    struct Sub { double hz = 0; std::complex<double> lo{1, 0}, step{1, 0}; int cnt = 0; std::vector<cf32> buf; std::unique_ptr<HalowChain> chain; };
+    std::vector<Sub> subs;
+    double curSubHz = 0;                 // the sub-channel offset of the chain whose event is being handled
+    std::atomic<bool> subScan{true};
     std::vector<cf32> mixed;
     // counters kept across chain restarts (a retune or a new rate rebuilds the chains)
     uint64_t accPre = 0, accSigOk = 0, accSigBad = 0, accDataBad = 0;
@@ -49,7 +55,7 @@ struct HalowReceiver::Impl {
     double nextPps = 1; int ppsAcc = 0;
 
     double sigSec() const { return rate > 0 ? nIn / rate : 0; }
-    double hintMhz() const { const double c = centerHz.load(); return c > 0 ? (c + offset) / 1e6 : 0; }
+    double hintMhz() const { const double c = centerHz.load(); return c > 0 ? (c + offset + curSubHz) / 1e6 : 0; }
 
     // The chains for this input rate: 1 / 2 / 4 MHz on the 4 Msps grid, 8 MHz from 8 Msps, 16 MHz from 16 Msps (halow_phy.h: minRateHz)
     void buildChains() {
@@ -58,7 +64,13 @@ struct HalowReceiver::Impl {
             accPre += s.preambles; accSigOk += s.sigOk; accSigBad += s.sigBad; accDataBad += s.dataBad;
             for (int w = 0; w < kNumWidths; w++) accWidth[w] += s.perWidth[w];
         }
+        for (auto& sb : subs) {
+            const HalowChain::Stats& s = sb.chain->stats();
+            accPre += s.preambles; accSigOk += s.sigOk; accSigBad += s.sigBad; accDataBad += s.dataBad;
+            for (int w = 0; w < kNumWidths; w++) accWidth[w] += s.perWidth[w];
+        }
         chains.clear();
+        subs.clear();
         if (rate < halowTuning().minSampleRate - 1) return;
         auto add = [&](double chainRate, std::vector<int> widths) {
             auto c = std::make_unique<HalowChain>(rate, chainRate, widths);
@@ -69,6 +81,20 @@ struct HalowReceiver::Impl {
         add(4e6, {W2, W1, W4});
         if (rate >= minRateHz(W8) - 1) add(8e6, {W8});
         if (rate >= minRateHz(W16) - 1) add(16e6, {W16});
+        // sub-channel scan: only with the dial on the centre, all widths tried (or 1 MHz chosen) and a radio rate that holds a wider band
+        if (subScan.load() && offset == 0 && (widthMask.load() & 1) && rate >= 2.9e6) {
+            std::vector<double> offs;   // the 1 MHz grid around the centre, as far as the passband of the radio's rate holds a whole channel
+            for (double hz = 0.5e6; hz + 0.6e6 <= 0.4 * rate && offs.size() < 12; hz += 1e6) { offs.push_back(-hz); offs.push_back(hz); }
+            for (double hz : offs) {
+                Sub sb;
+                sb.hz = hz;
+                sb.step = std::polar(1.0, -2 * math::kPi * hz / rate);
+                sb.chain = std::make_unique<HalowChain>(rate, 4e6, std::vector<int>{W1});
+                sb.chain->setWidthMask(1);
+                sb.chain->onEvent = [this, hz](const HalowEvent& e) { curSubHz = hz; onEvent(e); curSubHz = 0; };
+                subs.push_back(std::move(sb));
+            }
+        }
     }
 
     // The tables and the frame log stay through resets: Clear and a loaded file reach the feed thread's copy through these requests (mu)
@@ -249,7 +275,7 @@ struct HalowReceiver::Impl {
 
     // ---------------------------------------------------------------- feed side
 
-    void process() { for (auto& c : chains) c->process(); }
+    void process() { for (auto& c : chains) c->process(); for (auto& sb : subs) sb.chain->process(); }
 
     // Publishes the telemetry for the interface thread.
     void report() {
@@ -264,7 +290,10 @@ struct HalowReceiver::Impl {
         tel.widthMask = widthMask.load();
         tel.preambles = accPre; tel.sigOk = accSigOk; tel.sigBad = accSigBad; tel.dataBad = accDataBad;
         for (int w = 0; w < kNumWidths; w++) tel.perWidth[w] = accWidth[w];
-        for (auto& c : chains) {
+        std::vector<const HalowChain*> all;
+        for (auto& c : chains) all.push_back(c.get());
+        for (auto& sb : subs) all.push_back(sb.chain.get());
+        for (const HalowChain* c : all) {
             const HalowChain::Stats& s = c->stats();
             tel.preambles += s.preambles; tel.sigOk += s.sigOk; tel.sigBad += s.sigBad; tel.dataBad += s.dataBad;
             for (int w = 0; w < kNumWidths; w++) tel.perWidth[w] += s.perWidth[w];
@@ -352,6 +381,16 @@ void HalowReceiver::feed(const cf32* x, size_t n) {
                 m.mixed[i] = cf32((float)v.real(), (float)v.imag());
             }
         for (auto& c : m.chains) c->feed(m.mixed.data(), take);
+        for (auto& sb : m.subs) {
+            sb.buf.resize(take);
+            for (size_t i = 0; i < take; i++) {
+                const std::complex<double> v = std::complex<double>(m.mixed[i].real(), m.mixed[i].imag()) * sb.lo;
+                sb.lo *= sb.step;
+                if (++sb.cnt >= 4096) { sb.lo /= std::abs(sb.lo); sb.cnt = 0; }
+                sb.buf[i] = cf32((float)v.real(), (float)v.imag());
+            }
+            sb.chain->feed(sb.buf.data(), take);
+        }
         m.nIn += (int64_t)take;
         m.nPower += (int64_t)take;
         pos += take;
