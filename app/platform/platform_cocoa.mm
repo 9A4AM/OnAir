@@ -102,7 +102,7 @@ bool fetchUrl(const std::string& url, const std::string& file, const std::string
     return system(cmd.c_str()) == 0;
 }
 
-bool postJson(const std::string& url, const std::string& json, const std::string& userAgent) {
+static bool postImpl(const std::string& url, const std::string& json, const std::string& userAgent, std::string* reply) {
     @autoreleasepool {
         NSURL* u = [NSURL URLWithString:[NSString stringWithUTF8String:url.c_str()]];
         if (!u) return false;
@@ -113,15 +113,19 @@ bool postJson(const std::string& url, const std::string& json, const std::string
         [req setValue:[NSString stringWithUTF8String:userAgent.c_str()] forHTTPHeaderField:@"User-Agent"];
         dispatch_semaphore_t sem = dispatch_semaphore_create(0);
         __block bool ok = false;
-        [[[NSURLSession sharedSession] dataTaskWithRequest:req completionHandler:^(NSData*, NSURLResponse* resp, NSError* err) {
+        [[[NSURLSession sharedSession] dataTaskWithRequest:req completionHandler:^(NSData* data, NSURLResponse* resp, NSError* err) {
             NSHTTPURLResponse* h = (NSHTTPURLResponse*)resp;
             ok = err == nil && h && h.statusCode >= 200 && h.statusCode < 300;
+            if (reply && data) reply->assign((const char*)data.bytes, std::min<size_t>(data.length, 65536));
             dispatch_semaphore_signal(sem);
         }] resume];
         if (dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, 13 * NSEC_PER_SEC)) != 0) return false;
         return ok;
     }
 }
+
+bool postJson(const std::string& url, const std::string& json, const std::string& userAgent) { return postImpl(url, json, userAgent, nullptr); }
+bool postJsonReply(const std::string& url, const std::string& json, const std::string& userAgent, std::string& reply) { reply.clear(); return postImpl(url, json, userAgent, &reply); }
 
 std::string openFileDialog() {
     NSOpenPanel* p = [NSOpenPanel openPanel];

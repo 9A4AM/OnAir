@@ -2349,3 +2349,14 @@ Current setting: %.2f ppm	Jelenlegi beállítás: %.2f ppm
 No measurements of this radio yet.	Ehhez a rádióhoz még nincs mérés.
 History of this radio (ppm)	A rádió előzményei (ppm)
 Drift: %+.3f ppm per minute	Sodródás: %+.3f ppm percenként
+Live: stop the room	Élő: a szoba leállítása
+Copy room link	Szobalink másolása
+Host PIN (to moderate on the room page):	Házigazda PIN (a szoba oldalán történő moderáláshoz):
+Go live (Live rooms)...	Élő adás indítása (Élő szobák)...
+Could not create the room	A szobát nem sikerült létrehozni
+Lost the connection to the rooms server	Megszakadt a kapcsolat a szobaszerverrel
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Élő szobák: amíg élő adásban vagy, a szoba linkjével bárki láthatja ennek a vevőnek a vízesésdiagramját, a módot és a beállított frekvenciát, és csevegni tud másokkal. A weben a szobalista a címét is mutatja. Az Élő adás indítása gomb megnyomása előtt semmi nem kerül elküldésre, és a szoba megszűnése után semmi nem marad tárolva. A helyed, a neved és a hang soha nem kerül elküldésre.
+Room title	Szoba címe
+Also show decoded ACARS text in the room (public)	A dekódolt ACARS-szöveg megjelenítése a szobában (nyilvános)
+Needs Server > Send data to map server and Also share interesting ACARS messages.	Szükséges hozzá: Szerver > Adatok küldése a térképszervernek és Az érdekes ACARS-üzenetek megosztása is.
+Go live	Élő adás indítása

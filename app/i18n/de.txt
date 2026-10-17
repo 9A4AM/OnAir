@@ -2363,3 +2363,14 @@ Current setting: %.2f ppm	Aktuelle Einstellung: %.2f ppm
 No measurements of this radio yet.	Noch keine Messungen dieses Radios.
 History of this radio (ppm)	Verlauf dieses Radios (ppm)
 Drift: %+.3f ppm per minute	Drift: %+.3f ppm pro Minute
+Live: stop the room	Live: Raum beenden
+Copy room link	Raumlink kopieren
+Host PIN (to moderate on the room page):	Host-PIN (zum Moderieren auf der Raumseite):
+Go live (Live rooms)...	Live gehen (Live-Räume)...
+Could not create the room	Der Raum konnte nicht erstellt werden
+Lost the connection to the rooms server	Verbindung zum Raum-Server verloren
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Live-Räume: Solange du live bist, kann jeder mit dem Raumlink das Wasserfalldiagramm dieses Empfängers, den Modus und die eingestellte Frequenz sehen und miteinander chatten. Die Raumliste im Web zeigt auch den Titel. Vor dem Klick auf Live gehen wird nichts gesendet, und nach dem Ende des Raums wird nichts gespeichert. Dein Standort, dein Name und der Ton werden nie gesendet.
+Room title	Raumtitel
+Also show decoded ACARS text in the room (public)	Auch dekodierten ACARS-Text im Raum zeigen (öffentlich)
+Needs Server > Send data to map server and Also share interesting ACARS messages.	Benötigt Server > Daten an Kartenserver senden und Auch interessante ACARS-Nachrichten teilen.
+Go live	Live gehen
