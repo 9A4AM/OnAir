@@ -2,6 +2,7 @@
 #include "native_common.h"
 #include "dect2/engine/mode_tuning.h"
 #include <map>
+#include "rtl_fd_shim.h"
 
 namespace dect2 {
 namespace native {
@@ -35,7 +36,51 @@ struct RtlApi {
     bool blogLib = false;
     bool ok = false;
     DynLib lib;
+#ifdef DECT2_RUST_USB
+    // Android: the radios come from the app as opened USB descriptors (usb_fd.h), driven by the Rust protocol layer; no librtlsdr, no libusb.
+    // (A desktop build with DECT2_RUST_USB uses it when the app registered descriptors, which is also how the tests reach it.)
+    static bool useUsbFd() {
+#ifdef __ANDROID__
+        return true;
+#else
+        return !usbFdList("rtlsdr").empty();
+#endif
+    }
+    void fillFromUsbFd() {
+        using namespace rtlfd;
+        typedef rtlsdr_dev_t* D_;
+        get_device_count = [] () -> uint32_t { return getDeviceCount(); };
+        get_device_name = [] (uint32_t i) -> const char* { return getDeviceName(i); };
+        get_device_usb_strings = [] (uint32_t i, char* a, char* b, char* c) -> int { return getUsbStrings(i, a, b, c); };
+        open = [] (rtlsdr_dev_t** d, uint32_t i) -> int { return rtlfd::open(reinterpret_cast<void**>(d), i); };
+        close = [] (rtlsdr_dev_t* d) -> int { return rtlfd::close(d); };
+        set_center_freq = [] (rtlsdr_dev_t* d, uint32_t f) -> int { return setCenterFreq(d, f); };
+        set_sample_rate = [] (rtlsdr_dev_t* d, uint32_t r) -> int { return setSampleRate(d, r); };
+        get_sample_rate = [] (rtlsdr_dev_t* d) -> uint32_t { return getSampleRate(d); };
+        set_tuner_gain_mode = [] (rtlsdr_dev_t* d, int m) -> int { return setGainMode(d, m); };
+        get_tuner_gains = [] (rtlsdr_dev_t* d, int* g) -> int { return getGains(d, g); };
+        set_tuner_gain = [] (rtlsdr_dev_t* d, int g) -> int { return setGain(d, g); };
+        set_agc_mode = [] (rtlsdr_dev_t* d, int on) -> int { return setAgc(d, on); };
+        reset_buffer = [] (rtlsdr_dev_t* d) -> int { return resetBuffer(d); };
+        read_async = [] (rtlsdr_dev_t* d, cb_t cb, void* ctx, uint32_t n, uint32_t len) -> int { return readAsync(d, cb, ctx, n, len); };
+        cancel_async = [] (rtlsdr_dev_t* d) -> int { return cancelAsync(d); };
+        read_sync = [] (rtlsdr_dev_t* d, void* b, int len, int* got) -> int { return readSync(d, b, len, got); };
+        get_tuner_type = [] (rtlsdr_dev_t* d) -> int { return getTunerType(d); };
+        set_direct_sampling = [] (rtlsdr_dev_t* d, int m) -> int { return setDirect(d, m); };
+        set_bias_tee = [] (rtlsdr_dev_t* d, int on) -> int { return setBias(d, on); };
+        set_freq_correction = [] (rtlsdr_dev_t* d, int ppm) -> int { return setPpm(d, ppm); };
+        set_offset_tuning = [] (rtlsdr_dev_t* d, int on) -> int { return setOffset(d, on); };
+        check_dongle_model = [] (rtlsdr_dev_t* d, char* m, char* p) -> int { return checkModel(d, m, p); };
+        blogLib = true;   // the protocol layer follows the RTL-SDR Blog fork (V3 / V4 handling)
+        ok = true;
+        lib.path = "usb descriptor";
+        (void)sizeof(D_);
+    }
+#endif
     RtlApi() {
+#ifdef DECT2_RUST_USB
+        if (useUsbFd()) { fillFromUsbFd(); return; }
+#endif
         if (nativeDisabled() || !lib.open(libNames("rtlsdr", {".0", ".2"}, {"rtlsdr.dll", "librtlsdr.dll"}))) return;
         ok = lib.get(get_device_count, "rtlsdr_get_device_count") && lib.get(get_device_name, "rtlsdr_get_device_name") &&
              lib.get(get_device_usb_strings, "rtlsdr_get_device_usb_strings") && lib.get(open, "rtlsdr_open") && lib.get(close, "rtlsdr_close") &&
