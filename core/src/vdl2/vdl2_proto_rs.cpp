@@ -2,6 +2,7 @@
 // under #ifndef DECT2_RUST_VDL2 together with the burst / HDLC / frame builders for the test signal and the ACARS reader. Empty when the crate is not built.
 #ifdef DECT2_RUST_VDL2
 #include "dect2/vdl2/vdl2_proto.h"
+#include <memory>
 #include "dect2/rs/vdl2.h"
 #include "vdl2_internal.h"
 #include <cstdio>

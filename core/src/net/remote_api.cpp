@@ -1,6 +1,7 @@
 // Remote-control API server: see dect2/net/remote_api.h. One thread accepts; every connection has a thread of its own (at most 16), so a slow or
 // silent client never holds up another one. Blocking sockets with select() for the waits, on top of the helpers of tcp_client.h.
 #include "dect2/net/remote_api.h"
+#include "dect2/common/str.h"
 #include "dect2/source/rotator.h"
 #include "dect2/engine/mode_tuning.h"
 #include "netcompat.h"

@@ -1,4 +1,5 @@
 #include "dect2/source/rig_setup.h"
+#include "dect2/common/str.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
@@ -10,7 +11,6 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <limits.h>
-#include "dect2/common/str.h"
 #endif
 
 namespace dect2 {

@@ -1,4 +1,6 @@
 #include "dect2/engine/updater.h"
+#include "dect2/common/str.h"
+#include "dect2/common/timecompat.h"
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
