@@ -1,6 +1,6 @@
 // DRM packet mode demultiplexer for the Journaline data service (ES 201 980 clause 6.6.1), see dab_journaline.h.
 #include "dect2/dab/dab_journaline.h"
-#include "dect2/drm/drm_fec.h"
+#include "dect2/dab/dab_proto.h"
 
 namespace dect2 {
 
@@ -9,19 +9,19 @@ void DrmPacketDemux::configure(int dataLen, int packetId) {
 }
 
 bool DrmPacketDemux::packet(const uint8_t* p, size_t sz, std::vector<uint8_t>& out) {
-    const uint32_t c = drm::crc16Bytes(p, sz - 2);
-    if (c != (uint32_t)((p[sz - 2] << 8) | p[sz - 1])) {
+    const dabp::DrmPacket k = dabp::drmPacket(p, sz);   // header fields and CRC-16 (dab_proto: Rust with DECT2_RUST_DAB)
+    if (!k.crcOk) {
         badPackets++;
         if (on_) unitsDropped++;
         on_ = false; asm_.clear();
         return false;
     }
-    const bool first = p[0] & 0x80, last = p[0] & 0x40, ppi = p[0] & 0x08;
-    const int id = (p[0] >> 4) & 3, ci = p[0] & 7;
+    const bool first = k.first, last = k.last;
+    const int id = k.id, ci = k.ci;
     if (id != id_) { otherIdPackets++; return false; }
     packets++;
-    size_t n = sz - 3, at = 1;
-    if (ppi) { n = p[1]; at = 2; if (n > sz - 4) { badPackets++; packets--; return false; } }   // the useful length does not fit: a damaged packet
+    const size_t n = k.n, at = k.at;
+    if (k.lenBad) { badPackets++; packets--; return false; }   // the useful length does not fit: a damaged packet
     // the continuity index counts the packets of one Packet Id modulo 8, empty ones included
     if (lastCi_ >= 0) {
         const int gap = (ci - lastCi_ - 1) & 7;

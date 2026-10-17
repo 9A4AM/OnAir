@@ -1,106 +1,68 @@
 // MOT object reassembly (ETSI EN 301 234), see dab_mot.h. Shared by the DAB PAD / packet mode decoders and the DRM data services.
 #include "dect2/dab/dab_mot.h"
 #include "dect2/dab/dab.h"
-#include "dect2/common/text_charset.h"
+#include "dect2/dab/dab_proto.h"
+#include <mutex>
+#include <set>
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
 
 namespace dect2 {
 
+namespace {
+MotTime pub(const dabp::MotTime& c) {
+    MotTime t;
+    t.valid = c.valid; t.now = c.now; t.longForm = c.longForm; t.mjd = c.mjd; t.hour = c.hour; t.minute = c.minute; t.second = c.second; t.ms = c.ms;
+    return t;
+}
+dabp::MotTime priv(const MotTime& t) {
+    dabp::MotTime c;
+    c.valid = t.valid; c.now = t.now; c.longForm = t.longForm; c.mjd = t.mjd; c.hour = t.hour; c.minute = t.minute; c.second = t.second; c.ms = t.ms;
+    return c;
+}
+} // namespace
+
+// The parsing of MOT times, headers, data groups and directories is dab_proto (Rust with DECT2_RUST_DAB); this file keeps the objects and the reassembly.
 size_t motParseTime(const uint8_t* d, size_t n, MotTime& t) {
-    t = MotTime();
-    if (n < 4) return 0;
-    const uint32_t v = ((uint32_t)d[0] << 24) | ((uint32_t)d[1] << 16) | ((uint32_t)d[2] << 8) | d[3];
-    t.valid = (v >> 31) & 1;
-    if (!t.valid) { t.now = true; return 4; }
-    t.mjd = (int)((v >> 14) & 0x1FFFF);
-    t.longForm = (v >> 11) & 1;                  // bit 13 = LSI, bit 12 = confidence, bit 11 = UTC flag
-    t.hour = (int)((v >> 6) & 0x1F);
-    t.minute = (int)(v & 0x3F);
-    if (!t.longForm) return 4;
-    if (n < 6) return 0;
-    const uint32_t w = ((uint32_t)d[4] << 8) | d[5];   // seconds (6 bits), milliseconds (10 bits)
-    t.second = (int)((w >> 10) & 0x3F);
-    t.ms = (int)(w & 0x3FF);
-    return 6;
+    dabp::MotTime c;
+    const size_t used = dabp::motParseTime(d, n, c);
+    t = pub(c);
+    return used;
 }
 
-static void mjdDate(int mjd, int& y, int& m, int& d) {
-    // MJD to the calendar (EN 300 401 annex B)
-    const long j = (long)mjd + 2400001 + 68569;
-    const long c = 4 * j / 146097;
-    long e = j - (146097 * c + 3) / 4;
-    const long yy = 4000 * (e + 1) / 1461001;
-    e = e - 1461 * yy / 4 + 31;
-    const long mm = 80 * e / 2447;
-    d = (int)(e - 2447 * mm / 80);
-    const long k = mm / 11;
-    m = (int)(mm + 2 - 12 * k);
-    y = (int)(100 * (c - 49) + yy + k);
-}
-
-std::string motTimeText(const MotTime& t) {
-    if (t.now) return "now";
-    if (!t.valid) return "-";
-    int y, m, d;
-    mjdDate(t.mjd, y, m, d);
-    char b[64];
-    if (t.longForm) snprintf(b, sizeof b, "%04d-%02d-%02d %02d:%02d:%02d", y, m, d, t.hour, t.minute, t.second);
-    else snprintf(b, sizeof b, "%04d-%02d-%02d %02d:%02d", y, m, d, t.hour, t.minute);
-    return b;
-}
+std::string motTimeText(const MotTime& t) { return dabp::motTimeText(priv(t)); }
 
 bool motParseHeader(const uint8_t* h, size_t n, MotObject& o) {
-    if (n < 7) return false;
-    o.bodySize = ((size_t)h[0] << 20) | ((size_t)h[1] << 12) | ((size_t)h[2] << 4) | (h[3] >> 4);
-    o.headerSize = (((size_t)h[3] & 0x0F) << 9) | ((size_t)h[4] << 1) | (h[5] >> 7);
-    o.contentType = (h[5] >> 1) & 0x3F;
-    o.subtype = ((h[5] & 1) << 8) | h[6];
+    dabp::MotHeader hd;
+    if (!dabp::motParseHeader(h, n, hd)) return false;
+    o.bodySize = (size_t)hd.bodySize;
+    o.headerSize = (size_t)hd.headerSize;
+    o.contentType = hd.contentType;
+    o.subtype = hd.subtype;
     o.params.clear();
+    for (const dabp::MotParamRef& p : hd.params) { MotParam pr; pr.id = p.id; pr.data.assign(h + p.data.off, h + p.data.off + p.data.len); o.params.push_back(pr); }
     o.name.clear(); o.caption.clear(); o.category.clear(); o.clickUrl.clear(); o.altUrl.clear();
     o.categoryId = o.slideId = -1;
     o.hasTrigger = o.hasExpire = false;
-    const size_t end = o.headerSize >= 7 ? std::min(o.headerSize, n) : std::min<size_t>(7, n);
-    for (size_t p = 7; p < end;) {                                   // the header extension: parameters with a 2 bit length class
-        const int pli = h[p] >> 6, id = h[p] & 0x3F;
-        p++;
-        size_t len = pli == 0 ? 0 : pli == 1 ? 1 : pli == 2 ? 4 : 0;
-        if (pli == 3) {
-            if (p >= end) break;
-            if (h[p] & 0x80) { if (p + 1 >= end) break; len = ((size_t)(h[p] & 0x7F) << 8) | h[p + 1]; p += 2; }
-            else len = h[p++] & 0x7F;
-        }
-        if (p + len > end) break;
-        MotParam pr; pr.id = id; pr.data.assign(h + p, h + p + len);
-        o.params.push_back(pr);
-        const uint8_t* d = h + p;
-        if (id == 0x0C && len >= 1) o.name.assign((const char*)d + 1, len - 1);            // ContentName: character set byte, then the text
-        else if (id == 0x17 && len >= 1) o.caption = text::clean(text::dabCharset(d[0] >> 4, d + 1, len - 1));   // ContentDescription
-        else if (id == 0x25 && len >= 2) { o.categoryId = d[0]; o.slideId = d[1]; }       // CategoryID / SlideID
-        else if (id == 0x26) o.category.assign((const char*)d, len);                       // CategoryTitle
-        else if (id == 0x27) o.clickUrl.assign((const char*)d, len);                       // ClickThroughURL
-        else if (id == 0x28) o.altUrl.assign((const char*)d, len);                         // AlternativeLocationURL
-        else if (id == 0x05 && len >= 4) { o.hasTrigger = motParseTime(d, len, o.trigger) > 0; }
-        else if (id == 0x04 && len >= 4) { o.hasExpire = motParseTime(d, len, o.expire) > 0; }
-        p += len;
-    }
+    if (hd.hasName) o.name.assign((const char*)h + hd.name.off, hd.name.len);       // ContentName: the bytes after the character set byte, as sent
+    o.caption = hd.caption;                                                          // ContentDescription, UTF-8
+    if (hd.hasSlide) { o.categoryId = hd.categoryId; o.slideId = hd.slideId; }       // CategoryID / SlideID
+    o.category.assign((const char*)h + hd.category.off, hd.category.len);            // CategoryTitle
+    o.clickUrl.assign((const char*)h + hd.clickUrl.off, hd.clickUrl.len);            // ClickThroughURL
+    o.altUrl.assign((const char*)h + hd.altUrl.off, hd.altUrl.len);                  // AlternativeLocationURL
+    if (hd.hasTrigger) { o.hasTrigger = true; o.trigger = pub(hd.trigger); }
+    if (hd.hasExpire) { o.hasExpire = true; o.expire = pub(hd.expire); }
     return true;
 }
 
 const char* motContentTypeName(int type, int sub) {
-    switch (type) {
-    case 0: return sub == 1 ? "MIME / HTTP header" : "general data";
-    case 1: return sub == 0 ? "text/ASCII" : sub == 1 ? "text/ISO-8859-1" : sub == 2 ? "text/HTML" : "text";
-    case 2: return sub == 0 ? "image/GIF" : sub == 1 ? "image/JPEG" : sub == 2 ? "image/BMP" : sub == 3 ? "image/PNG" : "image";
-    case 3: return "audio";
-    case 4: return "video";
-    case 5: return "MOT transport";
-    case 6: return sub == 0 ? "MHEG" : sub == 1 ? "Java" : "system";
-    case 7: return "application";
-    case 8: return "proprietary";
-    }
-    return "unknown";
+    // the names are made by dab_proto; hand out a stable pointer for each distinct one
+    static std::mutex mu;
+    static std::set<std::string> names;
+    const std::string s = dabp::motContentTypeName(type, sub);
+    std::lock_guard<std::mutex> lk(mu);
+    return names.insert(s).first->c_str();
 }
 
 bool motIsText(const MotObject& o) { return o.contentType == 1; }
@@ -120,40 +82,13 @@ MotDecoder::Obj& MotDecoder::obj(uint16_t tid) {
 }
 
 void MotDecoder::dataGroup(const uint8_t* d, int n) {
-    if (n < 3) return;
-    const bool ext = d[0] & 0x80, crc = d[0] & 0x40, seg = d[0] & 0x20, ua = d[0] & 0x10;
-    const int type = d[0] & 0x0F;
-    if (type != 3 && type != 4 && type != 5 && type != 6 && type != 7) return;
+    const dabp::MotGroup g = dabp::motParseGroup(d, n < 0 ? 0 : (size_t)n);   // header, CRC, session header (transport id), segmentation header
+    if (g.status == dabp::MotGroup::Ignored) return;
     stats_.groups++;
-    if (crc) {
-        if (n < 5 || dab::crc16(d, n - 2) != (uint16_t)((d[n - 2] << 8) | d[n - 1])) { stats_.groupsBad++; return; }
-        n -= 2;
-    }
-    int p = 2 + (ext ? 2 : 0);
-    bool last = true;
-    int segNo = 0;
-    if (seg) {
-        if (p + 2 > n) { stats_.groupsBad++; return; }
-        last = (d[p] & 0x80) != 0;
-        segNo = ((d[p] & 0x7F) << 8) | d[p + 1];
-        p += 2;
-    }
-    uint16_t tid = 0;
-    if (ua) {
-        if (p + 1 > n) { stats_.groupsBad++; return; }
-        const bool hasTid = d[p] & 0x10;
-        const int li = d[p] & 0x0F;
-        p++;
-        if (p + li > n) { stats_.groupsBad++; return; }
-        if (hasTid && li >= 2) tid = (uint16_t)((d[p] << 8) | d[p + 1]);
-        p += li;
-    }
-    if (type == 5) { stats_.scrambled++; return; }            // a scrambled body needs conditional access
-    if (type == 7) { stats_.compressed++; return; }           // a compressed directory (zlib) is not decoded
-    if (p + 2 > n) { stats_.groupsBad++; return; }
-    const int size = ((d[p] & 0x1F) << 8) | d[p + 1];        // the MOT segmentation header: repetition count (3 bits), segment size (13 bits)
-    p += 2;
-    segment(tid, type, segNo, last, d + p, std::min(size, n - p));
+    if (g.status == dabp::MotGroup::Bad) { stats_.groupsBad++; return; }
+    if (g.status == dabp::MotGroup::Scrambled) { stats_.scrambled++; return; }    // a scrambled body needs conditional access
+    if (g.status == dabp::MotGroup::Compressed) { stats_.compressed++; return; }  // a compressed directory (zlib) is not decoded
+    segment((uint16_t)g.tid, g.type, g.segNo, g.last, d + g.off, (int)g.len);
 }
 
 void MotDecoder::segment(uint16_t tid, int type, int segNo, bool last, const uint8_t* d, int n) {
@@ -215,26 +150,19 @@ void MotDecoder::tryComplete(Obj& o, uint16_t tid) {
     if (sink_) sink_(m);
 }
 
-// The directory object (EN 301 234 clause 7.1): 32 bits compression flag and size, 16 bits number of objects, 24 bits carousel period, 16 bits
-// segment size, 16 bits extension length, the extension, then per object its transport id and header (core and extension).
+// The directory object (EN 301 234 clause 7.1), walked by dab_proto: the transport id and header of each object it announces.
 void MotDecoder::directoryDone(const std::vector<uint8_t>& dir) {
     stats_.directories++;
     dirList_.clear();
-    if (dir.size() < 13) return;
-    const size_t count = ((size_t)dir[4] << 8) | dir[5];
-    const size_t extLen = ((size_t)dir[11] << 8) | dir[12];
-    size_t p = 13 + extLen;
+    std::vector<dabp::DirEntry> ents;
+    if (!dabp::motParseDirectory(dir.data(), dir.size(), ents)) return;
     std::map<uint16_t, std::vector<uint8_t>> entries;
-    for (size_t i = 0; i < count && p + 2 + 7 <= dir.size(); i++) {
-        const uint16_t tid = (uint16_t)((dir[p] << 8) | dir[p + 1]);
-        const uint8_t* h = &dir[p + 2];
-        const size_t hs = (((size_t)h[3] & 0x0F) << 9) | ((size_t)h[4] << 1) | (h[5] >> 7);
-        if (hs < 7 || p + 2 + hs > dir.size()) break;
-        std::vector<uint8_t> raw(h, h + hs);
+    for (const dabp::DirEntry& e : ents) {
+        const uint16_t tid = (uint16_t)e.tid;
+        std::vector<uint8_t> raw(dir.begin() + e.off, dir.begin() + e.off + e.size);
         MotObject m;
         if (motParseHeader(raw.data(), raw.size(), m)) { m.tid = tid; m.fromDirectory = true; dirList_.push_back(m); }
         entries[tid] = raw;
-        p += 2 + hs;
     }
     // a changed header under a known transport id starts that object over; bodies that arrived before the directory complete now
     dirEntries_ = entries;
