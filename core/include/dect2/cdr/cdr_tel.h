@@ -70,6 +70,13 @@ struct CdrTelemetry {
     float ldpcIterations = 0;              // average of the last logical frame
     int codewords = 0;                     // per logical frame
     int capacityBytes = 0;                 // service multiplex frame size
+    // audio decoder of the listened service
+    uint64_t draUnitsIn = 0, draUnitsBad = 0;   // audio units sent to the decoder / refused by it
+    uint64_t draResets = 0;                // audio decoders rebuilt because nothing came out of them
+    int draRateHz = 0;                     // sample rate of the last decoded audio frame
+    uint64_t draPcmFrames = 0;             // PCM frames the decoder returned (sample frames)
+    uint64_t locks = 0, unlocks = 0;       // beacon locks and losses since the start
+    uint64_t resyncs = 0;                  // manual re-syncs
 
     // ---- multiplex (GY/T 268.2)
     std::string network;                   // network name
