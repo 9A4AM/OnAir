@@ -47,6 +47,8 @@ struct State {
     float txHang = 1.5f;         // the file stays open this long after the squelch shuts
     int txIq = -1;               // -1 follows the mode (on for USB / LSB), 0 off, 1 on
     float afHp = 0, afLp = 0, afNotch = 0;   // audio filters in Hz, 0 = off
+    bool nrOn[dect2::GenDemodCount] = {};    // neural noise remover per demodulator (speech modes only), off by default
+    float nrStr[dect2::GenDemodCount] = {80, 80, 80, 80, 80, 80};   // its strength in percent
     bool mp3 = false;            // recordings as MP3 through LAME (when libmp3lame is installed)
     bool flac = false;           // recordings as FLAC (lossless, smaller, with tags) instead of WAV
     // more channels from the same capture (Engine::generalExtra): each is silent, has its own demodulator and, if wanted, its own recordings
@@ -64,6 +66,7 @@ void tip(const char* t) { if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDi
 bool live(const App& a) { return a.rx.standard == 56; }   // the engine reports its standard code minus one
 const dect2::GeneralTelemetry& T(const App& a) { return a.rx.general; }
 
+bool nrOffered(int demod) { return demod == dect2::GenNfm || demod == dect2::GenWfm || demod == dect2::GenAm; }   // speech: not SSB data, CW or music
 const int kDefStep[dect2::GenDemodCount] = {9, 11, 2, 1, 1, 1};   // 12.5 kHz NFM, 50 kHz WFM, 1 kHz AM, 100 Hz SSB / CW
 
 void load() {
@@ -79,6 +82,11 @@ void load() {
     S.flac = p.getB("genFlac", false);
     S.mp3 = p.getB("genMp3", false) && dect2::GeneralReceiver::mp3Available();
     S.afHp = (float)p.getD("genAfHp", 0); S.afLp = (float)p.getD("genAfLp", 0); S.afNotch = (float)p.getD("genAfNotch", 0);
+    for (int d = 0; d < dect2::GenDemodCount; d++) {
+        char k[24];
+        snprintf(k, sizeof k, "genNrOn%d", d); S.nrOn[d] = nrOffered(d) && p.getB(k, false);
+        snprintf(k, sizeof k, "genNrStr%d", d); S.nrStr[d] = (float)std::clamp(p.getD(k, 80), 0.0, 100.0);
+    }
     S.sqOn = p.getB("genSqOn", true); S.sqAuto = p.getB("genSqAuto", true); S.sqDb = (float)p.getD("genSqDb", -60);
     S.preRoll = (float)std::clamp(p.getD("genPreRoll", 1.5), 0.0, 3.0);
     S.txHang = (float)std::clamp(p.getD("genTxHang", 1.5), 0.0, 3.0);
@@ -187,6 +195,7 @@ void sMeter(const App& a) {
 
 void extraChannelsUi(App& a);
 void audioFiltersUi(App& a);
+void noiseRemoverUi(App& a);
 
 void controls(App& a) {
     load();
@@ -340,6 +349,7 @@ void controls(App& a) {
     if (ImGui::Checkbox("Channel IQ", &iq)) { S.txIq = iq ? 1 : 0; plat::prefs().setI("genTxIq", S.txIq); }
     tip("Save the channel's complex baseband next to the audio (48 kHz float IQ, about 23 MB a minute), so the carrier can be measured afterwards. On for USB and LSB unless you change it; off for NFM, where those files would be large.");
     audioFiltersUi(a);
+    noiseRemoverUi(a);
     extraChannelsUi(a);
 }
 
@@ -361,6 +371,23 @@ void audioFiltersUi(App& a) {
     one("##aflp", "low-pass", &S.afLp, 500.f, 12000.f, "Cut the hiss above this frequency (drag; 0 = off). 3000 Hz is typical for voice");
     one("##afnt", "notch", &S.afNotch, 100.f, 12000.f, "Remove one steady whistle (carrier, heterodyne) at this audio frequency (drag; 0 = off)");
     if (ch) { auto& p = plat::prefs(); p.setD("genAfHp", S.afHp); p.setD("genAfLp", S.afLp); p.setD("genAfNotch", S.afNotch); }
+}
+
+// ---- neural noise remover (RNNoise): NFM, WFM and AM only, remembered per demodulator, off until switched on
+void noiseRemoverUi(App& a) {
+    (void)a;
+    if (!nrOffered(S.demod)) return;
+    const int d = S.demod;
+    bool ch = ImGui::Checkbox(tr("Noise remover (neural)##gennr"), &S.nrOn[d]);
+    if (S.nrOn[d]) {
+        ImGui::SameLine(0, 8 * gUi);
+        ImGui::SetNextItemWidth(110 * gUi);
+        if (ImGui::SliderFloat("##gennrs", &S.nrStr[d], 0.f, 100.f, "%.0f%%")) ch = true;
+        tip(tr("Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay."));
+    }
+    ImGui::SameLine(0, 8 * gUi);
+    ImGui::TextDisabled("%s", tr("Speech only; do not use on music or data modes."));
+    if (ch) { auto& p = plat::prefs(); char k[24]; snprintf(k, sizeof k, "genNrOn%d", d); p.setB(k, S.nrOn[d]); snprintf(k, sizeof k, "genNrStr%d", d); p.setD(k, S.nrStr[d]); }
 }
 
 // ---- more channels from the same capture
@@ -438,6 +465,7 @@ void tick(App& a) {
     r.setCwPitchHz(S.pitch);
     r.setVolume(a.volume); r.setMuted(a.muted);
     r.setAudioFilters(S.afHp, S.afLp, S.afNotch);
+    r.setNoiseRemover(nrOffered(S.demod) && S.nrOn[S.demod], S.nrStr[S.demod] / 100.f);
     r.setListenHz(listenHz(a));
     r.setTransmissionGate(S.preRoll, S.txHang, channelIq(S.demod), true);
     a.engine.setGeneralExtraCount(S.nExtra);
@@ -452,6 +480,7 @@ void tick(App& a) {
         x.setDeemphUs(S.exDemod[i] == dect2::GenNfm ? kDeemph[S.deNfm] : S.exDemod[i] == dect2::GenWfm ? kDeemph[S.deWfm] : 0);
         x.setCwPitchHz(S.pitch);
         x.setAudioFilters(S.afHp, S.afLp, S.afNotch);
+        x.setNoiseRemover(nrOffered(S.exDemod[i]) && S.nrOn[S.exDemod[i]], S.nrStr[S.exDemod[i]] / 100.f);
         x.setListenHz(a.freqMhz * 1e6 + S.exOff[i]);
         x.setTransmissionGate(S.preRoll, S.txHang, channelIq(S.exDemod[i]), true);
         dect2::GeneralTelemetry g;

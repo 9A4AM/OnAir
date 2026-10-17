@@ -1371,3 +1371,7 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 1500 MHz-es lekeverő kb. 1,5-3 GHz-hez (2,4 GHz, 2,3/3,4 GHz). Az antenna és a rádió közé kell kötni; a rádió RF - 1500 MHz-et lát. 1500 MHz alatt nem támogatott.
+Noise remover (neural)##gennr	Zajszűrő (neurális)##gennr
+Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay.	A tisztított és az eredeti hang keveréke: jobbra több zajt távolít el, balra több marad az eredetiből. Kb. 20 ms késleltetést ad.
+Speech only; do not use on music or data modes.	Csak beszédhez; ne használd zenéhez vagy adatmódokhoz.
+Noise remover (neural)##airnr	Zajszűrő (neurális)##airnr

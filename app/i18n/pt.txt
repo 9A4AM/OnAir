@@ -1368,3 +1368,7 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: conversor descendente de 1500 MHz para cerca de 1,5 a 3 GHz (2,4 GHz, 2,3/3,4 GHz). Ligue-o entre a antena e o rádio; o rádio vê RF - 1500 MHz. Abaixo de 1500 MHz não é suportado.
+Noise remover (neural)##gennr	Removedor de ruído (neural)##gennr
+Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay.	Mistura do áudio limpo com o original: à direita remove mais ruído, à esquerda mantém mais o original. Acrescenta cerca de 20 ms de atraso.
+Speech only; do not use on music or data modes.	Só para voz; não usar com música nem modos de dados.
+Noise remover (neural)##airnr	Removedor de ruído (neural)##airnr

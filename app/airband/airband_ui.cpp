@@ -21,6 +21,7 @@ struct State {
     bool loaded = false;
     std::vector<dect2::AirbandChannel> chans;
     float squelch = 6, hang = 0.5f;
+    bool nrOn = false; float nrStr = 80;   // neural noise remover
     bool scan = false;
     bool dirty = true;                   // push the list and the settings to the receiver
     int view = 0;                        // 0 channels, 1 activity, 2 spectrum
@@ -47,6 +48,7 @@ void save() {
     plat::Prefs& d = plat::prefs();
     d.setS("airChans", dect2::airbandEncode(S.chans));
     d.setD("airSquelch", S.squelch); d.setD("airHang", S.hang); d.setB("airScan", S.scan);
+    d.setB("airNr", S.nrOn); d.setD("airNrStr", S.nrStr);
     d.flush();
     S.dirty = true;
 }
@@ -58,6 +60,7 @@ void load() {
     if (d.has("airChans")) S.chans = dect2::airbandDecode(d.getS("airChans", ""));
     else S.chans = dect2::airbandChannelsFor(dect2::airbandTestLayout(), dect2::airbandTuning().defMhz * 1e6);
     S.squelch = (float)d.getD("airSquelch", 6); S.hang = (float)d.getD("airHang", 0.5); S.scan = d.getB("airScan", false);
+    S.nrOn = d.getB("airNr", false); S.nrStr = (float)std::clamp(d.getD("airNrStr", 80), 0.0, 100.0);
 }
 
 const dect2::AirbandChannelState* stateOf(const App& a, size_t i) {
@@ -82,6 +85,16 @@ void controls(App& a) {
     ImGui::SetNextItemWidth(110 * gUi);
     ImGui::SliderFloat("##airhang", &S.hang, 0.f, 3.f, "%.1f s");
     if (ImGui::IsItemDeactivatedAfterEdit()) save();
+    flowNext(12 * gUi);
+    if (ImGui::Checkbox(tr("Noise remover (neural)##airnr"), &S.nrOn)) save();
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Speech only; do not use on music or data modes."));
+    if (S.nrOn) {
+        ImGui::SameLine(0, 5 * gUi);
+        ImGui::SetNextItemWidth(90 * gUi);
+        ImGui::SliderFloat("##airnrs", &S.nrStr, 0.f, 100.f, "%.0f%%");
+        if (ImGui::IsItemDeactivatedAfterEdit()) save();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay."));
+    }
     flowNext(12 * gUi);
     if (live(a)) {
         const auto& t = a.rx.airband;
@@ -272,6 +285,7 @@ void tick(App& a) {
     const bool run = a.engine.running() && a.rx.standard == 27;
     if (!a.engine.running()) { S.wasRunning = false; return; }
     dect2::AirbandReceiver& r = a.engine.airband();
+    r.setNoiseRemover(S.nrOn, S.nrStr / 100.f);
     if (!S.wasRunning || S.dirty) {
         r.setChannels(S.chans); r.setSquelchDb(S.squelch); r.setHangSec(S.hang); r.setScan(S.scan);
         S.dirty = false;

@@ -5,6 +5,7 @@
 #include "dect2/airband/airband_tel.h"
 #include "dect2/airband/airband_gen.h"
 #include "dect2/audio/audioout.h"
+#include "dect2/audio/neural_nr.h"
 #include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <atomic>
@@ -208,6 +209,7 @@ struct AirbandReceiver::Impl {
     AirbandTelemetry pub;
     std::atomic<bool> resetReq{true}, chanReq{false}, tapsReq{false};
     std::atomic<float> volume{1.f};
+    NeuralNr nr{(int)kAirbandAudioRate};   // neural noise remover on the 8 kHz mix (RNNoise); off by default
     std::atomic<bool> muted{false}, silent{false};
     std::function<void(int, const float*, size_t)> chanTapSet, chanTap;
     std::function<void(const float*, size_t)> mixTapSet, mixTap;
@@ -641,6 +643,7 @@ struct AirbandReceiver::Impl {
         }
         for (auto& v : mix) v = std::tanh(v);   // soft limit
         nOut8 = upto;
+        nr.process(mix.data(), n);   // no-op while off
         if (mixTap) mixTap(mix.data(), n);
         if (silent.load()) return;
         pcm.clear();
@@ -788,6 +791,7 @@ void AirbandReceiver::setScan(bool on) { std::lock_guard<std::mutex> lk(p_->mu);
 void AirbandReceiver::setTuneErrorHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); p_->tuneGuess = hz; p_->tuneGuessReq = true; }
 void AirbandReceiver::setVolume(float v) { p_->volume = std::max(0.f, std::min(1.f, v)); }
 void AirbandReceiver::setMuted(bool m) { p_->muted = m; }
+void AirbandReceiver::setNoiseRemover(bool on, float strength) { p_->nr.setStrength(strength); p_->nr.setEnabled(on); }
 void AirbandReceiver::setSilent(bool s) { p_->silent = s; }
 void AirbandReceiver::setChannelTap(std::function<void(int, const float*, size_t)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->chanTapSet = std::move(cb); p_->tapsReq = true; }
 void AirbandReceiver::setMixTap(std::function<void(const float*, size_t)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->mixTapSet = std::move(cb); p_->tapsReq = true; }

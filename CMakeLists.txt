@@ -125,7 +125,7 @@ onair_rust_use(dect2core)   # -DDECT2_RUST_<MODULE> for every active module (cor
 set_source_files_properties(core/src/tv/dvbsub.cpp core/src/tv/dvbsub_rs.cpp core/src/adsb/adsb_msg.cpp core/src/dmr/dmr_fec.cpp core/src/p25/p25_proto.cpp core/src/packet/packet_aprs.cpp core/src/packet/packet_aprs_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
 target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp)
 target_sources(dect2core PRIVATE core/src/net/remote_api.cpp core/src/results/rx_json.cpp core/src/source/gain_opt.cpp core/src/mesh/mesh_report.cpp core/src/source/rotator.cpp)   # remote-control API server, telemetry JSON, gain optimiser, mesh report text, antenna rotator
-target_sources(dect2core PRIVATE core/src/tx/tx.cpp core/src/tx/tx_payload.cpp core/src/tx/tx_voice.cpp core/src/audio/audioin.cpp core/src/audio/videoin.cpp)   # transmit: modes, payloads, live voice/video, the TX session (tx.h)
+target_sources(dect2core PRIVATE core/src/tx/tx.cpp core/src/tx/tx_payload.cpp core/src/tx/tx_voice.cpp core/src/audio/audioin.cpp core/src/audio/videoin.cpp core/src/audio/neural_nr.cpp)   # transmit: modes, payloads, live voice/video, the TX session (tx.h)
 foreach(m ${DECT2_MODES})
   file(GLOB DECT2_MODE_SRC CONFIGURE_DEPENDS core/src/${m}/*.cpp)
   target_sources(dect2core PRIVATE ${DECT2_MODE_SRC})
@@ -148,6 +148,17 @@ if(NOT MSVC)
   target_link_libraries(dect2_dra PUBLIC m)
 endif()
 target_link_libraries(dect2core PUBLIC dect2_dra)
+# RNNoise (BSD-3-Clause, Xiph.Org): the neural noise remover in the Listen chain. Plain C99, small embedded model; no -ffast-math (it refuses it).
+add_library(dect2_rnnoise STATIC
+  third_party/rnnoise/src/denoise.c third_party/rnnoise/src/rnn.c third_party/rnnoise/src/rnn_data.c
+  third_party/rnnoise/src/pitch.c third_party/rnnoise/src/kiss_fft.c third_party/rnnoise/src/celt_lpc.c)
+target_include_directories(dect2_rnnoise PUBLIC third_party/rnnoise/include PRIVATE third_party/rnnoise/src)
+set_target_properties(dect2_rnnoise PROPERTIES POSITION_INDEPENDENT_CODE ON C_STANDARD 99)
+if(NOT MSVC)
+  target_compile_options(dect2_rnnoise PRIVATE -w -fno-fast-math)
+  target_link_libraries(dect2_rnnoise PUBLIC m)
+endif()
+target_link_libraries(dect2core PUBLIC dect2_rnnoise)
 # codec2 (FreeDV and M17 speech, LGPL-2.1): built from third_party/codec2 as its own shared library next to the programs and loaded at run
 # time, so the speech works without installing anything. An installed libcodec2 or one in a codecs folder is still found (docs/CODECS.md).
 option(DECT2_BUNDLE_CODEC2 "Build codec2 as a shared library next to OnAir" ON)
@@ -510,6 +521,9 @@ if(DECT2_BUILD_TESTS)
   add_executable(test_audio_levels tests/audio/test_audio_levels.cpp)
   target_link_libraries(test_audio_levels PRIVATE dect2core)
   add_test(NAME audio_levels COMMAND test_audio_levels)
+  add_executable(test_neural_nr tests/audio/test_neural_nr.cpp)
+  target_link_libraries(test_neural_nr PRIVATE dect2core)
+  add_test(NAME neural_nr COMMAND test_neural_nr)
   add_executable(test_map_ask tests/app/test_map_ask.cpp)
   target_include_directories(test_map_ask PRIVATE app/map)
   add_test(NAME map_ask COMMAND test_map_ask)
@@ -1348,6 +1362,8 @@ if(DECT2_BUILD_APP AND NOT APPLE)
     set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS_PRIVATE_DIRS "${CMAKE_INSTALL_FULL_LIBDIR}/onair")
   endif()
   install(FILES README.md LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} OPTIONAL)
+  install(FILES third_party/rnnoise/COPYING DESTINATION ${CMAKE_INSTALL_DOCDIR}/rnnoise)   # RNNoise (BSD-3-Clause) is linked in: its licence text travels with the binaries
+  install(FILES third_party/rnnoise/README-OnAir.md DESTINATION ${CMAKE_INSTALL_DOCDIR}/rnnoise RENAME NOTICE.md)
   if(TARGET onair_codec2)   # codec2 (LGPL-2.1): its own shared library in <prefix>/lib/onair, where the program looks (../lib/onair), with licence and notice
     install(TARGETS onair_codec2 LIBRARY DESTINATION lib/onair RUNTIME DESTINATION lib/onair)
     install(FILES third_party/codec2/COPYING DESTINATION ${CMAKE_INSTALL_DOCDIR}/codec2)
