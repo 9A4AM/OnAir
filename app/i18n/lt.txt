@@ -617,10 +617,6 @@ Region %s, %s wide	Sritis %s, plotis %s
 collecting samples	renkami mėginiai
 Working it out...	Nustatoma...
 Nothing to identify here.	Čia nėra ką atpažinti.
-Looks like: %s	Panašu į: %s
-Looks like: %s (frame sync found %dx)	Panašu į: %s (kadro sinchronizacija rasta %dx)
-No mode fits well.	Joks režimas gerai netinka.
-Open %s on this frequency	Atidaryti %s šiuo dažniu
 Switch to %s and tune to %s	Perjungti į %s ir suderinti %s
 Candidates	Kandidatai
 (sync %dx)	(sinchr. %dx)
@@ -1593,3 +1589,31 @@ testing	testavimas
 idea	idėja
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Ačiū visiems, kurie atsiuntė pataisymų, pranešė apie klaidas, pasidalijo įrašais, vertė ar siūlė idėjų. Autorius yra Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Norite, kad pakeistume ar pašalintume jūsų vardą? Parašykite mums Discord arba sukurkite issue.
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f bodų
+, %s wide	, plotis %s
+, bursts (%.0f %% on)	, impulsai (%.0f %% įjungta)
+, every %.3g ms	, kas %.3g ms
+, useful symbol %.4g us	, naudingas simbolis %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Įvertis yra patvirtintų įrodymų dalis; procentai sukalibruoti pagal paties OnAir bandomuosius signalus, o ne pagal visus tikrus signalus.
+Add to memory	Pridėti į Memory
+Best guess	Geriausias spėjimas
+Copy as text	Kopijuoti kaip tekstą
+Could be %s (%.0f %%) or %s (%.0f %%).	Gali būti %s (%.0f %%) arba %s (%.0f %%).
+Could not open this mode.	Nepavyko atidaryti šio režimo.
+Evidence for %s:	%s įrodymai:
+I do not know what this is: nothing I know fits well enough to say.	Nežinau, kas tai: nieko, ką žinau, pakankamai gerai neatitinka.
+Identify all signals	Atpažinti visus signalus
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Atpažinimas: spustelėkite signalą arba pervilkite per jį. Esc arba I išjungia įrankį.
+Measured	Išmatuota
+Most likely %s, %.0f %% sure.	Greičiausiai %s, %.0f %% tikra.
+No signal stands out of the noise here.	Čia joks signalas neišsiskiria iš triukšmo.
+Open in %s	Atidaryti: %s
+Opened %s	Atidaryta: %s
+Perhaps %s (%.0f %%).	Galbūt %s (%.0f %%).
+Signals in the view	Signalai rodinyje
+Sure	Tikra
+The frequency list has here:	Dažnių sąraše čia yra:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Kas tai? Spustelėkite signalą arba pervilkite per jį, ir OnAir pasakys, kas tai yra ir kiek tuo tikra. Klavišas I. Shift+vilkimas veikia ir be įrankio.
+Why?	Kodėl?
+unknown	nežinoma

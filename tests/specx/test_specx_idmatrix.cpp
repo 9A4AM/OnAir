@@ -203,6 +203,7 @@ int main(int argc, char** argv) {
     struct Bin { int n = 0, right = 0; double conf = 0; };
     Bin rel[2][10];
     double maxMs = 0, sumMs = 0; int nMs = 0;
+    std::map<std::string, double> slow;
     std::vector<std::string> skipped;
 
     for (Case& c : cases) {
@@ -234,6 +235,7 @@ int main(int argc, char** argv) {
                     const Result res = identify(p.x.data(), p.x.size(), c.rate, o);
                     const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
                     maxMs = std::max(maxMs, ms); sumMs += ms; nMs++;
+                    slow[c.label] = std::max(slow[c.label], ms);
                     int rank = -1;
                     for (size_t k = 0; k < res.cands.size() && k < 3; k++) if (isTruth(c, res.cands[k])) { rank = (int)k; break; }
                     const bool called = res.verdict != VerdictUnknown && !res.cands.empty();
@@ -332,6 +334,14 @@ int main(int argc, char** argv) {
         printf("\n==== reject option: noise %d/%d, band-limited noise %d/%d, two tones %d/%d answered \"unknown\" ====\n", rej[0], rejN[0], rej[1], rejN[1], rej[2], rejN[2]);
     }
     printf("\nidentify(): mean %.0f ms, worst %.0f ms\n", nMs ? sumMs / nMs : 0, maxMs);
+    {
+        std::vector<std::pair<double, std::string>> sl;
+        for (const auto& kv : slow) sl.push_back({kv.second, kv.first});
+        std::sort(sl.rbegin(), sl.rend());
+        printf("slowest:");
+        for (size_t i = 0; i < sl.size() && i < 12; i++) printf(" %s %.0f ms;", sl[i].second.c_str(), sl[i].first);
+        printf("\n");
+    }
 
     if (!only.empty() || verbose) { printf("(partial run: thresholds not checked)\n"); return 0; }
     // ---- thresholds: measured values minus a margin (docs/signal-id.md)

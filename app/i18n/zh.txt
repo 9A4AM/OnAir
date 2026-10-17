@@ -617,10 +617,6 @@ Region %s, %s wide	区域 %s，宽 %s
 collecting samples	正在采集样本
 Working it out...	正在分析...
 Nothing to identify here.	这里没有可识别的信号。
-Looks like: %s	看起来像：%s
-Looks like: %s (frame sync found %dx)	看起来像：%s（找到帧同步 %dx）
-No mode fits well.	没有十分匹配的模式。
-Open %s on this frequency	在此频率打开 %s
 Switch to %s and tune to %s	切换到 %s 并调谐到 %s
 Candidates	候选
 (sync %dx)	（同步 %dx）
@@ -1593,3 +1589,31 @@ testing	测试
 idea	创意
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	感谢所有提交修复、报告错误、分享录音、翻译或提出想法的人。作者是 Kristijonas Adomaitis。
 Want your name changed or removed? Tell us on Discord or open an issue.	希望更改或删除您的名字？请在 Discord 告诉我们或提交 issue。
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f 波特
+, %s wide	, 带宽 %s
+, bursts (%.0f %% on)	, 突发 (开启 %.0f %%)
+, every %.3g ms	, 每 %.3g 毫秒
+, useful symbol %.4g us	, 有效符号 %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	得分是成立的依据所占的比例;百分比是用 OnAir 自带的测试信号校准的,并未在所有真实信号上验证。
+Add to memory	添加到 Memory
+Best guess	最佳判断
+Copy as text	复制为文本
+Could be %s (%.0f %%) or %s (%.0f %%).	可能是 %s (%.0f %%) 或 %s (%.0f %%)。
+Could not open this mode.	无法打开此模式。
+Evidence for %s:	%s 的依据:
+I do not know what this is: nothing I know fits well enough to say.	不知道这是什么:已知的类型都不够吻合。
+Identify all signals	识别所有信号
+Identify: click a signal or drag across it. Esc or I leaves the tool.	识别:点击信号或在其上拖动。按 Esc 或 I 退出此工具。
+Measured	测量值
+Most likely %s, %.0f %% sure.	很可能是 %s,把握 %.0f %%。
+No signal stands out of the noise here.	这里没有信号高出噪声。
+Open in %s	在 %s 中打开
+Opened %s	已打开 %s
+Perhaps %s (%.0f %%).	也许是 %s (%.0f %%)。
+Signals in the view	视图中的信号
+Sure	把握
+The frequency list has here:	频率列表在此处有:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	这是什么?点击信号或在其上拖动,OnAir 会告诉你它是什么以及有多大把握。快捷键 I。按住 Shift 拖动无需启用该工具。
+Why?	为什么?
+unknown	未知

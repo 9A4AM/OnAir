@@ -220,7 +220,7 @@ bool related(int a, int b) {
 // ---------------------------------------------------------------------------------------------------- the steps
 
 // mix the region's centre to 0 and low-pass it to +-cut, every D-th sample (a band-pass FIR on the input: no mixed copy)
-std::vector<cf32> downconvert(const cf32* x, size_t n, double fs, double fc, double cut, int D, int L) {
+std::vector<cf32> filterDecimate(const cf32* x, size_t n, double fs, double fc, double cut, int D, int L) {
     std::vector<cf32> h((size_t)L);
     const int M = L / 2;
     double g = 0;
@@ -240,19 +240,43 @@ std::vector<cf32> downconvert(const cf32* x, size_t n, double fs, double fc, dou
     if (n < (size_t)L) return y;
     y.reserve((n - (size_t)L) / (size_t)D + 1);
     const double w0 = 2 * kPi * fc / fs;
+    // taps reversed, so that the loop runs forward over both and the four partial sums are independent (the compiler vectorises that)
+    std::vector<float> hre((size_t)L), him((size_t)L);
+    for (int k = 0; k < L; k++) { hre[(size_t)(L - 1 - k)] = h[(size_t)k].real(); him[(size_t)(L - 1 - k)] = h[(size_t)k].imag(); }
     for (size_t i = (size_t)L - 1; i < n; i += (size_t)D) {
-        float re = 0, im = 0;
-        const cf32* xp = x + i;
-        for (int k = 0; k < L; k++) {
-            const cf32 a = h[(size_t)k], b = *(xp - k);
-            re += a.real() * b.real() - a.imag() * b.imag();
-            im += a.real() * b.imag() + a.imag() * b.real();
+        const cf32* xp = x + (i + 1 - (size_t)L);
+        float re[4] = {0, 0, 0, 0}, im[4] = {0, 0, 0, 0};
+        int k = 0;
+        for (; k + 4 <= L; k += 4)
+            for (int q = 0; q < 4; q++) {
+                const float a = hre[(size_t)(k + q)], b = him[(size_t)(k + q)], xr = xp[k + q].real(), xi = xp[k + q].imag();
+                re[q] += a * xr - b * xi;
+                im[q] += a * xi + b * xr;
+            }
+        float sr = re[0] + re[1] + re[2] + re[3], si = im[0] + im[1] + im[2] + im[3];
+        for (; k < L; k++) {
+            const float a = hre[(size_t)k], b = him[(size_t)k], xr = xp[k].real(), xi = xp[k].imag();
+            sr += a * xr - b * xi; si += a * xi + b * xr;
         }
         const double ph = -w0 * (double)i;
-        const double c = std::cos(ph), s = std::sin(ph);
-        y.push_back(cf32((float)(re * c - im * s), (float)(re * s + im * c)));
+        const double c = std::cos(ph), s2 = std::sin(ph);
+        y.push_back(cf32((float)(sr * c - si * s2), (float)(sr * s2 + si * c)));
     }
     return y;
+}
+
+// Two stages when the decimation is large: a first filter (short in relation to the rate it works at) takes the region to four times its cut-off,
+// the second one has the sharp edge at that low rate. About a sixth of the work of one long filter at the input rate. D is the decimation done (D1 * D2).
+std::vector<cf32> downconvert(const cf32* x, size_t n, double fs, double fc, double cut, int& D, int L) {
+    const int D1 = std::max(1, std::min(D, (int)std::floor(fs / (4 * cut))));
+    if (D1 < 24 || L < 300) return filterDecimate(x, n, fs, fc, cut, D, L);
+    const int D2 = std::max(1, D / D1);
+    const double tr1 = fs / D1 - 2 * cut;   // from the edge of the region to where the first stage folds
+    const int L1 = (int)std::min(8191.0, std::max(31.0, std::ceil(5.5 * fs / std::max(1.0, tr1)))) | 1;
+    const std::vector<cf32> y1 = filterDecimate(x, n, fs, fc, 0.5 * fs / D1, D1, L1);
+    const int L2 = (int)std::min(8191.0, std::max(31.0, std::ceil(13.2 * (fs / D1) / cut))) | 1;   // as the caller sizes a filter: 5.5 / (0.5 half) of the rate it works at, half = cut / 1.2
+    D = D1 * D2;
+    return filterDecimate(y1.data(), y1.size(), fs / D1, 0, cut, D2, L2);
 }
 
 struct Work {
@@ -566,6 +590,17 @@ static void applyPriors(Result& R, const Features& f) {
     }
 }
 
+// The stretch of `want` samples of x[0 .. n) with the most power (a sparse signal is where it is; a continuous one is the same everywhere)
+static void denseWindow(const cf32*& x, size_t& n, size_t want) {
+    if (n <= want) return;
+    const size_t B = 4096, nb = n / B, wb = std::max<size_t>(1, want / B);
+    std::vector<double> pre(nb + 1, 0.0);
+    for (size_t b = 0; b < nb; b++) { double a = 0; for (size_t i = b * B; i < (b + 1) * B; i += 4) a += std::norm(x[i]); pre[b + 1] = pre[b] + a; }
+    size_t bs = 0; double bv = -1;
+    for (size_t b = 0; b + wb <= nb; b += std::max<size_t>(1, wb / 16)) if (pre[b + wb] - pre[b] > bv) { bv = pre[b + wb] - pre[b]; bs = b; }
+    x += bs * B; n = wb * B;
+}
+
 static Result identifyImpl(const cf32* x, size_t n, double fs, const Options& o) {
     Result R;
     Features& f = R.f;
@@ -627,6 +662,8 @@ static Result identifyImpl(const cf32* x, size_t n, double fs, const Options& o)
         for (size_t i = 0; i < n; i++) { w.y[i] = x[i] * cf32((float)std::cos(ph), (float)std::sin(ph)); ph += dph; if (ph < -kPi) ph += 2 * kPi; else if (ph > kPi) ph -= 2 * kPi; }
     } else {
         const int L = (int)std::max(31.0, std::min(8191.0, std::ceil(5.5 * fs / std::max(1.0, 0.5 * half)))) | 1;
+        // the filter costs n / D * L multiply-adds: past 6e7 (about 50 ms) only the stretch of the capture where the signal is on most is used
+        { const bool twoStage = std::min(D, (int)std::floor(fs / (4 * cut))) >= 24 && L >= 300; const double cost = twoStage ? (double)n * 12 : (double)n / D * L; if (cost > 6e7) { const size_t want = std::max<size_t>((size_t)1 << 19, (size_t)(6e7 * D / L)); denseWindow(x, n, want); } }
         w.y = downconvert(x, n, fs, f.centreHz, cut, D, L);
         noiseBw = 2 * cut;
     }
@@ -634,6 +671,27 @@ static Result identifyImpl(const cf32* x, size_t n, double fs, const Options& o)
     if (w.y.size() < 2048) { f.why = "too short a capture for this signal"; return R; }
     w.noise = lin(ms.floorDb) * N / enbw * std::min(1.0, noiseBw / fs);
     gate(w, f, sigW);
+    // The measurements that follow cost more than linearly with the number of samples; half a million are plenty (and the duty and the bursts
+    // have been counted over the whole capture). A longer capture is cropped to the stretch of it where the signal is on most.
+    {
+        const size_t cap = (size_t)1 << 19;
+        if (w.y.size() > cap) {
+            std::vector<size_t> pre(w.y.size() + 1, 0);
+            for (size_t i = 0; i < w.y.size(); i++) pre[i + 1] = pre[i] + (w.on[i] ? 1 : 0);
+            size_t bs = 0, bv = 0;
+            for (size_t s0 = 0; s0 + cap <= w.y.size(); s0 += cap / 8) if (pre[s0 + cap] - pre[s0] > bv) { bv = pre[s0 + cap] - pre[s0]; bs = s0; }
+            w.y.erase(w.y.begin() + (long)(bs + cap), w.y.end()); w.y.erase(w.y.begin(), w.y.begin() + (long)bs);
+            w.on.erase(w.on.begin() + (long)(bs + cap), w.on.end()); w.on.erase(w.on.begin(), w.on.begin() + (long)bs);
+            w.core.erase(w.core.begin() + (long)(bs + cap), w.core.end()); w.core.erase(w.core.begin(), w.core.begin() + (long)bs);
+            std::vector<std::pair<size_t, size_t>> runs;
+            for (const auto& r : w.runs) {
+                if (r.second <= bs || r.first >= bs + cap) continue;
+                runs.push_back({r.first > bs ? r.first - bs : 0, std::min(r.second, bs + cap) - bs});
+            }
+            if (runs.empty()) runs.push_back({0, w.y.size()});
+            w.runs = runs;
+        }
+    }
     // ---- envelope
     double m2 = 0, m4 = 0; size_t non = 0;
     for (size_t i = 0; i < w.y.size(); i++) if (w.core[i]) { const double p = std::norm(w.y[i]); m2 += p; m4 += p * p; non++; }
@@ -681,7 +739,6 @@ static Result identifyImpl(const cf32* x, size_t n, double fs, const Options& o)
         if (out.size() > 4) out.resize(4);
         return out;
     };
-    if (getenv("SIGDBG")) fprintf(stderr, "lines: env %.1f Hz %.1f dB ok %d | disc %.1f Hz %.1f dB ok %d | sigW %.0f fsd %.0f D %d duty %.2f\n", le.hz, le.db, le.ok, ld.hz, ld.db, ld.ok, sigW, w.fsd, D, f.duty);
     // tones in the discriminator itself: analog FM with a tone (or a dotting preamble)
     double toneFrac = 0;
     {
@@ -731,7 +788,8 @@ static Result identifyImpl(const cf32* x, size_t n, double fs, const Options& o)
         else if (f.fmPilot) f.mod = ModFm;
         else {
             // FSK at the discriminator's rate (or the envelope's)
-            Line r = ld.ok && ld.db > 9 ? ld : (le.ok && le.db > 9 ? le : Line());
+            const double lineMin = f.duty < 0.5 ? 7.0 : 9.0;   // a few short bursts give a weak line
+            Line r = ld.ok && ld.db > lineMin ? ld : (le.ok && le.db > lineMin ? le : Line());
             if (r.ok && r.hz >= sigW / 30 && toneFrac < 0.85) {
                 // the rate whose symbols fall into the cleanest levels (the strongest line, or one of the table's rates with a line of its own)
                 double rs = snap(r.hz), bestQ = 1e9;
@@ -741,8 +799,7 @@ static Result identifyImpl(const cf32* x, size_t n, double fs, const Options& o)
                     smooth(c);
                     Features g = f; std::vector<float> sy; double m2 = 0, u2 = 1;
                     const bool okT = fskTest(w, g, c, sy, m2, u2);
-                    if (getenv("SIGDBG")) fprintf(stderr, "  rate cand %.1f ok %d levels %d spread %.2f\n", c, okT, g.fskLevels, g.devSpread);
-                    if (!okT) continue;
+                                    if (!okT) continue;
                     const double gap = g.fskLevels == 4 ? g.devHz[2] - g.devHz[1] : g.devHz[1] - g.devHz[0];
                     const double q = g.devSpread / std::max(1e-9, gap) * (c == cands[0] ? 1.0 : 1.15);   // the strongest line is preferred a little
                     if (q < bestQ) { bestQ = q; rs = c; }

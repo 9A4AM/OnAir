@@ -69,7 +69,12 @@ void openMode(App& a, const si::Candidate& c, const si::Features& f) {
     dect2::Memory m = si::toMemory(c, f);
     m.bandwidthHz = 0; m.tags.clear(); m.notes.clear();
     std::string note;
-    if (memoryRecallApp(a, m, true, note)) { I.note = std::string(tr("Opened ")) + c.name + (note.empty() ? "" : "  (" + note + ")"); I.open = false; }
+    if (memoryRecallApp(a, m, true, note)) {
+        char b[160];
+        snprintf(b, sizeof b, tr("Opened %s"), c.name.c_str());
+        I.note = std::string(b) + (note.empty() ? "" : "  (" + note + ")");
+        I.open = false;
+    }
     else I.note = note.empty() ? std::string(tr("Could not open this mode.")) : note;
 }
 

@@ -617,10 +617,6 @@ Region %s, %s wide	Bereich %s, %s breit
 collecting samples	sammle Samples
 Working it out...	Wird ermittelt...
 Nothing to identify here.	Hier gibt es nichts zu identifizieren.
-Looks like: %s	Sieht aus wie: %s
-Looks like: %s (frame sync found %dx)	Sieht aus wie: %s (Rahmensync %dx gefunden)
-No mode fits well.	Keine Betriebsart passt gut.
-Open %s on this frequency	%s auf dieser Frequenz öffnen
 Switch to %s and tune to %s	Zu %s wechseln und auf %s abstimmen
 Candidates	Kandidaten
 (sync %dx)	(Sync %dx)
@@ -1593,3 +1589,31 @@ testing	Tests
 idea	Idee
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Danke an alle, die Korrekturen geschickt, Fehler gemeldet, Aufnahmen geteilt, übersetzt oder Ideen vorgeschlagen haben. Autor ist Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Soll dein Name geändert oder entfernt werden? Sag es uns auf Discord oder eröffne ein Issue.
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f Baud
+, %s wide	, %s breit
+, bursts (%.0f %% on)	, Bursts (%.0f %% aktiv)
+, every %.3g ms	, alle %.3g ms
+, useful symbol %.4g us	, Nutzsymbol %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Eine Bewertung ist der Anteil der zutreffenden Hinweise; die Prozentwerte sind an OnAirs eigenen Testsignalen kalibriert, nicht an jedem echten Signal.
+Add to memory	Zu Memory hinzufügen
+Best guess	Beste Vermutung
+Copy as text	Als Text kopieren
+Could be %s (%.0f %%) or %s (%.0f %%).	Könnte %s (%.0f %%) oder %s (%.0f %%) sein.
+Could not open this mode.	Dieser Modus lässt sich nicht öffnen.
+Evidence for %s:	Belege für %s:
+I do not know what this is: nothing I know fits well enough to say.	Ich weiß nicht, was das ist: nichts, was ich kenne, passt gut genug.
+Identify all signals	Alle Signale identifizieren
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Identifizieren: Signal anklicken oder darüberziehen. Esc oder I beendet das Werkzeug.
+Measured	Gemessen
+Most likely %s, %.0f %% sure.	Am ehesten %s, zu %.0f %% sicher.
+No signal stands out of the noise here.	Hier hebt sich kein Signal vom Rauschen ab.
+Open in %s	In %s öffnen
+Opened %s	%s geöffnet
+Perhaps %s (%.0f %%).	Vielleicht %s (%.0f %%).
+Signals in the view	Signale im Ausschnitt
+Sure	Sicher
+The frequency list has here:	Die Frequenzliste kennt hier:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Was ist das? Signal anklicken oder darüberziehen: OnAir sagt, was es ist und wie sicher es dabei ist. Taste I. Umschalt+Ziehen geht auch ohne das Werkzeug.
+Why?	Warum?
+unknown	unbekannt

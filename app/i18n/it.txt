@@ -595,10 +595,6 @@ Region %s, %s wide	Regione %s, larga %s
 collecting samples	raccolta campioni
 Working it out...	Elaborazione...
 Nothing to identify here.	Niente da identificare qui.
-Looks like: %s	Sembra: %s
-Looks like: %s (frame sync found %dx)	Sembra: %s (sincronismo di frame trovato %dx)
-No mode fits well.	Nessun modo si adatta bene.
-Open %s on this frequency	Apri %s su questa frequenza
 Switch to %s and tune to %s	Passa a %s e sintonizza su %s
 Candidates	Candidati
 (sync %dx)	(sinc. %dx)
@@ -1575,3 +1571,31 @@ testing	test
 idea	idea
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Grazie a tutti coloro che hanno inviato correzioni, segnalato bug, condiviso registrazioni, tradotto o proposto idee. L'autore è Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Vuoi che il tuo nome sia cambiato o rimosso? Scrivici su Discord o apri una issue.
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f baud
+, %s wide	, larghezza %s
+, bursts (%.0f %% on)	, burst (%.0f %% attivo)
+, every %.3g ms	, ogni %.3g ms
+, useful symbol %.4g us	, simbolo utile %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Un punteggio è la quota di indizi che risultano veri; le percentuali sono calibrate sui segnali di prova di OnAir, non su ogni segnale reale.
+Add to memory	Aggiungi a Memory
+Best guess	Ipotesi migliore
+Copy as text	Copia come testo
+Could be %s (%.0f %%) or %s (%.0f %%).	Potrebbe essere %s (%.0f %%) o %s (%.0f %%).
+Could not open this mode.	Impossibile aprire questa modalità.
+Evidence for %s:	Indizi per %s:
+I do not know what this is: nothing I know fits well enough to say.	Non so che cosa sia: nulla di ciò che conosco corrisponde abbastanza bene.
+Identify all signals	Identifica tutti i segnali
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Identifica: fai clic su un segnale o trascina sopra. Esc o I esce dallo strumento.
+Measured	Misurato
+Most likely %s, %.0f %% sure.	Molto probabilmente %s, sicuro al %.0f %%.
+No signal stands out of the noise here.	Qui nessun segnale emerge dal rumore.
+Open in %s	Apri in %s
+Opened %s	Aperto %s
+Perhaps %s (%.0f %%).	Forse %s (%.0f %%).
+Signals in the view	Segnali nella vista
+Sure	Sicuro
+The frequency list has here:	L'elenco frequenze qui riporta:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Che cos'è? Fai clic su un segnale o trascina sopra e OnAir dice che cos'è e quanto è sicuro. Tasto I. Maiusc+trascina funziona anche senza lo strumento.
+Why?	Perché?
+unknown	sconosciuto
