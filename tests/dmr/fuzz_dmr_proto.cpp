@@ -1,4 +1,4 @@
-// Seeded mutation run of the DMR frame layer (the Rust one under DECT2_RUST_DMR), meant for DECT2_SANITIZE=ON: every decoder, parser and text converter
+// Seeded mutation run of the DMR frame layer, meant for DECT2_SANITIZE=ON: every decoder, parser and text converter
 // must never crash or hang on any bytes. Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/dmr/dmr_proto.h"
 #include <cstdio>

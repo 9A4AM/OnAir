@@ -1,7 +1,5 @@
-// DMR error control codes on top of the Rust crate rust/onair_dmr (DECT2_RUST_DMR): the same functions as dmr_fec.cpp, which keeps the plain bit
-// helpers (putBits, getBits, bytesToBits, bitsToBytes, popcount32). Bit vectors that are shorter than the code needs are zero padded.
-// Empty when the crate is not built.
-#ifdef DECT2_RUST_DMR
+// DMR error control codes on top of the Rust crate rust/onair_dmr: the functions of dmr_fec.h;
+// dmr_fec.cpp keeps the plain bit helpers (putBits, getBits, bytesToBits, bitsToBytes, popcount32). Bit vectors that are shorter than the code needs are zero padded.
 #include "dect2/dmr/dmr_fec.h"
 #include "dect2/rs/dmr.h"
 #include <algorithm>
@@ -112,4 +110,3 @@ void rate1Decode(const Bits& tx196, uint8_t data[24], bool* padOk) {
 
 } // namespace dmr
 } // namespace dect2
-#endif
