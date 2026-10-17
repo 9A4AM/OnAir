@@ -10,6 +10,10 @@
 #include <cstdio>
 #include <cstring>
 #include <thread>
+#include <filesystem>
+#ifdef DECT2_TLS
+#include <openssl/ssl.h>
+#endif
 #ifndef _WIN32
 #include <ifaddrs.h>
 #include <net/if.h>
@@ -24,6 +28,26 @@ struct FakeHost : RemoteApiHost {
     std::string last;                 // "name arg"
     std::atomic<uint64_t> telSeq{1}, specSeq{1};
     bool failGain = false;
+    bool withPage = false;                   // the optional parts of the host interface (headless server)
+    std::atomic<int> audioOpened{0}, audioClosed{0}, audioReads{0};
+    std::string indexHtml() override { return withPage ? "<!doctype html><title>fake</title>" : std::string(); }
+    bool spectrumBinary(int bins, uint64_t& seq, std::string& f) override {
+        if (!withPage) return false;
+        seq = specSeq;
+        f.assign(1, '\x01');
+        f.append(20, '\0');
+        f.append((size_t)bins, 'x');
+        return true;
+    }
+    int audioOpen(int rate) override { if (!withPage) return -1; audioOpened++; return 7 + (rate == 8000 ? 1 : 0); }
+    bool audioRead(int, std::string& pcm) override { audioReads++; pcm.assign(8, '\x05'); return true; }
+    void audioClose(int) override { audioClosed++; }
+    int handleExtra(const std::string& m, const std::string& path, const std::map<std::string, JsonVal>& body, std::string& json) override {
+        if (!withPage) return 0;
+        if (path == "/api/v1/x/ping" && m == "GET") { json = "{\"pong\":true}"; return 200; }
+        if (path == "/api/v1/x/echo" && m == "POST") { auto it = body.find("v"); if (it == body.end()) { json = "give v"; return 400; } json = "{\"v\":" + jsonNum(it->second.num) + "}"; return 200; }
+        return 0;
+    }
     std::string statusJson() override { return "{\"running\":false,\"fake\":true}"; }
     std::string devicesJson() override { return "[{\"index\":0,\"name\":\"Synthetic\"}]"; }
     std::string modesJson() override { return "[{\"family\":0,\"name\":\"DVB\"}]"; }
@@ -327,6 +351,122 @@ static std::string lanAddress() {   // an IPv4 address of this computer that is 
 static std::string lanAddress() { return ""; }
 #endif
 
+
+// the parts the headless server adds: its page, the binary spectrum, audio messages, the extra endpoints
+static void testServerParts(FakeHost& h, int port) {
+    h.withPage = true;
+    Resp r = http("127.0.0.1", port, withPort(get("/"), port));
+    CHECK(r.status == 200 && r.body.find("<title>fake</title>") != std::string::npos, "GET / serves the host's page: %d", r.status);
+    CHECK(r.has("content-security-policy: default-src 'none'") && r.has("content-type: text/html"), "the page carries a CSP and its type");
+    r = http("127.0.0.1", port, post("/", "{}", port));
+    CHECK(r.status == 404, "POST / is not the page: %d", r.status);
+    r = http("127.0.0.1", port, withPort(get("/api/v1/x/ping"), port)); CHECK(r.status == 200 && r.body.find("pong") != std::string::npos, "extra GET: %d", r.status);
+    r = http("127.0.0.1", port, post("/api/v1/x/echo", "{\"v\":4.5}", port)); CHECK(r.status == 200 && r.body.find("4.5") != std::string::npos, "extra POST: %d %s", r.status, r.body.c_str());
+    r = http("127.0.0.1", port, post("/api/v1/x/echo", "{}", port)); CHECK(r.status == 400 && r.body.find("give v") != std::string::npos, "extra POST error: %d", r.status);
+    r = http("127.0.0.1", port, post("/api/v1/x/echo", "{\"v\":1}", port, "text/plain")); CHECK(r.status == 415, "extra POST needs JSON: %d", r.status);
+    r = http("127.0.0.1", port, withPort(get("/api/v1/x/nothing"), port)); CHECK(r.status == 404, "unknown extra: %d", r.status);
+
+    std::string buf, pl;
+    int op = 0, st = 0;
+    sock_t s = wsOpen(port, buf, &st);
+    CHECK(st == 101 && s != kBadSock, "handshake %d", st);
+    const std::string sub = cframe(1, "{\"telemetry\":false,\"spectrum\":true,\"bins\":100,\"fps\":20,\"fmt\":\"u8\",\"audio\":true,\"arate\":8000}");
+    sockSendAll(s, sub.data(), sub.size());
+    bool gotSub = false, gotBin = false, gotAudio = false;
+    for (int i = 0; i < 12 && !(gotSub && gotBin && gotAudio); i++) {
+        if (!sframe(s, buf, op, pl)) break;
+        if (op == 1 && pl.find("\"type\":\"subscribed\"") != std::string::npos) gotSub = pl.find("\"fps\":20") != std::string::npos && pl.find("\"audio\":true") != std::string::npos;
+        if (op == 2 && !pl.empty() && pl[0] == 1) gotBin = pl.size() == 1 + 20 + 100;
+        if (op == 2 && !pl.empty() && pl[0] == 2) gotAudio = pl.size() == 9;
+    }
+    CHECK(gotSub, "the subscription is confirmed with fps and audio");
+    CHECK(gotBin, "a binary spectrum message of 1 + 20 + bins bytes");
+    CHECK(gotAudio, "an audio message: type byte and the samples");
+    CHECK(h.audioOpened == 1, "one audio listener opened (%d)", h.audioOpened.load());
+    const std::string off = cframe(1, "{\"audio\":false}");
+    sockSendAll(s, off.data(), off.size());
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    CHECK(h.audioClosed == 1, "switching audio off closes the listener (%d)", h.audioClosed.load());
+    const int reads = h.audioReads;
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    CHECK(h.audioReads == reads, "no more audio reads once it is off");
+    sockSendAll(s, cframe(1, "{\"audio\":true}").data(), cframe(1, "{\"audio\":true}").size());
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    sockClose(s);   // a closed connection must close its listener too
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    CHECK(h.audioClosed == h.audioOpened, "a dropped connection closes its audio listener (%d of %d)", h.audioClosed.load(), h.audioOpened.load());
+    h.withPage = false;
+    r = http("127.0.0.1", port, withPort(get("/"), port)); CHECK(r.status == 404, "no page without a host page: %d", r.status);
+}
+
+static void testWsSlowClient(FakeHost& h, int port) {
+    // a client that never reads: the server must not stall other connections or grow without bound
+    h.withPage = true;
+    std::string buf;
+    int st = 0;
+    sock_t s = wsOpen(port, buf, &st);
+    const std::string sub = cframe(1, "{\"telemetry\":false,\"spectrum\":true,\"bins\":2048,\"fps\":30,\"fmt\":\"u8\"}");
+    sockSendAll(s, sub.data(), sub.size());
+    for (int i = 0; i < 40; i++) { h.specSeq++; std::this_thread::sleep_for(std::chrono::milliseconds(20)); }
+    Resp r = http("127.0.0.1", port, withPort(get("/api/v1/status"), port));
+    CHECK(r.status == 200, "the API still answers while a WebSocket client does not read: %d", r.status);
+    sockClose(s);
+    h.withPage = false;
+}
+
+
+// TLS: a certificate made with the openssl program, an OpenSSL client (certificate not checked), the page and an API call over it
+static void testTls() {
+    FakeHost h;
+    h.withPage = true;
+    RemoteApiServer bad(h);
+    RemoteApiConfig bc; bc.on = true; bc.port = 0; bc.tlsCert = "/nonexistent/c.pem"; bc.tlsKey = "/nonexistent/k.pem";
+    CHECK(!bad.configure(bc) && !bad.status().lastError.empty(), "a certificate that is not there is refused: %s", bad.status().lastError.c_str());
+#ifndef DECT2_TLS
+    CHECK(bad.status().lastError.find("no TLS support") != std::string::npos, "a build without OpenSSL says so: %s", bad.status().lastError.c_str());
+    printf("TLS: not built (DECT2_WITH_TLS=OFF), only the refusal was tested\n");
+#else
+    namespace fs = std::filesystem;
+    const fs::path dir = fs::temp_directory_path() / ("onair_tls_" + std::to_string((long long)std::chrono::steady_clock::now().time_since_epoch().count()));
+    fs::create_directories(dir);
+    const std::string crt = (dir / "c.pem").string(), key = (dir / "k.pem").string();
+    const std::string cmd = "openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj /CN=localhost -keyout '" + key + "' -out '" + crt + "' >/dev/null 2>&1";
+    if (system(cmd.c_str()) != 0 || !fs::exists(crt)) { printf("TLS: the openssl program is not available, skipped\n"); fs::remove_all(dir); return; }
+    RemoteApiServer srv(h);
+    RemoteApiConfig c; c.on = true; c.port = 0; c.tlsCert = crt; c.tlsKey = key;
+    CHECK(srv.configure(c) && srv.status().listening && srv.status().tls, "TLS server starts: %s", srv.status().lastError.c_str());
+    const int port = srv.config().port;
+    SSL_CTX* ctx = SSL_CTX_new(TLS_client_method());
+    auto tlsGet = [&](const std::string& req, bool ws, std::string& out) {
+        out.clear();
+        sock_t s = dial("127.0.0.1", port);
+        if (s == kBadSock) return false;
+        SSL* ssl = SSL_new(ctx);
+        SSL_set_fd(ssl, (int)s);
+        bool ok = SSL_connect(ssl) == 1;
+        if (ok) {
+            SSL_write(ssl, req.data(), (int)req.size());
+            if (ws) { char b[2048]; const int k = SSL_read(ssl, b, sizeof b); if (k > 0) out.assign(b, (size_t)k); }
+            else for (;;) { char b[4096]; const int k = SSL_read(ssl, b, sizeof b); if (k <= 0) break; out.append(b, (size_t)k); }
+        }
+        SSL_shutdown(ssl); SSL_free(ssl); sockClose(s);
+        return ok;
+    };
+    std::string out;
+    CHECK(tlsGet(withPort(get("/"), port), false, out) && out.find("200") != std::string::npos && out.find("<title>fake</title>") != std::string::npos, "the page over TLS");
+    CHECK(tlsGet(withPort(get("/api/v1/status"), port), false, out) && out.find("\"fake\":true") != std::string::npos, "an API call over TLS");
+    CHECK(tlsGet(wsHandshake(port, "127.0.0.1:" + std::to_string(port)), true, out) && out.find("101 Switching") != std::string::npos, "a WebSocket over TLS (wss)");
+    // plain HTTP to the TLS port gets no answer that looks like HTTP
+    Resp r = http("127.0.0.1", port, withPort(get("/api/v1/status"), port), 1500);
+    CHECK(r.status == 0, "plain HTTP to a TLS port is not answered (%d)", r.status);
+    // the server still serves after the broken handshake
+    CHECK(tlsGet(withPort(get("/api/v1/status"), port), false, out) && out.find("200") != std::string::npos, "TLS still works after a plain request");
+    SSL_CTX_free(ctx);
+    srv.configure(RemoteApiConfig());
+    fs::remove_all(dir);
+#endif
+}
+
 static void testAuth() {
     FakeHost h;
     RemoteApiServer srv(h);
@@ -444,11 +584,14 @@ int main(int argc, char** argv) {
         CHECK(port > 0, "port");
         testHttp(h, srv, port);
         testWs(h, port);
+        testServerParts(h, port);
+        testWsSlowClient(h, port);
         const RemoteApiStatus st = srv.status();
         printf("server counters: %llu requests, %llu refused\n", (unsigned long long)st.requests, (unsigned long long)st.rejected);
         CHECK(srv.configure(RemoteApiConfig()) && !srv.status().listening, "switching it off");
         CHECK(http("127.0.0.1", port, withPort(get("/api/v1/status"), port), 500).status == 0, "nothing answers once it is off");
         testAuth();
+        testTls();
     }
     testEngine();
     printf(fails ? "remote_api tests FAILED (%d)\n" : "remote_api tests passed\n", fails);
