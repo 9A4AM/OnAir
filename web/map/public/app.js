@@ -6,6 +6,7 @@ import { iconId, installLazyIcons, paintMini, altitudeColor, altitudeGradientCss
 import { SHAPES } from "./shapes.js";
 import { iconShape, vesselScale } from "./types.js";
 import { createCard } from "./card.js";
+import { createSheet } from "./sheet.js";
 import { generateDemo, stepDemo } from "./demo.js";
 import { watchMapTheme, themeKey, onThemeChange } from "./theme.js";
 import { mergeTrails, appendLive, toLine } from "./trail.js";
@@ -645,6 +646,11 @@ function loadMeta(t) {
 
 // ---------- selection and the info card ----------
 
+const sheet = createSheet({
+  host: $("card"), map, mq: window.matchMedia("(max-width: 860px)"), reduced: REDUCED,
+  getLngLat: () => (selected && tracks.has(selected) ? displayLonLat(tracks.get(selected)) : null),
+});
+
 const card = createCard($("card"), {
   demo: DEMO,
   loadPhoto: true,
@@ -704,6 +710,7 @@ function selectTrack(t) {
   loadMeta(t);
   fetchTrail(t.id);
   card.open(prepForCard(t));
+  sheet.onOpen();
   setHash(t);
   applyListSel();
   const src = map.getSource("live");
@@ -717,6 +724,7 @@ function clearSelection() {
   selected = null;
   followId = null;
   card.close();
+  sheet.onClose();
   setHash(null);
   applyListSel();
   const src = map.getSource("live");
@@ -735,7 +743,8 @@ function focusTrack(id) {
   if (!t) return;
   selectTrack(t);
   const [lon, lat] = displayLonLat(t);
-  map.easeTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 6.5), duration: REDUCED ? 0 : 500 });
+  // recentre keeps the marker in the free area above the phone sheet (plain centring on desktop)
+  sheet.recentre(true, { center: [lon, lat], zoom: Math.max(map.getZoom(), 6.5), duration: REDUCED ? 0 : 500 });
 }
 
 // card refresh at 1 Hz, regardless of how often positions arrive
