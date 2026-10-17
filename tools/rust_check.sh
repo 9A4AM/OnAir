@@ -25,7 +25,7 @@ cargo build --offline --release -p onair --features bare
 if [ "${1:-}" = "--sanitize" ]; then
   b="${TMPDIR:-/tmp}/onair-rust-san"
   echo "== sanitizer build in $b"
-  cmake -S "$root" -B "$b" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DDECT2_SANITIZE=ON -DDECT2_RUST=ON
+  cmake -S "$root" -B "$b" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DDECT2_SANITIZE=ON
   cmake --build "$b" --target test_ais_proto_rs fuzz_ais_proto
   (cd "$b" && ctest -R 'ais|rust' --output-on-failure)
 fi

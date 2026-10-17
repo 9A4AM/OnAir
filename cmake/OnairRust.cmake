@@ -1,42 +1,35 @@
-# Optional Rust code (the workspace rust/): one static library libonair_rs.a (crate rust/onair) holding every converted module.
+# The Rust code (the workspace rust/): one static library libonair_rs.a (crate rust/onair) holding every converted module. Rust is MANDATORY:
+# the converted modules (ONAIR_RUST_ALL_MODULES below) exist only in Rust, there is no C++ copy to fall back to, so configuring without a
+# usable cargo/rustc (>= 1.70) and the Rust target for this build stops with an error. Nothing is downloaded: the workspace has no external
+# crates and is built with `cargo build --offline`; for a cross build (Windows with MinGW, Android, ...) install the target first
+# (`rustup target add <triple>`; the error message names it).
 #
-#   -DDECT2_RUST=AUTO (default)  use it when cargo and the Rust target for this build are there, otherwise the C++ implementations
-#   -DDECT2_RUST=ON              as AUTO, but stop with an error when it cannot be used
-#   -DDECT2_RUST=OFF             always the C++ implementations (pure C++ build, cargo is not even looked for)
-#   -DDECT2_RUST_<MODULE>=AUTO|ON|OFF   per module (PROTO = the AIS frame layer, ADSB, ACARS, ...; default AUTO, USB default OFF): OFF keeps that module in C++
-#                                       even when Rust is available; ON stops with an error when the Rust build is unavailable
+# Opt-in by design (default OFF, so the C++ implementation is the one in use):
+#   -DDECT2_RUST_RING=ON   the Rust IqRing instead of the C++ ring buffer (core/include/dect2/common/ring.h keeps both)
+#   -DDECT2_RUST_USB=ON    the Android USB drivers in Rust instead of the desktop librtlsdr driver (needs a real device test)
+#   -DDECT2_RUST_VITERBI=ON  (CMakeLists.txt) the Rust NEON Viterbi: about 4% slower than the C++ NEON one, so the C++ one is the default
 #
-# Nothing is downloaded: the workspace has no external crates and is built with `cargo build --offline`. When the target for a cross
-# build (Windows with MinGW, Android, ...) is missing, AUTO falls back to C++ with a status message.
-#
-# Results: ONAIR_RUST_ACTIVE (TRUE/FALSE, the library exists), ONAIR_RUST_<MODULE> (TRUE when that module's Rust code is used),
-# ONAIR_RUST_MODULES (list of the active ones), the imported target onair_rs and the custom target onair_rs_cargo.
-# C++ side: call onair_rust_use(<target>) on every target that compiles or links a converted module. It adds -DDECT2_RUST_<MODULE> for each
-# active module (so `#ifndef DECT2_RUST_<MODULE>` blocks drop out) and links onair_rs. With the Rust build unavailable it does nothing.
-set(DECT2_RUST "AUTO" CACHE STRING "Rust code: AUTO (when cargo is found), ON, OFF")
-set_property(CACHE DECT2_RUST PROPERTY STRINGS AUTO ON OFF)
-set(DECT2_RUST_RING "OFF" CACHE STRING "Rust implementation of the RING module (IqRing): AUTO, ON, OFF; OFF until proven")   # before the loop below, so it stays OFF by default
+# Results: ONAIR_RUST_ACTIVE (always TRUE), ONAIR_RUST_<MODULE> (TRUE for every converted module and for the opt-in ones that are ON),
+# ONAIR_RUST_MODULES, the imported target onair_rs and the custom target onair_rs_cargo.
+# C++ side: call onair_rust_use(<target>) on every target that compiles or links a converted module; it links onair_rs.
+set(DECT2_RUST_RING "OFF" CACHE STRING "Opt-in: the Rust implementation of the RING module (IqRing): ON or OFF")
+set(DECT2_RUST_USB "OFF" CACHE STRING "Opt-in: the Rust Android USB drivers: ON or OFF")
 set(ONAIR_RUST_ALL_MODULES PROTO ADSB ACARS SAME PAGER AX25 DMR P25 NXDN DSTAR TETRA VDL2 HFDL MESH WISUN UAT TS DVBSI DAB DRM FILES NET ENGINE FEC USB RING)
+set(ONAIR_RUST_OPT_IN USB RING)
 set(ONAIR_RUST_ACTIVE FALSE)
 set(ONAIR_RUST_MODULES "")
-set(_rust_forced "")
 foreach(_m ${ONAIR_RUST_ALL_MODULES})
-  set(_rust_default "AUTO")
-  if(_m STREQUAL "USB")
-    set(_rust_default "OFF")   # the Android USB drivers: the desktop C++ driver (librtlsdr) stays the default until a real device test is possible
-  endif()
-  set(DECT2_RUST_${_m} "${_rust_default}" CACHE STRING "Rust implementation of the ${_m} module: AUTO, ON, OFF")
-  set_property(CACHE DECT2_RUST_${_m} PROPERTY STRINGS AUTO ON OFF)
-  set(ONAIR_RUST_${_m} FALSE)
-  if(DECT2_RUST_${_m} STREQUAL "ON")
-    list(APPEND _rust_forced ${_m})
+  set(ONAIR_RUST_${_m} TRUE)
+  if(_m IN_LIST ONAIR_RUST_OPT_IN)
+    if(DECT2_RUST_${_m} STREQUAL "ON")
+      set(ONAIR_RUST_${_m} TRUE)
+    else()
+      set(ONAIR_RUST_${_m} FALSE)
+    endif()
   endif()
 endforeach()
 
 function(onair_rust_use target)
-  if(NOT ONAIR_RUST_ACTIVE)
-    return()
-  endif()
   foreach(_m ${ONAIR_RUST_MODULES})
     target_compile_definitions(${target} PRIVATE DECT2_RUST_${_m})
   endforeach()
@@ -44,19 +37,8 @@ function(onair_rust_use target)
 endfunction()
 
 function(_onair_rust_unavailable why)
-  if(DECT2_RUST STREQUAL "ON" OR _rust_forced)
-    message(FATAL_ERROR "Rust was requested (DECT2_RUST=ON or DECT2_RUST_<MODULE>=ON ${_rust_forced}) but cannot be built: ${why}")
-  endif()
-  message(STATUS "Rust code: not used (${why}); the C++ implementations are built")
+  message(FATAL_ERROR "Rust is required (the protocol, FEC, file, network and engine layers are written in Rust, rust/README.md): ${why}")
 endfunction()
-
-if(DECT2_RUST STREQUAL "OFF")
-  if(_rust_forced)
-    message(FATAL_ERROR "DECT2_RUST_<MODULE>=ON (${_rust_forced}) contradicts DECT2_RUST=OFF")
-  endif()
-  message(STATUS "Rust code: off (DECT2_RUST=OFF); the C++ implementations are built")
-  return()
-endif()
 
 find_program(ONAIR_CARGO cargo)
 find_program(ONAIR_RUSTC rustc)
@@ -179,15 +161,9 @@ add_dependencies(onair_rs onair_rs_cargo)
 
 set(ONAIR_RUST_ACTIVE TRUE)
 foreach(_m ${ONAIR_RUST_ALL_MODULES})
-  if(NOT DECT2_RUST_${_m} STREQUAL "OFF")
-    set(ONAIR_RUST_${_m} TRUE)
+  if(ONAIR_RUST_${_m})
     list(APPEND ONAIR_RUST_MODULES ${_m})
   endif()
 endforeach()
-if(NOT ONAIR_RUST_MODULES)
-  set(ONAIR_RUST_ACTIVE FALSE)
-  message(STATUS "Rust code: every module is OFF; the C++ implementations are built")
-  return()
-endif()
 list(JOIN ONAIR_RUST_MODULES " " _mods)
-message(STATUS "Rust code: used for ${_mods} (${_want}, ${_prof_dir}; ${ONAIR_CARGO})")
+message(STATUS "Rust code: ${_mods} (${_want}, ${_prof_dir}; ${ONAIR_CARGO})")

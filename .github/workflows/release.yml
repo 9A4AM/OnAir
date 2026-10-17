@@ -65,7 +65,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install cross toolchain
-        run: brew install cmake pkg-config nasm mingw-w64
+        run: |
+          brew install cmake pkg-config nasm mingw-w64
+          rustup target add x86_64-pc-windows-gnu   # the Rust protocol layers (rust/README.md) are linked into the exe
       - name: Cache Windows cross prefix
         id: winpfx
         uses: actions/cache@v4
