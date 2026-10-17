@@ -2279,3 +2279,19 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Warum?
 Identify selected	Ausgewählte identifizieren
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Das Radio auf das ausgewählte Signal abstimmen und sagen, was es ist (der Empfänger muss in einem Modus laufen, dessen Abtastrate es abdeckt)
+Orbit from Doppler	Bahn aus Doppler
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	Verfolgt den Träger des verfolgten Satelliten während eines Überflugs und passt seine Bahn an die Doppler-Kurve an. Braucht eine stabile Frequenzreferenz (ein GPS-gesteuerter oder gut kalibrierter Empfänger); ein Fehler der Empfängeruhr wird als konstanter Versatz mitgefittet.
+Measure the carrier during tracked passes	Träger bei verfolgten Überflügen messen
+gate +-%.0f kHz	Fenster +-%.0f kHz
+How far from the predicted carrier the peak is looked for	Wie weit vom vorhergesagten Träger die Spitze gesucht wird
+%d measurements of %s	%d Messungen von %s
+Fit orbit	Bahn anpassen
+Save refined TLE	Verfeinertes TLE speichern
+saved in %s	gespeichert in %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	Schreibt die verfeinerten Elemente in eine eigene Datei, als aus dieser Messung abgeleitet markiert; die heruntergeladenen TLEs bleiben unberührt
+Use the derived elements for predictions	Abgeleitete Elemente für Vorhersagen verwenden
+no measurements yet	noch keine Messungen
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	grau: von den heruntergeladenen Elementen vorhergesagt, blau: verfeinert, grün: gemessen, bernstein: Rest der verfeinerten Kurve
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	Rest %.1f Hz -> %.1f Hz (%d verwendet, %d verworfen); Empfängerversatz %+.0f Hz
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	mittlere Anomalie %+.3f Grad, mittlere Bewegung %+.5f U/Tag, Inklination %+.4f Grad, RAAN %+.4f Grad
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	geschätzter Zeitfehler der Vorhersage: %.1f s vorher, %.1f s nachher (1 Sigma)

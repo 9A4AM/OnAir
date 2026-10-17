@@ -2279,3 +2279,19 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	为什么?
 Identify selected	识别所选
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	将无线电调谐到所选信号并说明它是什么(接收器须处于采样率能覆盖该信号的模式)
+Orbit from Doppler	由多普勒推算轨道
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	在过境期间跟踪所跟踪卫星的载波,并使其轨道拟合多普勒曲线。需要稳定的频率基准(GPS 驯服或校准良好的接收机);接收机时钟误差作为恒定偏移一并拟合。
+Measure the carrier during tracked passes	在跟踪的过境期间测量载波
+gate +-%.0f kHz	窗口 +-%.0f kHz
+How far from the predicted carrier the peak is looked for	在预测载波附近多大范围内寻找峰值
+%d measurements of %s	%d 个测量值(%s)
+Fit orbit	拟合轨道
+Save refined TLE	保存精化后的 TLE
+saved in %s	已保存到 %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	把精化后的轨道根数写入单独的文件,并标明由本次测量导出;下载的 TLE 不受影响
+Use the derived elements for predictions	用导出的轨道根数做预测
+no measurements yet	还没有测量值
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	灰色:下载的轨道根数预测,蓝色:精化后,绿色:测量值,琥珀色:精化曲线的残差
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	残差 %.1f Hz -> %.1f Hz(使用 %d,剔除 %d);接收机偏移 %+.0f Hz
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	平近点角 %+.3f 度,平均运动 %+.5f 圈/天,倾角 %+.4f 度,RAAN %+.4f 度
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	预测的估计时间误差:之前 %.1f 秒,之后 %.1f 秒(1 西格玛)

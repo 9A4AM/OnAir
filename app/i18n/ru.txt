@@ -2262,3 +2262,19 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Почему?
 Identify selected	Определить выбранный
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Настроить радио на выбранный сигнал и сказать, что это (приёмник должен работать в режиме, частота дискретизации которого его покрывает)
+Orbit from Doppler	Орбита по доплеру
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	Следит за несущей отслеживаемого спутника во время пролёта и подгоняет его орбиту под доплеровскую кривую. Нужен стабильный опорный генератор (приёмник с GPS-синхронизацией или хорошо откалиброванный); ошибка часов приёмника подбирается как постоянное смещение.
+Measure the carrier during tracked passes	Измерять несущую при отслеживаемых пролётах
+gate +-%.0f kHz	окно +-%.0f кГц
+How far from the predicted carrier the peak is looked for	Как далеко от предсказанной несущей искать пик
+%d measurements of %s	Измерений: %d (%s)
+Fit orbit	Подогнать орбиту
+Save refined TLE	Сохранить уточнённый TLE
+saved in %s	сохранено в %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	Записывает уточнённые элементы в отдельный файл с пометкой, что они выведены из этого измерения; загруженные TLE не затрагиваются
+Use the derived elements for predictions	Использовать выведенные элементы для прогнозов
+no measurements yet	измерений пока нет
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	серый: предсказано загруженными элементами, синий: уточнено, зелёный: измерено, янтарный: остаток уточнённой кривой
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	остаток %.1f Гц -> %.1f Гц (использовано %d, отброшено %d); смещение приёмника %+.0f Гц
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	средняя аномалия %+.3f град., среднее движение %+.5f об/сут, наклонение %+.4f град., RAAN %+.4f град.
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	ожидаемая ошибка времени прогноза: %.1f с до, %.1f с после (1 сигма)

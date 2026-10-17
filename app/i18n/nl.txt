@@ -2279,3 +2279,19 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Waarom?
 Identify selected	Geselecteerde identificeren
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Stemt de radio af op het geselecteerde signaal en zegt wat het is (de ontvanger moet in een modus staan waarvan de samplefrequentie het dekt)
+Orbit from Doppler	Baan uit Doppler
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	Volgt de draaggolf van de gevolgde satelliet tijdens een overvlucht en past zijn baan aan op de Doppler-curve. Vraagt een stabiele frequentiereferentie (een GPS-gestuurde of goed gekalibreerde ontvanger); een fout van de klok van de ontvanger wordt als vaste offset meegefit.
+Measure the carrier during tracked passes	Draaggolf meten tijdens gevolgde overvluchten
+gate +-%.0f kHz	venster +-%.0f kHz
+How far from the predicted carrier the peak is looked for	Hoe ver van de voorspelde draaggolf de piek wordt gezocht
+%d measurements of %s	%d metingen van %s
+Fit orbit	Baan fitten
+Save refined TLE	Verfijnde TLE opslaan
+saved in %s	opgeslagen in %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	Schrijft de verfijnde elementen naar een apart bestand, gemarkeerd als afgeleid van deze meting; de gedownloade TLE's blijven ongemoeid
+Use the derived elements for predictions	Afgeleide elementen gebruiken voor voorspellingen
+no measurements yet	nog geen metingen
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	grijs: voorspeld door de gedownloade elementen, blauw: verfijnd, groen: gemeten, amber: restfout van de verfijnde curve
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	rest %.1f Hz -> %.1f Hz (%d gebruikt, %d verworpen); ontvangeroffset %+.0f Hz
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	gemiddelde anomalie %+.3f graden, gemiddelde beweging %+.5f omw/dag, inclinatie %+.4f graden, RAAN %+.4f graden
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	geschatte tijdfout van de voorspelling: %.1f s ervoor, %.1f s erna (1 sigma)

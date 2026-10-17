@@ -2279,3 +2279,19 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Dlaczego?
 Identify selected	Zidentyfikuj zaznaczony
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Strojenie radia na zaznaczony sygnał i podanie, co to jest (odbiornik musi pracować w trybie, którego częstotliwość próbkowania go obejmuje)
+Orbit from Doppler	Orbita z Dopplera
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	W czasie przelotu śledzi nośną śledzonego satelity i dopasowuje jego orbitę do krzywej Dopplera. Potrzebuje stabilnego wzorca częstotliwości (odbiornik z GPS lub dobrze skalibrowany); błąd zegara odbiornika jest dopasowywany jako stałe przesunięcie.
+Measure the carrier during tracked passes	Mierz nośną podczas śledzonych przelotów
+gate +-%.0f kHz	okno +-%.0f kHz
+How far from the predicted carrier the peak is looked for	Jak daleko od przewidzianej nośnej szukany jest pik
+%d measurements of %s	%d pomiarów: %s
+Fit orbit	Dopasuj orbitę
+Save refined TLE	Zapisz poprawiony TLE
+saved in %s	zapisano w %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	Zapisuje poprawione elementy do osobnego pliku, oznaczonego jako wyprowadzone z tego pomiaru; pobrane TLE pozostają nietknięte
+Use the derived elements for predictions	Używaj wyprowadzonych elementów do prognoz
+no measurements yet	jeszcze brak pomiarów
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	szary: przewidziane przez pobrane elementy, niebieski: poprawione, zielony: zmierzone, bursztynowy: reszta poprawionej krzywej
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	reszta %.1f Hz -> %.1f Hz (użyto %d, odrzucono %d); przesunięcie odbiornika %+.0f Hz
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	anomalia średnia %+.3f stopnia, ruch średni %+.5f obr./dobę, inklinacja %+.4f stopnia, RAAN %+.4f stopnia
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	szacowany błąd czasu prognozy: %.1f s przed, %.1f s po (1 sigma)

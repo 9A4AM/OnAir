@@ -2262,3 +2262,19 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Perché?
 Identify selected	Identifica la selezionata
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Sintonizza la radio sul segnale selezionato e dice che cos'è (il ricevitore deve essere in una modalità la cui frequenza di campionamento lo copra)
+Orbit from Doppler	Orbita dal Doppler
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	Segue la portante del satellite seguito durante un passaggio e adatta la sua orbita alla curva Doppler. Serve un riferimento di frequenza stabile (un ricevitore agganciato al GPS o ben calibrato); l'errore dell'orologio del ricevitore viene adattato come scostamento costante.
+Measure the carrier during tracked passes	Misura la portante nei passaggi seguiti
+gate +-%.0f kHz	finestra +-%.0f kHz
+How far from the predicted carrier the peak is looked for	A che distanza dalla portante prevista si cerca il picco
+%d measurements of %s	%d misure di %s
+Fit orbit	Adatta orbita
+Save refined TLE	Salva TLE affinato
+saved in %s	salvato in %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	Scrive gli elementi affinati in un file a parte, segnato come derivato da questa misura; i TLE scaricati non vengono toccati
+Use the derived elements for predictions	Usa gli elementi derivati per le previsioni
+no measurements yet	ancora nessuna misura
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	grigio: previsto dagli elementi scaricati, blu: affinato, verde: misurato, ambra: residuo della curva affinata
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	residuo %.1f Hz -> %.1f Hz (%d usate, %d scartate); scostamento del ricevitore %+.0f Hz
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	anomalia media %+.3f gradi, moto medio %+.5f giri/giorno, inclinazione %+.4f gradi, RAAN %+.4f gradi
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	errore di tempo stimato della previsione: %.1f s prima, %.1f s dopo (1 sigma)

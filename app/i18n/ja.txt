@@ -2279,3 +2279,19 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	なぜ?
 Identify selected	選択を識別
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	選択した信号に無線機を合わせて、その正体を示します (サンプルレートが信号をカバーするモードでレシーバーが動作している必要があります)
+Orbit from Doppler	ドップラーからの軌道
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	追跡中の衛星のパス中に搬送波を追い、軌道をドップラー曲線に合わせます。安定した周波数基準が必要です(GPS同期または十分に校正された受信機)。受信機のクロック誤差は一定のオフセットとして推定されます。
+Measure the carrier during tracked passes	追跡中のパスで搬送波を測定
+gate +-%.0f kHz	ゲート +-%.0f kHz
+How far from the predicted carrier the peak is looked for	予測した搬送波からどこまでピークを探すか
+%d measurements of %s	%d 件の測定 (%s)
+Fit orbit	軌道を推定
+Save refined TLE	精密化したTLEを保存
+saved in %s	保存先: %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	精密化した要素を、この測定から導出したものと明記して別ファイルに書き出します。ダウンロードしたTLEは変更されません
+Use the derived elements for predictions	導出した要素を予測に使う
+no measurements yet	測定はまだありません
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	灰色: ダウンロードした要素による予測、青: 精密化後、緑: 測定値、琥珀色: 精密化後の残差
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	残差 %.1f Hz -> %.1f Hz (使用 %d、除外 %d)、受信機オフセット %+.0f Hz
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	平均近点角 %+.3f 度、平均運動 %+.5f 回転/日、軌道傾斜角 %+.4f 度、RAAN %+.4f 度
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	予測の推定時間誤差: 前 %.1f 秒、後 %.1f 秒 (1シグマ)

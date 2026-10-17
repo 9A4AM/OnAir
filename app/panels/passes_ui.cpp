@@ -5,6 +5,7 @@
 #include "../app.h"
 #include "gallery.h"
 #include "dect2/geo/passes.h"
+#include "dect2/geo/doppler_fit.h"
 #include "dect2/automation/engine.h"
 #include <algorithm>
 #include <atomic>
@@ -36,6 +37,7 @@ const Source kSources[] = {
     {"globalstar.txt", "https://celestrak.org/NORAD/elements/gp.php?GROUP=globalstar&FORMAT=tle"},
 };
 const char* const kPasted = "pasted.txt";
+const char* const kDerived = "derived_doppler.tle";
 const Source kKeplerpass = {"keplerpass.txt", "https://data.keplerpass.com/PU4ELT/tle.txt"};
 
 enum Group { Weather, Iss, Orbcomm, Amateur, GlobalstarGrp, NumGroups };
@@ -95,6 +97,18 @@ struct State {
     char cubeName[40] = ""; int cubeNorad = 0; double cubeMhz = 145.9; bool cubeAprs = false;
 };
 State S;
+
+struct DopState {
+    bool measure = false;               // follow the carrier in the spectrum during a tracked pass
+    std::vector<dect2::DopplerSample> smp;
+    int norad = 0; std::string name; double nominalHz = 0; dect2::Tle tle;   // what the samples are of
+    double lastT = 0; uint64_t lastSeq = 0;
+    dect2::DopplerFit fit; bool fitted = false;
+    std::string msg;
+    bool useDerived = false;
+    float gateKhz = 4;
+};
+DopState D;
 
 // the download runs on its own thread: these outlive it
 std::atomic<int> gDl{0};   // 0 idle, 1 working, 2 finished
@@ -196,6 +210,9 @@ void loadTles() {
     for (const dect2::Tle& t : dect2::parseTleText(readText(tleDir() + "/" + kKeplerpass.file))) S.tles[t.norad] = t;
     for (const auto& src : S.customSources) for (const dect2::Tle& t : dect2::parseTleText(readText(tleDir() + "/" + src.first))) S.tles[t.norad] = t;
     for (const dect2::Tle& t : dect2::parseTleText(readText(tleDir() + "/" + kPasted))) S.tles[t.norad] = t;
+    if (plat::prefs().getB("passUseDerived", false)) {   // the elements fitted to a measured Doppler curve: the last one saved for each satellite wins
+        for (const dect2::Tle& t : dect2::parseTleText(readText(tleDir() + "/" + kDerived))) S.tles[t.norad] = t;
+    }
     buildSats();
 }
 
@@ -205,6 +222,7 @@ void loadState() {
     plat::Prefs& p = plat::prefs();
     S.minEl = (float)p.getD("passMinEl", 10);
     S.autoTle = p.getB("passTleAuto", true);
+    D.measure = p.getB("passDopMeasure", false); D.useDerived = p.getB("passUseDerived", false);
     S.notifyMin = (float)p.getD("passNotifyMin", 5);
     for (int g = 0; g < NumGroups; g++) { char k[24]; snprintf(k, sizeof k, "passShow%d", g); S.show[g] = p.getB(k, true); }
     loadCubes();
@@ -587,6 +605,112 @@ void tleSection(App& a) {
     }
 }
 
+// ---- Orbit from Doppler: measure the carrier of the satellite being tracked and fit the elements to it (core/src/geo/doppler_fit.cpp)
+
+void dopplerCollect(App& a) {
+    if (!D.measure || !S.inPass || !a.engine.running() || S.selSat < 0 || S.selSat >= (int)S.sats.size()) return;
+    const Sat& sat = S.sats[S.selSat];
+    if (a.spec.seq == D.lastSeq || a.spec.dbfs.empty()) return;
+    const double now = (double)std::time(nullptr);
+    D.lastSeq = a.spec.seq;
+    if (D.norad != sat.norad || (!D.smp.empty() && now - D.smp.back().t > 900)) {   // another satellite or another pass: start over
+        D.smp.clear(); D.fitted = false; D.norad = sat.norad; D.name = sat.name; D.nominalHz = S.nominalMhz * 1e6; D.tle = sat.sgp.tle(); D.msg.clear();
+    }
+    if (now - D.lastT < 1.0) return;
+    D.lastT = now;
+    dect2::Look l;
+    if (!lookNow(sat, now, l) || l.elDeg < 3) return;
+    const double fs = a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate;
+    dect2::DopplerSample x;
+    const double pred = D.nominalHz + dect2::dopplerHz(D.nominalHz, l.rangeRateKmS);
+    static const dect2::DopplerTracker trk;
+    if (trk.feed(now, a.spec.dbfs.data(), a.spec.dbfs.size(), a.freqMhz * 1e6, fs, D.nominalHz, pred, D.gateKhz * 1000.0, x)) D.smp.push_back(x);
+}
+
+void dopplerPlot(float w, float h) {
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const ImVec2 p0 = ImGui::GetCursorScreenPos();
+    ImGui::Dummy(ImVec2(w, h));
+    const ImU32 grid = ImGui::GetColorU32(ImGuiCol_TextDisabled, 0.4f), text = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+    dl->AddRect(p0, ImVec2(p0.x + w, p0.y + h), grid);
+    if (D.smp.size() < 2) { dl->AddText(ImVec2(p0.x + 6, p0.y + 4), text, tr("no measurements yet")); return; }
+    const double t0 = D.smp.front().t, t1 = D.smp.back().t;
+    double lo = 1e18, hi = -1e18;
+    for (const auto& x : D.smp) { lo = std::min(lo, x.hz); hi = std::max(hi, x.hz); }
+    if (hi - lo < 100) { lo -= 50; hi += 50; }
+    const double pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
+    const float resH = D.fitted ? h * 0.28f : 0.f, mainH = h - resH - (D.fitted ? 6.f : 0.f);
+    auto X = [&](double t) { return p0.x + float((t - t0) / std::max(1.0, t1 - t0)) * w; };
+    auto Y = [&](double hz) { return p0.y + mainH - float((hz - lo) / (hi - lo)) * mainH; };
+    dect2::Sgp4 orig;
+    const bool haveOrig = orig.init(D.tle);
+    // predicted by the unrefined elements: the curve (a faint line) plus the receiver offset it cannot know about
+    if (haveOrig) {
+        std::vector<ImVec2> pts;
+        double lat = S.lat, lon = S.lon; dect2::Observer o; o.latDeg = lat; o.lonDeg = lon; o.altKm = S.altM / 1000;
+        for (int k = 0; k <= 100; k++) { const double t = t0 + (t1 - t0) * k / 100; dect2::Look l; if (dect2::lookAt(orig, o, t, l)) pts.push_back(ImVec2(X(t), Y(dect2::dopplerHz(D.nominalHz, l.rangeRateKmS)))); }
+        if (pts.size() > 1) dl->AddPolyline(pts.data(), (int)pts.size(), ImGui::GetColorU32(ImGuiCol_TextDisabled), 0, 1.5f);
+    }
+    if (D.fitted) {
+        std::vector<ImVec2> pts;
+        for (size_t i = 0; i < D.smp.size() && i < D.fit.predictedHz.size(); i++) pts.push_back(ImVec2(X(D.smp[i].t), Y(D.fit.predictedHz[i])));
+        if (pts.size() > 1) dl->AddPolyline(pts.data(), (int)pts.size(), ImGui::GetColorU32(pal::accent()), 0, 2.f);
+    }
+    for (const auto& x : D.smp) dl->AddCircleFilled(ImVec2(X(x.t), Y(x.hz)), 2.2f, ImGui::GetColorU32(pal::okGreen()));
+    char b[48];
+    snprintf(b, sizeof b, "%+.0f Hz", hi); dl->AddText(ImVec2(p0.x + 3, p0.y + 1), text, b);
+    snprintf(b, sizeof b, "%+.0f Hz", lo); dl->AddText(ImVec2(p0.x + 3, p0.y + mainH - ImGui::GetFontSize() - 1), text, b);
+    if (D.fitted) {   // the residuals of the refined curve
+        const float y0 = p0.y + mainH + 6.f;
+        dl->AddRect(ImVec2(p0.x, y0), ImVec2(p0.x + w, y0 + resH), grid);
+        double m = 10;
+        for (double r : D.fit.residualHz) m = std::max(m, std::fabs(r));
+        dl->AddLine(ImVec2(p0.x, y0 + resH * 0.5f), ImVec2(p0.x + w, y0 + resH * 0.5f), grid);
+        for (size_t i = 0; i < D.smp.size() && i < D.fit.residualHz.size(); i++) dl->AddCircleFilled(ImVec2(X(D.smp[i].t), y0 + resH * 0.5f - float(D.fit.residualHz[i] / m) * resH * 0.5f), 1.8f, ImGui::GetColorU32(pal::warnAmber()));
+        snprintf(b, sizeof b, "+-%.0f Hz", m); dl->AddText(ImVec2(p0.x + 3, y0 + 1), text, b);
+    }
+}
+
+void dopplerSection(App& a) {
+    if (!ImGui::CollapsingHeader(trw("Orbit from Doppler"))) return;
+    ImGui::TextWrapped("%s", tr("Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset."));
+    if (ImGui::Checkbox(tr("Measure the carrier during tracked passes"), &D.measure)) plat::prefs().setB("passDopMeasure", D.measure);
+    ImGui::SameLine(); ImGui::SetNextItemWidth(110 * gUi); ImGui::SliderFloat("##dopgate", &D.gateKhz, 1, 10, tr("gate +-%.0f kHz"));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("How far from the predicted carrier the peak is looked for"));
+    ImGui::Text(tr("%d measurements of %s"), (int)D.smp.size(), D.name.empty() ? "-" : D.name.c_str());
+    ImGui::BeginDisabled(D.smp.size() < 12);
+    if (ImGui::Button(tr("Fit orbit"))) {
+        dect2::Observer o; o.latDeg = S.lat; o.lonDeg = S.lon; o.altKm = S.altM / 1000;
+        D.fitted = dect2::fitDopplerOrbit(D.tle, o, D.nominalHz, D.smp, dect2::DopplerFitOptions(), D.fit);
+        D.msg = D.fitted ? "" : D.fit.why;
+    }
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    if (ImGui::Button(tr("Clear"))) { D.smp.clear(); D.fitted = false; D.msg.clear(); }
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!D.fitted);
+    if (ImGui::Button(tr("Save refined TLE"))) {
+        std::error_code ec;
+        fs::create_directories(fsPath(tleDir()), ec);
+        std::string old = readText(tleDir() + "/" + kDerived);
+        std::ofstream f(fsPath(tleDir() + "/" + kDerived), std::ios::binary);
+        f << old << dect2::derivedTleText(D.fit, D.nominalHz);
+        { char mb[600]; snprintf(mb, sizeof mb, tr("saved in %s"), (tleDir() + "/" + kDerived).c_str()); D.msg = mb; }
+    }
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched"));
+    if (ImGui::Checkbox(tr("Use the derived elements for predictions"), &D.useDerived)) { plat::prefs().setB("passUseDerived", D.useDerived); loadTles(); buildSats(); S.dirty = true; }
+    if (!D.msg.empty()) ImGui::TextDisabled("%s", D.msg.c_str());
+    dopplerPlot(std::max(200.f, ImGui::GetContentRegionAvail().x), 170 * gUi);
+    if (D.fitted) {
+        const dect2::DopplerFit& f = D.fit;
+        ImGui::TextDisabled("%s", tr("grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve"));
+        ImGui::Text(tr("residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz"), f.rmsBeforeHz, f.rmsAfterHz, f.used, f.rejected, f.offsetHz);
+        ImGui::Text(tr("mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg"), f.dMeanAnomDeg, f.dMeanMotion, f.dInclDeg, f.dRaanDeg);
+        ImGui::Text(tr("estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)"), f.alongTrackSigmaBeforeSec, f.alongTrackSigmaSec);
+    }
+}
+
 void window(App& a) {
     ImGui::SetNextWindowSize(ImVec2(820 * gUi, 560 * gUi), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin(trw("Passes"), &a.passesOpen)) { ImGui::End(); return; }
@@ -599,6 +723,7 @@ void window(App& a) {
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("The same position as the ADS-B antenna position"));
     }
     tleSection(a);
+    dopplerSection(a);
     {   // filters
         bool ch = false;
         for (int g = 0; g < NumGroups; g++) {
@@ -750,6 +875,7 @@ void passesWindow(App& a) {
     pollDownload();
     autoUpdateTle(a.passesOpen || S.track);
     trackTick(a);
+    dopplerCollect(a);
     aosBanner(a);
     if (a.passesOpen) window(a);
 }

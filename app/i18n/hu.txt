@@ -2265,3 +2265,19 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Miért?
 Identify selected	A kijelölt azonosítása
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	A rádiót a kijelölt jelre hangolja, és megmondja, mi az (a vevőnek olyan módban kell lennie, amelynek mintavételi sebessége lefedi)
+Orbit from Doppler	Pálya a Doppler-eltolódásból
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	Egy áthaladás alatt követi a követett műhold vivőjét, és a pályáját a Doppler-görbéhez illeszti. Stabil frekvenciareferencia kell hozzá (GPS-szinkronizált vagy jól kalibrált vevő); a vevő órájának hibáját állandó eltolásként illeszti.
+Measure the carrier during tracked passes	Vivő mérése követett áthaladásoknál
+gate +-%.0f kHz	ablak +-%.0f kHz
+How far from the predicted carrier the peak is looked for	Mekkora távolságra keresi a csúcsot az előrejelzett vivőtől
+%d measurements of %s	%d mérés: %s
+Fit orbit	Pálya illesztése
+Save refined TLE	Finomított TLE mentése
+saved in %s	mentve ide: %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	A finomított elemeket külön fájlba írja, a mérésből származtatottként megjelölve; a letöltött TLE-khez nem nyúl
+Use the derived elements for predictions	Származtatott elemek használata az előrejelzéshez
+no measurements yet	még nincs mérés
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	szürke: a letöltött elemek előrejelzése, kék: finomított, zöld: mért, borostyán: a finomított görbe maradéka
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	maradék %.1f Hz -> %.1f Hz (%d felhasználva, %d elvetve); vevőeltolás %+.0f Hz
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	közepes anomália %+.3f fok, közepes mozgás %+.5f ford./nap, inklináció %+.4f fok, RAAN %+.4f fok
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	az előrejelzés becsült időhibája: %.1f s előtte, %.1f s utána (1 szigma)

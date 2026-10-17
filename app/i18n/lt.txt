@@ -2279,3 +2279,19 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Kodėl?
 Identify selected	Atpažinti pažymėtą
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Suderina radiją su pažymėtu signalu ir pasako, kas tai yra (imtuvas turi veikti režimu, kurio atrankos dažnis jį apima)
+Orbit from Doppler	Orbita pagal Doplerį
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	Praskridimo metu seka sekamo palydovo nešlį ir pritaiko jo orbitą prie Doplerio kreivės. Reikia stabilaus dažnio etalono (GPS sinchronizuotas arba gerai sukalibruotas imtuvas); imtuvo laikrodžio paklaida pritaikoma kaip pastovus poslinkis.
+Measure the carrier during tracked passes	Matuoti nešlį sekamų praskridimų metu
+gate +-%.0f kHz	langas +-%.0f kHz
+How far from the predicted carrier the peak is looked for	Kiek toli nuo prognozuojamo nešlio ieškoma smailės
+%d measurements of %s	%d matavimų: %s
+Fit orbit	Pritaikyti orbitą
+Save refined TLE	Išsaugoti patikslintą TLE
+saved in %s	išsaugota: %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	Patikslintus elementus įrašo į atskirą failą, pažymėtą kaip išvestą iš šio matavimo; atsisiųsti TLE nekeičiami
+Use the derived elements for predictions	Prognozėms naudoti išvestus elementus
+no measurements yet	matavimų dar nėra
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	pilka: atsisiųstų elementų prognozė, mėlyna: patikslinta, žalia: išmatuota, gintarinė: patikslintos kreivės liekana
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	liekana %.1f Hz -> %.1f Hz (naudota %d, atmesta %d); imtuvo poslinkis %+.0f Hz
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	vidutinė anomalija %+.3f laipsnio, vidutinis judėjimas %+.5f apsisukimo/d., posvyris %+.4f laipsnio, RAAN %+.4f laipsnio
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	numatoma prognozės laiko paklaida: %.1f s prieš, %.1f s po (1 sigma)
