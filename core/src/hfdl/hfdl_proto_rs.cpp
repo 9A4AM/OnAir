@@ -1,6 +1,5 @@
-// HFDL bit layers, FCS, station table and PDU parser on top of the Rust crate rust/onair_hfdl (DECT2_RUST_HFDL): the same functions as hfdl_proto.cpp, which keeps
-// the C++ under #ifndef DECT2_RUST_HFDL together with the PSK maps, the builders for the test signal and the ACARS reader. Empty when the crate is not built.
-#ifdef DECT2_RUST_HFDL
+// HFDL bit layers, FCS, station table and PDU parser on top of the Rust crate rust/onair_hfdl: the functions of hfdl_proto.h;
+// hfdl_proto.cpp keeps the PSK maps, the builders for the test signal and the ACARS reader.
 #include "dect2/hfdl/hfdl_proto.h"
 #include "dect2/rs/hfdl.h"
 #include "hfdl_internal.h"
@@ -137,4 +136,3 @@ bool hfdlParsePdu(const uint8_t* p, size_t n, std::vector<HfdlMessage>& out) {
 }
 
 } // namespace dect2
-#endif

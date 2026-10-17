@@ -1500,27 +1500,7 @@ if(DECT2_BUILD_TESTS)
 
   onair_rust_golden_tests(vdl2 core/src/vdl2 ${ONAIR_ROOT}/core/include/dect2/vdl2)
 
-  # HFDL layers: a frozen copy of hfdl_proto.cpp (namespace dect2_hfdl_ref) against the Rust-backed real one; links dect2core for the ACARS / aero code, the test's own
-  # objects come first. -ffp-contract=off keeps the Viterbi / coordinate arithmetic identical in both copies
-  if(ONAIR_RUST_HFDL)
-    set(_dir ${CMAKE_BINARY_DIR}/hfdl_ref)
-    add_custom_command(OUTPUT ${_dir}/hfdl_proto_ref.h ${_dir}/hfdl_proto_ref.cpp
-      COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${_dir} -DNAME=hfdl_proto -DHDR=dect2/hfdl/hfdl_proto.h -DCPP=hfdl/hfdl_proto.cpp -DDEF=DECT2_RUST_HFDL
-              "-DFROM=namespace dect2 {" "-DTO=namespace dect2_hfdl_ref {" "-DEXTRA= using namespace dect2;" "-DCPP_REPL=hfdlReadAcars=>hfdlReadAcarsRef" -P ${ONAIR_ROOT}/cmake/gen_rs_ref.cmake
-      DEPENDS core/include/dect2/hfdl/hfdl_proto.h core/src/hfdl/hfdl_proto.cpp cmake/gen_rs_ref.cmake VERBATIM)
-    set(_real core/src/hfdl/hfdl_proto.cpp core/src/hfdl/hfdl_proto_rs.cpp)
-    set_source_files_properties(${_real} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_HFDL)
-    set_source_files_properties(${_real} ${_dir}/hfdl_proto_ref.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off")
-    add_executable(test_hfdl_proto_rs tests/hfdl/test_hfdl_proto_rs.cpp ${_dir}/hfdl_proto_ref.cpp ${_real})
-    target_include_directories(test_hfdl_proto_rs PRIVATE core/include core/src/hfdl ${_dir} ${ONAIR_ROOT}/core/include/dect2/hfdl)
-    target_link_libraries(test_hfdl_proto_rs PRIVATE dect2core onair_rs)
-    add_test(NAME hfdl_proto_rs COMMAND test_hfdl_proto_rs)
-    add_executable(fuzz_hfdl_proto tests/hfdl/fuzz_hfdl_proto.cpp ${_real})
-    target_include_directories(fuzz_hfdl_proto PRIVATE core/include core/src/hfdl)
-    target_compile_definitions(fuzz_hfdl_proto PRIVATE DECT2_RUST_HFDL)
-    target_link_libraries(fuzz_hfdl_proto PRIVATE dect2core onair_rs)
-    add_test(NAME fuzz_hfdl_proto COMMAND fuzz_hfdl_proto)
-  endif()
+  onair_rust_golden_tests(hfdl core/src/hfdl ${ONAIR_ROOT}/core/include/dect2/hfdl)
 
   onair_rust_golden_tests(uat)   # the decode functions of dump978 uat_decode.c, now Rust (uat_decode_rs.cpp)
 

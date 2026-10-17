@@ -1,4 +1,4 @@
-// Shared by hfdl_proto.cpp and hfdl_proto_rs.cpp (DECT2_RUST_HFDL): the ACARS reader that both parsers call.
+// Shared by hfdl_proto.cpp and hfdl_proto_rs.cpp: the ACARS reader that both parsers call.
 #pragma once
 #include "dect2/hfdl/hfdl_tel.h"
 #include <cstddef>
