@@ -158,20 +158,38 @@ EXPORT int bladerf_set_bias_tee(bl_dev*, int ch, bool on) { rec("blade.bias", on
 struct lms_range_t { double min, max, step; };
 struct lms_stream_t { size_t handle; bool isTx; uint32_t channel; uint32_t fifoSize; float throughputVsLatency; int dataFmt; int linkFmt; };
 struct lms_meta_t { uint64_t timestamp; bool waitForTimestamp; bool flushPartialPacket; };
-EXPORT int LMS_GetDeviceList(char (*l)[256]) { if (l) strcpy(l[0], "LimeSDR-USB, media=USB 3.0, module=FX3, addr=1d50:6108, serial=0009060B00000001"); return 1; }
-EXPORT int LMS_Open(void** d, const char* info, void*) { rec("lime.openInfoOk", info && strstr(info, "LimeSDR") ? 1 : 0); *d = new int(1); return 0; }
+// FAKE_LIME_MODEL=mini / mini2 / mini-usb2 / twomini make the fake a LimeSDR Mini (as LimeSuite names them); unset: a LimeSDR-USB
+EXPORT int LMS_GetDeviceList(char (*l)[256]) {
+    const char* m = getenv("FAKE_LIME_MODEL");
+    const std::string model = m ? m : "";
+    if (model == "none") return 0;
+    if (l) {
+        if (model == "mini" || model == "twomini") strcpy(l[0], "LimeSDR Mini, media=USB 3.0, module=FT601, addr=24607:1027, serial=1D40CA8B2ED29A");
+        else if (model == "mini2") strcpy(l[0], "LimeSDR Mini v2.4, media=USB 3.0, module=FT601, addr=24607:1027, serial=1D40CA8B2ED29B");
+        else if (model == "mini-usb2") strcpy(l[0], "LimeSDR Mini, media=USB 2.0, module=FT601, addr=24607:1027, serial=1D40CA8B2ED29A");
+        else strcpy(l[0], "LimeSDR-USB, media=USB 3.0, module=FX3, addr=1d50:6108, serial=0009060B00000001");
+        if (model == "twomini") strcpy(l[1], "LimeSDR Mini, media=USB 3.0, module=FT601, addr=24607:1027, serial=1D40CA8B2ED2FF");
+    }
+    return model == "twomini" ? 2 : 1;
+}
+EXPORT int LMS_Open(void** d, const char* info, void*) { if (getenv("FAKE_LIME_OPEN_FAIL")) return -1; rec("lime.openInfoOk", info && strstr(info, "LimeSDR") ? 1 : 0); *d = new int(1); return 0; }
 EXPORT int LMS_Close(void* d) { delete (int*)d; return 0; }
-EXPORT int LMS_Init(void*) { return 0; }
+EXPORT int LMS_Init(void*) { return getenv("FAKE_LIME_INIT_FAIL") ? -1 : 0; }
 EXPORT int LMS_EnableChannel(void*, bool tx, size_t ch, bool e) { rec("lime.chanEnabled", (!tx && ch == 0 && e) ? 1 : 0); return 0; }
 EXPORT int LMS_SetSampleRate(void*, double r, size_t) { rec("lime.rate", r); return 0; }
 EXPORT int LMS_GetSampleRateRange(void*, bool, lms_range_t* r) { r->min = 100e3; r->max = 61.44e6; r->step = 0; return 0; }
 EXPORT int LMS_SetLOFrequency(void*, bool, size_t, double f) { rec("lime.freq", f); return 0; }
-EXPORT int LMS_GetAntennaList(void*, bool, size_t, char (*l)[16]) { strcpy(l[0], "NONE"); strcpy(l[1], "LNAH"); strcpy(l[2], "LNAL"); strcpy(l[3], "LNAW"); return 4; }
+EXPORT int LMS_GetAntennaList(void*, bool, size_t, char (*l)[16]) {
+    const char* m = getenv("FAKE_LIME_MODEL");
+    const bool mini = m && strstr(m, "mini");
+    strcpy(l[0], "NONE"); strcpy(l[1], "LNAH"); strcpy(l[2], mini ? "LNAL_NC" : "LNAL"); strcpy(l[3], "LNAW");   // the Mini: LNAL goes nowhere
+    return 4;
+}
 EXPORT int LMS_SetAntenna(void*, bool, size_t, size_t i) { rec("lime.antenna", (double)i); return 0; }
 EXPORT int LMS_SetLPFBW(void*, bool, size_t, double b) { rec("lime.bw", b); return 0; }
 EXPORT int LMS_SetGaindB(void*, bool, size_t, unsigned g) { rec("lime.gain", g); return 0; }
-EXPORT int LMS_Calibrate(void*, bool, size_t, double, unsigned) { rec("lime.calibrated", 1); rec("lime.calibrations", std::max(0.0, fake_state("lime.calibrations")) + 1); return 0; }   // ---- radios: counted
-EXPORT int LMS_SetupStream(void*, lms_stream_t* s) { rec("lime.fmt", s->dataFmt); s->handle = 7; return 0; }
+EXPORT int LMS_Calibrate(void*, bool, size_t, double bw, unsigned) { rec("lime.calbw", bw); rec("lime.calibrated", 1); rec("lime.calibrations", std::max(0.0, fake_state("lime.calibrations")) + 1); return 0; }   // ---- radios: counted
+EXPORT int LMS_SetupStream(void*, lms_stream_t* s) { rec("lime.fmt", s->dataFmt); rec("lime.linkfmt", s->linkFmt); s->handle = 7; return 0; }
 EXPORT int LMS_DestroyStream(void*, lms_stream_t*) { return 0; }
 EXPORT int LMS_StartStream(lms_stream_t*) { rec("lime.streaming", 1); return 0; }
 EXPORT int LMS_StopStream(lms_stream_t*) { rec("lime.streaming", 0); return 0; }
@@ -515,8 +533,8 @@ EXPORT int bladerf_get_frequency_range(bl_dev*, int, const bladerf_range_t** r) 
     return 0;
 }
 EXPORT int bladerf_expansion_attach(bl_dev*, int xb) { rec("blade.xb", xb); return 0; }   // ---- radio settings
-EXPORT const char* LMS_GetLastErrorMessage(void) { return "fake LimeSuite error"; }
-EXPORT int LMS_GetLOFrequencyRange(void*, bool, lms_range_t* r) { r->min = 30e6; r->max = 3.8e9; r->step = 1; return 0; }
+EXPORT const char* LMS_GetLastErrorMessage(void) { return getenv("FAKE_LIME_INIT_FAIL") ? "Gateware version mismatch" : "fake LimeSuite error"; }
+EXPORT int LMS_GetLOFrequencyRange(void*, bool, lms_range_t* r) { const char* m = getenv("FAKE_LIME_MODEL"); const bool mini = m && strstr(m, "mini"); r->min = mini ? 10e6 : 30e6; r->max = mini ? 3.5e9 : 3.8e9; r->step = 1; return 0; }
 EXPORT long long iio_channel_attr_read(const void* c, const char* a, char* dst, size_t len) {
     if (strcmp(a, "frequency_available") != 0 || ((iio_chan*)c)->name != "phy:altvoltage0") return -22;
     snprintf(dst, len, "[325000000 1 3800000000]");   // a stock Pluto (AD9363)
