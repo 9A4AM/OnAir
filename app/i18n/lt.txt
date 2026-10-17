@@ -1559,3 +1559,14 @@ WAV header	WAV antraštė
 Allow other computers	Leisti kitus kompiuterius
 16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16 bitų stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORTAS arba WAV grotuvas su antraštė. Sauga: klausytis gali kiekvienas, pasiekiantis prievadą; neįjunkite „Leisti kitus kompiuterius“ be reikalo.
 Listeners:	Klausytojai:
+video	vaizdas
+audio	garsas
+profile	profilis
+Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work	Vaizdas: %s (OnAir šio vaizdo nemoka dekoduoti) — garsas, subtitrai ir duomenys veikia
+Open in an external player	Atidaryti išoriniame grotuve
+Save the transport stream to a file	Išsaugoti transporto srautą į failą
+Stream it as UDP to %s	Siųsti kaip UDP į %s
+Copy VLC command	Kopijuoti VLC komandą
+Copy mpv command	Kopijuoti mpv komandą
+Copy ffplay command	Kopijuoti ffplay komandą
+Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Pirmiausia įjunkite UDP srautą, tada paleiskite komandą. Ar grotuvas rodys vaizdą, priklauso nuo jo paties versijos (docs/AVSPLUS.md).
