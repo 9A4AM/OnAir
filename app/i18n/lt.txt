@@ -2409,3 +2409,50 @@ Tracks	Trasos
 Two recordings (reference, surveillance)	Du įrašai (atraminis, stebėjimo)
 Two-channel recording (cf32)	Dviejų kanalų įrašas (cf32)
 Waiting for data.	Laukiama duomenų.
+FM broadcast	FM radijas
+Airband	Aviacijos juosta
+DAB / VHF band III	DAB / VHF III juosta
+UHF TV	UHF televizija
+868 MHz ISM	868 MHz ISM
+ADS-B 1090 MHz	ADS-B 1090 MHz
+Measuring %s (%d/%d)	Matuojama: %s (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	Pirmiausia pasirinkite radiją (bandomojo signalo ir failų išmatuoti negalima)
+None of the measuring bands is inside this radio's range	Nė viena matavimo juosta nepatenka į šio radijo diapazoną
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s: ADC perkrautas (%.2f%% atskaitų nukerpama). Sumažinkite stiprinimą arba įdėkite slopintuvą.
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s: stiprus signalas (%.0f dB virš triukšmo lygio) perkrauna ADC, o kitos juostos esant šiam stiprinimui būna per silpnos. Šiai juostai įdėkite slopinimo filtrą (FM juostai FM šalinimo filtrą), užuot mažinę stiprinimą.
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s: ADC lygis aukštas (%.1f dBFS rms), stipriems signalams lieka mažai atsargos. Šiek tiek sumažinkite stiprinimą.
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s: imtuvo triukšmas tik %.1f dB aukštesnis už paties ADC triukšmą, todėl silpni signalai prarandami. Padidinkite stiprinimą.
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s: imtuvo triukšmas tik %.1f dB aukštesnis už paties ADC triukšmą, o stiprinimas jau didžiausias. Šalia antenos įdėkite mažo triukšmo stiprintuvą (LNA).
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s: stiprinimas galėtų būti maždaug %.0f dB mažesnis neprarandant jautrumo, o tai suteikia daugiau atsargos stipriems signalams.
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s: triukšmo lygis %.0f dB aukštesnis nei ramiausioje juostoje. Raskite vietinį triukšmo šaltinį (LED apšvietimą, impulsinius maitinimo šaltinius, kompiuterius), patraukite anteną nuo jo arba uždėkite ferito žiedą ant kabelio.
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	Nerasta nė vienos %s stoties, nors paprastai jų būna. Patikrinkite anteną ir kabelį; gali būti, kad jūsų vietovėje juosta tuščia.
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	Stipriausia %s stotis tik %.0f dB virš triukšmo (gera antena duoda bent %.0f dB). Pakelkite anteną aukščiau arba išneškite į lauką, arba pridėkite juostos filtrą ir LNA.
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	Radijo laikrodis nukrypęs %+.1f ppm. Radijo nustatymuose kaip dažnio pataisą (ppm) įveskite %+.1f.
+The radio's clock is %+.1f ppm off: fine.	Radijo laikrodis nukrypęs %+.1f ppm: tvarkoje.
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	ADS-B nuotolis trumpas: tolimiausias orlaivis buvo už %.0f nm (laisva lauko antena pasiekia 150 nm ar daugiau); silpniausia kryptis apie %.0f laipsnių. Pakelkite anteną aukščiau, kad atsivertų dangus.
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	Nė vieno orlaivio %.0f 10 laipsnių sektoriuose, pradedant %.0f laipsnių, nors gretimos kryptys siekia toli: kažkas ten užstoja vaizdą (siena, kalva, pastatas).
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	ADS-B nuotolis: dar nepakanka pozicijų. Kelias minutes naudokite ADS-B režimą su nustatyta antenos vieta ir ataskaitą paleiskite iš naujo.
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	Nieko blogo nerasta. Stiprinimas, triukšmo lygis ir etaloninės stotys atrodo gerai.
+Station health report	Stoties būklės ataskaita
+Gain: %.0f dB	Stiprinimas: %.0f dB
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s: triukšmo lygis %.1f dBFS vienam dažnio intervalui, ADC atsarga %.1f dB, stipriausias signalas %.0f dB virš triukšmo, ADC lygis %.1f dBFS, nukirpimas %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   rasta %s stočių: %d, stipriausia %.0f dB virš triukšmo
+The numbers are relative to the receiver itself (not calibrated to dBm).	Skaičiai santykiniai paties imtuvo atžvilgiu (nekalibruoti į dBm).
+Station health	Stoties būklė
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	Pamatuoja triukšmo lygį ir ADC lygį keliose juostose, ieško FM, DAB ir DVB-T stočių ir pasako, ką keisti prie antenos. Matuojant imtuvas sustoja (apie minutę).
+known carrier MHz (optional)	žinomas nešlys MHz (nebūtina)
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	Nešlys, kurio dažniu pasitikite (ATSC pilotas, mobiliojo ryšio bokšto švyturys, laiko signalas). Ataskaita pagal jį parodo radijo laikrodžio paklaidą ppm. Palikite 0, jei nereikia.
+Save report...	Išsaugoti ataskaitą...
+Save as JSON...	Išsaugoti kaip JSON...
+Noise floor	Triukšmo lygis
+ADC margin	ADC atsarga
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f dB
+none found	nerasta
+%s: %d, best %.0f dB	%s: %d, geriausia %.0f dB
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	Laikrodžio paklaida: %+.2f ppm (%+.0f Hz ties %.4f MHz)
+No carrier found at the frequency given	Nurodytu dažniu nešlio nerasta
+What to do	Ką daryti
+ADS-B range by direction	ADS-B nuotolis pagal kryptį
+Check station	Tikrinti stotį
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	Triukšmo lygis, ADC lygis ir etaloninės stotys pagal juostas su aiškiais patarimais dėl stiprinimo, filtrų ir antenos vietos

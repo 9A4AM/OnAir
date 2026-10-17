@@ -273,6 +273,7 @@ struct App {
     bool dfOpen = false;                // the direction finder window (View > Direction finder; app/df)
     bool passiveRadarOpen = false;      // the passive radar window (View > Passive radar; app/radar)
     bool passesOpen = false;            // the satellite pass planner window (View > Passes)
+    bool stationHealthOpen = false;     // the station health report window (View > Station health; app/panels/station_health_ui.cpp)
     bool sweepOpen = false;             // the sweep scanner window (View > Sweep scanner)
     bool scannerOpen = false;           // the scanner window (View > Scanner, highly experimental)
     bool memoryOpen = false;            // the Memory window (View > Memory, Ctrl+M; app/memory)
@@ -702,6 +703,7 @@ void memoryToolbarButton(App& a);                  // memory_ui.cpp: the same qu
 void memoryMenu(App& a);                           // memory_ui.cpp: the "M" menu of the menu bar: open, store, the favourites and the ten most recent
 double generalListenHz(const App& a);
 void generalRecallHz(App& a, double hz);          // general_ui.cpp: a memory's frequency: the dial on hz, the channel marker back on the dial              // general_ui.cpp: the general receiver's listening frequency (the dial plus its offset)
+void stationHealthWindow(App& a);                  // station_health_ui.cpp: the station and antenna health report (a.stationHealthOpen)
 void sweepWindow(App& a);                          // sweep_ui.cpp: the fast sweep scanner window (a.sweepOpen)
 void scannerWindow(App& a);                        // scanner_ui.cpp: the scanner window (a.scannerOpen) and its scan loop, every frame (HIGHLY EXPERIMENTAL)
 void scannerButton(App& a);                        // a button that opens it (the classic interface's Scan tab)

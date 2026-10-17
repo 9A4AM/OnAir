@@ -2409,3 +2409,50 @@ Tracks	Pistes
 Two recordings (reference, surveillance)	Deux enregistrements (référence, surveillance)
 Two-channel recording (cf32)	Enregistrement à deux voies (cf32)
 Waiting for data.	En attente de données.
+FM broadcast	Radio FM
+Airband	Bande aviation
+DAB / VHF band III	DAB / VHF bande III
+UHF TV	TV UHF
+868 MHz ISM	ISM 868 MHz
+ADS-B 1090 MHz	ADS-B 1090 MHz
+Measuring %s (%d/%d)	Mesure de %s (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	Choisissez d'abord une radio (le signal de test et les fichiers ne peuvent pas être mesurés)
+None of the measuring bands is inside this radio's range	Aucune des bandes de mesure n'est dans la plage de cette radio
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s : le CAN est saturé (%.2f %% des échantillons sont écrêtés). Baissez le gain ou ajoutez un atténuateur.
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s : un signal fort (%.0f dB au-dessus du plancher de bruit) sature le CAN alors que d'autres bandes manquent de signal à ce gain. Ajoutez un filtre coupe-bande pour cette bande (un filtre réjecteur FM pour la bande FM) au lieu de baisser le gain.
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s : le niveau du CAN est élevé (%.1f dBFS eff.), il reste peu de marge pour les signaux forts. Baissez un peu le gain.
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s : le bruit du récepteur n'est que de %.1f dB au-dessus de celui du CAN, les signaux faibles sont donc perdus. Augmentez le gain.
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s : le bruit du récepteur n'est que de %.1f dB au-dessus de celui du CAN et le gain est déjà au maximum. Ajoutez un amplificateur faible bruit (LNA) près de l'antenne.
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s : le gain pourrait être inférieur d'environ %.0f dB sans perdre de sensibilité, ce qui donne plus de marge face aux signaux forts.
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s : le plancher de bruit est %.0f dB plus haut que dans la bande la plus calme. Cherchez une source de bruit locale (éclairage LED, alimentations à découpage, ordinateurs), éloignez l'antenne ou ajoutez une ferrite sur le câble.
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	Aucune station %s trouvée, alors qu'il y en a normalement. Vérifiez l'antenne et le câble ; la bande peut aussi être vide chez vous.
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	La station %s la plus forte n'est qu'à %.0f dB au-dessus du bruit (une bonne antenne donne au moins %.0f dB). Placez l'antenne plus haut ou à l'extérieur, ou ajoutez un filtre de bande et un LNA.
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	L'horloge de la radio dérive de %+.1f ppm. Entrez %+.1f comme correction de fréquence (ppm) dans les réglages de la radio.
+The radio's clock is %+.1f ppm off: fine.	L'horloge de la radio dérive de %+.1f ppm : correct.
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	La portée ADS-B est courte : l'avion le plus lointain était à %.0f nm (une antenne extérieure dégagée atteint 150 nm ou plus) ; la direction la plus faible est autour de %.0f degrés. Placez l'antenne plus haut, avec une vue dégagée du ciel.
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	Aucun avion dans %.0f secteurs de 10 degrés à partir de %.0f degrés, alors que les directions voisines portent loin : quelque chose bloque la vue à cet endroit (un mur, une colline, un bâtiment).
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	Portée ADS-B : pas encore assez de positions. Utilisez le mode ADS-B quelques minutes avec la position de l'antenne renseignée, puis relancez le rapport.
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	Rien d'anormal trouvé. Le gain, le plancher de bruit et les stations de référence semblent sains.
+Station health report	Rapport sur la station
+Gain: %.0f dB	Gain : %.0f dB
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s : plancher de bruit %.1f dBFS par bin, marge du CAN %.1f dB, signal le plus fort %.0f dB au-dessus du plancher, niveau du CAN %.1f dBFS, écrêtage %.2f %%
+   %s stations found: %d, strongest %.0f dB over the floor	   stations %s trouvées : %d, la plus forte %.0f dB au-dessus du plancher
+The numbers are relative to the receiver itself (not calibrated to dBm).	Les valeurs sont relatives au récepteur lui-même (non étalonnées en dBm).
+Station health	État de la station
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	Mesure le plancher de bruit et le niveau du CAN sur quelques bandes, cherche des stations FM, DAB et DVB-T et vous dit quoi changer côté antenne. Le récepteur s'arrête pendant la mesure (environ une minute).
+known carrier MHz (optional)	porteuse connue MHz (facultatif)
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	Une porteuse dont vous connaissez bien la fréquence (un pilote ATSC, la balise d'un relais mobile, un signal horaire). Le rapport en déduit l'erreur d'horloge de la radio en ppm. Laissez à 0 pour ignorer.
+Save report...	Enregistrer le rapport...
+Save as JSON...	Enregistrer en JSON...
+Noise floor	Plancher de bruit
+ADC margin	Marge du CAN
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f dB
+none found	aucune trouvée
+%s: %d, best %.0f dB	%s : %d, meilleure %.0f dB
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	Erreur d'horloge : %+.2f ppm (%+.0f Hz à %.4f MHz)
+No carrier found at the frequency given	Aucune porteuse trouvée à la fréquence indiquée
+What to do	Que faire
+ADS-B range by direction	Portée ADS-B par direction
+Check station	Vérifier la station
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	Plancher de bruit, niveau du CAN et stations de référence par bande, avec des conseils clairs sur le gain, les filtres et l'emplacement de l'antenne

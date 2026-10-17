@@ -2409,3 +2409,50 @@ Tracks	Sporen
 Two recordings (reference, surveillance)	Twee opnames (referentie, bewaking)
 Two-channel recording (cf32)	Tweekanaalsopname (cf32)
 Waiting for data.	Wachten op gegevens.
+FM broadcast	FM-radio
+Airband	Luchtvaartband
+DAB / VHF band III	DAB / VHF band III
+UHF TV	UHF-tv
+868 MHz ISM	868 MHz ISM
+ADS-B 1090 MHz	ADS-B 1090 MHz
+Measuring %s (%d/%d)	%s meten (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	Kies eerst een radio (het testsignaal en bestanden kunnen niet gemeten worden)
+None of the measuring bands is inside this radio's range	Geen van de meetbanden valt binnen het bereik van deze radio
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s: de ADC is overstuurd (%.2f%% van de samples wordt afgekapt). Verlaag de versterking of plaats een verzwakker.
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s: een sterk signaal (%.0f dB boven de ruisvloer) stuurt de ADC over terwijl andere banden bij deze versterking te zwak zijn. Plaats voor die band een bandstopfilter (een FM-notchfilter voor de FM-band) in plaats van de versterking te verlagen.
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s: het ADC-niveau is hoog (%.1f dBFS eff.), er is weinig ruimte over voor sterke signalen. Verlaag de versterking een beetje.
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s: de ontvangerruis ligt maar %.1f dB boven die van de ADC zelf, waardoor zwakke signalen verloren gaan. Verhoog de versterking.
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s: de ontvangerruis ligt maar %.1f dB boven die van de ADC zelf en de versterking staat al op maximum. Plaats een low-noise-versterker (LNA) vlak bij de antenne.
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s: de versterking kan ongeveer %.0f dB lager zonder gevoeligheid te verliezen, wat meer ruimte geeft voor sterke signalen.
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s: de ruisvloer ligt %.0f dB hoger dan in de rustigste band. Zoek een lokale ruisbron (ledverlichting, schakelende voedingen, computers), zet de antenne er verder vandaan of plaats een ferrietkern op de kabel.
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	Er zijn geen %s-zenders gevonden, terwijl die er normaal wel zijn. Controleer de antenne en de kabel; de band kan in jouw omgeving ook leeg zijn.
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	De sterkste %s-zender ligt maar %.0f dB boven de ruis (een goede antenne geeft minstens %.0f dB). Plaats de antenne hoger of buiten, of voeg een bandfilter en een LNA toe.
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	De klok van de radio wijkt %+.1f ppm af. Vul %+.1f in als frequentiecorrectie (ppm) in de instellingen van de radio.
+The radio's clock is %+.1f ppm off: fine.	De klok van de radio wijkt %+.1f ppm af: prima.
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	Het ADS-B-bereik is kort: het verste vliegtuig was %.0f nm weg (een vrijstaande buitenantenne haalt 150 nm of meer); de zwakste richting ligt rond %.0f graden. Plaats de antenne hoger, met vrij zicht op de lucht.
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	Helemaal geen vliegtuigen in %.0f sectoren van 10 graden vanaf %.0f graden, terwijl de aangrenzende richtingen ver reiken: daar blokkeert iets het zicht (een muur, een heuvel, een gebouw).
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	ADS-B-bereik: nog niet genoeg posities. Draai de ADS-B-modus enkele minuten met de antennepositie ingesteld en voer het rapport daarna opnieuw uit.
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	Niets mis gevonden. De versterking, de ruisvloer en de referentiezenders zien er gezond uit.
+Station health report	Stationsrapport
+Gain: %.0f dB	Versterking: %.0f dB
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s: ruisvloer %.1f dBFS per bin, ADC-marge %.1f dB, sterkste signaal %.0f dB boven de vloer, ADC-niveau %.1f dBFS, afkapping %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   %s-zenders gevonden: %d, sterkste %.0f dB boven de vloer
+The numbers are relative to the receiver itself (not calibrated to dBm).	De getallen zijn relatief ten opzichte van de ontvanger zelf (niet gekalibreerd naar dBm).
+Station health	Stationsconditie
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	Meet de ruisvloer en het ADC-niveau op een paar banden, zoekt FM-, DAB- en DVB-T-zenders en vertelt wat je aan de antenne kunt veranderen. De ontvanger stopt tijdens het meten (ongeveer een minuut).
+known carrier MHz (optional)	bekende draaggolf MHz (optioneel)
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	Een draaggolf waarvan je de frequentie vertrouwt (een ATSC-pilot, de baken van een zendmast, een tijdsignaal). Het rapport geeft daaruit de klokfout van de radio in ppm. Laat op 0 om over te slaan.
+Save report...	Rapport opslaan...
+Save as JSON...	Opslaan als JSON...
+Noise floor	Ruisvloer
+ADC margin	ADC-marge
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f dB
+none found	geen gevonden
+%s: %d, best %.0f dB	%s: %d, beste %.0f dB
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	Klokfout: %+.2f ppm (%+.0f Hz bij %.4f MHz)
+No carrier found at the frequency given	Geen draaggolf gevonden op de opgegeven frequentie
+What to do	Wat te doen
+ADS-B range by direction	ADS-B-bereik per richting
+Check station	Station controleren
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	Ruisvloer, ADC-niveau en referentiezenders per band, met duidelijk advies over versterking, filters en antenneplaatsing

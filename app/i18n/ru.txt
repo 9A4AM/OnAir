@@ -2392,3 +2392,50 @@ Tracks	Треки
 Two recordings (reference, surveillance)	Две записи (опорная, обзорная)
 Two-channel recording (cf32)	Двухканальная запись (cf32)
 Waiting for data.	Ожидание данных.
+FM broadcast	FM-радио
+Airband	Авиадиапазон
+DAB / VHF band III	DAB / VHF диапазон III
+UHF TV	ТВ UHF
+868 MHz ISM	ISM 868 МГц
+ADS-B 1090 MHz	ADS-B 1090 МГц
+Measuring %s (%d/%d)	Измерение: %s (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	Сначала выберите радио (тестовый сигнал и файлы измерить нельзя)
+None of the measuring bands is inside this radio's range	Ни один из диапазонов измерения не попадает в диапазон этого радио
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s: АЦП перегружен (%.2f%% отсчётов обрезается). Уменьшите усиление или добавьте аттенюатор.
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s: сильный сигнал (на %.0f дБ выше уровня шума) перегружает АЦП, а другие диапазоны при таком усилении слишком слабы. Вместо уменьшения усиления поставьте для этого диапазона заграждающий фильтр (для диапазона FM — FM-режектор).
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s: уровень АЦП высокий (%.1f dBFS ск.), для сильных сигналов остаётся мало запаса. Немного уменьшите усиление.
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s: шум приёмника всего на %.1f дБ выше шума самого АЦП, поэтому слабые сигналы теряются. Увеличьте усиление.
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s: шум приёмника всего на %.1f дБ выше шума самого АЦП, а усиление уже максимальное. Поставьте малошумящий усилитель (LNA) рядом с антенной.
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s: усиление можно уменьшить примерно на %.0f дБ без потери чувствительности, это даст больше запаса для сильных сигналов.
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s: уровень шума на %.0f дБ выше, чем в самом тихом диапазоне. Найдите местный источник помех (LED-освещение, импульсные блоки питания, компьютеры), уберите антенну подальше или наденьте ферритовое кольцо на кабель.
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	Станции %s не найдены, хотя обычно они есть. Проверьте антенну и кабель; возможно, в вашем районе диапазон пуст.
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	Самая сильная станция %s всего на %.0f дБ выше шума (хорошая антенна даёт не менее %.0f дБ). Поднимите антенну выше или вынесите наружу, либо добавьте полосовой фильтр и LNA.
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	Часы радио уходят на %+.1f ppm. Введите %+.1f как поправку частоты (ppm) в настройках радио.
+The radio's clock is %+.1f ppm off: fine.	Часы радио уходят на %+.1f ppm: нормально.
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	Дальность ADS-B мала: самый далёкий самолёт был на расстоянии %.0f nm (открытая наружная антенна берёт 150 nm и больше); самое слабое направление около %.0f градусов. Поднимите антенну выше, чтобы было видно небо.
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	Ни одного самолёта в %.0f секторах по 10 градусов, начиная с %.0f градусов, хотя соседние направления берут далеко: там что-то закрывает обзор (стена, холм, здание).
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	Дальность ADS-B: позиций пока мало. Запустите режим ADS-B на несколько минут с заданным положением антенны и повторите отчёт.
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	Ничего плохого не найдено. Усиление, уровень шума и эталонные станции в порядке.
+Station health report	Отчёт о состоянии станции
+Gain: %.0f dB	Усиление: %.0f дБ
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s: уровень шума %.1f dBFS на ячейку, запас АЦП %.1f дБ, самый сильный сигнал на %.0f дБ выше шума, уровень АЦП %.1f dBFS, обрезка %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   найдено станций %s: %d, самая сильная на %.0f дБ выше шума
+The numbers are relative to the receiver itself (not calibrated to dBm).	Числа относительные, по самому приёмнику (не откалиброваны в dBm).
+Station health	Состояние станции
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	Измеряет уровень шума и АЦП в нескольких диапазонах, ищет станции FM, DAB и DVB-T и подсказывает, что изменить у антенны. На время измерения приёмник останавливается (около минуты).
+known carrier MHz (optional)	известная несущая, МГц (необязательно)
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	Несущая, чьей частоте вы доверяете (пилот ATSC, маяк вышки сотовой связи, сигнал точного времени). По ней отчёт даёт ошибку часов радио в ppm. Оставьте 0, чтобы пропустить.
+Save report...	Сохранить отчёт...
+Save as JSON...	Сохранить как JSON...
+Noise floor	Уровень шума
+ADC margin	Запас АЦП
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f дБ
+none found	не найдено
+%s: %d, best %.0f dB	%s: %d, лучшая %.0f дБ
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	Ошибка часов: %+.2f ppm (%+.0f Гц на %.4f МГц)
+No carrier found at the frequency given	На указанной частоте несущая не найдена
+What to do	Что делать
+ADS-B range by direction	Дальность ADS-B по направлениям
+Check station	Проверить станцию
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	Уровень шума, уровень АЦП и эталонные станции по диапазонам, с понятными советами по усилению, фильтрам и размещению антенны

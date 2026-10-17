@@ -2395,3 +2395,50 @@ Tracks	Pályák
 Two recordings (reference, surveillance)	Két felvétel (referencia, megfigyelő)
 Two-channel recording (cf32)	Kétcsatornás felvétel (cf32)
 Waiting for data.	Adatra várakozás.
+FM broadcast	FM rádió
+Airband	Repülőrádió
+DAB / VHF band III	DAB / VHF III. sáv
+UHF TV	UHF tévé
+868 MHz ISM	868 MHz ISM
+ADS-B 1090 MHz	ADS-B 1090 MHz
+Measuring %s (%d/%d)	Mérés: %s (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	Először válassz rádiót (a tesztjel és a fájlok nem mérhetők)
+None of the measuring bands is inside this radio's range	A mérősávok egyike sincs a rádió tartományában
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s: az ADC túlvezérelt (a minták %.2f%%-a levágódik). Csökkentsd az erősítést, vagy tegyél be csillapítót.
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s: egy erős jel (%.0f dB-lel a zajszint felett) túlvezérli az ADC-t, miközben más sávok ennél az erősítésnél túl gyengék. Ehhez a sávhoz sávzáró szűrőt használj (az FM sávhoz FM-notch szűrőt) az erősítés csökkentése helyett.
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s: az ADC szintje magas (%.1f dBFS eff.), kevés tartalék marad az erős jelekre. Csökkentsd egy kicsit az erősítést.
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s: a vevő zaja csak %.1f dB-lel van az ADC saját zaja felett, ezért a gyenge jelek elvesznek. Növeld az erősítést.
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s: a vevő zaja csak %.1f dB-lel van az ADC saját zaja felett, és az erősítés már a maximumon van. Tegyél kisebb zajú erősítőt (LNA) az antenna mellé.
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s: az erősítés kb. %.0f dB-lel lehetne kisebb az érzékenység elvesztése nélkül, ami több tartalékot ad az erős jelek ellen.
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s: a zajszint %.0f dB-lel magasabb, mint a legcsendesebb sávban. Keress helyi zajforrást (LED-világítás, kapcsolóüzemű tápegységek, számítógépek), vidd távolabb az antennát, vagy tegyél ferritgyűrűt a kábelre.
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	Nem található %s adó, pedig általában van. Ellenőrizd az antennát és a kábelt; az is lehet, hogy a sáv üres a környéken.
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	A legerősebb %s adó csak %.0f dB-lel van a zaj felett (egy jó antenna legalább %.0f dB-t ad). Tedd magasabbra vagy a szabadba az antennát, vagy tegyél be sávszűrőt és LNA-t.
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	A rádió órajele %+.1f ppm-mel eltér. Add meg a %+.1f értéket frekvenciakorrekcióként (ppm) a rádió beállításaiban.
+The radio's clock is %+.1f ppm off: fine.	A rádió órajele %+.1f ppm-mel eltér: rendben van.
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	Az ADS-B hatótáv rövid: a legtávolabbi repülő %.0f nm-re volt (egy szabad kültéri antenna 150 nm-ig vagy tovább ér el); a leggyengébb irány kb. %.0f fok. Tedd magasabbra az antennát, szabad rálátással az égre.
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	Egyetlen repülő sem %.0f darab 10 fokos szektorban %.0f foktól kezdve, miközben a szomszédos irányok messzire elérnek: valami eltakarja a kilátást (fal, domb, épület).
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	ADS-B hatótáv: még nincs elég pozíció. Futtasd az ADS-B módot néhány percig megadott antennapozícióval, majd készítsd el újra a jelentést.
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	Semmi hibát nem találtam. Az erősítés, a zajszint és a referenciaadók egészségesnek látszanak.
+Station health report	Állomás-jelentés
+Gain: %.0f dB	Erősítés: %.0f dB
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s: zajszint %.1f dBFS sávonként, ADC-tartalék %.1f dB, legerősebb jel %.0f dB a zajszint felett, ADC-szint %.1f dBFS, levágás %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   talált %s adók: %d, a legerősebb %.0f dB a zajszint felett
+The numbers are relative to the receiver itself (not calibrated to dBm).	A számok magához a vevőhöz viszonyítottak (nincsenek dBm-re kalibrálva).
+Station health	Állomás állapota
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	Néhány sávon megméri a zajszintet és az ADC szintjét, FM, DAB és DVB-T adókat keres, és megmondja, mit változtass az antennán. A vevő leáll a mérés alatt (kb. egy perc).
+known carrier MHz (optional)	ismert vivő MHz (nem kötelező)
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	Egy vivő, amelynek a frekvenciájában megbízol (ATSC pilot, mobiltorony jeladója, időjel). A jelentés ebből megadja a rádió órahibáját ppm-ben. Hagyd 0-n a kihagyáshoz.
+Save report...	Jelentés mentése...
+Save as JSON...	Mentés JSON-ként...
+Noise floor	Zajszint
+ADC margin	ADC-tartalék
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f dB
+none found	nincs találat
+%s: %d, best %.0f dB	%s: %d, legjobb %.0f dB
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	Órahiba: %+.2f ppm (%+.0f Hz %.4f MHz-en)
+No carrier found at the frequency given	A megadott frekvencián nem található vivő
+What to do	Mit tegyél
+ADS-B range by direction	ADS-B hatótáv irányonként
+Check station	Állomás ellenőrzése
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	Zajszint, ADC-szint és referenciaadók sávonként, egyszerű tanácsokkal az erősítésről, szűrőkről és az antenna helyéről

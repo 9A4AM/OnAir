@@ -2409,3 +2409,50 @@ Tracks	航迹
 Two recordings (reference, surveillance)	两个录音（参考、监视）
 Two-channel recording (cf32)	双通道录音 (cf32)
 Waiting for data.	正在等待数据。
+FM broadcast	FM 广播
+Airband	航空频段
+DAB / VHF band III	DAB / VHF 三频段
+UHF TV	UHF 电视
+868 MHz ISM	868 MHz ISM
+ADS-B 1090 MHz	ADS-B 1090 MHz
+Measuring %s (%d/%d)	正在测量 %s (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	请先选择一台无线电（测试信号和文件无法测量）
+None of the measuring bands is inside this radio's range	测量频段都不在这台无线电的范围内
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s：ADC 过载（%.2f%% 的采样被削波）。请降低增益或加装衰减器。
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s：一个强信号（高出底噪 %.0f dB）使 ADC 过载，而在这个增益下其他频段又太弱。请为该频段加装带阻滤波器（FM 频段用 FM 陷波器），而不是降低增益。
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s：ADC 电平偏高（%.1f dBFS 有效值），给强信号留下的余量很小。请稍微降低增益。
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s：接收机噪声只比 ADC 自身噪声高 %.1f dB，所以弱信号会丢失。请提高增益。
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s：接收机噪声只比 ADC 自身噪声高 %.1f dB，而且增益已经最大。请在天线旁加装低噪声放大器（LNA）。
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s：增益可以再降低约 %.0f dB 而不损失灵敏度，这样对强信号有更多余量。
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s：底噪比最安静的频段高 %.0f dB。请查找本地噪声源（LED 照明、开关电源、电脑），让天线远离它，或在线缆上加装磁环。
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	没有找到 %s 电台，而通常是有的。请检查天线和线缆；也可能是你所在地区该频段本来就没有信号。
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	最强的 %s 电台只比噪声高 %.0f dB（好的天线至少能达到 %.0f dB）。请把天线架高或放到室外，或加装带通滤波器和 LNA。
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	无线电的时钟偏差为 %+.1f ppm。请在无线电设置中把频率校正（ppm）设为 %+.1f。
+The radio's clock is %+.1f ppm off: fine.	无线电的时钟偏差为 %+.1f ppm：正常。
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	ADS-B 作用距离偏短：最远的飞机在 %.0f 海里（空旷的室外天线可达 150 海里或更远）；最弱的方向在约 %.0f 度。请把天线架高，保证天空视野开阔。
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	从 %.0f 度开始的 %.0f 个 10 度扇区里完全没有飞机，而相邻方向能到很远：那里有东西挡住了视野（墙、山丘或建筑）。
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	ADS-B 作用距离：位置数据还不够。请设置好天线位置后运行 ADS-B 模式几分钟，然后再次生成报告。
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	没有发现问题。增益、底噪和参考电台看起来都正常。
+Station health report	电台状态报告
+Gain: %.0f dB	增益：%.0f dB
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s：底噪每格 %.1f dBFS，ADC 余量 %.1f dB，最强信号高出底噪 %.0f dB，ADC 电平 %.1f dBFS，削波 %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   找到的 %s 电台：%d，最强的高出底噪 %.0f dB
+The numbers are relative to the receiver itself (not calibrated to dBm).	这些数值是相对接收机自身的（未校准为 dBm）。
+Station health	电台状态
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	在几个频段上测量底噪和 ADC 电平，查找 FM、DAB 和 DVB-T 电台，并告诉你天线处该改什么。测量期间接收机会停止（约一分钟）。
+known carrier MHz (optional)	已知载波 MHz（可选）
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	一个你信任其频率的载波（ATSC 导频、基站信标、授时信号）。报告会据此给出无线电的时钟误差（ppm）。保持 0 则跳过。
+Save report...	保存报告...
+Save as JSON...	保存为 JSON...
+Noise floor	底噪
+ADC margin	ADC 余量
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f dB
+none found	未找到
+%s: %d, best %.0f dB	%s：%d，最佳 %.0f dB
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	时钟误差：%+.2f ppm（%+.0f Hz，位于 %.4f MHz）
+No carrier found at the frequency given	在给定频率上没有找到载波
+What to do	怎么做
+ADS-B range by direction	按方向的 ADS-B 作用距离
+Check station	检查电台
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	按频段显示底噪、ADC 电平和参考电台，并对增益、滤波器和天线位置给出清晰建议

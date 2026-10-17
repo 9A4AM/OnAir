@@ -2409,3 +2409,50 @@ Tracks	トラック
 Two recordings (reference, surveillance)	2つの録音（参照、監視）
 Two-channel recording (cf32)	2チャンネルの録音 (cf32)
 Waiting for data.	データを待っています。
+FM broadcast	FMラジオ
+Airband	航空無線
+DAB / VHF band III	DAB / VHFバンドIII
+UHF TV	UHFテレビ
+868 MHz ISM	868 MHz ISM
+ADS-B 1090 MHz	ADS-B 1090 MHz
+Measuring %s (%d/%d)	%s を測定中 (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	先に無線機を選んでください (テスト信号とファイルは測定できません)
+None of the measuring bands is inside this radio's range	測定する帯域がこの無線機の範囲内にありません
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s: ADC が過負荷です (サンプルの %.2f%% がクリップしています)。ゲインを下げるか、アッテネータを入れてください。
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s: 強い信号 (ノイズフロアより %.0f dB 上) が ADC を過負荷にしていて、このゲインでは他の帯域の信号が弱すぎます。ゲインを下げる代わりに、その帯域用のバンドストップフィルタ (FM 帯なら FM ノッチ) を入れてください。
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s: ADC のレベルが高く (%.1f dBFS rms)、強い信号に対する余裕がほとんどありません。ゲインを少し下げてください。
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s: 受信機のノイズが ADC 自身のノイズより %.1f dB しか高くないため、弱い信号が失われます。ゲインを上げてください。
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s: 受信機のノイズが ADC 自身のノイズより %.1f dB しか高くなく、ゲインはすでに最大です。アンテナのそばに低雑音アンプ (LNA) を入れてください。
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s: 感度を落とさずにゲインを約 %.0f dB 下げられます。強い信号に対する余裕が増えます。
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s: ノイズフロアが最も静かな帯域より %.0f dB 高くなっています。近くのノイズ源 (LED 照明、スイッチング電源、パソコン) を探し、アンテナを離すか、ケーブルにフェライトコアを付けてください。
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	%s の局が見つかりませんでした。通常はいくつかあるはずです。アンテナとケーブルを確認してください。お住まいの地域でその帯域が空いている可能性もあります。
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	最も強い %s の局でもノイズより %.0f dB しか高くありません (良いアンテナなら少なくとも %.0f dB)。アンテナを高い場所か屋外に移すか、バンドフィルタと LNA を追加してください。
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	無線機のクロックが %+.1f ppm ずれています。無線機の設定の周波数補正 (ppm) に %+.1f を入力してください。
+The radio's clock is %+.1f ppm off: fine.	無線機のクロックのずれは %+.1f ppm: 問題ありません。
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	ADS-B の到達距離が短いです。最も遠い航空機は %.0f nm でした (見通しの良い屋外アンテナなら 150 nm 以上届きます)。最も弱い方向は約 %.0f 度です。空がよく見える高い場所にアンテナを移してください。
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	%.0f 度から始まる 10 度ごとの %.0f 個のセクターで航空機が 1 機も見つかりません。隣接する方向は遠くまで届いているので、そこで何か (壁、丘、建物) が視界をふさいでいます。
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	ADS-B の到達距離: 位置情報がまだ足りません。アンテナ位置を設定して ADS-B モードを数分動かしてから、もう一度レポートを実行してください。
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	問題は見つかりませんでした。ゲイン、ノイズフロア、基準局は良好です。
+Station health report	局の状態レポート
+Gain: %.0f dB	ゲイン: %.0f dB
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s: ノイズフロア 1 ビンあたり %.1f dBFS、ADC マージン %.1f dB、最強信号はフロアより %.0f dB 上、ADC レベル %.1f dBFS、クリップ %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   見つかった %s の局: %d、最強はフロアより %.0f dB 上
+The numbers are relative to the receiver itself (not calibrated to dBm).	数値は受信機自身を基準にした相対値です (dBm には校正されていません)。
+Station health	局の状態
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	いくつかの帯域でノイズフロアと ADC レベルを測り、FM、DAB、DVB-T の局を探して、アンテナで何を変えるべきかを教えます。測定中は受信が止まります (約 1 分)。
+known carrier MHz (optional)	既知のキャリア MHz (任意)
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	周波数を信頼できるキャリア (ATSC パイロット、携帯基地局のビーコン、標準時信号など)。レポートはそこから無線機のクロック誤差を ppm で出します。0 のままにすると省略します。
+Save report...	レポートを保存...
+Save as JSON...	JSON で保存...
+Noise floor	ノイズフロア
+ADC margin	ADC マージン
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f dB
+none found	見つかりません
+%s: %d, best %.0f dB	%s: %d、最良 %.0f dB
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	クロック誤差: %+.2f ppm (%+.0f Hz、%.4f MHz にて)
+No carrier found at the frequency given	指定した周波数にキャリアが見つかりません
+What to do	対処方法
+ADS-B range by direction	方向別の ADS-B 到達距離
+Check station	局をチェック
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	帯域ごとのノイズフロア、ADC レベル、基準局を測定し、ゲイン、フィルタ、アンテナの設置場所について分かりやすく助言します

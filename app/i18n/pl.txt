@@ -2409,3 +2409,50 @@ Tracks	Ślady
 Two recordings (reference, surveillance)	Dwa nagrania (referencyjne, obserwacyjne)
 Two-channel recording (cf32)	Nagranie dwukanałowe (cf32)
 Waiting for data.	Oczekiwanie na dane.
+FM broadcast	Radio FM
+Airband	Pasmo lotnicze
+DAB / VHF band III	DAB / VHF pasmo III
+UHF TV	Telewizja UHF
+868 MHz ISM	ISM 868 MHz
+ADS-B 1090 MHz	ADS-B 1090 MHz
+Measuring %s (%d/%d)	Pomiar: %s (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	Najpierw wybierz radio (sygnału testowego i plików nie da się zmierzyć)
+None of the measuring bands is inside this radio's range	Żadne z pasm pomiarowych nie mieści się w zakresie tego radia
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s: przetwornik ADC jest przesterowany (%.2f%% próbek jest obcinanych). Zmniejsz wzmocnienie albo dodaj tłumik.
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s: silny sygnał (%.0f dB ponad poziomem szumu) przesterowuje ADC, a inne pasma przy tym wzmocnieniu są zbyt słabe. Zamiast zmniejszać wzmocnienie, dodaj dla tego pasma filtr zaporowy (dla pasma FM filtr notch FM).
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s: poziom ADC jest wysoki (%.1f dBFS rms), zostaje mało zapasu na silne sygnały. Zmniejsz trochę wzmocnienie.
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s: szum odbiornika jest tylko o %.1f dB wyższy od szumu samego ADC, więc słabe sygnały giną. Zwiększ wzmocnienie.
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s: szum odbiornika jest tylko o %.1f dB wyższy od szumu samego ADC, a wzmocnienie jest już maksymalne. Dodaj wzmacniacz niskoszumny (LNA) przy antenie.
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s: wzmocnienie mogłoby być o około %.0f dB mniejsze bez utraty czułości, co daje większy zapas na silne sygnały.
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s: poziom szumu jest o %.0f dB wyższy niż w najcichszym paśmie. Poszukaj lokalnego źródła zakłóceń (oświetlenie LED, zasilacze impulsowe, komputery), odsuń antenę albo załóż ferryt na kabel.
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	Nie znaleziono żadnych stacji %s, choć zwykle jakieś są. Sprawdź antenę i kabel; pasmo może też być u Ciebie puste.
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	Najsilniejsza stacja %s jest tylko %.0f dB ponad szumem (dobra antena daje co najmniej %.0f dB). Umieść antenę wyżej lub na zewnątrz albo dodaj filtr pasmowy i LNA.
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	Zegar radia odbiega o %+.1f ppm. Wpisz %+.1f jako korekcję częstotliwości (ppm) w ustawieniach radia.
+The radio's clock is %+.1f ppm off: fine.	Zegar radia odbiega o %+.1f ppm: w porządku.
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	Zasięg ADS-B jest krótki: najdalszy samolot był %.0f nm stąd (wolna antena zewnętrzna sięga 150 nm lub więcej); najsłabszy kierunek to około %.0f stopni. Umieść antenę wyżej, z wolnym widokiem na niebo.
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	Ani jednego samolotu w %.0f sektorach po 10 stopni, zaczynając od %.0f stopni, choć sąsiednie kierunki sięgają daleko: coś tam zasłania widok (ściana, wzgórze, budynek).
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	Zasięg ADS-B: za mało pozycji. Uruchom tryb ADS-B na kilka minut z ustawioną pozycją anteny i wykonaj raport ponownie.
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	Nie znaleziono nic złego. Wzmocnienie, poziom szumu i stacje wzorcowe wyglądają dobrze.
+Station health report	Raport o stanie stacji
+Gain: %.0f dB	Wzmocnienie: %.0f dB
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s: poziom szumu %.1f dBFS na przedział, zapas ADC %.1f dB, najsilniejszy sygnał %.0f dB ponad szumem, poziom ADC %.1f dBFS, obcinanie %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   znalezione stacje %s: %d, najsilniejsza %.0f dB ponad szumem
+The numbers are relative to the receiver itself (not calibrated to dBm).	Liczby są względne wobec samego odbiornika (nie są skalibrowane w dBm).
+Station health	Stan stacji
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	Mierzy poziom szumu i ADC w kilku pasmach, szuka stacji FM, DAB i DVB-T i podpowiada, co zmienić przy antenie. Odbiornik zatrzymuje się na czas pomiaru (około minuty).
+known carrier MHz (optional)	znana nośna MHz (opcjonalnie)
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	Nośna, której częstotliwości ufasz (pilot ATSC, sygnał z wieży komórkowej, sygnał czasu). Raport podaje z niej błąd zegara radia w ppm. Zostaw 0, aby pominąć.
+Save report...	Zapisz raport...
+Save as JSON...	Zapisz jako JSON...
+Noise floor	Poziom szumu
+ADC margin	Zapas ADC
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f dB
+none found	nie znaleziono
+%s: %d, best %.0f dB	%s: %d, najlepsza %.0f dB
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	Błąd zegara: %+.2f ppm (%+.0f Hz przy %.4f MHz)
+No carrier found at the frequency given	Nie znaleziono nośnej na podanej częstotliwości
+What to do	Co zrobić
+ADS-B range by direction	Zasięg ADS-B według kierunku
+Check station	Sprawdź stację
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	Poziom szumu, poziom ADC i stacje wzorcowe w każdym paśmie, z prostymi radami o wzmocnieniu, filtrach i miejscu anteny
