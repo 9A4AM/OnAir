@@ -46,7 +46,6 @@
 #include "ui/theme.h"
 #include "gfx/gfx.h"
 #include "ui/icons.h"
-#include "ui/mascot.h"
 #include "ui/scale.h"
 #include "platform/platform.h"
 
@@ -1052,9 +1051,11 @@ void fmRadioPanel(App& a);
 void fmTune(App& a, double mhz);
 // wizard.cpp
 void wizEnter(App& a, int step);
-void wizAction(App& a, int step);
-void wizFinish(App& a);
-void wizard(App& a, ImVec2 disp);
+void wizAction(App& a, int step);   // tour.cpp: step 2 starts the synthetic demo signal (the DECT2_DEMO test hook)
+void wizard(App& a, ImVec2 disp);                      // tour.cpp: the first-run tour, each frame
+void tourStart(App& a);                                // tour.cpp: (re)start the tour from the first step
+void tourMark(const char* id, ImVec2 lo, ImVec2 hi);   // tour.cpp: report where a part of the window is this frame (the tour points at it)
+void wizEnter(App& a, int step);
 void setupWizardOpen(App& a);                        // wizard.cpp: (re)start the setup wizard
 void setupWizard(App& a, ImVec2 disp);               // wizard.cpp: the window, each frame
 #include "dect2/engine/device_claims.h"

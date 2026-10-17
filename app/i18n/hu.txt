@@ -175,7 +175,6 @@ Back	Vissza
 Next	Tovább
 Finish	Befejezés
 Skip	Kihagyás
-Skip tour	Bemutató kihagyása
 Dismiss	Elvetés
 Again	Újra
 Auto	Auto
@@ -218,7 +217,6 @@ New interface	Új felület
 Try the new interface. You can switch back at any time.	Próbáld ki az új felületet. Bármikor visszaválthatsz.
 Guided tour	Vezetett bemutató
 Tour	Bemutató
-Take the guided tour with Onny	Vezetett bemutató Onnyval
 by: Kristijonas Adomaitis, made with help from the community	készítette: Kristijonas Adomaitis, a közösség segítségével
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Köszönet mindenkinek, aki hibákat jelentett, felvételeket küldött és pull requesteket nyitott.
 Source	Forrás
@@ -476,20 +474,6 @@ Radio settings (%d changed)	Rádióbeállítások (%d módosítva)
 %s: frequency correction and the other settings of this radio	%s: frekvenciakorrekció és a rádió egyéb beállításai
 The driver's own settings show up here\nonce this radio has been started.	Az illesztőprogram saját beállításai itt jelennek meg,\nmiután a rádiót elindítottad.
 0 = libiio's default	0 = a libiio alapértéke
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	Szia, Onny vagyok! Egy kis TV vagyok, aki az OnAirben él. Kérsz egy gyors bemutatót? Körülbelül egy percig tart, és egy demójellel mutatok meg mindent, így még hardver sem kell hozzá.
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Itt fent kapcsolod át, milyen adást szeretnél: DVB a világ legtöbb digitális TV-jéhez, ATSC Észak-Amerikához, DAB a digitális rádióhoz. Az OnAirben mind a három egy helyen van.
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	Nézzük működés közben! Elindítok egy képzelt jelet. Ez egy tesztadó az alkalmazáson belül, így semmit sem kell csatlakoztatni.
-Start the demo signal	A demójel indítása
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	Látod a hullámzó vonalat? Ez a spektrum: balról jobbra mutatja, mennyire erős minden az éterben. A közepén lévő magas púp a mi csatornánk. Alatta a vízesés ugyanezt mutatja, lassan gördülve az időben.
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	Ez a négy doboz pedig a vevő által látott pontokat mutatja. Jó jelnél a pontok szép csoportokba állnak össze. A szétszórt pontok zajos jelet jeleznek. Most tiszta demó van, így rendezettnek kell látszaniuk!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Itt találod a csatornákat, miután a vevő bekapcsolódott. Kattints egyre, és nézheted. Van lejátszó képpel és hanggal, óra, valamint lehetőségek a nézett adás rögzítésére vagy továbbítására.
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	Most jöhet az igazi. Itt választhatod ki a rádiódat, adhatsz meg frekvenciát, és állíthatod az erősítést. Az erősítés azt jelenti, mennyire erősíti a rádió a jelet: kevés esetén elvész, sok esetén torzul. Az Automatikus hangolás gomb jó értéket talál neked.
-Stop the demo and look for my radio	A demó leállítása és a rádióm keresése
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	Nem tudod, hol vannak a csatornák? A Keresés fül megkeresi helyetted. Egy jó, magasra és ablak közelébe tett antenna többet számít bármi másnál. Ígérem!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	Ennyi volt a bemutató! A csatornáidat megoszthatod más eszközökkel a Folyam fülről (Kimenetek), és bármikor visszahívhatsz a jobb felső sarokban lévő Bemutató gombbal. Jó nézelődést!
-Good news: I can see "%s"!	Jó hír: látom ezt: "%s"!
-(I can't see a radio right now. Plug it in and press the button again.)	(Most nem látok rádiót. Dugd be, és nyomd meg újra a gombot.)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	Windowson a HackRF-nek egyszer szüksége van a WinUSB illesztőprogramra: telepítsd a Zadiggal, a zadig.akeo.ie oldalról.
 Weather (137 MHz)	Időjárás (137 MHz)
 Amateur	Amatőr
 Amateur satellites	Amatőr műholdak
@@ -1254,7 +1238,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	A LimeSDR Minihez Windowson az FTDI FT60x illesztőprogramja kell (nem a Zadig), Linuxon az udev szabályok, és egyszer a "LimeUtil --update", hogy a gateware egyezzen a könyvtárral.
 Real (mono)	Valós (mono)
 Left	Bal
 Right	Jobb
@@ -1525,3 +1508,24 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	Az nRSP-ST az SDRconnecten keresztül érhető el: futtasd az SDRconnectet (vagy a headless változatát) egy számítógépen bekapcsolt WebSocket-szerverrel (5454-es port) és kiválasztott nRSP-ST-vel, majd írd be a gép címét. Jelszóra nincs szükség, és nem tárolunk ilyet.
+#  the guided tour
+Tuning and gain	Hangolás és erősítés
+Modes	Módok
+Spectrum and waterfall	Spektrum és vízesés
+Mode panel	Mód panel
+Memory and frequencies	Memória és frekvenciák
+Receivers	Vevők
+Audio	Hang
+Server and support	Szerver és támogatás
+Done	Kész
+Take the guided tour	Útmutató indítása
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Válassza ki a mintákat szolgáltató rádiót vagy felvételt. A Record IQ elmenti a nyers jelet a későbbi lejátszáshoz.
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Itt állítható be a frekvencia, a sáv és a mintavételi sebesség. Az erősítés és az AGC a bemeneti szintet szabja meg; a Második mód ugyanabból a felvételből dekódol egy másik módot.
+%d modes, grouped by family. Use the search box to find one by name.	%d mód, családok szerint csoportosítva. A keresőmezővel név alapján találhat meg egyet.
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	Kattintással hangolhat, görgetéssel nagyíthat. A Peak hold megőrzi az egyes frekvenciákon látott legerősebb szintet.
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	Minden módnak saját fülei vannak a dekódolt kimenethez, a beállításokhoz és az eszközökhöz. A kiválasztott móddal együtt változnak.
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	A Memória a frekvenciákat móddal és beállításokkal együtt tárolja. A Frekvenciák és a sávtervek módonként mutatják, mi van adásban.
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	Minden vevő egy rádiót párosít egy móddal. Ez a sáv vált közöttük, és kijelöli, melyik szólaljon meg.
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	A Listen a demodulált jelet játssza le. A hangerő és a némítás itt van; a Record audio fájlba menti.
+Server sends decoded positions to the public map. Support helps fund development.	A Szerver a dekódolt pozíciókat a nyilvános térképre küldi. A Támogatás segít finanszírozni a fejlesztést.
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Itt található a dokumentáció, a hibaelhárítás, a közreműködők és a licencek. Az Útmutató újra elindítja ezt a bemutatót.

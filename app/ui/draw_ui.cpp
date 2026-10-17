@@ -120,8 +120,8 @@ static void classicTopBar(App& a, ImVec2 disp) {
     if (ImGui::SmallButton(tr("Touch"))) { a.touchUi = true; savePrefs(a); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Switch to the touch interface (big buttons, on-screen keypad). You can switch back at any time."));
     ImGui::SameLine();
-    if (ImGui::SmallButton(tr("Tour"))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Take the guided tour with Onny"));
+    if (ImGui::SmallButton(tr("Tour"))) tourStart(a);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Take the guided tour"));
     a.tgMin[TgSwitch] = ImVec2(sw0.x - 2, sw0.y - 2); a.tgMax[TgSwitch] = ImVec2(sw0.x + gSwitchWidth + 20, ImGui::GetCursorScreenPos().y);
 }
 

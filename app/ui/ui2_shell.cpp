@@ -162,12 +162,19 @@ void modeList(App& a) {
 
 void sidebar(App& a) {
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8 * gUi, 4 * gUi));
+    // the tour points at the sections: Source, and Gain with Tuner (next to each other)
+    const float sideX0 = ImGui::GetWindowPos().x, sideX1 = sideX0 + ImGui::GetWindowSize().x;
+    const float srcY0 = ImGui::GetCursorScreenPos().y;
+    float gainY0 = srcY0;
+    auto sectionDone = [&]() { gainY0 = ImGui::GetCursorScreenPos().y; };
     if (section(N_("Source"))) {
         ImGui::Indent(6 * gUi);
         toolbarParts(a, TbSource, true);
         ImGui::Unindent(6 * gUi);
         ImGui::Spacing();
     }
+    sectionDone();
+    tourMark("source", ImVec2(sideX0, srcY0), ImVec2(sideX1, gainY0));
     if (section(N_("Gain"))) {
         ImGui::Indent(6 * gUi);
         toolbarParts(a, TbGain, true);
@@ -180,6 +187,7 @@ void sidebar(App& a) {
         ImGui::Unindent(6 * gUi);
         ImGui::Spacing();
     }
+    tourMark("tuning", ImVec2(sideX0, gainY0), ImVec2(sideX1, ImGui::GetCursorScreenPos().y));
     if (section(N_("Mode"))) { ImGui::Indent(6 * gUi); modeList(a); ImGui::Unindent(6 * gUi); ImGui::Spacing(); }
     if (section(N_("Display"))) {
         ImGui::Indent(6 * gUi);
@@ -447,11 +455,17 @@ float menuBar(App& a) {
             ImGui::EndMenu();
         }
         viewMenu(a);
+        const float mx0 = ImGui::GetCursorScreenPos().x, my0 = ImGui::GetWindowPos().y, my1 = my0 + ImGui::GetWindowHeight();
         memoryMenu(a);
+        const float mx1 = ImGui::GetCursorScreenPos().x;
+        tourMark("memory", ImVec2(mx0, my0), ImVec2(mx1, my1));
         mapSendServerMenu(a);
+        const float sx1 = ImGui::GetCursorScreenPos().x;
+        tourMark("server", ImVec2(mx1, my0), ImVec2(sx1, my1));
+        const float hx0 = ImGui::GetCursorScreenPos().x;
         if (ImGui::BeginMenu(tr("Help"))) {
             if (ImGui::MenuItem(tr("Setup wizard"))) setupWizardOpen(a);
-            if (ImGui::MenuItem(tr("Guided tour"))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
+            if (ImGui::MenuItem(tr("Guided tour"))) tourStart(a);
             ImGui::Separator();
             if (ImGui::MenuItem(tr("Documentation"))) dect2::openUrl("https://on-air.dev/docs/");
             if (ImGui::MenuItem(tr("Troubleshooting"))) dect2::openUrl("https://on-air.dev/docs/troubleshooting/");
@@ -460,6 +474,7 @@ float menuBar(App& a) {
             if (ImGui::MenuItem(tr("Credits and licences"))) a.creditsOpen = true;
             ImGui::EndMenu();
         }
+        tourMark("help", ImVec2(hx0, my0), ImVec2(ImGui::GetCursorScreenPos().x, my1));
         menuBarRight(a);
         ImGui::EndMainMenuBar();
     }
@@ -503,6 +518,7 @@ void topBar(App& a, ImVec2 disp) {
         if (mw > 0) levelMeter(a, meterX, o.y, mw);
         ImGui::SetCursorScreenPos(ImVec2(o.x + W - vw + 4 * gUi, o.y + 8 * gUi));
         volumeControl(a, vw);
+        tourMark("audio", ImVec2(o.x + W - vw, o.y), ImVec2(o.x + W, o.y + 40 * gUi));
     }
     ImGui::EndChild();
     ImGui::PopStyleColor();

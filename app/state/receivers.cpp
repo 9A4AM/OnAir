@@ -117,6 +117,7 @@ void strip(App& first, ImVec2 disp, float h) {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6 * gUi, 3 * gUi));
     ImGui::Begin("##rxstrip", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar);
     ImGui::PopStyleVar();
+    tourMark("receivers", ImGui::GetWindowPos(), ImVec2(ImGui::GetWindowPos().x + disp.x, ImGui::GetWindowPos().y + h));
     int closeId = 0;
     for (App* r : receiversAll()) {
         ImGui::PushID(r->rxId);

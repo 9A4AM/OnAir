@@ -175,7 +175,6 @@ Back	Zurück
 Next	Weiter
 Finish	Fertig
 Skip	Überspringen
-Skip tour	Tour überspringen
 Dismiss	Ausblenden
 Again	Erneut
 Auto	Auto
@@ -219,7 +218,6 @@ New interface	Neue Oberfläche
 Try the new interface. You can switch back at any time.	Die neue Oberfläche ausprobieren. Du kannst jederzeit zurückwechseln.
 Guided tour	Geführte Tour
 Tour	Tour
-Take the guided tour with Onny	Die geführte Tour mit Onny machen
 by: Kristijonas Adomaitis, made with help from the community	von Kristijonas Adomaitis, mit Hilfe der Community
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Danke an alle, die Fehler gemeldet, Aufnahmen geschickt und Pull Requests eingereicht haben.
 Source	Quelle
@@ -484,21 +482,6 @@ Radio settings (%d changed)	Radio-Einstellungen (%d geändert)
 %s: frequency correction and the other settings of this radio	%s: Frequenzkorrektur und die übrigen Einstellungen dieses Radios
 The driver's own settings show up here\nonce this radio has been started.	Die eigenen Einstellungen des Treibers erscheinen hier,\nsobald dieses Radio einmal gestartet wurde.
 0 = libiio's default	0 = Vorgabe von libiio
-#  the guided tour
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	Hallo, ich bin Onny! Ich bin ein kleiner Fernseher, der in OnAir wohnt. Lust auf eine kurze Tour? Sie dauert etwa eine Minute, und ich zeige dir alles mit einem Demosignal, du brauchst also noch keine Hardware.
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Hier oben wählst du, welche Art von Sendung du willst: DVB für das meiste Digitalfernsehen der Welt, ATSC für Nordamerika und DAB für Digitalradio. OnAir hat alle drei an einem Ort.
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	Schauen wir es uns in Aktion an! Ich starte ein Übungssignal. Das ist ein Testsender, der in der App läuft, es muss also nichts angeschlossen werden.
-Start the demo signal	Demosignal starten
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	Siehst du die wackelige Linie? Das ist das Spektrum: wie stark alles in der Luft ist, von links nach rechts. Der hohe Buckel in der Mitte ist unser Kanal. Darunter zeigt der Wasserfall dasselbe, langsam im Lauf der Zeit durchlaufend.
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	Und diese vier Kästen zeigen die Punkte, die der Empfänger sieht. Bei gutem Signal sammeln sich die Punkte zu ordentlichen Häufchen. Unordentliche Punkte bedeuten ein verrauschtes Signal. Gerade ist es eine saubere Demo, also sollten sie schön aussehen!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Hier findest du die Kanäle, sobald der Empfänger eingerastet ist. Klicke einen an, um ihn anzusehen. Es gibt auch einen Player mit Bild und Ton, eine Uhr und Optionen zum Aufnehmen oder Streamen des Programms.
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	Jetzt zum Echten. Wähle hier dein Radio, eine Frequenz und stelle die Verstärkung ein. Die Verstärkung bestimmt, wie stark dein Radio das Signal anhebt: zu wenig und es geht verloren, zu viel und es verzerrt. Der Auto-Abgleich findet einen guten Wert für dich.
-Stop the demo and look for my radio	Demo beenden und mein Radio suchen
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	Du weißt nicht, wo die Kanäle sind? Der Reiter Suchlauf sucht für dich. Eine gute Antenne, hoch und nahe am Fenster aufgestellt, bringt mehr als alles andere. Versprochen!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	Das war die ganze Tour! Deine Kanäle kannst du über den Reiter Stream (Ausgänge) mit anderen Geräten teilen, und mit der Schaltfläche Tour oben rechts holst du mich jederzeit zurück. Viel Spaß beim Zuschauen!
-Good news: I can see "%s"!	Gute Nachricht: Ich sehe „%s“!
-(I can't see a radio right now. Plug it in and press the button again.)	(Ich sehe gerade kein Radio. Schließe es an und drücke die Schaltfläche noch einmal.)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	Unter Windows braucht ein HackRF einmalig seinen WinUSB-Treiber: Installiere ihn mit Zadig, zu finden unter zadig.akeo.ie.
 #  passes
 Weather (137 MHz)	Wetter (137 MHz)
 Amateur	Amateurfunk
@@ -1269,7 +1252,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	Ein LimeSDR Mini braucht unter Windows den FT60x-Treiber von FTDI (nicht Zadig), unter Linux die udev-Regeln und einmal "LimeUtil --update", damit seine Gateware zur Bibliothek passt.
 Real (mono)	Reell (mono)
 Left	Links
 Right	Rechts
@@ -1540,3 +1522,24 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	Der nRSP-ST wird über SDRconnect erreicht: SDRconnect (oder die Headless-Version) auf einem Rechner mit eingeschaltetem WebSocket-Server (Port 5454) und gewähltem nRSP-ST starten und dessen Adresse eingeben. Es wird kein Passwort benötigt oder gespeichert.
+#  the guided tour
+Tuning and gain	Abstimmung und Verstärkung
+Modes	Modi
+Spectrum and waterfall	Spektrum und Wasserfall
+Mode panel	Modus-Bereich
+Memory and frequencies	Speicher und Frequenzen
+Receivers	Empfänger
+Audio	Audio
+Server and support	Server und Unterstützung
+Done	Fertig
+Take the guided tour	Die geführte Tour starten
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Wähle das Radio oder die Aufnahme, die die Abtastwerte liefert. Record IQ speichert das Rohsignal zur späteren Wiedergabe.
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Hier stellst du Frequenz, Band und Abtastrate ein. Gain und AGC bestimmen den Eingangspegel; Zweiter Modus dekodiert aus derselben Aufnahme einen weiteren Modus.
+%d modes, grouped by family. Use the search box to find one by name.	%d Modi, nach Familien gruppiert. Mit dem Suchfeld findest du einen Modus nach Namen.
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	Klicken zum Abstimmen, Scrollen zum Zoomen. Peak Hold behält den stärksten gesehenen Pegel je Frequenz.
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	Jeder Modus hat eigene Reiter für dekodierte Ausgabe, Einstellungen und Werkzeuge. Sie wechseln mit dem gewählten Modus.
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	Der Speicher legt Frequenzen mit Modus und Einstellungen ab. Frequenzen und Bandpläne zeigen, was pro Modus auf Sendung ist.
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	Jeder Empfänger verbindet ein Radio mit einem Modus. Diese Leiste wechselt zwischen ihnen und bestimmt, welcher den Ton wiedergibt.
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen gibt das demodulierte Signal wieder. Lautstärke und Stummschaltung sind hier; Record audio speichert den Ton in eine Datei.
+Server sends decoded positions to the public map. Support helps fund development.	Der Server sendet dekodierte Positionen an die öffentliche Karte. Unterstützen hilft, die Entwicklung zu finanzieren.
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Hier finden sich Dokumentation, Fehlerbehebung, Danksagungen und Lizenzen. Geführte Tour startet diese Tour erneut.

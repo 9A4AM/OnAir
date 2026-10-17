@@ -166,7 +166,6 @@ Back	Назад
 Next	Далее
 Finish	Готово
 Skip	Пропустить
-Skip tour	Пропустить обзор
 Dismiss	Скрыть
 Again	Ещё раз
 Auto	Авто
@@ -209,7 +208,6 @@ New interface	Новый интерфейс
 Try the new interface. You can switch back at any time.	Попробуйте новый интерфейс. Вернуться назад можно в любой момент.
 Guided tour	Обзор программы
 Tour	Обзор
-Take the guided tour with Onny	Пройти обзор с Onny
 by: Kristijonas Adomaitis, made with help from the community	автор: Kristijonas Adomaitis, при участии сообщества
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Спасибо всем, кто сообщал об ошибках, присылал записи и отправлял pull request'ы.
 Source	Источник
@@ -467,20 +465,6 @@ Radio settings (%d changed)	Настройки радио (изменено: %d)
 %s: frequency correction and the other settings of this radio	%s: поправка частоты и остальные настройки этого радио
 The driver's own settings show up here\nonce this radio has been started.	Собственные настройки драйвера появятся здесь\nпосле запуска этого радио.
 0 = libiio's default	0 = значение libiio по умолчанию
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	Привет, я Onny! Я маленький телевизор, живущий в OnAir. Хотите быстрый обзор? Он займёт около минуты, и я покажу всё на демонстрационном сигнале, так что оборудование пока не нужно.
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Вверху - переключатель вида вещания: DVB для большей части цифрового ТВ в мире, ATSC для Северной Америки и DAB для цифрового радио. В OnAir все три собраны в одном месте.
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	Посмотрим в действии! Я запущу ненастоящий сигнал. Это тестовый передатчик внутри программы, так что ничего подключать не нужно.
-Start the demo signal	Запустить демо-сигнал
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	Видите волнистую линию? Это спектр: насколько силён каждый сигнал в эфире, слева направо. Высокий горб посередине - наш канал. Ниже водопад показывает то же самое, медленно прокручиваясь во времени.
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	А эти четыре окошка показывают точки, которые видит приёмник. Когда сигнал хороший, точки собираются в аккуратные кластеры. Разбросанные точки означают шумный сигнал. Сейчас это чистая демонстрация, так что всё должно выглядеть аккуратно!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Здесь появятся каналы, когда приёмник захватит сигнал. Щёлкните по одному, чтобы смотреть. Есть и плеер с изображением и звуком, часы и параметры записи или трансляции того, что вы смотрите.
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	Теперь по-настоящему. Выберите здесь своё радио, частоту и задайте усиление. Усиление - это то, насколько радио усиливает сигнал: слишком мало - и он теряется, слишком много - и искажается. Кнопка «Автонастройка» подберёт хорошее значение за вас.
-Stop the demo and look for my radio	Остановить демо и найти моё радио
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	Не знаете, где каналы? Вкладка «Сканирование» поищет за вас. Хорошая антенна, расположенная высоко и у окна, даёт больше, чем что-либо другое. Обещаю!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	Вот и весь обзор! Каналы можно раздавать на другие устройства со вкладки «Трансляция» (Выходы), а меня можно позвать в любой момент кнопкой «Обзор» вверху справа. Приятного просмотра!
-Good news: I can see "%s"!	Хорошие новости: я вижу «%s»!
-(I can't see a radio right now. Plug it in and press the button again.)	(Сейчас я не вижу радио. Подключите его и нажмите кнопку ещё раз.)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	В Windows для HackRF один раз нужен драйвер WinUSB: установите его через Zadig, zadig.akeo.ie.
 Weather (137 MHz)	Погода (137 MHz)
 Amateur	Любительская связь
 Amateur satellites	Любительские спутники
@@ -1251,7 +1235,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	LimeSDR Mini требует в Windows драйвер FT60x от FTDI (не Zadig), в Linux правила udev и однократный запуск "LimeUtil --update", чтобы его gateware соответствовал библиотеке.
 Real (mono)	Вещественный (моно)
 Left	Левый
 Right	Правый
@@ -1522,3 +1505,24 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	К nRSP-ST подключаются через SDRconnect: запустите SDRconnect (или его headless-версию) на компьютере с включённым WebSocket-сервером (порт 5454) и выбранным nRSP-ST и введите адрес этого компьютера. Пароль не нужен и не сохраняется.
+#  the guided tour
+Tuning and gain	Настройка и усиление
+Modes	Режимы
+Spectrum and waterfall	Спектр и водопад
+Mode panel	Панель режима
+Memory and frequencies	Память и частоты
+Receivers	Приёмники
+Audio	Звук
+Server and support	Сервер и поддержка
+Done	Готово
+Take the guided tour	Запустить обзор
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Выберите радио или запись, которая поставляет отсчёты. Record IQ сохраняет исходный сигнал для последующего воспроизведения.
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Здесь задаются частота, диапазон и частота дискретизации. Усиление и АРУ определяют входной уровень; Второй режим декодирует другой режим из той же записи.
+%d modes, grouped by family. Use the search box to find one by name.	Режимов: %d, сгруппированных по семействам. Найти нужный по названию можно в поле поиска.
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	Щёлкните для настройки, прокрутите для масштаба. Peak hold удерживает наибольший уровень, замеченный на каждой частоте.
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	У каждого режима свои вкладки для декодированных данных, настроек и инструментов. Они меняются вместе с выбранным режимом.
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	Память хранит частоты вместе с режимом и настройками. Частоты и диапазонные планы показывают, что есть в эфире, по режимам.
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	Каждый приёмник сочетает радио и режим. Эта панель переключает их и выбирает, какой воспроизводит звук.
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen воспроизводит демодулированный сигнал. Громкость и отключение звука здесь; Record audio сохраняет звук в файл.
+Server sends decoded positions to the public map. Support helps fund development.	Сервер отправляет декодированные позиции на общедоступную карту. Поддержка помогает финансировать разработку.
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Здесь находятся документация, устранение неполадок, благодарности и лицензии. Обзор запускает этот обзор снова.
