@@ -266,6 +266,11 @@ public:
     // Every burst of transport stream packets is also handed to this function (the network tuner); it runs on the receiver thread, so it must be quick.
     // `secs` is how long the burst represents in the stream, so a client can hand it to a player at that rate instead of in one lump.
     void setPacketTap(std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> f);
+    // The TV recorder's tap: every packet of the multiplex in stream order (EPG, recordings, timeshift). Separate from setPacketTap (the network tuner).
+    void setRecorderTap(std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> f);
+    // true: the live multiplex no longer feeds the player (a recording or the timeshift buffer is playing through player().push() instead)
+    void setPlayerExternal(bool on) { playerExternal_ = on; }
+    bool playerExternal() const { return playerExternal_; }
     void setOutputs(const OutputConfig& c) { outputs_.configure(c); }
     OutputConfig outputConfig() const { return outputs_.config(); }
     OutputStats outputStats() const { return outputs_.stats(); }
@@ -462,6 +467,8 @@ private:
     TsSnapshot tsSnap_;
     OutputManager outputs_;
     std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> tap_;
+    std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> rtap_;
+    std::atomic<bool> playerExternal_{false};
     Player player_;
     IqCorrector iqFix_;
     // offset tuning (offset_tune.h): the radio is tuned offHz_ below the channel at offRate_, and offMix_ brings the channel back to the centre;

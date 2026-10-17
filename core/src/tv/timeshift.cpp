@@ -18,7 +18,7 @@ void PcrTimeline::add(uint64_t idx, double raw) {
     }
     have_ = true;
     lastT_ = t;
-    if (!marks_.empty() && t - marks_.back().t < 0.2 && idx > marks_.back().idx) return;
+    if (!marks_.empty() && t - marks_.back().t < 0.095 && idx > marks_.back().idx) return;
     if (!marks_.empty() && idx <= marks_.back().idx) return;
     marks_.push_back({idx, t});
 }
@@ -45,7 +45,7 @@ bool PcrTimeline::indexAt(double t, uint64_t& idx) const {
     while (hi - lo > 1) { const size_t m = (lo + hi) / 2; if (marks_[m].t <= t) lo = m; else hi = m; }
     const Mark &a = marks_[lo], &b = marks_[hi];
     const double f = b.t > a.t ? (t - a.t) / (b.t - a.t) : 0;
-    idx = a.idx + (uint64_t)(f * (double)(b.idx - a.idx));
+    idx = a.idx + (uint64_t)(f * (double)(b.idx - a.idx) + 0.5);
     return true;
 }
 
@@ -64,7 +64,7 @@ bool DiskTimeshift::open(const TimeshiftConfig& c) {
     // left-overs of an earlier run (a crash): only our own file pattern
     for (auto& e : std::filesystem::directory_iterator(u8file(c.dir), ec)) {
         const std::string n = e.path().filename().string();
-        if (n.size() == 16 && n.compare(0, 3, "ts_") == 0 && n.compare(11, 5, ".seg") == 0) { std::error_code e2; std::filesystem::remove(e.path(), e2); }
+        if (n.size() == 15 && n.compare(0, 3, "ts_") == 0 && n.compare(11, 4, ".seg") == 0) { std::error_code e2; std::filesystem::remove(e.path(), e2); }
     }
     std::lock_guard<std::mutex> lk(mu_);
     cfg_ = c;

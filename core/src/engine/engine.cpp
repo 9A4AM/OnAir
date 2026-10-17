@@ -281,7 +281,8 @@ void Engine::onTsPackets(const uint8_t* pk, size_t n, double secs) {
     tsSnap_ = demux_.snapshot();
     outputs_.packets(pk, n, &tsSnap_);
     if (tap_) tap_(pk, n, &tsSnap_, secs);
-    if (player_.selected() >= 0) player_.push(pk, n, tsSnap_);
+    if (rtap_) rtap_(pk, n, &tsSnap_, secs);
+    if (player_.selected() >= 0 && !playerExternal_) player_.push(pk, n, tsSnap_);
     outputs_.burstDone(secs);
 }
 

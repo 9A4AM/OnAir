@@ -329,8 +329,8 @@ int main() {
             rec.feed(ts.data(), ts.size() / 188, dm.snapshot(), 1);
             rec.tick(T);
             CHECK(rec.active().size() == 1, "running");
-            auto due = rec.dueReminders(T + 50);
-            CHECK(due.empty() || due.size() == 1, "");
+            auto due = rec.dueReminders(T + 10);
+            CHECK(due.empty(), "reminder not due yet");
             due = rec.dueReminders(T + 60 + 50);
             CHECK(due.size() == 1 && due[0].id == rid && rec.dueReminders(T + 200).empty(), "reminder fires once");
             rec.stopJob(id, false);

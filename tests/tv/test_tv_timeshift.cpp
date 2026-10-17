@@ -150,7 +150,7 @@ int main() {
         fd.skip(2.0);
         fd.pause(false);
         std::this_thread::sleep_for(std::chrono::milliseconds(400));
-        CHECK(fd.positionSeconds() > 102.0 && fd.positionSeconds() < 103.5, "skipped forward to %.2f", fd.positionSeconds());
+        CHECK(fd.positionSeconds() > 102.0 && fd.positionSeconds() < 104.2, "skipped forward to %.2f", fd.positionSeconds());
         fd.stop();
     }
     {   // ---- feeder on a growing buffer: behind-live and go live

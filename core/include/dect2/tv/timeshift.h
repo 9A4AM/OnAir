@@ -16,7 +16,7 @@ namespace dect2 {
 // Maps packet numbers to stream time from the PCRs (unwrapped over the 33 bit rollover every 26.5 hours; a jump in the clock continues the timeline).
 class PcrTimeline {
 public:
-    void add(uint64_t packetIdx, double pcrSeconds);       // called for every PCR packet in order; marks are thinned to one per 0.2 s of stream
+    void add(uint64_t packetIdx, double pcrSeconds);       // called for every PCR packet in order; marks are thinned to one per 0.1 s of stream
     void trimBefore(uint64_t packetIdx);                   // forget marks before this packet (keeps the last one before it)
     bool timeAt(uint64_t packetIdx, double& t) const;      // interpolated; false before the first / with no marks
     bool indexAt(double t, uint64_t& packetIdx) const;     // the packet at that stream time (clamped to the first / last mark)
