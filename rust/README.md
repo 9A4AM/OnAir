@@ -76,7 +76,7 @@ Then update the status table below and run `tools/rust_check.sh`.
 | mesh | `onair_mesh` | `DECT2_RUST_MESH` | `rs/mesh.h` | LoRa / mesh / LoRaWAN | not started |
 | wisun | `onair_wisun` | `DECT2_RUST_WISUN` | `rs/wisun.h` | Wi-SUN | not started |
 | uat | `onair_uat` | `DECT2_RUST_UAT` | `rs/uat.h` | UAT 978 | not started |
-| ts | `onair_ts` | `DECT2_RUST_TS` | `rs/ts.h` | MPEG-TS, PSI, EIT | not started |
+| ts | `onair_ts` | `DECT2_RUST_TS` | `rs/ts.h` | MPEG-TS packet header, section CRC-32, PAT / PMT / SDT / NIT / EIT / TDT / ATSC TVCT section parsers, PAT packet | done (demux state, section reassembly, EPG store, dvbText / iconv in C++) |
 | dvbsi | `onair_dvbsi` | `DECT2_RUST_DVBSI` | `rs/dvbsi.h` | DVB service info, teletext, subtitles | not started |
 | dab | `onair_dab` | `DECT2_RUST_DAB` | `rs/dab.h` | DAB FIG, MOT | not started |
 | drm | `onair_drm` | `DECT2_RUST_DRM` | `rs/drm.h` | DRM data services | not started |
@@ -89,7 +89,7 @@ Then update the status table below and run `tools/rust_check.sh`.
 ## The C++ originals are still there
 
 For every converted module the replaced C++ stays in its file under `#ifndef DECT2_RUST_<MODULE>` (AIS: `ais_proto.cpp`; ADS-B: `adsb_msg.cpp`; ACARS:
-`acars_proto.cpp`; SAME: `same_proto.cpp`; pager: `pager_proto.cpp`; AX.25 / APRS: `packet_ax25.cpp`, `packet_aprs.cpp`; NXDN: `nxdn_proto.cpp`; DMR: `dmr_fec.cpp`, `dmr_proto.cpp`; P25: `p25_proto.cpp`; D-STAR: `dstar_proto.cpp`), because `DECT2_RUST=OFF` builds and cross builds without a Rust target must keep working. The Rust-backed
+`acars_proto.cpp`; SAME: `same_proto.cpp`; pager: `pager_proto.cpp`; AX.25 / APRS: `packet_ax25.cpp`, `packet_aprs.cpp`; NXDN: `nxdn_proto.cpp`; DMR: `dmr_fec.cpp`, `dmr_proto.cpp`; P25: `p25_proto.cpp`; D-STAR: `dstar_proto.cpp`; MPEG-TS: `ts_proto.cpp`), because `DECT2_RUST=OFF` builds and cross builds without a Rust target must keep working. The Rust-backed
 twin is `<file>_rs.cpp` (guarded by `#ifdef DECT2_RUST_<MODULE>`). A later step deletes the `#ifndef` blocks when Rust becomes mandatory; the differential
 tests then keep a frozen copy as their reference (`cmake/gen_rs_ref.cmake` writes it from the C++ file with the switch undefined).
 

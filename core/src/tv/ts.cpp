@@ -1,5 +1,6 @@
 #include "dect2/common/text_charset.h"
 #include "dect2/tv/ts.h"
+#include "dect2/tv/ts_proto.h"
 #include <algorithm>
 #include <cstring>
 #ifdef _WIN32
@@ -21,21 +22,7 @@
 
 namespace dect2 {
 
-uint32_t mpegCrc32(const uint8_t* p, int n) {
-    static uint32_t tab[256];
-    static bool init = false;
-    if (!init) {
-        for (uint32_t i = 0; i < 256; i++) {
-            uint32_t c = i << 24;
-            for (int k = 0; k < 8; k++) c = (c & 0x80000000u) ? (c << 1) ^ 0x04C11DB7u : (c << 1);
-            tab[i] = c;
-        }
-        init = true;
-    }
-    uint32_t crc = 0xFFFFFFFFu;
-    for (int i = 0; i < n; i++) crc = (crc << 8) ^ tab[(crc >> 24) ^ p[i]];
-    return crc;
-}
+uint32_t mpegCrc32(const uint8_t* p, int n) { return tsp::crc32(p, n); }   // the section CRC-32 lives in ts_proto (Rust with DECT2_RUST_TS)
 
 #ifdef _WIN32
 // Windows has the ISO 8859 tables built in (code pages 28591..28599, 28603, 28605): no iconv needed.
@@ -131,20 +118,7 @@ const char* TsService::typeName() const {
     }
 }
 
-static void buildPatPacket(int tsid, int sid, int pmtPid, int& cc, uint8_t* out) {
-    uint8_t sec[16];
-    sec[0] = 0x00; sec[1] = 0xB0; sec[2] = 13;
-    sec[3] = tsid >> 8; sec[4] = tsid & 0xFF;
-    sec[5] = 0xC1; sec[6] = 0; sec[7] = 0;
-    sec[8] = sid >> 8; sec[9] = sid & 0xFF;
-    sec[10] = 0xE0 | (pmtPid >> 8); sec[11] = pmtPid & 0xFF;
-    uint32_t crc = mpegCrc32(sec, 12);
-    sec[12] = crc >> 24; sec[13] = crc >> 16; sec[14] = crc >> 8; sec[15] = crc;
-    memset(out, 0xFF, 188);
-    out[0] = 0x47; out[1] = 0x40; out[2] = 0x00; out[3] = 0x10 | (cc++ & 15);
-    out[4] = 0x00;
-    memcpy(out + 5, sec, 16);
-}
+static void buildPatPacket(int tsid, int sid, int pmtPid, int& cc, uint8_t* out) { tsp::patPacket(tsid, sid, pmtPid, cc, out); cc++; }
 
 bool ServiceFilter::process(const uint8_t* in, const TsSnapshot* snap, uint8_t* out) {
     if (sid_ < 0) { memcpy(out, in, 188); return true; }
@@ -172,10 +146,11 @@ void TsDemux::reset() { *this = TsDemux(); }
 void TsDemux::markLoss() { for (auto& kv : pids_) kv.second.resync = true; for (auto& kv : sec_) kv.second.active = false; }
 
 void TsDemux::feed(const uint8_t* p) {
-    if (p[0] != 0x47) return;
-    const int pid = ((p[1] & 0x1F) << 8) | p[2];
-    const bool tei = p[1] & 0x80, pusi = p[1] & 0x40;
-    const int scr = (p[3] >> 6) & 3, afc = (p[3] >> 4) & 3, cc = p[3] & 15;
+    tsp::PacketHeader hd;
+    if (!tsp::packetHeader(p, 188, hd)) return;
+    const int pid = hd.pid;
+    const bool tei = hd.tei, pusi = hd.pusi;
+    const int scr = hd.scr, afc = hd.afc, cc = hd.cc;
     total_++; totalWin_++;
     PidState& st = pids_[pid];
     st.packets++; st.bytesWin += 188;
@@ -189,9 +164,8 @@ void TsDemux::feed(const uint8_t* p) {
         st.resync = false;
     } else if (afc == 2) st.resync = false;
     if (!(afc & 1) || scr) return;
-    int off = 4;
-    if (afc == 3) off += 1 + p[4];
-    if (off >= 188) return;
+    const int off = hd.payloadOff;
+    if (off < 0) return;
     // only PSI/SI PIDs and PMT PIDs carry sections we care about
     const bool psi = pid == 0 || pid == 0x10 || pid == 0x11 || pid == 0x12 || pid == 0x14 || pid == 0x1FFB || pmtToService_.count(pid);
     if (!psi) return;
@@ -246,266 +220,105 @@ void TsDemux::section(int pid, const uint8_t* s, int len) {
     else if (pid == 0x1FFB && (tid == 0xC8 || tid == 0xC9)) parseTvct(s, len);
 }
 
-// ATSC A/65 virtual channel table: for each channel a 7 character name, major.minor number, the program number it maps to and
-// the service type. Shown like DVB services (name, number in the provider line).
+// ATSC A/65 virtual channel table: names and channel numbers, shown like DVB services (name, number in the provider line).
 void TsDemux::parseTvct(const uint8_t* s, int len) {
-    if (len < 14) return;
-    tsid_ = (s[3] << 8) | s[4];
-    const int n = s[9];
-    int i = 10;
-    for (int c = 0; c < n && i + 32 <= len - 4; c++) {
-        std::string name;
-        for (int k = 0; k < 7; k++) {
-            const int hi = s[i + 2 * k], lo = s[i + 2 * k + 1];
-            if (hi == 0 && lo == 0) break;
-            name += hi == 0 && lo >= 0x20 && lo < 0x7F ? (char)lo : '?';
-        }
-        const int major = ((s[i + 14] & 0x0F) << 6) | (s[i + 15] >> 2);
-        const int minor = ((s[i + 15] & 0x03) << 8) | s[i + 16];
-        const int prog = (s[i + 24] << 8) | s[i + 25];
-        const int stype = s[i + 27] & 0x3F;   // 2 digital TV, 3 audio, 4 data
-        const int dl = ((s[i + 30] & 0x03) << 8) | s[i + 31];
-        if (prog != 0 && prog != 0xFFFF) {
-            TsService& sv = services_[prog];
-            sv.id = prog;
-            sv.name = name;
-            sv.haveSdt = true;
-            sv.lcn = major * 100 + minor;
-            sv.type = stype == 2 ? 0x01 : stype == 3 ? 0x02 : 0x0C;
-            char b[40];
-            snprintf(b, sizeof b, "channel %d.%d", major, minor);
-            sv.provider = b;
-        }
-        i += 32 + dl;
+    int tsid;
+    std::vector<tsp::Tvct> ch;
+    if (!tsp::parseTvct(s, len, tsid, ch)) return;
+    tsid_ = tsid;
+    for (const tsp::Tvct& c : ch) {
+        TsService& sv = services_[c.prog];
+        sv.id = c.prog;
+        sv.name = c.name;
+        sv.haveSdt = true;
+        sv.lcn = c.major * 100 + c.minor;
+        sv.type = c.stype == 2 ? 0x01 : c.stype == 3 ? 0x02 : 0x0C;
+        char b[40];
+        snprintf(b, sizeof b, "channel %d.%d", c.major, c.minor);
+        sv.provider = b;
     }
 }
 
 void TsDemux::parsePat(const uint8_t* s, int len) {
-    tsid_ = (s[3] << 8) | s[4];
-    for (int i = 8; i + 4 <= len - 4; i += 4) {
-        int prog = (s[i] << 8) | s[i + 1];
-        int pid = ((s[i + 2] & 0x1F) << 8) | s[i + 3];
-        if (prog == 0) continue; // network PID
-        TsService& sv = services_[prog];
-        sv.id = prog;
-        sv.pmtPid = pid;
-        pmtToService_[pid] = prog;
+    int tsid;
+    std::vector<tsp::PatEntry> e;
+    if (!tsp::parsePat(s, len, tsid, e)) return;
+    tsid_ = tsid;
+    for (const tsp::PatEntry& pe : e) {
+        TsService& sv = services_[pe.prog];
+        sv.id = pe.prog;
+        sv.pmtPid = pe.pid;
+        pmtToService_[pe.pid] = pe.prog;
     }
-}
-
-static const char* streamKind(int st, std::string& codec, bool& isVideo, bool& isAudio) {
-    isVideo = isAudio = false;
-    switch (st) {
-    case 0x01: codec = "MPEG-1 video"; isVideo = true; break;
-    case 0x02: codec = "MPEG-2"; isVideo = true; break;
-    case 0x03: codec = "MPEG-1 audio"; isAudio = true; break;
-    case 0x04: codec = "MPEG audio"; isAudio = true; break;
-    case 0x0F: codec = "AAC"; isAudio = true; break;
-    case 0x11: codec = "HE-AAC"; isAudio = true; break;
-    case 0x1B: codec = "H.264"; isVideo = true; break;
-    case 0x24: codec = "HEVC"; isVideo = true; break;
-    case 0x81: codec = "AC-3"; isAudio = true; break;
-    case 0x87: codec = "E-AC-3"; isAudio = true; break;
-    // the Chinese AVS family (GB/T 17975.1, DTMB in China): AVS1-P2 and AVS+, AVS2, AVS3 (docs/CODECS.md)
-    case 0x42: codec = "AVS"; isVideo = true; break;
-    case 0xD2: codec = "AVS2"; isVideo = true; break;
-    case 0xD4: codec = "AVS3"; isVideo = true; break;
-    default: break;
-    }
-    return isVideo ? "video" : isAudio ? "audio" : "data";
 }
 
 void TsDemux::parsePmt(int pid, const uint8_t* s, int len) {
     auto it = pmtToService_.find(pid);
     if (it == pmtToService_.end()) return;
     TsService& sv = services_[it->second];
-    int prog = (s[3] << 8) | s[4];
-    if (prog != sv.id) return;
-    sv.pcrPid = ((s[8] & 0x1F) << 8) | s[9];
-    int pil = ((s[10] & 0x0F) << 8) | s[11];
-    bool ca = false;
-    for (int i = 12; i + 2 <= 12 + pil && i + 2 <= len; ) { int tag = s[i], l = s[i + 1]; if (tag == 0x09) ca = true; i += 2 + l; }
+    tsp::Pmt pmt;
+    if (!tsp::parsePmt(s, len, pmt) || pmt.prog != sv.id) return;
+    sv.pcrPid = pmt.pcrPid;
     std::vector<TsStream> streams;
-    int i = 12 + pil;
-    while (i + 5 <= len - 4) {
+    for (const tsp::PmtStream& ps : pmt.streams) {
         TsStream st;
-        st.streamType = s[i];
-        st.pid = ((s[i + 1] & 0x1F) << 8) | s[i + 2];
-        int esl = ((s[i + 3] & 0x0F) << 8) | s[i + 4];
-        bool isV, isA;
-        st.kind = streamKind(st.streamType, st.codec, isV, isA);
-        for (int j = i + 5; j + 2 <= i + 5 + esl && j + 2 <= len; ) {
-            int tag = s[j], l = s[j + 1];
-            if (j + 2 + l > len) break;
-            const uint8_t* d = s + j + 2;
-            switch (tag) {
-            case 0x09: ca = true; break;
-            case 0x05: if (l >= 4 && memcmp(d, "DRA1", 4) == 0) { st.codec = "DRA"; st.kind = "audio"; } break;   // registration: DRA sound (GB/T 22726)
-            case 0x0A: if (l >= 3) st.lang.assign((const char*)d, 3); break;
-            case 0x6A: st.codec = "AC-3"; st.kind = "audio"; break;
-            case 0x7A: st.codec = "E-AC-3"; st.kind = "audio"; break;
-            case 0x7B: st.codec = "DTS"; st.kind = "audio"; break;
-            case 0x7C: st.codec = "AAC"; st.kind = "audio"; break;
-            case 0x59:
-                st.codec = "DVB subtitles"; st.kind = "subtitles"; if (l >= 3) st.lang.assign((const char*)d, 3);
-                for (int k = 0; k + 8 <= l; k += 8) {
-                    TsSubEntry e; e.lang.assign((const char*)d + k, 3); e.type = d[k + 3];
-                    e.page = (d[k + 4] << 8) | d[k + 5]; e.ancPage = (d[k + 6] << 8) | d[k + 7];
-                    st.subs.push_back(e);
-                }
-                break;
-            case 0x56:
-                st.codec = "Teletext"; st.kind = "teletext"; if (l >= 3) st.lang.assign((const char*)d, 3);
-                for (int k = 0; k + 5 <= l; k += 5) {
-                    TsSubEntry e; e.teletext = true; e.lang.assign((const char*)d + k, 3); e.type = d[k + 3] >> 3;
-                    const int mag = (d[k + 3] & 7) ? (d[k + 3] & 7) : 8, bcd = d[k + 4];
-                    if ((bcd >> 4) > 9 || (bcd & 15) > 9) continue;
-                    e.page = mag * 100 + (bcd >> 4) * 10 + (bcd & 15);
-                    st.subs.push_back(e);
-                }
-                break;
-            case 0x46: st.codec = "VBI teletext"; st.kind = "teletext"; break;
-            default: break;
-            }
-            j += 2 + l;
+        st.pid = ps.pid; st.streamType = ps.streamType; st.kind = ps.kind; st.codec = ps.codec; st.lang = ps.lang;
+        for (const tsp::PmtSub& e : ps.subs) {
+            TsSubEntry x; x.teletext = e.teletext; x.lang = e.lang; x.type = e.type; x.page = e.page; x.ancPage = e.ancPage;
+            st.subs.push_back(x);
         }
-        if (st.codec.empty()) { char b[24]; snprintf(b, sizeof b, "type 0x%02X", st.streamType); st.codec = b; }
         streams.push_back(st);
-        i += 5 + esl;
     }
     sv.streams = streams;
     sv.havePmt = true;
-    sv.caFlag = sv.caFlag || ca;
+    sv.caFlag = sv.caFlag || pmt.ca;
 }
 
 void TsDemux::parseSdt(const uint8_t* s, int len) {
-    tsid_ = (s[3] << 8) | s[4];
-    onid_ = (s[8] << 8) | s[9];
-    int i = 11;
-    while (i + 5 <= len - 4) {
-        int sid = (s[i] << 8) | s[i + 1];
-        bool freeCa = s[i + 3] & 0x10;
-        int dl = ((s[i + 3] & 0x0F) << 8) | s[i + 4];
-        TsService& sv = services_[sid];
-        sv.id = sid;
+    int tsid, onid;
+    std::vector<tsp::SdtService> v;
+    if (!tsp::parseSdt(s, len, tsid, onid, v)) return;
+    tsid_ = tsid;
+    onid_ = onid;
+    for (const tsp::SdtService& e : v) {
+        TsService& sv = services_[e.sid];
+        sv.id = e.sid;
         sv.haveSdt = true;
-        sv.caFlag = sv.caFlag || freeCa;
-        for (int j = i + 5; j + 2 <= i + 5 + dl && j + 2 <= len; ) {
-            int tag = s[j], l = s[j + 1];
-            if (j + 2 + l > len) break;
-            if (tag == 0x48 && l >= 3) {
-                const uint8_t* d = s + j + 2;
-                sv.type = d[0];
-                int pl = d[1];
-                if (2 + pl + 1 <= l) {
-                    sv.provider = dvbText(d + 2, pl, gbText_);
-                    int nl = d[2 + pl];
-                    if (3 + pl + nl <= l) sv.name = dvbText(d + 3 + pl, nl, gbText_);
-                }
-            }
-            j += 2 + l;
-        }
-        i += 5 + dl;
+        sv.caFlag = sv.caFlag || e.freeCa;
+        if (e.hasType) sv.type = e.type;
+        if (e.hasProvider) sv.provider = dvbText(s + e.provider.off, (int)e.provider.len, gbText_);
+        if (e.hasName) sv.name = dvbText(s + e.name.off, (int)e.name.len, gbText_);
     }
 }
 
 void TsDemux::parseNit(const uint8_t* s, int len) {
-    int ndl = ((s[8] & 0x0F) << 8) | s[9];
-    for (int j = 10; j + 2 <= 10 + ndl && j + 2 <= len; ) {
-        int tag = s[j], l = s[j + 1];
-        if (tag == 0x40) network_ = dvbText(s + j + 2, l, gbText_);
-        j += 2 + l;
-    }
-    // transport stream loop: logical channel numbers (descriptor 0x83 in private data, e.g. EACEM / UK)
-    int i = 10 + ndl;
-    if (i + 2 > len) return;
-    int tsl = ((s[i] & 0x0F) << 8) | s[i + 1];
-    i += 2;
-    int end = std::min(len - 4, i + tsl);
-    while (i + 6 <= end) {
-        int dl = ((s[i + 4] & 0x0F) << 8) | s[i + 5];
-        for (int j = i + 6; j + 2 <= i + 6 + dl && j + 2 <= len; ) {
-            int tag = s[j], l = s[j + 1];
-            if (tag == 0x83) for (int k = 0; k + 4 <= l; k += 4) {
-                int sid = (s[j + 2 + k] << 8) | s[j + 3 + k];
-                int lcn = ((s[j + 4 + k] & 0x03) << 8) | s[j + 5 + k];
-                services_[sid].id = sid;
-                services_[sid].lcn = lcn;
-            }
-            j += 2 + l;
-        }
-        i += 6 + dl;
+    tsp::Nit nit;
+    if (!tsp::parseNit(s, len, nit)) return;
+    if (nit.hasName) network_ = dvbText(s + nit.name.off, (int)nit.name.len, gbText_);
+    for (const tsp::NitLcn& e : nit.lcn) {   // logical channel numbers (descriptor 0x83 in private data, e.g. EACEM / UK)
+        services_[e.sid].id = e.sid;
+        services_[e.sid].lcn = e.lcn;
     }
 }
 
 void TsDemux::parseEit(const uint8_t* s, int len) {
-    const int tid = s[0];
-    const int sid = (s[3] << 8) | s[4];
-    const int secNum = s[6];
-    if (len < 18) return;
+    tsp::Eit eit;
+    if (!tsp::parseEit(s, len, eit)) return;
+    const int sid = eit.sid;
     // legacy: present / following event names for the service list
-    if (tid == 0x4E && secNum <= 1) {
-        int i = 14;
-        std::string nameOut;
-        if (i + 12 <= len - 4) {
-            int dl = ((s[i + 10] & 0x0F) << 8) | s[i + 11];
-            for (int j = i + 12; j + 2 <= i + 12 + dl && j + 2 <= len; ) {
-                int tag = s[j], l = s[j + 1];
-                if (tag == 0x4D && l >= 5) {
-                    const uint8_t* d = s + j + 2;
-                    int nl = d[3];
-                    if (4 + nl <= l) nameOut = dvbText(d + 4, nl, gbText_);
-                }
-                j += 2 + l;
-            }
-        }
+    if (eit.legacy) {
         TsService& sv = services_[sid];
         sv.id = sid;
-        (secNum == 0 ? sv.now : sv.next) = nameOut;
+        (eit.secNum == 0 ? sv.now : sv.next) = eit.hasName ? dvbText(s + eit.nowNextName.off, (int)eit.nowNextName.len, gbText_) : std::string();
     }
     // the guide: every event in the section
-    auto bcd = [](int v) { return (v >> 4) * 10 + (v & 15); };
-    int i = 14;
-    const int end = len - 4;
     auto& evs = epg_[sid];
-    while (i + 12 <= end) {
+    for (const tsp::EitEvent& pe : eit.events) {
         EpgEvent ev;
-        ev.eventId = (s[i] << 8) | s[i + 1];
-        const int mjd = (s[i + 2] << 8) | s[i + 3];
-        const bool undefined = s[i + 2] == 0xFF && s[i + 3] == 0xFF && s[i + 4] == 0xFF;
-        ev.start = undefined ? 0 : (int64_t)(mjd - 40587) * 86400 + bcd(s[i + 4]) * 3600 + bcd(s[i + 5]) * 60 + bcd(s[i + 6]);
-        ev.duration = bcd(s[i + 7]) * 3600 + bcd(s[i + 8]) * 60 + bcd(s[i + 9]);
-        ev.running = s[i + 10] >> 5;
-        const int dl = ((s[i + 10] & 0x0F) << 8) | s[i + 11];
-        const int dend = std::min(end, i + 12 + dl);
-        std::map<int, std::string> ext;
-        for (int j = i + 12; j + 2 <= dend; ) {
-            const int tag = s[j], l = s[j + 1];
-            if (j + 2 + l > dend) break;
-            const uint8_t* d = s + j + 2;
-            if (tag == 0x4D && l >= 5) {              // short event descriptor
-                ev.lang.assign((const char*)d, 3);
-                const int nl = d[3];
-                if (4 + nl < l) {
-                    ev.title = dvbText(d + 4, nl, gbText_);
-                    const int tl = d[4 + nl];
-                    if (5 + nl + tl <= l) ev.text = dvbText(d + 5 + nl, tl, gbText_);
-                }
-            } else if (tag == 0x4E && l >= 6) {       // extended event descriptor (several pieces, in order)
-                const int num = d[0] >> 4;
-                const int itemsLen = d[4];
-                if (5 + itemsLen < l) {
-                    const int tl = d[5 + itemsLen];
-                    if (6 + itemsLen + tl <= l) ext[num] = dvbText(d + 6 + itemsLen, tl, gbText_);
-                }
-            } else if (tag == 0x54 && l >= 2) {       // content descriptor
-                ev.genre = d[0] >> 4;
-            }
-            j += 2 + l;
-        }
-        for (auto& kv : ext) ev.extended += kv.second;
-        i = dend;
-        if (ev.start == 0 || ev.duration <= 0) continue;
+        ev.eventId = pe.eventId; ev.start = pe.start; ev.duration = pe.duration; ev.running = pe.running; ev.genre = pe.genre; ev.lang = pe.lang;
+        if (pe.hasTitle) ev.title = dvbText(s + pe.title.off, (int)pe.title.len, gbText_);
+        if (pe.hasText) ev.text = dvbText(s + pe.text.off, (int)pe.text.len, gbText_);
+        for (int n = 0; n < 16; n++) if (pe.extMask & (1u << n)) ev.extended += dvbText(s + pe.ext[n].off, (int)pe.ext[n].len, gbText_);   // pieces in descriptor_number order
         auto it = evs.find(ev.eventId);
         if (it != evs.end() && ev.extended.empty()) ev.extended = it->second.extended;
         evs[ev.eventId] = ev;
@@ -529,18 +342,10 @@ std::map<int, std::vector<EpgEvent>> TsDemux::epg() const {
 }
 
 void TsDemux::parseTdt(const uint8_t* s, int len) {
-    if (len < 8) return;
-    int mjd = (s[3] << 8) | s[4];
-    auto bcd = [](int v) { return (v >> 4) * 10 + (v & 15); };
-    int hh = bcd(s[5]), mm = bcd(s[6]), ss = bcd(s[7]);
-    int y = (int)((mjd - 15078.2) / 365.25);
-    int m = (int)((mjd - 14956.1 - (int)(y * 365.25)) / 30.6001);
-    int d = mjd - 14956 - (int)(y * 365.25) - (int)(m * 30.6001);
-    int k = (m == 14 || m == 15) ? 1 : 0;
-    y += k; m = m - 1 - k * 12;
-    char b[40]; snprintf(b, sizeof b, "%04d-%02d-%02d %02d:%02d:%02d UTC", 1900 + y, m, d, hh, mm, ss);
-    utc_ = b;
-    tdtUnix_ = (int64_t)(mjd - 40587) * 86400 + hh * 3600 + mm * 60 + ss;
+    tsp::Tdt d;
+    if (!tsp::parseTdt(s, len, d)) return;
+    utc_ = d.text;
+    tdtUnix_ = d.unix;
     tdtAt_ = streamClock_;
 }
 
