@@ -112,7 +112,7 @@ test("tracksJson is cached per version and equals the rows' wire JSON", () => {
   feed(b, ac({ id: "AAAAAA", lat: 52 }), NOW + 4000);
   const j = JSON.parse(b.tracksJson());
   assert.equal(j[0].lat, 52);
-  assert.deepEqual(Object.keys(j[0]), ["id", "kind", "label", "sub", "lat", "lon", "alt", "heading", "speed", "extra", "t", "squawk", "cat", "vrate", "src", "age", "est"]);
+  assert.deepEqual(Object.keys(j[0]), ["id", "kind", "label", "sub", "lat", "lon", "alt", "heading", "speed", "extra", "t", "squawk", "cat", "vrate", "src", "age", "est", "dv"]);
 });
 
 test("load() restores rows as already persisted and keeps the path", () => {
@@ -121,4 +121,23 @@ test("load() restores rows as already persisted and keeps the path", () => {
   assert.equal(b.size, 1);
   assert.equal(b.rows.get("aircraft:AAAAAA").path.length, 2);
   assert.equal(b.takePersist(NOW + 1000).upserts.length, 0, "nothing to write back");
+});
+
+test("derived-kinematics flag (dv) is sanitised, carried over, and a bearing line (doa) is accepted with its own id and no path", () => {
+  const b = new TrackBook(NOW);
+  assert.equal(sanitize(ac({ dv: 1, speed: undefined, heading: undefined }), NOW).dv, 0, "dv needs a value to describe");
+  feed(b, ac({ dv: 1 }), NOW);
+  const r = feed(b, ac({ lat: 50.01, heading: undefined, speed: undefined, dv: 0 }), NOW + 4000);
+  assert.equal(r.dv, 1, "kept speed/heading from the previous derived values stay marked derived");
+  assert.equal(JSON.parse(b.wire(r)).dv, 1);
+  const d = sanitize({ kind: "doa", id: "x", lat: 54.7, lon: 25.3, heading: 120, freq: 433920000, sigma: 3, conf: 0.8 }, NOW, "station-abc1");
+  assert.equal(d.kind, "doa");
+  assert.deepEqual(d.path, []);
+  assert.equal(sanitize({ kind: "doa", lat: 54.7, lon: 25.3, heading: 120, freq: 433920000 }, NOW), null, "needs a station");
+  const row = b.accept(d, NOW);
+  assert.ok(row);
+  assert.equal(b.doaRows().length, 1);
+  const v = b.version;
+  assert.equal(b.deltaParts(v - 1), null, "a changed bearing forces a full snapshot (fix markers are derived)");
+  assert.ok(b.deltaParts(v));
 });

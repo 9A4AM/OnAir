@@ -3,6 +3,8 @@
 #include "../adsb/adsb_map.h"
 #include "app.h"
 #include "map/pos_predict.h"
+#include "map/derived_kin.h"
+#include "state/results_export.h"
 #include "dect2/hfdl/hfdl_proto.h"
 #include "dect2/hfdl/hfdl_tel.h"
 #include <algorithm>
@@ -89,6 +91,11 @@ std::string khzList(const std::vector<int>& k) {
 
 // ---- position estimates (core/src/track): HF position reports come every few minutes, so the aircraft are dead-reckoned between them
 pospred::Layer gPred;
+
+// speed, track and vertical rate from the filter, else from the last two positions (~): HFDL reports carry none (the track points have no altitude: no vertical rate)
+derivedkin::Info kinOf(const dect2::HfdlAircraft& c, double now) {
+    return derivedkin::compute(c.track, dect2::geo::KinMeasured(), derivedkin::estimated(gPred.hub, gPred.predict, dect2::track::keyFromIcao(c.icao ? c.icao : c.key), now, c.track.size()));
+}
 std::unordered_map<uint32_t, double> gFedPosT;
 
 void feedEstimates(const dect2::HfdlTelemetry& t) {
@@ -320,6 +327,13 @@ void mapSide(App& a) {
     ImGui::SameLine();
     if (ImGui::SmallButton("clear")) S.selAir = 0;
     if (c->hasPos) kv("position", "%.4f %.4f", c->lat, c->lon);
+    {
+        derivedkin::Lines L;
+        if (c->hasPos && derivedkin::lines(kinOf(*c, t.nowSec), L)) {
+            kv("speed", "%s", L.gs.c_str()); kv("track", "%s", L.track.c_str());
+            if (!L.note.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", L.note.c_str()); ImGui::PopTextWrapPos(); }
+        }
+    }
     if (!c->posKind.empty()) kv("source", "%s, %s ago", c->posKind.c_str(), ago(t.nowSec, c->posTime).c_str());
     kv("station", "%s%s", gsLabel(c->gsId).c_str(), c->loggedOn ? ", logged on" : "");
     kv("messages", "%u, last %s ago on %.0f kHz", c->messages, ago(t.nowSec, c->lastHeardSec).c_str(), c->freqHz / 1e3);
@@ -341,10 +355,24 @@ void mapView(App& a) {
 
 void aircraftView(const App& a) {
     const dect2::HfdlTelemetry& t = a.rx.hfdl;
-    if (!ImGui::BeginTable("##hfair", 8, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
+    {
+        static std::string note;
+        resexp::Table x; x.cols = {"icao", "registration", "flight", "lat", "lon", "alt_ft", "gs_derived_kt", "track_derived_deg", "vrate_derived_fpm", "derived_dt_s"};
+        if (live(a)) for (const auto& c : t.aircraft) {
+            if (!c.hasPos) continue;
+            const derivedkin::Info k = kinOf(c, t.nowSec);
+            x.add({c.icao ? hex6(c.icao) : "", c.reg, c.flight, resexp::num(c.lat, 5), resexp::num(c.lon, 5), c.hasAlt ? std::to_string(c.altFt) : "",
+                   k.d.ok ? resexp::num(k.d.gsKt, 0) : "", k.d.ok && k.d.hasTrack ? resexp::num(k.d.trackDeg, 0) : "", k.d.ok && k.d.hasVs ? resexp::num(k.d.vsFpm, 0) : "",
+                   k.d.ok ? resexp::num(k.d.dtSec, 0) : ""});
+        }
+        resexp::saveButton(x, "hfdl_aircraft", note, "svhfair");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
+    if (!ImGui::BeginTable("##hfair", 10, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
     ImGui::TableSetupColumn("ICAO"); ImGui::TableSetupColumn("Reg"); ImGui::TableSetupColumn("Flight"); ImGui::TableSetupColumn("Station");
     ImGui::TableSetupColumn("Msgs"); ImGui::TableSetupColumn("kHz"); ImGui::TableSetupColumn("Last heard"); ImGui::TableSetupColumn("Position");
+    ImGui::TableSetupColumn("Speed"); ImGui::TableSetupColumn("Track");
     ImGui::TableHeadersRow();
     if (live(a))
         for (const auto& c : t.aircraft) {
@@ -357,6 +385,9 @@ void aircraftView(const App& a) {
             ImGui::TableNextColumn(); ImGui::Text("%.0f", c.freqHz / 1e3);
             ImGui::TableNextColumn(); ImGui::TextUnformatted(ago(t.nowSec, c.lastHeardSec).c_str());
             ImGui::TableNextColumn(); if (c.hasPos) ImGui::Text("%.3f %.3f", c.lat, c.lon); else ImGui::TextUnformatted("-");
+            const derivedkin::Info k = c.hasPos ? kinOf(c, t.nowSec) : derivedkin::Info();
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(derivedkin::gsText(k.v).c_str()); if (ImGui::IsItemHovered() && !derivedkin::explain(k).empty()) ImGui::SetTooltip("%s", derivedkin::explain(k).c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(derivedkin::trackText(k.v).c_str());
         }
     ImGui::EndTable();
 }
@@ -555,6 +586,9 @@ bool hfdlEstimatedPosition(uint32_t key, double now, double& lat, double& lon, d
 }
 
 
+
+// For the map upload (app/map/map_send.cpp)
+derivedkin::Info hfdlKinematics(const dect2::HfdlAircraft& c, double now) { return kinOf(c, now); }
 
 extern const ModeUi kHfdlUi;
 const ModeUi kHfdlUi = {

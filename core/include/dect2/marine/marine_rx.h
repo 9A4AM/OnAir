@@ -36,9 +36,10 @@ public:
     void setVolume(float v);
     void setMuted(bool m);
     void setSilent(bool s);                              // decode but never open the sound device
+    void clearFax();                                     // clears the weather fax picture and the decoder's lines; phasing and the line count restart (any thread)
     void clearMessages();                                // empties the NAVTEX and DSC lists
     // The NAVTEX and DSC lists stay through reset(), configure() and retunes: only clearResults() (clearMessages()) empties them
-    void clearResults();
+    void clearResults();                                 // the NAVTEX and DSC lists and the fax picture
     std::string saveResults() const;                     // for the results file (results_io.h)
     bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
 

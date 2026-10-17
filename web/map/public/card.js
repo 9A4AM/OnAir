@@ -101,7 +101,7 @@ export function createCard(host, api) {
         <dl class="rows" data-f="rows"></dl>
         <p class="c-extra" data-f="extra" hidden></p>
         <section class="c-msgs" data-f="msgsBox" hidden>
-          <h3>ACARS messages <span class="c-msgs-n" data-f="msgsN"></span></h3>
+          <h3>ACARS and radio messages <span class="c-msgs-n" data-f="msgsN"></span></h3>
           <ol class="c-msgs-list" data-f="msgs"></ol>
         </section>
       </div>
@@ -276,7 +276,7 @@ export function createCard(host, api) {
     // one-line summary for the collapsed phone sheet
     const pk = [];
     if (t.alt != null) pk.push(t.kind === "sat" || t.kind === "gnss" ? Math.round(t.alt).toLocaleString() + " km" : t.kind === "aircraft" ? Math.round(t.alt).toLocaleString() + " ft" : Math.round(t.alt).toLocaleString() + " m");
-    if (t.speed != null) pk.push(Math.round(t.speed) + (t.kind === "vessel" ? " kn" : t.kind === "aircraft" || t.kind === "flarm" ? " kt" : ""));
+    if (t.speed != null) pk.push((t.dv ? "~" : "") + Math.round(t.speed) + (t.kind === "vessel" ? " kn" : t.kind === "aircraft" || t.kind === "flarm" ? " kt" : ""));
     set("peek", pk.join(" · "));
   }
 
@@ -329,8 +329,10 @@ export function createCard(host, api) {
   /** Data rows for any track. Rebuilt only when their text changes. */
   function updateRows(t, m, now) {
     const rows = [];
-    const add = (k, v, cls) => { if (v !== "" && v != null) rows.push([k, String(v), cls || ""]); };
+    const add = (k, v, cls, title) => { if (v !== "" && v != null) rows.push([k, String(v), cls || "", title || ""]); };
     const src = (t.src || "").toLowerCase();
+    const dv = t.dv ? "~" : "";   // speed, track and vertical rate derived from position reports, not broadcast by the aircraft
+    const dvTip = t.dv ? "Derived from position reports (distance between two fixes divided by the time); the aircraft did not broadcast it." : "";
     if (t.kind === "aircraft" || t.kind === "flarm") {
       add("Registration", m.registration);
       const type = [m.type, m.icaoType ? "(" + m.icaoType + ")" : ""].filter(Boolean).join(" ");
@@ -353,17 +355,17 @@ export function createCard(host, api) {
       const unit = t.kind === "vessel" ? " kn" : t.kind === "aircraft" || t.kind === "flarm" ? " kt" : "";
       const v = t.kind === "vessel" ? Number(t.speed).toFixed(1) : Math.round(t.speed);
       const kmh = t.kind === "aircraft" || t.kind === "flarm" || t.kind === "vessel" ? " (" + Math.round(t.speed * 1.852) + " km/h)" : "";
-      add(t.kind === "aircraft" ? "Ground speed" : "Speed", v + unit + kmh);
+      add(t.kind === "aircraft" ? "Ground speed" : "Speed", dv + v + unit + kmh, "", dvTip);
     }
-    if (t.vrate != null) add("Vertical rate", vrateArrow(t.vrate) + " " + Math.round(Math.abs(t.vrate)).toLocaleString() + " ft/min");
-    if (t._hdg != null) add("Track", String(Math.round(t._hdg)).padStart(3, "0") + "°" + (t.heading == null ? " (from trail)" : ""));
+    if (t.vrate != null) add("Vertical rate", dv + vrateArrow(t.vrate) + " " + Math.round(Math.abs(t.vrate)).toLocaleString() + " ft/min", "", dvTip);
+    if (t._hdg != null) add("Track", (t.heading != null ? dv : "") + String(Math.round(t._hdg)).padStart(3, "0") + "°" + (t.heading == null ? " (from trail)" : ""), "", t.heading != null ? dvTip : "");
     add("Position", fmtLat(t.lat) + "  " + fmtLon(t.lon));
     add("Position age", ageText((now - posMs(t)) / 1000));
     if (t.kind === "aircraft" || t.kind === "flarm") add("Source", SRC_NAME[src] || t.sub || "");
     if (t.cat && t.kind !== "aircraft") add("Category", t.cat);
     else if (t.cat && /^[AB][0-7]$/.test(t.cat)) add("Emitter category", t.cat);
     // geometric altitude, Mach, IAS and "seen by N stations" are not in the data the hub receives, so they are not shown
-    const html = rows.map(([k, v, c]) => `<div class="${c}"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("");
+    const html = rows.map(([k, v, c, tip]) => `<div class="${c}"${tip ? ` title="${esc(tip)}"` : ""}><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("");
     if (f.rows._html !== html) { f.rows.innerHTML = html; f.rows._html = html; }
     if (t.extra) { f.extra.hidden = false; set("extra", t.extra); } else f.extra.hidden = true;
     const alertRow = rows.some((r) => r[2] === "alert");

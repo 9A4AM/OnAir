@@ -98,6 +98,7 @@ private:
         Cpr cpr[2], scpr[2];     // last airborne and surface frames, by parity
         double level = 0;        // mean pulse power (linear) of the last messages
         int rejects = 0;
+        double autoEmit = -1e9; int autoSq = -1; bool autoNew = false;   // the automations (automation/engine.h): when it was last reported, its squawk then
         int emergencyTc = 0;     // from type code 28
         int emergencySq = 0;     // from the squawk
         double altTime = -1e9; int trustedAltFt = 0; double baroAltTime = -1e9;   // baroAltTime: any barometric altitude (DF0/4/16/17/18/20)      // the last altitude from an ADS-B message

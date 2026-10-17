@@ -166,7 +166,6 @@ Back	Назад
 Next	Далее
 Finish	Готово
 Skip	Пропустить
-Skip tour	Пропустить обзор
 Dismiss	Скрыть
 Again	Ещё раз
 Auto	Авто
@@ -209,7 +208,6 @@ New interface	Новый интерфейс
 Try the new interface. You can switch back at any time.	Попробуйте новый интерфейс. Вернуться назад можно в любой момент.
 Guided tour	Обзор программы
 Tour	Обзор
-Take the guided tour with Onny	Пройти обзор с Onny
 by: Kristijonas Adomaitis, made with help from the community	автор: Kristijonas Adomaitis, при участии сообщества
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Спасибо всем, кто сообщал об ошибках, присылал записи и отправлял pull request'ы.
 Source	Источник
@@ -467,20 +465,6 @@ Radio settings (%d changed)	Настройки радио (изменено: %d)
 %s: frequency correction and the other settings of this radio	%s: поправка частоты и остальные настройки этого радио
 The driver's own settings show up here\nonce this radio has been started.	Собственные настройки драйвера появятся здесь\nпосле запуска этого радио.
 0 = libiio's default	0 = значение libiio по умолчанию
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	Привет, я Onny! Я маленький телевизор, живущий в OnAir. Хотите быстрый обзор? Он займёт около минуты, и я покажу всё на демонстрационном сигнале, так что оборудование пока не нужно.
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Вверху - переключатель вида вещания: DVB для большей части цифрового ТВ в мире, ATSC для Северной Америки и DAB для цифрового радио. В OnAir все три собраны в одном месте.
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	Посмотрим в действии! Я запущу ненастоящий сигнал. Это тестовый передатчик внутри программы, так что ничего подключать не нужно.
-Start the demo signal	Запустить демо-сигнал
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	Видите волнистую линию? Это спектр: насколько силён каждый сигнал в эфире, слева направо. Высокий горб посередине - наш канал. Ниже водопад показывает то же самое, медленно прокручиваясь во времени.
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	А эти четыре окошка показывают точки, которые видит приёмник. Когда сигнал хороший, точки собираются в аккуратные кластеры. Разбросанные точки означают шумный сигнал. Сейчас это чистая демонстрация, так что всё должно выглядеть аккуратно!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Здесь появятся каналы, когда приёмник захватит сигнал. Щёлкните по одному, чтобы смотреть. Есть и плеер с изображением и звуком, часы и параметры записи или трансляции того, что вы смотрите.
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	Теперь по-настоящему. Выберите здесь своё радио, частоту и задайте усиление. Усиление - это то, насколько радио усиливает сигнал: слишком мало - и он теряется, слишком много - и искажается. Кнопка «Автонастройка» подберёт хорошее значение за вас.
-Stop the demo and look for my radio	Остановить демо и найти моё радио
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	Не знаете, где каналы? Вкладка «Сканирование» поищет за вас. Хорошая антенна, расположенная высоко и у окна, даёт больше, чем что-либо другое. Обещаю!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	Вот и весь обзор! Каналы можно раздавать на другие устройства со вкладки «Трансляция» (Выходы), а меня можно позвать в любой момент кнопкой «Обзор» вверху справа. Приятного просмотра!
-Good news: I can see "%s"!	Хорошие новости: я вижу «%s»!
-(I can't see a radio right now. Plug it in and press the button again.)	(Сейчас я не вижу радио. Подключите его и нажмите кнопку ещё раз.)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	В Windows для HackRF один раз нужен драйвер WinUSB: установите его через Zadig, zadig.akeo.ie.
 Weather (137 MHz)	Погода (137 MHz)
 Amateur	Любительская связь
 Amateur satellites	Любительские спутники
@@ -1249,7 +1233,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	LimeSDR Mini требует в Windows драйвер FT60x от FTDI (не Zadig), в Linux правила udev и однократный запуск "LimeUtil --update", чтобы его gateware соответствовал библиотеке.
 Real (mono)	Вещественный (моно)
 Left	Левый
 Right	Правый
@@ -1380,6 +1363,61 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Sunday	воскресенье
+Monday	понедельник
+Tuesday	вторник
+Wednesday	среда
+Thursday	четверг
+Friday	пятница
+Saturday	суббота
+Your radio cannot tune 225 kHz.	Ваш приёмник не может настроиться на 225 кГц.
+Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.	Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.
+time decoded, two packets agree	время декодировано, два пакета совпадают
+time decoded (one packet)	время декодировано (один пакет)
+carrier found, waiting for a time packet	несущая найдена, ждём пакет времени
+searching for the carrier	поиск несущей
+start the receiver to read the time service	запустите приёмник, чтобы читать службу времени
+local time	местное время
+last packet	последний пакет
+summer time	летнее время
+the local time changes next Sunday at 01:00 UTC (summer / standard time)	местное время сменится в ближайшее воскресенье в 01:00 UTC (летнее / зимнее)
+no change announced	смена не объявлена
+leap second	високосная секунда
+one is to be removed at the end of the quarter	одна будет удалена в конце квартала
+one is to be added at the end of the quarter	одна будет добавлена в конце квартала
+none announced	не объявлена
+transmitter	передатчик
+computer clock	часы компьютера
+ahead	спешит
+behind	отстаёт
+The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.	The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.
+nothing to compare (a recording)	сравнивать не с чем (запись)
+once the time is decoded	после декодирования времени
+path	трасса
+; set your position in ADS-B (Receiver position) for the right delay	; set your position in ADS-B (Receiver position) for the right delay
+clock offset	расхождение часов
+level	уровень
+start the receiver to see the signal	запустите приёмник, чтобы увидеть сигнал
+carrier	несущая
+phase of the carrier	фаза несущей
+The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.	The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.
+signal at the bit slicer	сигнал на решающем устройстве
+The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.	The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.
+Computer UTC	UTC компьютера
+Frame	Кадр
+Result	Результат
+no frame yet: a time packet comes every few slots of the minute frame	кадров пока нет: пакет времени приходит каждые несколько слотов минутного кадра
+, audio recording	, аудиозапись
+Recording of the radio's audio	Запись звука приёмника
+Audio, not IQ	Аудио, не IQ
+The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.	The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.
+carrier tone Hz	тон несущей, Гц
+The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).	The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).
+Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).	Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).
+Carrier	Несущая
+Sync	Синхр.
+The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).	The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).
+LW time service, Poland	служба времени на ДВ, Польша
 Predict positions	Прогноз позиций
 Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	Заполняет промежутки между донесениями о позиции: самолёт движется плавно, а когда сообщения прекращаются, его положение рассчитывается по курсу (и по маршруту, если сообщение называло пункт назначения). Прогнозируемые позиции рисуются как призрак с пунктирным кольцом.
 uncertainty	погрешность
@@ -1512,7 +1550,6 @@ Source...	Источник...
 Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Переключается на режим записи, применяет его настройку и настраивается на частоту. Двойной щелчок по строке делает то же самое. Работающий приёмник перезапускается при смене режима.
 Tuned: %s  %s MHz	Настроено: %s  %s МГц
 Well-known frequencies of this mode: pick one to tune to it	Известные частоты этого режима: выберите одну, чтобы настроиться
-Carrier	Carrier
 Stop scan##dsc	Stop scan##dsc
 Scan band##dsc	Scan band##dsc
 DECT carrier %d, %.3f MHz	DECT carrier %d, %.3f MHz
@@ -1529,6 +1566,27 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	К nRSP-ST подключаются через SDRconnect: запустите SDRconnect (или его headless-версию) на компьютере с включённым WebSocket-сервером (порт 5454) и выбранным nRSP-ST и введите адрес этого компьютера. Пароль не нужен и не сохраняется.
+#  the guided tour
+Tuning and gain	Настройка и усиление
+Modes	Режимы
+Spectrum and waterfall	Спектр и водопад
+Mode panel	Панель режима
+Memory and frequencies	Память и частоты
+Receivers	Приёмники
+Audio	Звук
+Server and support	Сервер и поддержка
+Done	Готово
+Take the guided tour	Запустить обзор
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Выберите радио или запись, которая поставляет отсчёты. Record IQ сохраняет исходный сигнал для последующего воспроизведения.
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Здесь задаются частота, диапазон и частота дискретизации. Усиление и АРУ определяют входной уровень; Второй режим декодирует другой режим из той же записи.
+%d modes, grouped by family. Use the search box to find one by name.	Режимов: %d, сгруппированных по семействам. Найти нужный по названию можно в поле поиска.
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	Щёлкните для настройки, прокрутите для масштаба. Peak hold удерживает наибольший уровень, замеченный на каждой частоте.
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	У каждого режима свои вкладки для декодированных данных, настроек и инструментов. Они меняются вместе с выбранным режимом.
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	Память хранит частоты вместе с режимом и настройками. Частоты и диапазонные планы показывают, что есть в эфире, по режимам.
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	Каждый приёмник сочетает радио и режим. Эта панель переключает их и выбирает, какой воспроизводит звук.
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen воспроизводит демодулированный сигнал. Громкость и отключение звука здесь; Record audio сохраняет звук в файл.
+Server sends decoded positions to the public map. Support helps fund development.	Сервер отправляет декодированные позиции на общедоступную карту. Поддержка помогает финансировать разработку.
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Здесь находятся документация, устранение неполадок, благодарности и лицензии. Обзор запускает этот обзор снова.
 Monitor audio	Прослушивание
 Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Слушать настроенный канал в любом режиме, чтобы опознать сигнал: отсчёты радио демодулируются как USB, LSB, узкая FM или AM. Тишина, пока режим играет свой звук.
 Auto: USB below 30 MHz, narrow FM above	Авто: USB ниже 30 МГц, узкая FM выше
@@ -1575,6 +1633,66 @@ testing	тестирование
 idea	идея
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Спасибо всем, кто присылал исправления, сообщал об ошибках, делился записями, переводил и предлагал идеи. Автор — Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Хотите, чтобы ваше имя изменили или убрали? Напишите нам в Discord или создайте issue.
+# direction finder
+Cannot open the recording (interleaved complex float32, one sample of every channel after the other).	Не удаётся открыть запись (комплексный float32 с чередованием: по одному отсчёту каждого канала подряд).
+The recording has a different number of channels than the array.	В записи другое число каналов, чем в решётке.
+Choose a source first.	Сначала выберите источник.
+No data to calibrate with.	Нет данных для калибровки.
+Calibration stored.	Калибровка сохранена.
+Add this bearing	Добавить этот пеленг
+Keeps the current bearing and your position as a line. Move, or take bearings from other stations, add more lines and the position is fixed where they cross.	Запоминает текущий пеленг и ваше положение как линию. Переместитесь или возьмите пеленги других станций, добавьте линии, и положение определится там, где они пересекаются.
+Clear lines	Очистить линии
+Position	Положение
+95%% ellipse %.1f x %.1f km, %d of %d lines used	Эллипс 95%% %.1f x %.1f км, использовано линий: %d из %d
+The lines do not cross (parallel, or they meet behind the stations).	Линии не пересекаются (параллельны или сходятся позади станций).
+Direction finder	Пеленгатор
+Simulator (demo, no hardware)	Симулятор (демо, без оборудования)
+Recording (cf32 / SigMF)	Запись (cf32 / SigMF)
+KrakenSDR bearing file (JSON)	Файл пеленгов KrakenSDR (JSON)
+Lock to the tuned frequency	Привязать к настроенной частоте
+Run	Работает
+path of the recording	путь к записи
+a file the DoA server's JSON lines are saved to	файл, в который сохраняются строки JSON сервера DoA
+channels	каналы
+kS/s	кОтс/с
+Bearing	Пеленг
+Confidence	Достоверность
+Sidelobe %.0f dB, coherence %.2f	Боковой лепесток %.0f дБ, когерентность %.2f
+Waiting for a bearing.	Ожидание пеленга.
+Array and estimator	Решётка и оценщик
+Circular (KrakenSDR)	Круговая (KrakenSDR)
+Linear	Линейная
+Array	Решётка
+Elements	Элементы
+Spacing (wavelengths)	Расстояние (в длинах волн)
+Array orientation	Ориентация решётки
+Compass offset	Смещение компаса
+Added to every bearing: where the array's own north points relative to true north.	Прибавляется к каждому пеленгу: куда указывает север решётки относительно истинного севера.
+Interferometer	Интерферометр
+Estimator	Оценщик
+Sources	Источники
+Forward-backward averaging (reflections)	Усреднение вперёд-назад (отражения)
+Calibration	Калибровка
+1. Feed all channels the same signal: the receiver's noise source (KrakenSDR: switch it on in the DAQ), or a signal from a known bearing. 2. Choose the matching mode and press Calibrate. The offsets between the channels are measured and removed.	1. Подайте на все каналы один и тот же сигнал: источник шума приёмника (KrakenSDR: включите его в DAQ) или сигнал с известного пеленга. 2. Выберите подходящий режим и нажмите «Калибровать». Различия между каналами измеряются и убираются.
+Common noise source	Общий источник шума
+Known bearing	Известный пеленг
+Bearing of the source	Пеленг источника
+Calibrate	Калибровать
+Forget	Забыть
+Use calibration	Использовать калибровку
+Not calibrated.	Не откалибровано.
+Simulated channel errors	Смоделированные ошибки каналов
+Simulator	Симулятор
+Transmitter bearing	Пеленг передатчика
+Spin	Вращать
+SNR per channel	SNR на канал
+Second transmitter	Второй передатчик
+Second bearing	Второй пеленг
+Position fix	Определение положения
+Sharing	Отправка данных
+Share my bearing on the map server	Делиться моим пеленгом с сервером карты
+Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	Требуется Сервер > Отправлять данные на сервер карты. Передаются только пеленг, его неопределённость, частота и положение вашей станции; на карте видно, где пересекаются пеленги нескольких станций.
+Bearing and position of a transmitter from an antenna array such as the KrakenSDR	Пеленг и положение передатчика по антенной решётке, например KrakenSDR
 Decoded only	Только расшифрованные
 Hides tone-only pages and pages whose text could not be decoded.	Скрывает вызовы только тоном и сообщения, текст которых не удалось расшифровать.
 %zu tone-only or undecoded pages hidden (Decoded only)	Скрыто вызовов только тоном или нерасшифрованных сообщений: %zu (Только расшифрованные)
@@ -1597,3 +1715,255 @@ Up	Вверх
 Down	Вниз
 Some digits were corrected or lost: check this row against the next message of the train	Часть цифр исправлена или потеряна: сверьте эту строку со следующим сообщением поезда
 Train warning, 821 MHz	Предупреждение о поездах, 821 МГц
+clear picture	очистить картинку
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Очищает картинку и строки, накопленные декодером, и начинает новую картинку со следующего стартового тона или фазировки. Картинки, уже находящиеся в списке справа, остаются.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Очищает списки NAVTEX и DSC и картинку метеофакса.
+# radio clips
+Clip	Клип
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Радиоклип: сохраняет последние моменты (спектрограмму, звук, декодированные сообщения) в файл, которым можно поделиться. Клавиша: C
+Radio clip	Радиоклип
+Last:	Последние:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Что видел приёмник, самое старое слева. Ярче значит сильнее сигнал. Перетащите, чтобы выбрать сохраняемую часть.
+Include:	Включить:
+Spectrogram picture	Картинка спектрограммы
+Decoded messages	Декодированные сообщения
+Title	Заголовок
+Your station position is never included.	Положение вашей станции никогда не включается.
+Could not save:	Не удалось сохранить:
+Saved: %s (zip %.1f MB)	Сохранено: %s (zip %.1f МБ)
+Save clip	Сохранить клип
+Nothing to save: no waterfall, audio or decoded rows in this range	Нечего сохранять: в этом диапазоне нет водопада, звука и декодированных строк
+Saving...	Сохранение...
+Copy Discord post text	Копировать текст для Discord
+Copied: paste it into Discord and attach the files	Скопировано: вставьте в Discord и приложите файлы
+Open folder	Открыть папку
+Memory kept for clips	Память для клипов
+Waterfall history	История водопада
+%d min	%d мин
+%d MB max	макс. %d МБ
+Audio history	История звука
+%d s	%d с
+Decoded rows history	История декодированных строк
+Uses about %.1f MB now	Сейчас занимает около %.1f МБ
+Decoded rows are kept from the results tables you have open.	Декодированные строки сохраняются из открытых таблиц результатов.
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	Пароль
+blank if the owner set none	пусто, если владелец не задал
+Find KiwiSDR…	Найти KiwiSDR…
+pick a public receiver from the list	выбрать публичный приёмник из списка
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	KiwiSDR — это приёмник в интернете, покрывающий 0–30 МГц; OnAir использует его IQ-поток 12 кГц. У публичных мало мест для пользователей, и многие завершают сеанс примерно через 30 минут: используйте одно соединение на приёмник и отключайтесь, когда закончите. Пароль хранится в настройках OnAir.
+S-meter %.0f dBm%s	S-метр %.0f дБм%s
+, ADC overload	, перегрузка АЦП
+Find KiwiSDR	Найти KiwiSDR
+Download the public list	Скачать публичный список
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	По щелчку скачивает из интернета список публичных приёмников KiwiSDR (один запрос, никогда при запуске).
+downloading the list…	список загружается…
+filter by name, place or antenna	фильтр по названию, месту или антенне
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	У публичных приёмников мало мест для пользователей, и многие завершают сеанс примерно через 30 минут. Выберите не занятый полностью и отключайтесь, когда закончите.
+Location	Местоположение
+Users	Пользователи
+Distance	Расстояние
+offline	не в сети
+full	занят
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Добавляет этот приёмник в сетевые радио (он не подключается, пока вы не выберете его как радио).
+The downloaded list has no receivers OnAir can read.	В скачанном списке нет приёмников, которые OnAir может прочитать.
+Could not download the list. Check the internet connection.	Не удалось скачать список. Проверьте подключение к интернету.
+# live transcripts (docs/TRANSCRIBE.md)
+Transcribing speech: %s	Расшифровка речи: %s
+Voice (radio calls)	Голос (радиообмен)
+No radio call with this aircraft's callsign heard yet	Радиообмена с позывным этого воздушного судна пока не слышно
+Live transcription is off (View > Transcripts). Airband calls would be listed here by callsign.	Живая расшифровка выключена (Вид > Расшифровки). Вызовы авиадиапазона были бы перечислены здесь по позывному.
+Live captions: loading the speech model ...	Живые субтитры: загрузка речевой модели ...
+Live captions: off.	Живые субтитры: выключены.
+Set up transcripts	Настроить расшифровки
+Turns what is said on the airband channels into text as it is heard. It needs a speech model that you download or put in the models folder.	Превращает сказанное на каналах авиадиапазона в текст по мере приёма. Нужна речевая модель, которую вы скачиваете или кладёте в папку моделей.
+Live captions	Живые субтитры
+working ...	работает ...
+listening ...	слушает ...
+Transcripts	Расшифровки
+Airband is off in the transcript settings	Авиадиапазон выключен в настройках расшифровки
+Nothing heard yet.	Пока ничего не слышно.
+Cannot write %s	Не удаётся записать: %s
+Saved %s	Сохранено: %s
+Privacy: what is said on public aviation radio is public, but the speech engine runs here on your computer and the text is kept in your data folder. Do not use it on private conversations: marine, amateur, CB and every other mode are off until you choose them, and a visible line shows whenever transcription is on.	Конфиденциальность: то, что говорят в открытом авиационном радиообмене, общедоступно, но речевой движок работает здесь, на вашем компьютере, а текст хранится в вашей папке данных. Не используйте для личных разговоров: морской, любительский, CB и все остальные режимы выключены, пока вы их не выберете, а заметная строка показывает, когда расшифровка включена.
+Transcribe speech	Расшифровывать речь
+Master switch. While a transmission is going on the audio is cut out, sent to the speech engine and turned into text. Nothing runs while the channels are quiet.	Главный выключатель. Во время передачи звук вырезается, отправляется речевому движку и превращается в текст. Пока каналы молчат, ничего не работает.
+Airband channels	Каналы авиадиапазона
+Marine VHF	Морской УКВ
+Any other mode that plays sound (amateur, CB, FM ...)	Любой другой режим со звуком (любительский, CB, FM ...)
+Takes the sound you hear. Music and private conversations are not meant for this: leave it off unless you need it.	Берёт звук, который вы слышите. Музыка и личные разговоры для этого не предназначены: оставьте выключенным, если не нужно.
+Speech model	Речевая модель
+none	нет
+Open models folder	Открыть папку моделей
+Put a whisper.cpp model file (ggml-*.bin) here to use it. The folder is made if it does not exist.	Положите сюда файл модели whisper.cpp (ggml-*.bin), чтобы использовать его. Папка создаётся, если её нет.
+No speech model yet. Download one below, or put a model file in the models folder.	Речевой модели пока нет. Скачайте её ниже или положите файл модели в папку моделей.
+Loading the speech model ...	Загрузка речевой модели ...
+Speech model loaded.	Речевая модель загружена.
+This build has no speech engine.	В этой сборке нет речевого движка.
+checking	проверка
+Download speech model:	Скачать речевую модель:
+%s %d MB	%s %d МБ
+Already downloaded	Уже скачано
+English only. tiny is the fastest (real time on a laptop), small hears more words and needs a stronger computer.	Только английский. tiny — самая быстрая (в реальном времени на ноутбуке), small слышит больше слов, но требует более мощного компьютера.
+Other languages (multilingual models)	Другие языки (многоязычные модели)
+The loaded model is English only: other languages need a multilingual model (tiny, base or small without .en).	Загруженная модель только английская: для других языков нужна многоязычная модель (tiny, base или small без .en).
+CPU threads	Потоки процессора
+How many processor threads the speech engine may use for one transmission. Fewer threads use less battery and take longer.	Сколько потоков процессора речевой движок может использовать для одной передачи. Меньше потоков — меньше расход батареи, но дольше.
+Keep transcripts (days)	Хранить расшифровки (дней)
+Heard %llu, kept %llu, left out %llu (silence, noise, repeats), skipped %llu (too slow), speed %.2f x real time	Услышано %llu, сохранено %llu, отброшено %llu (тишина, шум, повторы), пропущено %llu (слишком медленно), скорость %.2f x реального времени
+Download the speech model %s (%d MB)?	Скачать речевую модель %s (%d МБ)?
+OnAir asks the model repository (huggingface.co) for this one file and sends nothing else. The file is checked against a fixed SHA-256 checksum and thrown away if it does not match. The model is MIT licensed.	OnAir запрашивает у репозитория моделей (huggingface.co) только этот файл и больше ничего не отправляет. Файл проверяется по фиксированной контрольной сумме SHA-256 и удаляется, если она не совпала. Модель имеет лицензию MIT.
+Download	Скачать
+Delete all saved transcripts? This cannot be undone.	Удалить все сохранённые расшифровки? Это нельзя отменить.
+Delete all	Удалить всё
+Transcription is off.	Расшифровка выключена.
+Hide settings	Скрыть настройки
+Settings and speech model	Настройки и речевая модель
+Search the text ...	Поиск по тексту ...
+All frequencies	Все частоты
+A callsign (DLH123), a registration (N123AB) or an ICAO address (3C6444)	Позывной (DLH123), регистрационный номер (N123AB) или адрес ICAO (3C6444)
+Airport	Аэропорт
+An airport code or name found in the channel name or the text (EYVI, Tower)	Код или название аэропорта в названии канала или в тексте (EYVI, Tower)
+%zu of %zu	%zu из %zu
+Copy all shown	Копировать всё показанное
+Export %s	Экспорт %s
+Delete all ...	Удалить всё ...
+Time (UTC)	Время (UTC)
+Sure	Уверенность
+Speaker (a guess from the wording)	Говорящий (догадка по словам)
+Click to copy this line	Нажмите, чтобы скопировать эту строку
+Aircraft on the screen	Воздушное судно на экране
+Also share transcripts of aircraft radio calls (text becomes public on the map)	Также делиться расшифровками радиообмена воздушных судов (текст станет общедоступным на карте)
+The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	Текст радиообмена авиадиапазона, который речевой движок на этом компьютере получил из принятого вами сигнала (окно Расшифровки), привязанный к воздушному судну по произнесённому позывному и показываемый публично на карточке этого судна на карте 48 часов. Возможны ошибки. Номера телефонов предварительно удаляются. Передаётся только авиадиапазон, никогда морской, любительский и другие каналы. Выключено, пока вы не выберете, и это можно отключить в любой момент.
+Transcripts ...	Расшифровки ...
+What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	Что говорят в авиадиапазоне и на других голосовых каналах, в виде текста: живые субтитры, поиск, экспорт. Выключено, пока вы не включите.
+# Automations window
+%d firings. Dropped events: %llu	Срабатываний: %d. Отброшено событий: %llu
+(the whole rule)	(всё правило)
+Add a condition	Добавить условие
+Add a copy	Добавить копию
+Add an action...	Добавить действие...
+Advanced	Дополнительно
+Allow running programs	Разрешить запуск программ
+Allow this rule to run it	Разрешить этому правилу запуск
+Any event	Любое событие
+Apply	Применить
+Arguments, one per line	Аргументы, по одному в строке
+Arguments:	Аргументы:
+At most per hour (0: no limit)	Не более раз в час (0: без ограничения)
+Automations	Автоматизация
+Automations...	Автоматизация...
+Bot token	Токен бота
+Cannot write the file.	Не удалось записать файл.
+Chat id	ID чата
+Choose a rule on the left, or make a new one.	Выберите правило слева или создайте новое.
+Choose what to tell apart in "separately for each" so every thing has its own state.	Выберите в поле «отдельно для каждого», что различать, чтобы у каждого объекта было своё состояние.
+Columns (optional)	Столбцы (необязательно)
+Confirm this rule...	Подтвердить это правило...
+Confirmed	Подтверждено
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Определите function on_event(e). Доступны e.type, e.mode, e.freq, e.time и поля события (e.callsign, e.squawk ...).\n\nДействия: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nПомощники: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nТекст: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Нет io, os, load, require, pcall и поиска по шаблону; на скрипт 1 млн инструкций, 250 мс и 16 МБ.
+Delete...	Удалить...
+Distance, km	Расстояние, км
+Does not fire for the sample event:	Не срабатывает на примере события:
+Duplicate	Дублировать
+Edit	Правка
+Edit as text and apply, or copy it to share.	Измените как текст и примените или скопируйте, чтобы поделиться.
+Every event	Каждое событие
+Expression (and'ed to the conditions above)	Выражение (через И с условиями выше)
+Expression is fine.	Выражение корректно.
+Fields, and or not, comparisons, contains startswith endswith matches in, arithmetic, distance_km() within() inside() hour() ...	Поля, and or not, сравнения, contains startswith endswith matches in, арифметика, distance_km() within() inside() hour() ...
+File name	Имя файла
+File:	Файл:
+Fire with sample event	Запустить с примером события
+Frequency, MHz	Частота, МГц
+Generic JSON	Обычный JSON
+Imported, switched off. Look it over, then switch it on.	Импортировано, выключено. Проверьте и затем включите.
+Insert an example...	Вставить пример...
+Inside an area (polygon)	Внутри области (многоугольник)
+JSON body (optional)	Тело JSON (необязательно)
+Keep	Оставить
+Last error:	Последняя ошибка:
+Limits	Ограничения
+Lua script	Скрипт Lua
+Manage	Управление
+Memory name	Имя памяти
+Mode id (optional)	ID режима (необязательно)
+New rule	Новое правило
+New script	Новый скрипт
+No location test	Без проверки положения
+No rules yet. Make one, or add a recipe.	Правил пока нет. Создайте или добавьте рецепт.
+Not active:	Не активно:
+Not imported:	Не импортировано:
+Note	Заметка
+Nothing has fired yet.	Пока ничего не сработало.
+Notification	Уведомление
+Off. A rule may start a program only when this is on and you confirmed that rule.	Выключено. Правило может запустить программу, только если это включено и вы подтвердили это правило.
+Only between these local hours	Только между этими местными часами
+Pick one event type to choose its fields from a list.	Выберите один тип события, чтобы выбирать его поля из списка.
+Points as lat,lon; lat,lon; ...	Точки в виде широта,долгота; широта,долгота; ...
+Program	Программа
+Program:	Программа:
+Quiet after firing, seconds	Пауза после срабатывания, секунд
+Ready-made rules and scripts. Adding one makes a copy that you can edit; it starts switched off.	Готовые правила и скрипты. Добавление создаёт копию, которую можно править; она выключена.
+Really delete	Точно удалить
+Really does the actions, once, with a made-up event.	Действительно выполняет действия один раз с выдуманным событием.
+Recall a memory	Вызвать память
+Receives these events	Получает эти события
+Recipes	Рецепты
+Recipes...	Рецепты...
+Rules and scripts: when something is decoded, notify, record, tune or call a webhook	Правила и скрипты: когда что-то декодировано — уведомить, записать, настроиться или вызвать вебхук
+Rules: when something is decoded (an aircraft squawks 7700, a pager message says fire, a vessel enters an area ...), do something (notify, record, tune, log, call a webhook). Scripts do the same in Lua.	Правила: когда что-то декодировано (самолёт передаёт 7700, сообщение пейджера говорит о пожаре, судно входит в зону ...), сделать что-то (уведомить, записать, настроиться, внести в журнал, вызвать вебхук). Скрипты делают то же на Lua.
+Run a program (advanced)	Запустить программу (для опытных)
+Run a program?	Запустить программу?
+Runs a program on this computer. Off until you allow it below and confirm this rule.	Запускает программу на этом компьютере. Выключено, пока вы не разрешите это ниже и не подтвердите правило.
+Save a screenshot	Сохранить снимок экрана
+Saved to	Сохранено в
+Seconds	Секунды
+Server (optional)	Сервер (необязательно)
+Service	Сервис
+Shows what the rule would do with a made-up event. Nothing is sent or started.	Показывает, что сделало бы правило с выдуманным событием. Ничего не отправляется и не запускается.
+Sound alert	Звуковой сигнал
+Test (dry run)	Проверка (без действий)
+Test with a sample event	Проверить на примере события
+Text can use:	В тексте можно использовать:
+The receiver position is not set (ADS-B window).	Положение приёмника не задано (окно ADS-B).
+The recipe file	Файл рецепта
+The script ran and did nothing for this event.	Скрипт выполнился и ничего не сделал для этого события.
+Then do	Тогда выполнить
+This rule will start the program below, on this computer, every time it fires, with text from the decoded signals in its arguments. Anyone who can send such a signal can influence it. Only allow it if you wrote it or trust the one who did.	Это правило будет при каждом срабатывании запускать указанную ниже программу на этом компьютере, передавая в аргументы текст из декодированных сигналов. Любой, кто может передать такой сигнал, может на это повлиять. Разрешайте, только если вы сами его написали или доверяете автору.
+Topic	Тема
+WAV file (empty: beeps)	WAV-файл (пусто: сигналы)
+Webhook	Вебхук
+Webhook address	Адрес вебхука
+What can a script do?	Что может скрипт?
+When this happens	Когда происходит это
+Within a distance of a point	В пределах расстояния от точки
+Within a distance of my receiver	В пределах расстояния от моего приёмника
+Write a CSV log row	Записать строку в CSV-журнал
+all of the conditions	все условия
+and only if	и только если
+any of the conditions	любое из условий
+contains	содержит
+ends with	заканчивается на
+equals	равно
+has a value	имеет значение
+is at least	не меньше
+is at most	не больше
+is less than	меньше
+is more than	больше
+is not	не равно
+is one of (a, b, c)	одно из (a, b, c)
+last fired %s, %d times	последний раз %s, всего %d
+matches (* ?)	соответствует (* ?)
+only as it comes in	только при входе
+separately for each	отдельно для каждого
+starts with	начинается с
+to	до
+when it is inside	когда внутри
+when it is outside	когда снаружи
+# derived speed, track and vertical rate
+%s%.0f deg (average)	%s%.0f град. (среднее)
+Reported by the aircraft.	Сообщено самолётом.
+Estimated by the position filter from the position reports (not broadcast by the aircraft).	Оценено фильтром положения по сообщениям о положении (самолёт это не передаёт).
+Derived from 2 positions %s apart: an average over that time; a curved path is longer than the straight line, so the real speed may be higher. The track is the average bearing.	Вычислено по 2 положениям с интервалом %s: среднее за это время; изогнутый путь длиннее прямой, поэтому реальная скорость может быть выше. Курс — средний азимут.
+Derived from 2 positions %s apart (distance on the WGS-84 ellipsoid divided by the time). The aircraft did not report a speed.	Вычислено по 2 положениям с интервалом %s (расстояние на эллипсоиде WGS-84, делённое на время). Самолёт не сообщил скорость.

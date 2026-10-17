@@ -175,7 +175,6 @@ Back	Vissza
 Next	Tovább
 Finish	Befejezés
 Skip	Kihagyás
-Skip tour	Bemutató kihagyása
 Dismiss	Elvetés
 Again	Újra
 Auto	Auto
@@ -218,7 +217,6 @@ New interface	Új felület
 Try the new interface. You can switch back at any time.	Próbáld ki az új felületet. Bármikor visszaválthatsz.
 Guided tour	Vezetett bemutató
 Tour	Bemutató
-Take the guided tour with Onny	Vezetett bemutató Onnyval
 by: Kristijonas Adomaitis, made with help from the community	készítette: Kristijonas Adomaitis, a közösség segítségével
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Köszönet mindenkinek, aki hibákat jelentett, felvételeket küldött és pull requesteket nyitott.
 Source	Forrás
@@ -476,20 +474,6 @@ Radio settings (%d changed)	Rádióbeállítások (%d módosítva)
 %s: frequency correction and the other settings of this radio	%s: frekvenciakorrekció és a rádió egyéb beállításai
 The driver's own settings show up here\nonce this radio has been started.	Az illesztőprogram saját beállításai itt jelennek meg,\nmiután a rádiót elindítottad.
 0 = libiio's default	0 = a libiio alapértéke
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	Szia, Onny vagyok! Egy kis TV vagyok, aki az OnAirben él. Kérsz egy gyors bemutatót? Körülbelül egy percig tart, és egy demójellel mutatok meg mindent, így még hardver sem kell hozzá.
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Itt fent kapcsolod át, milyen adást szeretnél: DVB a világ legtöbb digitális TV-jéhez, ATSC Észak-Amerikához, DAB a digitális rádióhoz. Az OnAirben mind a három egy helyen van.
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	Nézzük működés közben! Elindítok egy képzelt jelet. Ez egy tesztadó az alkalmazáson belül, így semmit sem kell csatlakoztatni.
-Start the demo signal	A demójel indítása
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	Látod a hullámzó vonalat? Ez a spektrum: balról jobbra mutatja, mennyire erős minden az éterben. A közepén lévő magas púp a mi csatornánk. Alatta a vízesés ugyanezt mutatja, lassan gördülve az időben.
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	Ez a négy doboz pedig a vevő által látott pontokat mutatja. Jó jelnél a pontok szép csoportokba állnak össze. A szétszórt pontok zajos jelet jeleznek. Most tiszta demó van, így rendezettnek kell látszaniuk!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Itt találod a csatornákat, miután a vevő bekapcsolódott. Kattints egyre, és nézheted. Van lejátszó képpel és hanggal, óra, valamint lehetőségek a nézett adás rögzítésére vagy továbbítására.
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	Most jöhet az igazi. Itt választhatod ki a rádiódat, adhatsz meg frekvenciát, és állíthatod az erősítést. Az erősítés azt jelenti, mennyire erősíti a rádió a jelet: kevés esetén elvész, sok esetén torzul. Az Automatikus hangolás gomb jó értéket talál neked.
-Stop the demo and look for my radio	A demó leállítása és a rádióm keresése
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	Nem tudod, hol vannak a csatornák? A Keresés fül megkeresi helyetted. Egy jó, magasra és ablak közelébe tett antenna többet számít bármi másnál. Ígérem!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	Ennyi volt a bemutató! A csatornáidat megoszthatod más eszközökkel a Folyam fülről (Kimenetek), és bármikor visszahívhatsz a jobb felső sarokban lévő Bemutató gombbal. Jó nézelődést!
-Good news: I can see "%s"!	Jó hír: látom ezt: "%s"!
-(I can't see a radio right now. Plug it in and press the button again.)	(Most nem látok rádiót. Dugd be, és nyomd meg újra a gombot.)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	Windowson a HackRF-nek egyszer szüksége van a WinUSB illesztőprogramra: telepítsd a Zadiggal, a zadig.akeo.ie oldalról.
 Weather (137 MHz)	Időjárás (137 MHz)
 Amateur	Amatőr
 Amateur satellites	Amatőr műholdak
@@ -1252,7 +1236,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	A LimeSDR Minihez Windowson az FTDI FT60x illesztőprogramja kell (nem a Zadig), Linuxon az udev szabályok, és egyszer a "LimeUtil --update", hogy a gateware egyezzen a könyvtárral.
 Real (mono)	Valós (mono)
 Left	Bal
 Right	Jobb
@@ -1383,6 +1366,61 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Sunday	vasárnap
+Monday	hétfő
+Tuesday	kedd
+Wednesday	szerda
+Thursday	csütörtök
+Friday	péntek
+Saturday	szombat
+Your radio cannot tune 225 kHz.	A rádiód nem tud 225 kHz-re hangolni.
+Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.	Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.
+time decoded, two packets agree	idő dekódolva, két csomag egyezik
+time decoded (one packet)	idő dekódolva (egy csomag)
+carrier found, waiting for a time packet	vivő megvan, időcsomagra várunk
+searching for the carrier	vivő keresése
+start the receiver to read the time service	indítsd el a vevőt az időszolgáltatás olvasásához
+local time	helyi idő
+last packet	utolsó csomag
+summer time	nyári időszámítás
+the local time changes next Sunday at 01:00 UTC (summer / standard time)	a helyi idő jövő vasárnap 01:00 UTC-kor vált (nyári / téli)
+no change announced	nincs bejelentett váltás
+leap second	szökőmásodperc
+one is to be removed at the end of the quarter	egyet elvesznek a negyedév végén
+one is to be added at the end of the quarter	egyet beiktatnak a negyedév végén
+none announced	nincs bejelentve
+transmitter	adó
+computer clock	számítógép órája
+ahead	siet
+behind	késik
+The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.	The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.
+nothing to compare (a recording)	nincs mivel összevetni (felvétel)
+once the time is decoded	amint az idő dekódolva van
+path	útvonal
+; set your position in ADS-B (Receiver position) for the right delay	; set your position in ADS-B (Receiver position) for the right delay
+clock offset	óraeltérés
+level	szint
+start the receiver to see the signal	indítsd el a vevőt a jel megtekintéséhez
+carrier	vivő
+phase of the carrier	a vivő fázisa
+The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.	The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.
+signal at the bit slicer	jel a bitdöntőnél
+The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.	The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.
+Computer UTC	Számítógép UTC
+Frame	Keret
+Result	Eredmény
+no frame yet: a time packet comes every few slots of the minute frame	még nincs keret: időcsomag a perckeret néhány időrésenként érkezik
+, audio recording	, hangfelvétel
+Recording of the radio's audio	A rádió hangjának felvétele
+Audio, not IQ	Hang, nem IQ
+The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.	The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.
+carrier tone Hz	vivőhang Hz
+The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).	The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).
+Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).	Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).
+Carrier	Vivő
+Sync	Szinkron
+The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).	The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).
+LW time service, Poland	LW időszolgáltatás, Lengyelország
 Predict positions	Pozíciók előrejelzése
 Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	Kitölti a pozíciójelentések közötti réseket: a repülő egyenletesen mozog, és ha az üzenetek elmaradnak, a pályája mentén (és az útvonal mentén, ha egy üzenet megnevezte az úticélt) számítja a helyét. Az előrejelzett pozíciókat szellemként, szaggatott gyűrűvel rajzolja.
 uncertainty	bizonytalanság
@@ -1515,7 +1553,6 @@ Source...	Forrás...
 Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Átvált a bejegyzés üzemmódjára, alkalmazza a hangolását, és ráhangol a frekvenciára. A sorra kattintva duplán ugyanez történik. A futó vevő üzemmódváltáskor újraindul.
 Tuned: %s  %s MHz	Hangolva: %s  %s MHz
 Well-known frequencies of this mode: pick one to tune to it	Ennek az üzemmódnak az ismert frekvenciái: válassz egyet a ráhangoláshoz
-Carrier	Carrier
 Stop scan##dsc	Stop scan##dsc
 Scan band##dsc	Scan band##dsc
 DECT carrier %d, %.3f MHz	DECT carrier %d, %.3f MHz
@@ -1532,6 +1569,27 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	Az nRSP-ST az SDRconnecten keresztül érhető el: futtasd az SDRconnectet (vagy a headless változatát) egy számítógépen bekapcsolt WebSocket-szerverrel (5454-es port) és kiválasztott nRSP-ST-vel, majd írd be a gép címét. Jelszóra nincs szükség, és nem tárolunk ilyet.
+#  the guided tour
+Tuning and gain	Hangolás és erősítés
+Modes	Módok
+Spectrum and waterfall	Spektrum és vízesés
+Mode panel	Mód panel
+Memory and frequencies	Memória és frekvenciák
+Receivers	Vevők
+Audio	Hang
+Server and support	Szerver és támogatás
+Done	Kész
+Take the guided tour	Útmutató indítása
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Válassza ki a mintákat szolgáltató rádiót vagy felvételt. A Record IQ elmenti a nyers jelet a későbbi lejátszáshoz.
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Itt állítható be a frekvencia, a sáv és a mintavételi sebesség. Az erősítés és az AGC a bemeneti szintet szabja meg; a Második mód ugyanabból a felvételből dekódol egy másik módot.
+%d modes, grouped by family. Use the search box to find one by name.	%d mód, családok szerint csoportosítva. A keresőmezővel név alapján találhat meg egyet.
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	Kattintással hangolhat, görgetéssel nagyíthat. A Peak hold megőrzi az egyes frekvenciákon látott legerősebb szintet.
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	Minden módnak saját fülei vannak a dekódolt kimenethez, a beállításokhoz és az eszközökhöz. A kiválasztott móddal együtt változnak.
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	A Memória a frekvenciákat móddal és beállításokkal együtt tárolja. A Frekvenciák és a sávtervek módonként mutatják, mi van adásban.
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	Minden vevő egy rádiót párosít egy móddal. Ez a sáv vált közöttük, és kijelöli, melyik szólaljon meg.
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	A Listen a demodulált jelet játssza le. A hangerő és a némítás itt van; a Record audio fájlba menti.
+Server sends decoded positions to the public map. Support helps fund development.	A Szerver a dekódolt pozíciókat a nyilvános térképre küldi. A Támogatás segít finanszírozni a fejlesztést.
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Itt található a dokumentáció, a hibaelhárítás, a közreműködők és a licencek. Az Útmutató újra elindítja ezt a bemutatót.
 Monitor audio	Hang figyelése
 Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Hallgasd a behangolt csatornát bármely módban egy jel felismeréséhez: a rádió mintáit USB, LSB, keskeny FM vagy AM szerint demodulálja. Néma, amíg a mód saját hangot játszik.
 Auto: USB below 30 MHz, narrow FM above	Auto: USB 30 MHz alatt, keskeny FM felette
@@ -1578,6 +1636,66 @@ testing	tesztelés
 idea	ötlet
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Köszönet mindenkinek, aki javítást küldött, hibát jelentett, felvételt osztott meg, fordított vagy ötletet adott. A szerző Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Szeretnéd, ha módosítanánk vagy törölnénk a neved? Szólj a Discordon, vagy nyiss egy issue-t.
+# direction finder
+Cannot open the recording (interleaved complex float32, one sample of every channel after the other).	A felvétel nem nyitható meg (komplex float32, váltott sorrendű, minden csatorna egy-egy mintája egymás után).
+The recording has a different number of channels than the array.	A felvétel csatornaszáma eltér az antennarendszerétől.
+Choose a source first.	Először válassz forrást.
+No data to calibrate with.	Nincs adat a kalibráláshoz.
+Calibration stored.	A kalibráció elmentve.
+Add this bearing	Ezen irány hozzáadása
+Keeps the current bearing and your position as a line. Move, or take bearings from other stations, add more lines and the position is fixed where they cross.	Eltárolja az aktuális irányt és a pozíciódat egy vonalként. Mozogj, vagy vegyél fel irányokat más állomásokról, adj hozzá több vonalat, és a pozíció ott lesz meghatározva, ahol metszik egymást.
+Clear lines	Vonalak törlése
+Position	Pozíció
+95%% ellipse %.1f x %.1f km, %d of %d lines used	95%%-os ellipszis %.1f x %.1f km, %d/%d vonal felhasználva
+The lines do not cross (parallel, or they meet behind the stations).	A vonalak nem metszik egymást (párhuzamosak, vagy az állomások mögött találkoznak).
+Direction finder	Iránymérő
+Simulator (demo, no hardware)	Szimulátor (demó, hardver nélkül)
+Recording (cf32 / SigMF)	Felvétel (cf32 / SigMF)
+KrakenSDR bearing file (JSON)	KrakenSDR irányfájl (JSON)
+Lock to the tuned frequency	Rögzítés a hangolt frekvenciára
+Run	Fut
+path of the recording	a felvétel elérési útja
+a file the DoA server's JSON lines are saved to	fájl, amelybe a DoA-szerver JSON-sorait mentik
+channels	csatorna
+kS/s	kS/s
+Bearing	Irány
+Confidence	Megbízhatóság
+Sidelobe %.0f dB, coherence %.2f	Mellékcsúcs %.0f dB, koherencia %.2f
+Waiting for a bearing.	Várakozás egy irányra.
+Array and estimator	Antennarendszer és becslő
+Circular (KrakenSDR)	Körkörös (KrakenSDR)
+Linear	Lineáris
+Array	Antennarendszer
+Elements	Elemek
+Spacing (wavelengths)	Távolság (hullámhossz)
+Array orientation	Az antennarendszer tájolása
+Compass offset	Iránytű-eltolás
+Added to every bearing: where the array's own north points relative to true north.	Minden irányhoz hozzáadódik: merre mutat az antennarendszer északja a valódi északhoz képest.
+Interferometer	Interferométer
+Estimator	Becslő
+Sources	Források
+Forward-backward averaging (reflections)	Előre-hátra átlagolás (visszaverődések)
+Calibration	Kalibráció
+1. Feed all channels the same signal: the receiver's noise source (KrakenSDR: switch it on in the DAQ), or a signal from a known bearing. 2. Choose the matching mode and press Calibrate. The offsets between the channels are measured and removed.	1. Adj minden csatornának ugyanazt a jelet: a vevő zajforrását (KrakenSDR: kapcsold be a DAQ-ban) vagy egy ismert irányból érkező jelet. 2. Válaszd a megfelelő módot és nyomd meg a Kalibrálás gombot. A csatornák közti eltéréseket megméri és eltávolítja.
+Common noise source	Közös zajforrás
+Known bearing	Ismert irány
+Bearing of the source	A forrás iránya
+Calibrate	Kalibrálás
+Forget	Elfelejt
+Use calibration	Kalibráció használata
+Not calibrated.	Nincs kalibrálva.
+Simulated channel errors	Szimulált csatornahibák
+Simulator	Szimulátor
+Transmitter bearing	Az adó iránya
+Spin	Forgatás
+SNR per channel	SNR csatornánként
+Second transmitter	Második adó
+Second bearing	Második irány
+Position fix	Pozíciómeghatározás
+Sharing	Megosztás
+Share my bearing on the map server	Irányom megosztása a térképszerverrel
+Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	Szükséges hozzá: Szerver > Adatok küldése a térképszervernek. Csak az irány, bizonytalansága, a frekvencia és az állomásod pozíciója kerül fel; a térkép megmutatja, hol metszik egymást több állomás irányai.
+Bearing and position of a transmitter from an antenna array such as the KrakenSDR	Egy adó iránya és pozíciója antennarendszerrel, például a KrakenSDR-rel
 Decoded only	Csak dekódolt
 Hides tone-only pages and pages whose text could not be decoded.	Elrejti a csak hangjelzéses hívásokat és azokat az üzeneteket, amelyek szövege nem volt dekódolható.
 %zu tone-only or undecoded pages hidden (Decoded only)	%zu csak hangjelzéses vagy dekódolatlan üzenet elrejtve (Csak dekódolt)
@@ -1600,3 +1718,255 @@ Up	Fel
 Down	Le
 Some digits were corrected or lost: check this row against the next message of the train	Néhány számjegyet javítottunk vagy elveszett: ellenőrizd ezt a sort a vonat következő üzenetével
 Train warning, 821 MHz	Vonatfigyelmeztetés, 821 MHz
+clear picture	kép törlése
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Törli a képet és a dekóder által összegyűjtött sorokat, és a következő indítóhangnál vagy fázisjelnél új képet kezd. A jobb oldali listában lévő képek megmaradnak.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Törli a NAVTEX- és DSC-listákat, valamint az időjárási fax képét.
+# radio clips
+Clip	Klip
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Rádióklip: az utolsó pillanatokat (spektrogram, hang, dekódolt üzenetek) menti megosztható fájlként. Billentyű: C
+Radio clip	Rádióklip
+Last:	Utolsó:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Amit a vevő látott, a legrégebbi balra. A világosabb erősebb jel. Húzással jelölheted ki a mentendő részt.
+Include:	Tartalom:
+Spectrogram picture	Spektrogramkép
+Decoded messages	Dekódolt üzenetek
+Title	Cím
+Your station position is never included.	A állomásod helyzete soha nem kerül bele.
+Could not save:	A mentés nem sikerült:
+Saved: %s (zip %.1f MB)	Mentve: %s (zip %.1f MB)
+Save clip	Klip mentése
+Nothing to save: no waterfall, audio or decoded rows in this range	Nincs mit menteni: ebben a tartományban nincs vízesés, hang vagy dekódolt sor
+Saving...	Mentés...
+Copy Discord post text	Discord-szöveg másolása
+Copied: paste it into Discord and attach the files	Másolva: illeszd be a Discordba, és csatold a fájlokat
+Open folder	Mappa megnyitása
+Memory kept for clips	Klipekhez tartott memória
+Waterfall history	Vízesés-előzmények
+%d min	%d perc
+%d MB max	max. %d MB
+Audio history	Hangelőzmények
+%d s	%d mp
+Decoded rows history	Dekódolt sorok előzményei
+Uses about %.1f MB now	Jelenleg kb. %.1f MB-ot használ
+Decoded rows are kept from the results tables you have open.	A dekódolt sorokat a megnyitott eredménytáblákból őrzi meg.
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	Jelszó
+blank if the owner set none	üresen hagyható, ha a tulajdonos nem állított be
+Find KiwiSDR…	KiwiSDR keresése…
+pick a public receiver from the list	nyilvános vevő kiválasztása a listából
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	A KiwiSDR egy az interneten elérhető vevő, amely 0–30 MHz-et fed le; az OnAir a 12 kHz-es IQ-adatfolyamát veszi. A nyilvánosaknak kevés felhasználói helyük van, és sokan körülbelül 30 perc után megszakítják a munkamenetet: vevőnként egy kapcsolatot használj, és ha végeztél, lépj ki. A jelszót az OnAir beállításai tárolják.
+S-meter %.0f dBm%s	S-mérő %.0f dBm%s
+, ADC overload	, ADC túlvezérlés
+Find KiwiSDR	KiwiSDR keresése
+Download the public list	Nyilvános lista letöltése
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	Kattintásra letölti a nyilvános KiwiSDR vevők listáját az internetről (egy kérés, soha nem indításkor).
+downloading the list…	a lista letöltése…
+filter by name, place or antenna	szűrés név, hely vagy antenna szerint
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	A nyilvános vevőknek kevés felhasználói helyük van, és sokan körülbelül 30 perc után megszakítják a munkamenetet. Válassz egyet, amelyik nem tele, és ha végeztél, lépj ki.
+Location	Hely
+Users	Felhasználók
+Distance	Távolság
+offline	offline
+full	tele
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Hozzáadja ezt a vevőt a hálózati rádiókhoz (addig nem csatlakozik, amíg rádiónak nem választod).
+The downloaded list has no receivers OnAir can read.	A letöltött listában nincs olyan vevő, amelyet az OnAir olvasni tud.
+Could not download the list. Check the internet connection.	A listát nem sikerült letölteni. Ellenőrizd az internetkapcsolatot.
+# live transcripts (docs/TRANSCRIBE.md)
+Transcribing speech: %s	Beszéd átírása: %s
+Voice (radio calls)	Hang (rádióhívások)
+No radio call with this aircraft's callsign heard yet	Még nem hallatszott hívás ennek a légijárműnek a hívójelével
+Live transcription is off (View > Transcripts). Airband calls would be listed here by callsign.	Az élő átírás ki van kapcsolva (Nézet > Átiratok). A repülési sáv hívásai itt jelennének meg hívójel szerint.
+Live captions: loading the speech model ...	Élő feliratok: a beszédmodell betöltése ...
+Live captions: off.	Élő feliratok: kikapcsolva.
+Set up transcripts	Átiratok beállítása
+Turns what is said on the airband channels into text as it is heard. It needs a speech model that you download or put in the models folder.	A repülési sáv csatornáin elhangzottakat szöveggé alakítja hallás közben. Beszédmodell kell hozzá, amelyet letöltesz vagy a modellek mappájába teszel.
+Live captions	Élő feliratok
+working ...	dolgozik ...
+listening ...	figyel ...
+Transcripts	Átiratok
+Airband is off in the transcript settings	A repülési sáv ki van kapcsolva az átírási beállításokban
+Nothing heard yet.	Még semmi sem hallatszott.
+Cannot write %s	Nem írható: %s
+Saved %s	Mentve: %s
+Privacy: what is said on public aviation radio is public, but the speech engine runs here on your computer and the text is kept in your data folder. Do not use it on private conversations: marine, amateur, CB and every other mode are off until you choose them, and a visible line shows whenever transcription is on.	Adatvédelem: ami a nyilvános repülési rádión elhangzik, az nyilvános, de a beszédfelismerő itt, a számítógépeden fut, és a szöveg az adatmappádban marad. Ne használd magánbeszélgetésekre: a tengeri, amatőr, CB és minden más üzemmód ki van kapcsolva, amíg be nem kapcsolod, és egy látható sor jelzi, ha az átírás működik.
+Transcribe speech	Beszéd átírása
+Master switch. While a transmission is going on the audio is cut out, sent to the speech engine and turned into text. Nothing runs while the channels are quiet.	Főkapcsoló. Adás közben a hangot kivágja, a beszédfelismerőnek adja, és szöveggé alakítja. Amíg a csatornák csendesek, semmi sem fut.
+Airband channels	Repülési sáv csatornái
+Marine VHF	Tengeri URH
+Any other mode that plays sound (amateur, CB, FM ...)	Bármely más üzemmód, amely hangot ad (amatőr, CB, FM ...)
+Takes the sound you hear. Music and private conversations are not meant for this: leave it off unless you need it.	A hallott hangot veszi. Zene és magánbeszélgetések nem erre valók: hagyd kikapcsolva, ha nincs rá szükség.
+Speech model	Beszédmodell
+none	nincs
+Open models folder	Modellek mappájának megnyitása
+Put a whisper.cpp model file (ggml-*.bin) here to use it. The folder is made if it does not exist.	Tegyél ide egy whisper.cpp modellfájlt (ggml-*.bin) a használatához. A mappa létrejön, ha nem létezik.
+No speech model yet. Download one below, or put a model file in the models folder.	Még nincs beszédmodell. Tölts le egyet lent, vagy tegyél egy modellfájlt a modellek mappájába.
+Loading the speech model ...	A beszédmodell betöltése ...
+Speech model loaded.	A beszédmodell betöltve.
+This build has no speech engine.	Ez a változat nem tartalmaz beszédfelismerőt.
+checking	ellenőrzés
+Download speech model:	Beszédmodell letöltése:
+%s %d MB	%s %d MB
+Already downloaded	Már letöltve
+English only. tiny is the fastest (real time on a laptop), small hears more words and needs a stronger computer.	Csak angol. A tiny a leggyorsabb (valós idejű egy laptopon), a small több szót ért meg, és erősebb gépet kér.
+Other languages (multilingual models)	Más nyelvek (többnyelvű modellek)
+The loaded model is English only: other languages need a multilingual model (tiny, base or small without .en).	A betöltött modell csak angolul tud: más nyelvekhez többnyelvű modell kell (tiny, base vagy small .en nélkül).
+CPU threads	CPU-szálak
+How many processor threads the speech engine may use for one transmission. Fewer threads use less battery and take longer.	Hány processzorszálat használhat a beszédfelismerő egy adáshoz. Kevesebb szál kevesebb akkut fogyaszt, és tovább tart.
+Keep transcripts (days)	Átiratok megőrzése (nap)
+Heard %llu, kept %llu, left out %llu (silence, noise, repeats), skipped %llu (too slow), speed %.2f x real time	Hallott %llu, megtartott %llu, eldobott %llu (csend, zaj, ismétlés), kihagyott %llu (túl lassú), sebesség %.2f x valós idő
+Download the speech model %s (%d MB)?	Letöltöd a(z) %s beszédmodellt (%d MB)?
+OnAir asks the model repository (huggingface.co) for this one file and sends nothing else. The file is checked against a fixed SHA-256 checksum and thrown away if it does not match. The model is MIT licensed.	Az OnAir ezt az egy fájlt kéri el a modelltárból (huggingface.co), mást nem küld. A fájlt egy rögzített SHA-256 ellenőrzőösszeggel ellenőrzi, és eldobja, ha nem egyezik. A modell MIT licencű.
+Download	Letöltés
+Delete all saved transcripts? This cannot be undone.	Törlöd az összes mentett átiratot? Ez nem vonható vissza.
+Delete all	Összes törlése
+Transcription is off.	Az átírás ki van kapcsolva.
+Hide settings	Beállítások elrejtése
+Settings and speech model	Beállítások és beszédmodell
+Search the text ...	Keresés a szövegben ...
+All frequencies	Minden frekvencia
+A callsign (DLH123), a registration (N123AB) or an ICAO address (3C6444)	Hívójel (DLH123), lajstromjel (N123AB) vagy ICAO-cím (3C6444)
+Airport	Repülőtér
+An airport code or name found in the channel name or the text (EYVI, Tower)	A csatorna nevében vagy a szövegben található repülőtérkód vagy -név (EYVI, Tower)
+%zu of %zu	%zu / %zu
+Copy all shown	Az összes látható másolása
+Export %s	%s exportálása
+Delete all ...	Összes törlése ...
+Time (UTC)	Idő (UTC)
+Sure	Biztos
+Speaker (a guess from the wording)	Beszélő (a szavakból tippelve)
+Click to copy this line	Kattints a sor másolásához
+Aircraft on the screen	Légijármű a képernyőn
+Also share transcripts of aircraft radio calls (text becomes public on the map)	A légijárművek rádióhívásainak átiratát is megosztom (a szöveg nyilvános lesz a térképen)
+The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	Az a repülési sávú rádióhívás-szöveg, amelyet a számítógéped beszédfelismerője készített a vett jelből (Átiratok ablak), a benne elhangzó hívójel alapján a légijárműhöz kötve, 48 órán át nyilvánosan megjelenik a légijármű kártyáján a térképen. Hibákat tartalmazhat. A telefonszámokat előtte eltávolítja. Csak a repülési sáv kerül megosztásra, soha tengeri, amatőr vagy más csatorna. Kikapcsolva, amíg be nem kapcsolod, és bármikor kikapcsolhatod.
+Transcripts ...	Átiratok ...
+What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	Ami a repülési sávon és más hangcsatornákon elhangzik, szövegként: élő feliratok, keresés, exportálás. Kikapcsolva, amíg be nem kapcsolod.
+# Automations window
+%d firings. Dropped events: %llu	%d végrehajtás. Eldobott események: %llu
+(the whole rule)	(az egész szabály)
+Add a condition	Feltétel hozzáadása
+Add a copy	Másolat hozzáadása
+Add an action...	Művelet hozzáadása...
+Advanced	Speciális
+Allow running programs	Programok futtatásának engedélyezése
+Allow this rule to run it	Engedélyezem ennek a szabálynak a futtatást
+Any event	Bármely esemény
+Apply	Alkalmaz
+Arguments, one per line	Argumentumok, soronként egy
+Arguments:	Argumentumok:
+At most per hour (0: no limit)	Óránként legfeljebb (0: nincs korlát)
+Automations	Automatizálások
+Automations...	Automatizálások...
+Bot token	Bot-token
+Cannot write the file.	A fájl nem írható.
+Chat id	Csevegés-azonosító
+Choose a rule on the left, or make a new one.	Válassz egy szabályt balról, vagy hozz létre újat.
+Choose what to tell apart in "separately for each" so every thing has its own state.	Válaszd ki a „külön minden…” mezőben, mi alapján különböztessen meg, hogy mindennek saját állapota legyen.
+Columns (optional)	Oszlopok (nem kötelező)
+Confirm this rule...	Szabály megerősítése...
+Confirmed	Megerősítve
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Definiáld a function on_event(e) függvényt. e.type, e.mode, e.freq, e.time és az esemény mezői (e.callsign, e.squawk ...).\n\nMűveletek: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nSegédek: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nSzöveg: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Nincs io, os, load, require, pcall és mintaillesztés; szkriptenként 1 millió utasítás, 250 ms és 16 MB.
+Delete...	Törlés...
+Distance, km	Távolság, km
+Does not fire for the sample event:	A mintaesemény nem váltja ki:
+Duplicate	Másolás
+Edit	Szerkesztés
+Edit as text and apply, or copy it to share.	Szerkeszd szövegként és alkalmazd, vagy másold a megosztáshoz.
+Every event	Minden esemény
+Expression (and'ed to the conditions above)	Kifejezés (ÉS kapcsolattal az fenti feltételekhez)
+Expression is fine.	A kifejezés rendben van.
+Fields, and or not, comparisons, contains startswith endswith matches in, arithmetic, distance_km() within() inside() hour() ...	Mezők, and or not, összehasonlítások, contains startswith endswith matches in, aritmetika, distance_km() within() inside() hour() ...
+File name	Fájlnév
+File:	Fájl:
+Fire with sample event	Kiváltás mintaeseménnyel
+Frequency, MHz	Frekvencia, MHz
+Generic JSON	Általános JSON
+Imported, switched off. Look it over, then switch it on.	Importálva, kikapcsolva. Nézd át, majd kapcsold be.
+Insert an example...	Példa beszúrása...
+Inside an area (polygon)	Egy területen belül (sokszög)
+JSON body (optional)	JSON törzs (nem kötelező)
+Keep	Megtartom
+Last error:	Utolsó hiba:
+Limits	Korlátok
+Lua script	Lua-szkript
+Manage	Kezelés
+Memory name	Memória neve
+Mode id (optional)	Mód azonosító (nem kötelező)
+New rule	Új szabály
+New script	Új szkript
+No location test	Nincs helyellenőrzés
+No rules yet. Make one, or add a recipe.	Még nincs szabály. Hozz létre egyet, vagy adj hozzá receptet.
+Not active:	Nem aktív:
+Not imported:	Nem importálva:
+Note	Megjegyzés
+Nothing has fired yet.	Még semmi sem váltódott ki.
+Notification	Értesítés
+Off. A rule may start a program only when this is on and you confirmed that rule.	Ki. Egy szabály csak akkor indíthat programot, ha ez be van kapcsolva, és megerősítetted a szabályt.
+Only between these local hours	Csak ezek között a helyi órák között
+Pick one event type to choose its fields from a list.	Válassz egy eseménytípust, hogy a mezőit listából választhasd.
+Points as lat,lon; lat,lon; ...	Pontok így: szél,hossz; szél,hossz; ...
+Program	Program
+Program:	Program:
+Quiet after firing, seconds	Szünet kiváltás után, másodperc
+Ready-made rules and scripts. Adding one makes a copy that you can edit; it starts switched off.	Kész szabályok és szkriptek. A hozzáadás szerkeszthető másolatot hoz létre; kikapcsolva indul.
+Really delete	Valóban törlöm
+Really does the actions, once, with a made-up event.	Valóban végrehajtja a műveleteket egyszer, kitalált eseménnyel.
+Recall a memory	Memória előhívása
+Receives these events	Ezeket az eseményeket kapja
+Recipes	Receptek
+Recipes...	Receptek...
+Rules and scripts: when something is decoded, notify, record, tune or call a webhook	Szabályok és szkriptek: ha valamit dekódol, értesítés, felvétel, hangolás vagy webhook hívása
+Rules: when something is decoded (an aircraft squawks 7700, a pager message says fire, a vessel enters an area ...), do something (notify, record, tune, log, call a webhook). Scripts do the same in Lua.	Szabályok: ha valamit dekódol (egy repülő 7700-at ad, egy személyhívó üzenet tűzről szól, egy hajó belép egy területre ...), tegyen valamit (értesítés, felvétel, hangolás, naplózás, webhook hívása). A szkriptek ugyanezt teszik Luában.
+Run a program (advanced)	Program futtatása (haladó)
+Run a program?	Programot futtat?
+Runs a program on this computer. Off until you allow it below and confirm this rule.	Programot indít ezen a számítógépen. Kikapcsolt, amíg lent nem engedélyezed, és meg nem erősíted a szabályt.
+Save a screenshot	Képernyőkép mentése
+Saved to	Mentve ide:
+Seconds	Másodperc
+Server (optional)	Szerver (nem kötelező)
+Service	Szolgáltatás
+Shows what the rule would do with a made-up event. Nothing is sent or started.	Megmutatja, mit tenne a szabály egy kitalált eseménnyel. Semmi sem kerül elküldésre vagy elindításra.
+Sound alert	Hangjelzés
+Test (dry run)	Teszt (szárazon)
+Test with a sample event	Teszt mintaeseménnyel
+Text can use:	A szöveg használhatja:
+The receiver position is not set (ADS-B window).	A vevő pozíciója nincs megadva (ADS-B ablak).
+The recipe file	A receptfájl
+The script ran and did nothing for this event.	A szkript lefutott, és nem tett semmit ennél az eseménynél.
+Then do	Akkor tegye
+This rule will start the program below, on this computer, every time it fires, with text from the decoded signals in its arguments. Anyone who can send such a signal can influence it. Only allow it if you wrote it or trust the one who did.	Ez a szabály minden kiváltáskor elindítja az alábbi programot ezen a számítógépen, az argumentumaiban a dekódolt jelekből származó szöveggel. Bárki, aki ilyen jelet tud küldeni, befolyásolhatja. Csak akkor engedélyezd, ha te írtad, vagy megbízol a szerzőjében.
+Topic	Téma
+WAV file (empty: beeps)	WAV-fájl (üres: sípolás)
+Webhook	Webhook
+Webhook address	Webhook címe
+What can a script do?	Mit tud egy szkript?
+When this happens	Ha ez történik
+Within a distance of a point	Egy ponttól adott távolságon belül
+Within a distance of my receiver	A vevőmtől adott távolságon belül
+Write a CSV log row	CSV-naplósor írása
+all of the conditions	az összes feltétel
+and only if	és csak ha
+any of the conditions	bármelyik feltétel
+contains	tartalmazza
+ends with	ezzel végződik
+equals	egyenlő
+has a value	van értéke
+is at least	legalább
+is at most	legfeljebb
+is less than	kisebb mint
+is more than	nagyobb mint
+is not	nem
+is one of (a, b, c)	ezek egyike (a, b, c)
+last fired %s, %d times	utoljára %s, %d alkalommal
+matches (* ?)	illeszkedik (* ?)
+only as it comes in	csak belépéskor
+separately for each	külön minden
+starts with	ezzel kezdődik
+to	–
+when it is inside	amikor belül van
+when it is outside	amikor kívül van
+# derived speed, track and vertical rate
+%s%.0f deg (average)	%s%.0f fok (átlag)
+Reported by the aircraft.	A légijármű jelentette.
+Estimated by the position filter from the position reports (not broadcast by the aircraft).	A helyzetszűrő becsülte a pozíciójelentésekből (a légijármű nem sugározza).
+Derived from 2 positions %s apart: an average over that time; a curved path is longer than the straight line, so the real speed may be higher. The track is the average bearing.	2, %s különbséggel mért pozícióból származtatva: az adott idő átlaga; a görbe pálya hosszabb az egyenesnél, ezért a valódi sebesség nagyobb lehet. Az irány az átlagos irányszög.
+Derived from 2 positions %s apart (distance on the WGS-84 ellipsoid divided by the time). The aircraft did not report a speed.	2, %s különbséggel mért pozícióból származtatva (a WGS-84 ellipszoidon mért távolság osztva az idővel). A légijármű nem jelentett sebességet.

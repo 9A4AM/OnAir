@@ -49,6 +49,7 @@ struct State {
     int texW = 0, texH = 0, imgW = 0, imgH = 0;
     uint64_t imgSeq = 0, telImgSeq = ~0ull;
     dect2::FaxImage last;            // the copy kept for saving
+    bool faxShown = false;           // the Fax view was drawn this frame (the top "clear" button also clears the picture then)
     float zoom = 0;                  // 0 = fit the width
     ImVec2 pan{0, 0};
     std::string saveMsg;
@@ -300,7 +301,10 @@ void uploadFax(App& a) {
     if (!a.engine.marine().latestImage(im, seq)) { S.telImgSeq = a.rx.marine.fax.imageSeq; return; }
     S.imgSeq = seq;
     S.telImgSeq = a.rx.marine.fax.imageSeq;
-    if (im.width <= 0 || im.height <= 0 || im.pix.size() < (size_t)im.width * im.height) return;
+    if (im.width <= 0 || im.height <= 0 || im.pix.size() < (size_t)im.width * im.height) {
+        S.imgW = S.imgH = 0; S.last = dect2::FaxImage();      // the decoder started a new picture (cleared): drop the old one too
+        return;
+    }
     const int th = std::max(1500, im.height);
     if (!S.img || S.texW != im.width || S.texH < im.height) {
         delete S.img;
@@ -340,6 +344,7 @@ void saveFax() {
 }
 
 void faxView(App& a) {
+    S.faxShown = true;
     const dect2::MarineTelemetry& t = a.rx.marine;
     const dect2::MarineFaxInfo& f = t.fax;
     static const char* const lpmN[] = {"lpm: detect", "60 lpm", "90 lpm", "120 lpm", "240 lpm"};
@@ -364,8 +369,11 @@ void faxView(App& a) {
     if (ImGui::SmallButton("1:1")) { S.zoom = 1; }
     flowNext(14 * gUi);
     ImGui::BeginDisabled(S.last.width <= 0);
-    if (ImGui::SmallButton("save PNG")) saveFax();
+    if (ImGui::SmallButton(tr("save PNG"))) saveFax();
     ImGui::EndDisabled();
+    ImGui::SameLine();
+    if (ImGui::SmallButton(tr("clear picture##faxclr"))) { a.engine.marine().clearFax(); marineFaxClearUi(); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay."));
     flowEnd();
     static const char* const st[] = {"waiting for the start tone", "phasing", "receiving", "stopped"};
     { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s, IOC %d, %d lpm, %d lines, %d px wide, slant %+.1f ppm, black at %.0f Hz (%+.0f Hz off), last tone %.0f Hz",
@@ -653,7 +661,12 @@ void tab(App& a) {
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("auto: by the frequency (490, 518, 4209.5 kHz NAVTEX; the DSC frequencies; otherwise fax).\nWith the test signal or a recording every decoder runs.");
     }
     ImGui::SameLine();
-    if (ImGui::SmallButton("clear")) a.engine.marine().clearMessages();
+    if (ImGui::SmallButton("clear")) {
+        a.engine.marine().clearMessages();
+        if (S.faxShown) { a.engine.marine().clearFax(); marineFaxClearUi(); }   // the Fax view is open: this button clears its picture too
+    }
+    if (ImGui::IsItemHovered() && S.faxShown) ImGui::SetTooltip("%s", tr("Clears the NAVTEX and DSC lists and the weather fax picture."));
+    S.faxShown = false;       // faxView() sets it again in this frame when the Fax view is drawn
     if (S.view == 0 || S.view == 1) {   // NAVTEX and DSC: hear the FSK tones (fax has its own control in its view)
         ImGui::SameLine(0, 14 * gUi);
         listenControls(a, S.listen, "faxListen", "marfsk", "Play the sideband from the dial up on the sound card (the FSK tones); decoding is the same either way");
@@ -827,6 +840,14 @@ const ModeUi kMarineUi = {
 };
 
 // the last weather fax picture for the results file (results_ui.cpp): shown again until a new one comes in
+// the picture on screen and the saved copy: empty (the engine side is MarineReceiver::clearFax). Also used by the top bar's Clear all.
+void marineFaxClearUi() {
+    S.last = dect2::FaxImage();
+    S.imgW = S.imgH = 0;
+    S.zoom = 0; S.pan = ImVec2(0, 0);
+    S.saveMsg.clear();
+    S.faxes.clear();
+}
 std::string marineFaxSave() { return dect2::results::pack(S.last); }
 bool marineFaxLoad(const std::string& blob) {
     dect2::FaxImage im;

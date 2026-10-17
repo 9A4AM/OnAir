@@ -3,6 +3,7 @@
 #include "../adsb/adsb_map.h"
 #include "app.h"
 #include "map/pos_predict.h"
+#include "map/derived_kin.h"
 #include "state/results_export.h"
 #include "dect2/acars/acars_tel.h"
 #include <algorithm>
@@ -90,6 +91,15 @@ pospred::Layer gPred;
 std::unordered_map<std::string, double> gFedPosT;
 
 dect2::track::Key estKey(const dect2::AcarsAircraft& c) { return c.icao ? dect2::track::keyFromIcao(c.icao) : dect2::track::keyFromText(c.reg); }
+
+// speed, track and vertical rate: the report's own, else the filter's, else from the last two positions (~)
+std::string icaoText(uint32_t a) { char b[16]; if (!a) return ""; snprintf(b, sizeof b, "%06X", a & 0xFFFFFF); return b; }
+
+derivedkin::Info kinOf(const dect2::AcarsAircraft& c, double now) {
+    dect2::geo::KinMeasured m;
+    if (c.hasSpeed) { m.hasGs = true; m.gsKt = c.speedKt; if (c.hasTrack) { m.hasTrack = true; m.trackDeg = c.trackDeg; } }
+    return derivedkin::compute(c.track, m, derivedkin::estimated(gPred.hub, gPred.predict, estKey(c), now, c.track.size()));
+}
 
 void feedEstimates(const dect2::AcarsTelemetry& t) {
     gPred.load("acars", true, true);
@@ -397,8 +407,13 @@ void mapSide(App& a) {
     if (c->hasPos) {
         kv("position", "%.4f %.4f", c->lat, c->lon);
         if (c->hasAlt) kv("altitude", "%d ft", c->altFt); else kv("altitude", "%s", "-");
-        if (c->hasTrack) kv("track", "%.0f deg%s", c->trackDeg, c->posSource == 1 && c->hasSpeed ? "" : " (from the last two positions)");
-        if (c->hasSpeed) kv("speed", "%.0f kt over the ground", c->speedKt);
+        {
+            derivedkin::Lines L;
+            if (derivedkin::lines(kinOf(*c, t.nowSec), L)) {
+                kv("speed", "%s", L.gs.c_str()); kv("track", "%s", L.track.c_str()); kv("v. rate", "%s", L.vs.c_str());
+                if (!L.note.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", L.note.c_str()); ImGui::PopTextWrapPos(); }
+            }
+        }
         kv("source", "%s", c->posKind.c_str());
         if (c->reportSecPastHour >= 0) { const int s = (int)c->reportSecPastHour; kv("report", "at xx:%02d:%02d (minutes past the hour)", s / 60, s % 60); }
         else if (c->reportSecOfDay >= 0) { const int s = c->reportSecOfDay; kv("report", "at %02d:%02d:%02d UTC", s / 3600, s / 60 % 60, s % 60); }
@@ -448,11 +463,26 @@ void mapView(App& a) {
 void aircraftView(const App& a) {
     const dect2::AcarsTelemetry& t = a.rx.acars;
     const bool on = live(a);
-    if (!ImGui::BeginTable("##acair", 9, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
+    {
+        static std::string note;
+        resexp::Table x; x.cols = {"registration", "flight", "icao", "lat", "lon", "alt_ft", "gs_kt", "track_deg", "gs_derived_kt", "track_derived_deg", "vrate_derived_fpm", "derived_dt_s"};
+        if (on) for (const auto& c : t.aircraft) {
+            if (!c.hasPos) continue;
+            const derivedkin::Info k = kinOf(c, t.nowSec);
+            x.add({c.reg, c.flight, icaoText(c.icao), resexp::num(c.lat, 5), resexp::num(c.lon, 5), c.hasAlt ? std::to_string(c.altFt) : "",
+                   c.hasSpeed ? resexp::num(c.speedKt, 0) : "", c.hasSpeed && c.hasTrack ? resexp::num(c.trackDeg, 0) : "",
+                   k.d.ok ? resexp::num(k.d.gsKt, 0) : "", k.d.ok && k.d.hasTrack ? resexp::num(k.d.trackDeg, 0) : "", k.d.ok && k.d.hasVs ? resexp::num(k.d.vsFpm, 0) : "",
+                   k.d.ok ? resexp::num(k.d.dtSec, 0) : ""});
+        }
+        resexp::saveButton(x, "acars_aircraft", note, "svacair");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
+    if (!ImGui::BeginTable("##acair", 12, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
     ImGui::TableSetupColumn("Registration"); ImGui::TableSetupColumn("Flight"); ImGui::TableSetupColumn("Blocks"); ImGui::TableSetupColumn("Last label");
     ImGui::TableSetupColumn("MHz"); ImGui::TableSetupColumn("Level dB"); ImGui::TableSetupColumn("Last heard");
     ImGui::TableSetupColumn("Position"); ImGui::TableSetupColumn("Alt ft");
+    ImGui::TableSetupColumn("Speed"); ImGui::TableSetupColumn("Track"); ImGui::TableSetupColumn("V/S");
     ImGui::TableHeadersRow();
     if (on) {
         for (const auto& c : t.aircraft) {
@@ -466,6 +496,10 @@ void aircraftView(const App& a) {
             ImGui::TableNextColumn(); ImGui::TextUnformatted(ago(t.nowSec, c.lastHeardSec).c_str());
             ImGui::TableNextColumn(); if (c.hasPos) { ImGui::PushTextWrapPos(0); ImGui::Text("%.3f %.3f (%s ago)", c.lat, c.lon, ago(t.nowSec, c.posTime).c_str()); ImGui::PopTextWrapPos(); } else ImGui::TextUnformatted("-");
             ImGui::TableNextColumn(); if (c.hasPos && c.hasAlt) ImGui::Text("%d", c.altFt); else ImGui::TextUnformatted("-");
+            const derivedkin::Info k = c.hasPos ? kinOf(c, t.nowSec) : derivedkin::Info();
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(derivedkin::gsText(k.v).c_str()); if (ImGui::IsItemHovered() && !derivedkin::explain(k).empty()) ImGui::SetTooltip("%s", derivedkin::explain(k).c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(derivedkin::trackText(k.v).c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(derivedkin::vsText(k.v).c_str());
         }
     }
     ImGui::EndTable();
@@ -637,6 +671,9 @@ void meters(const App& a, std::vector<ModeMeter>& out) {
 }
 
 } // namespace
+
+// For the map upload (app/map/map_send.cpp)
+derivedkin::Info acarsKinematics(const dect2::AcarsAircraft& c, double now) { return kinOf(c, now); }
 
 extern const ModeUi kAcarsUi;
 const ModeUi kAcarsUi = {

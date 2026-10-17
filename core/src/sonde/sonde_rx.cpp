@@ -1,5 +1,6 @@
 // Radiosonde receiver (see sonde_rx.h).
 #include "dect2/sonde/sonde_rx.h"
+#include "dect2/automation/engine.h"
 #include "dect2/results/results_io.h"
 #include "dect2/dsp/fftutil.h"
 #include "dect2/sonde/sonde_geo.h"
@@ -59,6 +60,7 @@ struct SondeRec {
     SondeInfo info;
     std::string key;
     double lastFixT = -1e9, firstT = 0;
+    double autoEmit = -1e9;   // the automations: when this sonde was last reported
     std::vector<SondeTrackPoint> track;
     double trackStepS = 1.0, lastTrackT = -1e9;
     double announcedHz = 0;
@@ -576,6 +578,17 @@ struct SondeReceiver::Impl {
         else if (f.type == "RS41") { s.calDone = s.calTotal = kRs41CalFrames; }
         else if (f.type == "RS92") { s.calDone = s.calTotal = kRs92CalFrames; }
         if (fx.announcedHz > 0) r->announcedHz = fx.announcedHz;
+        if (f.hasPos && automation::wants(automation::FSonde) && tNow - r->autoEmit >= 5.0) {   // the automations: a frame with a position, at most every 5 s per sonde
+            r->autoEmit = tNow;
+            automation::Event ev("sonde.update");
+            ev.at(automation::wallNow(), "Sonde", centerHz > 0 ? centerHz + s.offsetHz : 0);
+            ev.str("serial", s.serial).str("type", s.type).num("lat", s.lat).num("lon", s.lon).num("alt_m", s.altM);
+            if (s.hasVel) ev.num("vspeed_ms", s.vSpeed).num("hspeed_ms", s.hSpeed);
+            if (s.hasTemp) ev.num("temp_c", s.tempC);
+            if (s.batteryV >= 0) ev.num("batt_v", s.batteryV);
+            if (s.sats >= 0) ev.num("sats", s.sats);
+            automation::emit(std::move(ev));
+        }
     }
 
     void report(double tNow) {

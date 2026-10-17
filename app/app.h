@@ -22,6 +22,7 @@
 #include "dect2/t2/t2rx.h"
 #include "dect2/net/nettuner.h"
 #include "dect2/net/netradio.h"
+#include "dect2/net/kiwisdr.h"
 #include "dect2/source/hamlib_rig.h"
 #include "dect2/source/rig_setup.h"
 #include "platform/airplay.h"
@@ -46,7 +47,6 @@
 #include "ui/theme.h"
 #include "gfx/gfx.h"
 #include "ui/icons.h"
-#include "ui/mascot.h"
 #include "ui/scale.h"
 #include "platform/platform.h"
 
@@ -253,7 +253,7 @@ using SavedChannel = plat::Channel;
 // parts of the window the tour points at
 enum WizTarget { TgNone = 0, TgSwitch, TgToolbar, TgMain, TgRight, TgConst, TgCount };
 
-constexpr int kNumFamilies = 85;   // App::family runs from 0 to kNumFamilies - 1
+constexpr int kNumFamilies = 86;   // App::family runs from 0 to kNumFamilies - 1
 constexpr int kNumSubModes = 32;   // dect2::subModes(): the protocols of HF digital, mesh, pagers, marine and VOR / ILS listed as modes of their own
 constexpr int kNumSlots = kNumFamilies + kNumSubModes;   // what keeps its own frequency and gains: each family, and each protocol entry
 
@@ -270,6 +270,7 @@ struct App {
     int creditsTab = 0;         // 0 Contributors, 1 Projects and licences (the tab the Credits window opens on)
     bool creditsOpen = false;   // the Credits window (Help menu, the "by: ..." button)
     bool galleryOpen = false;           // the picture gallery (View > Images)
+    bool dfOpen = false;                // the direction finder window (View > Direction finder; app/df)
     bool passesOpen = false;            // the satellite pass planner window (View > Passes)
     bool sweepOpen = false;             // the sweep scanner window (View > Sweep scanner)
     bool scannerOpen = false;           // the scanner window (View > Scanner, highly experimental)
@@ -315,6 +316,14 @@ struct App {
     char netAddHost[128] = "";
     int netAddPort = 1234;
     char netAddRemote[128] = "";   // SoapyRemote: the server radio to ask for ("mirisdr", "driver=sdrplay,serial=1")
+    char netAddPass[128] = "";     // KiwiSDR: the receiver's password (blank: none); wiped after the radio is added, never logged
+    // "Find KiwiSDR": the public list, downloaded only when the user clicks (kiwiFindWindow, toolbar_rig.cpp)
+    struct KiwiFetch { std::atomic<bool> done{false}; bool ok = false; std::string err; std::vector<KiwiServer> list; };
+    std::shared_ptr<KiwiFetch> kiwiFetch;
+    std::vector<KiwiServer> kiwiList;
+    bool kiwiFindOpen = false;
+    char kiwiFilter[64] = "";
+    char kiwiListUrl[256] = "";
     std::string netAddErr;
     // a search for Hermes Lite 2 radios (a discovery broadcast) running on a worker thread, and what the last one found
     struct NetDiscovery { std::atomic<bool> done{false}; std::vector<FoundNetRadio> found; };
@@ -373,12 +382,14 @@ struct App {
     bool reduceCpuHidden = true;   // View > Reduce CPU when hidden: no drawing while the window is minimised or hidden (decoding goes on)
     bool discordOn = false, discordFreq = true;   // View > Show in Discord (opt-in Rich Presence, discord_rpc.cpp) and its "Show the frequency"
     bool mapSend = false, mapConsent = false;     // Server > Send data to map server (opt-in; consent once)
+    bool mapVoice = false;                        // Server > also share transcripts of airband radio calls (public text; own choice, off until chosen)
     bool mapMsgs = false;                         // Server > also share interesting ACARS messages (free text becomes public); off until chosen
     std::string mapDeclinedVersion;               // ONAIR_VERSION when "No, do not ask again" was chosen; another version asks again
     bool mapDeclined = false;                     // the start-up question was answered "No, do not ask again" (the Server menu still works)
     std::string mapStationId;                     // client id for /ingest, generated once
     std::string mapServer;                        // empty: https://map.on-air.dev (a local worker URL for developers)
     bool feedsOpen = false;   // View > Data feeds: the window (feeds_ui.cpp)
+    bool automationOpen = false;   // View > Automations: rules and scripts (automation_ui.cpp)
     dect2::FeedConfig feeds;  // the data feeds out (all off by default), saved with the preferences
     dect2::ShareConfig share; // "Share my radio": the rtl_tcp server (off by default; feeds_ui.cpp), saved with the preferences
     dect2::PskReporterConfig pskr;   // PSK Reporter spots (off by default; feeds_ui.cpp), saved with the preferences
@@ -668,6 +679,9 @@ std::string mapSendStatusLine();                    // short "connected / N sent
 std::string mapSendDiagnosticsBlock(const App& a);  // map.on-air.dev ingest state + recent log for Copy diagnostics
 void passesDevTle(const std::string& path);       // dev (--tle): TLEs from a file, as if pasted
 std::vector<std::pair<std::string, double>> passesGlobalstarDoppler(double unixSec, double freqHz);   // passes_ui.cpp: Globalstar satellites above the horizon and their Doppler (TLEs from the planner)
+struct DfMapLine { double lat = 0, lon = 0, bearing = 0, sigma = 5, conf = 0, freqHz = 0, ageSec = 0; };
+void dfWindow(App& a);                              // df_ui.cpp: the direction finder window (a.dfOpen), every frame
+bool dfMapLine(const App& a, DfMapLine& out);       // df_ui.cpp: the current bearing as a map line, only when the user chose to share it and it is fresh and confident
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
 void memoryWindow(App& a);                         // memory_ui.cpp: the Memory window (a.memoryOpen), the Ctrl+M key, the scan of the flagged memories, every frame
 void freqdbWindow(App& a);                          // freqdb_ui.cpp: the Frequencies window (a.freqOpen), the Ctrl+Shift+F key, every frame
@@ -746,6 +760,7 @@ int subIndexOf(const char* id);                // 1 .. kNumSubModes, 0 when not 
 int modeSlot(const App& a);                    // index of famFreq / famGain for the current entry
 int engineStd(const App& a);
 void refreshDevices(App& a);
+void kiwiFindWindow(App& a);    // the "Find KiwiSDR" window (toolbar_rig.cpp)
 void netRadioWindow(App& a);   // the "Add network radio" window (toolbar_rig.cpp)
 void hamlibRigWindow(App& a);  // the "Add Hamlib rig" window (toolbar_rig.cpp)
 void applyBandwidth(App& a);
@@ -779,6 +794,8 @@ void remoteApiSavePrefs(const App& a);
 void remoteApiTick(App& a);          // every frame: runs the commands the API queued for the main thread, publishes the telemetry
 void remoteApiSection(App& a);       // the settings panel (in the Data feeds window)
 void shareTick(App& a);             // feeds_ui.cpp: carries out the frequency / gain commands of the clients of "Share my radio" (when allowed)
+void automationWindow(App& a);   // automation_ui.cpp: the Automations window (View > Automations) and, every frame, the engine's actions that touch the receiver
+extern std::string gAutomationShotPath;   // automation_sink.cpp: a screenshot of the program's own window is saved here after the next frame (then cleared)
 void feedsWindow(App& a);          // feeds_ui.cpp: the "Data feeds" window (View > Data feeds)
 void rotatorWindow(App& a);        // rotator_ui.cpp: GS-232 rotator connect / status
 void rotatorTick(App& a);          // rotator_ui.cpp: signal-peak azimuth calibration sweep
@@ -963,6 +980,7 @@ void supportButton();
 std::string modeCreditsLine(const char* modeName);   // "\n\nCredits: a, b" for a mode's tooltip, empty when nobody is credited for it (credits_ui.cpp)
 void creditsWindow(App& a);   // Help, Credits and licences: the projects OnAir uses (app/panels/credits_ui.cpp)
 void clearAllButton(App& a);   // top bar, next to the version: empties every decoded list, after an "are you sure"
+void marineFaxClearUi();     // marine_ui.cpp: empties the weather fax picture on screen and in the saved copy (engine side: MarineReceiver::clearFax)
 bool updateOnExit(App& a);
 void constellationsTab(App& a);
 void channelTab(App& a);
@@ -1058,9 +1076,11 @@ void fmRadioPanel(App& a);
 void fmTune(App& a, double mhz);
 // wizard.cpp
 void wizEnter(App& a, int step);
-void wizAction(App& a, int step);
-void wizFinish(App& a);
-void wizard(App& a, ImVec2 disp);
+void wizAction(App& a, int step);   // tour.cpp: step 2 starts the synthetic demo signal (the DECT2_DEMO test hook)
+void wizard(App& a, ImVec2 disp);                      // tour.cpp: the first-run tour, each frame
+void tourStart(App& a);                                // tour.cpp: (re)start the tour from the first step
+void tourMark(const char* id, ImVec2 lo, ImVec2 hi);   // tour.cpp: report where a part of the window is this frame (the tour points at it)
+void wizEnter(App& a, int step);
 void setupWizardOpen(App& a);                        // wizard.cpp: (re)start the setup wizard
 void setupWizard(App& a, ImVec2 disp);               // wizard.cpp: the window, each frame
 #include "dect2/engine/device_claims.h"

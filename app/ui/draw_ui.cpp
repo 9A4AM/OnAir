@@ -7,6 +7,7 @@
 #include "app.h"
 #include "ui/contrast.h"
 #include "ui/touch.h"
+#include "clips/clips_ui.h"
 #include "dect2/source/iq_file.h"
 #include "panels/gallery.h"
 #include "dect2/engine/crash_report.h"
@@ -58,6 +59,7 @@ static void tickReceiver(App& a) {
 
 // F toggles the video-only view; Escape leaves it
 static void videoOnlyKeys(App& a) {
+    clipsui::tick(a);   // radio clips: settings, the audio ring, the C key and the dialog
     ImGuiIO& io = ImGui::GetIO();
     if (!io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_F, false)) {
         if (a.videoOnly) { a.videoOnly = false; if (glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
@@ -120,8 +122,8 @@ static void classicTopBar(App& a, ImVec2 disp) {
     if (ImGui::SmallButton(tr("Touch"))) { a.touchUi = true; savePrefs(a); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Switch to the touch interface (big buttons, on-screen keypad). You can switch back at any time."));
     ImGui::SameLine();
-    if (ImGui::SmallButton(tr("Tour"))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Take the guided tour with Onny"));
+    if (ImGui::SmallButton(tr("Tour"))) tourStart(a);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Take the guided tour"));
     a.tgMin[TgSwitch] = ImVec2(sw0.x - 2, sw0.y - 2); a.tgMax[TgSwitch] = ImVec2(sw0.x + gSwitchWidth + 20, ImGui::GetCursorScreenPos().y);
 }
 
@@ -168,6 +170,7 @@ static void classicShell(App& a, ImVec2 disp) {
 // the windows over the interface (passes, images, scanner, tours, feeds, map, rotator) and the per-frame ticks of the shared services
 static void floatingWindows(App& a, ImVec2 disp) {
     passesWindow(a);
+    dfWindow(a);
     galleryWindow(a);
     scannerWindow(a);
     sweepWindow(a);
@@ -175,6 +178,7 @@ static void floatingWindows(App& a, ImVec2 disp) {
     freqdbWindow(a);
     // the "add a radio" windows: here, not with the source controls, so they open whichever layout is up and from the setup wizard too
     netRadioWindow(a);
+    kiwiFindWindow(a);
     hamlibRigWindow(a);
     setupWizard(a, disp);
     wizard(a, disp);
@@ -185,6 +189,7 @@ static void floatingWindows(App& a, ImVec2 disp) {
     a.engine.setWideDecode(a.wideDecode && modeSupportsWideHf(a.family));
     a.engine.setMultiChannel(a.mtvOn && a.family == 0, a.mtvMax, a.mtvGrid);
     feedsWindow(a);
+    automationWindow(a);
     txTick(a);
     shareTick(a);
     remoteApiTick(a);

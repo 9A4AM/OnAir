@@ -3,6 +3,7 @@ import { parseIngestBody } from "./lenient-json.js";
 import { TrailStore, SqlBackend } from "./trail-store.js";
 import { parseTrailRequest } from "./trail.js";
 import { TrackBook, sanitize, positionTimeMs, TTL_MS } from "./track-book.js";
+import { computeFixes, DOA_TTL_MS, MAX_DOA_PER_INGEST } from "./doa.js";
 
 
 // sanitize is exported for the tests (it already was, from this file)
@@ -119,6 +120,7 @@ export class MapHub {
     add("src", "TEXT");
     add("age", "REAL");
     add("path", "TEXT");
+    add("dv", "INTEGER");    // 1: speed / heading / vertical rate are derived from position reports (or estimated), not broadcast
     add("est", "INTEGER");   // 1: the position is an estimate (dead reckoning) the app sent, not a received fix
     sql.exec(`
       CREATE TABLE IF NOT EXISTS meta (
@@ -139,7 +141,7 @@ export class MapHub {
     // The whole live picture is read once per start; from here on SQLite is write-behind storage, not the source.
     const now = Date.now();
     this.book.load(sql.exec(
-      "SELECT id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, path, est FROM tracks",
+      "SELECT id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, path, est, dv FROM tracks",
     ).toArray());
     this.book.expire(now);
     for (const r of sql.exec("SELECT id, last, n FROM stations").toArray()) this.stationMap.set(r.id, { last: r.last, n: r.n, wAt: now, dirty: false });
@@ -209,16 +211,16 @@ export class MapHub {
     this.ctx.storage.transactionSync(() => {
       for (const t of upserts) {
         sql.exec(
-          `INSERT INTO tracks (id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, path, est)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `INSERT INTO tracks (id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, path, est, dv)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(id) DO UPDATE SET
              kind=excluded.kind, label=excluded.label, sub=excluded.sub,
              lat=excluded.lat, lon=excluded.lon, alt=excluded.alt,
              heading=excluded.heading, speed=excluded.speed, extra=excluded.extra, t=excluded.t,
              squawk=excluded.squawk, cat=excluded.cat, vrate=excluded.vrate, src=excluded.src,
-             age=excluded.age, path=excluded.path, est=excluded.est`,
+             age=excluded.age, path=excluded.path, est=excluded.est, dv=excluded.dv`,
           t.id, t.kind, t.label, t.sub, t.lat, t.lon, t.alt, t.heading, t.speed, t.extra, t.t,
-          t.squawk, t.cat, t.vrate, t.src, t.age, JSON.stringify(t.path), t.est ? 1 : 0,
+          t.squawk, t.cat, t.vrate, t.src, t.age, JSON.stringify(t.path), t.est ? 1 : 0, t.dv ? 1 : 0,
         );
       }
       for (let i = 0; i < deletes.length; i += 90) {
@@ -302,14 +304,18 @@ export class MapHub {
 
     let kept = 0;
     let msgBudgetLeft = MSG_PER_INGEST;
+    let doaLeft = MAX_DOA_PER_INGEST;
+    let sawDoa = false;
     for (const raw of tracks) {
-      const t = sanitize(raw, now);
+      if (raw && raw.kind === "doa") { if (doaLeft-- <= 0) continue; }
+      const t = sanitize(raw, now, station);
       if (!t) continue;
       const row = this.book.accept(t, now);
       if (!row) continue;
       kept++;
       this.trails.record(row.id, { t: positionTimeMs(now, row.age), lat: row.lat, lon: row.lon, alt: row.alt, hdg: row.heading }, now);
       if (row.visible) this.pendingUpserts.set(row.id, row);
+      if (row.kind === "doa") sawDoa = true;
       if (row.kind === "aircraft" && Array.isArray(raw.msgs) && raw.msgs.length && msgBudgetLeft > 0) {
         let list = sanitizeList(raw.msgs, now).slice(0, msgBudgetLeft);
         list = list.slice(0, takeBudget(this.msgBudget, station, list.length, now));
@@ -319,12 +325,35 @@ export class MapHub {
     }
     if (st) { st.last = now; st.n++; st.dirty = true; }
     else { st = { last: now, n: 1, wAt: 0, dirty: true }; this.stationMap.set(station, st); }
+    if (sawDoa) for (const f of this.currentFixes(now)) this.pendingUpserts.set(f.id, f);   // derived fix markers go out with the bearings
     this.touchLoad(now, "ingest");
     this.loadCache = null;
     this.armFlush(now);
     this.scheduleBroadcast();
     this.maybeBroadcastLoad(now);
     return json({ ok: true, n: kept, load: this.loadMetrics(now) });
+  }
+
+  /** Fix markers where bearing lines from different stations on one frequency cross (derived from memory, never stored). */
+  currentFixes(now) {
+    const rows = this.book.doaRows().filter((r) => r.t > now - DOA_TTL_MS);
+    return rows.length > 1 ? computeFixes(rows, now).map((f) => ({ est: 0, dv: 0, _fix: true, ...f })) : [];
+  }
+
+  /** The cached tracks array with the current fix markers appended. */
+  tracksWithFixes(now) {
+    const tj = this.book.tracksJson();
+    const fixes = this.currentFixes(now);
+    if (!fixes.length) return tj;
+    const extra = fixes.map((f) => JSON.stringify(this.fixWire(f))).join(",");
+    return tj.length > 2 ? tj.slice(0, -1) + "," + extra + "]" : "[" + extra + "]";
+  }
+
+  fixWire(t) {
+    return {
+      id: t.id, kind: t.kind, label: t.label, sub: t.sub, lat: t.lat, lon: t.lon, alt: t.alt, heading: t.heading, speed: t.speed,
+      extra: t.extra, t: t.t, squawk: t.squawk, cat: t.cat, vrate: t.vrate, src: t.src, age: t.age, est: t.est ? 1 : 0, dv: t.dv ? 1 : 0,
+    };
   }
 
   // ---------- ACARS messages (cached in memory, written back with the flush) ----------
@@ -397,14 +426,14 @@ export class MapHub {
     }
     if (url.searchParams.get("trails") === "1") {
       const all = this.trails.all();
-      const tracks = JSON.parse(book.tracksJson()).map((t) => (all[t.id] ? { ...t, trail: all[t.id] } : t));
+      const tracks = JSON.parse(this.tracksWithFixes(now)).map((t) => (all[t.id] ? { ...t, trail: all[t.id] } : t));
       return cors(new Response(JSON.stringify({ now, version: book.version, stations, tracks, load: JSON.parse(load) }), { headers: { ...hdr, "Cache-Control": "no-store" } }));
     }
     const etag = `W/"${book.version}"`;
     if (req && req.headers.get("If-None-Match") === etag) {
       return cors(new Response(null, { status: 304, headers: { ETag: etag, "Cache-Control": `public, max-age=${LIVE_EDGE_S}` } }));
     }
-    return cors(new Response(`{"now":${now},"version":${book.version},"stations":${stations},"tracks":${book.tracksJson()},"load":${load}}`,
+    return cors(new Response(`{"now":${now},"version":${book.version},"stations":${stations},"tracks":${this.tracksWithFixes(now)},"load":${load}}`,
       { headers: { ...hdr, "Cache-Control": `public, max-age=${LIVE_EDGE_S}`, ETag: etag } }));
   }
 
@@ -453,7 +482,7 @@ export class MapHub {
     this.expireIfDue(now);
     const book = this.book;
     const lm = this.loadMetrics(now);
-    server.send(`{"type":"hello","now":${now},"version":${book.version},"stations":${lm.stations},"tracks":${book.tracksJson()},"load":${JSON.stringify(lm)}}`);
+    server.send(`{"type":"hello","now":${now},"version":${book.version},"stations":${lm.stations},"tracks":${this.tracksWithFixes(now)},"load":${JSON.stringify(lm)}}`);
     this.maybeBroadcastLoad(now);
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -473,7 +502,10 @@ export class MapHub {
   sendUpserts() {
     if (!this.pendingUpserts.size) return;
     const parts = [];
-    for (const row of this.pendingUpserts.values()) if (this.book.rows.get(row.id) === row) parts.push(this.book.wire(row));
+    for (const row of this.pendingUpserts.values()) {
+      if (row._fix) parts.push(JSON.stringify(this.fixWire(row)));
+      else if (this.book.rows.get(row.id) === row) parts.push(this.book.wire(row));
+    }
     this.pendingUpserts.clear();
     if (parts.length) this.sendAll(`{"type":"upsert","tracks":[${parts.join(",")}]}`);
   }

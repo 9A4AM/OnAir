@@ -175,7 +175,6 @@ Back	Atgal
 Next	Toliau
 Finish	Baigti
 Skip	Praleisti
-Skip tour	Praleisti apžvalgą
 Dismiss	Paslėpti
 Again	Dar kartą
 Auto	Auto
@@ -219,7 +218,6 @@ New interface	Nauja sąsaja
 Try the new interface. You can switch back at any time.	Išbandykite naują sąsają. Grįžti galima bet kada.
 Guided tour	Apžvalga su gidu
 Tour	Apžvalga
-Take the guided tour with Onny	Apžvalga kartu su Onny
 by: Kristijonas Adomaitis, made with help from the community	autorius Kristijonas Adomaitis, padedant bendruomenei
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Ačiū visiems, kurie pranešė apie klaidas, atsiuntė įrašus ir pateikė „pull request“.
 Source	Šaltinis
@@ -484,21 +482,6 @@ Radio settings (%d changed)	Radijo nustatymai (pakeista: %d)
 %s: frequency correction and the other settings of this radio	%s: dažnio korekcija ir kiti šio radijo nustatymai
 The driver's own settings show up here\nonce this radio has been started.	Tvarkyklės nustatymai atsiras čia,\nkai šis radijas bus paleistas.
 0 = libiio's default	0 = libiio numatytoji reikšmė
-#  the guided tour
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	Labas, aš Onny! Esu mažas televizorius, gyvenantis OnAir. Norite trumpos apžvalgos? Ji truks apie minutę, viską parodysiu su demonstraciniu signalu, tad jokios įrangos dar nereikia.
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Čia viršuje pasirenkate transliacijos rūšį: DVB – daugumai pasaulio skaitmeninės televizijos, ATSC – Šiaurės Amerikai, DAB – skaitmeniniam radijui. OnAir turi visus tris vienoje vietoje.
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	Pažiūrėkime, kaip tai veikia! Paleisiu tariamą signalą. Tai programos viduje veikiantis bandomasis siųstuvas, tad nieko jungti nereikia.
-Start the demo signal	Paleisti demonstracinį signalą
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	Matote banguojančią liniją? Tai spektras: kiek stiprus viskas eteryje, iš kairės į dešinę. Aukšta kupra viduryje – mūsų kanalas. Po juo krioklys rodo tą patį, lėtai slenkantį laike.
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	O šie keturi langeliai rodo taškus, kuriuos mato imtuvas. Kai signalas geras, taškai susiburia į tvarkingas grupeles. Netvarkingi taškai reiškia triukšmingą signalą. Dabar tai švari demonstracija, tad jie turėtų atrodyti tvarkingai!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Kai imtuvas prisisinchronizuos, kanalai atsiras čia. Spustelėkite vieną, kad žiūrėtumėte. Yra ir grotuvas su vaizdu ir garsu, laikrodis bei galimybė įrašyti ar transliuoti tai, ką žiūrite.
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	O dabar tikras dalykas. Čia pasirinkite savo radiją, dažnį ir nustatykite stiprinimą. Stiprinimas – tai, kiek radijas sustiprina signalą: per mažai – signalas dingsta, per daug – iškraipomas. Mygtukas „Auto derinimas“ suras gerą reikšmę už jus.
-Stop the demo and look for my radio	Stabdyti demonstraciją ir ieškoti mano radijo
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	Nežinote, kur kanalai? Skirtukas „Paieška“ suras juos už jus. Gera antena, pastatyta aukštai ir prie lango, padeda labiau už bet ką kita. Pažadu!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	Tai ir visa apžvalga! Kanalais su kitais įrenginiais galite dalytis skirtuke „Srautas“ (Išvestys), o mane bet kada sugrąžinsite mygtuku „Apžvalga“ viršuje dešinėje. Malonaus žiūrėjimo!
-Good news: I can see "%s"!	Gera žinia: matau „%s“!
-(I can't see a radio right now. Plug it in and press the button again.)	(Šiuo metu nematau radijo. Prijunkite jį ir dar kartą paspauskite mygtuką.)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	Windows sistemoje HackRF vieną kartą reikia WinUSB tvarkyklės: įdiekite ją su Zadig, zadig.akeo.ie.
 #  passes
 Weather (137 MHz)	Orai (137 MHz)
 Amateur	Mėgėjų
@@ -1267,7 +1250,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	LimeSDR Mini sistemoje Windows reikia FTDI FT60x tvarkyklės (ne Zadig), sistemoje Linux - udev taisyklių, o vieną kartą paleisti "LimeUtil --update", kad jo gateware atitiktų biblioteką.
 Real (mono)	Realus (mono)
 Left	Kairysis
 Right	Dešinysis
@@ -1398,6 +1380,61 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Sunday	sekmadienis
+Monday	pirmadienis
+Tuesday	antradienis
+Wednesday	trečiadienis
+Thursday	ketvirtadienis
+Friday	penktadienis
+Saturday	šeštadienis
+Your radio cannot tune 225 kHz.	Jūsų radijas negali derintis prie 225 kHz.
+Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.	Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.
+time decoded, two packets agree	laikas iškoduotas, du paketai sutampa
+time decoded (one packet)	laikas iškoduotas (vienas paketas)
+carrier found, waiting for a time packet	nešlys rastas, laukiama laiko paketo
+searching for the carrier	ieškoma nešlio
+start the receiver to read the time service	paleiskite imtuvą, kad būtų skaitoma laiko tarnyba
+local time	vietos laikas
+last packet	paskutinis paketas
+summer time	vasaros laikas
+the local time changes next Sunday at 01:00 UTC (summer / standard time)	vietos laikas keisis kitą sekmadienį 01:00 UTC (vasaros / žiemos)
+no change announced	pakeitimas nepaskelbtas
+leap second	keliamoji sekundė
+one is to be removed at the end of the quarter	ketvirčio pabaigoje viena bus pašalinta
+one is to be added at the end of the quarter	ketvirčio pabaigoje viena bus pridėta
+none announced	nepaskelbta
+transmitter	siųstuvas
+computer clock	kompiuterio laikrodis
+ahead	pirmauja
+behind	vėluoja
+The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.	The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.
+nothing to compare (a recording)	nėra ką lyginti (įrašas)
+once the time is decoded	kai laikas bus iškoduotas
+path	trasa
+; set your position in ADS-B (Receiver position) for the right delay	; set your position in ADS-B (Receiver position) for the right delay
+clock offset	laikrodžio paklaida
+level	lygis
+start the receiver to see the signal	paleiskite imtuvą, kad pamatytumėte signalą
+carrier	nešlys
+phase of the carrier	nešlio fazė
+The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.	The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.
+signal at the bit slicer	signalas prie bitų sprendiklio
+The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.	The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.
+Computer UTC	Kompiuterio UTC
+Frame	Kadras
+Result	Rezultatas
+no frame yet: a time packet comes every few slots of the minute frame	kadro dar nėra: laiko paketas ateina kas kelis minutės kadro laiko tarpus
+, audio recording	, garso įrašas
+Recording of the radio's audio	Radijo garso įrašas
+Audio, not IQ	Garsas, ne IQ
+The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.	The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.
+carrier tone Hz	nešlio tonas Hz
+The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).	The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).
+Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).	Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).
+Carrier	Nešlys
+Sync	Sinchr.
+The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).	The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).
+LW time service, Poland	LW laiko tarnyba, Lenkija
 Predict positions	Prognozuoti padėtis
 Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	Užpildo tarpus tarp padėties pranešimų: orlaivis juda sklandžiai, o kai pranešimai nutrūksta, jo vieta skaičiuojama pagal kursą (ir pagal maršrutą, jei pranešime nurodyta paskirties vieta). Prognozuotos padėtys piešiamos kaip šmėkla su punktyriniu žiedu.
 uncertainty	neapibrėžtis
@@ -1530,7 +1567,6 @@ Source...	Šaltinis...
 Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Perjungia į įrašo režimą, pritaiko jo derinimą ir suderina dažnį. Dukart spustelėjus eilutę atsitinka tas pats. Veikiantis imtuvas paleidžiamas iš naujo pasikeitus režimui.
 Tuned: %s  %s MHz	Suderinta: %s  %s MHz
 Well-known frequencies of this mode: pick one to tune to it	Šio režimo žinomi dažniai: pasirinkite, kad suderintumėte
-Carrier	Carrier
 Stop scan##dsc	Stop scan##dsc
 Scan band##dsc	Scan band##dsc
 DECT carrier %d, %.3f MHz	DECT carrier %d, %.3f MHz
@@ -1547,6 +1583,27 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	nRSP-ST pasiekiamas per SDRconnect: paleiskite SDRconnect (arba jo headless versiją) kompiuteryje su įjungtu WebSocket serveriu (prievadas 5454) ir pasirinktu nRSP-ST, tada įveskite to kompiuterio adresą. Slaptažodžio nereikia ir jis nesaugomas.
+#  the guided tour
+Tuning and gain	Derinimas ir stiprinimas
+Modes	Režimai
+Spectrum and waterfall	Spektras ir krioklys
+Mode panel	Režimo skydelis
+Memory and frequencies	Atmintis ir dažniai
+Receivers	Imtuvai
+Audio	Garsas
+Server and support	Serveris ir parama
+Done	Atlikta
+Take the guided tour	Pradėti gidą
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Pasirinkite radiją arba įrašą, kuris teikia atskaitas. Record IQ išsaugo neapdorotą signalą vėlesniam atkūrimui.
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Čia nustatomas dažnis, juosta ir atskaitų dažnis. Stiprinimas ir AGC nustato įėjimo lygį; Antras režimas iš to paties įrašo dekoduoja kitą režimą.
+%d modes, grouped by family. Use the search box to find one by name.	%d režimų, sugrupuotų pagal šeimas. Paieškos laukelyje galite rasti režimą pagal pavadinimą.
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	Spustelėkite norėdami derinti, ratuku keiskite mastelį. Peak hold išlaiko stipriausią kiekviename dažnyje matytą lygį.
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	Kiekvienas režimas turi savo korteles dekoduotai išvesčiai, nustatymams ir įrankiams. Jos keičiasi pagal pasirinktą režimą.
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	Atmintis saugo dažnius su jų režimu ir nustatymais. Dažniai ir juostų planai parodo, kas transliuojama, pagal režimą.
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	Kiekvienas imtuvas sieja radiją su režimu. Ši juosta perjungia juos ir parenka, kuris groja garsą.
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen groja demoduliuotą signalą. Garsumas ir nutildymas čia; Record audio įrašo garsą į failą.
+Server sends decoded positions to the public map. Support helps fund development.	Serveris siunčia dekoduotas pozicijas į viešą žemėlapį. Parama padeda finansuoti kūrimą.
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Čia rasite dokumentaciją, trikčių šalinimą, padėkas ir licencijas. Gidas paleidžia šį gidą iš naujo.
 Monitor audio	Garso stebėjimas
 Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Klausykitės suderinto kanalo bet kuriuo režimu, kad atpažintumėte signalą: radijo mėginiai demoduliuojami kaip USB, LSB, siaura FM arba AM. Tylu, kol režimas groja savo garsą.
 Auto: USB below 30 MHz, narrow FM above	Auto: USB žemiau 30 MHz, siaura FM aukščiau
@@ -1593,6 +1650,66 @@ testing	testavimas
 idea	idėja
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Ačiū visiems, kurie atsiuntė pataisymų, pranešė apie klaidas, pasidalijo įrašais, vertė ar siūlė idėjų. Autorius yra Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Norite, kad pakeistume ar pašalintume jūsų vardą? Parašykite mums Discord arba sukurkite issue.
+# direction finder
+Cannot open the recording (interleaved complex float32, one sample of every channel after the other).	Nepavyksta atidaryti įrašo (kompleksinis float32, persipynęs: iš eilės po vieną kiekvieno kanalo skaitmenį).
+The recording has a different number of channels than the array.	Įrašo kanalų skaičius skiriasi nuo gardelės.
+Choose a source first.	Pirmiausia pasirinkite šaltinį.
+No data to calibrate with.	Nėra duomenų kalibravimui.
+Calibration stored.	Kalibravimas išsaugotas.
+Add this bearing	Pridėti šią kryptį
+Keeps the current bearing and your position as a line. Move, or take bearings from other stations, add more lines and the position is fixed where they cross.	Išsaugo dabartinę kryptį ir jūsų vietą kaip liniją. Pasislinkite arba paimkite kitų stočių kryptis, pridėkite daugiau linijų ir vieta nustatoma ten, kur jos susikerta.
+Clear lines	Išvalyti linijas
+Position	Vieta
+95%% ellipse %.1f x %.1f km, %d of %d lines used	95%% elipsė %.1f x %.1f km, panaudota %d iš %d linijų
+The lines do not cross (parallel, or they meet behind the stations).	Linijos nesikerta (lygiagrečios arba susitinka už stočių).
+Direction finder	Krypčių ieškiklis
+Simulator (demo, no hardware)	Simuliatorius (demonstracija, be įrangos)
+Recording (cf32 / SigMF)	Įrašas (cf32 / SigMF)
+KrakenSDR bearing file (JSON)	KrakenSDR krypčių failas (JSON)
+Lock to the tuned frequency	Užrakinti ties suderintu dažniu
+Run	Veikia
+path of the recording	įrašo kelias
+a file the DoA server's JSON lines are saved to	failas, į kurį įrašomos DoA serverio JSON eilutės
+channels	kanalai
+kS/s	kS/s
+Bearing	Kryptis
+Confidence	Patikimumas
+Sidelobe %.0f dB, coherence %.2f	Šoninė skiltis %.0f dB, koherencija %.2f
+Waiting for a bearing.	Laukiama krypties.
+Array and estimator	Antenų gardelė ir vertintuvas
+Circular (KrakenSDR)	Apskritimo (KrakenSDR)
+Linear	Tiesinė
+Array	Antenų gardelė
+Elements	Elementai
+Spacing (wavelengths)	Atstumas (bangos ilgiais)
+Array orientation	Gardelės orientacija
+Compass offset	Kompaso poslinkis
+Added to every bearing: where the array's own north points relative to true north.	Pridedamas prie kiekvienos krypties: kur gardelės šiaurė rodo tikrosios šiaurės atžvilgiu.
+Interferometer	Interferometras
+Estimator	Vertintuvas
+Sources	Šaltiniai
+Forward-backward averaging (reflections)	Pirmyn-atgal vidurkinimas (atspindžiai)
+Calibration	Kalibravimas
+1. Feed all channels the same signal: the receiver's noise source (KrakenSDR: switch it on in the DAQ), or a signal from a known bearing. 2. Choose the matching mode and press Calibrate. The offsets between the channels are measured and removed.	1. Duokite visiems kanalams tą patį signalą: imtuvo triukšmo šaltinį (KrakenSDR: įjunkite DAQ) arba signalą iš žinomos krypties. 2. Pasirinkite atitinkamą režimą ir spauskite Kalibruoti. Skirtumai tarp kanalų išmatuojami ir pašalinami.
+Common noise source	Bendras triukšmo šaltinis
+Known bearing	Žinoma kryptis
+Bearing of the source	Šaltinio kryptis
+Calibrate	Kalibruoti
+Forget	Pamiršti
+Use calibration	Naudoti kalibravimą
+Not calibrated.	Nekalibruota.
+Simulated channel errors	Simuliuotos kanalų klaidos
+Simulator	Simuliatorius
+Transmitter bearing	Siųstuvo kryptis
+Spin	Sukti
+SNR per channel	SNR kanalui
+Second transmitter	Antras siųstuvas
+Second bearing	Antra kryptis
+Position fix	Vietos nustatymas
+Sharing	Dalijimasis
+Share my bearing on the map server	Dalytis mano kryptimi žemėlapio serveryje
+Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	Reikia Serveris > Siųsti duomenis į žemėlapio serverį. Siunčiama tik kryptis, jos neapibrėžtis, dažnis ir jūsų stoties vieta; žemėlapyje matoma, kur susikerta kelių stočių kryptys.
+Bearing and position of a transmitter from an antenna array such as the KrakenSDR	Siųstuvo kryptis ir vieta naudojant antenų gardelę, pavyzdžiui, KrakenSDR
 Decoded only	Tik iššifruoti
 Hides tone-only pages and pages whose text could not be decoded.	Paslepia vien tono iškvietimus ir pranešimus, kurių teksto nepavyko iššifruoti.
 %zu tone-only or undecoded pages hidden (Decoded only)	Paslėpta %zu vien tono arba neiššifruotų pranešimų (Tik iššifruoti)
@@ -1615,3 +1732,255 @@ Up	Aukštyn
 Down	Žemyn
 Some digits were corrected or lost: check this row against the next message of the train	Kai kurie skaitmenys ištaisyti arba prarasti: palyginkite šią eilutę su kitu traukinio pranešimu
 Train warning, 821 MHz	Traukinių įspėjimas, 821 MHz
+clear picture	išvalyti vaizdą
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Išvalo vaizdą ir dekoderio surinktas eilutes, o kitu pradžios tonu ar fazavimu pradeda naują vaizdą. Dešiniajame sąraše jau esantys vaizdai lieka.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Išvalo NAVTEX ir DSC sąrašus bei orų fakso vaizdą.
+# radio clips
+Clip	Klipas
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Radijo klipas: išsaugo paskutines akimirkas (spektrogramą, garsą, dekoduotus pranešimus) failu, kuriuo galima dalytis. Klavišas: C
+Radio clip	Radijo klipas
+Last:	Paskutiniai:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Ką matė imtuvas, seniausia kairėje. Šviesesnis reiškia stipresnį signalą. Vilkite, kad pasirinktumėte išsaugotiną dalį.
+Include:	Įtraukti:
+Spectrogram picture	Spektrogramos paveikslėlis
+Decoded messages	Dekoduoti pranešimai
+Title	Pavadinimas
+Your station position is never included.	Jūsų stoties padėtis niekada neįtraukiama.
+Could not save:	Nepavyko išsaugoti:
+Saved: %s (zip %.1f MB)	Išsaugota: %s (zip %.1f MB)
+Save clip	Išsaugoti klipą
+Nothing to save: no waterfall, audio or decoded rows in this range	Nėra ką išsaugoti: šiame intervale nėra krioklio, garso ar dekoduotų eilučių
+Saving...	Saugoma...
+Copy Discord post text	Kopijuoti Discord tekstą
+Copied: paste it into Discord and attach the files	Nukopijuota: įklijuokite į Discord ir pridėkite failus
+Open folder	Atidaryti aplanką
+Memory kept for clips	Klipams laikoma atmintis
+Waterfall history	Krioklio istorija
+%d min	%d min.
+%d MB max	daugiausia %d MB
+Audio history	Garso istorija
+%d s	%d s
+Decoded rows history	Dekoduotų eilučių istorija
+Uses about %.1f MB now	Dabar naudoja apie %.1f MB
+Decoded rows are kept from the results tables you have open.	Dekoduotos eilutės saugomos iš atidarytų rezultatų lentelių.
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	Slaptažodis
+blank if the owner set none	palikite tuščią, jei savininkas nenustatė
+Find KiwiSDR…	Rasti KiwiSDR…
+pick a public receiver from the list	pasirinkti viešą imtuvą iš sąrašo
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	KiwiSDR yra internete esantis imtuvas, apimantis 0–30 MHz; OnAir naudoja jo 12 kHz IQ srautą. Vieši imtuvai turi mažai vartotojų vietų, o daugelis užbaigia seansą po maždaug 30 minučių: naudokite tik vieną ryšį su imtuvu ir išeikite, kai baigsite. Slaptažodis saugomas OnAir nustatymuose.
+S-meter %.0f dBm%s	S-metras %.0f dBm%s
+, ADC overload	, ADC perkrova
+Find KiwiSDR	Rasti KiwiSDR
+Download the public list	Atsisiųsti viešą sąrašą
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	Spustelėjus atsisiunčia viešų KiwiSDR imtuvų sąrašą iš interneto (viena užklausa, niekada paleidžiant).
+downloading the list…	sąrašas atsisiunčiamas…
+filter by name, place or antenna	filtruoti pagal pavadinimą, vietą ar anteną
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	Vieši imtuvai turi mažai vartotojų vietų, o daugelis užbaigia seansą po maždaug 30 minučių. Pasirinkite nepilną imtuvą ir išeikite, kai baigsite.
+Location	Vieta
+Users	Vartotojai
+Distance	Atstumas
+offline	neprisijungęs
+full	pilnas
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Prideda šį imtuvą prie tinklo radijų (jis neprisijungs, kol nepasirinksite jo kaip radijo).
+The downloaded list has no receivers OnAir can read.	Atsisiųstame sąraše nėra imtuvų, kuriuos OnAir gali perskaityti.
+Could not download the list. Check the internet connection.	Nepavyko atsisiųsti sąrašo. Patikrinkite interneto ryšį.
+# live transcripts (docs/TRANSCRIBE.md)
+Transcribing speech: %s	Kalba transkribuojama: %s
+Voice (radio calls)	Kalba (radijo skambučiai)
+No radio call with this aircraft's callsign heard yet	Su šio orlaivio šaukiniu skambučių dar negirdėta
+Live transcription is off (View > Transcripts). Airband calls would be listed here by callsign.	Tiesioginė transkripcija išjungta (Rodymas > Transkripcijos). Aviacijos juostos skambučiai čia būtų išvardyti pagal šaukinį.
+Live captions: loading the speech model ...	Tiesioginiai subtitrai: įkeliamas kalbos modelis ...
+Live captions: off.	Tiesioginiai subtitrai: išjungti.
+Set up transcripts	Nustatyti transkripcijas
+Turns what is said on the airband channels into text as it is heard. It needs a speech model that you download or put in the models folder.	Aviacijos juostos kanalais pasakytus žodžius paverčia tekstu, kai tik jie girdimi. Reikia kalbos modelio, kurį atsisiunčiate arba įdedate į modelių aplanką.
+Live captions	Tiesioginiai subtitrai
+working ...	dirba ...
+listening ...	klausosi ...
+Transcripts	Transkripcijos
+Airband is off in the transcript settings	Aviacijos juosta išjungta transkripcijos nustatymuose
+Nothing heard yet.	Dar nieko negirdėta.
+Cannot write %s	Nepavyksta įrašyti: %s
+Saved %s	Išsaugota: %s
+Privacy: what is said on public aviation radio is public, but the speech engine runs here on your computer and the text is kept in your data folder. Do not use it on private conversations: marine, amateur, CB and every other mode are off until you choose them, and a visible line shows whenever transcription is on.	Privatumas: tai, kas sakoma viešame aviacijos radijuje, yra vieša, bet kalbos variklis veikia čia, jūsų kompiuteryje, o tekstas laikomas jūsų duomenų aplanke. Nenaudokite privatiems pokalbiams: jūrų, mėgėjų, CB ir visi kiti režimai išjungti, kol jų nepasirinksite, o matoma eilutė rodo, kada transkripcija įjungta.
+Transcribe speech	Transkribuoti kalbą
+Master switch. While a transmission is going on the audio is cut out, sent to the speech engine and turned into text. Nothing runs while the channels are quiet.	Pagrindinis jungiklis. Kol vyksta perdavimas, garsas iškerpamas, perduodamas kalbos varikliui ir paverčiamas tekstu. Kol kanalai tylūs, niekas neveikia.
+Airband channels	Aviacijos juostos kanalai
+Marine VHF	Jūrų VHF
+Any other mode that plays sound (amateur, CB, FM ...)	Bet kuris kitas režimas, grojantis garsą (mėgėjų, CB, FM ...)
+Takes the sound you hear. Music and private conversations are not meant for this: leave it off unless you need it.	Paima garsą, kurį girdite. Muzikai ir privatiems pokalbiams tai neskirta: palikite išjungta, jei nereikia.
+Speech model	Kalbos modelis
+none	nėra
+Open models folder	Atidaryti modelių aplanką
+Put a whisper.cpp model file (ggml-*.bin) here to use it. The folder is made if it does not exist.	Įdėkite čia whisper.cpp modelio failą (ggml-*.bin), kad jį naudotumėte. Aplankas sukuriamas, jei jo nėra.
+No speech model yet. Download one below, or put a model file in the models folder.	Kalbos modelio dar nėra. Atsisiųskite vieną žemiau arba įdėkite modelio failą į modelių aplanką.
+Loading the speech model ...	Įkeliamas kalbos modelis ...
+Speech model loaded.	Kalbos modelis įkeltas.
+This build has no speech engine.	Šioje versijoje nėra kalbos variklio.
+checking	tikrinama
+Download speech model:	Atsisiųsti kalbos modelį:
+%s %d MB	%s %d MB
+Already downloaded	Jau atsisiųsta
+English only. tiny is the fastest (real time on a laptop), small hears more words and needs a stronger computer.	Tik anglų kalba. tiny greičiausias (realiuoju laiku nešiojamajame), small girdi daugiau žodžių ir reikalauja galingesnio kompiuterio.
+Other languages (multilingual models)	Kitos kalbos (daugiakalbiai modeliai)
+The loaded model is English only: other languages need a multilingual model (tiny, base or small without .en).	Įkeltas modelis tik anglų kalbos: kitoms kalboms reikia daugiakalbio modelio (tiny, base arba small be .en).
+CPU threads	Procesoriaus gijos
+How many processor threads the speech engine may use for one transmission. Fewer threads use less battery and take longer.	Kiek procesoriaus gijų kalbos variklis gali naudoti vienam perdavimui. Mažiau gijų naudoja mažiau baterijos ir trunka ilgiau.
+Keep transcripts (days)	Saugoti transkripcijas (dienomis)
+Heard %llu, kept %llu, left out %llu (silence, noise, repeats), skipped %llu (too slow), speed %.2f x real time	Išgirsta %llu, palikta %llu, atmesta %llu (tyla, triukšmas, pasikartojimai), praleista %llu (per lėtai), greitis %.2f x realusis laikas
+Download the speech model %s (%d MB)?	Atsisiųsti kalbos modelį %s (%d MB)?
+OnAir asks the model repository (huggingface.co) for this one file and sends nothing else. The file is checked against a fixed SHA-256 checksum and thrown away if it does not match. The model is MIT licensed.	OnAir prašo šio vieno failo modelių saugyklos (huggingface.co) ir nieko daugiau nesiunčia. Failas tikrinamas pagal fiksuotą SHA-256 kontrolinę sumą ir išmetamas, jei nesutampa. Modelis licencijuotas pagal MIT.
+Download	Atsisiųsti
+Delete all saved transcripts? This cannot be undone.	Ištrinti visas išsaugotas transkripcijas? Atšaukti negalima.
+Delete all	Ištrinti viską
+Transcription is off.	Transkripcija išjungta.
+Hide settings	Slėpti nustatymus
+Settings and speech model	Nustatymai ir kalbos modelis
+Search the text ...	Ieškoti tekste ...
+All frequencies	Visi dažniai
+A callsign (DLH123), a registration (N123AB) or an ICAO address (3C6444)	Šaukinys (DLH123), registracija (N123AB) arba ICAO adresas (3C6444)
+Airport	Oro uostas
+An airport code or name found in the channel name or the text (EYVI, Tower)	Oro uosto kodas ar pavadinimas, rastas kanalo pavadinime arba tekste (EYVI, Tower)
+%zu of %zu	%zu iš %zu
+Copy all shown	Kopijuoti viską, kas rodoma
+Export %s	Eksportuoti %s
+Delete all ...	Ištrinti viską ...
+Time (UTC)	Laikas (UTC)
+Sure	Tikra
+Speaker (a guess from the wording)	Kalbėtojas (spėjimas pagal žodžius)
+Click to copy this line	Spustelėkite, kad nukopijuotumėte šią eilutę
+Aircraft on the screen	Orlaivis ekrane
+Also share transcripts of aircraft radio calls (text becomes public on the map)	Taip pat dalytis orlaivių radijo skambučių transkripcijomis (tekstas taps viešas žemėlapyje)
+The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	Aviacijos juostos radijo skambučių tekstas, kurį šio kompiuterio kalbos variklis sudarė iš to, ką priimate (langas Transkripcijos), susiejamas su orlaiviu pagal jame pasakytą šaukinį ir 48 valandas viešai rodomas to orlaivio kortelėje žemėlapyje. Gali būti klaidų. Telefono numeriai prieš tai pašalinami. Dalijamasi tik aviacijos juosta, niekada jūrų, mėgėjų ar kitais kanalais. Išjungta, kol nepasirinksite, ir bet kada galite išjungti.
+Transcripts ...	Transkripcijos ...
+What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	Kas sakoma aviacijos juostoje ir kituose kalbos kanaluose, kaip tekstas: tiesioginiai subtitrai, paieška, eksportas. Išjungta, kol neįjungsite.
+# Automations window
+%d firings. Dropped events: %llu	%d suveikimų. Atmesti įvykiai: %llu
+(the whole rule)	(visa taisyklė)
+Add a condition	Pridėti sąlygą
+Add a copy	Pridėti kopiją
+Add an action...	Pridėti veiksmą...
+Advanced	Išplėstiniai
+Allow running programs	Leisti paleisti programas
+Allow this rule to run it	Leisti šiai taisyklei tai paleisti
+Any event	Bet koks įvykis
+Apply	Taikyti
+Arguments, one per line	Argumentai, po vieną eilutėje
+Arguments:	Argumentai:
+At most per hour (0: no limit)	Daugiausia per valandą (0: be ribos)
+Automations	Automatizavimas
+Automations...	Automatizavimas...
+Bot token	Roboto žetonas
+Cannot write the file.	Nepavyksta įrašyti failo.
+Chat id	Pokalbio ID
+Choose a rule on the left, or make a new one.	Pasirinkite taisyklę kairėje arba sukurkite naują.
+Choose what to tell apart in "separately for each" so every thing has its own state.	Pasirinkite lauke „atskirai kiekvienam“, kas skiriama, kad kiekvienas turėtų savo būseną.
+Columns (optional)	Stulpeliai (nebūtina)
+Confirm this rule...	Patvirtinti šią taisyklę...
+Confirmed	Patvirtinta
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Apibrėžkite function on_event(e). e.type, e.mode, e.freq, e.time ir įvykio laukai (e.callsign, e.squawk ...).\n\nVeiksmai: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nPagalbinės: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTekstas: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Nėra io, os, load, require, pcall ir šablonų paieškos; 1 milijonas instrukcijų, 250 ms ir 16 MB vienam skriptui.
+Delete...	Ištrinti...
+Distance, km	Atstumas, km
+Does not fire for the sample event:	Pavyzdiniam įvykiui nesuveikia:
+Duplicate	Dubliuoti
+Edit	Redaguoti
+Edit as text and apply, or copy it to share.	Redaguokite kaip tekstą ir taikykite arba nukopijuokite, kad pasidalintumėte.
+Every event	Kiekvienas įvykis
+Expression (and'ed to the conditions above)	Reiškinys (su pirmiau esančiomis sąlygomis sujungtas IR)
+Expression is fine.	Reiškinys tinkamas.
+Fields, and or not, comparisons, contains startswith endswith matches in, arithmetic, distance_km() within() inside() hour() ...	Laukai, and or not, palyginimai, contains startswith endswith matches in, aritmetika, distance_km() within() inside() hour() ...
+File name	Failo pavadinimas
+File:	Failas:
+Fire with sample event	Suaktyvinti su pavyzdiniu įvykiu
+Frequency, MHz	Dažnis, MHz
+Generic JSON	Bendras JSON
+Imported, switched off. Look it over, then switch it on.	Importuota, išjungta. Peržiūrėkite ir tada įjunkite.
+Insert an example...	Įterpti pavyzdį...
+Inside an area (polygon)	Srities (daugiakampio) viduje
+JSON body (optional)	JSON turinys (nebūtina)
+Keep	Palikti
+Last error:	Paskutinė klaida:
+Limits	Apribojimai
+Lua script	Lua skriptas
+Manage	Tvarkyti
+Memory name	Atminties pavadinimas
+Mode id (optional)	Režimo ID (nebūtina)
+New rule	Nauja taisyklė
+New script	Naujas skriptas
+No location test	Be vietos tikrinimo
+No rules yet. Make one, or add a recipe.	Taisyklių dar nėra. Sukurkite arba pridėkite receptą.
+Not active:	Neaktyvi:
+Not imported:	Neimportuota:
+Note	Pastaba
+Nothing has fired yet.	Dar niekas nesuveikė.
+Notification	Pranešimas
+Off. A rule may start a program only when this is on and you confirmed that rule.	Išjungta. Taisyklė gali paleisti programą tik kai tai įjungta ir jūs patvirtinote tą taisyklę.
+Only between these local hours	Tik tarp šių vietos valandų
+Pick one event type to choose its fields from a list.	Pasirinkite vieną įvykio tipą, kad rinktumėte jo laukus iš sąrašo.
+Points as lat,lon; lat,lon; ...	Taškai kaip plat,ilg; plat,ilg; ...
+Program	Programa
+Program:	Programa:
+Quiet after firing, seconds	Tyla po suveikimo, sekundės
+Ready-made rules and scripts. Adding one makes a copy that you can edit; it starts switched off.	Paruošti taisyklės ir skriptai. Pridėjus sukuriama redaguojama kopija; ji pradeda išjungta.
+Really delete	Tikrai ištrinti
+Really does the actions, once, with a made-up event.	Tikrai atlieka veiksmus vieną kartą su išgalvotu įvykiu.
+Recall a memory	Iškviesti atmintį
+Receives these events	Gauna šiuos įvykius
+Recipes	Receptai
+Recipes...	Receptai...
+Rules and scripts: when something is decoded, notify, record, tune or call a webhook	Taisyklės ir skriptai: kai kas nors iškoduojama, pranešti, įrašyti, derinti ar iškviesti webhook
+Rules: when something is decoded (an aircraft squawks 7700, a pager message says fire, a vessel enters an area ...), do something (notify, record, tune, log, call a webhook). Scripts do the same in Lua.	Taisyklės: kai kas nors iškoduojama (orlaivis siunčia 7700, pranešimas pageriu mini gaisrą, laivas įplaukia į sritį ...), atlikite veiksmą (pranešti, įrašyti, derinti, žurnalas, iškviesti webhook). Skriptai tą patį daro Lua kalba.
+Run a program (advanced)	Paleisti programą (pažengusiems)
+Run a program?	Paleisti programą?
+Runs a program on this computer. Off until you allow it below and confirm this rule.	Paleidžia programą šiame kompiuteryje. Išjungta, kol neleisite žemiau ir nepatvirtinsite šios taisyklės.
+Save a screenshot	Įrašyti ekrano nuotrauką
+Saved to	Įrašyta į
+Seconds	Sekundės
+Server (optional)	Serveris (nebūtina)
+Service	Paslauga
+Shows what the rule would do with a made-up event. Nothing is sent or started.	Parodo, ką taisyklė darytų su išgalvotu įvykiu. Niekas nesiunčiama ir nepaleidžiama.
+Sound alert	Garso signalas
+Test (dry run)	Tikrinti (be veiksmų)
+Test with a sample event	Išbandyti su pavyzdiniu įvykiu
+Text can use:	Tekste galima naudoti:
+The receiver position is not set (ADS-B window).	Imtuvo vieta nenustatyta (ADS-B langas).
+The recipe file	Recepto failas
+The script ran and did nothing for this event.	Skriptas veikė ir šiam įvykiui nieko nepadarė.
+Then do	Tada daryti
+This rule will start the program below, on this computer, every time it fires, with text from the decoded signals in its arguments. Anyone who can send such a signal can influence it. Only allow it if you wrote it or trust the one who did.	Ši taisyklė kaskart suveikusi paleis žemiau nurodytą programą šiame kompiuteryje, o argumentuose bus iškoduotų signalų tekstas. Bet kas, galintis siųsti tokį signalą, gali tai paveikti. Leiskite tik jei patys ją parašėte arba pasitikite autoriumi.
+Topic	Tema
+WAV file (empty: beeps)	WAV failas (tuščias: pyptelėjimai)
+Webhook	Webhook
+Webhook address	Webhook adresas
+What can a script do?	Ką gali skriptas?
+When this happens	Kai įvyksta tai
+Within a distance of a point	Per atstumą nuo taško
+Within a distance of my receiver	Per atstumą nuo mano imtuvo
+Write a CSV log row	Įrašyti CSV žurnalo eilutę
+all of the conditions	visos sąlygos
+and only if	ir tik jei
+any of the conditions	bet kuri sąlyga
+contains	turi
+ends with	baigiasi
+equals	lygu
+has a value	turi reikšmę
+is at least	yra bent
+is at most	yra daugiausia
+is less than	mažiau nei
+is more than	daugiau nei
+is not	nėra
+is one of (a, b, c)	yra viena iš (a, b, c)
+last fired %s, %d times	paskutinį kartą %s, %d kartų
+matches (* ?)	atitinka (* ?)
+only as it comes in	tik įėjus
+separately for each	atskirai kiekvienam
+starts with	prasideda
+to	iki
+when it is inside	kai yra viduje
+when it is outside	kai yra išorėje
+# derived speed, track and vertical rate
+%s%.0f deg (average)	%s%.0f laipsnių (vidurkis)
+Reported by the aircraft.	Praneša orlaivis.
+Estimated by the position filter from the position reports (not broadcast by the aircraft).	Įvertino padėties filtras pagal padėties pranešimus (orlaivis jo nesiunčia).
+Derived from 2 positions %s apart: an average over that time; a curved path is longer than the straight line, so the real speed may be higher. The track is the average bearing.	Išvesta iš 2 padėčių, nutolusių %s: vidurkis per tą laiką; kreivas kelias ilgesnis už tiesę, todėl tikrasis greitis gali būti didesnis. Kursas yra vidutinis azimutas.
+Derived from 2 positions %s apart (distance on the WGS-84 ellipsoid divided by the time). The aircraft did not report a speed.	Išvesta iš 2 padėčių, nutolusių %s (atstumas WGS-84 elipsoide, padalytas iš laiko). Orlaivis greičio nepranešė.

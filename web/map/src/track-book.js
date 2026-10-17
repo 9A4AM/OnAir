@@ -5,8 +5,10 @@
 // one transaction every FLUSH_MS (write-behind), at most once per PERSIST_GAP_MS per track. /live, the WebSocket and the
 // delta endpoint are all served from here, so they cost no SQL reads at all.
 
+import { cleanDoa, DOA_TTL_MS } from "./doa.js";
+
 export const KINDS = new Set([
-  "aircraft", "vessel", "sonde", "aprs", "ham", "drone", "flarm", "sat", "buoy", "dsc", "station", "gnss",
+  "aircraft", "vessel", "sonde", "aprs", "ham", "drone", "flarm", "sat", "buoy", "dsc", "station", "gnss", "doa",
 ]);
 
 export const TTL_MS = {
@@ -19,6 +21,7 @@ export const TTL_MS = {
   flarm: 15 * 60e3,
   sat: 20 * 60e3,
   gnss: 10 * 60e3,
+  doa: DOA_TTL_MS,
   buoy: 2 * 3600e3,
   dsc: 60 * 60e3,
   station: 6 * 3600e3,
@@ -141,13 +144,14 @@ export function mergeTrackMeta(prev, inc) {
   return out;
 }
 
-export function sanitize(raw, now) {
+export function sanitize(raw, now, station) {
   if (!raw || typeof raw !== "object") return null;
   const kind = String(raw.kind || "");
   if (!KINDS.has(kind)) return null;
   const lat = Number(raw.lat), lon = Number(raw.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
   if (lat === 0 && lon === 0) return null;
+  if (kind === "doa") return sanitizeDoa(raw, now, station);
   const storageId = trackStorageId(kind, raw);
   if (!storageId) return null;
   const rawId = String(raw.id || "").slice(0, 80);
@@ -182,12 +186,30 @@ export function sanitize(raw, now) {
     sub: String(raw.sub || "").slice(0, 32),
     lat, lon, alt, heading, speed, vrate, age,
     est: raw.est === 1 || raw.est === true ? 1 : 0,
+    dv: (raw.dv === 1 || raw.dv === true) && (speed != null || heading != null || vrate != null) ? 1 : 0,   // additive: old clients never send it
     squawk,
     src: String(raw.src || "").slice(0, 16),
     cat: String(raw.cat || "").slice(0, 48),
     extra: String(raw.extra || "").slice(0, 120),
-    path: kind === "gnss" ? [] : path.slice(-80),   // no trails for navigation satellites
+    path: kind === "gnss" || kind === "doa" ? [] : path.slice(-80),   // no trails for navigation satellites
     t: now,
+  };
+}
+
+/** A bearing line from a station that runs a direction finder: the track is the station position, heading is the bearing. */
+function sanitizeDoa(raw, now, station) {
+  const lat = Number(raw.lat), lon = Number(raw.lon);
+  if (!station) return null;
+  const d = cleanDoa(raw);
+  if (!d) return null;
+  const age = Number.isFinite(Number(raw.age)) ? Number(raw.age) : 0;
+  if (age > DOA_TTL_MS / 1000) return null;
+  return {
+    id: "doa:" + String(station).slice(0, 12) + "-" + Math.round(d.freq / 1000), kind: "doa", rawId: String(station).slice(0, 12), icao: "", mmsi: "",
+    label: (d.freq / 1e6).toFixed(3) + " MHz", sub: Math.round(d.bearing) + "\u00b0",
+    lat, lon, alt: null, heading: d.bearing, speed: null, vrate: null, age, est: 0, dv: 0, squawk: null, src: "df", cat: "",
+    extra: JSON.stringify({ f: d.freq, s: d.sigma, c: +d.conf.toFixed(2) }),
+    path: [], t: now,
   };
 }
 
@@ -237,9 +259,9 @@ export function mergePath(oldArr, incoming, lon, lat) {
 }
 
 /** Fields whose change is visible to a viewer: they bump the version and go out as an upsert. */
-const VISIBLE = ["lat", "lon", "alt", "heading", "speed", "label", "sub", "squawk", "cat", "src", "extra", "est", "vrate"];
+const VISIBLE = ["lat", "lon", "alt", "heading", "speed", "label", "sub", "squawk", "cat", "src", "extra", "est", "dv", "vrate"];
 /** Fields whose change makes the row worth writing back at once (not only on the periodic heartbeat). */
-const SIG = ["kind", "label", "sub", "squawk", "cat", "src", "extra", "est"];
+const SIG = ["kind", "label", "sub", "squawk", "cat", "src", "extra", "est", "dv"];
 const sigOf = (r) => SIG.map((k) => r[k]).join("\u0001");
 
 export class TrackBook {
@@ -250,6 +272,8 @@ export class TrackBook {
     this.removedFloor = this.version; // deltas from a version below this cannot be answered (the log is incomplete there)
     this.dirty = new Set();         // ids to write back
     this.pendingDeletes = new Set();
+    this.doaIds = new Set();        // ids of bearing lines; fixes are derived from them
+    this.doaVersion = this.version; // version of the last change to any bearing line (fixes change with it)
     this._tj = null;
     this._tjV = -1;
   }
@@ -262,10 +286,11 @@ export class TrackBook {
       const row = {
         id: r.id, kind: r.kind, label: r.label, sub: r.sub, lat: r.lat, lon: r.lon, alt: r.alt, heading: r.heading,
         speed: r.speed, extra: r.extra, t: r.t, squawk: r.squawk, cat: r.cat, vrate: r.vrate, src: r.src, age: r.age,
-        est: r.est ? 1 : 0, path: Array.isArray(path) ? path : [], ver: this.version, json: null, w: null,
+        est: r.est ? 1 : 0, dv: r.dv ? 1 : 0, path: Array.isArray(path) ? path : [], ver: this.version, json: null, w: null,
       };
       row.w = { at: r.t, lat: row.lat, lon: row.lon, sig: sigOf(row) };
       this.rows.set(row.id, row);
+      if (row.kind === "doa") this.doaIds.add(row.id);
     }
   }
 
@@ -279,18 +304,20 @@ export class TrackBook {
     const prev = this.rows.get(t.id);
     if (!fresherPosition(t.age, prev, now)) return null;
     const merged = prev ? mergeTrackMeta(prev, t) : { ...t };
-    if (t.kind === "gnss") merged.path = [];
+    if (t.kind === "gnss" || t.kind === "doa") merged.path = [];
     else merged.path = mergePath(prev && prev.path, merged.path, merged.lon, merged.lat);
-    const trailHdg = t.kind === "gnss" ? null : headingFromTrail(merged.path, merged.lon, merged.lat, merged.heading);
+    const trailHdg = t.kind === "gnss" || t.kind === "doa" ? null : headingFromTrail(merged.path, merged.lon, merged.lat, merged.heading);
     if (trailHdg != null) merged.heading = trailHdg;
-    else if (merged.heading == null && prev && prev.heading != null) merged.heading = prev.heading;
-    if (merged.speed == null && prev && prev.speed != null) merged.speed = prev.speed;
+    else if (merged.heading == null && prev && prev.heading != null) { merged.heading = prev.heading; if (prev.dv) merged.dv = 1; }
+    if (merged.speed == null && prev && prev.speed != null) { merged.speed = prev.speed; if (prev.dv) merged.dv = 1; }
     let visible = !prev;
     if (prev) for (const k of VISIBLE) if (prev[k] !== merged[k]) { visible = true; break; }
     const row = prev || { id: t.id, ver: 0, json: null, w: null };
-    for (const k of ["kind", "label", "sub", "lat", "lon", "alt", "heading", "speed", "extra", "t", "squawk", "cat", "vrate", "src", "age", "est", "path"]) row[k] = merged[k];
+    for (const k of ["kind", "label", "sub", "lat", "lon", "alt", "heading", "speed", "extra", "t", "squawk", "cat", "vrate", "src", "age", "est", "dv", "path"]) row[k] = merged[k];
     row.est = row.est ? 1 : 0;
-    if (visible) { row.ver = ++this.version; row.json = null; }
+    row.dv = row.dv ? 1 : 0;
+    if (visible) { row.ver = ++this.version; row.json = null; if (row.kind === "doa") this.doaVersion = this.version; }
+    if (row.kind === "doa") this.doaIds.add(row.id);
     this.removed.delete(row.id);
     this.pendingDeletes.delete(row.id);
     this.rows.set(row.id, row);
@@ -307,6 +334,7 @@ export class TrackBook {
         this.rows.delete(id);
         this.dirty.delete(id);
         this.removed.set(id, { v: ++this.version, at: now });
+        if (row.kind === "doa") { this.doaIds.delete(id); this.doaVersion = this.version; }
         if (row.w) this.pendingDeletes.add(id);
         n++;
       }
@@ -325,9 +353,16 @@ export class TrackBook {
       id: row.id, kind: row.kind, label: row.label, sub: row.sub,
       lat: row.lat, lon: row.lon, alt: row.alt, heading: row.heading, speed: row.speed,
       extra: row.extra, t: row.t, squawk: row.squawk, cat: row.cat, vrate: row.vrate,
-      src: row.src, age: row.age, est: row.est ? 1 : 0,
+      src: row.src, age: row.age, est: row.est ? 1 : 0, dv: row.dv ? 1 : 0,
     });
     return row.json;
+  }
+
+  /** Bearing-line rows in the shape computeFixes() wants. */
+  doaRows() {
+    const out = [];
+    for (const id of this.doaIds) { const r = this.rows.get(id); if (r) out.push({ id: r.id, lat: r.lat, lon: r.lon, heading: r.heading, extra: r.extra, t: r.t }); }
+    return out;
   }
 
   /** `[...]` of every track, cached per version. */
@@ -343,6 +378,7 @@ export class TrackBook {
   /** `[...]` of the rows changed after `since`, plus the ids removed after it; null when `since` is too old or from another hub life. */
   deltaParts(since) {
     if (!Number.isFinite(since) || since < this.removedFloor || since > this.version) return null;
+    if (since < this.doaVersion) return null;   // derived fix markers changed: send a full snapshot
     const parts = [];
     for (const row of this.rows.values()) if (row.ver > since) parts.push(this.wire(row));
     const gone = [];

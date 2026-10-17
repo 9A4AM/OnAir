@@ -2,6 +2,7 @@
 #include "dect2/adsb/adsb_track.h"
 #include "dect2/results/results_io.h"
 #include "dect2/net/feeds.h"
+#include "dect2/automation/engine.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -279,6 +280,31 @@ void AdsbTracker::apply(const AdsbFrame& f, uint8_t src) {
         ff.hasPos = r.lastPos != posBefore && r.a.hasPos;
         ff.lat = r.a.lat; ff.lon = r.a.lon;
         Feeds::get().adsb(ff);
+    }
+    if (automation::wants(automation::FAdsb)) {   // the automations: a new aircraft, a new squawk, otherwise an update every 2 s
+        const bool isNew = !r.autoNew;
+        const int sq = r.a.hasSquawk ? r.a.squawk : -1;
+        if (isNew || sq != r.autoSq || f.timeSec - r.autoEmit >= 2.0) {
+            auto mk = [&](const char* type) {
+                automation::Event ev(type);
+                const AdsbAircraft& a = r.a;
+                ev.at(automation::wallNow(), "ADS-B", 1090e6);
+                char hex[8];
+                snprintf(hex, sizeof hex, "%06X", key & 0xFFFFFF);
+                ev.str("hex", hex).str("callsign", a.callsign).str("category", a.category).num("messages", a.messages).num("emergency", a.emergency).flag("ground", a.ground);
+                if (a.hasSquawk) ev.num("squawk", a.squawk);
+                if (a.hasAlt) ev.num("alt_ft", a.altFt);
+                if (a.hasSpeed) ev.num("speed_kt", a.speedKt);
+                if (a.hasHeading) ev.num("heading_deg", a.headingDeg);
+                if (a.hasVrate) ev.num("vrate_fpm", a.vrateFpm);
+                if (a.hasPos) ev.num("lat", a.lat).num("lon", a.lon);
+                if (a.hasRange) ev.num("distance_km", a.distNm * 1.852);
+                return ev;
+            };
+            if (isNew) automation::emit(mk("adsb.new"));
+            automation::emit(mk("adsb.aircraft"));
+            r.autoNew = true; r.autoSq = sq; r.autoEmit = f.timeSec;
+        }
     }
 
     good_++;

@@ -1,5 +1,6 @@
 // Bluetooth LE advertising monitor (see ble_rx.h).
 #include "dect2/ble/ble_rx.h"
+#include "dect2/automation/engine.h"
 #include "dect2/results/results_io.h"
 #include "dect2/ble/ble_tel.h"
 #include "dect2/ble/ble_proto.h"
@@ -353,6 +354,12 @@ struct BleReceiver::Impl {
         if (sentByPeer) { p.addr = ble::addrText(a.peer); p.random = a.txRandom; }
         else if (a.hasAdv) { p.addr = ble::addrText(a.adv); p.random = a.txRandom; }
         if (Feeds::get().wantBle()) Feeds::get().ble(p.addr, a.name, rssi);
+        if (automation::wants(automation::FBle) && !p.addr.empty()) {   // the automations (automation/engine.h)
+            automation::Event ev("ble.device");
+            ev.at(automation::wallNow(), "BLE", 0);
+            ev.str("mac", p.addr).str("name", a.name).num("rssi_db", rssi);
+            automation::emit(std::move(ev));
+        }
         tel.log.insert(tel.log.begin(), std::move(p));
         if (tel.log.size() > kBleLogMax) tel.log.pop_back();
         // the device that sent it

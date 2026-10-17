@@ -6,6 +6,7 @@ import { iconId, installLazyIcons, paintMini, altitudeColor, altitudeGradientCss
 import { SHAPES } from "./shapes.js";
 import { iconShape, vesselScale } from "./types.js";
 import { createCard } from "./card.js";
+import { dfFeatures } from "./df.js";
 import { createSheet } from "./sheet.js";
 import { generateDemo, stepDemo } from "./demo.js";
 import { watchMapTheme, themeKey, onThemeChange } from "./theme.js";
@@ -31,6 +32,8 @@ const KINDS = [
   { id: "dsc", name: "DSC", color: "#e0ad6b", shape: "dsc" },
   { id: "station", name: "Stations", color: "#e0d48f", shape: "station" },
   { id: "gnss", name: "GNSS satellites", color: "#9ad0f0", shape: "sat_gnss" },
+  { id: "doa", name: "DF bearings", color: "#ff9a4d", shape: "station" },
+  { id: "fix", name: "DF fixes", color: "#ff5a5a", shape: "station" },
 ];
 
 const on = Object.fromEntries(KINDS.map((k) => [k.id, true]));
@@ -308,7 +311,7 @@ function geojson() {
   const theme = themeKey();
   const inView = viewTest();   // beyond ~150 tracks only what is on (or near) the screen is handed to the renderer
   for (const t of tracks.values()) {
-    if (!on[t.kind]) continue;
+    if (!on[t.kind] || t.kind === "doa" || t.kind === "fix") continue;   // drawn by the DF layers
     if (inView && t.id !== selected && !inView(t.lon, t.lat)) continue;
     const hdg = effectiveHeading(t);
     const dot = datalinkDotUntilHeading(t, hdg);
@@ -327,7 +330,8 @@ function geojson() {
         scale: t._scale || 1,
         sym: dot ? 0 : 1,
         dot: dot ? 1 : 0,
-        iconRot: shapeRotates(shape) && hdg != null && !dot ? 1 : 0,
+        // a heading derived from position reports (dv) at walking pace is noise: do not turn the icon on it
+        iconRot: shapeRotates(shape) && hdg != null && !dot && !(t.dv && !(t.speed >= 8)) ? 1 : 0,
         sel: t.id === selected ? 1 : 0,
         est: t.est ? 1 : 0,   // an estimated (dead-reckoned) position: drawn as a ghost
       },
@@ -338,6 +342,12 @@ function geojson() {
 }
 
 function trailGeo() {
+  const g = trailGeoSelected();
+  g.features.push(...dfFeatures(tracks, on, Date.now()));
+  return g;
+}
+
+function trailGeoSelected() {
   const features = [];
   if (!selected) return { type: "FeatureCollection", features };
   const t = tracks.get(selected);
@@ -377,7 +387,7 @@ function mergePathClient(prev, t) {
   const hdg = effectiveHeading({ ...t, path, heading: t.heading });
   if (hdg != null) t.heading = hdg;
   if (t.heading == null && prev && prev.heading != null) t.heading = prev.heading;
-  if (t.speed == null && prev && prev.speed != null) t.speed = prev.speed;
+  if (t.speed == null && prev && prev.speed != null) { t.speed = prev.speed; if (prev.dv) t.dv = 1; }
   if (prev && prev.meta && !t.meta) t.meta = prev.meta;
   // first sighting (this page) feeds the "first seen" and departure estimate on the card
   t.first = (prev && prev.first) || t.first || { ms: positionTimeMs(t), altFt: t.kind === "aircraft" ? t.alt : null, lat: t.lat, lon: t.lon };
@@ -442,7 +452,7 @@ function fmtAlt(t) {
 }
 
 function fmtSpeed(t) {
-  if (t.kind === "aircraft" || t.kind === "flarm") return Math.round(t.speed) + " kt";
+  if (t.kind === "aircraft" || t.kind === "flarm") return (t.dv ? "~" : "") + Math.round(t.speed) + " kt";
   if (t.kind === "vessel") return Number(t.speed).toFixed(1) + " kn";
   return Number(t.speed).toFixed(1);
 }
@@ -798,6 +808,22 @@ map.on("load", () => {
     filter: ["==", ["get", "kind"], "pred"],
     paint: { "line-color": ["get", "color"], "line-width": 1.2, "line-opacity": 0.45, "line-dasharray": [2, 2] },
   });
+  // direction finding: bearing wedges and lines from the stations, fix markers with their 95 % ellipse
+  map.addLayer({ id: "dfwedge", type: "fill", source: "trails", filter: ["==", ["get", "kind"], "dfwedge"],
+    paint: { "fill-color": "#ff9a4d", "fill-opacity": ["*", 0.12, ["get", "fade"]] } });
+  map.addLayer({ id: "dfell", type: "fill", source: "trails", filter: ["==", ["get", "kind"], "dfell"],
+    paint: { "fill-color": "#ff5a5a", "fill-opacity": 0.18 } });
+  map.addLayer({ id: "dfellline", type: "line", source: "trails", filter: ["==", ["get", "kind"], "dfell"],
+    paint: { "line-color": "#ff5a5a", "line-width": 1.5, "line-opacity": 0.9 } });
+  map.addLayer({ id: "dfline", type: "line", source: "trails", filter: ["==", ["get", "kind"], "dfline"],
+    paint: { "line-color": "#ff9a4d", "line-width": 2, "line-opacity": ["*", 0.9, ["get", "fade"]], "line-dasharray": [4, 2] } });
+  map.addLayer({ id: "dfstation", type: "circle", source: "trails", filter: ["==", ["get", "kind"], "dfstation"],
+    paint: { "circle-radius": 5, "circle-color": "#ff9a4d", "circle-stroke-width": 1.2, "circle-stroke-color": "#0b0c0d" } });
+  map.addLayer({ id: "dffix", type: "circle", source: "trails", filter: ["==", ["get", "kind"], "dffix"],
+    paint: { "circle-radius": 7, "circle-color": "#ff5a5a", "circle-stroke-width": 2, "circle-stroke-color": "#ffffff" } });
+  map.addLayer({ id: "dffixlabel", type: "symbol", source: "trails", filter: ["==", ["get", "kind"], "dffix"],
+    layout: { "text-field": ["concat", "TX ", ["get", "label"]], "text-size": 12, "text-offset": [0, 1.4], "text-anchor": "top", "text-font": ["Open Sans Regular"] },
+    paint: { "text-color": "#ffd0d0", "text-halo-color": "#0b0c0d", "text-halo-width": 1.5 } });
   // selected state: soft glow plus a ring in the track's colour
   map.addLayer({
     id: "halo", type: "circle", source: "live",

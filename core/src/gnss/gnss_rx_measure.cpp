@@ -1,5 +1,6 @@
 // GNSS receiver, the measurement epoch: pseudoranges, the position solution, the clock estimate and the sky prediction.
 #include "gnss_rx_impl.h"
+#include "dect2/automation/engine.h"
 
 namespace dect2 {
 
@@ -81,6 +82,12 @@ void GnssReceiver::Impl::applyFix(double S, bool solved, GnssSolution& sl, std::
         if (fix.timeValid) gpsTimeToCalendar(week, tow, utc.valid ? utc.dtls : 18, &fix.year, &fix.month, &fix.day, &fix.hour, &fix.minute, &fix.second);
         fix.fixCount = (uint32_t)(++fixCount);
         if (Feeds::get().wantGnss()) Feeds::get().gnss(fix);
+        if (automation::wants(automation::FGnss) && fix.valid && (fix.fixCount % 10) == 1) {   // the automations: about every tenth fix
+            automation::Event ev("gnss.fix");
+            ev.at(automation::wallNow(), "GNSS", 1575.42e6);
+            ev.num("lat", fix.latDeg).num("lon", fix.lonDeg).num("alt_m", fix.heightM).num("sats", fix.nSats);
+            automation::emit(std::move(ev));
+        }
         lastFixSignal = S;
         if (firstFix < 0) {
             firstFix = S;

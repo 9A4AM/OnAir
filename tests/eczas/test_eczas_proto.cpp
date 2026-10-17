@@ -25,7 +25,7 @@ int main() {
     CHECK(p.status == DecodeStatus::CrcOk, "status %d", (int)p.status);
     CHECK(p.periods3s == periods, "periods %u", p.periods3s);
     CHECK(p.tzHours == 1, "tz %d", p.tzHours);
-    CHECK(p.utcSec == kEpochUtc + 86400 + 3600, "utc %lld", (long long)p.utcSec);
+    CHECK(p.utcSec == kEpochUtc + 86400 && p.localSec == p.utcSec + 3600, "utc %lld local %lld", (long long)p.utcSec, (long long)p.localSec);
     CHECK(p.timeMarker == kTimeMarker, "marker 0x%x", p.timeMarker);
     CHECK(p.leapAnnounce, "leap announce");
 

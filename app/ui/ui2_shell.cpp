@@ -1,6 +1,7 @@
 // The new interface: the shell around the body (menu bar, top bar with the mode combo and summary, bottom bar, the
 // mode list and side bar, the status line and the log console).
 // Split from ui2.cpp; the shared declarations are in ui2_internal.h.
+#include "transcribe/transcribe_app.h"
 #include "ui2_internal.h"
 #include "ui_common.h"
 #ifdef _WIN32
@@ -162,12 +163,19 @@ void modeList(App& a) {
 
 void sidebar(App& a) {
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8 * gUi, 4 * gUi));
+    // the tour points at the sections: Source, and Gain with Tuner (next to each other)
+    const float sideX0 = ImGui::GetWindowPos().x, sideX1 = sideX0 + ImGui::GetWindowSize().x;
+    const float srcY0 = ImGui::GetCursorScreenPos().y;
+    float gainY0 = srcY0;
+    auto sectionDone = [&]() { gainY0 = ImGui::GetCursorScreenPos().y; };
     if (section(N_("Source"))) {
         ImGui::Indent(6 * gUi);
         toolbarParts(a, TbSource, true);
         ImGui::Unindent(6 * gUi);
         ImGui::Spacing();
     }
+    sectionDone();
+    tourMark("source", ImVec2(sideX0, srcY0), ImVec2(sideX1, gainY0));
     if (section(N_("Gain"))) {
         ImGui::Indent(6 * gUi);
         toolbarParts(a, TbGain, true);
@@ -180,6 +188,7 @@ void sidebar(App& a) {
         ImGui::Unindent(6 * gUi);
         ImGui::Spacing();
     }
+    tourMark("tuning", ImVec2(sideX0, gainY0), ImVec2(sideX1, ImGui::GetCursorScreenPos().y));
     if (section(N_("Mode"))) { ImGui::Indent(6 * gUi); modeList(a); ImGui::Unindent(6 * gUi); ImGui::Spacing(); }
     if (section(N_("Display"))) {
         ImGui::Indent(6 * gUi);
@@ -216,8 +225,10 @@ void sidebar(App& a) {
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr(tipText));
         };
         tool("Passes", a.passesOpen, "Satellite passes and automatic tuning");
+        tool("Direction finder", a.dfOpen, N_("Bearing and position of a transmitter from an antenna array such as the KrakenSDR"));
         tool("Images", a.galleryOpen, "The pictures the receivers have decoded");
         tool("Data feeds...", a.feedsOpen, "Send decoded data to other programs and services");
+        tool("Automations...", a.automationOpen, N_("Rules and scripts: when something is decoded, notify, record, tune or call a webhook"));
         tool("Memory...", a.memoryOpen, "The frequencies you keep, with mode and settings (Ctrl+M)");
         tool("Frequencies...", a.freqOpen, "Known frequencies of every mode (Ctrl+Shift+F)");
         tool("Transmit...", txViewFlag(), N_("Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission."));
@@ -339,6 +350,8 @@ static void viewMenu(App& a) {
             ImGui::TextDisabled("%s", tr("Ctrl + / Ctrl - / Ctrl 0"));
             ImGui::EndMenu();
         }
+        if (ImGui::MenuItem(tr("Transcripts ..."), nullptr, tx::windowOpen())) tx::windowOpen() = !tx::windowOpen();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on."));
         if (ImGui::MenuItem(tr("Reset layout"))) { a.splitSide = a.splitRight = a.splitBottom = a.splitDock = a.splitBot2 = 0; savePrefs(a); }
         if (ImGui::MenuItem(tr("Reset spectrum"))) resetSpectrum(a);
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Put the panels back to their automatic sizes (drag the bars between panels to resize them)"));
@@ -367,8 +380,10 @@ static void viewMenu(App& a) {
         }
         ImGui::Separator();
         if (ImGui::MenuItem(tr("Passes"), nullptr, &a.passesOpen)) {}
+        ImGui::MenuItem(tr("Direction finder"), nullptr, &a.dfOpen);
         ImGui::MenuItem(tr("Images"), nullptr, &a.galleryOpen);
         ImGui::MenuItem(tr("Data feeds..."), nullptr, &a.feedsOpen);
+        ImGui::MenuItem(tr("Automations..."), nullptr, &a.automationOpen);
         ImGui::MenuItem(tr("Memory..."), "Ctrl+M", &a.memoryOpen);
         ImGui::MenuItem(tr("Frequencies..."), "Ctrl+Shift+F", &a.freqOpen);
         if (ImGui::MenuItem(tr("Show Frequencies as a tab"), nullptr, a.freqTab)) freqdbTabToggle(a);
@@ -447,13 +462,19 @@ float menuBar(App& a) {
             ImGui::EndMenu();
         }
         viewMenu(a);
+        const float mx0 = ImGui::GetCursorScreenPos().x, my0 = ImGui::GetWindowPos().y, my1 = my0 + ImGui::GetWindowHeight();
         memoryMenu(a);
+        const float mx1 = ImGui::GetCursorScreenPos().x;
+        tourMark("memory", ImVec2(mx0, my0), ImVec2(mx1, my1));
         mapSendServerMenu(a);
+        const float sx1 = ImGui::GetCursorScreenPos().x;
+        tourMark("server", ImVec2(mx1, my0), ImVec2(sx1, my1));
+        const float hx0 = ImGui::GetCursorScreenPos().x;
         if (ImGui::BeginMenu(tr("Help"))) {
             if (ImGui::MenuItem(tr("Credits"))) { a.creditsOpen = true; a.creditsTab = 0; }
             ImGui::Separator();
             if (ImGui::MenuItem(tr("Setup wizard"))) setupWizardOpen(a);
-            if (ImGui::MenuItem(tr("Guided tour"))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
+            if (ImGui::MenuItem(tr("Guided tour"))) tourStart(a);
             ImGui::Separator();
             if (ImGui::MenuItem(tr("Documentation"))) dect2::openUrl("https://on-air.dev/docs/");
             if (ImGui::MenuItem(tr("Troubleshooting"))) dect2::openUrl("https://on-air.dev/docs/troubleshooting/");
@@ -462,10 +483,12 @@ float menuBar(App& a) {
             if (ImGui::MenuItem(tr("Credits and licences"))) { a.creditsOpen = true; a.creditsTab = 1; }
             ImGui::EndMenu();
         }
+        tourMark("help", ImVec2(hx0, my0), ImVec2(ImGui::GetCursorScreenPos().x, my1));
         menuBarRight(a);
         ImGui::EndMainMenuBar();
     }
     creditsWindow(a);
+    tx::window(a);
     return menuH;
 }
 
@@ -505,6 +528,7 @@ void topBar(App& a, ImVec2 disp) {
         if (mw > 0) levelMeter(a, meterX, o.y, mw);
         ImGui::SetCursorScreenPos(ImVec2(o.x + W - vw + 4 * gUi, o.y + 8 * gUi));
         volumeControl(a, vw);
+        tourMark("audio", ImVec2(o.x + W - vw, o.y), ImVec2(o.x + W, o.y + 40 * gUi));
     }
     ImGui::EndChild();
     ImGui::PopStyleColor();
