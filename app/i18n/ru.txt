@@ -929,13 +929,11 @@ holds	удерживает
 last send %s	последняя отправка %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	слушает %s порт %d, клиентов: %d, отправлено %.1f MB, отброшено %.1f MB
 max	макс
-mute	без звука
 on air	в эфире
 partial	частично
 point %s	точка %s
 power (dBm)	мощность (dBm)
 searching for Hermes Lite 2 radios…	поиск радио Hermes Lite 2…
-sound	звук
 up-converter	повышающий конвертер
 waiting	ожидание
 waterfall dB##wfdb	водопад dB##wfdb

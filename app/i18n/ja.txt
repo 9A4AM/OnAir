@@ -947,13 +947,11 @@ holds	保持中
 last send %s	最終送信 %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	%s ポート %d で待ち受け中、クライアント %d 件、送信 %.1f MB、破棄 %.1f MB
 max	最大
-mute	ミュート
 on air	運用中
 partial	一部
 point %s	地点 %s
 power (dBm)	電力 (dBm)
 searching for Hermes Lite 2 radios…	Hermes Lite 2 を検索中…
-sound	音声
 up-converter	アップコンバーター
 waiting	待機中
 waterfall dB##wfdb	ウォーターフォール dB##wfdb

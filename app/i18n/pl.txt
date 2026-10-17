@@ -947,13 +947,11 @@ holds	trzyma
 last send %s	ostatnie wysłanie %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	nasłuch na %s port %d, klienci: %d, wysłano %.1f MB, odrzucono %.1f MB
 max	maks.
-mute	wyciszenie
 on air	na antenie
 partial	częściowo
 point %s	punkt %s
 power (dBm)	moc (dBm)
 searching for Hermes Lite 2 radios…	wyszukiwanie radiów Hermes Lite 2…
-sound	dźwięk
 up-converter	up-converter
 waiting	oczekiwanie
 waterfall dB##wfdb	wodospad dB##wfdb

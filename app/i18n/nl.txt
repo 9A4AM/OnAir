@@ -947,13 +947,11 @@ holds	houdt vast
 last send %s	laatst verzonden %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	luistert op %s poort %d, %d client(s), %.1f MB verzonden, %.1f MB verworpen
 max	max
-mute	gedempt
 on air	in de lucht
 partial	gedeeltelijk
 point %s	punt %s
 power (dBm)	vermogen (dBm)
 searching for Hermes Lite 2 radios…	zoeken naar Hermes Lite 2-radio's…
-sound	geluid
 up-converter	upconverter
 waiting	wachten
 waterfall dB##wfdb	waterval dB##wfdb

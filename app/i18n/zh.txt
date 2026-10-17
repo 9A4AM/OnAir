@@ -956,13 +956,11 @@ holds	保持
 last send %s	上次发送 %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	正在监听 %s 端口 %d，%d 个客户端，已发送 %.1f MB，已丢弃 %.1f MB
 max	最大
-mute	静音
 on air	播出中
 partial	部分
 point %s	点 %s
 power (dBm)	功率 (dBm)
 searching for Hermes Lite 2 radios…	正在查找 Hermes Lite 2 电台…
-sound	声音
 up-converter	上变频器
 waiting	等待中
 waterfall dB##wfdb	瀑布图 dB##wfdb

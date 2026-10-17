@@ -956,13 +956,11 @@ holds	hält
 last send %s	letztes Senden %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	lauscht auf %s Port %d, %d Client(s), %.1f MB gesendet, %.1f MB verworfen
 max	max
-mute	stumm
 on air	auf Sendung
 partial	teilweise
 point %s	Punkt %s
 power (dBm)	Leistung (dBm)
 searching for Hermes Lite 2 radios…	suche nach Hermes-Lite-2-Radios …
-sound	Ton
 up-converter	Aufwärtskonverter
 waiting	wartet
 waterfall dB##wfdb	Wasserfall dB##wfdb

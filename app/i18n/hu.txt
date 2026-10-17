@@ -941,13 +941,11 @@ holds	tart
 last send %s	utolsó küldés %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	figyel: %s, %d. port, %d kliens, %.1f MB elküldve, %.1f MB eldobva
 max	max
-mute	néma
 on air	adásban
 partial	részleges
 point %s	pont: %s
 power (dBm)	teljesítmény (dBm)
 searching for Hermes Lite 2 radios…	Hermes Lite 2 rádiók keresése…
-sound	hang
 up-converter	felfelé konverter
 waiting	várakozik
 waterfall dB##wfdb	vízesés dB##wfdb

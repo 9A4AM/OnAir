@@ -956,13 +956,11 @@ holds	išlaiko
 last send %s	paskutinis siuntimas %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	klausoma %s prievadu %d, %d klientas(-ai), išsiųsta %.1f MB, praleista %.1f MB
 max	maks.
-mute	nutildyti
 on air	eteryje
 partial	dalinis
 point %s	taškas %s
 power (dBm)	galia (dBm)
 searching for Hermes Lite 2 radios…	ieškoma Hermes Lite 2 radijų…
-sound	garsas
 up-converter	kėlimo keitiklis
 waiting	laukiama
 waterfall dB##wfdb	krioklys dB##wfdb
