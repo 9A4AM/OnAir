@@ -2363,9 +2363,48 @@ Current setting: %.2f ppm	Réglage actuel : %.2f ppm
 No measurements of this radio yet.	Pas encore de mesures de cette radio.
 History of this radio (ppm)	Historique de cette radio (ppm)
 Drift: %+.3f ppm per minute	Dérive : %+.3f ppm par minute
+Band from (kHz)	Bande de (kHz)
+Calibrate from two landmarks	Étalonner avec deux repères
+Calibrated.	Étalonné.
+Camera snapshot URL (JPEG)	URL d'instantané de la caméra (JPEG)
+Cannot load the picture.	Impossible de charger l'image.
+Cannot save the snapshot.	Impossible d'enregistrer l'instantané.
+Centre azimuth	Azimut central
+Click the picture to set the column of the selected landmark.	Cliquez sur l'image pour fixer la colonne du repère sélectionné.
+Demo skyline (no camera)	Horizon de démonstration (sans caméra)
+Enable RF camera	Activer la caméra RF
+Field of view	Champ de vision
+Heat strength	Intensité de la carte thermique
+No picture.	Aucune image.
+Normal camera lens	Objectif de caméra normal
+Panorama (equirectangular)	Panorama (équirectangulaire)
+Picture	Image
+Picture or panorama file	Fichier image ou panorama
+Projection	Projection
+RF camera	Caméra RF
+Save snapshot	Enregistrer l'instantané
+Snapshot saved: %s	Instantané enregistré : %s
+Sub-bands	Sous-bandes
+The two landmarks do not fit a picture.	Les deux repères ne correspondent pas à une image.
+Weakest shown	Plus faible affiché
+azimuth	azimut
+azimuth only; the picture is just a backdrop	azimut seulement ; l'image n'est qu'un fond
+column	colonne
+to (kHz)	à (kHz)
 Translate to English	Traduire en anglais
 Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	La parole dans une autre langue est aussi traduite en anglais, hors ligne, à côté de l'original. Nécessite un modèle multilingue et coûte environ 1,5 fois plus de temps processeur ; ignoré quand le moteur ne suit plus. Rien n'est envoyé. La traduction vers d'autres langues n'est pas disponible.
 The loaded model is English only: translation needs a multilingual model.	Le modèle chargé est uniquement anglais : la traduction nécessite un modèle multilingue.
+Live: stop the room	En direct : arrêter la salle
+Copy room link	Copier le lien de la salle
+Host PIN (to moderate on the room page):	PIN de l'hôte (pour modérer sur la page de la salle) :
+Go live (Live rooms)...	Passer en direct (salles en direct)...
+Could not create the room	Impossible de créer la salle
+Lost the connection to the rooms server	Connexion au serveur de salles perdue
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Salles en direct : tant que vous êtes en direct, toute personne ayant le lien de la salle peut voir la cascade de ce récepteur, le mode et la fréquence réglée, et discuter avec les autres. La liste des salles sur le web affiche aussi son titre. Rien n'est envoyé avant d'appuyer sur Passer en direct, et rien n'est conservé après la fin de la salle. Votre position, votre nom et l'audio ne sont jamais envoyés.
+Room title	Titre de la salle
+Also show decoded ACARS text in the room (public)	Afficher aussi le texte ACARS décodé dans la salle (public)
+Needs Server > Send data to map server and Also share interesting ACARS messages.	Nécessite Serveur > Envoyer les données au serveur de la carte et Partager aussi les messages ACARS intéressants.
+Go live	Passer en direct
 Schedule passes by itself	Planifier les passages automatiquement
 Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Prend les passages des groupes cochés un par un, par priorité décroissante, et démarre, accorde et enregistre chacun sans vous. Les passages qui se chevauchent sont raccourcis ou ignorés ; un récepteur que vous avez lancé vous-même n'est pas touché.
 Priority (higher wins)	Priorité (la plus haute gagne)
@@ -2456,3 +2495,112 @@ What to do	Que faire
 ADS-B range by direction	Portée ADS-B par direction
 Check station	Vérifier la station
 Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	Plancher de bruit, niveau du CAN et stations de référence par bande, avec des conseils clairs sur le gain, les filtres et l'emplacement de l'antenne
+# interference hunter
+Unknown	Inconnu
+Switching power supply	Alimentation à découpage
+LED lamp or driver	Lampe LED ou son driver
+Powerline (PLC)	Courant porteur (CPL)
+Local oscillator or clock leak	Fuite d'oscillateur ou d'horloge
+Cannot open the GPS device or file.	Impossible d'ouvrir le périphérique GPS ou le fichier.
+Waiting for a position fix.	En attente d'une position.
+Interference gone	L'interférence a disparu
+The noise floor rose by %.1f dB	Le plancher de bruit a monté de %.1f dB
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	Nouveau bruit large bande %.2f - %.2f MHz, %.0f dB : %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	Nouveau signal à %.4f MHz, %.0f dB au-dessus de la référence : %s
+Demo (simulated sweeps)	Démo (balayages simulés)
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	Un peigne de raies demande un espacement d'au moins 5 cases pour être distingué d'un signal large : des cases plus fines montrent des raies plus rapprochées
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	Pause entre les balayages : la surveillance peut tourner des heures avec de longues pauses ; la marche demande des balayages enchaînés
+spur threshold %.0f dB	seuil de raies %.0f dB
+floor alert %.0f dB	alerte de plancher %.0f dB
+confirm in %d sweeps	confirmer en %d balayages
+floor change dB	variation du plancher dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	Apprentissage de la référence : %d balayages sur %d. Laissez la bande dans son état normal.
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	Surveillance en cours. Plancher de bruit %.1f dBFS, référence %.1f dBFS, %zu signaux connus.
+Press Start. The first sweeps become the baseline: what is normal in this band.	Appuyez sur Démarrer. Les premiers balayages deviennent la référence : ce qui est normal dans cette bande.
+Learn the baseline again	Réapprendre la référence
+What is there now is normal	Ce qui est là maintenant est normal
+Adds the interference that has been reported to the baseline, so it raises no more alerts	Ajoute l'interférence signalée à la référence, elle ne déclenche plus d'alerte
+Save the alerts...	Enregistrer les alertes...
+Save the noise floor log...	Enregistrer le journal du plancher de bruit...
+Interference now	Interférences actuelles
+Likely source	Source probable
+To MHz	Jusqu'à MHz
+Spacing kHz	Espacement kHz
+Alerts	Alertes
+Event	Événement
+dB above baseline	dB au-dessus de la référence
+new signal	nouveau signal
+noise floor up	plancher de bruit en hausse
+new broadband noise	nouveau bruit large bande
+gone	disparu
+no position	pas de position
+the receiver position (set for ADS-B)	la position du récepteur (réglée pour l'ADS-B)
+type a position	saisir une position
+GPS device or NMEA file	périphérique GPS ou fichier NMEA
+latitude	latitude
+longitude	longitude
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	Un GPS série (par exemple /dev/cu.usbmodem1101 ou COM3 sur PC ; 9600 bauds) ou un fichier texte de phrases NMEA
+Reconnect	Reconnecter
+Readings are logged at %.5f, %.5f	Les mesures sont enregistrées à %.5f, %.5f
+Readings are logged without a position.	Les mesures sont enregistrées sans position.
+%+.1f dB above the quiet level	%+.1f dB au-dessus du niveau calme
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	Appuyez sur Démarrer et marchez. L'indicateur est plein quand l'interférence dépasse de 25 dB l'endroit le plus calme jusqu'ici.
+Quiet	Calme
+Some interference	Un peu d'interférence
+Loud	Fort
+- getting louder	- augmente
+- getting quieter	- diminue
+- steady	- stable
+strongest spur %.4f MHz, %.0f dB	raie la plus forte %.4f MHz, %.0f dB
+This is the quiet level	C'est le niveau calme
+Leave out the signals seen now	Exclure les signaux vus maintenant
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	Les porteuses de radiodiffusion et appareils connus sont exclus de l'indicateur : faites-le dans un endroit calme avant de marcher
+Clear the readings	Effacer les mesures
+Save as CSV...	Enregistrer en CSV...
+Save as GPX...	Enregistrer en GPX...
+reading	mesure
+dB above the quiet level	dB au-dessus du niveau calme
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	Mesure la plus forte : %+.1f dB à %.5f, %.5f (%s)
+Loudest reading: %+.1f dB (%s), no position	Mesure la plus forte : %+.1f dB (%s), sans position
+Strongest spur MHz	Raie la plus forte MHz
+Interference hunter	Chasseur d'interférences
+Monitor	Surveillance
+Walk	Marche
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Surveiller une bande pour détecter de nouvelles interférences, en déterminer le type et les localiser à pied avec un indicateur fort / calme
+The watchlist file could not be read:	Le fichier des listes de surveillance n'a pas pu être lu :
+APRS call signs	Indicatifs APRS
+Words in messages	Mots dans les messages
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Une par ligne : une adresse ICAO hexadécimale (4840D6), une immatriculation (A6-EDA) ou un indicatif (KLM1023). Un * final correspond au début (KLM*). Reçu par ADS-B, ACARS, VDL2 et HFDL.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Une par ligne : un numéro MMSI, un nom de navire ou un indicatif. Un * final correspond au début (2190*). Reçu par AIS et DSC.
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Un par ligne : un indicatif. Sans SSID (LY1ABC), tous les SSID correspondent ; avec un SSID (LY1ABC-9), seulement celui-ci.
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Une par ligne : une fréquence en MHz (162.025), avec une unité (162025 kHz) ou une plage (144-146). Tout ce qui est décodé dessus compte.
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Un par ligne : un mot ou une expression (sans tenir compte de la casse). Un * final correspond aux débuts de mot (fire*). Recherché dans les messages de pagers, ACARS, APRS et autres textes décodés.
+New list...	Nouvelle liste...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	Créez une liste à gauche : avions, navires, indicatifs APRS, fréquences ou mots. OnAir vous prévient quand l'un d'eux est entendu.
+On	Actif
+Tolerance (kHz)	Tolérance (kHz)
+entries	entrées
+Delete list	Supprimer la liste
+Desktop notification	Notification du bureau
+Sound (follows Mute)	Son (respecte Muet)
+WAV file, empty = three beeps	Fichier WAV, vide = trois bips
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	Les alertes push sont envoyées à un service de votre choix, avec l'adresse et le jeton que vous indiquez. Ils sont conservés dans votre dossier de données et jamais écrits dans un journal.
+optional	facultatif
+optional, sent as a Bearer token	facultatif, envoyé comme jeton Bearer
+Send a test alert	Envoyer une alerte de test
+Most alerts per hour (0 = no limit)	Nombre maximal d'alertes par heure (0 = illimité)
+Same station again after (minutes)	Même station à nouveau après (minutes)
+Quiet hours (no alerts, still listed in the history)	Heures calmes (pas d'alertes, toujours listées dans l'historique)
+From	De
+Until	Jusqu'à
+Local time of this computer.	Heure locale de cet ordinateur.
+alerts sent	alertes envoyées
+Heard	Entendu
+What happened	Ce qui s'est passé
+held back: quiet hours	retenue : heures calmes
+held back: rate limit	retenue : limite atteinte
+Watchlists	Listes de surveillance
+Watch for these	Surveiller ceux-ci
+Lists	Listes
+Watchlists...	Listes de surveillance...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alertes quand des avions, navires, indicatifs, fréquences ou mots listés sont entendus : notification, son, ntfy, Telegram ou webhook

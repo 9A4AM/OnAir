@@ -12,6 +12,7 @@ namespace dect2::df {
 SimMultiChannelSource::SimMultiChannelSource(SimConfig c) : cfg_(std::move(c)), rng_(cfg_.seed) {
     for (size_t i = 0; i < cfg_.sources.size(); i++) srcRng_.emplace_back(cfg_.sources[i].seed ? cfg_.sources[i].seed : cfg_.seed * 1000 + i + 7);
     hist_.resize(cfg_.sources.size());
+    lp_.assign(cfg_.sources.size(), {cd(0), cd(0)});
 }
 
 bool SimMultiChannelSource::read(Frame& out, size_t n) {
@@ -26,7 +27,14 @@ bool SimMultiChannelSource::read(Frame& out, size_t n) {
             const SimSource& ss = cfg_.sources[s];
             if (ss.copyOf >= 0) continue;
             // unit-power circular Gaussian message, rotated by the source's frequency offset
-            wav[s] = cd(srcRng_[s].gauss(), srcRng_[s].gauss()) / std::sqrt(2.0) * std::polar(1.0, 2 * kPi * ss.offsetHz * (double)t_ / cfg_.sampleRate);
+            cd g = cd(srcRng_[s].gauss(), srcRng_[s].gauss()) / std::sqrt(2.0);
+            if (ss.bandwidthHz > 0) {   // two cascaded one-pole low-passes, scaled back to unit power
+                const double a = std::exp(-kPi * ss.bandwidthHz / cfg_.sampleRate);
+                lp_[s][0] = a * lp_[s][0] + (1 - a) * g;
+                lp_[s][1] = a * lp_[s][1] + (1 - a) * lp_[s][0];
+                g = lp_[s][1] / std::sqrt((1 - a) * (1 - a) * (1 - a) * (1 - a) * (1 + a * a) / std::pow(1 - a * a, 3));
+            }
+            wav[s] = g * std::polar(1.0, 2 * kPi * ss.offsetHz * (double)t_ / cfg_.sampleRate);
             auto& h = hist_[s]; h.push_back(wav[s]); if (h.size() > 64) h.erase(h.begin());
         }
         for (size_t s = 0; s < cfg_.sources.size(); s++) {   // reflections: the same waveform, `delay` samples late (0 = fully coherent)

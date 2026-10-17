@@ -176,6 +176,7 @@ static void floatingWindows(App& a, ImVec2 disp) {
     passesWindow(a);
     dfWindow(a);
     passiveRadarWindow(a);
+    rfiWindow(a);
     galleryWindow(a);
     scannerWindow(a);
     sweepWindow(a);
@@ -199,6 +200,7 @@ static void floatingWindows(App& a, ImVec2 disp) {
     pluginFrame(a);
     pluginManagerWindow(a);
     msgdbWindow(a);
+    watchlistWindow(a);
     txTick(a);
     shareTick(a);
     remoteApiTick(a);
