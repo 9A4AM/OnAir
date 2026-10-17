@@ -11,6 +11,17 @@ using namespace dect2;
 static bool has(const std::vector<int>& v, int b) { return std::find(v.begin(), v.end(), b) != v.end(); }
 
 int main() {
+    {   // table-driven: F_DL = F_DL_low + 0.1 (N - N_Offs-DL), 36.101 5.7.3-1
+        struct T { int band, n; double mhz; } t[] = {{31, 9870, 462.5}, {31, 9885, 464.0}, {31, 9892, 464.7}, {31, 9919, 467.4}, {28, 9210, 758.0}, {20, 6150, 791.0},
+                                                     {72, 68936, 461.0}, {87, 70546, 420.0}, {14, 5280, 758.0}, {30, 9770, 2350.0}, {29, 9660, 717.0}};
+        for (const auto& e : t) {
+            CHECK(std::fabs(lteEarfcnToHz(e.n) - e.mhz * 1e6) < 1, "EARFCN %d = %.1f MHz", e.n, e.mhz);
+            CHECK(lteBandOfEarfcn(e.n) == e.band, "EARFCN %d is B%d", e.n, e.band);
+            CHECK(lteNearestEarfcn(e.mhz * 1e6, e.band) == e.n, "%.1f MHz in B%d is EARFCN %d", e.mhz, e.band, e.n);
+        }
+        CHECK(has(lteBandsOfHz(464.0e6), 31) && lteBandInfo(31) && !lteBandInfo(31)->tdd, "464.0 MHz holds B31 (FDD)");
+        CHECK(lteBandOfEarfcn(9920) == 32 && lteBandOfEarfcn(9919) == 31, "B31 ends at 9919, B32 starts at 9920");
+    }
     // overlaps the reports were about
     const auto b2125 = lteBandsOfHz(2125e6);
     CHECK(has(b2125, 1) && has(b2125, 4) && has(b2125, 10) && has(b2125, 66) && has(b2125, 65) && !has(b2125, 25), "2125 MHz holds B1, 4, 10, 65, 66");

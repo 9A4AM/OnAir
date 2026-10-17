@@ -3,6 +3,7 @@
 // map of the towers: looked up on OpenCelliD with the user's own API key (only the cell identity and the key are sent; cached on disk), or
 // from a tower position file the user downloads (OpenCelliD CSV: radio,mcc,net,area,cell,unit,lon,lat,...). Data (c) OpenCelliD, CC BY-SA
 // 4.0; nothing is bundled. Only what cells broadcast to every phone is shown.
+#include <set>
 #include "app.h"
 #include "state/results_export.h"
 #include "../adsb/adsb_map.h"
@@ -22,14 +23,15 @@
 
 namespace {
 
-constexpr int kNb = 20;
-const int kScanBands[kNb] = {20, 8, 3, 1, 7, 28, 32, 38, 40, 41, 42, 43, 2, 4, 5, 12, 13, 25, 66, 71};
+constexpr int kNb = 21;
+const int kScanBands[kNb] = {20, 8, 3, 1, 7, 28, 32, 38, 40, 41, 42, 43, 2, 4, 5, 12, 13, 25, 66, 71, 31};
 
 struct Pos { double lat, lon; };
 struct State {
     int view = 0;                 // 0 cells, 1 sites, 2 neighbours, 3 operators, 4 map, 5 log
     int sel = -1;                 // selected cell (index in cells)
     bool bands[kNb] = {true, true, true, true, true};   // B20, B8, B3, B1, B7
+    std::set<int> extraBands;     // other table bands picked in the "Other bands" popup
     bool custom = false;          // a custom range instead of (with) the bands
     float customLo = 790, customHi = 830;   // MHz
     bool scanning = false;
@@ -163,6 +165,7 @@ void makePlan(const App& a) {
         if (!S.bands[i]) continue;
         if (const dect2::LteBand* b = dect2::lteBandInfo(kScanBands[i])) range(b->dlLowMhz, b->dlHighMhz);
     }
+    for (int nb : S.extraBands) if (const dect2::LteBand* b = dect2::lteBandInfo(nb)) range(b->dlLowMhz, b->dlHighMhz);
     if (S.custom && S.customHi > S.customLo) range(S.customLo, S.customHi);
 }
 
@@ -174,6 +177,25 @@ void scanBar(App& a) {
         char l[16]; snprintf(l, sizeof l, "B%d##cb%d", kScanBands[i], i);
         ImGui::Checkbox(l, &S.bands[i]);
         if (ImGui::IsItemHovered()) if (const dect2::LteBand* b = dect2::lteBandInfo(kScanBands[i])) ImGui::SetTooltip("Band %d: %.0f - %.0f MHz (%s)", b->band, b->dlLowMhz, b->dlHighMhz, b->region);
+    }
+    flowNext(10 * gUi);
+    {   // every other band of the table (36.101 5.5-1), in a popup; the 5 GHz bands (46, 47, 49) are beyond the radios
+        char l[32]; snprintf(l, sizeof l, S.extraBands.empty() ? "Other bands..." : "Other bands (%d)...", (int)S.extraBands.size());
+        if (ImGui::SmallButton(l)) ImGui::OpenPopup("lteother");
+        if (ImGui::BeginPopup("lteother")) {
+            int col = 0;
+            for (const auto& b : dect2::lteBands()) {
+                if (b.band == 46 || b.band == 47 || b.band == 49) continue;
+                bool listed = false; for (int k : kScanBands) if (k == b.band) listed = true;
+                if (listed) continue;
+                bool on = S.extraBands.count(b.band) > 0;
+                char bl[48]; snprintf(bl, sizeof bl, "B%d %s%s##ob%d", b.band, b.tdd ? "TDD " : "", b.region, b.band);
+                if (col++ % 3) ImGui::SameLine(190 * gUi * (float)((col - 1) % 3));
+                if (ImGui::Checkbox(bl, &on)) { if (on) S.extraBands.insert(b.band); else S.extraBands.erase(b.band); }
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("Band %d: %.1f - %.1f MHz downlink", b.band, b.dlLowMhz, b.dlHighMhz);
+            }
+            ImGui::EndPopup();
+        }
     }
     flowNext(10 * gUi);
     ImGui::Checkbox("Custom##cbc", &S.custom);
