@@ -47,7 +47,7 @@ std::vector<MultiService> Engine::multiServices() {
 
 void Engine::onMultiPackets(const uint8_t* pk, size_t n, double secs, const TsSnapshot& snap) {
     std::lock_guard<std::mutex> lk(tsMu_);
-    for (size_t i = 0; i < n; i++) ttx_.feedTs(pk + i * 188);
+    if (!playerExternal_) for (size_t i = 0; i < n; i++) ttx_.feedTs(pk + i * 188);
     tsSnap_ = snap;
     outputs_.packets(pk, n, &tsSnap_);
     if (tap_) tap_(pk, n, &tsSnap_, secs);

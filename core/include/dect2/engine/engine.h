@@ -271,6 +271,8 @@ public:
     // true: the live multiplex no longer feeds the player (a recording or the timeshift buffer is playing through player().push() instead)
     void setPlayerExternal(bool on) { playerExternal_ = on; }
     bool playerExternal() const { return playerExternal_; }
+    // The subtitle decoders follow the stream that plays through player().push() while setPlayerExternal(true)
+    void feedPlaybackSubtitles(const uint8_t* pkts, size_t n) { for (size_t i = 0; i < n; i++) { ttx_.feedTs(pkts + i * 188); dvbsub_.feedTs(pkts + i * 188); } }
     void setOutputs(const OutputConfig& c) { outputs_.configure(c); }
     OutputConfig outputConfig() const { return outputs_.config(); }
     OutputStats outputStats() const { return outputs_.stats(); }

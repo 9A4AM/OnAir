@@ -251,7 +251,7 @@ void Engine::applyReset() {
         std::lock_guard<std::mutex> lk(tsMu_);
         demux_.reset();
         unpack_ = BbUnpacker();
-        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); ttx_.feedTs(pkt); dvbsub_.feedTs(pkt); frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
+        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); if (!playerExternal_) { ttx_.feedTs(pkt); dvbsub_.feedTs(pkt); } frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
         tsSnap_ = TsSnapshot();
         lastT2Frame_ = -1;
         frameBuf_.clear();
@@ -274,8 +274,8 @@ void Engine::onTsPackets(const uint8_t* pk, size_t n, double secs) {
     for (size_t i = 0; i < n; i++) {
         const uint8_t* q = pk + i * 188;
         demux_.feed(q);
-        ttx_.feedTs(q);
-        dvbsub_.feedTs(q);
+        if (!playerExternal_) ttx_.feedTs(q);
+        if (!playerExternal_) dvbsub_.feedTs(q);
     }
     demux_.advance(secs);
     tsSnap_ = demux_.snapshot();
