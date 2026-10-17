@@ -7,6 +7,7 @@
 
 namespace dect2 {
 
+#ifndef DECT2_RUST_DVBSI   // with Rust (rust/onair_dvbsi) these live in teletext_rs.cpp
 // ------------------------------------------------------------------ hamming
 namespace {
 uint8_t hammEncode(int n) {
@@ -58,6 +59,79 @@ uint8_t ttxReverse8(uint8_t b) {
     b = (uint8_t)((b & 0xAA) >> 1 | (b & 0x55) << 1);
     return b;
 }
+
+TtxUnit ttxDecodeUnit(const uint8_t* u) {
+    TtxUnit r;
+    // u[0] field/line, u[1] framing code, u[2..43] = 2 address bytes + 40 data bytes (bit-reversed in the PES)
+    if (u[1] != 0xE4 && u[1] != 0x27) return r;
+    uint8_t b[42];
+    for (int i = 0; i < 42; i++) b[i] = ttxReverse8(u[2 + i]);
+    const int a0 = ttxHamming84(b[0]), a1 = ttxHamming84(b[1]);
+    if (a0 < 0 || a1 < 0) return r;
+    const int addr = a0 | a1 << 4;
+    int mag = addr & 7;
+    if (mag == 0) mag = 8;
+    const int row = addr >> 3;
+    r.mag = mag; r.row = row; r.kind = TtxUnit::Other;
+    if (row == 0) {
+        r.kind = TtxUnit::Header;
+        const int un = ttxHamming84(b[2]), tn = ttxHamming84(b[3]);
+        int nib[6];
+        for (int i = 0; i < 6; i++) nib[i] = ttxHamming84(b[4 + i]);
+        r.serial = nib[5] >= 0 && (nib[5] & 1);   // C11
+        if (un < 0 || tn < 0 || un > 9 || tn > 9) return r;   // time filler (0xFF) and non-decimal pages
+        r.pageOk = true;
+        r.number = mag * 100 + tn * 10 + un;
+        if (nib[0] >= 0 && nib[1] >= 0 && nib[2] >= 0 && nib[3] >= 0) r.subcode = nib[0] | (nib[1] & 7) << 4 | nib[2] << 8 | (nib[3] & 3) << 12;
+        r.erase = nib[1] >= 0 && (nib[1] & 8);
+        r.newsflash = nib[3] >= 0 && (nib[3] & 4);
+        r.subtitle = nib[3] >= 0 && (nib[3] & 8);
+        r.inhibit = nib[4] >= 0 && (nib[4] & 8);
+        r.national = nib[5] >= 0 ? ((nib[5] >> 1) & 7) : 0;
+        for (int i = 0; i < 32; i++) r.head[i] = b[10 + i] & 0x7F;
+    } else if (row >= 1 && row <= 24) {
+        r.kind = TtxUnit::Row;
+        for (int i = 0; i < 40; i++) r.rowData[i] = b[2 + i] & 0x7F;
+    } else if (row == 27 && ttxHamming84(b[2]) == 0) {
+        // packet X/27/0: Fastext links (red, green, yellow, cyan, index, spare), six Hamming 8/4 nibbles each; only designation code 0 carries page links
+        r.kind = TtxUnit::Fastext;
+        for (int l = 0; l < 6; l++) {
+            int n[6];
+            bool ok = true;
+            for (int i = 0; i < 6; i++) { n[i] = ttxHamming84(b[3 + l * 6 + i]); if (n[i] < 0) ok = false; }
+            if (!ok) continue;
+            const int units = n[0], tens = n[1];
+            if (units > 9 || tens > 9) { r.linkAct[l] = 1; continue; }   // 0xFF = no link (and anything not decimal)
+            const int m = ((n[3] >> 3) & 1) | ((n[5] >> 2) & 3) << 1;   // M1, M2, M3: the magazine relative to this one
+            int lm = (mag & 7) ^ m;
+            if (lm == 0) lm = 8;
+            r.linkAct[l] = 2;
+            r.linkPage[l] = lm * 100 + tens * 10 + units;
+            r.linkSub[l] = n[2] | (n[3] & 7) << 4 | n[4] << 8 | (n[5] & 3) << 12;
+        }
+    }
+    return r;
+}
+
+size_t ttxPesUnits(const uint8_t* pes, size_t n, uint32_t* off, size_t cap) {
+    if (n < 10 || pes[0] != 0 || pes[1] != 0 || pes[2] != 1) return 0;
+    if (pes[3] != 0xBD) return 0; // private stream 1
+    const size_t hdr = 9 + pes[8];
+    if (hdr + 1 > n) return 0;
+    const uint8_t* d = pes + hdr;
+    size_t left = n - hdr;
+    if (d[0] < 0x10 || d[0] > 0x1F) return 0; // data_identifier
+    d++; left--;
+    size_t count = 0;
+    while (left >= 2) {
+        const uint8_t id = d[0], len = d[1];
+        if (2u + len > left) break;
+        if ((id == 0x02 || id == 0x03) && len == 44) { if (count < cap) off[count] = (uint32_t)(d + 2 - pes); count++; }
+        d += 2 + len; left -= 2 + len;
+    }
+    return count;
+}
+#endif
 
 // ------------------------------------------------------------------ decoder
 void TeletextDecoder::setPid(int pid) {
@@ -112,20 +186,9 @@ void TeletextDecoder::feedTs(const uint8_t* p) {
 }
 
 void TeletextDecoder::feedPes(const uint8_t* pes, size_t n) {
-    if (n < 10 || pes[0] != 0 || pes[1] != 0 || pes[2] != 1) return;
-    if (pes[3] != 0xBD) return; // private stream 1
-    const size_t hdr = 9 + pes[8];
-    if (hdr + 1 > n) return;
-    const uint8_t* d = pes + hdr;
-    size_t left = n - hdr;
-    if (d[0] < 0x10 || d[0] > 0x1F) return; // data_identifier
-    d++; left--;
-    while (left >= 2) {
-        const uint8_t id = d[0], len = d[1];
-        if (2u + len > left) break;
-        if ((id == 0x02 || id == 0x03) && len == 44) dataUnit(d + 2);
-        d += 2 + len; left -= 2 + len;
-    }
+    std::vector<uint32_t> off(n / 46 + 2);
+    const size_t count = std::min(ttxPesUnits(pes, n, off.data(), off.size()), off.size());
+    for (size_t i = 0; i < count; i++) dataUnit(pes + off[i]);
 }
 
 void TeletextDecoder::closePage(int64_t key) {
@@ -138,32 +201,18 @@ void TeletextDecoder::closePage(int64_t key) {
 }
 
 void TeletextDecoder::dataUnit(const uint8_t* u) {
-    // u[0] field/line, u[1] framing code, u[2..43] = 2 address bytes + 40 data bytes (bit-reversed in the PES)
-    if (u[1] != 0xE4 && u[1] != 0x27) return;
-    uint8_t b[42];
-    for (int i = 0; i < 42; i++) b[i] = ttxReverse8(u[2 + i]);
-    const int a0 = ttxHamming84(b[0]), a1 = ttxHamming84(b[1]);
-    if (a0 < 0 || a1 < 0) return;
-    const int addr = a0 | a1 << 4;
-    int mag = addr & 7;
-    if (mag == 0) mag = 8;
-    const int row = addr >> 3;
+    const TtxUnit d = ttxDecodeUnit(u);
+    if (d.kind == TtxUnit::Ignore) return;
+    const int mag = d.mag, row = d.row;
     std::lock_guard<std::mutex> lk(mu_);
     if (!curInit_) { for (int i = 0; i < 9; i++) cur_[i] = -1; curInit_ = true; }
     packets_++;
-    if (row == 0) {
-        const int un = ttxHamming84(b[2]), tn = ttxHamming84(b[3]);
-        int nib[6];
-        for (int i = 0; i < 6; i++) nib[i] = ttxHamming84(b[4 + i]);
-        const bool serial = nib[5] >= 0 && (nib[5] & 1);   // C11
+    if (d.kind == TtxUnit::Header) {
         // this header ends the page being sent in its magazine (every magazine's, with serial transmission)
-        if (serial) { for (int m = 1; m <= 8; m++) { closePage(cur_[m]); cur_[m] = -1; } }
+        if (d.serial) { for (int m = 1; m <= 8; m++) { closePage(cur_[m]); cur_[m] = -1; } }
         else { closePage(cur_[mag]); cur_[mag] = -1; }
-        if (un < 0 || tn < 0) return;
-        if (un > 9 || tn > 9) return;   // time filler (0xFF) and non-decimal pages
-        const int number = mag * 100 + tn * 10 + un;
-        int subcode = 0;
-        if (nib[0] >= 0 && nib[1] >= 0 && nib[2] >= 0 && nib[3] >= 0) subcode = nib[0] | (nib[1] & 7) << 4 | nib[2] << 8 | (nib[3] & 3) << 12;
+        if (!d.pageOk) return;
+        const int number = d.number, subcode = d.subcode;
         const uint32_t key = (uint32_t)number << 16 | (uint32_t)subcode;
         if (pages_.size() > 4096 && !pages_.count(key)) {   // a stream with ever-changing subcodes: drop the oldest copies
             std::vector<std::pair<uint64_t, uint32_t>> age;
@@ -172,46 +221,34 @@ void TeletextDecoder::dataUnit(const uint8_t* u) {
             for (size_t i = 0; i < 512; i++) pages_.erase(age[i].second);
         }
         TtxPage& p = pages_[key].live;
-        const bool erase = nib[1] >= 0 && (nib[1] & 8);
-        if (erase || p.number == 0) { p.rows = {}; p.rowMask = 0; for (int i = 0; i < 6; i++) p.fastext[i] = p.fastextSub[i] = 0; }
+        if (d.erase || p.number == 0) { p.rows = {}; p.rowMask = 0; for (int i = 0; i < 6; i++) p.fastext[i] = p.fastextSub[i] = 0; }
         p.number = number;
         p.subcode = subcode;
         p.complete = false;
-        p.serial = serial;
-        p.newsflash = nib[3] >= 0 && (nib[3] & 4);
-        p.subtitle = nib[3] >= 0 && (nib[3] & 8);
-        p.inhibit = nib[4] >= 0 && (nib[4] & 8);
-        p.national = nib[5] >= 0 ? ((nib[5] >> 1) & 7) : 0;
+        p.serial = d.serial;
+        p.newsflash = d.newsflash;
+        p.subtitle = d.subtitle;
+        p.inhibit = d.inhibit;
+        p.national = d.national;
         for (int i = 0; i < 8; i++) p.rows[0][i] = ' ';
-        for (int i = 0; i < 32; i++) p.rows[0][8 + i] = b[10 + i] & 0x7F;
+        for (int i = 0; i < 32; i++) p.rows[0][8 + i] = d.head[i];
         p.rowMask |= 1;
         p.version = ++version_;
         cur_[mag] = key;
-    } else if (row >= 1 && row <= 24 && cur_[mag] >= 0) {
+    } else if (d.kind == TtxUnit::Row && cur_[mag] >= 0) {
         auto it = pages_.find((uint32_t)cur_[mag]);
         if (it == pages_.end()) return;
         TtxPage& p = it->second.live;
-        for (int i = 0; i < 40; i++) p.rows[row][i] = b[2 + i] & 0x7F;
+        for (int i = 0; i < 40; i++) p.rows[row][i] = d.rowData[i];
         p.rowMask |= 1u << row;
         p.version = ++version_;
-    } else if (row == 27 && cur_[mag] >= 0) {
-        // packet X/27/0: Fastext links (red, green, yellow, cyan, index, spare), six Hamming 8/4 nibbles each
-        if (ttxHamming84(b[2]) != 0) return;   // only designation code 0 carries page links
+    } else if (d.kind == TtxUnit::Fastext && cur_[mag] >= 0) {
         auto it = pages_.find((uint32_t)cur_[mag]);
         if (it == pages_.end()) return;
         TtxPage& p = it->second.live;
         for (int l = 0; l < 6; l++) {
-            int n[6];
-            bool ok = true;
-            for (int i = 0; i < 6; i++) { n[i] = ttxHamming84(b[3 + l * 6 + i]); if (n[i] < 0) ok = false; }
-            if (!ok) continue;
-            const int units = n[0], tens = n[1];
-            if (units > 9 || tens > 9) { p.fastext[l] = 0; continue; }   // 0xFF = no link (and anything not decimal)
-            const int m = ((n[3] >> 3) & 1) | ((n[5] >> 2) & 3) << 1;   // M1, M2, M3: the magazine relative to this one
-            int lm = (mag & 7) ^ m;
-            if (lm == 0) lm = 8;
-            p.fastext[l] = lm * 100 + tens * 10 + units;
-            p.fastextSub[l] = n[2] | (n[3] & 7) << 4 | n[4] << 8 | (n[5] & 3) << 12;
+            if (d.linkAct[l] == 1) p.fastext[l] = 0;
+            else if (d.linkAct[l] == 2) { p.fastext[l] = d.linkPage[l]; p.fastextSub[l] = d.linkSub[l]; }
         }
         p.version = ++version_;
     }
@@ -247,6 +284,7 @@ std::vector<int> TeletextDecoder::subpages(int number) const {
     return v;
 }
 
+#ifndef DECT2_RUST_DVBSI   // with Rust (rust/onair_dvbsi) the renderer lives in teletext_rs.cpp
 // ------------------------------------------------------------------ renderer
 // Latin G0 national option subsets (EN 300 706 table 36): the 13 code positions 0x23 0x24 0x40 0x5B-0x5F 0x60 0x7B-0x7E
 uint32_t ttxG0(uint8_t c, int national) {
@@ -340,5 +378,6 @@ std::string ttxRowText(const TtxGrid& g, int row) {
     }
     return s;
 }
+#endif
 
 } // namespace dect2

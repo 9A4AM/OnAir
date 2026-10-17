@@ -53,6 +53,25 @@ std::string ttxRowText(const TtxGrid& g, int row);
 // 3 Italian, 4 French, 5 Portuguese/Spanish, 6 Czech/Slovak, 7 falls back to English)
 uint32_t ttxG0(uint8_t code, int national);
 
+// The pure layer below the decoder (Rust crate rust/onair_dvbsi with DECT2_RUST_DVBSI, otherwise teletext.cpp). One teletext data unit decoded: the 44 byte
+// payload of a PES data unit (field / line, framing code, 2 address bytes, 40 data bytes, bit reversed) as a header, row or Fastext record.
+struct TtxUnit {
+    enum Kind { Ignore = 0, Header = 1, Row = 2, Fastext = 3, Other = 4 };   // Ignore: bad framing code or address (not counted); Other: counted, no effect
+    int kind = Ignore;
+    bool serial = false;       // header: C11 serial transmission
+    bool pageOk = false;       // header: decimal page number (not a time filler): a page is opened
+    bool erase = false, newsflash = false, subtitle = false, inhibit = false;   // header: C4, C5, C6, C10
+    int linkAct[6] = {0, 0, 0, 0, 0, 0};   // Fastext, per link: 0 unchanged, 1 cleared (no link), 2 set to linkPage / linkSub
+    int mag = 0, row = 0;      // magazine 1..8, packet address row
+    int number = 0, subcode = 0, national = 0;   // header: page number 100..899, 13 bit subcode (0 if a nibble was bad), C12..C14
+    int linkPage[6] = {0, 0, 0, 0, 0, 0}, linkSub[6] = {0, 0, 0, 0, 0, 0};
+    uint8_t head[32] = {};     // header: the 32 characters of the header text (7 bit)
+    uint8_t rowData[40] = {};  // row: the 40 characters (7 bit)
+};
+TtxUnit ttxDecodeUnit(const uint8_t* u44);
+// Offsets (into the PES) of the 44 byte data units with id 0x02 / 0x03 in a teletext PES packet (EN 300 472); returns how many there are (also past `cap`).
+size_t ttxPesUnits(const uint8_t* pes, size_t n, uint32_t* off, size_t cap);
+
 class TeletextDecoder {
 public:
     void setPid(int pid);                 // -1 disables
