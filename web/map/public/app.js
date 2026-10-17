@@ -11,6 +11,7 @@ import { createSheet } from "./sheet.js";
 import { generateDemo, stepDemo } from "./demo.js";
 import { watchMapTheme, themeKey, onThemeChange } from "./theme.js";
 import { mergeTrails, appendLive, toLine } from "./trail.js";
+import { cellsToGeo, LEVEL_COLOURS } from "./jamlayer.js";
 
 const DEMO = new URLSearchParams(location.search).get("demo") === "1";
 // ?view=lat,lon,zoom opens the map there (used for screenshots and shared links)
@@ -1219,3 +1220,42 @@ if (DEMO) {
     pollLive();
   }, 30000);
 }
+
+// ---------- GPS interference (community heatmap, from GET /jam) ----------
+// Cells where a larger share of aircraft report a degraded GNSS position. An indicator, not proof of jamming (see the note under the toggle).
+let jamOn = false;
+try { jamOn = localStorage.getItem("onair.map.gpsjam") === "1"; } catch { /* storage blocked */ }
+let jamTimer = 0;
+function jamLoad() {
+  if (!jamOn || !map.getSource("jam")) return;
+  fetch("/jam").then((r) => (r.ok ? r.json() : null)).then((d) => {
+    if (d && map.getSource("jam")) map.getSource("jam").setData(cellsToGeo(d.cells, d.cell));
+  }).catch(() => {});
+}
+function jamApply() {
+  const box = $("gpsJam");
+  if (box) box.checked = jamOn;
+  const lg = $("jamLegend");
+  if (lg) lg.hidden = !jamOn;
+  if (map.getLayer("jamfill")) map.setLayoutProperty("jamfill", "visibility", jamOn ? "visible" : "none");
+  clearInterval(jamTimer);
+  if (jamOn) { jamLoad(); jamTimer = setInterval(jamLoad, 300e3); }
+}
+function jamInit() {
+  if (map.getSource("jam")) return;
+  map.addSource("jam", { type: "geojson", data: cellsToGeo([]) });
+  map.addLayer({
+    id: "jamfill", type: "fill", source: "jam",
+    layout: { visibility: jamOn ? "visible" : "none" },
+    paint: { "fill-color": ["get", "color"], "fill-opacity": 0.38 },
+  }, map.getLayer("trail") ? "trail" : undefined);
+  jamApply();
+}
+const jamBar = $("jamBar");
+if (jamBar) jamBar.innerHTML = LEVEL_COLOURS.map((c) => `<i style="background:${c}"></i>`).join("");
+$("gpsJam")?.addEventListener("change", (e) => {
+  jamOn = e.target.checked;
+  try { localStorage.setItem("onair.map.gpsjam", jamOn ? "1" : "0"); } catch { /* storage blocked */ }
+  jamApply();
+});
+if (map.loaded()) jamInit(); else map.on("load", () => setTimeout(jamInit, 0));

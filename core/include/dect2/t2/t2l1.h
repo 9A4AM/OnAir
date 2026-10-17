@@ -98,7 +98,8 @@ struct L1Result {
 };
 // y: 1840 equalised cells; n0: noise variance per real dimension
 L1Result decodeL1Pre(const std::vector<cf32>& y, float n0, L1Pre& out);
-L1Result decodeL1Post(const std::vector<cf32>& y, float n0, const L1Pre& pre, int nP2, bool fefPresent, L1Post& out);
+// n0v: optional noise variance per cell (equalised noise grows where the channel is faded); n0 is used when it is null.
+L1Result decodeL1Post(const std::vector<cf32>& y, float n0, const L1Pre& pre, int nP2, bool fefPresent, L1Post& out, const std::vector<float>* n0v = nullptr);
 
 // ---- P2 cell distribution
 // Stream order: [L1-pre][L1-post][other cells]. Distribute across nP2 symbols of cP2 cells (zig-zag), and back.

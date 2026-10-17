@@ -77,6 +77,9 @@ public:
     int setBiasTee(bool on) { return onair_usb_rtl_set_bias_tee(h_, on); }
     int resetBuffer() { return onair_usb_rtl_reset_buffer(h_); }
     int readSync(uint8_t* buf, size_t len) { return onair_usb_rtl_read_sync(h_, buf, len); }
+    // 1 when the manufacturer / product strings read at open equal these (NUL terminated), else 0
+    int checkDongleModel(const char* manufact, const char* product) {
+        return onair_usb_rtl_check_dongle_model(h_, reinterpret_cast<const uint8_t*>(manufact), reinterpret_cast<const uint8_t*>(product)); }
 
 private:
     RtlSdrRs(void* h, size_t align) : h_(h), align_(align) {}

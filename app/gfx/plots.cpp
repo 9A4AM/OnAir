@@ -4,9 +4,61 @@
 #include "dect2/specan/specan_dsp.h"
 
 // Click on the spectrum or the waterfall to tune to that frequency (a drag still pans). The grid follows the mode: FM 0.1 MHz, DMR 12.5 kHz, else 1 kHz.
+// The Identify tool: with it on (key I, or the "Identify" button), a click on a signal identifies it and a drag across it identifies what is inside;
+// Shift+drag does the same without the tool. The selection is a band on the plot; the open card's region is drawn as a fainter one.
+static void identifyPlotInput(App& a, int plotId) {
+    static int dragPlot = -1;
+    static double x0 = 0;
+    const ImGuiIO& io = ImGui::GetIO();
+    const bool hov = plt::IsPlotHovered();
+    const bool select = a.identifyTool || io.KeyShift;
+    double rlo = 0, rhi = 0;
+    if (plotId == 0 && identifyRegionMhz(rlo, rhi)) { plt::Spec rs; rs.FillColor = ImVec4(0.30f, 0.65f, 1.0f, 0.12f); plt::PlotVBand("##idregion", rlo, rhi, rs); }
+    if (hov && select && ImGui::IsMouseClicked(0) && a.engine.running()) { dragPlot = plotId; x0 = plt::GetPlotMousePos().x; }
+    if (dragPlot == plotId) {
+        const double x1 = plt::GetPlotMousePos().x;
+        if (ImGui::IsMouseDown(0)) {
+            plt::Spec bs; bs.FillColor = ImVec4(0.30f, 0.65f, 1.0f, 0.22f);
+            plt::PlotVBand("##idsel", std::min(x0, x1), std::max(x0, x1), bs);
+        } else {
+            dragPlot = -1;
+            const plt::Rect lim = plt::GetPlotLimits();
+            const double perPx = (lim.X.Max - lim.X.Min) / std::max(1.f, plt::GetPlotSize().x);
+            if (std::fabs(x1 - x0) < 4 * perPx) identifyAt(a, x1);
+            else identifyRegion(a, std::min(x0, x1), std::max(x0, x1));
+        }
+    }
+}
+
+// the "Identify" toggle in the corner of the spectrum, beside the other buttons
+static float identifyButton(App& a, ImVec2 plotMin, ImVec2 plotSize, float rightUsed) {
+    const char* lb = a.identifyTool ? "Identify: on###idbtn" : "Identify###idbtn";
+    const ImVec2 sz = ImGui::CalcTextSize(lb, nullptr, true);
+    const float w = sz.x + 2 * ImGui::GetStyle().FramePadding.x, m = 4 * gUi;
+    const float x = plotMin.x + plotSize.x - rightUsed - w - m;
+    if (x < plotMin.x + 40 * gUi || plotSize.y < sz.y + 2 * m) return 0;
+    const ImVec2 keep = ImGui::GetCursorScreenPos();
+    ImGui::SetCursorScreenPos(ImVec2(x, plotMin.y + m));
+    ImVec4 bg = a.identifyTool ? pal::accent(0.55f) : ImGui::GetStyleColorVec4(ImGuiCol_FrameBg); if (!a.identifyTool) bg.w = 0.85f;
+    ImGui::PushStyleColor(ImGuiCol_Button, bg);
+    if (ImGui::SmallButton(lb)) a.identifyTool = !a.identifyTool;
+    ImGui::PopStyleColor();
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool."));
+    if (a.identifyTool && plotSize.y > 3 * sz.y + 6 * m) {
+        const char* hint = tr("Identify: click a signal or drag across it. Esc or I leaves the tool.");
+        const ImVec2 hs = ImGui::CalcTextSize(hint);
+        const ImVec2 q(plotMin.x + (plotSize.x - hs.x) / 2, plotMin.y + plotSize.y - hs.y - 8 * gUi);
+        ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(q.x - 6 * gUi, q.y - 2 * gUi), ImVec2(q.x + hs.x + 6 * gUi, q.y + hs.y + 2 * gUi), IM_COL32(20, 22, 26, 210), 3.f * gUi);
+        ImGui::GetWindowDrawList()->AddText(q, IM_COL32(150, 200, 255, 255), hint);
+    }
+    ImGui::SetCursorScreenPos(keep);
+    return w + m;
+}
+
 static void clickToTune(App& a, int plotId) {
     if (a.family == 55) { generalPlotMouse(a, plotId); return; }   // the general receiver: its channel marker, without retuning the radio
     if (!plt::IsPlotHovered() || a.fmScan.running) return;
+    if (a.identifyTool || ImGui::GetIO().KeyShift) return;   // the Identify tool and Shift+drag select a signal instead of tuning (identifyPlotInput)
     double mhz = plt::GetPlotMousePos().x;
     double lo = 0.001, hi = dect2::kMaxTuneMhz;
     double grid = 0.001;
@@ -736,7 +788,7 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
     bool drawn = false, openCtx = false;
     double visLo = 0, visHi = 0;
     static double ctxMhz = 0;
-    if (plt::BeginPlot("##spec", size, plt::Flags_NoLegend | plt::Flags_NoTitle | plt::Flags_Overlay | plt::Flags_SmoothZoom | extraFlags | (a.family == 55 && generalDragging(0) ? plt::Flags_NoPan : 0))) {
+    if (plt::BeginPlot("##spec", size, plt::Flags_NoLegend | plt::Flags_NoTitle | plt::Flags_Overlay | plt::Flags_SmoothZoom | extraFlags | (a.family == 55 && generalDragging(0) ? plt::Flags_NoPan : 0) | (a.identifyTool || ImGui::GetIO().KeyShift ? plt::Flags_NoPan : 0))) {
         drawn = true;
         plt::SetupAxes(nullptr, kYLabel, plt::AxisFlags_Inside | (a.specGrid ? 0 : plt::AxisFlags_NoGridLines), plt::AxisFlags_Inside | (a.specGrid ? 0 : plt::AxisFlags_NoGridLines));   // the frequencies along the bottom edge, inside, as in SDR++
         setupFreqAxis(a);
@@ -841,6 +893,7 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
         wideMarkers(a);
         multiMarkers(a);
         clickToTune(a, 0);
+        identifyPlotInput(a, 0);
         visLo = plt::GetPlotLimits().X.Min; visHi = plt::GetPlotLimits().X.Max;
         specxDrawBookmarks(ImGui::GetWindowDrawList(), visLo * 1e6, visHi * 1e6,
                            plotMin.x, plotMin.x + plotSize.x, plotMin.y, plotMin.y + plotSize.y);
@@ -853,12 +906,14 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
         channelWidthButton(a, plotMin, plotSize, kYLabel); wideSwitch(a, plotMin, plotSize); multiSwitch(a, plotMin, plotSize);
         gSpecBtnW = cornerPopup(a, "Spectrum###specbtn", "##specpop", plotMin, plotSize, gBwBtnW + gWideBtnW, ImGui::CalcTextSize(kYLabel).x + 24 * gUi, 0, false,
                                 tr("Spectrum: averaging, max hold, peak markers, fill, grid and the unit (dBFS or dBm)"), specDisplayPopup);
+        identifyButton(a, plotMin, plotSize, gBwBtnW + gWideBtnW + gSpecBtnW);
     }
     // right-click: what is this signal?
     if (openCtx) ImGui::OpenPopup("##specctx");
     if (ImGui::BeginPopup("##specctx")) {
         if (ImGui::MenuItem(trw("Identify this signal"), nullptr, false, a.engine.running())) identifyAt(a, ctxMhz);
         if (!a.engine.running() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Start the receiver first"));
+        if (ImGui::MenuItem(trw("Identify all signals"), nullptr, false, a.engine.running())) identifyAll(a);
         ImGui::EndPopup();
     }
 }
@@ -913,7 +968,7 @@ static void waterfallPlot(App& a, ImVec2 size, int extraFlags) {
     }
     ImVec2 plotMin, plotSize;
     bool drawn = false;
-    if (plt::BeginPlot("##wf", size, plt::Flags_NoLegend | plt::Flags_NoTitle | plt::Flags_Overlay | plt::Flags_SmoothZoom | extraFlags | (a.family == 55 && generalDragging(1) ? plt::Flags_NoPan : 0))) {
+    if (plt::BeginPlot("##wf", size, plt::Flags_NoLegend | plt::Flags_NoTitle | plt::Flags_Overlay | plt::Flags_SmoothZoom | extraFlags | (a.family == 55 && generalDragging(1) ? plt::Flags_NoPan : 0) | (a.identifyTool || ImGui::GetIO().KeyShift ? plt::Flags_NoPan : 0))) {
         drawn = true;
         plt::SetupAxes(nullptr, tr("seconds ago"), plt::AxisFlags_NoTickLabels | (a.specGrid ? 0 : plt::AxisFlags_NoGridLines), plt::AxisFlags_Inside | (a.specGrid ? 0 : plt::AxisFlags_NoGridLines));   // the spectrum above shows the frequencies
         double fs = (a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate) / 1e6;
@@ -940,6 +995,7 @@ static void waterfallPlot(App& a, ImVec2 size, int extraFlags) {
         plotMin = plt::GetPlotPos(); plotSize = plt::GetPlotSize();
         wfScaleBar(a, plotMin, plotSize);
         clickToTune(a, 1);
+        identifyPlotInput(a, 1);
         plt::EndPlot();
     }
     if (drawn) cornerPopup(a, a.wf.paused ? "Paused###wfbtn" : "Waterfall###wfbtn", "##wfpop", plotMin, plotSize, 0, 40 * gUi, ImGui::GetTextLineHeight() + 6 * gUi, a.wf.paused,

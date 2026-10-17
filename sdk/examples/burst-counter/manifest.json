@@ -1,0 +1,21 @@
+{
+  "id": "burst-counter",
+  "name": "Burst counter",
+  "version": "1.0.0",
+  "author": "OnAir contributors",
+  "license": "CC0-1.0",
+  "homepage": "https://github.com/adswill/OnAir",
+  "description": "Counts bursts of signal above a threshold over the noise floor, with start time, length and peak level. Emits the automation event plugin.burst for each one.",
+  "kind": "mode",
+  "abi_version": 1,
+  "minimum_onair": "0.2.7",
+  "library": {"macos": "burst-counter.dylib", "linux": "burst-counter.so", "windows": "burst-counter.dll"},
+  "permissions": [],
+  "modes": [
+    {"id": "bursts", "name": "Burst counter", "group": "Plugins", "default_frequency_hz": 433920000, "bandwidth_hz": 500000, "sample_rates": [1000000, 2000000]}
+  ],
+  "settings": [
+    {"key": "threshold_db", "label": "Threshold over the noise floor (dB)", "type": "slider", "min": 3, "max": 40, "default": 10, "step": 1},
+    {"key": "min_ms", "label": "Shortest burst (ms)", "type": "slider", "min": 0, "max": 100, "default": 1, "step": 0.5}
+  ]
+}

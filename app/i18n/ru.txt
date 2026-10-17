@@ -579,10 +579,6 @@ Region %s, %s wide	Область %s, шириной %s
 collecting samples	сбор отсчётов
 Working it out...	Вычисление...
 Nothing to identify here.	Здесь нечего определять.
-Looks like: %s	Похоже на: %s
-Looks like: %s (frame sync found %dx)	Похоже на: %s (синхронизация кадров найдена %dx)
-No mode fits well.	Ни один режим не подходит.
-Open %s on this frequency	Открыть %s на этой частоте
 Switch to %s and tune to %s	Переключиться на %s и настроиться на %s
 Candidates	Кандидаты
 (sync %dx)	(синхр. %dx)
@@ -2035,6 +2031,37 @@ How to install	Как установить
 The services, signal information and data work without it.	Службы, информация о сигнале и данные работают и без него.
 Interface and windows	Интерфейс и окна
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Меню «Вид» переключает компоновку (Sidebar, Scope, Tiles, Faceplate, Panel), классический интерфейс, размер текста и палитру; сенсорный интерфейс находится в разделе «Инструменты». Окна «Частоты», «Сканер-обзор», «Пеленгатор» и «Автоматизации» открываются отсюда.
+# programme guide (SPI)
+Guide	Телегид
+until	до
+Genre	Жанр
+Saved	Сохранено
+Now	Сейчас
+objects	объекты
+services	службы
+programmes	передачи
+scheduled	в расписании
+objects decoded	декодированные объекты
+Guide data	Данные гида
+last update	последнее обновление
+no update yet	обновлений пока нет
+not collecting	не собирается
+from the cache	из кэша
+cached data, expires with time	данные из кэша, со временем устаревают
+waiting for the carousel directory...	ожидание каталога карусели...
+Export XMLTV	Экспорт XMLTV
+Collect the guide in the background	Собирать гид в фоне
+Could not write the file.	Не удалось записать файл.
+Listen to this station	Слушать эту станцию
+search title or description	поиск по названию или описанию
+Nothing matches.	Ничего не найдено.
+No description in the guide.	В гиде нет описания.
+Click a programme in the grid or the search results to see its details.	Нажмите на передачу в сетке или в результатах поиска, чтобы увидеть подробности.
+Start the receiver on a DAB channel to see the guide.	Запустите приёмник на канале DAB, чтобы увидеть гид.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Этот ансамбль не объявляет программный гид (SPI, пользовательское приложение 0x007).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	Гид этого ансамбля передаётся в PAD станции: включите эту станцию, чтобы собрать его.
+The broadcaster sends service information (names, logos) but no programme schedule.	Вещатель передаёт сведения о службах (названия, логотипы), но не программу передач.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Программа передач ещё не получена. Оборот карусели гида может занять несколько минут.
 Air-interface encryption: %s	Шифрование радиоинтерфейса: %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu сигнальных PDU с режимом шифрования (не расшифровано); %llu нечитаемых блоков (ошибка CRC)
 none advertised	не объявлено
@@ -2094,3 +2121,259 @@ Peak dB above floor	Пик дБ над шумом
 Quietest slots	Самые тихие участки
 From MHz	От МГц
 Width kHz	Ширина кГц
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Выберите передачу, чтобы увидеть подробности.
+Cancel recording	Отменить запись
+Record	Записать
+Stop series	Остановить сериал
+Record series	Записывать сериал
+The broadcaster sends no series identifier for this programme.	Вещатель не передаёт идентификатор сериала для этой передачи.
+No reminder	Без напоминания
+Remind me	Напомнить
+Watch	Смотреть
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	Не хватает тюнеров: пересекается с записью на другом мультиплексе и записана не будет.
+No description broadcast.	Описание не передаётся.
+Waiting for the service list...	Ожидание списка служб...
+Search title or description	Поиск по названию или описанию
+This multiplex only	Только этот мультиплекс
+time zone:	часовой пояс:
+this computer	этот компьютер
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Информация о программе пока не получена. Вещатели передают её в таблицах EIT, которые повторяются каждые несколько секунд (сейчас/далее) или минут (расписание). Некоторые мультиплексы не передают её вовсе.
+Opening the recording...	Открытие записи...
+Pause (timeshift)	Пауза (таймшифт)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Ставит эфир на паузу и продолжает записывать его на диск, чтобы можно было продолжить или перемотать назад.
+buffered	в буфере
+Timeshift	Таймшифт
+Play	Воспроизвести
+behind live	позади эфира
+Live	Эфир
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	Запись работает только пока OnAir открыт и компьютер не спит; спящий компьютер ничего не записывает. Скремблированные службы записываются как есть и не расшифровываются. Только для личного использования.
+Scheduled	Запланировано
+recording	запись
+conflict	конфликт
+any multiplex	любой мультиплекс
+series	сериал
+waiting for the tuner	ожидание тюнера
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Ничего не запланировано. Выберите передачу в телегиде или добавьте запись вручную ниже.
+Manual recording	Запись вручную
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Начинается в это время (сегодня, а если оно прошло – завтра), без запаса.
+Recorded	Записано
+No recordings yet.	Записей пока нет.
+Export	Экспорт
+Delete this recording and its subtitle files?	Удалить эту запись и файлы субтитров?
+free	свободно
+Recorder settings	Настройки рекордера
+Folder	Папка
+Start earlier (s)	Начать раньше (с)
+End later (s)	Закончить позже (с)
+Tuners	Тюнеры
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Сколько разных мультиплексов можно принимать одновременно. Службы одного мультиплекса всегда записываются вместе.
+Keep free (GB)	Оставлять свободным (ГБ)
+Stop after signal loss (s, 0 = never)	Остановить после потери сигнала (с, 0 = никогда)
+Save teletext subtitles next to recordings (.srt, .vtt)	Сохранять субтитры телетекста рядом с записями (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Настраиваться на канал запланированной записи при её начале
+Timeshift buffer on disk	Буфер таймшифта на диске
+minutes	минут
+Propagation	Прохождение
+open	открыт
+marginal	на грани
+closed	закрыт
+Best band now	Лучший диапазон сейчас
+Stations	Станции
+Best SNR	Лучший SNR
+Farthest	Самая дальняя
+Heard from	Слышно из
+Forget the history	Очистить историю
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Что этот приёмник слышал по диапазонам: маяки (NCDXF/IARU, Long Dashes, одиночные буквы, несущие) и станции FT8 / FT4 / FT2 / WSPR, декодированные на экране HF-цифры. Диапазон открыт, если за последние 30 минут услышаны не менее 3 станций. Только свой приёмник: ничего не скачивается, поэтому нет солнечного потока и K-индекса.
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	За последние 30 минут ничего не слышно: запустите HF-маяки или экран HF-цифры и оставьте работать.
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Последние 24 часа (UTC), ячейки по 15 минут, темнее: меньше станций
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s запрашивает разрешения:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	Сбой или зависание плагина завершает только его вспомогательный процесс. Действует при следующем запуске плагина.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Добавляйте декодеры и действия без пересборки OnAir: установка, включение и настройка плагинов
+Add-ons	Дополнения
+Allow	Разрешить
+Asks for	Запрашивает
+Asks for no permissions.	Не запрашивает разрешений.
+Community plugins	Плагины сообщества
+Do not allow	Не разрешать
+Enabled	Включён
+Files: read and write its own data folder	Файлы: чтение и запись в собственной папке данных
+Install from file...	Установить из файла...
+Installed	Установлено
+Kind	Вид
+Map points	Точки на карте
+Modes (in the mode list, group PLUGINS)	Режимы (в списке режимов, группа PLUGINS)
+Network: talk to other computers	Сеть: обмен данными с другими компьютерами
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Плагины не установлены. Нажмите «Установить из файла» или скопируйте папку плагина в папку плагинов. Плагин — это файл .onairplugin.
+Not installed	Не установлено
+Open its folder	Открыть его папку
+PLUGINS	ПЛАГИНЫ
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	Разрешения определяют, что OnAir передаёт плагину. Плагин, работающий внутри OnAir, всё равно может сам обращаться к системе: устанавливайте только доверенные плагины или запускайте их во вспомогательном процессе.
+Plugin idle	Плагин не работает
+Plugin log	Журнал плагина
+Plugin modes run on receiver 1.	Режимы плагинов работают на приёмнике 1.
+Plugin running	Плагин работает
+Plugins	Плагины
+Plugins are not available on this receiver.	На этом приёмнике плагины недоступны.
+Plugins...	Плагины...
+Programs: start other programs	Программы: запуск других программ
+Recording: save audio or IQ	Запись: сохранение звука или IQ
+Refresh	Обновить
+Results the plugin sent beyond the limits	Результаты плагина сверх лимитов
+Run in a helper process	Запускать во вспомогательном процессе
+Safe mode (no plugins)	Безопасный режим (без плагинов)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	Безопасный режим включён: плагины отключены. Откройте режим «Плагины», чтобы выйти из него.
+Safe mode: all plugins are switched off.	Безопасный режим: все плагины отключены.
+Select a plugin.	Выберите плагин.
+Sound: play audio through the program	Звук: воспроизведение звука через программу
+The plugin was switched off after a failure. See its log in the Plugins mode.	Плагин отключён после сбоя. Его журнал — в режиме «Плагины».
+This plugin is off.	Этот плагин отключён.
+This plugin mode is not installed any more.	Этот режим плагина больше не установлен.
+Try plugins again	Повторить с плагинами
+Turn it on	Включить
+blocks	блоков
+by	автор:
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	%d бинов помечено в последнем спектре
+Add spectrum at the target l	Добавить спектр при l цели
+Az %.1f  El %.1f   site %.3f, %.3f	Аз %.1f  Выс %.1f   место %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	Тело                  Аз     Выс    кульминация (UTC)  восход  заход
+Calibration / RFI	Калибровка / RFI
+Capture cold	Снять холодную
+Capture hot	Снять горячую
+Cassiopeia A	Кассиопея A
+Clear map	Очистить карту
+Compute	Вычислить
+Custom (RA / Dec)	Своя (RA / Dec)
+Cygnus A	Лебедь A
+Elevation of the selected body over the UTC day (hours)	Высота выбранного тела за сутки UTC (часы)
+Fit lines	Подогнать линии
+Flag and interpolate RFI	Помечать и интерполировать RFI
+Galactic position	Галактическая позиция
+IAU standard solar motion (off: Schoenrich 2010)	Стандартное движение Солнца МАС (выкл.: Schoenrich 2010)
+LSR axis	Ось LSR
+Moon	Луна
+No processed spectrum yet.	Обработанного спектра пока нет.
+Nothing logged yet.	В журнале пока пусто.
+Open session	Открыть сеанс
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	Наведите антенну на каждую галактическую долготу l при b = 0 (задаётся во вкладке Скорость), накопите и добавьте спектр сюда.
+Pointing	Наведение
+R0 kpc	R0 кпк
+Sagittarius A*	Стрелец A*
+Save CSV	Сохранить CSV
+Save FITS	Сохранить FITS
+Save SigMF text	Сохранить текст SigMF
+Save session	Сохранить сеанс
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	Место — положение приёмника (Вид > Карта). Время — часы компьютера, UTC.
+Sun	Солнце
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	Для кривой вращения нужны спектры на нескольких долготах между 0 и 90 (или 270 и 360).
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	К цели: вращение Земли %+.2f, орбита %+.2f, Солнце %+.2f; всего %+.2f км/с (добавить к топоцентрической скорости)
+Tsys K	Tsys K
+V0 km/s	V0 км/с
+Velocity	Скорость
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   приёмник %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Y-фактор: снимите спектр на горячей нагрузке (поглотитель при комнатной температуре), затем на холодной (или холодном небе), указав их температуры.
+cold K	холод. K
+fit rms %.3f K	СКО подгонки %.3f K
+hot K	горяч. K
+no positions yet	позиций пока нет
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	пик K, центр км/с (LSR), FWHM км/с, площадь K км/с; один сигма
+sigma	сигма
+sky + spill K	небо + переливание K
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f бод
+, %s wide	, ширина %s
+, bursts (%.0f %% on)	, пакеты (включён %.0f %%)
+, every %.3g ms	, каждые %.3g мс
+, useful symbol %.4g us	, полезный символ %.4g мкс
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Оценка — доля подтверждающихся признаков; проценты откалиброваны по собственным тестовым сигналам OnAir, а не по всем реальным сигналам.
+Add to memory	Добавить в Memory
+Best guess	Лучшая догадка
+Copy as text	Копировать как текст
+Could be %s (%.0f %%) or %s (%.0f %%).	Возможно, %s (%.0f %%) или %s (%.0f %%).
+Could not open this mode.	Не удалось открыть этот режим.
+Evidence for %s:	Признаки для %s:
+I do not know what this is: nothing I know fits well enough to say.	Не знаю, что это: ничто из известного мне не подходит достаточно хорошо.
+Identify all signals	Определить все сигналы
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Определение: щёлкните сигнал или проведите по нему мышью. Esc или I выходит из режима.
+Measured	Измерено
+Most likely %s, %.0f %% sure.	Скорее всего %s, уверенность %.0f %%.
+No signal stands out of the noise here.	Здесь ни один сигнал не выделяется из шума.
+Open in %s	Открыть в %s
+Opened %s	Открыт %s
+Perhaps %s (%.0f %%).	Возможно, %s (%.0f %%).
+Signals in the view	Сигналы в окне
+The frequency list has here:	В списке частот здесь есть:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Что это? Щёлкните сигнал или проведите по нему мышью, и OnAir скажет, что это и насколько он уверен. Клавиша I. Shift+перетаскивание работает и без режима.
+Why?	Почему?
+Identify selected	Определить выбранный
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Настроить радио на выбранный сигнал и сказать, что это (приёмник должен работать в режиме, частота дискретизации которого его покрывает)
+Orbit from Doppler	Орбита по доплеру
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	Следит за несущей отслеживаемого спутника во время пролёта и подгоняет его орбиту под доплеровскую кривую. Нужен стабильный опорный генератор (приёмник с GPS-синхронизацией или хорошо откалиброванный); ошибка часов приёмника подбирается как постоянное смещение.
+Measure the carrier during tracked passes	Измерять несущую при отслеживаемых пролётах
+gate +-%.0f kHz	окно +-%.0f кГц
+How far from the predicted carrier the peak is looked for	Как далеко от предсказанной несущей искать пик
+%d measurements of %s	Измерений: %d (%s)
+Fit orbit	Подогнать орбиту
+Save refined TLE	Сохранить уточнённый TLE
+saved in %s	сохранено в %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	Записывает уточнённые элементы в отдельный файл с пометкой, что они выведены из этого измерения; загруженные TLE не затрагиваются
+Use the derived elements for predictions	Использовать выведенные элементы для прогнозов
+no measurements yet	измерений пока нет
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	серый: предсказано загруженными элементами, синий: уточнено, зелёный: измерено, янтарный: остаток уточнённой кривой
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	остаток %.1f Гц -> %.1f Гц (использовано %d, отброшено %d); смещение приёмника %+.0f Гц
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	средняя аномалия %+.3f град., среднее движение %+.5f об/сут, наклонение %+.4f град., RAAN %+.4f град.
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	ожидаемая ошибка времени прогноза: %.1f с до, %.1f с после (1 сигма)
+Also share GPS interference cells (counts per area, no aircraft)	Также передавать ячейки помех GPS (счётчики по областям, без самолётов)
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	Для каждого квадрата 0,5 градуса (около 55 км) вокруг вашего приёмника ADS-B: сколько самолётов было услышано за последний час и сколько из них сообщили о плохой позиции GPS. Для квадрата отправляются только эти два числа, никогда идентификаторы самолётов, треки или ваше местоположение. Они питают слой помех GPS публичной карты и служат признаком, а не доказательством глушения. Выключено, пока вы не включите.
+Calibrate...	Калибровка...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	Измерить ошибку частоты этого радио по FM-станции или несущей известной частоты
+Frequency calibration	Калибровка частоты
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Измеряет, насколько тактовая частота этого радио отличается от сигнала известной частоты, и задаёт поправку в ppm.
+Not with a converter in front of the radio.	Не работает с конвертером перед радио.
+Start the receiver first.	Сначала запустите приёмник.
+FM station (stereo pilot) at the tuned frequency	FM-станция (стереопилот) на настроенной частоте
+Carrier of known frequency (MHz)	Несущая известной частоты (МГц)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Сначала настройтесь на сильную FM-станцию. Пилот станции не всегда точен: повторите на двух-трёх станциях.
+Ready.	Готово.
+Looking for a reference signal.	Поиск опорного сигнала.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	Измерение: %+.2f ppm, неопределённость %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Готово: %+.2f ppm (неопределённость %.2f ppm).
+No usable reference signal was found.	Подходящий опорный сигнал не найден.
+Apply %+.2f ppm	Применить %+.2f ppm
+Current setting: %.2f ppm	Текущая настройка: %.2f ppm
+No measurements of this radio yet.	Измерений этого радио пока нет.
+History of this radio (ppm)	История этого радио (ppm)
+Drift: %+.3f ppm per minute	Дрейф: %+.3f ppm в минуту
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Самолёты по отражённым сигналам вещательного передатчика, два когерентных канала
+Baseline %.1f km, transmitter bearing %.0f degrees	База %.1f км, азимут передатчика %.0f градусов
+Cancellation taps	Отводы подавления
+Cannot open the recording.	Не удаётся открыть запись.
+Clutter cancelled by %.0f dB, %d detections	Помехи подавлены на %.0f дБ, обнаружений: %d
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Комплексный float32, канал 0 опорный, канал 1 обзорный, синхронные по отсчётам.
+Doppler Hz	Доплер, Гц
+Doppler over time	Доплер во времени
+Echo level (dB)	Уровень эха (дБ)
+End of the recording.	Конец записи.
+Enter the illuminator position.	Введите положение передатчика-подсветки.
+False alarm rate 1e-x	Вероятность ложной тревоги 1e-x
+Illuminator	Передатчик-подсветка
+NLMS instead of ECA	NLMS вместо ECA
+Noise-like waveform (DVB-T)	Шумоподобный сигнал (DVB-T)
+Passive radar	Пассивный радар
+Processing	Обработка
+Range km	Дальность, км
+Range rate (m/s)	Скорость изменения дальности (м/с)
+Range-Doppler map	Карта дальность-Доплер
+Rate m/s	Скорость, м/с
+Saved illuminators	Сохранённые передатчики
+Second target	Вторая цель
+Target range (km)	Дальность цели (км)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Цели ближе, чем число отводов в отсчётах дальности, скрываются подавлением.
+The receiver position is the one set for ADS-B.	Положение приёмника берётся из настроек ADS-B.
+Tracks	Треки
+Two recordings (reference, surveillance)	Две записи (опорная, обзорная)
+Two-channel recording (cf32)	Двухканальная запись (cf32)
+Waiting for data.	Ожидание данных.

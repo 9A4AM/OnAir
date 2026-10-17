@@ -84,6 +84,7 @@ class DabPacketDemux {
 public:
     explicit DabPacketDemux(int address = -1) : addr_(address) {}
     void setAddress(int a) { addr_ = a; reset(); }
+    void setMaxGroup(size_t n) { maxLen_ = n; }   // longest data group taken (default: the Journaline limit; MOT data groups of the SPI go up to about 8200 bytes)
     void reset() { buf_.clear(); asm_.clear(); on_ = false; lastCi_ = -1; }
     // Calls onGroup(const uint8_t*, size_t) for every complete data group (the bytes as carried: header, field, CRC).
     template <class F> void feed(const uint8_t* d, size_t n, F onGroup) {
@@ -108,6 +109,7 @@ public:
 private:
     bool packet(const uint8_t* p, size_t len, std::vector<uint8_t>& out);
     int addr_;
+    size_t maxLen_ = 0;
     std::vector<uint8_t> buf_, asm_;
     bool on_ = false;
     int lastCi_ = -1;

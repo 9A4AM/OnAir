@@ -1,0 +1,17 @@
+{
+  "id": "tone-detector",
+  "name": "Tone detector",
+  "version": "1.0.0",
+  "author": "OnAir contributors",
+  "license": "CC0-1.0",
+  "homepage": "https://github.com/adswill/OnAir",
+  "description": "Finds the strongest tone in the channel and reports its offset in Hz and its level. A minimal example of an IQ plugin.",
+  "kind": "mode",
+  "abi_version": 1,
+  "minimum_onair": "0.2.7",
+  "library": {"macos": "tone-detector.dylib", "linux": "tone-detector.so", "windows": "tone-detector.dll"},
+  "permissions": [],
+  "modes": [
+    {"id": "tone", "name": "Tone detector", "group": "Plugins", "default_frequency_hz": 100000000, "bandwidth_hz": 200000, "sample_rates": [250000, 500000, 1000000, 2000000]}
+  ]
+}

@@ -1,5 +1,7 @@
 // The modes added after FM, seen together: tuning table, test signals, status lines.
 #include "dect2/source/source.h"
+#include <map>
+#include <mutex>
 #include "dect2/engine/mode_tuning.h"
 #include "dect2/dvbs/dvbs_rx.h"
 #include "dect2/dvbs/dvbs_gen.h"
@@ -291,7 +293,29 @@ static const std::vector<ModeTuning>& table() {
     return t;
 }
 
+namespace {
+struct PluginTuningEntry { ModeTuning t; std::string id, name; };
+std::mutex gPluginTuningMu;
+std::map<int, PluginTuningEntry>& pluginTunings() { static std::map<int, PluginTuningEntry> m; return m; }   // node-based: the pointers stay valid
+}
+
+void registerPluginTuning(int stdMode, const std::string& id, const std::string& name, double minMhz, double maxMhz, double defMhz, double sampleRate, double bandwidthMhz) {
+    if (!isPluginStd(stdMode)) return;
+    std::lock_guard<std::mutex> lk(gPluginTuningMu);
+    auto& e = pluginTunings()[stdMode];
+    e.id = id; e.name = name;
+    e.t = ModeTuning{};
+    e.t.stdMode = stdMode; e.t.id = e.id.c_str(); e.t.name = e.name.c_str();
+    e.t.minMhz = minMhz; e.t.maxMhz = maxMhz; e.t.defMhz = defMhz; e.t.sampleRate = sampleRate; e.t.bandwidthMhz = bandwidthMhz;
+    e.t.minSampleRate = std::min(sampleRate, 250e3);
+}
+
 const ModeTuning* modeTuning(int stdMode) {
+    if (isPluginStd(stdMode)) {
+        std::lock_guard<std::mutex> lk(gPluginTuningMu);
+        auto it = pluginTunings().find(stdMode);
+        return it == pluginTunings().end() ? nullptr : &it->second.t;
+    }
     for (const auto& m : table()) if (m.stdMode == stdMode) return &m;
     return nullptr;
 }

@@ -600,10 +600,6 @@ Region %s, %s wide	Zone %s, %s de large
 collecting samples	collecte des échantillons
 Working it out...	Analyse en cours...
 Nothing to identify here.	Rien à identifier ici.
-Looks like: %s	Ressemble à : %s
-Looks like: %s (frame sync found %dx)	Ressemble à : %s (synchro de trame trouvée %dx)
-No mode fits well.	Aucun mode ne correspond bien.
-Open %s on this frequency	Ouvrir %s sur cette fréquence
 Switch to %s and tune to %s	Passer à %s et accorder sur %s
 Candidates	Candidats
 (sync %dx)	(synchro %dx)
@@ -2052,6 +2048,37 @@ How to install	Comment installer
 The services, signal information and data work without it.	Les services, les informations du signal et les données fonctionnent sans lui.
 Interface and windows	Interface et fenêtres
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Affichage change la disposition (Sidebar, Scope, Tiles, Faceplate, Panel), l'interface classique, la taille du texte et la palette ; l'interface tactile est sous Outils. Des fenêtres comme Fréquences, Scanner de balayage, Radiogoniomètre et Automatisations s'ouvrent d'ici.
+# programme guide (SPI)
+Guide	Guide
+until	jusqu'à
+Genre	Genre
+Saved	Enregistré
+Now	Maintenant
+objects	objets
+services	services
+programmes	programmes
+scheduled	programmés
+objects decoded	objets décodés
+Guide data	Données du guide
+last update	dernière mise à jour
+no update yet	pas encore de mise à jour
+not collecting	pas de collecte
+from the cache	depuis le cache
+cached data, expires with time	données en cache, expirent avec le temps
+waiting for the carousel directory...	attente du répertoire du carrousel...
+Export XMLTV	Exporter en XMLTV
+Collect the guide in the background	Collecter le guide en arrière-plan
+Could not write the file.	Impossible d'écrire le fichier.
+Listen to this station	Écouter cette station
+search title or description	rechercher dans le titre ou la description
+Nothing matches.	Aucun résultat.
+No description in the guide.	Pas de description dans le guide.
+Click a programme in the grid or the search results to see its details.	Cliquez sur un programme de la grille ou des résultats pour voir ses détails.
+Start the receiver on a DAB channel to see the guide.	Démarrez le récepteur sur un canal DAB pour voir le guide.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Ce multiplex n'annonce pas de guide des programmes (SPI, application utilisateur 0x007).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	Le guide de ce multiplex est diffusé dans le PAD d'une station : écoutez cette station pour le collecter.
+The broadcaster sends service information (names, logos) but no programme schedule.	Le diffuseur envoie des informations de service (noms, logos) mais pas de grille des programmes.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Aucune grille reçue pour l'instant. Un carrousel de guide peut mettre plusieurs minutes à faire un tour.
 Air-interface encryption: %s	Chiffrement de l'interface air : %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu PDU de signalisation avec un mode de chiffrement (non déchiffrées) ; %llu blocs illisibles (CRC faux)
 none advertised	aucun annoncé
@@ -2111,3 +2138,259 @@ Peak dB above floor	Crête dB au-dessus du bruit
 Quietest slots	Plages les plus calmes
 From MHz	De MHz
 Width kHz	Largeur kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Choisissez une émission pour voir ses détails.
+Cancel recording	Annuler l'enregistrement
+Record	Enregistrer
+Stop series	Arrêter la série
+Record series	Enregistrer la série
+The broadcaster sends no series identifier for this programme.	Le diffuseur n'envoie pas d'identifiant de série pour cette émission.
+No reminder	Pas de rappel
+Remind me	Me rappeler
+Watch	Regarder
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	Pas assez de tuners : cela chevauche un enregistrement sur un autre multiplex et ne sera pas enregistré.
+No description broadcast.	Aucune description diffusée.
+Waiting for the service list...	En attente de la liste des services...
+Search title or description	Rechercher titre ou description
+This multiplex only	Ce multiplex seulement
+time zone:	fuseau horaire :
+this computer	cet ordinateur
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Aucune information de programme reçue pour l'instant. Les diffuseurs l'envoient dans les tables EIT, répétées toutes les quelques secondes (maintenant/suivant) à quelques minutes (programmation). Certains multiplex n'en envoient aucune.
+Opening the recording...	Ouverture de l'enregistrement...
+Pause (timeshift)	Pause (timeshift)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Fige la télévision en direct et continue de l'enregistrer sur le disque pour reprendre ou revenir en arrière.
+buffered	en tampon
+Timeshift	Timeshift
+Play	Lire
+behind live	derrière le direct
+Live	Direct
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	Les enregistrements ne fonctionnent que lorsque OnAir est ouvert et l'ordinateur actif ; un ordinateur en veille n'enregistre rien. Les services brouillés sont enregistrés tels quels, sans être décodés. Usage personnel uniquement.
+Scheduled	Planifiés
+recording	enregistrement
+conflict	conflit
+any multiplex	n'importe quel multiplex
+series	série
+waiting for the tuner	attente du tuner
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Rien de planifié. Choisissez une émission dans le guide ou ajoutez un enregistrement manuel ci-dessous.
+Manual recording	Enregistrement manuel
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Démarre à cette heure (aujourd'hui, ou demain si elle est passée), sans marge.
+Recorded	Enregistrés
+No recordings yet.	Aucun enregistrement pour l'instant.
+Export	Exporter
+Delete this recording and its subtitle files?	Supprimer cet enregistrement et ses fichiers de sous-titres ?
+free	libres
+Recorder settings	Réglages de l'enregistreur
+Folder	Dossier
+Start earlier (s)	Commencer plus tôt (s)
+End later (s)	Finir plus tard (s)
+Tuners	Tuners
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Combien de multiplex différents peuvent être reçus en même temps. Les services d'un même multiplex s'enregistrent toujours ensemble.
+Keep free (GB)	Garder libre (Go)
+Stop after signal loss (s, 0 = never)	Arrêter après perte du signal (s, 0 = jamais)
+Save teletext subtitles next to recordings (.srt, .vtt)	Enregistrer les sous-titres télétexte à côté des enregistrements (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Se syntoniser sur la chaîne d'un enregistrement planifié à son début
+Timeshift buffer on disk	Tampon timeshift sur disque
+minutes	minutes
+Propagation	Propagation
+open	ouverte
+marginal	limite
+closed	fermée
+Best band now	Meilleure bande maintenant
+Stations	Stations
+Best SNR	Meilleur SNR
+Farthest	Plus lointaine
+Heard from	Entendu depuis
+Forget the history	Effacer l'historique
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Ce que ce récepteur a entendu, par bande : balises (NCDXF/IARU, Long Dashes, lettres seules, porteuses) et stations FT8 / FT4 / FT2 / WSPR décodées dans l'écran HF numérique. Une bande est ouverte quand au moins 3 stations ont été entendues ces 30 dernières minutes. Récepteur propre uniquement : rien n'est téléchargé, donc ni flux solaire ni indice K.
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Rien entendu ces 30 dernières minutes : lancez les balises HF ou l'écran HF numérique et laissez-le tourner.
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	24 dernières heures (UTC), cellules de 15 minutes, plus sombre : moins de stations
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s demande ces autorisations :
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	Un plantage ou un blocage du plugin ne termine alors que son processus auxiliaire. Pris en compte au prochain démarrage du plugin.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Ajouter des décodeurs et des actions sans recompiler OnAir : installer, activer et configurer des plugins
+Add-ons	Extensions
+Allow	Autoriser
+Asks for	Demande
+Asks for no permissions.	Ne demande aucune autorisation.
+Community plugins	Plugins de la communauté
+Do not allow	Ne pas autoriser
+Enabled	Activé
+Files: read and write its own data folder	Fichiers : lire et écrire son propre dossier de données
+Install from file...	Installer depuis un fichier...
+Installed	Installé
+Kind	Type
+Map points	Points de la carte
+Modes (in the mode list, group PLUGINS)	Modes (dans la liste des modes, groupe PLUGINS)
+Network: talk to other computers	Réseau : communiquer avec d'autres ordinateurs
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Aucun plugin installé. Utilisez « Installer depuis un fichier » ou copiez un dossier de plugin dans le dossier des plugins. Un plugin est un fichier .onairplugin.
+Not installed	Non installé
+Open its folder	Ouvrir son dossier
+PLUGINS	PLUGINS
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	Les autorisations définissent ce qu'OnAir donne au plugin. Un plugin exécuté dans OnAir peut malgré tout utiliser lui-même le système : installez des plugins de confiance ou exécutez-les dans un processus auxiliaire.
+Plugin idle	Plugin inactif
+Plugin log	Journal du plugin
+Plugin modes run on receiver 1.	Les modes de plugin s'exécutent sur le récepteur 1.
+Plugin running	Plugin en cours
+Plugins	Plugins
+Plugins are not available on this receiver.	Les plugins ne sont pas disponibles sur ce récepteur.
+Plugins...	Plugins...
+Programs: start other programs	Programmes : lancer d'autres programmes
+Recording: save audio or IQ	Enregistrement : sauvegarder l'audio ou l'IQ
+Refresh	Actualiser
+Results the plugin sent beyond the limits	Résultats du plugin au-delà des limites
+Run in a helper process	Exécuter dans un processus auxiliaire
+Safe mode (no plugins)	Mode sans échec (sans plugins)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	Le mode sans échec est actif : les plugins sont désactivés. Ouvrez le mode Plugins pour en sortir.
+Safe mode: all plugins are switched off.	Mode sans échec : tous les plugins sont désactivés.
+Select a plugin.	Sélectionnez un plugin.
+Sound: play audio through the program	Son : lire de l'audio via le programme
+The plugin was switched off after a failure. See its log in the Plugins mode.	Le plugin a été désactivé après une défaillance. Voir son journal dans le mode Plugins.
+This plugin is off.	Ce plugin est désactivé.
+This plugin mode is not installed any more.	Ce mode de plugin n'est plus installé.
+Try plugins again	Réessayer les plugins
+Turn it on	L'activer
+blocks	blocs
+by	par
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	%d canaux signalés dans le dernier spectre
+Add spectrum at the target l	Ajouter le spectre à la l visée
+Az %.1f  El %.1f   site %.3f, %.3f	Az %.1f  El %.1f   site %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	Astre                 Az     El     passage (UTC)  lever   coucher
+Calibration / RFI	Étalonnage / RFI
+Capture cold	Capturer le froid
+Capture hot	Capturer le chaud
+Cassiopeia A	Cassiopée A
+Clear map	Effacer la carte
+Compute	Calculer
+Custom (RA / Dec)	Personnalisé (AD / Dec)
+Cygnus A	Cygnus A
+Elevation of the selected body over the UTC day (hours)	Élévation de l'astre choisi sur la journée UTC (heures)
+Fit lines	Ajuster les raies
+Flag and interpolate RFI	Signaler et interpoler les RFI
+Galactic position	Position galactique
+IAU standard solar motion (off: Schoenrich 2010)	Mouvement solaire standard UAI (désactivé : Schoenrich 2010)
+LSR axis	Axe LSR
+Moon	Lune
+No processed spectrum yet.	Pas encore de spectre traité.
+Nothing logged yet.	Rien de consigné pour l'instant.
+Open session	Ouvrir la session
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	Pointez l'antenne sur chaque longitude galactique l à b = 0 (réglée dans Vitesse), intégrez, puis ajoutez le spectre ici.
+Pointing	Pointage
+R0 kpc	R0 kpc
+Sagittarius A*	Sagittarius A*
+Save CSV	Enregistrer CSV
+Save FITS	Enregistrer FITS
+Save SigMF text	Enregistrer le texte SigMF
+Save session	Enregistrer la session
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	Le site est la position du récepteur (Affichage > Carte). L'heure est l'horloge de l'ordinateur, UTC.
+Sun	Soleil
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	La courbe de rotation demande des spectres à plusieurs longitudes entre 0 et 90 (ou 270 et 360).
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	Vers la cible : rotation terrestre %+.2f, orbite %+.2f, Soleil %+.2f ; total %+.2f km/s (à ajouter à la vitesse topocentrique)
+Tsys K	Tsys K
+V0 km/s	V0 km/s
+Velocity	Vitesse
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   récepteur %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Facteur Y : capturez un spectre sur une charge chaude (absorbant à température ambiante), puis sur une charge froide (ou le ciel froid), avec leurs températures.
+cold K	froid K
+fit rms %.3f K	rms de l'ajustement %.3f K
+hot K	chaud K
+no positions yet	pas encore de positions
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	pic K, centre km/s (LSR), FWHM km/s, aire K km/s ; un sigma
+sigma	sigma
+sky + spill K	ciel + débordement K
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f bauds
+, %s wide	, %s de large
+, bursts (%.0f %% on)	, salves (%.0f %% actif)
+, every %.3g ms	, toutes les %.3g ms
+, useful symbol %.4g us	, symbole utile %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Un score est la part des indices qui se vérifient ; les pourcentages sont calibrés sur les signaux de test d'OnAir, pas sur tous les signaux réels.
+Add to memory	Ajouter à Memory
+Best guess	Meilleure hypothèse
+Copy as text	Copier en texte
+Could be %s (%.0f %%) or %s (%.0f %%).	Peut-être %s (%.0f %%) ou %s (%.0f %%).
+Could not open this mode.	Impossible d'ouvrir ce mode.
+Evidence for %s:	Indices pour %s :
+I do not know what this is: nothing I know fits well enough to say.	Je ne sais pas ce que c'est : rien de ce que je connais ne correspond assez bien.
+Identify all signals	Identifier tous les signaux
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Identifier : cliquez sur un signal ou faites glisser dessus. Échap ou I quitte l'outil.
+Measured	Mesuré
+Most likely %s, %.0f %% sure.	Très probablement %s, sûr à %.0f %%.
+No signal stands out of the noise here.	Aucun signal ne se détache du bruit ici.
+Open in %s	Ouvrir dans %s
+Opened %s	%s ouvert
+Perhaps %s (%.0f %%).	Peut-être %s (%.0f %%).
+Signals in the view	Signaux dans la vue
+The frequency list has here:	La liste de fréquences indique ici :
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Qu'est-ce que c'est ? Cliquez sur un signal ou faites glisser dessus : OnAir dit ce que c'est et avec quelle certitude. Touche I. Maj+glisser le fait sans l'outil.
+Why?	Pourquoi ?
+Identify selected	Identifier la sélection
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Accorde la radio sur le signal sélectionné et dit ce que c'est (le récepteur doit être dans un mode dont le taux d'échantillonnage le couvre)
+Orbit from Doppler	Orbite par effet Doppler
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	Suit la porteuse du satellite suivi pendant un passage et ajuste son orbite à la courbe Doppler. Demande une référence de fréquence stable (un récepteur asservi par GPS ou bien étalonné) ; l'erreur de l'horloge du récepteur est ajustée comme un décalage constant.
+Measure the carrier during tracked passes	Mesurer la porteuse pendant les passages suivis
+gate +-%.0f kHz	fenêtre +-%.0f kHz
+How far from the predicted carrier the peak is looked for	Distance maximale à la porteuse prévue où le pic est cherché
+%d measurements of %s	%d mesures de %s
+Fit orbit	Ajuster l'orbite
+Save refined TLE	Enregistrer le TLE affiné
+saved in %s	enregistré dans %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	Écrit les éléments affinés dans un fichier séparé, marqué comme dérivé de cette mesure ; les TLE téléchargés ne sont pas modifiés
+Use the derived elements for predictions	Utiliser les éléments dérivés pour les prévisions
+no measurements yet	pas encore de mesures
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	gris : prévu par les éléments téléchargés, bleu : affiné, vert : mesuré, ambre : résidu de la courbe affinée
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	résidu %.1f Hz -> %.1f Hz (%d utilisées, %d rejetées) ; décalage du récepteur %+.0f Hz
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	anomalie moyenne %+.3f degrés, mouvement moyen %+.5f tr/jour, inclinaison %+.4f degrés, RAAN %+.4f degrés
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	erreur de temps estimée de la prévision : %.1f s avant, %.1f s après (1 sigma)
+Also share GPS interference cells (counts per area, no aircraft)	Partager aussi les cellules de brouillage GPS (comptes par zone, sans aéronefs)
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	Pour chaque carré de 0,5 degré (environ 55 km) autour de votre récepteur ADS-B : combien d'aéronefs ont été entendus durant la dernière heure et combien ont signalé une mauvaise position GPS. Seuls ces deux nombres par carré sont envoyés, jamais d'identités d'aéronefs, de traces ni votre position. Ils alimentent la couche de brouillage GPS de la carte publique et constituent un indice, pas une preuve de brouillage. Désactivé tant que vous ne le choisissez pas.
+Calibrate...	Étalonner...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	Mesurer l'erreur de fréquence de cette radio avec une station FM ou une porteuse de fréquence connue
+Frequency calibration	Étalonnage en fréquence
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Mesure l'écart de l'horloge de cette radio par rapport à un signal de fréquence connue et règle la correction en ppm.
+Not with a converter in front of the radio.	Pas avec un convertisseur devant la radio.
+Start the receiver first.	Démarrez d'abord le récepteur.
+FM station (stereo pilot) at the tuned frequency	Station FM (pilote stéréo) sur la fréquence accordée
+Carrier of known frequency (MHz)	Porteuse de fréquence connue (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Accordez d'abord une station FM puissante. Le pilote d'une station n'est pas toujours exact : recommencez sur deux ou trois stations.
+Ready.	Prêt.
+Looking for a reference signal.	Recherche d'un signal de référence.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	Mesure : %+.2f ppm, incertitude %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Terminé : %+.2f ppm (incertitude %.2f ppm).
+No usable reference signal was found.	Aucun signal de référence utilisable n'a été trouvé.
+Apply %+.2f ppm	Appliquer %+.2f ppm
+Current setting: %.2f ppm	Réglage actuel : %.2f ppm
+No measurements of this radio yet.	Pas encore de mesures de cette radio.
+History of this radio (ppm)	Historique de cette radio (ppm)
+Drift: %+.3f ppm per minute	Dérive : %+.3f ppm par minute
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Avions détectés par les échos d'un émetteur de radiodiffusion, avec deux voies cohérentes
+Baseline %.1f km, transmitter bearing %.0f degrees	Ligne de base %.1f km, cap de l'émetteur %.0f degrés
+Cancellation taps	Coefficients d'annulation
+Cannot open the recording.	Impossible d'ouvrir l'enregistrement.
+Clutter cancelled by %.0f dB, %d detections	Fouillis annulé de %.0f dB, %d détections
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Complexe float32, voie 0 référence et voie 1 surveillance, synchrones à l'échantillon.
+Doppler Hz	Doppler Hz
+Doppler over time	Doppler au cours du temps
+Echo level (dB)	Niveau de l'écho (dB)
+End of the recording.	Fin de l'enregistrement.
+Enter the illuminator position.	Saisissez la position de l'illuminateur.
+False alarm rate 1e-x	Taux de fausses alarmes 1e-x
+Illuminator	Illuminateur
+NLMS instead of ECA	NLMS au lieu d'ECA
+Noise-like waveform (DVB-T)	Forme d'onde de type bruit (DVB-T)
+Passive radar	Radar passif
+Processing	Traitement
+Range km	Distance km
+Range rate (m/s)	Vitesse de variation de distance (m/s)
+Range-Doppler map	Carte distance-Doppler
+Rate m/s	Vitesse m/s
+Saved illuminators	Illuminateurs enregistrés
+Second target	Seconde cible
+Target range (km)	Distance de la cible (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Les cibles plus proches que le nombre de coefficients, en échantillons de distance, sont masquées par l'annulation.
+The receiver position is the one set for ADS-B.	La position du récepteur est celle réglée pour l'ADS-B.
+Tracks	Pistes
+Two recordings (reference, surveillance)	Deux enregistrements (référence, surveillance)
+Two-channel recording (cf32)	Enregistrement à deux voies (cf32)
+Waiting for data.	En attente de données.

@@ -600,10 +600,6 @@ Region %s, %s wide	区域 %s，宽 %s
 collecting samples	正在采集样本
 Working it out...	正在分析...
 Nothing to identify here.	这里没有可识别的信号。
-Looks like: %s	看起来像：%s
-Looks like: %s (frame sync found %dx)	看起来像：%s（找到帧同步 %dx）
-No mode fits well.	没有十分匹配的模式。
-Open %s on this frequency	在此频率打开 %s
 Switch to %s and tune to %s	切换到 %s 并调谐到 %s
 Candidates	候选
 (sync %dx)	（同步 %dx）
@@ -2052,6 +2048,37 @@ How to install	安装方法
 The services, signal information and data work without it.	没有它,服务、信号信息和数据仍可正常使用。
 Interface and windows	界面与窗口
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	“视图”菜单可切换布局（Sidebar、Scope、Tiles、Faceplate、Panel）、经典界面、文字大小和配色；触控界面位于“工具”下。频率、扫频扫描器、测向和自动化等窗口也从这里打开。
+# programme guide (SPI)
+Guide	节目指南
+until	直到
+Genre	类型
+Saved	已保存
+Now	现在
+objects	对象
+services	服务
+programmes	节目
+scheduled	已排期
+objects decoded	已解码对象
+Guide data	指南数据
+last update	上次更新
+no update yet	尚无更新
+not collecting	未在收集
+from the cache	来自缓存
+cached data, expires with time	缓存数据，随时间过期
+waiting for the carousel directory...	正在等待轮播目录...
+Export XMLTV	导出 XMLTV
+Collect the guide in the background	在后台收集指南
+Could not write the file.	无法写入文件。
+Listen to this station	收听此电台
+search title or description	按标题或描述搜索
+Nothing matches.	没有匹配项。
+No description in the guide.	指南中没有描述。
+Click a programme in the grid or the search results to see its details.	点击网格或搜索结果中的节目以查看详情。
+Start the receiver on a DAB channel to see the guide.	在 DAB 频道上启动接收机即可查看指南。
+This ensemble does not announce a programme guide (SPI, user application 0x007).	此复用未公布节目指南（SPI，用户应用 0x007）。
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	此复用的指南通过某电台的 PAD 发送：播放该电台即可收集。
+The broadcaster sends service information (names, logos) but no programme schedule.	广播商发送了服务信息（名称、台标），但没有节目表。
+No programme schedule received yet. A guide carousel can take several minutes to come round.	尚未收到节目表。指南轮播转一圈可能需要几分钟。
 Air-interface encryption: %s	空中接口加密：%s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu 个设置了加密模式的信令PDU（未解密）；%llu 个不可读块（CRC错误）
 none advertised	未公布
@@ -2111,3 +2138,259 @@ Peak dB above floor	高于底噪的峰值 dB
 Quietest slots	最安静的频段
 From MHz	起始 MHz
 Width kHz	宽度 kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	选择一个节目以查看详情。
+Cancel recording	取消录制
+Record	录制
+Stop series	停止系列录制
+Record series	录制整个系列
+The broadcaster sends no series identifier for this programme.	广播方没有为此节目发送系列标识。
+No reminder	取消提醒
+Remind me	提醒我
+Watch	观看
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	调谐器不足：与另一个复用器上的录制重叠，将不会被录制。
+No description broadcast.	未广播节目说明。
+Waiting for the service list...	正在等待服务列表...
+Search title or description	搜索标题或说明
+This multiplex only	仅此复用器
+time zone:	时区：
+this computer	本机
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	尚未收到节目信息。广播方通过EIT表发送，这些表每隔几秒（当前/下一个）到几分钟（节目表）重复一次。有些复用器完全不发送。
+Opening the recording...	正在打开录制文件...
+Pause (timeshift)	暂停（时移）
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	暂停直播并继续将其录到磁盘，以便恢复播放或倒退。
+buffered	已缓冲
+Timeshift	时移
+Play	播放
+behind live	落后于直播
+Live	直播
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	录制仅在OnAir打开且电脑未休眠时进行；休眠的电脑不会录制任何内容。加密的服务按接收原样录制，不会被解密。仅供个人使用。
+Scheduled	已计划
+recording	录制中
+conflict	冲突
+any multiplex	任意复用器
+series	系列
+waiting for the tuner	等待调谐器
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	没有计划。请在节目指南中选择节目，或在下方添加手动录制。
+Manual recording	手动录制
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	在此时间开始（今天，已过则为明天），无额外时间。
+Recorded	已录制
+No recordings yet.	暂无录制。
+Export	导出
+Delete this recording and its subtitle files?	删除此录制及其字幕文件？
+free	可用
+Recorder settings	录制设置
+Folder	文件夹
+Start earlier (s)	提前开始（秒）
+End later (s)	延后结束（秒）
+Tuners	调谐器
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	可同时接收多少个不同的复用器。同一复用器的服务始终一起录制。
+Keep free (GB)	保留空闲（GB）
+Stop after signal loss (s, 0 = never)	信号丢失后停止（秒，0=从不）
+Save teletext subtitles next to recordings (.srt, .vtt)	在录制文件旁保存图文电视字幕（.srt、.vtt）
+Tune to a scheduled recording's channel when it starts	计划录制开始时调谐到其频道
+Timeshift buffer on disk	磁盘时移缓冲
+minutes	分钟
+Propagation	传播
+open	开放
+marginal	临界
+closed	关闭
+Best band now	当前最佳波段
+Stations	电台数
+Best SNR	最佳信噪比
+Farthest	最远
+Heard from	接收自
+Forget the history	清除历史
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	本接收机按波段听到的内容:信标(NCDXF/IARU、Long Dashes、单字母、载波)以及在 HF 数字界面解码的 FT8 / FT4 / FT2 / WSPR 电台。最近 30 分钟内至少听到 3 个电台即视为波段开放。仅使用自己的接收机:不下载任何数据,因此没有太阳通量和 K 指数。
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	最近 30 分钟没有听到任何信号:请启动 HF 信标或 HF 数字界面并保持运行。
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	最近 24 小时(UTC),每格 15 分钟,颜色越深电台越少
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s 请求以下权限:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	插件崩溃或卡死时只会结束它的辅助进程。下次启动插件时生效。
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	无需重新编译 OnAir 即可添加解码器和动作:安装、启用并设置插件
+Add-ons	扩展
+Allow	允许
+Asks for	请求
+Asks for no permissions.	不请求任何权限。
+Community plugins	社区插件
+Do not allow	不允许
+Enabled	已启用
+Files: read and write its own data folder	文件:读写自己的数据文件夹
+Install from file...	从文件安装...
+Installed	已安装
+Kind	类型
+Map points	地图点
+Modes (in the mode list, group PLUGINS)	模式(在模式列表的 PLUGINS 组中)
+Network: talk to other computers	网络:与其他计算机通信
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	尚未安装插件。请使用“从文件安装”,或把插件文件夹复制到插件文件夹中。插件是一个 .onairplugin 文件。
+Not installed	未安装
+Open its folder	打开其文件夹
+PLUGINS	插件
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	权限决定 OnAir 向插件提供什么。运行在 OnAir 内部的插件仍可自行使用系统:请只安装可信的插件,或让它们在辅助进程中运行。
+Plugin idle	插件空闲
+Plugin log	插件日志
+Plugin modes run on receiver 1.	插件模式在接收器 1 上运行。
+Plugin running	插件运行中
+Plugins	插件
+Plugins are not available on this receiver.	此接收器不支持插件。
+Plugins...	插件...
+Programs: start other programs	程序:启动其他程序
+Recording: save audio or IQ	录制:保存音频或 IQ
+Refresh	刷新
+Results the plugin sent beyond the limits	超出限制的插件结果
+Run in a helper process	在辅助进程中运行
+Safe mode (no plugins)	安全模式(不加载插件)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	安全模式已开启:插件已关闭。打开“插件”模式即可退出。
+Safe mode: all plugins are switched off.	安全模式:所有插件均已关闭。
+Select a plugin.	请选择一个插件。
+Sound: play audio through the program	声音:通过程序播放音频
+The plugin was switched off after a failure. See its log in the Plugins mode.	插件因故障已被关闭。请在“插件”模式中查看其日志。
+This plugin is off.	此插件已关闭。
+This plugin mode is not installed any more.	此插件模式已不再安装。
+Try plugins again	重新尝试插件
+Turn it on	打开
+blocks	块
+by	作者
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	最近一次频谱中标记了 %d 个频点
+Add spectrum at the target l	在目标 l 处添加频谱
+Az %.1f  El %.1f   site %.3f, %.3f	方位 %.1f  仰角 %.1f   站点 %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	天体                  方位   仰角   中天 (UTC)  升起   落下
+Calibration / RFI	校准 / RFI
+Capture cold	采集冷负载
+Capture hot	采集热负载
+Cassiopeia A	仙后座 A
+Clear map	清除地图
+Compute	计算
+Custom (RA / Dec)	自定义 (赤经 / 赤纬)
+Cygnus A	天鹅座 A
+Elevation of the selected body over the UTC day (hours)	所选天体在 UTC 一天内的仰角 (小时)
+Fit lines	拟合谱线
+Flag and interpolate RFI	标记并插值 RFI
+Galactic position	银道位置
+IAU standard solar motion (off: Schoenrich 2010)	IAU 标准太阳运动 (关闭: Schoenrich 2010)
+LSR axis	LSR 轴
+Moon	月球
+No processed spectrum yet.	尚无处理后的频谱。
+Nothing logged yet.	尚无日志。
+Open session	打开会话
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	将天线依次指向 b = 0 的各银经 l (在“速度”中设置),积分后在此添加频谱。
+Pointing	指向
+R0 kpc	R0 kpc
+Sagittarius A*	人马座 A*
+Save CSV	保存 CSV
+Save FITS	保存 FITS
+Save SigMF text	保存 SigMF 文本
+Save session	保存会话
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	站点为接收机位置 (视图 > 地图),时间为电脑时钟 (UTC)。
+Sun	太阳
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	旋转曲线需要 0 到 90 (或 270 到 360) 之间多个银经的频谱。
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	朝向目标: 地球自转 %+.2f、公转 %+.2f、太阳 %+.2f;合计 %+.2f km/s (加到站心速度上)
+Tsys K	Tsys K
+V0 km/s	V0 km/s
+Velocity	速度
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   接收机 %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Y 因子: 分别在热负载 (室温吸收体) 和冷负载 (或冷天空) 下采集频谱,并填入各自温度。
+cold K	冷 K
+fit rms %.3f K	拟合 rms %.3f K
+hot K	热 K
+no positions yet	尚无位置
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	峰值 K,中心 km/s (LSR),FWHM km/s,面积 K km/s;一个 sigma
+sigma	sigma
+sky + spill K	天空 + 溢出 K
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f 波特
+, %s wide	, 带宽 %s
+, bursts (%.0f %% on)	, 突发 (开启 %.0f %%)
+, every %.3g ms	, 每 %.3g 毫秒
+, useful symbol %.4g us	, 有效符号 %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	得分是成立的依据所占的比例;百分比是用 OnAir 自带的测试信号校准的,并未在所有真实信号上验证。
+Add to memory	添加到 Memory
+Best guess	最佳判断
+Copy as text	复制为文本
+Could be %s (%.0f %%) or %s (%.0f %%).	可能是 %s (%.0f %%) 或 %s (%.0f %%)。
+Could not open this mode.	无法打开此模式。
+Evidence for %s:	%s 的依据:
+I do not know what this is: nothing I know fits well enough to say.	不知道这是什么:已知的类型都不够吻合。
+Identify all signals	识别所有信号
+Identify: click a signal or drag across it. Esc or I leaves the tool.	识别:点击信号或在其上拖动。按 Esc 或 I 退出此工具。
+Measured	测量值
+Most likely %s, %.0f %% sure.	很可能是 %s,把握 %.0f %%。
+No signal stands out of the noise here.	这里没有信号高出噪声。
+Open in %s	在 %s 中打开
+Opened %s	已打开 %s
+Perhaps %s (%.0f %%).	也许是 %s (%.0f %%)。
+Signals in the view	视图中的信号
+The frequency list has here:	频率列表在此处有:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	这是什么?点击信号或在其上拖动,OnAir 会告诉你它是什么以及有多大把握。快捷键 I。按住 Shift 拖动无需启用该工具。
+Why?	为什么?
+Identify selected	识别所选
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	将无线电调谐到所选信号并说明它是什么(接收器须处于采样率能覆盖该信号的模式)
+Orbit from Doppler	由多普勒推算轨道
+Follows the carrier of the tracked satellite during a pass and fits its orbit to the Doppler curve. Needs a steady frequency reference (a GPS-disciplined or well calibrated receiver); an error of the receiver's clock is fitted as a constant offset.	在过境期间跟踪所跟踪卫星的载波,并使其轨道拟合多普勒曲线。需要稳定的频率基准(GPS 驯服或校准良好的接收机);接收机时钟误差作为恒定偏移一并拟合。
+Measure the carrier during tracked passes	在跟踪的过境期间测量载波
+gate +-%.0f kHz	窗口 +-%.0f kHz
+How far from the predicted carrier the peak is looked for	在预测载波附近多大范围内寻找峰值
+%d measurements of %s	%d 个测量值(%s)
+Fit orbit	拟合轨道
+Save refined TLE	保存精化后的 TLE
+saved in %s	已保存到 %s
+Writes the refined elements to a separate file, marked as derived from this measurement; the downloaded TLEs are not touched	把精化后的轨道根数写入单独的文件,并标明由本次测量导出;下载的 TLE 不受影响
+Use the derived elements for predictions	用导出的轨道根数做预测
+no measurements yet	还没有测量值
+grey: predicted by the downloaded elements, blue: refined, green: measured, amber: residual of the refined curve	灰色:下载的轨道根数预测,蓝色:精化后,绿色:测量值,琥珀色:精化曲线的残差
+residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	残差 %.1f Hz -> %.1f Hz(使用 %d,剔除 %d);接收机偏移 %+.0f Hz
+mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	平近点角 %+.3f 度,平均运动 %+.5f 圈/天,倾角 %+.4f 度,RAAN %+.4f 度
+estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	预测的估计时间误差:之前 %.1f 秒,之后 %.1f 秒(1 西格玛)
+Also share GPS interference cells (counts per area, no aircraft)	同时分享GPS干扰网格（按区域计数，不含飞机信息）
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	对于ADS-B接收机周围每个0.5度方格（约55公里）：过去一小时听到多少架飞机，其中多少架报告了较差的GPS位置。每个方格只发送这两个数字，绝不发送飞机身份、航迹或您的位置。它用于公共地图的GPS干扰图层，只是迹象，不能证明存在干扰。在您选择之前保持关闭。
+Calibrate...	校准...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	用FM电台或已知频率的载波测量此电台的频率误差
+Frequency calibration	频率校准
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	测量此无线电的时钟相对于已知频率信号的偏差，并设置ppm校正。
+Not with a converter in front of the radio.	无线电前接有变频器时不可用。
+Start the receiver first.	请先启动接收机。
+FM station (stereo pilot) at the tuned frequency	已调谐频率上的FM电台(立体声导频)
+Carrier of known frequency (MHz)	已知频率的载波(MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	请先调谐到一个强FM电台。电台的导频并不总是精确:请在两三个电台上重复。
+Ready.	就绪。
+Looking for a reference signal.	正在寻找参考信号。
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	测量中: %+.2f ppm，不确定度 %.2f ppm。
+Done: %+.2f ppm (uncertainty %.2f ppm).	完成: %+.2f ppm(不确定度 %.2f ppm)。
+No usable reference signal was found.	未找到可用的参考信号。
+Apply %+.2f ppm	应用 %+.2f ppm
+Current setting: %.2f ppm	当前设置: %.2f ppm
+No measurements of this radio yet.	此无线电尚无测量记录。
+History of this radio (ppm)	此无线电的历史(ppm)
+Drift: %+.3f ppm per minute	漂移: 每分钟 %+.3f ppm
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	利用广播发射机的回波探测飞机，需要两个相干通道
+Baseline %.1f km, transmitter bearing %.0f degrees	基线 %.1f 公里，发射机方位 %.0f 度
+Cancellation taps	抵消抽头数
+Cannot open the recording.	无法打开录音文件。
+Clutter cancelled by %.0f dB, %d detections	杂波已抵消 %.0f dB，检测到 %d 个目标
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	复数 float32，通道0为参考，通道1为监视，逐采样同步。
+Doppler Hz	多普勒 Hz
+Doppler over time	多普勒随时间变化
+Echo level (dB)	回波电平 (dB)
+End of the recording.	录音结束。
+Enter the illuminator position.	请输入照射源（发射机）的位置。
+False alarm rate 1e-x	虚警率 1e-x
+Illuminator	照射源
+NLMS instead of ECA	用 NLMS 代替 ECA
+Noise-like waveform (DVB-T)	类噪声波形 (DVB-T)
+Passive radar	无源雷达
+Processing	处理
+Range km	距离 km
+Range rate (m/s)	距离变化率 (m/s)
+Range-Doppler map	距离-多普勒图
+Rate m/s	速率 m/s
+Saved illuminators	已保存的照射源
+Second target	第二个目标
+Target range (km)	目标距离 (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	比抽头数（以距离采样计）更近的目标会被抵消处理掩盖。
+The receiver position is the one set for ADS-B.	接收机位置使用为 ADS-B 设置的位置。
+Tracks	航迹
+Two recordings (reference, surveillance)	两个录音（参考、监视）
+Two-channel recording (cf32)	双通道录音 (cf32)
+Waiting for data.	正在等待数据。
