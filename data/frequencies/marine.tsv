@@ -1,0 +1,110 @@
+# Marine: VHF channels, AIS, DSC, NAVTEX, weather fax
+# freq_mhz|name|bandwidth_khz|notes[|mode|region|category]   @mode / @region / @category / @source set the defaults for the lines below
+@source ITU Radio Regulations Appendix 18 (VHF maritime mobile channels), ITU-R M.1371 (AIS), ITU-R M.493 (DSC), IMO NAVTEX manual, national weather-fax schedules (DWD, NOAA, UKHO)
+@region GLOBAL
+@category marine
+@mode ais
+161.975|AIS 1 (channel 87B)|25|GMSK 9600 bit/s
+162.025|AIS 2 (channel 88B)|25|GMSK 9600 bit/s
+156.775|Long-range AIS 1 (channel 75)|25|Satellite AIS downlink region, usually weak
+156.825|Long-range AIS 2 (channel 76)|25|
+@mode vdes
+161.950|VDES ASM 1|25|Application specific messages
+162.050|VDES ASM 2|25|
+@mode dsc
+156.525|DSC distress calling (VHF channel 70)|25|1200 baud FSK, ITU-R M.493
+2.1875|DSC MF distress (2187.5 kHz)|1|
+4.2075|DSC HF distress (4207.5 kHz)|1|
+6.312|DSC HF distress (6312 kHz)|1|
+8.4145|DSC HF distress (8414.5 kHz)|1|
+12.577|DSC HF distress (12577 kHz)|1|
+16.8045|DSC HF distress (16804.5 kHz)|1|
+@mode navtex
+0.518|NAVTEX international (English)|0.3|518 kHz, SITOR-B 100 baud
+0.490|NAVTEX national language|0.3|490 kHz
+0.4242|NAVTEX 424 kHz|0.3|Some Baltic / Turkish stations
+4.2095|NAVTEX HF (tropical zone)|0.3|4209.5 kHz
+@mode wefax
+@source DWD, NOAA and UKHO / Northwood published schedules; the dial is 1.9 kHz below the assigned carrier
+3.8531|DWD Pinneberg weather fax (3855 kHz)|3|Assigned carrier 3855 kHz, USB dial|wefax|DE|weather
+7.8781|DWD Pinneberg weather fax (7880 kHz)|3|Assigned carrier 7880 kHz, USB dial|wefax|DE|weather
+13.8806|DWD Pinneberg weather fax (13882.5 kHz)|3|Assigned carrier 13882.5 kHz, USB dial|wefax|DE|weather
+4.2331|NOAA Boston NMF weather fax (4235 kHz)|3|Assigned carrier 4235 kHz, USB dial|wefax|US|weather
+6.3386|NOAA Boston NMF weather fax (6340.5 kHz)|3|Assigned carrier 6340.5 kHz, USB dial|wefax|US|weather
+9.1081|NOAA Boston NMF weather fax (9110 kHz)|3|Assigned carrier 9110 kHz, USB dial|wefax|US|weather
+12.7481|NOAA Boston NMF weather fax (12750 kHz)|3|Assigned carrier 12750 kHz, USB dial|wefax|US|weather
+4.316|NOAA New Orleans NMG weather fax (4317.9 kHz)|3|Assigned carrier 4317.9 kHz, USB dial|wefax|US|weather
+8.502|NOAA New Orleans NMG weather fax (8503.9 kHz)|3|Assigned carrier 8503.9 kHz, USB dial|wefax|US|weather
+12.788|NOAA New Orleans NMG weather fax (12789.9 kHz)|3|Assigned carrier 12789.9 kHz, USB dial|wefax|US|weather
+17.1445|NOAA New Orleans NMG weather fax (17146.4 kHz)|3|Assigned carrier 17146.4 kHz, USB dial|wefax|US|weather
+2.0521|NOAA Kodiak NOJ weather fax (2054 kHz)|3|Assigned carrier 2054 kHz, USB dial|wefax|US|weather
+4.2961|NOAA Kodiak NOJ weather fax (4298 kHz)|3|Assigned carrier 4298 kHz, USB dial|wefax|US|weather
+8.4571|NOAA Kodiak NOJ weather fax (8459 kHz)|3|Assigned carrier 8459 kHz, USB dial|wefax|US|weather
+12.4106|NOAA Kodiak NOJ weather fax (12412.5 kHz)|3|Assigned carrier 12412.5 kHz, USB dial|wefax|US|weather
+2.6166|Northwood GYA weather fax (2618.5 kHz)|3|Assigned carrier 2618.5 kHz, USB dial|wefax|UK|weather
+4.6081|Northwood GYA weather fax (4610 kHz)|3|Assigned carrier 4610 kHz, USB dial|wefax|UK|weather
+8.0381|Northwood GYA weather fax (8040 kHz)|3|Assigned carrier 8040 kHz, USB dial|wefax|UK|weather
+11.0846|Northwood GYA weather fax (11086.5 kHz)|3|Assigned carrier 11086.5 kHz, USB dial|wefax|UK|weather
+3.6206|JMA Tokyo JMH weather fax (3622.5 kHz)|3|Assigned carrier 3622.5 kHz, USB dial|wefax|JP|weather
+7.7931|JMA Tokyo JMH weather fax (7795 kHz)|3|Assigned carrier 7795 kHz, USB dial|wefax|JP|weather
+13.9866|JMA Tokyo JMH weather fax (13988.5 kHz)|3|Assigned carrier 13988.5 kHz, USB dial|wefax|JP|weather
+18.2181|JMA Tokyo JMH weather fax (18220 kHz)|3|Assigned carrier 18220 kHz, USB dial|wefax|JP|weather
+@mode general
+@source ITU Radio Regulations Appendix 18; frequencies are ship-transmit channels, coast stations transmit 4.6 MHz higher on duplex channels
+@category marine
+156.050|Marine VHF channel 01|25|NFM
+156.100|Marine VHF channel 02|25|NFM
+156.150|Marine VHF channel 03|25|NFM
+156.200|Marine VHF channel 04|25|NFM
+156.250|Marine VHF channel 05|25|NFM
+156.300|Marine VHF channel 06 (intership safety / SAR)|25|NFM
+156.350|Marine VHF channel 07|25|NFM
+156.400|Marine VHF channel 08|25|NFM
+156.450|Marine VHF channel 09 (calling / port ops)|25|NFM
+156.500|Marine VHF channel 10|25|NFM
+156.550|Marine VHF channel 11|25|NFM
+156.600|Marine VHF channel 12|25|NFM
+156.650|Marine VHF channel 13 (bridge to bridge)|25|NFM
+156.700|Marine VHF channel 14|25|NFM
+156.750|Marine VHF channel 15|25|NFM
+156.800|Marine VHF channel 16 (distress, safety and calling)|25|NFM
+156.850|Marine VHF channel 17|25|NFM
+156.900|Marine VHF channel 18|25|NFM
+156.950|Marine VHF channel 19|25|NFM
+157.000|Marine VHF channel 20|25|NFM
+157.050|Marine VHF channel 21|25|NFM
+157.100|Marine VHF channel 22|25|NFM
+157.150|Marine VHF channel 23|25|NFM
+157.200|Marine VHF channel 24|25|NFM
+157.250|Marine VHF channel 25|25|NFM
+157.300|Marine VHF channel 26|25|NFM
+157.350|Marine VHF channel 27|25|NFM
+157.400|Marine VHF channel 28|25|NFM
+156.025|Marine VHF channel 60|25|NFM
+156.075|Marine VHF channel 61|25|NFM
+156.125|Marine VHF channel 62|25|NFM
+156.175|Marine VHF channel 63|25|NFM
+156.225|Marine VHF channel 64|25|NFM
+156.275|Marine VHF channel 65|25|NFM
+156.325|Marine VHF channel 66|25|NFM
+156.375|Marine VHF channel 67|25|NFM
+156.425|Marine VHF channel 68|25|NFM
+156.475|Marine VHF channel 69|25|NFM
+156.575|Marine VHF channel 71|25|NFM
+156.625|Marine VHF channel 72|25|NFM
+156.675|Marine VHF channel 73|25|NFM
+156.725|Marine VHF channel 74|25|NFM
+156.775|Marine VHF channel 75|25|NFM
+156.825|Marine VHF channel 76|25|NFM
+156.875|Marine VHF channel 77|25|NFM
+156.925|Marine VHF channel 78|25|NFM
+156.975|Marine VHF channel 79|25|NFM
+157.025|Marine VHF channel 80|25|NFM
+157.075|Marine VHF channel 81|25|NFM
+157.125|Marine VHF channel 82|25|NFM
+157.175|Marine VHF channel 83|25|NFM
+157.225|Marine VHF channel 84|25|NFM
+157.275|Marine VHF channel 85|25|NFM
+157.325|Marine VHF channel 86|25|NFM
+157.375|Marine VHF channel 87|25|NFM
+157.425|Marine VHF channel 88|25|NFM

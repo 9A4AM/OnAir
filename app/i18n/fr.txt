@@ -1494,3 +1494,32 @@ Keeps recording when the mode or the frequency changes. Off: the recording stops
 The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir, and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	Le module SoapyRemote manque dans cette installation d'OnAir, donc il ne peut pas joindre une radio distante. Réinstallez OnAir, et signalez-le si cela se reproduit. L'ordinateur de la radio doit exécuter SoapySDRServer --bind.
 The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir (or run brew install soapyremote), and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	Le module SoapyRemote manque dans cette installation d'OnAir, donc il ne peut pas joindre une radio distante. Réinstallez OnAir (ou lancez brew install soapyremote), et signalez-le si cela se reproduit. L'ordinateur de la radio doit exécuter SoapySDRServer --bind.
 SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install it (Debian/Ubuntu: sudo apt install soapysdr-module-remote; other systems: github.com/pothosware/SoapyRemote), then restart OnAir. The radio's computer must run SoapySDRServer --bind.	Ce SoapySDR n'a pas de module client SoapyRemote, donc il ne peut pas joindre une radio distante. Installez-le (Debian/Ubuntu : sudo apt install soapysdr-module-remote ; autres systèmes : github.com/pothosware/SoapyRemote), puis redémarrez OnAir. L'ordinateur de la radio doit exécuter SoapySDRServer --bind.
+# frequency database
+%zu built in, %zu yours	%zu intégrées, %zu à vous
+Add entry...	Ajouter une entrée...
+Add frequency	Ajouter une fréquence
+Add to Memory	Ajouter à Memory
+Added to Memory.	Ajouté à Memory.
+Already in Memory.	Déjà dans Memory.
+An entry with this frequency and mode exists already.	Une entrée avec cette fréquence et ce mode existe déjà.
+Category	Catégorie
+Could not save 	Impossible d'enregistrer 
+Could not tune to this entry.	Impossible de s'accorder sur cette entrée.
+Exports your own entries (not the built-in ones)	Exporte vos propres entrées (pas celles intégrées)
+Frequencies	Fréquences
+Frequencies...	Fréquences...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	%zu entrées importées, %zu ignorées (doublons ou lignes sans fréquence).
+Keeps this entry in the Memory panel	Garde cette entrée dans le panneau Memory
+Known frequencies (%zu)	Fréquences connues (%zu)
+Mine	Les miennes
+Nothing matches. Clear the search or the filters.	Rien ne correspond. Effacez la recherche ou les filtres.
+Nothing to import in this file.	Rien à importer dans ce fichier.
+Only the entries you added or imported	Seulement les entrées que vous avez ajoutées ou importées
+Open the Frequencies panel...	Ouvrir le panneau des fréquences...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	Lit un fichier CSV ou JSON écrit par Exporter (ou par le panneau Memory), ou une simple liste de lignes « fréquence,nom » (MHz). Les entrées dont la fréquence et le mode existent déjà sont ignorées.
+Search name, notes, mode, frequency (162.4)	Rechercher nom, notes, mode, fréquence (162.4)
+Show Frequencies as a tab	Afficher Fréquences comme onglet
+Source...	Source...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Passe au mode de l'entrée, applique son accord et s'accorde sur la fréquence. Un double-clic sur une ligne fait de même. Un récepteur en marche redémarre quand le mode change.
+Tuned: %s  %s MHz	Accordé : %s  %s MHz
+Well-known frequencies of this mode: pick one to tune to it	Fréquences connues de ce mode : choisissez-en une pour vous y accorder

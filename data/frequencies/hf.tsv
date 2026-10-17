@@ -1,0 +1,212 @@
+# HF: amateur digital modes, time signals, beacons, utilities
+# freq_mhz|name|bandwidth_khz|notes[|mode|region|category]   @mode / @region / @category / @source set the defaults for the lines below
+@region GLOBAL
+@source WSJT-X default frequency table and JS8Call defaults (dial frequencies, USB); IARU band plans; NCDXF/IARU beacon project; national time-service publications; ITU-R TF.768
+@category amateur
+@mode ft8
+1.840|FT8 1.840 MHz|3|USB dial
+3.573|FT8 3.573 MHz|3|USB dial
+5.357|FT8 5.357 MHz|3|USB dial
+7.074|FT8 7.074 MHz|3|USB dial
+10.136|FT8 10.136 MHz|3|USB dial
+14.074|FT8 14.074 MHz|3|USB dial
+18.100|FT8 18.100 MHz|3|USB dial
+21.074|FT8 21.074 MHz|3|USB dial
+24.915|FT8 24.915 MHz|3|USB dial
+28.074|FT8 28.074 MHz|3|USB dial
+50.313|FT8 50.313 MHz|3|USB dial
+70.154|FT8 70.154 MHz|3|USB dial
+144.174|FT8 144.174 MHz|3|USB dial
+432.174|FT8 432.174 MHz|3|USB dial
+@mode ft4
+3.575|FT4 3.575 MHz|3|USB dial
+7.0475|FT4 7.0475 MHz|3|USB dial
+10.14|FT4 10.14 MHz|3|USB dial
+14.08|FT4 14.08 MHz|3|USB dial
+18.104|FT4 18.104 MHz|3|USB dial
+21.14|FT4 21.14 MHz|3|USB dial
+24.919|FT4 24.919 MHz|3|USB dial
+28.18|FT4 28.18 MHz|3|USB dial
+50.318|FT4 50.318 MHz|3|USB dial
+144.17|FT4 144.17 MHz|3|USB dial
+@mode ft2
+14.084|FT2 20 m|3|
+@mode wspr
+0.4742|WSPR 0.4742 MHz|0.2|USB dial, 1.5 kHz audio centre
+1.8366|WSPR 1.8366 MHz|0.2|USB dial, 1.5 kHz audio centre
+3.5686|WSPR 3.5686 MHz|0.2|USB dial, 1.5 kHz audio centre
+5.2872|WSPR 5.2872 MHz|0.2|USB dial, 1.5 kHz audio centre
+7.0386|WSPR 7.0386 MHz|0.2|USB dial, 1.5 kHz audio centre
+10.1387|WSPR 10.1387 MHz|0.2|USB dial, 1.5 kHz audio centre
+14.0956|WSPR 14.0956 MHz|0.2|USB dial, 1.5 kHz audio centre
+18.1046|WSPR 18.1046 MHz|0.2|USB dial, 1.5 kHz audio centre
+21.0946|WSPR 21.0946 MHz|0.2|USB dial, 1.5 kHz audio centre
+24.9246|WSPR 24.9246 MHz|0.2|USB dial, 1.5 kHz audio centre
+28.1246|WSPR 28.1246 MHz|0.2|USB dial, 1.5 kHz audio centre
+50.293|WSPR 50.293 MHz|0.2|USB dial, 1.5 kHz audio centre
+70.091|WSPR 70.091 MHz|0.2|USB dial, 1.5 kHz audio centre
+144.489|WSPR 144.489 MHz|0.2|USB dial, 1.5 kHz audio centre
+@mode jt65
+1.838|JT65 1.838 MHz|3|USB dial
+3.57|JT65 3.57 MHz|3|USB dial
+7.076|JT65 7.076 MHz|3|USB dial
+10.138|JT65 10.138 MHz|3|USB dial
+14.076|JT65 14.076 MHz|3|USB dial
+18.102|JT65 18.102 MHz|3|USB dial
+21.076|JT65 21.076 MHz|3|USB dial
+28.076|JT65 28.076 MHz|3|USB dial
+50.276|JT65 50.276 MHz|3|USB dial
+144.12|JT65 144.12 MHz|3|USB dial
+@mode jt9
+1.839|JT9 1.839 MHz|3|USB dial
+3.572|JT9 3.572 MHz|3|USB dial
+7.078|JT9 7.078 MHz|3|USB dial
+10.14|JT9 10.14 MHz|3|USB dial
+14.078|JT9 14.078 MHz|3|USB dial
+18.104|JT9 18.104 MHz|3|USB dial
+21.078|JT9 21.078 MHz|3|USB dial
+28.078|JT9 28.078 MHz|3|USB dial
+@mode q65
+50.275|Q65 50.275 MHz|3|USB dial; 14.100 is the app default
+144.116|Q65 144.116 MHz|3|USB dial; 14.100 is the app default
+14.1|Q65 14.1 MHz|3|USB dial; 14.100 is the app default
+@mode fst4
+1.8366|FST4W / WSPR 160 m|0.2|
+@mode msk144
+50.260|MSK144 6 m meteor scatter|3|
+144.150|MSK144 2 m meteor scatter|3|
+28.145|MSK144 10 m (app default)|3|
+@mode js8
+1.842|JS8Call 1.842 MHz|3|USB dial
+3.578|JS8Call 3.578 MHz|3|USB dial
+7.078|JS8Call 7.078 MHz|3|USB dial
+10.13|JS8Call 10.13 MHz|3|USB dial
+14.078|JS8Call 14.078 MHz|3|USB dial
+18.104|JS8Call 18.104 MHz|3|USB dial
+21.078|JS8Call 21.078 MHz|3|USB dial
+24.922|JS8Call 24.922 MHz|3|USB dial
+28.078|JS8Call 28.078 MHz|3|USB dial
+50.318|JS8Call 50.318 MHz|3|USB dial
+@mode psk
+1.838|PSK31 1.838 MHz|0.1|USB dial; activity centre per IARU band plans
+3.58|PSK31 3.58 MHz|0.1|USB dial; activity centre per IARU band plans
+7.04|PSK31 7.04 MHz|0.1|USB dial; activity centre per IARU band plans
+10.142|PSK31 10.142 MHz|0.1|USB dial; activity centre per IARU band plans
+14.07|PSK31 14.07 MHz|0.1|USB dial; activity centre per IARU band plans
+18.1|PSK31 18.1 MHz|0.1|USB dial; activity centre per IARU band plans
+21.07|PSK31 21.07 MHz|0.1|USB dial; activity centre per IARU band plans
+24.92|PSK31 24.92 MHz|0.1|USB dial; activity centre per IARU band plans
+28.12|PSK31 28.12 MHz|0.1|USB dial; activity centre per IARU band plans
+50.29|PSK31 50.29 MHz|0.1|USB dial; activity centre per IARU band plans
+@mode rtty
+3.58|RTTY 3.58 MHz|0.5|Narrow-band digital segment; contests use the CW/RTTY segments
+7.04|RTTY 7.04 MHz|0.5|Narrow-band digital segment; contests use the CW/RTTY segments
+14.08|RTTY 14.08 MHz|0.5|Narrow-band digital segment; contests use the CW/RTTY segments
+21.08|RTTY 21.08 MHz|0.5|Narrow-band digital segment; contests use the CW/RTTY segments
+28.08|RTTY 28.08 MHz|0.5|Narrow-band digital segment; contests use the CW/RTTY segments
+@mode cw
+1.83|CW QRP calling 1.83 MHz|0.5|QRP centre of activity
+3.56|CW QRP calling 3.56 MHz|0.5|QRP centre of activity
+7.03|CW QRP calling 7.03 MHz|0.5|QRP centre of activity
+10.106|CW QRP calling 10.106 MHz|0.5|QRP centre of activity
+14.06|CW QRP calling 14.06 MHz|0.5|QRP centre of activity
+18.096|CW QRP calling 18.096 MHz|0.5|QRP centre of activity
+21.06|CW QRP calling 21.06 MHz|0.5|QRP centre of activity
+24.906|CW QRP calling 24.906 MHz|0.5|QRP centre of activity
+28.06|CW QRP calling 28.06 MHz|0.5|QRP centre of activity
+@mode sstv
+3.845|SSTV 3.845 MHz|3|Activity frequency; 145.800 is the ISS SSTV downlink during events (FM)
+7.171|SSTV 7.171 MHz|3|Activity frequency; 145.800 is the ISS SSTV downlink during events (FM)
+14.23|SSTV 14.23 MHz|3|Activity frequency; 145.800 is the ISS SSTV downlink during events (FM)
+21.34|SSTV 21.34 MHz|3|Activity frequency; 145.800 is the ISS SSTV downlink during events (FM)
+28.68|SSTV 28.68 MHz|3|Activity frequency; 145.800 is the ISS SSTV downlink during events (FM)
+145.8|SSTV 145.8 MHz|3|Activity frequency; 145.800 is the ISS SSTV downlink during events (FM)
+@mode freedv
+3.625|FreeDV 3.625 MHz|3|Activity frequency
+7.177|FreeDV 7.177 MHz|3|Activity frequency
+14.236|FreeDV 14.236 MHz|3|Activity frequency
+18.118|FreeDV 18.118 MHz|3|Activity frequency
+21.313|FreeDV 21.313 MHz|3|Activity frequency
+24.933|FreeDV 24.933 MHz|3|Activity frequency
+28.33|FreeDV 28.33 MHz|3|Activity frequency
+@mode hamdrm
+14.233|HamDRM digital SSTV 20 m|3|
+@mode olivia
+14.1065|Olivia 20 m|1|
+@mode contestia
+14.1095|Contestia 20 m|1|
+@mode mfsk
+14.0785|MFSK 20 m|1|
+@mode thor
+14.077|THOR 20 m|1|
+@mode dominoex
+14.0715|DominoEX 20 m|1|
+@mode hell
+14.063|Hellschreiber 20 m|1|
+@mode hfbeacon
+@category beacon
+@source NCDXF / IARU International Beacon Project (each beacon sends in turn for 10 s every 3 minutes)
+14.100|NCDXF/IARU beacon network 14.100 MHz|1|18 beacons share the channel, 100 W then 10 W 1 W 0.1 W
+18.110|NCDXF/IARU beacon network 18.110 MHz|1|18 beacons share the channel, 100 W then 10 W 1 W 0.1 W
+21.150|NCDXF/IARU beacon network 21.150 MHz|1|18 beacons share the channel, 100 W then 10 W 1 W 0.1 W
+24.930|NCDXF/IARU beacon network 24.930 MHz|1|18 beacons share the channel, 100 W then 10 W 1 W 0.1 W
+28.200|NCDXF/IARU beacon network 28.200 MHz|1|18 beacons share the channel, 100 W then 10 W 1 W 0.1 W
+@mode ale
+@category utility
+@source MIL-STD-188-141 / FED-STD-1045 automatic link establishment; commonly cited amateur and HFN calling channels (USB dial)
+3.596|ALE calling channel 3.596 MHz|3|Check the local band plan before transmitting
+5.3305|ALE calling channel 5.3305 MHz|3|Check the local band plan before transmitting
+7.185|ALE calling channel 7.185 MHz|3|Check the local band plan before transmitting
+10.1465|ALE calling channel 10.1465 MHz|3|Check the local band plan before transmitting
+14.109|ALE calling channel 14.109 MHz|3|Check the local band plan before transmitting
+18.1065|ALE calling channel 18.1065 MHz|3|Check the local band plan before transmitting
+21.096|ALE calling channel 21.096 MHz|3|Check the local band plan before transmitting
+24.926|ALE calling channel 24.926 MHz|3|Check the local band plan before transmitting
+28.146|ALE calling channel 28.146 MHz|3|Check the local band plan before transmitting
+@mode time
+@category time
+@source NIST, NPL, PTB, NICT, VNIIFTRI, NIM, NRC time-service publications
+2.5|WWV / WWVH / BPM 2.5 MHz|10|Fort Collins, Hawaii and Pucheng share the standard frequencies|time|US|
+5|WWV / WWVH / BPM 5 MHz|10||time|US|
+10|WWV / WWVH / BPM 10 MHz|10||time|US|
+15|WWV / WWVH / BPM 15 MHz|10||time|US|
+20|WWV 20 MHz|10|Fort Collins|time|US|
+0.06|WWVB / MSF / JJY-60 60 kHz|1|Three stations share 60 kHz: WWVB Fort Collins (US), MSF Anthorn (UK), JJY Hagane-yama (Japan); each sends its own time code|time|GLOBAL|
+0.0775|DCF77 77.5 kHz|1|Mainflingen; AM second marks and PM code|time|DE|
+0.04|JJY 40 kHz|1|Fukushima (Ohtakadoya-yama)|time|JP|
+0.066666|RBU 66.67 kHz|1|Moscow, time pulses|time|RU|
+0.05|RTZ 50 kHz|1|Irkutsk|time|RU|
+0.0685|BPC 68.5 kHz|1|Shangqiu|time|CN|
+0.162|ALS162 162 kHz|1|Allouis, phase-modulated time code|time|FR|
+3.33|CHU 3.330 MHz|3|Ottawa, AM/USB|time|CA|
+7.85|CHU 7.850 MHz|3||time|CA|
+14.67|CHU 14.670 MHz|3||time|CA|
+4.996|RWM 4.996 MHz|10|Moscow|time|RU|
+9.996|RWM 9.996 MHz|10||time|RU|
+14.996|RWM 14.996 MHz|10||time|RU|
+@mode codar
+@category radar
+@source ITU Radio Regulations Resolution 612 (WRC-12) HF oceanographic radar allocations: band centres only; the receiver covers the radar's sweep
+4.463|HF ocean radar band 4.463 MHz|50|Swept chirp radar (SeaSonde and similar)
+5.2625|HF ocean radar band 5.2625 MHz|25|Swept chirp radar (SeaSonde and similar)
+9.33|HF ocean radar band 9.33 MHz|50|Swept chirp radar (SeaSonde and similar)
+13.5|HF ocean radar band 13.5 MHz|100|Swept chirp radar (SeaSonde and similar)
+16.15|HF ocean radar band 16.15 MHz|100|Swept chirp radar (SeaSonde and similar)
+24.55|HF ocean radar band 24.55 MHz|200|Swept chirp radar (SeaSonde and similar)
+26.31|HF ocean radar band 26.31 MHz|220|Swept chirp radar (SeaSonde and similar)
+40|HF ocean radar band 40 MHz|1000|Swept chirp radar (SeaSonde and similar)
+@mode datawell
+@category data
+@source Datawell Waverider DWR-MkIII manual (HF link, 25.5-45 MHz)
+30.475|Datawell buoy HF link (app default)|12.5|
+@mode general
+@category amateur
+@source IARU Regions 1/2/3 band plans: emergency centres of activity
+3.76|Emergency centre of activity 3.76 MHz|3|SSB (LSB below 10 MHz, USB above)|general|R1|
+3.75|Emergency centre of activity 3.75 MHz|3|SSB (LSB below 10 MHz, USB above)|general|R3|
+3.985|Emergency centre of activity 3.985 MHz|3|SSB (LSB below 10 MHz, USB above)|general|R2|
+7.11|Emergency centre of activity 7.11 MHz|3|SSB (LSB below 10 MHz, USB above)|general|R1|
+7.06|Emergency centre of activity 7.06 MHz|3|SSB (LSB below 10 MHz, USB above)|general|R2|
+14.3|Emergency centre of activity 14.3 MHz|3|SSB (LSB below 10 MHz, USB above)|general|GLOBAL|
+18.16|Emergency centre of activity 18.16 MHz|3|SSB (LSB below 10 MHz, USB above)|general|GLOBAL|
+21.36|Emergency centre of activity 21.36 MHz|3|SSB (LSB below 10 MHz, USB above)|general|GLOBAL|

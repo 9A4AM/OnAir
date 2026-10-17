@@ -1494,3 +1494,32 @@ Keeps recording when the mode or the frequency changes. Off: the recording stops
 The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir, and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	Šioje OnAir įdiegtyje trūksta SoapyRemote modulio, todėl nepavyksta pasiekti nuotolinio radijo. Iš naujo įdiekite OnAir, o jei pasikartotų, praneškite. Radijo kompiuteryje turi veikti SoapySDRServer --bind.
 The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir (or run brew install soapyremote), and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	Šioje OnAir įdiegtyje trūksta SoapyRemote modulio, todėl nepavyksta pasiekti nuotolinio radijo. Iš naujo įdiekite OnAir (arba paleiskite brew install soapyremote), o jei pasikartotų, praneškite. Radijo kompiuteryje turi veikti SoapySDRServer --bind.
 SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install it (Debian/Ubuntu: sudo apt install soapysdr-module-remote; other systems: github.com/pothosware/SoapyRemote), then restart OnAir. The radio's computer must run SoapySDRServer --bind.	Šis SoapySDR neturi SoapyRemote kliento modulio, todėl nepavyksta pasiekti nuotolinio radijo. Įdiekite jį (Debian/Ubuntu: sudo apt install soapysdr-module-remote; kitos sistemos: github.com/pothosware/SoapyRemote) ir paleiskite OnAir iš naujo. Radijo kompiuteryje turi veikti SoapySDRServer --bind.
+# frequency database
+%zu built in, %zu yours	%zu įmontuoti, %zu jūsų
+Add entry...	Pridėti įrašą...
+Add frequency	Pridėti dažnį
+Add to Memory	Pridėti į Memory
+Added to Memory.	Pridėta į Memory.
+Already in Memory.	Jau yra Memory.
+An entry with this frequency and mode exists already.	Įrašas su šiuo dažniu ir režimu jau yra.
+Category	Kategorija
+Could not save 	Nepavyko išsaugoti 
+Could not tune to this entry.	Nepavyko derinti šio įrašo.
+Exports your own entries (not the built-in ones)	Eksportuoja jūsų pačių įrašus (ne įmontuotus)
+Frequencies	Dažniai
+Frequencies...	Dažniai...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	Importuota įrašų: %zu, praleista: %zu (dublikatai arba eilutės be dažnio).
+Keeps this entry in the Memory panel	Išsaugo šį įrašą Memory skydelyje
+Known frequencies (%zu)	Žinomi dažniai (%zu)
+Mine	Mano
+Nothing matches. Clear the search or the filters.	Nieko nerasta. Išvalykite paiešką arba filtrus.
+Nothing to import in this file.	Šiame faile nėra ką importuoti.
+Only the entries you added or imported	Tik jūsų pridėti arba importuoti įrašai
+Open the Frequencies panel...	Atidaryti dažnių skydelį...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	Nuskaito CSV arba JSON failą, parašytą Eksportu (arba Memory skydeliu), arba paprastą eilučių 'dažnis,pavadinimas' sąrašą (MHz). Įrašai su jau esančiu dažniu ir režimu praleidžiami.
+Search name, notes, mode, frequency (162.4)	Ieškoti: pavadinimas, pastabos, režimas, dažnis (162.4)
+Show Frequencies as a tab	Rodyti dažnius kaip skirtuką
+Source...	Šaltinis...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Perjungia į įrašo režimą, pritaiko jo derinimą ir suderina dažnį. Dukart spustelėjus eilutę atsitinka tas pats. Veikiantis imtuvas paleidžiamas iš naujo pasikeitus režimui.
+Tuned: %s  %s MHz	Suderinta: %s  %s MHz
+Well-known frequencies of this mode: pick one to tune to it	Šio režimo žinomi dažniai: pasirinkite, kad suderintumėte

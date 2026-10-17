@@ -368,6 +368,7 @@ void toolbarParts(App& a, int mask, bool vertical) {
     if (mask & TbTuner) toolbarTuner(a, mask, vertical, retune, mu);
 
     if (mask & TbTuner) secondModeControl(a, vertical);
+    if (mask & TbTuner) { if (!vertical) flowNext(10 * gUi); freqdbKnownCombo(a, vertical ? -1.f : 170 * gUi); }
 
     if (mask & TbGain) toolbarGain(a, vertical, running, retune);
 
