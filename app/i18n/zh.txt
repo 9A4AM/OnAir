@@ -1618,3 +1618,6 @@ Up	上行
 Down	下行
 Some digits were corrected or lost: check this row against the next message of the train	部分数字已被纠正或丢失：请与该列车的下一条报文核对此行
 Train warning, 821 MHz	列车预警，821 MHz
+clear picture	清除图像
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	清除图像以及解码器已收集的行,并在下一个起始音或相位信号处开始新图像。右侧列表中已有的图像会保留。
+Clears the NAVTEX and DSC lists and the weather fax picture.	清除 NAVTEX 和 DSC 列表以及气象传真图像。

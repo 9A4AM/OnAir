@@ -1618,3 +1618,6 @@ Up	Ascendente
 Down	Descendente
 Some digits were corrected or lost: check this row against the next message of the train	Algunos dígitos se corrigieron o se perdieron: compara esta fila con el siguiente mensaje del tren
 Train warning, 821 MHz	Aviso de trenes, 821 MHz
+clear picture	borrar imagen
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Borra la imagen y las líneas que ha reunido el decodificador, y empieza una imagen nueva con el siguiente tono de inicio o fase. Las imágenes que ya están en la lista de la derecha se conservan.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Borra las listas NAVTEX y DSC y la imagen del fax meteorológico.

@@ -1601,3 +1601,6 @@ Up	Ascendente
 Down	Discendente
 Some digits were corrected or lost: check this row against the next message of the train	Alcune cifre sono state corrette o perse: confronta questa riga con il messaggio successivo del treno
 Train warning, 821 MHz	Avviso treni, 821 MHz
+clear picture	cancella immagine
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Cancella l'immagine e le righe raccolte dal decodificatore e avvia una nuova immagine al prossimo tono di avvio o alla prossima fasatura. Le immagini già nell'elenco a destra restano.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Cancella gli elenchi NAVTEX e DSC e l'immagine del fax meteo.

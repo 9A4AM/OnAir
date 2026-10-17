@@ -1601,3 +1601,6 @@ Up	Вверх
 Down	Вниз
 Some digits were corrected or lost: check this row against the next message of the train	Часть цифр исправлена или потеряна: сверьте эту строку со следующим сообщением поезда
 Train warning, 821 MHz	Предупреждение о поездах, 821 МГц
+clear picture	очистить картинку
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Очищает картинку и строки, накопленные декодером, и начинает новую картинку со следующего стартового тона или фазировки. Картинки, уже находящиеся в списке справа, остаются.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Очищает списки NAVTEX и DSC и картинку метеофакса.

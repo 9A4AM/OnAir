@@ -1618,3 +1618,6 @@ Up	Op
 Down	Neer
 Some digits were corrected or lost: check this row against the next message of the train	Sommige cijfers zijn gecorrigeerd of verloren: vergelijk deze regel met het volgende bericht van de trein
 Train warning, 821 MHz	Treinwaarschuwing, 821 MHz
+clear picture	afbeelding wissen
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Wist de afbeelding en de regels die de decoder heeft verzameld, en begint een nieuwe afbeelding bij de volgende starttoon of fasering. Afbeeldingen die al in de lijst rechts staan blijven.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Wist de NAVTEX- en DSC-lijsten en de weerfaxafbeelding.

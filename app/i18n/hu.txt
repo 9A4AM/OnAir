@@ -1604,3 +1604,6 @@ Up	Fel
 Down	Le
 Some digits were corrected or lost: check this row against the next message of the train	Néhány számjegyet javítottunk vagy elveszett: ellenőrizd ezt a sort a vonat következő üzenetével
 Train warning, 821 MHz	Vonatfigyelmeztetés, 821 MHz
+clear picture	kép törlése
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Törli a képet és a dekóder által összegyűjtött sorokat, és a következő indítóhangnál vagy fázisjelnél új képet kezd. A jobb oldali listában lévő képek megmaradnak.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Törli a NAVTEX- és DSC-listákat, valamint az időjárási fax képét.

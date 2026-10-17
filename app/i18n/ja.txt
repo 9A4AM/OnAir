@@ -1618,3 +1618,6 @@ Up	上り
 Down	下り
 Some digits were corrected or lost: check this row against the next message of the train	一部の桁が訂正または欠落しました。同じ列車の次のメッセージと照合してください
 Train warning, 821 MHz	列車警報、821 MHz
+clear picture	画像を消去
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	画像とデコーダーが集めたラインを消去し、次のスタートトーンまたは位相合わせから新しい画像を始めます。右のリストにある画像はそのまま残ります。
+Clears the NAVTEX and DSC lists and the weather fax picture.	NAVTEX と DSC のリストと気象ファックスの画像を消去します。

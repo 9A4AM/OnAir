@@ -1618,3 +1618,6 @@ Up	Aukštyn
 Down	Žemyn
 Some digits were corrected or lost: check this row against the next message of the train	Kai kurie skaitmenys ištaisyti arba prarasti: palyginkite šią eilutę su kitu traukinio pranešimu
 Train warning, 821 MHz	Traukinių įspėjimas, 821 MHz
+clear picture	išvalyti vaizdą
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Išvalo vaizdą ir dekoderio surinktas eilutes, o kitu pradžios tonu ar fazavimu pradeda naują vaizdą. Dešiniajame sąraše jau esantys vaizdai lieka.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Išvalo NAVTEX ir DSC sąrašus bei orų fakso vaizdą.

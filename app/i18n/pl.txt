@@ -1618,3 +1618,6 @@ Up	W górę
 Down	W dół
 Some digits were corrected or lost: check this row against the next message of the train	Niektóre cyfry poprawiono lub utracono: porównaj ten wiersz z następną wiadomością pociągu
 Train warning, 821 MHz	Ostrzeżenie o pociągach, 821 MHz
+clear picture	wyczyść obraz
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Czyści obraz i linie zebrane przez dekoder, a nowy obraz zaczyna przy następnym tonie startowym lub fazowaniu. Obrazy już na liście po prawej zostają.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Czyści listy NAVTEX i DSC oraz obraz faksu pogodowego.
