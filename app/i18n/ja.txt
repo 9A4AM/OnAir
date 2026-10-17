@@ -1428,3 +1428,17 @@ Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks
 Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	プランを JSON ファイルとして、名前が .csv で終わる場合は CSV として保存します。内蔵プランは自作プランの出発点に最適です。
 Deletes one of your own band plans. The built-in plans stay.	自分のバンドプランを 1 つ削除します。内蔵プランは残ります。
 TV channels of the band plan %s (change it in the Scan tab).	バンドプラン %s のテレビチャンネル（スキャンタブで変更できます）。
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	乗員
+Operations	運航
+Company	航空会社
+Maintenance	整備
+Fault	故障
+Show all messages	すべてのメッセージを表示
+ACARS messages	ACARSメッセージ
+%d ACARS messages	ACARSメッセージ %d 件
+Copy these messages as text	これらのメッセージをテキストとしてコピー
+No ACARS messages heard from this aircraft	この機体からのACARSメッセージは受信されていません
+Also share interesting ACARS messages (text becomes public on the map)	興味深いACARSメッセージも共有する（テキストは地図上で公開されます）
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	機体がACARSで送信したメッセージ（自由文、乗員・運航・会社・整備のメッセージ）を、公開地図のその機体のカードに48時間表示します。電話番号とメールアドレスは事前に削除されます。位置報告とリンクテストは含まれません。いつでもオフにできます。
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	機体がACARSで送信するメッセージ（自由文、乗員・運航・会社・整備のメッセージ）を、電話番号とメールアドレスを除いて機体のカードにも表示できます。これは別の選択で、サーバーメニューで変更できます。

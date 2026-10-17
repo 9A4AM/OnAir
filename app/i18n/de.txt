@@ -1428,3 +1428,17 @@ Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks
 Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	Speichert den Plan als JSON-Datei, oder als CSV, wenn der Name auf .csv endet. Ein eingebauter Plan ist ein guter Ausgangspunkt für einen eigenen.
 Deletes one of your own band plans. The built-in plans stay.	Löscht einen eigenen Bandplan. Die eingebauten Pläne bleiben.
 TV channels of the band plan %s (change it in the Scan tab).	TV-Kanäle des Bandplans %s (im Tab Suchlauf änderbar).
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	Besatzung
+Operations	Betrieb
+Company	Fluggesellschaft
+Maintenance	Wartung
+Fault	Störung
+Show all messages	Alle Nachrichten zeigen
+ACARS messages	ACARS-Nachrichten
+%d ACARS messages	%d ACARS-Nachrichten
+Copy these messages as text	Diese Nachrichten als Text kopieren
+No ACARS messages heard from this aircraft	Von diesem Flugzeug wurden keine ACARS-Nachrichten empfangen
+Also share interesting ACARS messages (text becomes public on the map)	Auch interessante ACARS-Nachrichten teilen (der Text wird auf der Karte öffentlich)
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	Nachrichten, die ein Flugzeug per ACARS gesendet hat (Freitext sowie Besatzungs-, Betriebs-, Firmen- und Wartungsnachrichten), werden 48 Stunden lang auf der Karte dieses Flugzeugs in der öffentlichen Karte gezeigt. Telefonnummern und E-Mail-Adressen werden vorher entfernt. Positionsmeldungen und Verbindungstests gehören nicht dazu. Du kannst das jederzeit ausschalten.
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	Nachrichten, die Flugzeuge per ACARS senden (Freitext sowie Besatzungs-, Betriebs-, Firmen- und Wartungsnachrichten), können auch auf der Karte des Flugzeugs erscheinen, ohne Telefonnummern und E-Mail-Adressen. Das ist eine eigene Wahl, die du im Server-Menü ändern kannst.

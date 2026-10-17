@@ -1428,3 +1428,17 @@ Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks
 Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	Enregistre le plan en JSON, ou en CSV si le nom finit par .csv. Un plan intégré est un bon point de départ pour le vôtre.
 Deletes one of your own band plans. The built-in plans stay.	Supprime l'un de vos plans de bandes. Les plans intégrés restent.
 TV channels of the band plan %s (change it in the Scan tab).	Canaux TV du plan de bandes %s (à changer dans l'onglet Balayage).
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	Équipage
+Operations	Exploitation
+Company	Compagnie
+Maintenance	Maintenance
+Fault	Panne
+Show all messages	Afficher tous les messages
+ACARS messages	Messages ACARS
+%d ACARS messages	%d messages ACARS
+Copy these messages as text	Copier ces messages en texte
+No ACARS messages heard from this aircraft	Aucun message ACARS reçu de cet avion
+Also share interesting ACARS messages (text becomes public on the map)	Partager aussi les messages ACARS intéressants (le texte devient public sur la carte)
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	Messages qu'un avion a envoyés par ACARS (texte libre, messages d'équipage, d'exploitation, de compagnie et de maintenance), affichés pendant 48 heures sur la fiche de cet avion sur la carte publique. Les numéros de téléphone et les adresses e-mail sont retirés avant. Les comptes rendus de position et les tests de liaison n'en font pas partie. Vous pouvez le désactiver à tout moment.
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	Les messages que les avions envoient par ACARS (texte libre et messages d'équipage, d'exploitation, de compagnie et de maintenance) peuvent aussi apparaître sur la fiche de l'avion, sans numéros de téléphone ni adresses e-mail. C'est un choix à part, modifiable dans le menu Serveur.
