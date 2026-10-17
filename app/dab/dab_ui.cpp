@@ -685,6 +685,27 @@ void dabRadioTab(App& a) {
         time_t t = (time_t)ens.utc; struct tm m; dect2::gmTime(t, &m); char tb[64]; strftime(tb, sizeof tb, "broadcast time %a %d %b %Y %H:%M UTC", &m);
         sameLineIf(ImGui::CalcTextSize(tb).x, 12 * gUi); ImGui::TextDisabled("%s", tb);
     }
+    {   // what the FIC says about the ensemble beyond its services: local time, alternative frequencies (FIG 0/21), the ensemble's own network (0/24)
+        static DabFicInfo fic; static double ficAt = -10; static uint16_t ficEid = 0;
+        if (ficEid != ens.eid || ImGui::GetTime() - ficAt > 2.0) { ficAt = ImGui::GetTime(); ficEid = ens.eid; fic = dabFicInfo(a.engine.dabFic()); }
+        char lt[64] = "";
+        if (fic.hasLto && ens.utc) {
+            time_t t = (time_t)ens.utc + (time_t)fic.ltoHalfHours * 1800; struct tm m; dect2::gmTime(t, &m);
+            snprintf(lt, sizeof lt, "local time %02d:%02d (UTC%+d:%02d)", m.tm_hour, m.tm_min, fic.ltoHalfHours / 2, std::abs(fic.ltoHalfHours) % 2 * 30);
+        }
+        std::string fr;
+        int nf = 0;
+        for (const auto& f : fic.freqs) for (double k : f.kHz) {
+            char b[64]; snprintf(b, sizeof b, "%s%s %.3f MHz", fr.empty() ? "" : "\n", f.rm <= 1 ? "DAB" : f.rm <= 9 && f.rm >= 8 ? "FM" : "other", k / 1000);
+            if (nf++ < 24) fr += b;
+        }
+        if (lt[0]) { sameLineIf(ImGui::CalcTextSize(lt).x, 12 * gUi); ImGui::TextDisabled("%s", lt); }
+        if (nf) {
+            char b[64]; snprintf(b, sizeof b, "%d alternative frequencies", nf);
+            sameLineIf(ImGui::CalcTextSize(b).x, 12 * gUi); ImGui::TextDisabled("%s", b);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s%s", fr.c_str(), nf > 24 ? "\n..." : "");
+        }
+    }
     ImGui::Spacing();
     if (ImGui::BeginTable("dabtbl", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp)) {
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 34 * gUi);
