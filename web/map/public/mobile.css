@@ -2,6 +2,7 @@
    map fills the screen, main controls sit at the bottom within thumb reach, filters and the card are bottom sheets. */
 :root { --bar: 40px; --foot: 0px; }
 body { touch-action: manipulation; }
+input, select, textarea { font-size: 16px; }   /* iOS zooms into smaller fields on focus */
 #map { left: 0; right: 0; bottom: 0; top: calc(var(--bar) + var(--sat)); }
 .status, .viewers, .counts, .clock, .cur, .sep, .load, .link:not(.donate), kbd, .search .slash { display: none !important; }
 
@@ -73,3 +74,14 @@ body { touch-action: manipulation; }
 .inspect { max-height: 58dvh; }
 .pic-art { height: 72px; }
 .pic-art svg { width: 56px; height: 56px; }
+
+/* sheet states: peek (default, ~31% of the viewport) shows the header, a one-line summary and the buttons; full adds the details */
+.inspect.peek { max-height: none; }
+.inspect.peek .c-scroll { display: none; }
+.inspect.peek .c-actions { flex-wrap: nowrap; overflow: hidden; }
+.inspect.peek .c-peek { display: block; color: var(--text); font-weight: 600; font-size: 14px; }
+.inspect.full { max-height: var(--full-max, 72dvh); }
+.inspect .grab { padding: 10px 0; background-clip: content-box; height: 24px; margin: 0 auto; width: 56px; touch-action: none; cursor: grab; }
+.inspect .c-head { touch-action: none; }
+.inspect.dragging { transition: none; user-select: none; -webkit-user-select: none; }
+.c-scroll { touch-action: pan-y; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }

@@ -47,11 +47,15 @@
 
 * { box-sizing: border-box; }
 html, body {
-  margin: 0; height: 100%; height: 100dvh; overflow: hidden; overscroll-behavior: none;
-  background: var(--plot); color: var(--text);
+  margin: 0; width: 100%; height: 100%; overflow: hidden; overflow: clip; overscroll-behavior: none;
+  background-color: var(--plot); color: var(--text);
   font: 13px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 }
+/* the document itself never scrolls or rubber-bands: body is pinned to the viewport, only the map and the sheet scroll */
+body { position: fixed; inset: 0; height: 100vh; height: -webkit-fill-available; height: 100dvh; height: var(--vh, 100dvh); }
+html { height: -webkit-fill-available; }
+.c-peek { display: none; }
 button { font: inherit; color: inherit; }
 a { color: var(--text); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
