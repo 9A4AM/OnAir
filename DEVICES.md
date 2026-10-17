@@ -259,6 +259,13 @@ A sound card ("Sound card: ..." in the radio list) feeds real audio to the decod
 
 Settings are saved. Tested with synthetic audio files through the sound-card path (`tests/audio/test_audio_if.cpp`: tone, FT8-like, RTTY-like, offsets, sideband, all rates, channels, DC, gain); not with a real card or rig.
 
+# KiwiSDR (network, HF)
+
+A KiwiSDR (0 to 30 MHz, often a public receiver run by a volunteer) as a network radio: **Network radios > KiwiSDR**, port 8073, optional password, or
+**Find KiwiSDR...** for the public list. The Kiwi's 12 kHz IQ is interpolated to 252 kHz (1.008 MHz for the general receiver); HF digital, CW, PSK, JS8, HFDL,
+ALE and the general receiver work on that window. One connection per receiver, a growing pause before reconnecting, a clear message for busy / time limit.
+**Not tested on a real KiwiSDR**: only against a fake one (`test_kiwisdr`). What is verified, assumed and the etiquette: [docs/kiwisdr.md](docs/kiwisdr.md).
+
 # SDRplay nRSP-ST (network)
 
 Through SDRconnect's WebSocket API (spec 1.0.3, port 5454), not straight to the radio: SDRconnect (GUI or headless) must run with its WebSocket
