@@ -285,6 +285,7 @@ function geojson() {
         dot: dot ? 1 : 0,
         iconRot: shapeRotates(shape) && hdg != null && !dot ? 1 : 0,
         sel: t.id === selected ? 1 : 0,
+        est: t.est ? 1 : 0,   // an estimated (dead-reckoned) position: drawn as a ghost
       },
       geometry: { type: "Point", coordinates: displayLonLat(t) },
     });
@@ -737,6 +738,7 @@ map.on("load", () => {
       "circle-color": ["get", "color"],
       "circle-stroke-width": 1.2,
       "circle-stroke-color": "#0b0c0d",
+      "circle-opacity": ["case", ["==", ["to-number", ["get", "est"]], 1], 0.5, 1],
     },
   });
   map.addLayer({
@@ -753,6 +755,7 @@ map.on("load", () => {
       "icon-size": ["interpolate", ["linear"], ["zoom"], 1.5, 0.5, 4, 0.7, 8, 0.95, 12, 1.25],
       "symbol-sort-key": ["to-number", ["get", "sel"]],
     },
+    paint: { "icon-opacity": ["case", ["==", ["to-number", ["get", "est"]], 1], 0.5, 1] },
   });
   const hit = ["dot", "sym"];
   /** Nearest feature to the click within a 14 px box, so thin icons are easy to hit on touch screens too. */

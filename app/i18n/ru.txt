@@ -1382,3 +1382,9 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Predict positions	Прогноз позиций
+Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	Заполняет промежутки между донесениями о позиции: самолёт движется плавно, а когда сообщения прекращаются, его положение рассчитывается по курсу (и по маршруту, если сообщение называло пункт назначения). Прогнозируемые позиции рисуются как призрак с пунктирным кольцом.
+uncertainty	погрешность
+Draws the uncertainty ellipse (95 percent) of every estimated position.	Рисует эллипс погрешности (95 процентов) каждой оценённой позиции.
+predicted from the last position %s ago, +-%.1f NM	прогноз по последней позиции %s назад, +-%.1f NM
+estimated from the ground station only, within about %.0f NM	оценка только по наземной станции, в пределах примерно %.0f NM

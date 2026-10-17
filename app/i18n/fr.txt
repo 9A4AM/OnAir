@@ -1400,3 +1400,9 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Predict positions	Prédire les positions
+Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	Comble les trous entre les comptes rendus de position : l'avion se déplace de façon fluide et, quand les messages cessent, sa position est estimée le long de sa route (et de l'itinéraire si un message a indiqué la destination). Les positions prédites sont dessinées en fantôme avec un anneau en pointillés.
+uncertainty	incertitude
+Draws the uncertainty ellipse (95 percent) of every estimated position.	Dessine l'ellipse d'incertitude (95 pour cent) de chaque position estimée.
+predicted from the last position %s ago, +-%.1f NM	prédite à partir de la dernière position il y a %s, +-%.1f NM
+estimated from the ground station only, within about %.0f NM	estimée à partir de la station sol seule, à environ %.0f NM près

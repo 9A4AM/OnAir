@@ -1400,3 +1400,9 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Predict positions	位置を予測
+Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	位置報告の間の空白を補います。機体は滑らかに動き、メッセージが途絶えると進路に沿って(目的地が通知されていれば航路に沿って)推測航法で位置を求めます。予測位置は破線の輪を付けた半透明の機影で描かれます。
+uncertainty	不確かさ
+Draws the uncertainty ellipse (95 percent) of every estimated position.	推定した各位置の不確かさの楕円(95パーセント)を描きます。
+predicted from the last position %s ago, +-%.1f NM	%s前の最後の位置から予測、+-%.1f NM
+estimated from the ground station only, within about %.0f NM	地上局のみから推定、約%.0f NM以内

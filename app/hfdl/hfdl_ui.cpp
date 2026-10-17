@@ -2,6 +2,7 @@
 // the aircraft, the ground stations with their status, and the channel list with its activity. Band presets in the tuner.
 #include "../adsb/adsb_map.h"
 #include "app.h"
+#include "map/pos_predict.h"
 #include "dect2/hfdl/hfdl_proto.h"
 #include "dect2/hfdl/hfdl_tel.h"
 #include <algorithm>
@@ -86,7 +87,28 @@ std::string khzList(const std::vector<int>& k) {
     return s.empty() ? "-" : s;
 }
 
+// ---- position estimates (core/src/track): HF position reports come every few minutes, so the aircraft are dead-reckoned between them
+pospred::Layer gPred;
+std::unordered_map<uint32_t, double> gFedPosT;
+
+void feedEstimates(const dect2::HfdlTelemetry& t) {
+    gPred.load("hfdl", true, true);
+    if (!gPred.predict) return;
+    for (const auto& c : t.aircraft) {
+        const uint32_t key = c.icao ? c.icao : c.key;
+        if (c.gsId) if (const auto* s = dect2::hfdlStation(c.gsId)) { gPred.hub.setStation((uint32_t)c.gsId, s->lat, s->lon, 1500); gPred.hub.noteStation(dect2::track::keyFromIcao(key), (uint32_t)c.gsId, c.lastHeardSec); }
+        if (!c.hasPos) continue;
+        double& last = gFedPosT[key];
+        if (last == c.posTime) continue;
+        last = c.posTime;
+        dect2::track::Fix f;
+        if (dect2::track::fixFromHfdl(c, f)) gPred.hub.feed(dect2::track::keyFromIcao(key), f);
+    }
+    gPred.hub.purge(t.nowSec, 6 * 3600);
+}
+
 void tick(App& a) {
+    feedEstimates(a.rx.hfdl);
     loadState();
     if (!a.engine.running()) { S.pushedChans[0] = '\x01'; S.pushedChans[1] = 0; return; }
     if (std::strcmp(S.pushedChans, S.chans) != 0) {
@@ -225,12 +247,19 @@ void mapCanvas(App& a, ImVec2 size) {
     }
     if (on) {
         for (const auto& c : t.aircraft) {
-            if (!c.hasPos) continue;
-            placed++;
             const ImU32 col = adsbmap::acColour(adsbmap::AcSrc::Hfdl, t.nowSec - c.lastHeardSec);
+            dect2::track::PosEstimate pe;
+            const dect2::track::Key ekey = dect2::track::keyFromIcao(c.icao ? c.icao : c.key);
+            if (!c.hasPos) {   // no position at all: the reach of the ground station it talks to
+                if (gPred.predict && gPred.hub.estimate(ekey, t.nowSec, pe) && pe.coarse) pospred::drawCoarse(dl, pe, col);
+                continue;
+            }
+            placed++;
+            const bool est = gPred.get(ekey, t.nowSec, pe, t.nowSec - c.posTime) && pe.valid && !pe.coarse;
             for (size_t i = 1; i < c.track.size(); i++) dl->AddLine(adsbmap::project(c.track[i - 1].lat, c.track[i - 1].lon), adsbmap::project(c.track[i].lat, c.track[i].lon), (col & 0x00FFFFFF) | 0x90000000, 1.5f);
-            const ImVec2 q = adsbmap::project(c.lat, c.lon);
+            const ImVec2 q = est ? adsbmap::project(pe.lat, pe.lon) : adsbmap::project(c.lat, c.lon);
             const bool sel = c.key == S.selAir;
+            if (est) { pospred::drawPredictionMarks(dl, pe, q, col, gPred.ellipses); pospred::hoverTooltip(pe, q); }
             dl->AddCircleFilled(q, (sel ? 6.f : 5.f) * gUi, col);
             dl->AddCircle(q, (sel ? 6.f : 5.f) * gUi, sel ? IM_COL32(255, 255, 255, 255) : IM_COL32(0, 0, 0, 160), 16, sel ? 1.6f : 1.f);
             if (const auto* s = dect2::hfdlStation(c.gsId)) dl->AddLine(q, adsbmap::project(s->lat, s->lon), IM_COL32(120, 170, 230, 60), 1.f);
@@ -253,6 +282,8 @@ void mapCanvas(App& a, ImVec2 size) {
     ImGui::SameLine(0, 6 * gUi);
     if (ImGui::Button("fit")) S.mapFollow = true;
     ImGui::PopStyleColor();
+    ImGui::SameLine(0, 6 * gUi);
+    gPred.controls();
     ImGui::SameLine(0, 6 * gUi);
     adsbmap::tileControls("never the position itself");
     plat::prefs().setI("hfdlZoom", S.map.zoom);
@@ -513,6 +544,17 @@ void meters(const App& a, std::vector<ModeMeter>& out) {
 }
 
 } // namespace
+
+// For the map upload (app/map/map_send.cpp): the estimated position of an aircraft whose last fix is old (dead reckoning); false when there is none.
+bool hfdlEstimatedPosition(uint32_t key, double now, double& lat, double& lon, double& ageSec) {
+    if (!gPred.predict) return false;
+    dect2::track::PosEstimate pe;
+    if (!gPred.hub.estimate(dect2::track::keyFromIcao(key), now, pe) || !pe.valid || pe.coarse || !pe.predicted || pe.ageSec > 1800) return false;
+    lat = pe.lat; lon = pe.lon; ageSec = pe.ageSec;
+    return true;
+}
+
+
 
 extern const ModeUi kHfdlUi;
 const ModeUi kHfdlUi = {

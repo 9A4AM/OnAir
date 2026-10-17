@@ -2,6 +2,7 @@
 // ground stations, and the channel list with its activity.
 #include "../adsb/adsb_map.h"
 #include "app.h"
+#include "map/pos_predict.h"
 #include "dect2/adsb/adsb_tel.h"
 #include "dect2/vdl2/vdl2_tel.h"
 #include <algorithm>
@@ -104,8 +105,49 @@ std::string who(const dect2::Vdl2Telemetry& t, uint32_t addr, int type) {
     return s;
 }
 
+// ---- position estimates (core/src/track): fixes in, a smooth or dead-reckoned position out. Falls back to the two-point extrapolation when switched off.
+pospred::Layer gPred;
+uint64_t gTextSerial = 0;
+std::unordered_map<uint32_t, double> gFedPosT;
+
+void feedEstimates(const dect2::Vdl2Telemetry& t) {
+    gPred.load("vdl2", true, true);
+    if (!gPred.predict) return;
+    for (const auto& g : t.stations) if (g.hasPos) gPred.hub.setStation(g.addr, g.lat, g.lon);
+    for (const auto& c : t.aircraft) {
+        if (c.groundStation) gPred.hub.noteStation(dect2::track::keyFromIcao(c.icao), c.groundStation, c.lastHeardSec);
+        if (!c.hasPos) continue;
+        double& last = gFedPosT[c.icao];
+        if (last == c.posTime) continue;
+        last = c.posTime;
+        dect2::track::Fix f;
+        if (dect2::track::fixFromVdl2(c, f)) gPred.hub.feed(dect2::track::keyFromIcao(c.icao), f);
+    }
+    uint64_t newest = gTextSerial;
+    for (const auto& m : t.messages) {   // newest first: route / ETA / destination lines of ACARS downlinks
+        if (m.serial <= gTextSerial) break;
+        newest = std::max(newest, m.serial);
+        if (m.fromAir && m.acars && !m.acarsText.empty()) gPred.hub.feedText(dect2::track::keyFromIcao(m.src), m.label, m.acarsText, m.timeSec, (double)(m.wallTime % 86400));
+    }
+    gTextSerial = newest;
+    gPred.hub.purge(t.nowSec, 3 * 3600);
+}
+
+// the position to show for an aircraft: the estimate when prediction is on, else the old dead reckoning
+bool positionNow(const dect2::Vdl2Aircraft& c, double now, double& lat, double& lon, int& altFt, bool& pred, dect2::track::PosEstimate* peOut = nullptr) {
+    dect2::track::PosEstimate pe;
+    if (gPred.predict && gPred.get(dect2::track::keyFromIcao(c.icao), now, pe, now - c.posTime) && pe.valid && !pe.coarse) {
+        lat = pe.lat; lon = pe.lon; pred = pe.predicted;
+        altFt = c.hasAlt ? (int)std::lround(pe.altFt) : 0;
+        if (peOut) *peOut = pe;
+        return true;
+    }
+    return dect2::vdl2AircraftPositionNow(c, now, lat, lon, altFt, pred);
+}
+
 void tick(App& a) {
     loadState();
+    feedEstimates(a.rx.vdl2);
     if (!a.engine.running()) { S.wasRunning = false; S.pushedChans[0] = '\x01'; S.pushedChans[1] = 0; return; }
     if (std::strcmp(S.pushedChans, S.chans) != 0) {
         std::vector<double> hz;
@@ -248,7 +290,7 @@ void mapCanvas(App& a, ImVec2 size) {
             double la, lo;
             int alt;
             bool pred = false;
-            if (dect2::vdl2AircraftPositionNow(c, t.nowSec, la, lo, alt, pred)) add(la, lo);
+            if (positionNow(c, t.nowSec, la, lo, alt, pred)) add(la, lo);
         }
         for (const auto& g : t.stations) if (g.hasPos) add(g.lat, g.lon);
         if (n) {
@@ -278,7 +320,12 @@ void mapCanvas(App& a, ImVec2 size) {
             double plat, plon;
             int altFt = 0;
             bool pred = false;
-            if (!dect2::vdl2AircraftPositionNow(c, t.nowSec, plat, plon, altFt, pred)) continue;
+            dect2::track::PosEstimate pe;
+            if (!c.hasPos && gPred.predict) {   // no position at all: the reach of the ground station it talks to
+                if (gPred.hub.estimate(dect2::track::keyFromIcao(c.icao), t.nowSec, pe) && pe.coarse) pospred::drawCoarse(dl, pe, planeColour(t.nowSec, c.lastHeardSec));
+                continue;
+            }
+            if (!positionNow(c, t.nowSec, plat, plon, altFt, pred, &pe)) continue;
             placed++;
             if (pred) predicted++;
             const ImU32 col = planeColour(t.nowSec, c.posTime);
@@ -292,6 +339,7 @@ void mapCanvas(App& a, ImVec2 size) {
             const ImVec2 q = adsbmap::project(plat, plon);
             const bool sel = c.icao == S.selAir;
             const ImU32 drawCol = pred ? ((col & 0x00FFFFFF) | 0xB0000000) : col;
+            if (gPred.predict && pe.valid) { pospred::drawPredictionMarks(dl, pe, q, col, gPred.ellipses); pospred::hoverTooltip(pe, q); }
             if (c.hasTrack) drawPlane(dl, q, (float)c.trackDeg, (sel ? 12.f : 10.f) * gUi, drawCol, sel);
             else {
                 dl->AddCircleFilled(q, (sel ? 6.f : 5.f) * gUi, drawCol);
@@ -319,6 +367,8 @@ void mapCanvas(App& a, ImVec2 size) {
     ImGui::SameLine(0, 6 * gUi);
     if (ImGui::Button("fit")) S.mapFollow = true;
     ImGui::PopStyleColor();
+    ImGui::SameLine(0, 6 * gUi);
+    gPred.controls();
     ImGui::SameLine(0, 6 * gUi);
     adsbmap::tileControls("never the position itself");
     plat::prefs().setI("vdl2Zoom", S.map.zoom);
@@ -360,7 +410,7 @@ void mapSide(App& a) {
         double plat, plon;
         int altFt = 0;
         bool pred = false;
-        dect2::vdl2AircraftPositionNow(*c, t.nowSec, plat, plon, altFt, pred);
+        positionNow(*c, t.nowSec, plat, plon, altFt, pred);
         if (pred) kv("position", "~ %.4f %.4f (fix %.4f %.4f, %s ago)", plat, plon, c->lat, c->lon, ago(t.nowSec, c->posTime).c_str());
         else kv("position", "%.4f %.4f", plat, plon);
         if (pred && c->hasKin) kv("motion", "track %.0f deg, %.0f kt%s", c->trackDeg, c->groundKt, c->vsFpm ? (", VS " + std::to_string(c->vsFpm) + " fpm").c_str() : "");
@@ -410,7 +460,7 @@ void aircraftView(const App& a) {
                 double plat, plon;
                 int altFt = 0;
                 bool pred = false;
-                dect2::vdl2AircraftPositionNow(c, t.nowSec, plat, plon, altFt, pred);
+                positionNow(c, t.nowSec, plat, plon, altFt, pred);
                 ImGui::Text("%s%.3f %.3f%s", pred ? "~" : "", plat, plon, (c.hasAlt || altFt) ? (" " + std::to_string(pred ? altFt : c.altFt) + " ft").c_str() : "");
             } else ImGui::TextUnformatted("-");
         }
@@ -595,6 +645,15 @@ void meters(const App& a, std::vector<ModeMeter>& out) {
 }
 
 } // namespace
+
+// For the map upload (app/map/map_send.cpp): the estimated position of an aircraft whose last fix is old (dead reckoning); false when there is none.
+bool vdl2EstimatedPosition(uint32_t icao, double now, double& lat, double& lon, double& ageSec) {
+    if (!gPred.predict) return false;
+    dect2::track::PosEstimate pe;
+    if (!gPred.hub.estimate(dect2::track::keyFromIcao(icao), now, pe) || !pe.valid || pe.coarse || !pe.predicted || pe.ageSec > 1200) return false;
+    lat = pe.lat; lon = pe.lon; ageSec = pe.ageSec;
+    return true;
+}
 
 extern const ModeUi kVdl2Ui;
 const ModeUi kVdl2Ui = {
