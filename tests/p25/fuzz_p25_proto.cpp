@@ -1,4 +1,4 @@
-// Seeded mutation run of the P25 frame layer (the Rust one under DECT2_RUST_P25), meant for DECT2_SANITIZE=ON: NID, Reed-Solomon, Golay, trellis, TSBK,
+// Seeded mutation run of the P25 frame layer, meant for DECT2_SANITIZE=ON: NID, Reed-Solomon, Golay, trellis, TSBK,
 // link control, header / encryption sync words and the IMBE interleave must never crash or hang on any bytes. Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/p25/p25_proto.h"
 #include <cstdio>

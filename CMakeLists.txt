@@ -163,7 +163,7 @@ endif()
 onair_rust_use(dect2core)   # -DDECT2_RUST_<MODULE> for every active module (core/src/ais/ais_proto.cpp leaves the covered functions to ais_proto_rs.cpp) and links onair_rs
 # adsb_msg.cpp and the APRS parser (and the reference copies the Rust differential test builds) is compiled without fused multiply-add and without the sin+cos -> sincos rewrite:
 # clang and gcc do both by default (arm64, macOS), Rust never does, and the two builds (DECT2_RUST ON and OFF) should give the same numbers bit for bit
-set_source_files_properties(core/src/tv/dvbsub.cpp core/src/tv/dvbsub_rs.cpp core/src/adsb/adsb_msg.cpp core/src/dmr/dmr_fec.cpp core/src/p25/p25_proto.cpp core/src/tetra/tetra_pdu.cpp core/src/tetra/tetra_pdu_rs.cpp core/src/packet/packet_aprs_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
+set_source_files_properties(core/src/tv/dvbsub.cpp core/src/tv/dvbsub_rs.cpp core/src/adsb/adsb_msg.cpp core/src/dmr/dmr_fec.cpp core/src/tetra/tetra_pdu.cpp core/src/tetra/tetra_pdu_rs.cpp core/src/packet/packet_aprs_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
 target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp core/src/df/df.cpp core/src/df/source.cpp core/src/df/position.cpp core/src/df/rfcam.cpp)
 target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/geo/pass_sched.cpp core/src/geo/doppler_fit.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp core/src/df/df.cpp core/src/df/source.cpp core/src/df/position.cpp)
 target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/geo/pass_sched.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/engine/sig_known.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp)
@@ -1324,7 +1324,7 @@ if(DECT2_BUILD_TESTS)
     target_compile_definitions(bench_fec_proto PRIVATE DECT2_RUST_FEC ONAIR_RUST_VITERBI)
     target_link_libraries(bench_fec_proto PRIVATE onair_rs)
   endif()
-  onair_rust_diff_tests(p25 p25_proto p25 p25_proto dect2/p25/p25_proto.h "namespace p25 {" "namespace p25_ref {" "" "")
+  onair_rust_golden_tests(p25)
   onair_rust_diff_tests(tetra tetra_pdu tetra tetra_pdu dect2/tetra/tetra_pdu.h "namespace dect2::tetra {" "namespace dect2::tetra_ref {" " using dect2::tetra::Bits;" ${ONAIR_ROOT}/core/include/dect2/tetra)
   # DRM: drm_proto.cpp with a generated reference copy (the records are those of drm_msg.h, so the copy's header includes the real one)
   if(ONAIR_RUST_DRM)
