@@ -1400,3 +1400,16 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	HD Radio の音声には HDC コーデックが必要です。ご自分でインストールしてください(? をクリック)
+HDC sound codec cannot be used: %s	HDC 音声コーデックは使用できません: %s
+HDC sound codec not installed (no sound; click ? for the steps)	HDC 音声コーデックが未インストールです(音なし。手順は ? をクリック)
+sound: HD%d (HDC)	音声: HD%d (HDC)
+sound: HD%d, waiting for audio	音声: HD%d、音声を待っています
+The HD Radio sound codec (HDC) is not installed	HD Radio 音声コーデック (HDC) がインストールされていません
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	放送局、番組データ、画像は表示されますが、ご自分でコーデックをインストールするまで HD Radio の音声は無音のままです。OnAir には同梱されていません (HDC は特許があり Xperi が所有しています)。
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	完全な手順の説明に従って、HDC パッチ付きの FAAD2 をビルドしてください (オープンソースの nrsc5 のパッチが必要です)。
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	ライブラリ (libfaad_hdc) を OnAir のコーデックフォルダに置いてください (下のボタン)。
+The HD Radio sound library cannot be used	HD Radio 音声ライブラリは使用できません
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	OnAir は HDC 用のライブラリを見つけましたが、OnAir が呼び出せる HDC パッチ付き FAAD2 のビルドではないため、使用しませんでした。
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	完全な手順の説明に従って、FAAD2 2.10 または 2.11 と nrsc5 のパッチでライブラリをビルドし直してください。
+Replace the file in the OnAir codecs folder (button below).	OnAir のコーデックフォルダのファイルを置き換えてください (下のボタン)。

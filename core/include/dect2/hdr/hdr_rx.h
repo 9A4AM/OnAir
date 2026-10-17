@@ -1,6 +1,7 @@
 // HD Radio (NRSC-5, USA): the digital sidebands of hybrid FM (MP1, MP3) and AM (MA1) stations, and all-digital AM (MA3). Decodes everything but the sound: station
 // information (SIS), the program list, program service data (ID3), the station information guide and the large objects (pictures).
-// The audio is HDC, a patented codec that OnAir does not decode: its packets are counted only.
+// The audio is HDC, a patented codec that OnAir does not ship: its packets are counted, and played when the user has installed a patched
+// FAAD2 (hdr_hdc.h, docs/CODECS.md).
 // FM or AM is found by itself: both receivers search until one of them has block sync. Below 500 ksps only AM is searched for (an AM
 // station is 30 kHz wide: the HF radios' slower rates, such as an Airspy HF+ at 912 or 768 ksps, are plenty).
 // Written to the engine's contract: configure() once the sample rate is known, feed() from the analysis thread (never blocks),
@@ -28,6 +29,12 @@ public:
     void reset();                                        // after a retune: forget the signal and the decoded state
     void feed(const cf32* x, size_t n);
     bool telemetry(HdrTelemetry& out, uint64_t lastSeq);
+    // Sound (any thread): the program to hear (0 = HD1), volume 0..1, mute; silent = decode but never open the sound device
+    void setProgram(int p);
+    void setVolume(float v);
+    void setMuted(bool m);
+    void setSilent(bool s);
+    void setAudioTap(std::function<void(const float* stereo48k, size_t frames)> cb);   // tests: the sound that goes to the device
     void setLogCallback(std::function<void(const std::string&)> cb);   // events for the log pane; may be called from the receiver thread
     // The bytes of a complete large object (LOT), e.g. a picture listed in HdrTelemetry::lots; false when not (yet) complete.
     bool lotBytes(int port, int lot, std::vector<uint8_t>& out) const;

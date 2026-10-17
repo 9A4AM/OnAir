@@ -1400,3 +1400,16 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	El sonido de HD Radio necesita el códec HDC, que instalas tú mismo (pulsa ?)
+HDC sound codec cannot be used: %s	El códec de sonido HDC no se puede usar: %s
+HDC sound codec not installed (no sound; click ? for the steps)	Códec de sonido HDC no instalado (sin sonido; pulsa ? para ver los pasos)
+sound: HD%d (HDC)	sonido: HD%d (HDC)
+sound: HD%d, waiting for audio	sonido: HD%d, esperando audio
+The HD Radio sound codec (HDC) is not installed	El códec de sonido de HD Radio (HDC) no está instalado
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	Se muestran la emisora, los datos del programa y las imágenes, pero el sonido de HD Radio sigue en silencio hasta que instales el códec tú mismo. OnAir no lo incluye (HDC está patentado y es de Xperi).
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	Compila el FAAD2 con el parche HDC como explican las instrucciones completas (hace falta el parche de código abierto de nrsc5).
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	Pon la biblioteca (libfaad_hdc) en la carpeta de códecs de OnAir (botón de abajo).
+The HD Radio sound library cannot be used	La biblioteca de sonido de HD Radio no se puede usar
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	OnAir encontró una biblioteca para HDC, pero no es una compilación de FAAD2 con el parche HDC que OnAir sepa usar, así que se dejó sin usar.
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Compila de nuevo la biblioteca con FAAD2 2.10 o 2.11 y el parche de nrsc5, como explican las instrucciones completas.
+Replace the file in the OnAir codecs folder (button below).	Sustituye el archivo en la carpeta de códecs de OnAir (botón de abajo).

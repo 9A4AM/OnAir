@@ -1400,3 +1400,16 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	HD Radio 的声音需要 HDC 编解码器,需要您自己安装(点击 ?)
+HDC sound codec cannot be used: %s	无法使用 HDC 声音编解码器:%s
+HDC sound codec not installed (no sound; click ? for the steps)	未安装 HDC 声音编解码器(无声音;点击 ? 查看步骤)
+sound: HD%d (HDC)	声音:HD%d (HDC)
+sound: HD%d, waiting for audio	声音:HD%d,等待音频
+The HD Radio sound codec (HDC) is not installed	未安装 HD Radio 声音编解码器 (HDC)
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	电台、节目数据和图片都会显示,但在您自己安装编解码器之前,HD Radio 的声音保持静音。OnAir 不包含它 (HDC 受专利保护,归 Xperi 所有)。
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	请按完整说明编译带 HDC 补丁的 FAAD2 (需要 nrsc5 的开源补丁)。
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	把库 (libfaad_hdc) 放进 OnAir 的编解码器文件夹 (下方按钮)。
+The HD Radio sound library cannot be used	无法使用 HD Radio 声音库
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	OnAir 找到了一个 HDC 库,但它不是带有 OnAir 能调用的 HDC 补丁的 FAAD2 版本,因此没有使用。
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	请按完整说明,用 FAAD2 2.10 或 2.11 加 nrsc5 补丁重新编译该库。
+Replace the file in the OnAir codecs folder (button below).	替换 OnAir 编解码器文件夹中的文件 (下方按钮)。

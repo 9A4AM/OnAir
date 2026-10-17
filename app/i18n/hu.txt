@@ -1385,3 +1385,16 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	A HD Radio hangjához a HDC kodek kell, amelyet magad telepítesz (kattints a ?-re)
+HDC sound codec cannot be used: %s	A HDC hangkodek nem használható: %s
+HDC sound codec not installed (no sound; click ? for the steps)	A HDC hangkodek nincs telepítve (nincs hang; a ?-re kattintva láthatod a lépéseket)
+sound: HD%d (HDC)	hang: HD%d (HDC)
+sound: HD%d, waiting for audio	hang: HD%d, hangra vár
+The HD Radio sound codec (HDC) is not installed	A HD Radio hangkodek (HDC) nincs telepítve
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	Az állomás, a műsoradatok és a képek megjelennek, de a HD Radio hang néma marad, amíg nem telepíted magad a kodeket. Az OnAir nem tartalmazza (a HDC szabadalmaztatott, az Xperi tulajdona).
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	Fordítsd le a HDC-javítással ellátott FAAD2-t, ahogy a teljes útmutató leírja (kell hozzá az nrsc5 nyílt forrású javítása).
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	Tedd a könyvtárat (libfaad_hdc) az OnAir kodekmappájába (gomb alul).
+The HD Radio sound library cannot be used	A HD Radio hangkönyvtár nem használható
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	Az OnAir talált egy HDC-könyvtárat, de ez nem olyan FAAD2-fordítás HDC-javítással, amelyet az OnAir hívni tud, ezért nem használta.
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Fordítsd le újra a könyvtárat a FAAD2 2.10 vagy 2.11 változatából az nrsc5 javításával, ahogy a teljes útmutató leírja.
+Replace the file in the OnAir codecs folder (button below).	Cseréld ki a fájlt az OnAir kodekmappájában (gomb alul).
