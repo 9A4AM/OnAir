@@ -60,6 +60,27 @@ of the one that was opened.
 - SoapySDR: a SoapyFobosSDR module built with Visual Studio (PothosSDR) cannot be loaded by OnAir's Windows build, which is built with
   MinGW; the native driver needs no SoapySDR
 
+# LimeSDR Mini (and Mini 2)
+
+**Experimental: written from LimeSuite's public C API (`LimeSuite.h`) and tested only against a fake library. It has not run on a real
+LimeSDR Mini; please report what you see.**
+
+OnAir loads `libLimeSuite` at run time (no link dependency; the Windows packages ship it with `FTD3XX.dll`) and lists the board by name:
+**LimeSDR Mini** or **LimeSDR Mini 2** (from the library's device string, with the end of the serial added when two of one model are plugged in).
+
+- Tuning 10 MHz to 3.5 GHz, 12-bit ADC, analogue bandwidth 1.5 to 130 MHz (follows the sample rate unless a mode sets a filter).
+- Sample rates 1, 2, 4, 5, 8, 10, 15, 20 and 30.72 Msps. **A USB 3 port is needed above about 15 Msps**; on a USB 2 port OnAir says so and
+  keeps modes at or below 15 Msps where they fit. The stream uses the packed 12-bit USB link.
+- Receive inputs: the Mini's second low input is not wired (LimeSuite lists it as `LNAL_NC`), so OnAir uses **LNAW below 1.7 GHz and LNAH
+  above**, the same crossover LimeSuite's own band switching uses. Extra radio-list entries ("LimeSDR Mini LNAW", "... LNAH") force one input.
+- Gain: one slider, 0 to 73 dB, handed to `LMS_SetGaindB`; LimeSuite splits it over LNA (0-30 dB), TIA (0-12 dB) and PGA (-12 to 19 dB).
+- DC offset and I/Q balance are calibrated at start (and again after a sample-rate change, which restarts the stream) and after a retune of more
+  than 10 % or across the input crossover. Calibration blocks for a moment.
+- **Windows:** the Mini needs FTDI's FT60x USB 3 driver (Windows Update or ftdichip.com). Do not use Zadig/WinUSB on it.
+- **Linux:** the udev rules (`install-udev-rules.sh`, vendor `0403` product `601f`) let a normal user open it.
+- **Gateware / firmware:** the images in the board must match the library. If the radio is listed but will not open or initialise, run
+  `LimeUtil --update` (it loads the images that ship with that library); OnAir's error message says so.
+
 # RFNM
 
 Contributed; tested on Windows only. The driver uses [librfnm](https://github.com/rfnm/librfnm), modelled on the RFNM client in XMC_SDR.

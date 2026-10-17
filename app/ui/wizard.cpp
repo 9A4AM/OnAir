@@ -113,6 +113,7 @@ void wizard(App& a, ImVec2 disp) {
 #ifdef _WIN32
                      + " " + tr("On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.")
 #endif
+                     + " " + tr("A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and \"LimeUtil --update\" once so its gateware matches the library.")
                   ;
           }()
         : std::string(tr(st.text));

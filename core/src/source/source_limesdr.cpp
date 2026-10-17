@@ -1,5 +1,6 @@
 // Native driver for the LimeSDR: the radio's own library is loaded at run time when it is installed. See native_common.h.
 #include "native_common.h"
+#include "lime_board.h"
 #include <map>
 
 namespace dect2 {
@@ -95,6 +96,7 @@ public:
         const size_t cut = args.rfind("#port=");
         if (cut != std::string::npos) { port_ = args.substr(cut + 6); args.erase(cut); }
         info_ = std::move(args);
+        board_ = limeBoard(info_);
     }
     ~LimeSource() override { stop(); }
 
@@ -102,8 +104,7 @@ protected:
     bool openDevice(const TuneSettings& s, std::string& err) override {
         if (lime().open(&dev_, info_.c_str(), nullptr) != 0 || !dev_) {
             dev_ = nullptr;
-            err = "LimeSDR: cannot open the radio" + lime().text();
-            if (kOnWindows) err += std::string(". If it is plugged in: ") + windowsUsbDriverHint();
+            err = "LimeSDR: cannot open the radio" + lime().text() + limeOpenHint(board_, kOnWindows);
             return false;
         }
         // On some USB controllers a LimeSDR-USB misdetects its reference clock (10 MHz instead of 30.72 MHz) on every other open, and
@@ -114,7 +115,7 @@ protected:
             dev_ = nullptr;
             if (lime().open(&dev_, info_.c_str(), nullptr) != 0 || !dev_) { dev_ = nullptr; err = "LimeSDR: cannot open the radio again after a reference clock misdetection" + lime().text(); return false; }
         }
-        if (lime().init(dev_) != 0) { err = "LimeSDR: initialisation failed" + lime().text(); return false; }
+        if (lime().init(dev_) != 0) { err = "LimeSDR: initialisation failed" + lime().text() + limeOpenHint(board_, kOnWindows); return false; }
         if (lime().enable_channel(dev_, false, 0, true) != 0) { err = "LimeSDR: cannot enable the receiver" + lime().text(); return false; }
         lo_ = hi_ = 0;
         LimeApi::range_t fr{0, 0, 0};
@@ -132,7 +133,10 @@ protected:
             if (streaming_) { lime().stop_stream(&stream_); lime().destroy_stream(dev_, &stream_); streaming_ = false; }
             LimeApi::range_t range{0.1e6, 61.44e6, 0};
             lime().get_sample_rate_range(dev_, false, &range);
-            const double want = std::min(std::max(s.sampleRate > 0 ? s.sampleRate : 10e6, range.min), range.max);
+            // a Mini on a USB 2 port cannot carry more than the 12-bit packed link allows: said once, the rate is still asked for
+            if (board_.mini && !board_.usb3 && s.sampleRate > kLimeMiniUsb2RateHz)
+                addNote(err, "LimeSDR Mini: this is a USB 2 port, samples above about 15 Msps are lost; use a USB 3 port (blue) for 20 or 30.72 Msps");
+            const double want = std::min(std::max(s.sampleRate > 0 ? s.sampleRate : 10e6, range.min), board_.mini ? std::min(range.max, 30.72e6) : range.max);
             if (lime().set_sample_rate(dev_, want, 0) != 0) { err = "LimeSDR: the sample rate was refused" + lime().text(); return false; }
             rate_ = want;
             // the rate the clock generator really gives ("Use LMS_GetSampleRate() to obtain actual sample rate values", LimeSuite.h)
@@ -148,7 +152,7 @@ protected:
         if (lime().set_lo_frequency(dev_, false, 0, ppmCorrectedHz(f, radioPpm(s))) != 0) { err = "LimeSDR: the library refused " + mhz(f) + " MHz" + range + ": " + lime().text(); openFailure_ = OpenFailure::Final; return false; }
         selectAntenna(f);
         lime().set_lpf_bw(dev_, false, 0, std::max(1.5e6, s.basebandFilterHz > 0 ? s.basebandFilterHz : rate_ * 0.95));
-        lime().set_gain_db(dev_, false, 0, (unsigned)std::min(73.0, std::max(0.0, std::round(s.gainDb))));
+        lime().set_gain_db(dev_, false, 0, limeGainDb(s.gainDb));
         if (!live) {
             lime().calibrate(dev_, false, 0, std::max(2.5e6, rate_ * 0.9), 0);   // DC offset and I/Q balance (takes a moment)
             calLo_ = f;
@@ -159,6 +163,8 @@ protected:
             while (fifo < 8u * 1024 * 1024 && (double)fifo < rate_ * 0.1) fifo *= 2;
             stream_.channel = 0; stream_.isTx = false; stream_.fifoSize = fifo; stream_.throughputVsLatency = 1.0f;
             stream_.dataFmt = 0;   // 32-bit float, full scale +-1
+            // The Mini's ADC has 12 bits: the packed 12-bit USB link (LMS_LINK_FMT_I12) loses nothing and takes a quarter less of the bus
+            if (board_.mini) stream_.linkFmt = 2;   // LMS_LINK_FMT_I12 (DEFAULT 0, I16 1)
             if (lime().setup_stream(dev_, &stream_) != 0) { err = "LimeSDR: cannot set up the sample stream" + lime().text(); return false; }
             if (lime().start_stream(&stream_) != 0) { lime().destroy_stream(dev_, &stream_); err = "LimeSDR: cannot start the sample stream" + lime().text(); return false; }
             streaming_ = true;
@@ -204,28 +210,22 @@ private:
     // LNAW (wideband) as the fallback.
     // The Mini has no LNAL wired to a socket (its list says "LNAL_NC"): LNAW below 1.7 GHz and LNAH above, the crossover LimeSuite's own
     // band switching uses for it (LMS7_LimeSDR_mini::AutoRFPath)
-    double highHz() const { return info_.find("Mini") != std::string::npos ? 1.7e9 : 1.5e9; }
+    double highHz() const { return limeCrossoverHz(board_); }
     void selectAntenna(double hz) {
         LimeApi::name_t names[16];
         std::memset(names, 0, sizeof names);
         const int n = lime().get_antenna_list(dev_, false, 0, names);
-        int pick = -1, wide = -1;
-        const double highHz = this->highHz();
-        for (int i = 0; i < n && i < 16; i++) {   // the input the user picked (antenna on that socket), whatever the frequency
-            const std::string a(names[i], strnlen(names[i], 16));
-            if (!port_.empty() && a == port_) { lime().set_antenna(dev_, false, 0, (size_t)i); return; }
+        std::vector<std::string> list;
+        for (int i = 0; i < n && i < 16; i++) list.emplace_back(names[i], strnlen(names[i], 16));
+        for (int i = 0; i < (int)list.size(); i++) {   // the input the user picked (antenna on that socket), whatever the frequency
+            if (!port_.empty() && list[i] == port_) { lime().set_antenna(dev_, false, 0, (size_t)i); return; }
         }
         if (!port_.empty()) fprintf(stderr, "LimeSDR: no input %s on this radio, choosing by frequency\n", port_.c_str());
-        for (int i = 0; i < n && i < 16; i++) {
-            const std::string a(names[i], strnlen(names[i], 16));
-            if (hz < highHz && a == "LNAL") pick = i;
-            if (hz >= highHz && a == "LNAH") pick = i;
-            if (a == "LNAW") wide = i;
-        }
-        if (pick < 0) pick = wide;
+        const int pick = limeAutoAntenna(board_, hz, list);
         if (pick >= 0) lime().set_antenna(dev_, false, 0, (size_t)pick);
     }
     std::string info_;
+    LimeBoard board_;
     std::string port_;   // "LNAL", "LNAH", "LNAW" or empty (by frequency)
     LimeApi::lms_device_t* dev_ = nullptr;
     LimeApi::stream_t stream_{};
@@ -283,34 +283,44 @@ void listLime(std::vector<DeviceInfo>& out) {
     if (n <= 0) return;
     std::vector<char> raw((size_t)n * sizeof(LimeApi::info_str_t), 0);   // n strings of 256 characters
     const int got = lime().get_device_list(reinterpret_cast<LimeApi::info_str_t*>(raw.data()));
+    std::vector<std::string> infos;
     for (int i = 0; i < got && i < n && i < 16; i++) {
         const char* p = raw.data() + (size_t)i * sizeof(LimeApi::info_str_t);
-        const std::string info(p, strnlen(p, sizeof(LimeApi::info_str_t)));
+        infos.emplace_back(p, strnlen(p, sizeof(LimeApi::info_str_t)));
+    }
+    for (const std::string& info : infos) {
+        const LimeBoard b = limeBoard(info);
+        int same = 0;   // two radios of one model: the end of the serial tells them apart
+        for (const std::string& o : infos) same += limeBoard(o).model == b.model;
+        const std::string model = b.model + (same > 1 && !b.serial.empty() ? " " + b.serial.substr(b.serial.size() > 6 ? b.serial.size() - 6 : 0) : std::string());
         DeviceInfo d;
         d.kind = DeviceInfo::Native;
         d.board = "lime";
         d.nativeArgs = info;   // the string LMS_Open() wants
-        const size_t comma = info.find(',');
-        d.name = (comma == std::string::npos ? info : info.substr(0, comma)) + " (native, experimental)";
-        d.maxRateHz = info.find("Mini") != std::string::npos ? 30.72e6 : 61.44e6;   // the Mini's FT601 USB link carries 30.72 Msps at most
-        d.minRateHz = 0.1e6;
+        d.serial = b.serial;
+        d.name = model + " (native, experimental)";
+        d.maxRateHz = b.mini ? 30.72e6 : 61.44e6;   // the Mini's FT601 USB link carries 30.72 Msps at most
+        d.minRateHz = b.mini ? 1e6 : 0.1e6;
+        if (b.mini) {
+            d.rateRanges = limeMiniRates();
+            if (!b.usb3) d.steadyRateHz = kLimeMiniUsb2RateHz;   // linkRateFor() keeps a mode within it when it fits
+        }
         d.gainMinDb = 0; d.gainMaxDb = 73;
         d.settings = {ppmSetting(0.01)};
         {   // the range the library gave when this radio was last opened, else the data sheet's (the Mini's tuner starts higher)
             std::lock_guard<std::mutex> lk(gRangeMu);
             auto it = gRange.find(info);
             if (it != gRange.end()) { d.minFreqHz = it->second.first; d.maxFreqHz = it->second.second; }
-            else if (info.find("Mini") != std::string::npos) { d.minFreqHz = 10e6; d.maxFreqHz = 3.5e9; }
+            else if (b.mini) { d.minFreqHz = 10e6; d.maxFreqHz = 3.5e9; }
             else { d.minFreqHz = 0.1e6; d.maxFreqHz = 3.8e9; }
         }
         out.push_back(d);
         // one entry per receive socket as well, for an antenna that is not on the input the automatic choice would take (the Mini has
         // no LNAL socket); the first entry stays the automatic one
-        const bool mini = info.find("Mini") != std::string::npos;
-        for (const char* port : mini ? std::vector<const char*>{"LNAW", "LNAH"} : std::vector<const char*>{"LNAL", "LNAH", "LNAW"}) {
+        for (const char* port : b.mini ? std::vector<const char*>{"LNAW", "LNAH"} : std::vector<const char*>{"LNAL", "LNAH", "LNAW"}) {
             DeviceInfo e = d;
             e.nativeArgs = info + "#port=" + port;
-            e.name = (comma == std::string::npos ? info : info.substr(0, comma)) + " " + port + " (native, experimental)";
+            e.name = model + " " + port + " (native, experimental)";
             out.push_back(e);
         }
     }

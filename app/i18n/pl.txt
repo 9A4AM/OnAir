@@ -1277,3 +1277,4 @@ test (no RF)	test (bez RF)
 test running	test trwa
 test, no RF	test, bez RF
 the limiter is working: %.2f%% of samples (lower the level)	limiter pracuje: %.2f%% próbek (obniż poziom)
+A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	LimeSDR Mini wymaga w systemie Windows sterownika FT60x firmy FTDI (nie Zadig), w Linuksie reguł udev oraz jednorazowego "LimeUtil --update", aby jego gateware pasował do biblioteki.
