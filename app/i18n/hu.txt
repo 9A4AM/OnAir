@@ -2265,3 +2265,34 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Miért?
 Identify selected	A kijelölt azonosítása
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	A rádiót a kijelölt jelre hangolja, és megmondja, mi az (a vevőnek olyan módban kell lennie, amelynek mintavételi sebessége lefedi)
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Repülőgépek egy műsorszóró adó visszaverődéseiből, két koherens csatornával
+Baseline %.1f km, transmitter bearing %.0f degrees	Alapvonal %.1f km, az adó iránya %.0f fok
+Cancellation taps	Kioltási együtthatók
+Cannot open the recording.	A felvétel nem nyitható meg.
+Clutter cancelled by %.0f dB, %d detections	Zavar elnyomva %.0f dB-lel, %d észlelés
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Komplex float32, a 0. csatorna referencia, az 1. megfigyelő, mintaszinkron.
+Doppler Hz	Doppler Hz
+Doppler over time	Doppler az idő függvényében
+Echo level (dB)	Visszhang szintje (dB)
+End of the recording.	A felvétel vége.
+Enter the illuminator position.	Add meg a megvilágító adó helyét.
+False alarm rate 1e-x	Téves riasztás aránya 1e-x
+Illuminator	Megvilágító adó
+NLMS instead of ECA	NLMS az ECA helyett
+Noise-like waveform (DVB-T)	Zajszerű jelalak (DVB-T)
+Passive radar	Passzív radar
+Processing	Feldolgozás
+Range km	Távolság km
+Range rate (m/s)	Távolságváltozás sebessége (m/s)
+Range-Doppler map	Távolság–Doppler térkép
+Rate m/s	Sebesség m/s
+Saved illuminators	Mentett megvilágító adók
+Second target	Második cél
+Target range (km)	Cél távolsága (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Azokat a célokat, amelyek közelebb vannak, mint az együtthatók száma távolságmintákban, elrejti a kioltás.
+The receiver position is the one set for ADS-B.	A vevő helyzete az ADS-B-hez beállított.
+Tracks	Pályák
+Two recordings (reference, surveillance)	Két felvétel (referencia, megfigyelő)
+Two-channel recording (cf32)	Kétcsatornás felvétel (cf32)
+Waiting for data.	Adatra várakozás.

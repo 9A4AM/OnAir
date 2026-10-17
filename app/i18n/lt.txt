@@ -2279,3 +2279,34 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Kodėl?
 Identify selected	Atpažinti pažymėtą
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Suderina radiją su pažymėtu signalu ir pasako, kas tai yra (imtuvas turi veikti režimu, kurio atrankos dažnis jį apima)
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Orlaivai iš transliuojančio siųstuvo aidų, naudojant du koherentinius kanalus
+Baseline %.1f km, transmitter bearing %.0f degrees	Bazinė linija %.1f km, siųstuvo azimutas %.0f laipsnių
+Cancellation taps	Slopinimo koeficientai
+Cannot open the recording.	Nepavyksta atidaryti įrašo.
+Clutter cancelled by %.0f dB, %d detections	Trukdžiai nuslopinti %.0f dB, aptikimų: %d
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Kompleksinis float32, 0 kanalas atraminis, 1 kanalas stebėjimo, sinchroniniai pagal atskaitą.
+Doppler Hz	Doplerio Hz
+Doppler over time	Doplerio dažnis laike
+Echo level (dB)	Aido lygis (dB)
+End of the recording.	Įrašo pabaiga.
+Enter the illuminator position.	Įveskite apšvietėjo (siųstuvo) padėtį.
+False alarm rate 1e-x	Klaidingų aliarmų dažnis 1e-x
+Illuminator	Apšvietėjas
+NLMS instead of ECA	NLMS vietoje ECA
+Noise-like waveform (DVB-T)	Triukšmą primenanti bangos forma (DVB-T)
+Passive radar	Pasyvusis radaras
+Processing	Apdorojimas
+Range km	Atstumas km
+Range rate (m/s)	Atstumo kitimo greitis (m/s)
+Range-Doppler map	Atstumo ir Doplerio žemėlapis
+Rate m/s	Greitis m/s
+Saved illuminators	Išsaugoti apšvietėjai
+Second target	Antras taikinys
+Target range (km)	Taikinio atstumas (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Taikinius, esančius arčiau nei koeficientų skaičius atstumo atskaitomis, slopinimas paslepia.
+The receiver position is the one set for ADS-B.	Imtuvo padėtis yra ta pati, kuri nustatyta ADS-B.
+Tracks	Trasos
+Two recordings (reference, surveillance)	Du įrašai (atraminis, stebėjimo)
+Two-channel recording (cf32)	Dviejų kanalų įrašas (cf32)
+Waiting for data.	Laukiama duomenų.
