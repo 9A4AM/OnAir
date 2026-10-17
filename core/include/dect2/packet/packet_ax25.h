@@ -57,7 +57,7 @@ struct HdlcState {
     uint8_t buf[402] = {};       // frame bytes (at most 401 are stored)
 };
 // One bit through the receiver state: 0 nothing completed, 1 a frame with a good FCS (buf[0..len) without the FCS), 2 a frame of plausible length with
-// a bad FCS (buf[0..len) all bytes). C++ in packet_ax25.cpp, or the Rust one (packet_ax25_rs.cpp) with DECT2_RUST_AX25.
+// a bad FCS (buf[0..len) all bytes). Rust (packet_ax25_rs.cpp).
 int hdlcStep(HdlcState& s, int level, bool nrzi, size_t& len);
 void hdlcReset(HdlcState& s);
 

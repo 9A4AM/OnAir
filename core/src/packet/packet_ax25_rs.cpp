@@ -1,6 +1,5 @@
-// The AX.25 frame parser, text forms, FCS and HDLC receiver step on top of the Rust crate rust/onair_ax25 (DECT2_RUST_AX25): the same functions as the
-// #ifndef DECT2_RUST_AX25 part of packet_ax25.cpp, which keeps frame building and the transmit-side bit helpers. Empty when the crate is not built.
-#ifdef DECT2_RUST_AX25
+// The AX.25 frame parser, text forms, FCS and HDLC receiver step on top of the Rust crate rust/onair_ax25: the functions of packet_ax25.h;
+// packet_ax25.cpp keeps frame building and the transmit-side bit helpers.
 #include "dect2/packet/packet_ax25.h"
 #include "dect2/rs/ax25.h"
 #include <cstdio>
@@ -98,4 +97,3 @@ void hdlcReset(HdlcState& s) { onair_ax25_hdlc_reset(reinterpret_cast<OnairAx25H
 
 } // namespace ax25
 } // namespace dect2
-#endif

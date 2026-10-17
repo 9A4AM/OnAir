@@ -1,6 +1,6 @@
-// The APRS information field parser on top of the Rust crate rust/onair_ax25 (DECT2_RUST_AX25): the same functions as packet_aprs.cpp (which holds
-// the C++ version under #ifndef DECT2_RUST_AX25). Empty when the crate is not built.
-#ifdef DECT2_RUST_AX25
+// The APRS information field parser (see packet_aprs.h) on top of the Rust crate rust/onair_ax25. Written from APRS101 (chapters 5-12) and the APRS 1.2
+// addenda; the Mic-E longitude and speed rules were cross-checked against the description in Dire Wolf's decode_aprs.c (WB2OSZ, GPL-2.0-or-later) - no code
+// was copied.
 #include "dect2/packet/packet_aprs.h"
 #include "dect2/rs/ax25.h"
 #include <cstdint>
@@ -59,4 +59,3 @@ bool parse(const std::string& dest, const std::string& info, Info& o) {
 
 } // namespace aprs
 } // namespace dect2
-#endif

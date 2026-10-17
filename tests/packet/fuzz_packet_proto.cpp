@@ -1,4 +1,4 @@
-// Seeded mutation run of the AX.25 / APRS layer (the Rust one under DECT2_RUST_AX25), meant for DECT2_SANITIZE=ON: frame parser, text forms, FCS, the
+// Seeded mutation run of the AX.25 / APRS layer, meant for DECT2_SANITIZE=ON: frame parser, text forms, FCS, the
 // HDLC receiver and the APRS parser must never crash or hang on any bytes. Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/packet/packet_ax25.h"
 #include "dect2/packet/packet_aprs.h"
