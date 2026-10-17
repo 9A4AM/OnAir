@@ -7,6 +7,7 @@
 #include "app.h"
 #include "ui/contrast.h"
 #include "ui/touch.h"
+#include "clips/clips_ui.h"
 #include "dect2/source/iq_file.h"
 #include "panels/gallery.h"
 #include "dect2/engine/crash_report.h"
@@ -58,6 +59,7 @@ static void tickReceiver(App& a) {
 
 // F toggles the video-only view; Escape leaves it
 static void videoOnlyKeys(App& a) {
+    clipsui::tick(a);   // radio clips: settings, the audio ring, the C key and the dialog
     ImGuiIO& io = ImGui::GetIO();
     if (!io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_F, false)) {
         if (a.videoOnly) { a.videoOnly = false; if (glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }

@@ -1621,3 +1621,31 @@ Train warning, 821 MHz	Treinwaarschuwing, 821 MHz
 clear picture	afbeelding wissen
 Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Wist de afbeelding en de regels die de decoder heeft verzameld, en begint een nieuwe afbeelding bij de volgende starttoon of fasering. Afbeeldingen die al in de lijst rechts staan blijven.
 Clears the NAVTEX and DSC lists and the weather fax picture.	Wist de NAVTEX- en DSC-lijsten en de weerfaxafbeelding.
+# radio clips
+Clip	Clip
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Radioclip: slaat de laatste momenten (spectrogram, audio, gedecodeerde berichten) op als bestand om te delen. Toets: C
+Radio clip	Radioclip
+Last:	Laatste:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Wat de ontvanger zag, het oudste links. Helderder is een sterker signaal. Sleep om het op te slaan deel te kiezen.
+Include:	Opnemen:
+Spectrogram picture	Spectrogramafbeelding
+Decoded messages	Gedecodeerde berichten
+Title	Titel
+Your station position is never included.	Je stationspositie wordt nooit opgenomen.
+Could not save:	Opslaan mislukt:
+Saved: %s (zip %.1f MB)	Opgeslagen: %s (zip %.1f MB)
+Save clip	Clip opslaan
+Nothing to save: no waterfall, audio or decoded rows in this range	Niets om op te slaan: in dit bereik is geen waterval, audio of gedecodeerde rij
+Saving...	Opslaan...
+Copy Discord post text	Discord-tekst kopiëren
+Copied: paste it into Discord and attach the files	Gekopieerd: plak het in Discord en voeg de bestanden toe
+Open folder	Map openen
+Memory kept for clips	Geheugen voor clips
+Waterfall history	Waterval-geschiedenis
+%d min	%d min
+%d MB max	max. %d MB
+Audio history	Audiogeschiedenis
+%d s	%d s
+Decoded rows history	Geschiedenis van gedecodeerde rijen
+Uses about %.1f MB now	Gebruikt nu ongeveer %.1f MB
+Decoded rows are kept from the results tables you have open.	Gedecodeerde rijen worden bewaard uit de resultaattabellen die je open hebt.

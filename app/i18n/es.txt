@@ -1621,3 +1621,31 @@ Train warning, 821 MHz	Aviso de trenes, 821 MHz
 clear picture	borrar imagen
 Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Borra la imagen y las líneas que ha reunido el decodificador, y empieza una imagen nueva con el siguiente tono de inicio o fase. Las imágenes que ya están en la lista de la derecha se conservan.
 Clears the NAVTEX and DSC lists and the weather fax picture.	Borra las listas NAVTEX y DSC y la imagen del fax meteorológico.
+# radio clips
+Clip	Clip
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Clip de radio: guarda los últimos momentos (espectrograma, audio, mensajes decodificados) como archivo para compartir. Tecla: C
+Radio clip	Clip de radio
+Last:	Últimos:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Lo que vio el receptor, lo más antiguo a la izquierda. Más brillo es una señal más fuerte. Arrastra para elegir la parte a guardar.
+Include:	Incluir:
+Spectrogram picture	Imagen del espectrograma
+Decoded messages	Mensajes decodificados
+Title	Título
+Your station position is never included.	La posición de tu estación nunca se incluye.
+Could not save:	No se pudo guardar:
+Saved: %s (zip %.1f MB)	Guardado: %s (zip %.1f MB)
+Save clip	Guardar clip
+Nothing to save: no waterfall, audio or decoded rows in this range	Nada que guardar: no hay cascada, audio ni filas decodificadas en este rango
+Saving...	Guardando...
+Copy Discord post text	Copiar texto para Discord
+Copied: paste it into Discord and attach the files	Copiado: pégalo en Discord y adjunta los archivos
+Open folder	Abrir carpeta
+Memory kept for clips	Memoria para clips
+Waterfall history	Historial de la cascada
+%d min	%d min
+%d MB max	máx. %d MB
+Audio history	Historial de audio
+%d s	%d s
+Decoded rows history	Historial de filas decodificadas
+Uses about %.1f MB now	Usa ahora unos %.1f MB
+Decoded rows are kept from the results tables you have open.	Las filas decodificadas se toman de las tablas de resultados que tienes abiertas.

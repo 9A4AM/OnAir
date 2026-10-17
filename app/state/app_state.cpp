@@ -1,5 +1,6 @@
 // application state: preferences, device list, bandwidth, ingesting spectrum and receiver telemetry, channel list
 #include "../app.h"
+#include "../clips/clips_ui.h"
 #include <cstring>
 #include "dect2/source/usb_diag.h"
 #include "dect2/engine/rate_choice.h"
@@ -374,6 +375,7 @@ void ingestSpectrum(App& a) {
     if (a.holdDecay > 0) for (size_t i = 0; i < n; i++) pk[i] = std::max(pk[i] - fall, in[i]);
     else for (size_t i = 0; i < n; i++) pk[i] = std::max(pk[i], in[i]);
     if (a.wf.offer(f.dbfs, now)) a.wf.stamp(now);
+    clipsui::feed(f.dbfs);   // radio clips: the retroactive history
     if (a.wf.autoTrack && !a.wf.paused && now - a.wf.trackT > 0.25) { a.wf.trackT = now; a.wf.fitRange(a.smooth, false); }
 }
 

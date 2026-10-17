@@ -1604,3 +1604,31 @@ Train warning, 821 MHz	Aviso de comboios, 821 MHz
 clear picture	limpar imagem
 Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Limpa a imagem e as linhas reunidas pelo descodificador e começa uma imagem nova no próximo tom de início ou faseamento. As imagens que já estão na lista à direita ficam.
 Clears the NAVTEX and DSC lists and the weather fax picture.	Limpa as listas NAVTEX e DSC e a imagem do fax meteorológico.
+# radio clips
+Clip	Clipe
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Clipe de rádio: guarda os últimos momentos (espectrograma, áudio, mensagens descodificadas) num ficheiro para partilhar. Tecla: C
+Radio clip	Clipe de rádio
+Last:	Últimos:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	O que o receptor viu, o mais antigo à esquerda. Mais claro é um sinal mais forte. Arraste para escolher a parte a guardar.
+Include:	Incluir:
+Spectrogram picture	Imagem do espectrograma
+Decoded messages	Mensagens descodificadas
+Title	Título
+Your station position is never included.	A posição da tua estação nunca é incluída.
+Could not save:	Não foi possível guardar:
+Saved: %s (zip %.1f MB)	Guardado: %s (zip %.1f MB)
+Save clip	Guardar clipe
+Nothing to save: no waterfall, audio or decoded rows in this range	Nada para guardar: não há cascata, áudio nem linhas descodificadas neste intervalo
+Saving...	A guardar...
+Copy Discord post text	Copiar texto para o Discord
+Copied: paste it into Discord and attach the files	Copiado: cole no Discord e anexe os ficheiros
+Open folder	Abrir pasta
+Memory kept for clips	Memória para clipes
+Waterfall history	Histórico da cascata
+%d min	%d min
+%d MB max	máx. %d MB
+Audio history	Histórico de áudio
+%d s	%d s
+Decoded rows history	Histórico de linhas descodificadas
+Uses about %.1f MB now	Usa agora cerca de %.1f MB
+Decoded rows are kept from the results tables you have open.	As linhas descodificadas são guardadas das tabelas de resultados que tens abertas.

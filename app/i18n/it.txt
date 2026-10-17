@@ -1604,3 +1604,31 @@ Train warning, 821 MHz	Avviso treni, 821 MHz
 clear picture	cancella immagine
 Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Cancella l'immagine e le righe raccolte dal decodificatore e avvia una nuova immagine al prossimo tono di avvio o alla prossima fasatura. Le immagini già nell'elenco a destra restano.
 Clears the NAVTEX and DSC lists and the weather fax picture.	Cancella gli elenchi NAVTEX e DSC e l'immagine del fax meteo.
+# radio clips
+Clip	Clip
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Clip radio: salva gli ultimi momenti (spettrogramma, audio, messaggi decodificati) in un file da condividere. Tasto: C
+Radio clip	Clip radio
+Last:	Ultimi:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Ciò che il ricevitore ha visto, il più vecchio a sinistra. Più chiaro significa segnale più forte. Trascina per scegliere la parte da salvare.
+Include:	Includi:
+Spectrogram picture	Immagine dello spettrogramma
+Decoded messages	Messaggi decodificati
+Title	Titolo
+Your station position is never included.	La posizione della tua stazione non viene mai inclusa.
+Could not save:	Salvataggio non riuscito:
+Saved: %s (zip %.1f MB)	Salvato: %s (zip %.1f MB)
+Save clip	Salva clip
+Nothing to save: no waterfall, audio or decoded rows in this range	Niente da salvare: in questo intervallo non ci sono waterfall, audio o righe decodificate
+Saving...	Salvataggio...
+Copy Discord post text	Copia il testo per Discord
+Copied: paste it into Discord and attach the files	Copiato: incollalo su Discord e allega i file
+Open folder	Apri cartella
+Memory kept for clips	Memoria per i clip
+Waterfall history	Cronologia del waterfall
+%d min	%d min
+%d MB max	max %d MB
+Audio history	Cronologia audio
+%d s	%d s
+Decoded rows history	Cronologia delle righe decodificate
+Uses about %.1f MB now	Ora usa circa %.1f MB
+Decoded rows are kept from the results tables you have open.	Le righe decodificate vengono conservate dalle tabelle dei risultati aperte.

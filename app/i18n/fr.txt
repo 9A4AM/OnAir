@@ -1621,3 +1621,31 @@ Train warning, 821 MHz	Alerte train, 821 MHz
 clear picture	effacer l'image
 Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Efface l'image et les lignes réunies par le décodeur, et commence une nouvelle image au prochain ton de départ ou à la prochaine phase. Les images déjà dans la liste de droite restent.
 Clears the NAVTEX and DSC lists and the weather fax picture.	Efface les listes NAVTEX et DSC et l'image du fax météo.
+# radio clips
+Clip	Clip
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Clip radio : enregistre les derniers instants (spectrogramme, audio, messages décodés) dans un fichier à partager. Touche : C
+Radio clip	Clip radio
+Last:	Derniers :
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Ce que le récepteur a vu, le plus ancien à gauche. Plus clair = signal plus fort. Faites glisser pour choisir la partie à enregistrer.
+Include:	Inclure :
+Spectrogram picture	Image du spectrogramme
+Decoded messages	Messages décodés
+Title	Titre
+Your station position is never included.	La position de votre station n'est jamais incluse.
+Could not save:	Enregistrement impossible :
+Saved: %s (zip %.1f MB)	Enregistré : %s (zip %.1f Mo)
+Save clip	Enregistrer le clip
+Nothing to save: no waterfall, audio or decoded rows in this range	Rien à enregistrer : ni cascade, ni audio, ni lignes décodées dans cette plage
+Saving...	Enregistrement...
+Copy Discord post text	Copier le texte pour Discord
+Copied: paste it into Discord and attach the files	Copié : collez-le dans Discord et joignez les fichiers
+Open folder	Ouvrir le dossier
+Memory kept for clips	Mémoire pour les clips
+Waterfall history	Historique de la cascade
+%d min	%d min
+%d MB max	max %d Mo
+Audio history	Historique audio
+%d s	%d s
+Decoded rows history	Historique des lignes décodées
+Uses about %.1f MB now	Utilise actuellement environ %.1f Mo
+Decoded rows are kept from the results tables you have open.	Les lignes décodées viennent des tableaux de résultats que vous avez ouverts.

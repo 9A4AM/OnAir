@@ -1621,3 +1621,31 @@ Train warning, 821 MHz	列车预警，821 MHz
 clear picture	清除图像
 Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	清除图像以及解码器已收集的行,并在下一个起始音或相位信号处开始新图像。右侧列表中已有的图像会保留。
 Clears the NAVTEX and DSC lists and the weather fax picture.	清除 NAVTEX 和 DSC 列表以及气象传真图像。
+# radio clips
+Clip	剪辑
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	电台剪辑:把最近的片段(频谱图、音频、解码消息)保存为可分享的文件。快捷键:C
+Radio clip	电台剪辑
+Last:	最近:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	接收机看到的内容,最早的在左边。越亮信号越强。拖动以选择要保存的部分。
+Include:	包含:
+Spectrogram picture	频谱图图片
+Decoded messages	解码消息
+Title	标题
+Your station position is never included.	绝不包含你的电台位置。
+Could not save:	无法保存:
+Saved: %s (zip %.1f MB)	已保存:%s(zip %.1f MB)
+Save clip	保存剪辑
+Nothing to save: no waterfall, audio or decoded rows in this range	没有可保存的内容:此范围内没有瀑布图、音频或解码行
+Saving...	正在保存...
+Copy Discord post text	复制 Discord 帖子文本
+Copied: paste it into Discord and attach the files	已复制:粘贴到 Discord 并附上文件
+Open folder	打开文件夹
+Memory kept for clips	为剪辑保留的内存
+Waterfall history	瀑布图历史
+%d min	%d 分钟
+%d MB max	最多 %d MB
+Audio history	音频历史
+%d s	%d 秒
+Decoded rows history	解码行历史
+Uses about %.1f MB now	目前约占用 %.1f MB
+Decoded rows are kept from the results tables you have open.	解码行取自你已打开的结果表。

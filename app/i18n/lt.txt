@@ -1621,3 +1621,31 @@ Train warning, 821 MHz	Traukinių įspėjimas, 821 MHz
 clear picture	išvalyti vaizdą
 Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Išvalo vaizdą ir dekoderio surinktas eilutes, o kitu pradžios tonu ar fazavimu pradeda naują vaizdą. Dešiniajame sąraše jau esantys vaizdai lieka.
 Clears the NAVTEX and DSC lists and the weather fax picture.	Išvalo NAVTEX ir DSC sąrašus bei orų fakso vaizdą.
+# radio clips
+Clip	Klipas
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Radijo klipas: išsaugo paskutines akimirkas (spektrogramą, garsą, dekoduotus pranešimus) failu, kuriuo galima dalytis. Klavišas: C
+Radio clip	Radijo klipas
+Last:	Paskutiniai:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Ką matė imtuvas, seniausia kairėje. Šviesesnis reiškia stipresnį signalą. Vilkite, kad pasirinktumėte išsaugotiną dalį.
+Include:	Įtraukti:
+Spectrogram picture	Spektrogramos paveikslėlis
+Decoded messages	Dekoduoti pranešimai
+Title	Pavadinimas
+Your station position is never included.	Jūsų stoties padėtis niekada neįtraukiama.
+Could not save:	Nepavyko išsaugoti:
+Saved: %s (zip %.1f MB)	Išsaugota: %s (zip %.1f MB)
+Save clip	Išsaugoti klipą
+Nothing to save: no waterfall, audio or decoded rows in this range	Nėra ką išsaugoti: šiame intervale nėra krioklio, garso ar dekoduotų eilučių
+Saving...	Saugoma...
+Copy Discord post text	Kopijuoti Discord tekstą
+Copied: paste it into Discord and attach the files	Nukopijuota: įklijuokite į Discord ir pridėkite failus
+Open folder	Atidaryti aplanką
+Memory kept for clips	Klipams laikoma atmintis
+Waterfall history	Krioklio istorija
+%d min	%d min.
+%d MB max	daugiausia %d MB
+Audio history	Garso istorija
+%d s	%d s
+Decoded rows history	Dekoduotų eilučių istorija
+Uses about %.1f MB now	Dabar naudoja apie %.1f MB
+Decoded rows are kept from the results tables you have open.	Dekoduotos eilutės saugomos iš atidarytų rezultatų lentelių.
