@@ -1282,3 +1282,5 @@ The audio frequency of the signal's centre in the sound card, for example 12000 
 Mirror the spectrum: for a receiver whose output is the other sideband.	Tükrözi a spektrumot: olyan vevőhöz, amelynek kimenete a másik oldalsáv.
 The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	A hangkártya mintavételi frekvenciája, 8-tól 192 kHz-ig. A nagyobb több KF-et mutat. A vevő indításakor lép érvénybe.
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	WebSDR-hez, virtuális hangkábelhez (VAC), vagy a rádió hangszórójához/vonalához a számítógépen. Nem helyettesíti az SDR-t, ha megahertznyi sávszélesség kell.
+Re-sync	Újraszinkronizálás
+Drop the lock and search for the CDR signal again without stopping the radio.\nUse it when the sound stays silent after the signal faded.	Eldobja a szinkront és újra keresi a CDR-jelet a rádió leállítása nélkül.\nHasználja, ha a hang a jel kiesése után néma marad.

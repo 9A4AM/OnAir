@@ -1297,3 +1297,5 @@ The audio frequency of the signal's centre in the sound card, for example 12000 
 Mirror the spectrum: for a receiver whose output is the other sideband.	Refleja el espectro: para un receptor cuya salida es la otra banda lateral.
 The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	La frecuencia de muestreo de la tarjeta de sonido, de 8 a 192 kHz. Una mayor muestra más de una FI. Se aplica al iniciar el receptor.
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	Para WebSDR, un cable de audio virtual (VAC) o el altavoz/línea de una radio al ordenador. No sustituye a un SDR cuando necesita megahercios de ancho de banda.
+Re-sync	Resincronizar
+Drop the lock and search for the CDR signal again without stopping the radio.\nUse it when the sound stays silent after the signal faded.	Descartar el enganche y buscar de nuevo la señal CDR sin detener la radio.\nÚselo cuando el sonido siga mudo después de que la señal se desvaneciera.

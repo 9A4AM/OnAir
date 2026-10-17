@@ -1279,3 +1279,5 @@ The audio frequency of the signal's centre in the sound card, for example 12000 
 Mirror the spectrum: for a receiver whose output is the other sideband.	Зеркалит спектр: для приёмника, выход которого — другая боковая полоса.
 The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	Частота дискретизации звуковой карты, 8–192 кГц. Более высокая показывает больше ПЧ. Применяется при запуске приёмника.
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	Для WebSDR, виртуального аудиокабеля (VAC) или динамика/линейного выхода рации в компьютер. Это не замена SDR, когда нужны мегагерцы полосы.
+Re-sync	Пересинхронизировать
+Drop the lock and search for the CDR signal again without stopping the radio.\nUse it when the sound stays silent after the signal faded.	Сбросить захват и заново искать сигнал CDR, не останавливая радио.\nИспользуйте, если звук остаётся беззвучным после пропадания сигнала.

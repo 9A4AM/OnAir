@@ -1297,3 +1297,5 @@ The audio frequency of the signal's centre in the sound card, for example 12000 
 Mirror the spectrum: for a receiver whose output is the other sideband.	スペクトルを反転：出力が反対側のサイドバンドの受信機用。
 The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	サウンドカードのサンプルレート（8〜192 kHz）。高いほどIFをより広く表示します。受信機の開始時に適用されます。
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	WebSDR、仮想オーディオケーブル（VAC）、無線機のスピーカー／ライン入力用。MHz単位の帯域が必要なときのSDRの代わりにはなりません。
+Re-sync	再同期
+Drop the lock and search for the CDR signal again without stopping the radio.\nUse it when the sound stays silent after the signal faded.	ラジオを止めずにロックを破棄してCDR信号を再探索します。\n信号が弱まった後に音が出なくなったときに使います。
