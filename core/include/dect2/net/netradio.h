@@ -31,7 +31,8 @@ void setSoapyEnumerator(SoapyEnumerateFn fn);   // nullptr: SoapySDR's own; also
 std::vector<RemoteSoapyDevice> soapyRemoteList(const NetRadio& r, bool includeAudio = false);
 // Whether SoapySDR has SoapyRemote's client module (the "remote" driver); false without SoapySDR. Tests force it: 0 / 1, -1 = real.
 bool soapyRemoteModuleAvailable();
-const char* soapyRemoteModuleHelp();   // where to get it and how to install it
+const char* soapyRemoteModuleHelp();   // what is missing on THIS platform and what to do (Windows/macOS: a damaged install; Linux: apt install soapysdr-module-remote)
+const char* soapyRemoteModuleHelpFor(int platform);   // the same for 0 Windows, 1 macOS, 2 Linux (the app translates these three texts)
 void setSoapyRemoteModuleOverride(int v);
 // The plain-language reason a SoapyRemote radio could not be opened: what the server offers and what to type in "Remote driver". "" for other args.
 std::string soapyRemoteFailureHelp(const std::string& soapyArgs);

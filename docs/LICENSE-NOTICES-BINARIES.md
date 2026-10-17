@@ -12,3 +12,7 @@ OnAir is GPL-3.0-or-later (file LICENSE; source: https://github.com/adswill/OnAi
 - Homebrew's and MSYS2's FFmpeg packages are configured with --enable-gpl and are never bundled.
 
 Other bundled libraries (Hamlib, codec2, libusb, libhackrf, GLFW, the radio vendor libraries): see THIRD_PARTY.md; each package also carries the licence files of the libraries it contains.
+
+## SoapyRemote client module (BSL-1.0)
+
+Windows (zip, installer) and macOS (.dmg) carry the SoapyRemote client module (`libremoteSupport.dll` in `lib/SoapySDR/modules0.8`, `libremoteSupport.so` in `OnAir.app/Contents/Frameworks/SoapySDR/modules0.8`) so that a SoapyRemote network radio works without installing anything. Source: github.com/pothosware/SoapyRemote tag soapy-remote-0.5.3 (Windows: built by tools/package/cross_deps_windows.sh with the MinGW patch tools/package/patches/soapyremote-0.5.3-mingw.patch; macOS: Homebrew's `soapyremote`). Boost Software License 1.0 (LICENSES/BSL-1.0.txt, also `licenses/SoapyRemote-LICENSE_1_0.txt` in the Windows package); compatible with GPL-3. Linux: the `.deb` recommends `soapysdr-module-remote`; with the portable archive install it yourself (`sudo apt install soapysdr-module-remote`).

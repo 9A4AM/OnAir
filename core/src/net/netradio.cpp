@@ -112,11 +112,29 @@ bool soapyRemoteModuleAvailable() {
 #endif
 }
 
-const char* soapyRemoteModuleHelp() {
-    return "SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install SoapyRemote (github.com/pothosware/SoapyRemote) "
-           "on this computer: Windows, PothosSDR; macOS, brew install soapyremote; Debian/Ubuntu, apt install soapyremote-server (it brings the client module); "
-           "then restart OnAir. The server needs SoapySDRServer --bind running on the radio's computer.";
+// What is missing and what to do about it, for the platform OnAir runs on (0 Windows, 1 macOS, 2 Linux and others; -1 = this one).
+// Windows and macOS packages carry the module themselves, so there it means a damaged installation, not something to install.
+const char* soapyRemoteModuleHelpFor(int platform) {
+    if (platform < 0) {
+#if defined(_WIN32)
+        platform = 0;
+#elif defined(__APPLE__)
+        platform = 1;
+#else
+        platform = 2;
+#endif
+    }
+    if (platform == 0)
+        return "The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir, and please report it if it happens again. "
+               "The radio's computer must run SoapySDRServer --bind.";
+    if (platform == 1)
+        return "The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir (or run brew install soapyremote), and please report it if it happens again. "
+               "The radio's computer must run SoapySDRServer --bind.";
+    return "SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install it (Debian/Ubuntu: sudo apt install soapysdr-module-remote; "
+           "other systems: github.com/pothosware/SoapyRemote), then restart OnAir. The radio's computer must run SoapySDRServer --bind.";
 }
+
+const char* soapyRemoteModuleHelp() { return soapyRemoteModuleHelpFor(-1); }
 
 std::string soapyRemoteArgs(const NetRadio& r) {
     std::string a = remoteBase(r);

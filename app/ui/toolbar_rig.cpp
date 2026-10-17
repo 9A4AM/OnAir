@@ -13,6 +13,16 @@
 #include <thread>
 #include "toolbar_internal.h"
 
+// The three texts of soapyRemoteModuleHelpFor() (core/src/net/netradio.cpp): listed here so the catalogs carry them; the error line below passes the text through tr().
+[[maybe_unused]] static const char* const kSoapyRemoteModuleTexts[] = {
+    N_("The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir, and please report it if it happens again. "
+       "The radio's computer must run SoapySDRServer --bind."),
+    N_("The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir (or run brew install soapyremote), and please report it if it happens again. "
+       "The radio's computer must run SoapySDRServer --bind."),
+    N_("SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install it (Debian/Ubuntu: sudo apt install soapysdr-module-remote; "
+       "other systems: github.com/pothosware/SoapyRemote), then restart OnAir. The radio's computer must run SoapySDRServer --bind."),
+};
+
 static bool netTypeSearches(int t) { return t == NetRadio::HermesLite2 || t == NetRadio::RedPitaya; }   // found by a discovery broadcast
 
 // looks for Hermes Lite 2 (or Red Pitaya) radios, by the type chosen, on a worker thread (the broadcast waits 1.5 s for answers); netRadioWindow() takes the result
@@ -164,7 +174,7 @@ void netRadioWindow(App& a) {
     }
     ImGui::EndDisabled();
     if (busy) { ImGui::SameLine(); ImGui::TextDisabled("%s", tr("connecting…")); }
-    if (!a.netAddErr.empty()) { ImGui::PushTextWrapPos(400 * gUi); ImGui::TextColored(ImVec4(1.f, 0.45f, 0.4f, 1), tr("Cannot connect: %s"), a.netAddErr.c_str()); ImGui::PopTextWrapPos(); }
+    if (!a.netAddErr.empty()) { ImGui::PushTextWrapPos(400 * gUi); ImGui::TextColored(ImVec4(1.f, 0.45f, 0.4f, 1), tr("Cannot connect: %s"), tr(a.netAddErr.c_str())); ImGui::PopTextWrapPos(); }
     if (!a.netRadios.empty()) netRadioList(a);
     ImGui::End();
 }

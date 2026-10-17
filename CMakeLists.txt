@@ -1511,7 +1511,7 @@ if(DECT2_BUILD_APP AND NOT APPLE)
   set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
   set(CPACK_DEBIAN_PACKAGE_SECTION hamradio)
   set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-  set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "zenity")
+  set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "zenity, soapysdr-module-remote")   # the SoapyRemote client module: SoapySDR over LAN (issue #84); Debian/Ubuntu package name
   set(CPACK_DEBIAN_PACKAGE_SUGGESTS "hackrf, librtlsdr0, libairspy0, libbladerf2, libiio0, soapysdr-module-all")
   include(CPack)
 endif()
