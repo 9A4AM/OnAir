@@ -136,6 +136,8 @@ DRA. These are Chinese patented codecs, and OnAir ships none of them: it plays w
   (Outputs: file or UDP) and play it with an FFmpeg build that has them (ffplay).
 - DRA sound: FFmpeg has no DRA decoder. The player says "DRA audio: no decoder available"; a second sound track in another format plays.
 
+Details and the external-player route (save the TS / stream UDP, copy the VLC / mpv command): [AVSPLUS.md](AVSPLUS.md).
+
 The player panel has a **?** button next to these messages. A channel that signals a CA system (a CA descriptor, free_CA_mode) but sends
 its streams in the clear is not shown as scrambled: OnAir goes by the scrambling bits of the stream packets.
 

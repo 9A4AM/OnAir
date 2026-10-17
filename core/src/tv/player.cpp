@@ -52,6 +52,25 @@ std::string avsVideoNote(const std::string& codec, bool haveDecoder, int profile
     return b;
 }
 
+std::string avsFamilyName(int streamType, int profile) {
+    switch (streamType) {
+    case 0x42: return profile == 0x20 ? "AVS" : profile == 0x48 ? "AVS+" : profile < 0 ? "AVS/AVS+" : "AVS";
+    case 0xD2: return "AVS2";
+    case 0xD4: return "AVS3";
+    default: return std::string();
+    }
+}
+
+bool avsNeverDecodable(int streamType, int profile) { return streamType == 0x42 && profile >= 0 && profile != 0x20; }
+
+std::string avsServiceMessage(int streamType, int profile, bool haveDecoder) {
+    const std::string fam = avsFamilyName(streamType, profile);
+    if (fam.empty()) return std::string();
+    if (streamType == 0x42 && !avsNeverDecodable(streamType, profile) && haveDecoder) return std::string();
+    if ((streamType == 0xD2 || streamType == 0xD4) && haveDecoder) return std::string();
+    return "Video: " + fam + " (OnAir cannot decode this video) \xE2\x80\x94 audio, subtitles and data still work";
+}
+
 using Clock = std::chrono::steady_clock;
 static double nowSec() { return dect2::steadyNowSec(); }
 
@@ -459,7 +478,7 @@ void Player::threadMain() {
         const AVCodecID avsId = vIdx >= 0 ? fmt->streams[vIdx]->codecpar->codec_id : AV_CODEC_ID_NONE;
         const bool avs = avsId == AV_CODEC_ID_CAVS || avsId == AV_CODEC_ID_AVS2 || avsId == AV_CODEC_ID_AVS3;
         int avsProfile = -1;
-        const std::string avsNote = avs ? avsVideoNote(avcodec_get_name(avsId), avcodec_find_decoder(avsId) != nullptr, -1) : std::string();
+        const std::string avsNote = avs ? avsServiceMessage(avsId == AV_CODEC_ID_CAVS ? 0x42 : avsId == AV_CODEC_ID_AVS2 ? 0xD2 : 0xD4, -1, avcodec_find_decoder(avsId) != nullptr) : std::string();
         if (vIdx >= 0) {
             const AVCodec* c = avcodec_find_decoder(fmt->streams[vIdx]->codecpar->codec_id);
             if (c) {
@@ -526,6 +545,8 @@ void Player::threadMain() {
             I.st.hasVideo = vctx != nullptr;
             I.st.hasAudio = actx != nullptr;
             I.st.videoNote = avsNote;
+            I.st.videoStreamType = avsId == AV_CODEC_ID_CAVS ? 0x42 : avsId == AV_CODEC_ID_AVS2 ? 0xD2 : avsId == AV_CODEC_ID_AVS3 ? 0xD4 : -1;
+            I.st.avsProfile = -1;
             if (vctx) {
                 I.st.videoCodec = avcodec_get_name(vctx->codec_id);
                 I.st.hardware = hw;
@@ -844,7 +865,8 @@ void Player::threadMain() {
             if (avsId == AV_CODEC_ID_CAVS && avsProfile < 0 && pkt->stream_index == vIdx) {
                 // the profile from the first sequence header: AVS+ (and anything else but JiZhun) is refused picture by picture, so say so instead
                 avsProfile = avsProfileId(pkt->data, (size_t)pkt->size);
-                const std::string n = avsProfile >= 0 ? avsVideoNote("cavs", vctx != nullptr, avsProfile) : std::string();
+                const std::string n = avsProfile >= 0 ? avsServiceMessage(0x42, avsProfile, vctx != nullptr) : std::string();
+                { std::lock_guard<std::mutex> lk(I.smu); I.st.avsProfile = avsProfile; }
                 if (!n.empty()) {
                     if (vctx) avcodec_free_context(&vctx);
                     std::lock_guard<std::mutex> lk(I.smu);
