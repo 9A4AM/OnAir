@@ -1315,3 +1315,13 @@ Status	Būsena
 Running	Veikia
 Step	Žingsnis
 Keyboard	Klaviatūra
+Update source	Atnaujinimų šaltinis
+Automatic: GitHub	Automatiškai: GitHub
+GitHub only	Tik GitHub
+Mirror only	Tik veidrodis
+Use the mirror when GitHub cannot be reached	Naudoti veidrodį, kai GitHub nepasiekiamas
+Mirror address (https://host/{url} or a base address)	Veidrodžio adresas (https://host/{url} arba bazinis adresas)
+A mirror is a third-party web address you chose. It sees that you check for updates and which version you run. It is used only after GitHub fails (not at all with GitHub only), the package is checked against the checksum from GitHub when GitHub can be reached, and nothing is installed from a mirror without your confirmation.	Veidrodis yra trečiosios šalies jūsų pasirinktas tinklalapio adresas. Jis mato, kad tikrinate atnaujinimus ir kokią versiją naudojate. Jis naudojamas tik po GitHub nesėkmės (niekada su „Tik GitHub“), paketas tikrinamas pagal GitHub kontrolinę sumą, kai GitHub pasiekiamas, ir nieko neįdiegiama iš veidrodžio be jūsų patvirtinimo.
+The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	Versijų sąrašas atėjo per veidrodį, o GitHub nebuvo pasiekiamas kontrolinei sumai patvirtinti: šį paketą garantuoja tik veidrodis. Be jūsų patvirtinimo nieko neįdiegiama.
+I understand, download it anyway	Suprantu, vis tiek atsisiųsti
+The list came through the mirror; the checksum was confirmed by GitHub.	Sąrašas atėjo per veidrodį; kontrolinę sumą patvirtino GitHub.

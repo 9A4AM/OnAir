@@ -1315,3 +1315,13 @@ Status	Estado
 Running	En marcha
 Step	Paso
 Keyboard	Teclado
+Update source	Fuente de actualización
+Automatic: GitHub	Automático: GitHub
+GitHub only	Solo GitHub
+Mirror only	Solo espejo
+Use the mirror when GitHub cannot be reached	Usar el espejo cuando no se pueda llegar a GitHub
+Mirror address (https://host/{url} or a base address)	Dirección del espejo (https://host/{url} o una dirección base)
+A mirror is a third-party web address you chose. It sees that you check for updates and which version you run. It is used only after GitHub fails (not at all with GitHub only), the package is checked against the checksum from GitHub when GitHub can be reached, and nothing is installed from a mirror without your confirmation.	Un espejo es una dirección web de terceros que usted eligió. Ve que busca actualizaciones y qué versión usa. Solo se usa si GitHub falla (nunca con «Solo GitHub»), el paquete se comprueba con la suma de GitHub cuando se puede llegar a GitHub, y nada se instala desde un espejo sin su confirmación.
+The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	La lista de versiones llegó por el espejo y no se pudo llegar a GitHub para confirmar la suma: solo el espejo respalda este paquete. No se instala nada sin su confirmación.
+I understand, download it anyway	Lo entiendo, descargar de todos modos
+The list came through the mirror; the checksum was confirmed by GitHub.	La lista llegó por el espejo; GitHub confirmó la suma de comprobación.

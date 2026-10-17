@@ -1315,3 +1315,13 @@ Status	状態
 Running	動作中
 Step	ステップ
 Keyboard	キーボード
+Update source	更新の取得元
+Automatic: GitHub	自動: GitHub
+GitHub only	GitHub のみ
+Mirror only	ミラーのみ
+Use the mirror when GitHub cannot be reached	GitHub に接続できないときはミラーを使う
+Mirror address (https://host/{url} or a base address)	ミラーのアドレス (https://host/{url} またはベースアドレス)
+A mirror is a third-party web address you chose. It sees that you check for updates and which version you run. It is used only after GitHub fails (not at all with GitHub only), the package is checked against the checksum from GitHub when GitHub can be reached, and nothing is installed from a mirror without your confirmation.	ミラーはあなたが選んだ第三者の Web アドレスです。更新を確認していることと使用中のバージョンが分かります。GitHub が失敗した後にだけ使われ (「GitHub のみ」では使われません)、GitHub に接続できるときはパッケージを GitHub のチェックサムで検証し、ミラーからのものはあなたの確認なしにはインストールされません。
+The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	バージョン一覧はミラー経由で、GitHub に接続できずチェックサムを確認できませんでした。このパッケージを保証するのはミラーだけです。確認なしにはインストールしません。
+I understand, download it anyway	理解しました。それでもダウンロードする
+The list came through the mirror; the checksum was confirmed by GitHub.	一覧はミラー経由ですが、チェックサムは GitHub で確認されました。

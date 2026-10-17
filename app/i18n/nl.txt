@@ -1315,3 +1315,13 @@ Status	Status
 Running	Actief
 Step	Stap
 Keyboard	Toetsenbord
+Update source	Updatebron
+Automatic: GitHub	Automatisch: GitHub
+GitHub only	Alleen GitHub
+Mirror only	Alleen mirror
+Use the mirror when GitHub cannot be reached	De mirror gebruiken als GitHub niet bereikbaar is
+Mirror address (https://host/{url} or a base address)	Mirroradres (https://host/{url} of een basisadres)
+A mirror is a third-party web address you chose. It sees that you check for updates and which version you run. It is used only after GitHub fails (not at all with GitHub only), the package is checked against the checksum from GitHub when GitHub can be reached, and nothing is installed from a mirror without your confirmation.	Een mirror is een webadres van een derde dat u hebt gekozen. Hij ziet dat u naar updates zoekt en welke versie u gebruikt. Hij wordt alleen gebruikt nadat GitHub faalt (nooit bij „Alleen GitHub”), het pakket wordt gecontroleerd met de checksum van GitHub als GitHub bereikbaar is, en er wordt niets van een mirror geïnstalleerd zonder uw bevestiging.
+The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	De lijst met versies kwam via de mirror en GitHub was niet bereikbaar om de checksum te bevestigen: alleen de mirror staat in voor dit pakket. Zonder uw bevestiging wordt niets geïnstalleerd.
+I understand, download it anyway	Ik begrijp het, toch downloaden
+The list came through the mirror; the checksum was confirmed by GitHub.	De lijst kwam via de mirror; de checksum is door GitHub bevestigd.

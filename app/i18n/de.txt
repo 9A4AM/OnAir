@@ -1315,3 +1315,13 @@ Status	Status
 Running	Läuft
 Step	Schritt
 Keyboard	Tastatur
+Update source	Update-Quelle
+Automatic: GitHub	Automatisch: GitHub
+GitHub only	Nur GitHub
+Mirror only	Nur Spiegel
+Use the mirror when GitHub cannot be reached	Spiegel nutzen, wenn GitHub nicht erreichbar ist
+Mirror address (https://host/{url} or a base address)	Spiegel-Adresse (https://host/{url} oder Basisadresse)
+A mirror is a third-party web address you chose. It sees that you check for updates and which version you run. It is used only after GitHub fails (not at all with GitHub only), the package is checked against the checksum from GitHub when GitHub can be reached, and nothing is installed from a mirror without your confirmation.	Ein Spiegel ist eine Webadresse eines Dritten, die Sie gewählt haben. Er sieht, dass Sie nach Updates suchen und welche Version Sie nutzen. Er wird nur nach einem Fehler bei GitHub verwendet (bei „Nur GitHub“ nie); das Paket wird mit der Prüfsumme von GitHub verglichen, wenn GitHub erreichbar ist, und nichts wird ohne Ihre Bestätigung von einem Spiegel installiert.
+The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	Die Versionsliste kam über den Spiegel und GitHub war nicht erreichbar, um die Prüfsumme zu bestätigen: Nur der Spiegel bürgt für dieses Paket. Ohne Ihre Bestätigung wird nichts installiert.
+I understand, download it anyway	Ich verstehe, trotzdem herunterladen
+The list came through the mirror; the checksum was confirmed by GitHub.	Die Liste kam über den Spiegel; die Prüfsumme wurde von GitHub bestätigt.

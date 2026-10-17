@@ -1315,3 +1315,13 @@ Status	状态
 Running	运行中
 Step	步进
 Keyboard	键盘
+Update source	更新来源
+Automatic: GitHub	自动：GitHub
+GitHub only	仅 GitHub
+Mirror only	仅镜像
+Use the mirror when GitHub cannot be reached	无法连接 GitHub 时使用镜像
+Mirror address (https://host/{url} or a base address)	镜像地址（https://host/{url} 或基础地址）
+A mirror is a third-party web address you chose. It sees that you check for updates and which version you run. It is used only after GitHub fails (not at all with GitHub only), the package is checked against the checksum from GitHub when GitHub can be reached, and nothing is installed from a mirror without your confirmation.	镜像是您自己选择的第三方网址。它能看到您在检查更新以及您使用的版本。只有在 GitHub 失败后才会使用（选择“仅 GitHub”时永不使用）；能连接 GitHub 时，安装包会按 GitHub 的校验和验证；未经您确认，不会从镜像安装任何内容。
+The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	版本列表来自镜像，且无法连接 GitHub 确认校验和：只有镜像为此安装包担保。未经您确认不会安装任何内容。
+I understand, download it anyway	我已了解，仍然下载
+The list came through the mirror; the checksum was confirmed by GitHub.	列表来自镜像；校验和已由 GitHub 确认。

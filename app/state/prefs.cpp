@@ -147,6 +147,7 @@ const std::vector<PrefKey>& keyTable() {
         shared(flagB("subsOn", AT(a.subsOn), true)), shared(text("subsPick", AT(a.subsPick))), shared(num("ttxPage", AT(a.ttxPage), 100, 100, 899)),
         shared(flagB("updCheck", AT(a.updCheck), true)), shared(flagB("updAuto", AT(a.updAuto), true)), shared(flagB("updBeta", AT(a.updPre), false)),
         shared(dbl("updLast", AT(a.updLast), 0)), shared(text("updSkip", AT(a.updSkip))),
+        shared(num("updSrc", AT(a.updSrc), 0, 0, 2)), shared(flagB("updMirrorOn", AT(a.updMirrorOn), false)), shared(text("updMirror", AT(a.updMirror))),
     };
     return t;
 }
