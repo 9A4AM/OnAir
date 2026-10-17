@@ -1,4 +1,4 @@
-// Seeded mutation run of the DRM signalling and data layers (the Rust ones under DECT2_RUST_DRM), meant for DECT2_SANITIZE=ON: FAC / SDC parsing, the CRC checks,
+// Seeded mutation run of the DRM signalling and data layers, meant for DECT2_SANITIZE=ON: FAC / SDC parsing, the CRC checks,
 // the super frame split, the text segment check and the data service helpers must never crash or hang on any bytes at any length (the input is copied to an
 // exactly sized heap block). Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/drm/drm_proto.h"

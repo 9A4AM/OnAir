@@ -1,21 +1,19 @@
-// Differential test: the C++ DRM signalling and data layers (a generated copy in dect2::drmp_ref, see cmake/gen_rs_ref.cmake) against the one the program uses
-// (dect2::drmp: the Rust crate onair_drm when DECT2_RUST is on). The same inputs go to both and every result has to be identical: the CRCs, FAC blocks (both
-// robustness mode families, good and corrupted), SDC data fields (every entity type, parsed twice into the same record so the in-place refinement is compared),
-// SDC block checks, the audio super frame split (consistent and corrupt borders), the text message segment check, the tables, MJD conversion and the data
-// service helpers, over ONAIR_DIFF_ITERS (default 200000) seeded inputs per family. Buffers are exactly as long as the input (sanitizer builds see overruns).
+// Golden-vector test of the DRM signalling and data layers (dect2::drmp, the Rust crate onair_drm): the CRCs, FAC blocks (both robustness mode families, good and
+// corrupted), SDC data fields (every entity type, parsed twice into the same record so the in-place refinement is covered), SDC block checks, the audio super frame
+// split (consistent and corrupt borders), the text message segment check, the tables, MJD conversion and the data service helpers, over ONAIR_DIFF_ITERS (default
+// 200000) seeded inputs per family. Buffers are exactly as long as the input (sanitizer builds see overruns). Every result goes into a digest (tests/common/golden.h)
+// compared with the one recorded from the C++ layer the Rust code replaced.
 #include "dect2/drm/drm_proto.h"
-#include "drm_proto_ref.h"
+#include "../common/golden.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <random>
 namespace A = dect2::drmp;
-namespace R = dect2::drmp_ref;
 namespace D = dect2::drm;
 
-static long fails = 0, checks = 0;
+static golden::Digest dig;
 static long okc[16];
-#define SAME(c, ...) do { checks++; if (!(c)) { if (fails++ < 20) { printf("MISMATCH: " __VA_ARGS__); printf("\n"); } } } while (0)
 static std::mt19937 g(31415);
 static uint32_t r32() { return g(); }
 using Buf = std::vector<uint8_t>;
@@ -50,13 +48,12 @@ static void testFac() {
             const size_t need = askE ? 116 : 72;
             if (b.size() < need) b.resize(need, 0); else if (b.size() > need) b.resize(need);
             exact(b, [&](const uint8_t* p, size_t) {
-                D::FacInfo fa, fr; const bool ba = A::facParse(p, askE, fa), br = R::facParse(p, askE, fr);
-                bool e = ba == br;
-                if (e && ba) { e = fa.enhancement == fr.enhancement && fa.identity == fr.identity && fa.modeE == fr.modeE && fa.occupancy == fr.occupancy && fa.interleaver == fr.interleaver && fa.mscMode == fr.mscMode &&
-                    fa.sdcMode == fr.sdcMode && fa.numServicesCode == fr.numServicesCode && fa.reconfig == fr.reconfig && fa.toggle == fr.toggle && fa.nSvc == fr.nSvc;
-                    for (int i = 0; i < fa.nSvc; i++) e = e && fa.svc[i].id == fr.svc[i].id && fa.svc[i].shortId == fr.svc[i].shortId && fa.svc[i].audioCa == fr.svc[i].audioCa && fa.svc[i].dataCa == fr.svc[i].dataCa &&
-                        fa.svc[i].language == fr.svc[i].language && fa.svc[i].data == fr.svc[i].data && fa.svc[i].descriptor == fr.svc[i].descriptor; }
-                SAME(e, "fac modeE=%d ask=%d ok %d/%d", me, askE, ba, br);
+                D::FacInfo fa; const bool ba = A::facParse(p, askE, fa);
+                dig.add(ba);
+                if (ba) {
+                    dig.add(fa.enhancement, fa.identity, fa.modeE, fa.occupancy, fa.interleaver, fa.mscMode, fa.sdcMode, fa.numServicesCode, fa.reconfig, fa.toggle, fa.nSvc);
+                    for (int i = 0; i < fa.nSvc; i++) dig.add(fa.svc[i].id, fa.svc[i].shortId, fa.svc[i].audioCa, fa.svc[i].dataCa, fa.svc[i].language, fa.svc[i].data, fa.svc[i].descriptor);
+                }
                 okc[0] += ba;
             });
         }
@@ -93,29 +90,28 @@ static void fillSdc(D::SdcInfo& s) {   // arbitrary previous state, so the in-pl
     if (r32() % 2) { s.time.present = true; s.time.hasOffset = true; s.time.offsetHalfHours = -7; s.time.mjd = 1; }
     s.otherTypes = {3, 4};
 }
-static bool sdcEq(const D::SdcInfo& a, const D::SdcInfo& b) {
-    auto mux = [](const D::SdcMux& x, const D::SdcMux& y) { bool e = x.present == y.present && x.protA == y.protA && x.protB == y.protB && x.nStreams == y.nStreams; for (int i = 0; i < 4; i++) e = e && x.stream[i].lenA == y.stream[i].lenA && x.stream[i].lenB == y.stream[i].lenB; return e; };
-    bool e = a.afsIndex == b.afsIndex && a.entities == b.entities && mux(a.mux, b.mux) && mux(a.muxNext, b.muxNext) && a.otherTypes == b.otherTypes &&
-             a.time.present == b.time.present && a.time.mjd == b.time.mjd && a.time.hour == b.time.hour && a.time.minute == b.time.minute && a.time.hasOffset == b.time.hasOffset && a.time.offsetHalfHours == b.time.offsetHalfHours;
+static void addSdc(const D::SdcInfo& a) {
+    auto mux = [](const D::SdcMux& x) { dig.add(x.present, x.protA, x.protB, x.nStreams); for (int i = 0; i < 4; i++) dig.add(x.stream[i].lenA, x.stream[i].lenB); };
+    dig.add(a.afsIndex, a.entities, a.otherTypes, a.time.present, a.time.mjd, a.time.hour, a.time.minute, a.time.hasOffset, a.time.offsetHalfHours);
+    mux(a.mux); mux(a.muxNext);
     for (int i = 0; i < 4; i++) {
-        const auto &x = a.audio[i], &y = b.audio[i]; const auto &l = a.label[i], &m = b.label[i]; const auto &p = a.lang[i], &q = b.lang[i]; const auto &s = a.app[i], &t = b.app[i];
-        e = e && x.present == y.present && x.shortId == y.shortId && x.streamId == y.streamId && x.coding == y.coding && x.sbr == y.sbr && x.mode == y.mode && x.rateCode == y.rateCode && x.text == y.text && x.enhancement == y.enhancement && x.mps == y.mps && x.config == y.config;
-        e = e && l.present == m.present && l.shortId == m.shortId && l.textControl == m.textControl && l.text == m.text;
-        e = e && p.present == q.present && p.shortId == q.shortId && p.language == q.language && p.country == q.country;
-        e = e && s.present == t.present && s.shortId == t.shortId && s.streamId == t.streamId && s.packet == t.packet && s.domain == t.domain && s.dataUnit == t.dataUnit && s.packetId == t.packetId && s.packetLen == t.packetLen && s.appData == t.appData;
+        const auto &x = a.audio[i]; const auto &l = a.label[i]; const auto &p = a.lang[i]; const auto &s = a.app[i];
+        dig.add(x.present, x.shortId, x.streamId, x.coding, x.sbr, x.mode, x.rateCode, x.text, x.enhancement, x.mps, x.config);
+        dig.add(l.present, l.shortId, l.textControl, l.text);
+        dig.add(p.present, p.shortId, p.language, p.country);
+        dig.add(s.present, s.shortId, s.streamId, s.packet, s.domain, s.dataUnit, s.packetId, s.packetLen, s.appData);
     }
-    return e;
 }
 static void testSdc() {
     Buf f = genSdc();
     if (r32() % 3 == 0) { const int k = (int)(r32() % 3); for (int i = 0; i < k && !f.empty(); i++) f[r32() % f.size()] = (uint8_t)r32(); }
     if (r32() % 5 == 0) f.resize(r32() % (f.size() + 1));
     exact(f, [&](const uint8_t* p, size_t n) {
-        D::SdcInfo sa, sr; fillSdc(sa); sr = sa;
-        const int ca = A::sdcParse(p, (int)n, sa), cr = R::sdcParse(p, (int)n, sr);
-        SAME(ca == cr && sdcEq(sa, sr), "sdcParse n=%zu %d vs %d", n, ca, cr);
-        const int c2 = A::sdcParse(p, (int)n, sa), c3 = R::sdcParse(p, (int)n, sr);   // a second field refines the first
-        SAME(c2 == c3 && sdcEq(sa, sr), "sdcParse twice n=%zu", n);
+        D::SdcInfo sa; fillSdc(sa);
+        const int ca = A::sdcParse(p, (int)n, sa);
+        dig.add(ca); addSdc(sa);
+        const int c2 = A::sdcParse(p, (int)n, sa);   // a second field refines the first
+        dig.add(c2); addSdc(sa);
         okc[1] += ca > 0; okc[2] += !sa.otherTypes.empty();
     });
     // CRC block
@@ -125,13 +121,13 @@ static void testSdc() {
     uint32_t c = A::crc16(crcIn.data(), crcIn.size()); if (r32() % 4 == 0) c ^= 1 + r32() % 65535;
     putBits(blk, c, 16);
     if (r32() % 8 == 0) blk = flipBits(blk, 2);
-    exact(blk, [&](const uint8_t* p, size_t) { int aa = -1, ar = -2; const bool ba = A::sdcCheckBits(p, fb, aa), br = R::sdcCheckBits(p, fb, ar); SAME(ba == br && aa == ar, "sdcCheckBits"); okc[3] += ba; });
+    exact(blk, [&](const uint8_t* p, size_t) { int aa = -1; const bool ba = A::sdcCheckBits(p, fb, aa); dig.add(ba, aa); okc[3] += ba; });
 }
 
 // ---- audio super frame -----------------------------------------------------------------------------------------------------------------------------------
 static void testAac() {
-    for (int rate : {0, 12000, 24000, 48000, 16000}) for (int me = 0; me < 2; me++) SAME(A::aacNumFrames(me, rate) == R::aacNumFrames(me, rate), "numFrames");
-    for (int n = -2; n < 20; n++) SAME(A::aacHeaderBytes(n) == R::aacHeaderBytes(n), "headerBytes %d", n);
+    for (int rate : {0, 12000, 24000, 48000, 16000}) for (int me = 0; me < 2; me++) dig.add(A::aacNumFrames(me, rate));
+    for (int n = -2; n < 20; n++) dig.add(A::aacHeaderBytes(n));
     const int nf = (int)(r32() % 14 < 12 ? (r32() % 2 ? 5 : 10) : (int)(r32() % 20) - 2);
     const int hdr = A::aacHeaderBytes(nf), hp = (int)(r32() % 6), len = (int)(r32() % 3 == 0 ? r32() % 300 : 60 + r32() % 200);
     Buf lf; rnd(lf, (size_t)len);
@@ -143,10 +139,9 @@ static void testAac() {
     }
     const int lenA = r32() % 3 == 0 ? 0 : r32() % 4 == 0 ? (int)(r32() % 400) - 20 : hdr + nf * (hp + 1);
     exact(lf, [&](const uint8_t* p, size_t) {
-        D::AacSuperFrame a, r; const bool ba = A::aacSuperFrameParse(p, len, lenA, nf, a), br = R::aacSuperFrameParse(p, len, lenA, nf, r);
-        bool e = ba == br && a.numFrames == r.numFrames && a.headerOk == r.headerOk && a.hpBytes == r.hpBytes;
-        if (e && ba) { e = a.frames == r.frames && a.crc == r.crc; }
-        SAME(e, "aacParse n=%d len=%d lenA=%d ok %d/%d", nf, len, lenA, ba, br);
+        D::AacSuperFrame a; const bool ba = A::aacSuperFrameParse(p, len, lenA, nf, a);
+        dig.add(ba, a.numFrames, a.headerOk, a.hpBytes);
+        if (ba) dig.add(a.frames, a.crc);
         okc[4 + (ba ? 1 : 0)]++;
     });
 }
@@ -176,41 +171,41 @@ static Buf genText() {
 }
 static void testTables() {   // the tables are small: all values, once
     for (int c = -3; c < 40; c++) {
-        SAME(A::languageName(c) == R::languageName(c) && A::programmeTypeName(c) == R::programmeTypeName(c) && A::facAudioServices(c) == R::facAudioServices(c) && A::facDataServices(c) == R::facDataServices(c), "names %d", c);
-        for (int me = 0; me < 2; me++) SAME(A::mscModeName(me, c) == R::mscModeName(me, c) && A::occupancyName(me, c) == R::occupancyName(me, c), "mode names %d", c);
+        dig.add(A::languageName(c), A::programmeTypeName(c), A::facAudioServices(c), A::facDataServices(c));
+        for (int me = 0; me < 2; me++) dig.add(A::mscModeName(me, c), A::occupancyName(me, c));
     }
-    for (int dom = -1; dom < 4; dom++) for (int app = -2; app < 0x460; app++) SAME(A::appName(dom, app) == R::appName(dom, app), "appName %d %d", dom, app);
+    for (int dom = -1; dom < 4; dom++) for (int app = -2; app < 0x460; app++) dig.add(A::appName(dom, app));
 }
 
 static void testMisc() {
     for (int i = 0; i < 20; i++) {
         const int mjd = (int)(r32() % 200000) - 10000;
-        int y1, m1, d1, y2, m2, d2; A::mjdToDate(mjd, y1, m1, d1); R::mjdToDate(mjd, y2, m2, d2);
-        SAME(y1 == y2 && m1 == m2 && d1 == d2 && A::dateToMjd(y1, m1, d1) == R::dateToMjd(y1, m1, d1), "mjd %d", mjd);
+        int y1, m1, d1; A::mjdToDate(mjd, y1, m1, d1);
+        dig.add(y1, m1, d1, A::dateToMjd(y1, m1, d1));
     }
-    SAME(A::dateToMjd(2026, 10, 17) == 61330 && R::dateToMjd(2026, 10, 17) == 61330, "mjd value");
+    if (A::dateToMjd(2026, 10, 17) != 61330) { printf("mjd value\n"); abort(); }
     Buf bits; rnd(bits, r32() % 300); for (auto& x : bits) x &= 1;
-    exact(bits, [&](const uint8_t* p, size_t n) { SAME(A::crc8(p, n) == R::crc8(p, n) && A::crc16(p, n) == R::crc16(p, n), "crc bits n=%zu", n); });
+    exact(bits, [&](const uint8_t* p, size_t n) { dig.add(A::crc8(p, n), A::crc16(p, n)); });
     const Buf grp = genGroup();
-    exact(grp, [&](const uint8_t* p, size_t n) { size_t oa = 9, la = 9, orr = 8, lr = 8; const bool ba = A::groupPayload(p, n, oa, la), br = R::groupPayload(p, n, orr, lr); SAME(ba == br && (!ba || (oa == orr && la == lr)), "groupPayload n=%zu", n); okc[6] += ba; });
+    exact(grp, [&](const uint8_t* p, size_t n) { size_t oa = 9, la = 9; const bool ba = A::groupPayload(p, n, oa, la); dig.add(ba); if (ba) dig.add((uint64_t)oa, (uint64_t)la); okc[6] += ba; });
     const Buf txt = genText();
     exact(txt, [&](const uint8_t* p, size_t n) {
-        SAME(A::displayText(p, n) == R::displayText(p, n), "displayText n=%zu", n);
-        const bool la = A::looksText(p, n), lr = R::looksText(p, n); SAME(la == lr, "looksText n=%zu", n); okc[7] += la;
+        dig.add(A::displayText(p, n));
+        const bool la = A::looksText(p, n); dig.add(la); okc[7] += la;
     });
     // text message segments
     Buf seg; seg.push_back((uint8_t)(r32() & 0xFF)); const int need = A::textSegmentNeed(seg[0]);
-    SAME(need == R::textSegmentNeed(seg[0]), "textSegmentNeed");
+    dig.add(need);
     rnd(seg, (size_t)need - 1);
     { uint16_t c = 0xFFFF; for (int i = 0; i < need - 2; i++) { c ^= (uint16_t)(seg[(size_t)i] << 8); for (int k = 0; k < 8; k++) c = (c & 0x8000) ? (uint16_t)((c << 1) ^ 0x1021) : (uint16_t)(c << 1); } c = (uint16_t)~c; if (r32() % 4 == 0) c ^= (uint16_t)(1 + r32() % 65534); seg[(size_t)need - 2] = (uint8_t)(c >> 8); seg[(size_t)need - 1] = (uint8_t)c; }
-    exact(seg, [&](const uint8_t* p, size_t n) { const auto a = A::textSegment(p, n, need); const auto r = R::textSegment(p, n, need);
-        SAME(a.crcOk == r.crcOk && (!a.crcOk || (a.toggle == r.toggle && a.first == r.first && a.last == r.last && a.command == r.command && a.cmd == r.cmd && a.segnum == r.segnum && a.n == r.n)), "textSegment"); okc[8] += a.crcOk; });
+    exact(seg, [&](const uint8_t* p, size_t n) { const auto a = A::textSegment(p, n, need);
+        dig.add(a.crcOk); if (a.crcOk) dig.add(a.toggle, a.first, a.last, a.command, a.cmd, a.segnum, a.n); okc[8] += a.crcOk; });
 }
 
 int main() {
     const long iters = getenv("ONAIR_DIFF_ITERS") ? atol(getenv("ONAIR_DIFF_ITERS")) : 200000;
     testTables();
     for (long i = 0; i < iters; i++) { testFac(); testSdc(); testAac(); testMisc(); }
-    printf("drm proto: %ld checks, %ld mismatches (ok: fac %ld sdc %ld sdc-other %ld sdc-crc %ld aac bad %ld good %ld group %ld text %ld segment %ld)\n", checks, fails, okc[0], okc[1], okc[2], okc[3], okc[4], okc[5], okc[6], okc[7], okc[8]);
-    return fails ? 1 : 0;
+    printf("drm proto: ok: fac %ld sdc %ld sdc-other %ld sdc-crc %ld aac bad %ld good %ld group %ld text %ld segment %ld\n", okc[0], okc[1], okc[2], okc[3], okc[4], okc[5], okc[6], okc[7], okc[8]);
+    return golden::check("drm_proto_rs", dig, 0x9214822683311cdfull, !getenv("ONAIR_DIFF_ITERS"));
 }

@@ -45,7 +45,7 @@ void facBuild(const FacInfo& f, uint8_t* bits) {
     w.put(crc8(tmp, (size_t)cn), 8);
 }
 
-// The parsing of FAC, SDC, the text message segments and the audio super frame, and the descriptive tables, is drm_proto (Rust with DECT2_RUST_DRM).
+// The parsing of FAC, SDC, the text message segments and the audio super frame, and the descriptive tables, is drm_proto (Rust).
 bool facParse(const uint8_t* bits, bool modeE, FacInfo& f) { return drmp::facParse(bits, modeE, f); }
 
 int facAudioServices(int c) { return drmp::facAudioServices(c); }

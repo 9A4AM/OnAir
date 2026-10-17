@@ -9,7 +9,7 @@ void DrmPacketDemux::configure(int dataLen, int packetId) {
 }
 
 bool DrmPacketDemux::packet(const uint8_t* p, size_t sz, std::vector<uint8_t>& out) {
-    const dabp::DrmPacket k = dabp::drmPacket(p, sz);   // header fields and CRC-16 (dab_proto: Rust with DECT2_RUST_DAB)
+    const dabp::DrmPacket k = dabp::drmPacket(p, sz);   // header fields and CRC-16 (dab_proto: Rust)
     if (!k.crcOk) {
         badPackets++;
         if (on_) unitsDropped++;

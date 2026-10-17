@@ -11,7 +11,7 @@
 
 namespace dect2 {
 
-// The application names, the text helpers and the data group payload are drm_proto (Rust with DECT2_RUST_DRM).
+// The application names, the text helpers and the data group payload are drm_proto (Rust).
 const char* drmAppName(int domain, int app) {
     static std::mutex mu;
     static std::set<std::string> names;   // a stable pointer for each distinct name

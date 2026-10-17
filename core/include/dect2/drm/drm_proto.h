@@ -1,6 +1,6 @@
 // The pure parsing layer of the DRM signalling and data services (ETSI ES 201 980): FAC and SDC parsing and checks, the audio super frame split, the text message
-// segment check, the descriptive tables, MJD conversion and the data service helpers. The records are the ones of drm_msg.h. With DECT2_RUST_DRM these functions
-// are implemented by the Rust crate rust/onair_drm (drm_proto_rs.cpp), otherwise by drm_proto.cpp. MOT and the packet mode headers are in dab_proto.h.
+// segment check, the descriptive tables, MJD conversion and the data service helpers. The records are the ones of drm_msg.h. These functions
+// are implemented by the Rust crate rust/onair_drm (drm_proto_rs.cpp). MOT and the packet mode headers are in dab_proto.h.
 #pragma once
 #include "drm_msg.h"
 #include <cstddef>

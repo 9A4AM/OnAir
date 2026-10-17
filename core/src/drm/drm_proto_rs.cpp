@@ -1,6 +1,5 @@
-// drm_proto.h on top of the Rust crate rust/onair_drm (DECT2_RUST_DRM): the FAC / SDC / super frame records of drm_msg.h are copied to and from the plain C
-// records of the crate (the SDC parser works in place on them, like the C++ one on SdcInfo). Empty when the crate is not built.
-#ifdef DECT2_RUST_DRM
+// drm_proto.h on top of the Rust crate rust/onair_drm: the FAC / SDC / super frame records of drm_msg.h are copied to and from the plain C
+// records of the crate (the SDC parser works in place on them).
 #include "dect2/drm/drm_proto.h"
 #include "dect2/rs/drm.h"
 #include <algorithm>
@@ -164,4 +163,3 @@ TextSeg textSegment(const uint8_t* seg, size_t n, int need) {
 }
 
 } // namespace dect2::drmp
-#endif
