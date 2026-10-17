@@ -2366,6 +2366,17 @@ Drift: %+.3f ppm per minute	Drift: %+.3f ppm pro Minute
 Translate to English	Auf Englisch übersetzen
 Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	Sprache in einer anderen Sprache wird zusätzlich offline ins Englische übersetzt, neben dem Original. Braucht ein mehrsprachiges Modell und kostet etwa 1,5-mal so viel Rechenzeit; wird übersprungen, wenn die Engine nicht mehr mitkommt. Es wird nichts versendet. Übersetzung in andere Sprachen gibt es nicht.
 The loaded model is English only: translation needs a multilingual model.	Das geladene Modell ist nur Englisch: Übersetzung braucht ein mehrsprachiges Modell.
+Live: stop the room	Live: Raum beenden
+Copy room link	Raumlink kopieren
+Host PIN (to moderate on the room page):	Host-PIN (zum Moderieren auf der Raumseite):
+Go live (Live rooms)...	Live gehen (Live-Räume)...
+Could not create the room	Der Raum konnte nicht erstellt werden
+Lost the connection to the rooms server	Verbindung zum Raum-Server verloren
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Live-Räume: Solange du live bist, kann jeder mit dem Raumlink das Wasserfalldiagramm dieses Empfängers, den Modus und die eingestellte Frequenz sehen und miteinander chatten. Die Raumliste im Web zeigt auch den Titel. Vor dem Klick auf Live gehen wird nichts gesendet, und nach dem Ende des Raums wird nichts gespeichert. Dein Standort, dein Name und der Ton werden nie gesendet.
+Room title	Raumtitel
+Also show decoded ACARS text in the room (public)	Auch dekodierten ACARS-Text im Raum zeigen (öffentlich)
+Needs Server > Send data to map server and Also share interesting ACARS messages.	Benötigt Server > Daten an Kartenserver senden und Auch interessante ACARS-Nachrichten teilen.
+Go live	Live gehen
 Schedule passes by itself	Durchgänge selbst planen
 Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Nimmt die Durchgänge der angehakten Gruppen nacheinander auf, höchste Priorität zuerst, und startet, stimmt ab und nimmt jeden ohne dein Zutun auf. Überlappende Durchgänge werden gekürzt oder übersprungen; ein von dir gestarteter Empfänger bleibt unberührt.
 Priority (higher wins)	Priorität (höher gewinnt)

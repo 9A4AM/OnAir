@@ -2366,6 +2366,17 @@ Drift: %+.3f ppm per minute	Dreifas: %+.3f ppm per minutę
 Translate to English	Versti į anglų kalbą
 Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	Kita kalba sakoma kalba papildomai verčiama į anglų kalbą, neprisijungus, šalia originalo. Reikia daugiakalbio modelio, procesoriaus laiko sunaudojama apie 1,5 karto daugiau; praleidžiama, kai variklis nespėja. Niekas nesiunčiama. Vertimo į kitas kalbas nėra.
 The loaded model is English only: translation needs a multilingual model.	Įkeltas modelis tik anglų kalbos: vertimui reikia daugiakalbio modelio.
+Live: stop the room	Gyvai: sustabdyti kambarį
+Copy room link	Kopijuoti kambario nuorodą
+Host PIN (to moderate on the room page):	Šeimininko PIN (moderuoti kambario puslapyje):
+Go live (Live rooms)...	Pradėti transliaciją (Gyvi kambariai)...
+Could not create the room	Nepavyko sukurti kambario
+Lost the connection to the rooms server	Prarastas ryšys su kambarių serveriu
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Gyvi kambariai: kol transliuojate, kiekvienas, turintis kambario nuorodą, gali matyti šio imtuvo krioklio diagramą, režimą ir derinamą dažnį bei kalbėtis tarpusavyje. Kambarių sąraše internete rodomas ir jo pavadinimas. Kol nenuspausite Pradėti transliaciją, niekas nesiunčiama, o kambariui pasibaigus nieko nelieka saugoma. Jūsų vieta, vardas ir garsas niekada nesiunčiami.
+Room title	Kambario pavadinimas
+Also show decoded ACARS text in the room (public)	Rodyti kambaryje ir dekoduotą ACARS tekstą (viešai)
+Needs Server > Send data to map server and Also share interesting ACARS messages.	Reikia: Serveris > Siųsti duomenis žemėlapio serveriui ir Dalytis ir įdomiais ACARS pranešimais.
+Go live	Pradėti transliaciją
 Schedule passes by itself	Praskridimus planuoti automatiškai
 Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Paimia pažymėtų grupių praskridimus po vieną, pirma aukščiausio prioriteto, ir pats paleidžia, sutaiko bei įrašo kiekvieną. Persidengiantys praskridimai sutrumpinami arba praleidžiami; pats paleistas imtuvas neliečiamas.
 Priority (higher wins)	Prioritetas (didesnis laimi)

@@ -49,6 +49,8 @@ std::string dataDir();
 bool fetchUrl(const std::string& url, const std::string& file, const std::string& userAgent);
 // POST of UTF-8 JSON (Content-Type: application/json), same curl program. False when it did not work (including HTTP 4xx/5xx).
 bool postJson(const std::string& url, const std::string& json, const std::string& userAgent);
+// The same, and the response body (up to 64 KB) in reply. The Live rooms feature needs the room id and token the server answers with.
+bool postJsonReply(const std::string& url, const std::string& json, const std::string& userAgent, std::string& reply);
 // Starts a program with arguments and does not wait for it. No shell is ever involved: every argument stays one argument. False and err when it did not start.
 bool spawnProgram(const std::string& program, const std::vector<std::string>& args, std::string& err);
 // A desktop notification (Notification Center on macOS, a toast on Windows, notify-send on Linux when installed). False when the system could not show one.

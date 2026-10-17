@@ -2349,6 +2349,17 @@ Drift: %+.3f ppm per minute	Deriva: %+.3f ppm al minuto
 Translate to English	Traduci in inglese
 Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	Il parlato in un'altra lingua viene tradotto anche in inglese, offline, accanto all'originale. Richiede un modello multilingue e costa circa 1,5 volte più tempo di processore; viene saltato quando il motore non regge. Non viene inviato nulla. La traduzione in altre lingue non è disponibile.
 The loaded model is English only: translation needs a multilingual model.	Il modello caricato è solo inglese: la traduzione richiede un modello multilingue.
+Live: stop the room	In diretta: ferma la stanza
+Copy room link	Copia il link della stanza
+Host PIN (to moderate on the room page):	PIN dell'host (per moderare dalla pagina della stanza):
+Go live (Live rooms)...	Vai in diretta (Stanze live)...
+Could not create the room	Impossibile creare la stanza
+Lost the connection to the rooms server	Connessione al server delle stanze persa
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Stanze live: finché sei in diretta, chiunque abbia il link della stanza può vedere la cascata di questo ricevitore, la modalità e la frequenza sintonizzata, e chattare con gli altri. L'elenco delle stanze sul web mostra anche il titolo. Non viene inviato nulla prima di premere Vai in diretta e nulla viene conservato dopo la fine della stanza. La tua posizione, il tuo nome e l'audio non vengono mai inviati.
+Room title	Titolo della stanza
+Also show decoded ACARS text in the room (public)	Mostra anche il testo ACARS decodificato nella stanza (pubblico)
+Needs Server > Send data to map server and Also share interesting ACARS messages.	Richiede Server > Invia dati al server della mappa e Condividi anche i messaggi ACARS interessanti.
+Go live	Vai in diretta
 Schedule passes by itself	Pianifica i passaggi da solo
 Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Prende i passaggi dei gruppi spuntati uno alla volta, prima la priorità più alta, e avvia, sintonizza e registra ciascuno senza di te. I passaggi sovrapposti vengono accorciati o saltati; un ricevitore avviato da te non viene toccato.
 Priority (higher wins)	Priorità (la più alta vince)
