@@ -2052,3 +2052,7 @@ How to install	Cómo instalar
 The services, signal information and data work without it.	Los servicios, la información de la señal y los datos funcionan sin él.
 Interface and windows	Interfaz y ventanas
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Ver cambia el diseño (Sidebar, Scope, Tiles, Faceplate, Panel), la interfaz clásica, el tamaño del texto y la paleta; la interfaz táctil está en Herramientas. Ventanas como Frecuencias, Escáner de barrido, Radiogoniómetro y Automatizaciones se abren desde aquí.
+Save CADU	Guardar CADU
+Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Cada trama que pasa Reed-Solomon, como CADU de 1024 bytes en <carpeta de datos>/goes/frames.cadu (el mismo tipo de archivo que escribe SatDump), para comparar decodificadores
+Open CADU	Abrir CADU
+Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Decodifica un archivo .cadu (tramas de 1024 bytes, de este programa o de SatDump) con Reed-Solomon, los paquetes y los archivos; GOES HRIT debe estar en marcha

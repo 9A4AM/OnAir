@@ -2052,3 +2052,7 @@ How to install	安装方法
 The services, signal information and data work without it.	没有它,服务、信号信息和数据仍可正常使用。
 Interface and windows	界面与窗口
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	“视图”菜单可切换布局（Sidebar、Scope、Tiles、Faceplate、Panel）、经典界面、文字大小和配色；触控界面位于“工具”下。频率、扫频扫描器、测向和自动化等窗口也从这里打开。
+Save CADU	保存 CADU
+Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	把每个通过 Reed-Solomon 的帧按 1024 字节 CADU 写入 <数据文件夹>/goes/frames.cadu(与 SatDump 写出的文件同类),用于比较解码器
+Open CADU	打开 CADU
+Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	把 .cadu 文件(1024 字节帧,来自本程序或 SatDump)依次送过 Reed-Solomon、数据包和文件解码;GOES HRIT 必须在运行
