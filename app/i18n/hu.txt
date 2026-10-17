@@ -2190,6 +2190,53 @@ Forget the history	Előzmények törlése
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Amit ez a vevő hallott, sávonként: jeladók (NCDXF/IARU, Long Dashes, egybetűs jeladók, vivők) és a HF digitális képernyőn dekódolt FT8 / FT4 / FT2 / WSPR állomások. Egy sáv nyitott, ha az utolsó 30 percben legalább 3 állomást hallottunk. Csak a saját vevő: semmit nem töltünk le, ezért nincs napsugárzási fluxus és K-index.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Az utolsó 30 percben semmi nem hallatszott: indítsd el a HF jeladókat vagy a HF digitális képernyőt, és hagyd futni.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Utolsó 24 óra (UTC), 15 perces cellák, sötétebb: kevesebb állomás
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s ezeket az engedélyeket kéri:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	A bővítmény összeomlása vagy lefagyása ilyenkor csak a segédfolyamatát állítja le. A bővítmény következő indításakor lép érvénybe.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Dekóderek és műveletek hozzáadása az OnAir újrafordítása nélkül: bővítmények telepítése, engedélyezése és beállítása
+Add-ons	Bővítmények
+Allow	Engedélyez
+Asks for	Kéri
+Asks for no permissions.	Nem kér engedélyt.
+Community plugins	Közösségi bővítmények
+Do not allow	Nem engedélyez
+Enabled	Engedélyezve
+Files: read and write its own data folder	Fájlok: olvashatja és írhatja a saját adatmappáját
+Install from file...	Telepítés fájlból...
+Installed	Telepítve
+Kind	Fajta
+Map points	Térképpontok
+Modes (in the mode list, group PLUGINS)	Módok (a módlistában, PLUGINS csoport)
+Network: talk to other computers	Hálózat: kommunikálhat más számítógépekkel
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Nincs telepített bővítmény. Használja a „Telepítés fájlból” gombot, vagy másoljon egy bővítménymappát a bővítmények mappájába. A bővítmény egy .onairplugin fájl.
+Not installed	Nincs telepítve
+Open its folder	Mappájának megnyitása
+PLUGINS	BŐVÍTMÉNYEK
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	Az engedélyek azt jelentik, mit ad át az OnAir a bővítménynek. Az OnAiren belül futó bővítmény ettől még maga is használhatja a rendszert: csak megbízható bővítményt telepítsen, vagy futtassa segédfolyamatban.
+Plugin idle	A bővítmény tétlen
+Plugin log	Bővítménynapló
+Plugin modes run on receiver 1.	A bővítménymódok az 1. vevőn futnak.
+Plugin running	A bővítmény fut
+Plugins	Bővítmények
+Plugins are not available on this receiver.	A bővítmények ezen a vevőn nem érhetők el.
+Plugins...	Bővítmények...
+Programs: start other programs	Programok: más programokat indíthat
+Recording: save audio or IQ	Felvétel: hang vagy IQ mentése
+Refresh	Frissítés
+Results the plugin sent beyond the limits	A bővítmény határon túli eredményei
+Run in a helper process	Futtatás segédfolyamatban
+Safe mode (no plugins)	Biztonságos mód (bővítmények nélkül)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	A biztonságos mód be van kapcsolva: a bővítmények ki vannak kapcsolva. A kilépéshez nyissa meg a Bővítmények módot.
+Safe mode: all plugins are switched off.	Biztonságos mód: minden bővítmény ki van kapcsolva.
+Select a plugin.	Válasszon egy bővítményt.
+Sound: play audio through the program	Hang: hang lejátszása a programon keresztül
+The plugin was switched off after a failure. See its log in the Plugins mode.	A bővítményt hiba után kikapcsoltuk. A naplója a Bővítmények módban látható.
+This plugin is off.	Ez a bővítmény ki van kapcsolva.
+This plugin mode is not installed any more.	Ez a bővítménymód már nincs telepítve.
+Try plugins again	Bővítmények újrapróbálása
+Turn it on	Bekapcsolás
+blocks	blokk
+by	készítő:
 # radio astronomy toolkit
 %d bins flagged in the last spectrum	%d csatorna megjelölve az utolsó spektrumban
 Add spectrum at the target l	Spektrum hozzáadása a cél l értékén
