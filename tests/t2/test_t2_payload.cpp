@@ -197,10 +197,9 @@ int main() {
         // Hz, which left the frame-closing symbol (no continual pilots, so no phase tracking) several radians off. 256QAM 2/3 as on air.
         {"32K GI 1/16 PP4 256QAM DC -10 dB", 0, false, 3, 2, true, 3, 24, 8, 5, 1, 3, false, 2, -12000, 58, -10},
         {"16K ext PP1 GI 1/4 64QAM 3/5", 0, false, 2, 1, true, 2, 22, 8, 4, 3, 0, true, 2, 0, 0, -999, 0, 3, true},
-        // The 642 MHz recording that never got an L1-post: echoes out to 135 samples plus a weak one far out in the guard interval widen the span
-        // the P2 stage keeps for the channel estimate to 2100 samples, with the main path at its edge; the lowpass that cuts the window then
-        // attenuated that path and the 64-QAM L1-post failed its LDPC (rate 1/2, 250 cells) although the BPSK L1-pre was fine.
-        {"16K ext PP1 GI 1/4 echoes, 64QAM L1", 0, false, 0, 0, true, 2, 30, 8, 4, 3, 0, true, 2, 0, 0, -999, 2, 3, true},
+        // A real 8 MHz 16K ext PP1 GI 1/4 mux (64-QAM L1-post, 64-QAM 3/5 data) seen through echoes out to 135 samples, a weak one far out in the guard
+        // interval (which widens the delay span the P2 stage keeps) and a -29 Hz carrier offset: L1-pre, L1-post and every data block must decode
+        {"16K ext PP1 GI 1/4 echoes, 64QAM L1", 0, false, 2, 1, true, 2, 26, 8, 4, 3, 0, true, 2, -29, 0, -999, 2,  3, true},
         {"8K GI 1/8 PP2 -100 ppm",       0, false, 2, 2, true, 3, 22, 8, 1, 2, 1, false, 2, 0, -100},
     };
     // the cases are independent: each one runs on its own thread, the output keeps the order of the cases
