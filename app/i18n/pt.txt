@@ -2121,6 +2121,59 @@ Peak dB above floor	Pico dB acima do ruído
 Quietest slots	Faixas mais calmas
 From MHz	De MHz
 Width kHz	Largura kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Escolha um programa para ver os detalhes.
+Cancel recording	Cancelar gravação
+Record	Gravar
+Stop series	Parar série
+Record series	Gravar série
+The broadcaster sends no series identifier for this programme.	A emissora não envia identificador de série para este programa.
+No reminder	Sem lembrete
+Remind me	Lembrar-me
+Watch	Assistir
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	Sintonizadores insuficientes: coincide com uma gravação noutro múltiplex e não será gravado.
+No description broadcast.	Nenhuma descrição transmitida.
+Waiting for the service list...	A aguardar a lista de serviços...
+Search title or description	Procurar título ou descrição
+This multiplex only	Apenas este múltiplex
+time zone:	fuso horário:
+this computer	este computador
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Ainda não foi recebida informação de programação. As emissoras enviam-na nas tabelas EIT, repetidas a cada poucos segundos (agora/seguinte) ou minutos (programação). Alguns múltiplex não enviam nenhuma.
+Opening the recording...	A abrir a gravação...
+Pause (timeshift)	Pausa (timeshift)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Congela a TV em direto e continua a gravá-la no disco, para retomar ou recuar.
+buffered	em buffer
+Timeshift	Timeshift
+Play	Reproduzir
+behind live	atrás do direto
+Live	Direto
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	As gravações só funcionam com o OnAir aberto e o computador ativo; um computador em suspensão não grava nada. Os serviços cifrados são gravados tal como chegam, sem serem decifrados. Apenas para uso pessoal.
+Scheduled	Agendadas
+recording	a gravar
+conflict	conflito
+any multiplex	qualquer múltiplex
+series	série
+waiting for the tuner	a aguardar o sintonizador
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Nada agendado. Escolha um programa no guia ou adicione uma gravação manual abaixo.
+Manual recording	Gravação manual
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Começa a esta hora (hoje, ou amanhã se já passou), sem margem.
+Recorded	Gravadas
+No recordings yet.	Ainda não há gravações.
+Export	Exportar
+Delete this recording and its subtitle files?	Eliminar esta gravação e os seus ficheiros de legendas?
+free	livres
+Recorder settings	Definições do gravador
+Folder	Pasta
+Start earlier (s)	Começar mais cedo (s)
+End later (s)	Terminar mais tarde (s)
+Tuners	Sintonizadores
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Quantos múltiplex diferentes podem ser recebidos ao mesmo tempo. Os serviços do mesmo múltiplex gravam-se sempre em conjunto.
+Keep free (GB)	Manter livre (GB)
+Stop after signal loss (s, 0 = never)	Parar após perda de sinal (s, 0 = nunca)
+Save teletext subtitles next to recordings (.srt, .vtt)	Guardar legendas de teletexto junto às gravações (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Sintonizar o canal de uma gravação agendada quando começa
+Timeshift buffer on disk	Buffer de timeshift em disco
+minutes	minutos
 Propagation	Propagação
 open	aberta
 marginal	marginal
@@ -2134,6 +2187,53 @@ Forget the history	Apagar o histórico
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	O que este recetor ouviu, por banda: balizas (NCDXF/IARU, Long Dashes, letras soltas, portadoras) e as estações FT8 / FT4 / FT2 / WSPR descodificadas no ecrã HF digital. Uma banda está aberta quando foram ouvidas pelo menos 3 estações nos últimos 30 minutos. Só o recetor próprio: nada é descarregado, por isso não há fluxo solar nem índice K.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Nada ouvido nos últimos 30 minutos: inicie as balizas HF ou o ecrã HF digital e deixe-o a funcionar.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Últimas 24 horas (UTC), células de 15 minutos, mais escuro: menos estações
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s pede estas permissões:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	Uma falha ou bloqueio do plugin termina apenas o seu processo auxiliar. Aplica-se na próxima vez que o plugin iniciar.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Adicione decodificadores e ações sem recompilar o OnAir: instale, ative e configure plugins
+Add-ons	Extensões
+Allow	Permitir
+Asks for	Pede
+Asks for no permissions.	Não pede permissões.
+Community plugins	Plugins da comunidade
+Do not allow	Não permitir
+Enabled	Ativado
+Files: read and write its own data folder	Ficheiros: ler e escrever na sua própria pasta de dados
+Install from file...	Instalar a partir de um ficheiro...
+Installed	Instalado
+Kind	Tipo
+Map points	Pontos do mapa
+Modes (in the mode list, group PLUGINS)	Modos (na lista de modos, grupo PLUGINS)
+Network: talk to other computers	Rede: comunicar com outros computadores
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Nenhum plugin instalado. Use «Instalar a partir de um ficheiro» ou copie a pasta de um plugin para a pasta de plugins. Um plugin é um ficheiro .onairplugin.
+Not installed	Não instalado
+Open its folder	Abrir a sua pasta
+PLUGINS	PLUGINS
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	As permissões definem o que o OnAir entrega ao plugin. Um plugin executado dentro do OnAir ainda pode usar o sistema por si: instale plugins de confiança ou execute-os num processo auxiliar.
+Plugin idle	Plugin inativo
+Plugin log	Registo do plugin
+Plugin modes run on receiver 1.	Os modos de plugin funcionam no receptor 1.
+Plugin running	Plugin em execução
+Plugins	Plugins
+Plugins are not available on this receiver.	Os plugins não estão disponíveis neste receptor.
+Plugins...	Plugins...
+Programs: start other programs	Programas: iniciar outros programas
+Recording: save audio or IQ	Gravação: guardar áudio ou IQ
+Refresh	Atualizar
+Results the plugin sent beyond the limits	Resultados do plugin acima dos limites
+Run in a helper process	Executar num processo auxiliar
+Safe mode (no plugins)	Modo seguro (sem plugins)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	O modo seguro está ativo: os plugins estão desligados. Abra o modo Plugins para sair.
+Safe mode: all plugins are switched off.	Modo seguro: todos os plugins estão desligados.
+Select a plugin.	Selecione um plugin.
+Sound: play audio through the program	Som: reproduzir áudio através do programa
+The plugin was switched off after a failure. See its log in the Plugins mode.	O plugin foi desligado após uma falha. Veja o seu registo no modo Plugins.
+This plugin is off.	Este plugin está desligado.
+This plugin mode is not installed any more.	Este modo de plugin já não está instalado.
+Try plugins again	Tentar os plugins novamente
+Turn it on	Ativá-lo
+blocks	blocos
+by	por
 # radio astronomy toolkit
 %d bins flagged in the last spectrum	%d canais marcados no último espectro
 Add spectrum at the target l	Adicionar espectro na l do alvo
@@ -2211,3 +2311,22 @@ Identify selected	Identificar a selecionada
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Sintoniza o rádio no sinal selecionado e diz o que é (o recetor tem de estar num modo cuja taxa de amostragem o abranja)
 Also share GPS interference cells (counts per area, no aircraft)	Partilhar também células de interferência GPS (contagens por zona, sem aeronaves)
 For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	Para cada quadrado de 0,5 graus (cerca de 55 km) à volta do seu recetor ADS-B: quantas aeronaves foram ouvidas na última hora e quantas indicaram uma má posição GPS. Só estes dois números por quadrado são enviados, nunca identidades de aeronaves, rastos nem a sua localização. Alimenta a camada de interferência GPS do mapa público e é um indício, não uma prova de interferência. Desligado até o escolher.
+Calibrate...	Calibrar...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	Medir o erro de frequência deste rádio com uma estação FM ou uma portadora de frequência conhecida
+Frequency calibration	Calibração de frequência
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Mede quanto o relógio deste rádio se desvia de um sinal de frequência conhecida e define a correção em ppm.
+Not with a converter in front of the radio.	Não com um conversor à frente do rádio.
+Start the receiver first.	Inicie primeiro o recetor.
+FM station (stereo pilot) at the tuned frequency	Estação FM (piloto estéreo) na frequência sintonizada
+Carrier of known frequency (MHz)	Portadora de frequência conhecida (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Sintonize primeiro uma estação FM forte. O piloto de uma estação nem sempre é exato: repita em duas ou três estações.
+Ready.	Pronto.
+Looking for a reference signal.	A procurar um sinal de referência.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	A medir: %+.2f ppm, incerteza %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Concluído: %+.2f ppm (incerteza %.2f ppm).
+No usable reference signal was found.	Não foi encontrado nenhum sinal de referência utilizável.
+Apply %+.2f ppm	Aplicar %+.2f ppm
+Current setting: %.2f ppm	Definição atual: %.2f ppm
+No measurements of this radio yet.	Ainda não há medições deste rádio.
+History of this radio (ppm)	Histórico deste rádio (ppm)
+Drift: %+.3f ppm per minute	Deriva: %+.3f ppm por minuto

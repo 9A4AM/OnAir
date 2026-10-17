@@ -399,7 +399,7 @@ void setDbmOffset(const App& a, float db) {
 void ingestRx(App& a) {
     double now = glfwGetTime();
     if (a.engine.running() && now - a.tsT > 0.25) {
-        a.ts = a.engine.tsSnapshot(); a.bb = a.engine.bbStats(); a.tsT = now;
+        a.ts = a.engine.tsSnapshot(); tvRecOverrideTs(a); a.bb = a.engine.bbStats(); a.tsT = now;
         if (a.engine.multiChannelActive()) a.mtvSvc = a.engine.multiServices(); else a.mtvSvc.clear();
     }
     RxTelemetry t;

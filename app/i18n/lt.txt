@@ -2138,6 +2138,59 @@ Peak dB above floor	Pikas dB virš triukšmo
 Quietest slots	Ramiausi intervalai
 From MHz	Nuo MHz
 Width kHz	Plotis kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Pasirinkite laidą, kad pamatytumėte išsamią informaciją.
+Cancel recording	Atšaukti įrašymą
+Record	Įrašyti
+Stop series	Nutraukti serialą
+Record series	Įrašyti serialą
+The broadcaster sends no series identifier for this programme.	Transliuotojas nesiunčia šios laidos serialo identifikatoriaus.
+No reminder	Be priminimo
+Remind me	Priminti
+Watch	Žiūrėti
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	Nepakanka imtuvų: sutampa su įrašymu kitame multipleksuose, todėl nebus įrašyta.
+No description broadcast.	Aprašymas netransliuojamas.
+Waiting for the service list...	Laukiama paslaugų sąrašo...
+Search title or description	Ieškoti pavadinimo ar aprašymo
+This multiplex only	Tik šis multipleksas
+time zone:	laiko juosta:
+this computer	šis kompiuteris
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Programos informacija dar negauta. Transliuotojai ją siunčia EIT lentelėse, kurios kartojamos kas kelias sekundes (dabar/toliau) ar kas kelias minutes (tvarkaraštis). Kai kurie multipleksai jos nesiunčia visai.
+Opening the recording...	Atidaromas įrašas...
+Pause (timeshift)	Pauzė (laiko poslinkis)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Sustabdo tiesioginę TV ir toliau įrašo ją į diską, kad galėtumėte tęsti ar atsukti atgal.
+buffered	buferyje
+Timeshift	Laiko poslinkis
+Play	Groti
+behind live	atsilieka nuo tiesioginės
+Live	Tiesiogiai
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	Įrašymas vyksta tik kol OnAir atidarytas ir kompiuteris nemiega; miegantis kompiuteris nieko neįrašo. Užšifruotos paslaugos įrašomos tokios, kokios gaunamos, ir neiššifruojamos. Tik asmeniniam naudojimui.
+Scheduled	Suplanuota
+recording	įrašoma
+conflict	konfliktas
+any multiplex	bet kuris multipleksas
+series	serialas
+waiting for the tuner	laukia imtuvo
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Nieko nesuplanuota. Pasirinkite laidą vadove arba apačioje pridėkite rankinį įrašymą.
+Manual recording	Rankinis įrašymas
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Prasideda šiuo laiku (šiandien, o jei jau praėjo – rytoj), be atsargos.
+Recorded	Įrašyta
+No recordings yet.	Įrašų dar nėra.
+Export	Eksportuoti
+Delete this recording and its subtitle files?	Ištrinti šį įrašą ir jo subtitrų failus?
+free	laisva
+Recorder settings	Įrašymo nustatymai
+Folder	Aplankas
+Start earlier (s)	Pradėti anksčiau (s)
+End later (s)	Baigti vėliau (s)
+Tuners	Imtuvai
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Kiek skirtingų multipleksų galima priimti vienu metu. To paties multiplekso paslaugos visada įrašomos kartu.
+Keep free (GB)	Palikti laisvos (GB)
+Stop after signal loss (s, 0 = never)	Sustoti dingus signalui (s, 0 = niekada)
+Save teletext subtitles next to recordings (.srt, .vtt)	Išsaugoti teleteksto subtitrus šalia įrašų (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Prasidėjus suplanuotam įrašymui, persijungti į jo kanalą
+Timeshift buffer on disk	Laiko poslinkio buferis diske
+minutes	minutės
 Propagation	Sklaida
 open	atidaryta
 marginal	ribinė
@@ -2151,6 +2204,53 @@ Forget the history	Išvalyti istoriją
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Ką šis imtuvas girdėjo pagal diapazoną: švyturiai (NCDXF/IARU, Long Dashes, pavienės raidės, nešlys) ir HF skaitmeniniame ekrane dekoduotos FT8 / FT4 / FT2 / WSPR stotys. Diapazonas atidarytas, kai per paskutines 30 minučių išgirstos bent 3 stotys. Tik savo imtuvas: nieko neatsisiunčiama, todėl nėra saulės srauto ir K indekso.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Per paskutines 30 minučių nieko negirdėta: paleiskite HF švyturius arba HF skaitmeninį ekraną ir palikite veikti.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Paskutinės 24 valandos (UTC), 15 minučių langeliai, tamsiau: mažiau stočių
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s prašo šių leidimų:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	Įskiepio strigimas ar luzimas tada nutraukia tik jo pagalbinį procesą. Įsigalioja kitą kartą paleidus įskiepį.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Pridėkite dekoderių ir veiksmų neperkompiliuodami OnAir: įdiekite, įjunkite ir sukonfigūruokite įskiepius
+Add-ons	Papildiniai
+Allow	Leisti
+Asks for	Prašo
+Asks for no permissions.	Neprašo jokių leidimų.
+Community plugins	Bendruomenės įskiepiai
+Do not allow	Neleisti
+Enabled	Įjungta
+Files: read and write its own data folder	Failai: skaityti ir rašyti savo duomenų aplanke
+Install from file...	Įdiegti iš failo...
+Installed	Įdiegta
+Kind	Rūšis
+Map points	Žemėlapio taškai
+Modes (in the mode list, group PLUGINS)	Režimai (režimų sąraše, grupė PLUGINS)
+Network: talk to other computers	Tinklas: bendrauti su kitais kompiuteriais
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Įskiepių neįdiegta. Naudokite „Įdiegti iš failo“ arba nukopijuokite įskiepio aplanką į įskiepių aplanką. Įskiepis yra .onairplugin failas.
+Not installed	Neįdiegta
+Open its folder	Atidaryti jo aplanką
+PLUGINS	ĮSKIEPIAI
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	Leidimai nusako, ką OnAir suteikia įskiepiui. OnAir viduje veikiantis įskiepis vis tiek gali pats naudotis sistema: diekite tik patikimus įskiepius arba paleiskite juos pagalbiniame procese.
+Plugin idle	Įskiepis neveikia
+Plugin log	Įskiepio žurnalas
+Plugin modes run on receiver 1.	Įskiepių režimai veikia 1 imtuve.
+Plugin running	Įskiepis veikia
+Plugins	Įskiepiai
+Plugins are not available on this receiver.	Šiame imtuve įskiepiai nepasiekiami.
+Plugins...	Įskiepiai...
+Programs: start other programs	Programos: paleisti kitas programas
+Recording: save audio or IQ	Įrašymas: išsaugoti garsą ar IQ
+Refresh	Atnaujinti
+Results the plugin sent beyond the limits	Įskiepio rezultatai virš ribų
+Run in a helper process	Vykdyti pagalbiniame procese
+Safe mode (no plugins)	Saugusis režimas (be įskiepių)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	Saugusis režimas įjungtas: įskiepiai išjungti. Norėdami išeiti, atidarykite režimą Įskiepiai.
+Safe mode: all plugins are switched off.	Saugusis režimas: visi įskiepiai išjungti.
+Select a plugin.	Pasirinkite įskiepį.
+Sound: play audio through the program	Garsas: leisti garsą per programą
+The plugin was switched off after a failure. See its log in the Plugins mode.	Įskiepis po gedimo išjungtas. Jo žurnalą rasite režime Įskiepiai.
+This plugin is off.	Šis įskiepis išjungtas.
+This plugin mode is not installed any more.	Šis įskiepio režimas nebeįdiegtas.
+Try plugins again	Bandyti įskiepius dar kartą
+Turn it on	Įjungti
+blocks	blokai
+by	autorius
 # radio astronomy toolkit
 %d bins flagged in the last spectrum	%d kanalų pažymėta paskutiniame spektre
 Add spectrum at the target l	Pridėti spektrą ties tikslo l
@@ -2228,3 +2328,22 @@ Identify selected	Atpažinti pažymėtą
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Suderina radiją su pažymėtu signalu ir pasako, kas tai yra (imtuvas turi veikti režimu, kurio atrankos dažnis jį apima)
 Also share GPS interference cells (counts per area, no aircraft)	Taip pat dalytis GPS trikdžių langeliais (skaičiai pagal plotą, be orlaivių)
 For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	Kiekvienam 0,5 laipsnio kvadratui (apie 55 km) aplink jūsų ADS-B imtuvą: kiek orlaivių buvo išgirsta per paskutinę valandą ir kiek iš jų pranešė apie blogą GPS padėtį. Siunčiami tik šie du skaičiai kiekvienam kvadratui, niekada orlaivių tapatybės, trasos ar jūsų vieta. Tai maitina viešo žemėlapio GPS trikdžių sluoksnį ir yra požymis, o ne įrodymas, kad slopinama. Išjungta, kol pasirinksite.
+Calibrate...	Kalibruoti...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	Išmatuoti šio radijo dažnio paklaidą pagal FM stotį arba žinomo dažnio nešlį
+Frequency calibration	Dažnio kalibravimas
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Išmatuoja, kiek šio radijo taktas nukrypsta nuo žinomo dažnio signalo, ir nustato ppm pataisą.
+Not with a converter in front of the radio.	Netinka, jei prieš radiją yra keitiklis.
+Start the receiver first.	Pirmiausia paleiskite imtuvą.
+FM station (stereo pilot) at the tuned frequency	FM stotis (stereo pilotas) nustatytu dažniu
+Carrier of known frequency (MHz)	Žinomo dažnio nešlys (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Pirmiausia nustatykite stiprią FM stotį. Stoties pilotas ne visada tikslus: pakartokite su dviem ar trimis stotimis.
+Ready.	Paruošta.
+Looking for a reference signal.	Ieškoma atskaitos signalo.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	Matuojama: %+.2f ppm, neapibrėžtis %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Baigta: %+.2f ppm (neapibrėžtis %.2f ppm).
+No usable reference signal was found.	Tinkamo atskaitos signalo nerasta.
+Apply %+.2f ppm	Taikyti %+.2f ppm
+Current setting: %.2f ppm	Dabartinis nustatymas: %.2f ppm
+No measurements of this radio yet.	Šio radijo matavimų dar nėra.
+History of this radio (ppm)	Šio radijo istorija (ppm)
+Drift: %+.3f ppm per minute	Dreifas: %+.3f ppm per minutę
