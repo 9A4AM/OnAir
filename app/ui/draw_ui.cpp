@@ -6,6 +6,7 @@
 #endif
 #include "app.h"
 #include "ui/contrast.h"
+#include "ui/touch.h"
 #include "dect2/source/iq_file.h"
 #include "panels/gallery.h"
 #include "dect2/engine/crash_report.h"
@@ -116,6 +117,9 @@ static void classicTopBar(App& a, ImVec2 disp) {
     if (ImGui::SmallButton(tr("New interface"))) { a.newUi = true; savePrefs(a); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Try the new interface. You can switch back at any time."));
     ImGui::SameLine();
+    if (ImGui::SmallButton(tr("Touch"))) { a.touchUi = true; savePrefs(a); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Switch to the touch interface (big buttons, on-screen keypad). You can switch back at any time."));
+    ImGui::SameLine();
     if (ImGui::SmallButton(tr("Tour"))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Take the guided tour with Onny"));
     a.tgMin[TgSwitch] = ImVec2(sw0.x - 2, sw0.y - 2); a.tgMax[TgSwitch] = ImVec2(sw0.x + gSwitchWidth + 20, ImGui::GetCursorScreenPos().y);
@@ -225,7 +229,8 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
     if (a.videoOnly) { videoOnlyWindow(a, disp); return; }
     applyUiTheme(a);
     if (adsbFullMap(a, disp)) return;   // the ADS-B map popped out over the whole window
-    if (a.newUi) drawShell2(a, disp);
+    if (a.touchUi) touch::shell(a, disp);   // the touch interface (ui/touch_shell.cpp) over either interface's panels
+    else if (a.newUi) drawShell2(a, disp);
     else classicShell(a, disp);
     floatingWindows(a, disp);
     crashNotePopup(disp);

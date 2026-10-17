@@ -7584,6 +7584,8 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
             if (viewport_rect.GetWidth() > 0.0f && viewport_rect.GetHeight() > 0.0f)
                 ClampWindowPos(window, visibility_rect);
         window->Pos = ImTrunc(window->Pos);
+        if (ImGuiTouchPlaceWindow && !(flags & (ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_Tooltip)))
+            ImGuiTouchPlaceWindow(window);   // touch interface: bottom sheets and full-screen windows
 
         // Lock window rounding for the frame (so that altering them doesn't cause inconsistencies)
         // Large values tend to lead to variety of artifacts and are not recommended.
@@ -11794,9 +11796,15 @@ bool ImGui::BeginItemTooltip()
     return BeginTooltipEx(ImGuiTooltipFlags_None, ImGuiWindowFlags_None);
 }
 
+float ImGuiTouchRowMin = 0.0f;
+bool (*ImGuiTouchTooltipGate)() = NULL;
+void (*ImGuiTouchPlaceWindow)(ImGuiWindow*) = NULL;
+
 bool ImGui::BeginTooltipEx(ImGuiTooltipFlags tooltip_flags, ImGuiWindowFlags extra_window_flags)
 {
     ImGuiContext& g = *GImGui;
+    if (ImGuiTouchTooltipGate && !(g.DragDropWithinSource || g.DragDropWithinTarget) && !ImGuiTouchTooltipGate())
+        return false;   // touch interface: no hover tooltips
 
     const bool is_dragdrop_tooltip = g.DragDropWithinSource || g.DragDropWithinTarget;
     if (is_dragdrop_tooltip)

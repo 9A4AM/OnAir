@@ -6,6 +6,7 @@
 #endif
 #include "app.h"
 #include "ui/contrast.h"
+#include "ui/touch.h"
 #include "dect2/source/iq_file.h"
 #include "panels/gallery.h"
 #include "dect2/engine/crash_report.h"
@@ -106,8 +107,14 @@ static void applyDisplayScale(GLFWwindow* window, App& app, const ImGuiStyle& ba
                     s = std::max(1.f, std::max(xs, ys));
     #endif
                     if (const char* e = getenv("DECT2_UISCALE")) s = std::max(0.5f, (float)atof(e));
+                    touch::setDisplayScale(s);   // 48 px targets are measured at the display scale, not the text scale
                     s *= app.uiTextScale;   // View > Text size
-                    if (s != gUi) {
+                    touch::setOn(app.touchUi);
+                    if (app.touchUi) s *= app.touchScale;   // the touch interface's larger text
+                    static bool lastTouch = false;
+                    if (s != gUi || lastTouch != app.touchUi) {
+                        lastTouch = app.touchUi;
+                        gStyleEpoch++;
                         gUi = s;
                         ImGuiStyle& st = ImGui::GetStyle();
                         st = baseStyle;

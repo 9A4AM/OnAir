@@ -6,6 +6,7 @@
 #endif
 #include "app.h"
 #include "ui/contrast.h"
+#include "ui/touch.h"
 #include "dect2/source/iq_file.h"
 #include "panels/gallery.h"
 #include "dect2/engine/crash_report.h"
@@ -124,6 +125,9 @@ void parseDevFlags(App& app, int argc, char** argv, DevOpts& o) {
         if (std::string(argv[i]) == "--lang" && i + 1 < argc) i18n::set(argv[++i]);   // dev: the interface in this language (not saved)
         if (std::string(argv[i]) == "--theme" && i + 1 < argc) app.uiTheme = atoi(argv[++i]);
         if (std::string(argv[i]) == "--light") app.lightUi = true;   // dev: View > Theme > Light
+        if (std::string(argv[i]) == "--touch") app.touchUi = true;   // the touch interface (not saved)
+        if (std::string(argv[i]) == "--touchsheet" && i + 1 < argc) { app.touchUi = true; touch::devOpen(argv[++i]); }   // dev: a touch sheet open at the start (keypad[:7.1], step, modes, menu, gain, vol, tuner, more[1-3])
+        if (std::string(argv[i]) == "--touchscale" && i + 1 < argc) app.touchScale = std::max(1.f, std::min(2.f, (float)atof(argv[++i])));
         if (std::string(argv[i]) == "--hc") app.highContrast = true;   // dev: View > Theme > High contrast
         if (std::string(argv[i]) == "--variant" && i + 1 < argc) app.uiVariant = std::max(0, std::min(7, atoi(argv[++i])));
         if (std::string(argv[i]) == "--classic") app.newUi = false;

@@ -2,6 +2,7 @@
 // mode list and side bar, the status line and the log console).
 // Split from ui2.cpp; the shared declarations are in ui2_internal.h.
 #include "ui2_internal.h"
+#include "ui_common.h"
 #ifdef _WIN32
 #define NOMINMAX
 #include <windows.h>
@@ -228,6 +229,8 @@ void sidebar(App& a) {
         ImGui::SetNextItemWidth(-1);
         if (ImGui::SliderInt("##sidetxt", &pct, 80, 200, tr("Text size %d%%"))) a.uiTextScale = std::max(0.8f, std::min(2.f, pct / 100.f));
         if (ImGui::IsItemDeactivatedAfterEdit()) savePrefs(a);
+        if (ImGui::Checkbox(tr("Touch interface"), &a.touchUi)) savePrefs(a);   // big targets, a bottom dock, full-screen pickers (ui/touch.h)
+        if (ImGui::IsItemHovered()) wrapTooltip(280 * gUi, tr("For tablets and touch screens: big buttons, an on-screen keypad for the frequency, a full-screen mode picker."));
         ImGui::Unindent(6 * gUi);
         ImGui::Spacing();
     }
