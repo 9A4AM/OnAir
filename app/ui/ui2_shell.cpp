@@ -153,7 +153,7 @@ void modeList(App& a) {
             if (p0.x + 28 * gUi + ImGui::CalcTextSize(m.name).x + 10 * gUi < p0.x + w - ss.x - 6 * gUi)   // no room: the name alone, not both on top of each other
                 dl->AddText(ImVec2(p0.x + w - ss.x - 6 * gUi, p0.y + (h - ss.y) * 0.5f), u32(T.dim), sub);
             if (clicked) selectMode(a, m.family, m.subId);
-            if (hov && running && !sel) ImGui::SetTooltip("%s", tr("Stop the receiver to switch mode"));
+            if (hov && running && !sel) ImGui::SetTooltip("%s", tr("Click to switch mode and restart receiver automatically"));
         }
     }
     if (!shown) ImGui::TextDisabled(tr("no mode matches \"%s\""), q);
