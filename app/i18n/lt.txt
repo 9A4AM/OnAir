@@ -2059,3 +2059,7 @@ class 2	2 klasė
 class 3	3 klasė
 available	galimas
 unknown	nežinoma
+Save CADU	Įrašyti CADU
+Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Kiekvienas Reed-Solomon patikrą praėjęs kadras kaip 1024 baitų CADU į <duomenų aplankas>/goes/frames.cadu (tokio paties tipo failas, kokį rašo SatDump), dekoderiams palyginti
+Open CADU	Atverti CADU
+Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Dekoduoja .cadu failą (1024 baitų kadrai iš šios programos ar SatDump) per Reed-Solomon, paketus ir failus; GOES HRIT turi veikti

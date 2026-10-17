@@ -2059,3 +2059,7 @@ class 2	clase 2
 class 3	clase 3
 available	disponible
 unknown	desconocido
+Save CADU	Guardar CADU
+Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Cada trama que pasa Reed-Solomon, como CADU de 1024 bytes en <carpeta de datos>/goes/frames.cadu (el mismo tipo de archivo que escribe SatDump), para comparar decodificadores
+Open CADU	Abrir CADU
+Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Decodifica un archivo .cadu (tramas de 1024 bytes, de este programa o de SatDump) con Reed-Solomon, los paquetes y los archivos; GOES HRIT debe estar en marcha

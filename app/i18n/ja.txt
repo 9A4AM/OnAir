@@ -2059,3 +2059,7 @@ class 2	クラス2
 class 3	クラス3
 available	利用可能
 unknown	不明
+Save CADU	CADUを保存
+Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Reed-Solomonを通過した全フレームを1024バイトのCADUとして<データフォルダ>/goes/frames.cadu に保存します(SatDumpが書き出すのと同種のファイル)。デコーダの比較用です
+Open CADU	CADUを開く
+Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	このプログラムまたはSatDumpの.caduファイル(1024バイトのフレーム)をReed-Solomon、パケット、ファイルの順にデコードします。GOES HRITを実行しておく必要があります

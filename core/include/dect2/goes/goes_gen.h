@@ -43,6 +43,7 @@ struct GoesGenConfig {
     int fillFrames = 250;       // fill VCDUs after each round of the test files (about 4.4 s); -1: the files only once, then fill
     int scid = 0x7E;
     bool invertG2 = true;       // false: the second code output sent as it is (the receiver finds out which)
+    bool dualBasis = true;      // Reed-Solomon symbols in the CCSDS dual basis (the receiver finds out which)
     uint32_t seed = 1;
 };
 

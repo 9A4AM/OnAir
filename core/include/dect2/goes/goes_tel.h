@@ -28,6 +28,7 @@ struct GoesTelemetry {
     double symbolRate = 0;            // measured by the timing loop
     bool carrierLock = false, frameLock = false;
     bool invertedG2 = true;           // how the convolutional code's second output arrives
+    bool rsDualBasis = true;          // Reed-Solomon symbols in the CCSDS dual basis (true) or the conventional one
     float lockMetric = 0;             // 0 .. 1: BPSK constellation quality
     float rsByteErrors = 0;           // fraction of the bytes Reed-Solomon had to correct (last second)
     uint64_t frames = 0, rsCorrected = 0;
