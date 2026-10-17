@@ -99,7 +99,7 @@ fn compress(h: &mut [u32; 5], block: &[u8; 64]) {
 
 /// Length of the base64 text of `n` bytes (with `=` padding).
 pub const fn base64_len(n: usize) -> usize {
-    n.div_ceil(3) * 4
+    (n + 2) / 3 * 4
 }
 
 /// Base64 of `d` into `out` (at least `base64_len(d.len())` bytes); returns the length, or `usize::MAX` when `out` is too short.
