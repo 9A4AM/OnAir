@@ -4,6 +4,7 @@
 #include "../app.h"
 #include "../state/receivers.h"
 #include "map_ask.h"
+#include "../rooms/rooms.h"
 #include "../adsb/adsb_acars.h"
 #include "../transcribe/transcribe_app.h"
 #ifndef ONAIR_VERSION
@@ -521,6 +522,7 @@ void attachMsgs(std::vector<Track>& tracks) {
             dect2::AcarsLogEntry e = *it;
             e.text = dect2::acarsRedact(e.text);
             if (e.text.empty()) continue;
+            roomsFeedText(e.text);
             newest = std::max(newest, e.wall);
             t.msgs.push_back(std::move(e));
         }
@@ -823,6 +825,7 @@ void startupQuestion(App& a) {
 }
 
 void mapPopups(App& a) {
+    roomsPopups(rootApp(a));
     startupQuestion(a);
     consentPopup(a);
     connectingPopup();
@@ -863,6 +866,8 @@ void mapSendServerMenu(App& a) {
     if (rootApp(a).mapSend) msgsToggle(rootApp(a), true);
     if (rootApp(a).mapSend) voiceToggle(rootApp(a), true);
     if (rootApp(a).mapSend) jamToggle(rootApp(a), true);
+    ImGui::Separator();
+    roomsMenu(rootApp(a), true);
     ImGui::TextDisabled("%s", tr("The map is at map.on-air.dev"));
     ImGui::EndMenu();
     mapPopups(a);
@@ -876,6 +881,8 @@ void mapSendButton(App& a) {
         if (rootApp(a).mapSend) msgsToggle(rootApp(a), false);
         if (rootApp(a).mapSend) voiceToggle(rootApp(a), false);
         if (rootApp(a).mapSend) jamToggle(rootApp(a), false);
+        ImGui::Separator();
+        roomsMenu(rootApp(a), false);
         ImGui::TextDisabled("%s", tr("The map is at map.on-air.dev"));
         ImGui::EndPopup();
     }
@@ -996,6 +1003,7 @@ void mapTransmitEnded() {
 }
 
 void mapSendShutdown() {
+    roomsShutdown();
     std::thread t;
     { std::lock_guard<std::mutex> lk(gThMu); if (gTh.joinable()) t = std::move(gTh); }
     if (t.joinable()) t.join();

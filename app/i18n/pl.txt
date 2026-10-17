@@ -2363,6 +2363,48 @@ Current setting: %.2f ppm	Bieżące ustawienie: %.2f ppm
 No measurements of this radio yet.	Brak jeszcze pomiarów tego radia.
 History of this radio (ppm)	Historia tego radia (ppm)
 Drift: %+.3f ppm per minute	Dryf: %+.3f ppm na minutę
+Band from (kHz)	Pasmo od (kHz)
+Calibrate from two landmarks	Kalibruj dwoma punktami orientacyjnymi
+Calibrated.	Skalibrowano.
+Camera snapshot URL (JPEG)	Adres URL migawki z kamery (JPEG)
+Cannot load the picture.	Nie można wczytać obrazu.
+Cannot save the snapshot.	Nie można zapisać migawki.
+Centre azimuth	Azymut środkowy
+Click the picture to set the column of the selected landmark.	Kliknij obraz, aby ustawić kolumnę wybranego punktu orientacyjnego.
+Demo skyline (no camera)	Przykładowa panorama (bez kamery)
+Enable RF camera	Włącz kamerę RF
+Field of view	Pole widzenia
+Heat strength	Intensywność mapy cieplnej
+No picture.	Brak obrazu.
+Normal camera lens	Zwykły obiektyw kamery
+Panorama (equirectangular)	Panorama (równoprostokątna)
+Picture	Obraz
+Picture or panorama file	Plik obrazu lub panoramy
+Projection	Odwzorowanie
+RF camera	Kamera RF
+Save snapshot	Zapisz migawkę
+Snapshot saved: %s	Migawka zapisana: %s
+Sub-bands	Podpasma
+The two landmarks do not fit a picture.	Dwa punkty orientacyjne nie pasują do obrazu.
+Weakest shown	Najsłabszy pokazywany
+azimuth	azymut
+azimuth only; the picture is just a backdrop	tylko azymut; obraz jest tylko tłem
+column	kolumna
+to (kHz)	do (kHz)
+Translate to English	Tłumacz na angielski
+Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	Mowa w innym języku jest dodatkowo tłumaczona na angielski, offline, obok oryginału. Wymaga modelu wielojęzycznego i zużywa około 1,5 raza więcej czasu procesora; pomijane, gdy silnik nie nadąża. Nic nie jest wysyłane. Tłumaczenie na inne języki nie jest dostępne.
+The loaded model is English only: translation needs a multilingual model.	Załadowany model jest tylko angielski: tłumaczenie wymaga modelu wielojęzycznego.
+Live: stop the room	Na żywo: zatrzymaj pokój
+Copy room link	Kopiuj link do pokoju
+Host PIN (to moderate on the room page):	PIN gospodarza (do moderowania na stronie pokoju):
+Go live (Live rooms)...	Rozpocznij transmisję (Pokoje na żywo)...
+Could not create the room	Nie udało się utworzyć pokoju
+Lost the connection to the rooms server	Utracono połączenie z serwerem pokoi
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Pokoje na żywo: dopóki transmitujesz, każdy z linkiem do pokoju może oglądać wodospad tego odbiornika, tryb i ustawioną częstotliwość oraz czatować z innymi. Lista pokoi w sieci pokazuje też jego tytuł. Nic nie jest wysyłane przed naciśnięciem Rozpocznij transmisję i nic nie jest przechowywane po zakończeniu pokoju. Twoja lokalizacja, imię i dźwięk nigdy nie są wysyłane.
+Room title	Tytuł pokoju
+Also show decoded ACARS text in the room (public)	Pokazuj w pokoju także zdekodowany tekst ACARS (publicznie)
+Needs Server > Send data to map server and Also share interesting ACARS messages.	Wymaga: Serwer > Wysyłaj dane na serwer mapy oraz Udostępniaj także ciekawe wiadomości ACARS.
+Go live	Rozpocznij transmisję
 Schedule passes by itself	Planuj przeloty automatycznie
 Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Bierze przeloty zaznaczonych grup po kolei, od najwyższego priorytetu, i sam uruchamia, stroi i nagrywa każdy z nich. Nakładające się przeloty są skracane lub pomijane; odbiornik uruchomiony przez Ciebie pozostaje nietknięty.
 Priority (higher wins)	Priorytet (wyższy wygrywa)

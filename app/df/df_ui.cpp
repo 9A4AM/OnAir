@@ -4,6 +4,7 @@
 // read from a KrakenSDR DoA server JSON file. Nothing here talks to a radio: see docs/direction-finding.md for what is verified.
 #include "../app.h"
 #include "../ui/scale.h"
+#include "rfcam_ui.h"
 #include "dect2/df/df.h"
 #include "dect2/df/position.h"
 #include "dect2/df/source.h"
@@ -120,6 +121,10 @@ void rebuildSource(double hz, bool noise = false) {
         c.array = arrayFor(hz); c.freqHz = hz; c.sampleRate = 250e3; c.seed = (uint64_t)ImGui::GetTime() + 1;
         SimSource a; a.bearingDeg = S.simBearing - S.compass; a.snrDb = S.simSnr; c.sources.push_back(a);
         if (S.sim2) { SimSource b; b.bearingDeg = S.sim2Bearing - S.compass; b.snrDb = S.simSnr - 3; b.offsetHz = 9e3; c.sources.push_back(b); }
+        if (rfCamEnabled()) {   // the RF camera shows each transmitter at its own frequency: narrowband messages, apart
+            c.sources[0].offsetHz = -35e3; c.sources[0].bandwidthHz = 8e3;
+            if (S.sim2) { c.sources[1].offsetHz = 25e3; c.sources[1].bandwidthHz = 8e3; }
+        }
         if (S.simErrors) c.elementGains = simGains();
         c.calibrationNoise = noise;
         S.source = std::make_unique<SimMultiChannelSource>(std::move(c));
@@ -135,6 +140,17 @@ bool step(double hz, size_t n, CMat* covOut = nullptr) {
     Frame x;
     if (!S.source->read(x, n)) { if (S.src == SrcFile) { rebuildSource(hz); return false; } return false; }
     if ((int)x.size() != S.elements) { S.msg = tr("The recording has a different number of channels than the array."); return false; }
+    if (S.useCal && (int)S.cal.size() == S.elements && rfCamEnabled()) {   // the RF camera wants the corrected samples, not just the covariance
+        Frame y = x;
+        applyCalibration(y, S.cal);
+        Options co;
+        co.method = (Method)S.method; co.sources = S.sources; co.forwardBackward = S.fb; co.gridStepDeg = 1.0; co.compassOffsetDeg = S.compass;
+        rfCamFeed(y, arrayFor(hz), hz, S.source->sampleRate(), co);
+    } else if (rfCamEnabled()) {
+        Options co;
+        co.method = (Method)S.method; co.sources = S.sources; co.forwardBackward = S.fb; co.gridStepDeg = 1.0; co.compassOffsetDeg = S.compass;
+        rfCamFeed(x, arrayFor(hz), hz, S.source->sampleRate(), co);
+    }
     CMat r = covariance(x);
     if (covOut) *covOut = r;
     if (S.useCal && (int)S.cal.size() == S.elements) r = applyCalibration(r, S.cal);
@@ -177,16 +193,16 @@ void pollJson(double now) {
 void update(App& a) {
     const double now = ImGui::GetTime();
     const double hz = tunedHz(a);
-    if (!S.run || now - S.lastUpdate < 0.2) return;
+    if (!S.run || now - S.lastUpdate < (rfCamEnabled() ? 0.12 : 0.2)) return;
     S.lastUpdate = now;
     if (S.src == SrcJson) { pollJson(now); return; }
-    const int key = S.src * 100000 + S.elements * 1000 + S.geo * 100 + (int)(hz / 1e3) + (int)(S.simBearing * 10) * 7 + (S.sim2 ? 13 : 0) + (int)(S.sim2Bearing * 10) + (int)(S.simSnr * 10) + (S.simErrors ? 5 : 0) + (int)(S.orientation * 3) + (int)(S.compass * 11);
+    const int key = S.src * 100000 + S.elements * 1000 + S.geo * 100 + (int)(hz / 1e3) + (int)(S.simBearing * 10) * 7 + (S.sim2 ? 13 : 0) + (int)(S.sim2Bearing * 10) + (int)(S.simSnr * 10) + (S.simErrors ? 5 : 0) + (int)(S.orientation * 3) + (int)(S.compass * 11) + (rfCamEnabled() ? 17 : 0);
     if (S.src == SrcSim && S.simSpin) { S.simBearing = (float)std::fmod(S.simBearing + 3.0, 360.0); }
     if (S.src == SrcSim) {
         // the simulator keeps running; only its scene is rebuilt when a setting changed (spin changes the bearing 5 times a second)
         if (key != S.builtKey || S.simSpin) { S.builtKey = key; rebuildSource(hz); }
     } else if (!S.source || key != S.builtKey) { S.builtKey = key; rebuildSource(hz); }
-    if (step(hz, 2048)) {
+    if (step(hz, rfCamEnabled() ? 4096 : 2048)) {
         S.avg.add(S.res.bearingDeg, std::max(0.05, S.res.confidence));
         S.hist.push_back({now, S.res.bearingDeg, S.res.confidence});
     }
@@ -357,6 +373,7 @@ void window(App& a) {
     ImGui::EndChild();
     ImGui::SameLine();
     ImGui::BeginChild("##dfright", ImVec2(0, 0), false);
+    if (S.src != SrcJson) rfCamSection(a);
     if (ImGui::CollapsingHeader(tr("Array and estimator"), ImGuiTreeNodeFlags_DefaultOpen)) {
         const char* geos[] = {N_("Circular (KrakenSDR)"), N_("Linear")};
         ImGui::SetNextItemWidth(170 * gUi);

@@ -52,6 +52,7 @@ public:
         p.temperature = 0.f;
         p.temperature_inc = 0.2f;
         p.no_speech_thold = 0.6f;
+        p.translate = multi_ && o.translate;
         p.initial_prompt = o.prompt.empty() ? nullptr : o.prompt.c_str();
         const std::string lang = multi_ ? o.language : std::string("en");
         p.language = lang == "auto" ? nullptr : lang.c_str();
@@ -78,6 +79,7 @@ public:
                     sumP += d.p; sumLp += std::log(std::max(1e-6f, d.p)); nt++;
                 }
             }
+            { const int li = whisper_full_lang_id_from_state(st); if (li >= 0) r.lang = whisper_lang_str(li); }
             r.noSpeechProb = nsp;
             r.confidence = nt ? (float)(sumP / nt) : 0.f;
             r.avgLogprob = nt ? (float)(sumLp / nt) : 0.f;
