@@ -1578,3 +1578,8 @@ testing	tesztelés
 idea	ötlet
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Köszönet mindenkinek, aki javítást küldött, hibát jelentett, felvételt osztott meg, fordított vagy ötletet adott. A szerző Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Szeretnéd, ha módosítanánk vagy törölnénk a neved? Szólj a Discordon, vagy nyiss egy issue-t.
+Decoded only	Csak dekódolt
+Hides tone-only pages and pages whose text could not be decoded.	Elrejti a csak hangjelzéses hívásokat és azokat az üzeneteket, amelyek szövege nem volt dekódolható.
+%zu tone-only or undecoded pages hidden (Decoded only)	%zu csak hangjelzéses vagy dekódolatlan üzenet elrejtve (Csak dekódolt)
+%zu tone-only or undecoded pages hidden	%zu csak hangjelzéses vagy dekódolatlan üzenet elrejtve
+hidden	elrejtve

@@ -1593,3 +1593,8 @@ testing	tests
 idea	idée
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Merci à tous ceux qui ont envoyé des corrections, signalé des bugs, partagé des enregistrements, traduit ou proposé des idées. L'auteur est Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Vous voulez que votre nom soit modifié ou retiré ? Dites-le-nous sur Discord ou ouvrez une issue.
+Decoded only	Décodés seulement
+Hides tone-only pages and pages whose text could not be decoded.	Masque les appels en tonalité seule et les messages dont le texte n'a pas pu être décodé.
+%zu tone-only or undecoded pages hidden (Decoded only)	%zu appels en tonalité ou messages non décodés masqués (Décodés seulement)
+%zu tone-only or undecoded pages hidden	%zu appels en tonalité ou messages non décodés masqués
+hidden	masqués

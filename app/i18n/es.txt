@@ -1593,3 +1593,8 @@ testing	pruebas
 idea	idea
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Gracias a todos los que enviaron correcciones, informaron de errores, compartieron grabaciones, tradujeron o propusieron ideas. El autor es Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	¿Quieres que cambiemos o quitemos tu nombre? Dínoslo en Discord o abre un issue.
+Decoded only	Solo decodificados
+Hides tone-only pages and pages whose text could not be decoded.	Oculta los avisos solo de tono y los mensajes cuyo texto no se pudo decodificar.
+%zu tone-only or undecoded pages hidden (Decoded only)	%zu avisos de tono o mensajes sin decodificar ocultos (Solo decodificados)
+%zu tone-only or undecoded pages hidden	%zu avisos de tono o mensajes sin decodificar ocultos
+hidden	ocultos

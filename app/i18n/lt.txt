@@ -1593,3 +1593,8 @@ testing	testavimas
 idea	idėja
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Ačiū visiems, kurie atsiuntė pataisymų, pranešė apie klaidas, pasidalijo įrašais, vertė ar siūlė idėjų. Autorius yra Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Norite, kad pakeistume ar pašalintume jūsų vardą? Parašykite mums Discord arba sukurkite issue.
+Decoded only	Tik iššifruoti
+Hides tone-only pages and pages whose text could not be decoded.	Paslepia vien tono iškvietimus ir pranešimus, kurių teksto nepavyko iššifruoti.
+%zu tone-only or undecoded pages hidden (Decoded only)	Paslėpta %zu vien tono arba neiššifruotų pranešimų (Tik iššifruoti)
+%zu tone-only or undecoded pages hidden	Paslėpta %zu vien tono arba neiššifruotų pranešimų
+hidden	paslėpta

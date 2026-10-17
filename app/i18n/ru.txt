@@ -1575,3 +1575,8 @@ testing	тестирование
 idea	идея
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Спасибо всем, кто присылал исправления, сообщал об ошибках, делился записями, переводил и предлагал идеи. Автор — Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Хотите, чтобы ваше имя изменили или убрали? Напишите нам в Discord или создайте issue.
+Decoded only	Только расшифрованные
+Hides tone-only pages and pages whose text could not be decoded.	Скрывает вызовы только тоном и сообщения, текст которых не удалось расшифровать.
+%zu tone-only or undecoded pages hidden (Decoded only)	Скрыто вызовов только тоном или нерасшифрованных сообщений: %zu (Только расшифрованные)
+%zu tone-only or undecoded pages hidden	Скрыто вызовов только тоном или нерасшифрованных сообщений: %zu
+hidden	скрыто

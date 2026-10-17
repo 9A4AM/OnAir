@@ -1593,3 +1593,8 @@ testing	testen
 idea	idee
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Dank aan iedereen die fixes stuurde, bugs meldde, opnames deelde, vertaalde of ideeën aandroeg. De auteur is Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Wil je dat je naam wordt aangepast of verwijderd? Laat het ons weten op Discord of open een issue.
+Decoded only	Alleen gedecodeerd
+Hides tone-only pages and pages whose text could not be decoded.	Verbergt alleen-toon-oproepen en berichten waarvan de tekst niet gedecodeerd kon worden.
+%zu tone-only or undecoded pages hidden (Decoded only)	%zu alleen-toon- of niet-gedecodeerde berichten verborgen (Alleen gedecodeerd)
+%zu tone-only or undecoded pages hidden	%zu alleen-toon- of niet-gedecodeerde berichten verborgen
+hidden	verborgen

@@ -1593,3 +1593,8 @@ testing	テスト
 idea	アイデア
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	修正の送付、バグ報告、録音の共有、翻訳、アイデアの提案をしてくださったすべての方に感謝します。作者は Kristijonas Adomaitis です。
 Want your name changed or removed? Tell us on Discord or open an issue.	名前の変更や削除をご希望ですか？ Discord でお知らせいただくか、issue を作成してください。
+Decoded only	デコード済みのみ
+Hides tone-only pages and pages whose text could not be decoded.	トーンのみの呼び出しと、テキストをデコードできなかったメッセージを非表示にします。
+%zu tone-only or undecoded pages hidden (Decoded only)	トーンのみまたは未デコードのメッセージを%zu件非表示（デコード済みのみ）
+%zu tone-only or undecoded pages hidden	トーンのみまたは未デコードのメッセージを%zu件非表示
+hidden	非表示

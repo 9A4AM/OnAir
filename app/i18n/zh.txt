@@ -1593,3 +1593,8 @@ testing	测试
 idea	创意
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	感谢所有提交修复、报告错误、分享录音、翻译或提出想法的人。作者是 Kristijonas Adomaitis。
 Want your name changed or removed? Tell us on Discord or open an issue.	希望更改或删除您的名字？请在 Discord 告诉我们或提交 issue。
+Decoded only	仅已解码
+Hides tone-only pages and pages whose text could not be decoded.	隐藏仅有音调的呼叫以及文本无法解码的消息。
+%zu tone-only or undecoded pages hidden (Decoded only)	已隐藏 %zu 条仅音调或未解码的消息（仅已解码）
+%zu tone-only or undecoded pages hidden	已隐藏 %zu 条仅音调或未解码的消息
+hidden	已隐藏

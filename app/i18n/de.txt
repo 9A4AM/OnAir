@@ -1593,3 +1593,8 @@ testing	Tests
 idea	Idee
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Danke an alle, die Korrekturen geschickt, Fehler gemeldet, Aufnahmen geteilt, übersetzt oder Ideen vorgeschlagen haben. Autor ist Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Soll dein Name geändert oder entfernt werden? Sag es uns auf Discord oder eröffne ein Issue.
+Decoded only	Nur dekodiert
+Hides tone-only pages and pages whose text could not be decoded.	Blendet reine Tonrufe und Meldungen aus, deren Text nicht dekodiert werden konnte.
+%zu tone-only or undecoded pages hidden (Decoded only)	%zu reine Tonrufe oder nicht dekodierte Meldungen ausgeblendet (Nur dekodiert)
+%zu tone-only or undecoded pages hidden	%zu reine Tonrufe oder nicht dekodierte Meldungen ausgeblendet
+hidden	ausgeblendet
