@@ -593,10 +593,6 @@ Region %s, %s wide	Zakres %s, szerokość %s
 collecting samples	zbieranie próbek
 Working it out...	Analizowanie...
 Nothing to identify here.	Nie ma tu nic do zidentyfikowania.
-Looks like: %s	Wygląda na: %s
-Looks like: %s (frame sync found %dx)	Wygląda na: %s (synchronizacja ramek znaleziona %dx)
-No mode fits well.	Żaden tryb dobrze nie pasuje.
-Open %s on this frequency	Otwórz %s na tej częstotliwości
 Switch to %s and tune to %s	Przełącz na %s i dostrój do %s
 Candidates	Kandydaci
 (sync %dx)	(synchronizacja %dx)
@@ -2052,6 +2048,37 @@ How to install	Jak zainstalować
 The services, signal information and data work without it.	Usługi, informacje o sygnale i dane działają bez niego.
 Interface and windows	Interfejs i okna
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Widok przełącza układ (Sidebar, Scope, Tiles, Faceplate, Panel), interfejs klasyczny, rozmiar tekstu i paletę; interfejs dotykowy jest w sekcji Narzędzia. Okna takie jak Częstotliwości, Skaner przemiatający, Namierzanie i Automatyzacje otwierają się stąd.
+# programme guide (SPI)
+Guide	Przewodnik
+until	do
+Genre	Gatunek
+Saved	Zapisano
+Now	Teraz
+objects	obiekty
+services	usługi
+programmes	programy
+scheduled	zaplanowane
+objects decoded	zdekodowane obiekty
+Guide data	Dane przewodnika
+last update	ostatnia aktualizacja
+no update yet	brak aktualizacji
+not collecting	nie zbiera
+from the cache	z pamięci podręcznej
+cached data, expires with time	dane z pamięci podręcznej, wygasają z czasem
+waiting for the carousel directory...	oczekiwanie na katalog karuzeli...
+Export XMLTV	Eksportuj XMLTV
+Collect the guide in the background	Zbieraj przewodnik w tle
+Could not write the file.	Nie udało się zapisać pliku.
+Listen to this station	Słuchaj tej stacji
+search title or description	szukaj w tytule lub opisie
+Nothing matches.	Nic nie pasuje.
+No description in the guide.	Brak opisu w przewodniku.
+Click a programme in the grid or the search results to see its details.	Kliknij program w siatce lub wynikach wyszukiwania, aby zobaczyć szczegóły.
+Start the receiver on a DAB channel to see the guide.	Uruchom odbiornik na kanale DAB, aby zobaczyć przewodnik.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Ten multipleks nie zapowiada przewodnika programowego (SPI, aplikacja użytkownika 0x007).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	Przewodnik tego multipleksu jest nadawany w PAD stacji: odtwórz tę stację, aby go zebrać.
+The broadcaster sends service information (names, logos) but no programme schedule.	Nadawca wysyła informacje o usługach (nazwy, logo), ale nie ramówkę.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Ramówka jeszcze nie została odebrana. Obieg karuzeli przewodnika może trwać kilka minut.
 Air-interface encryption: %s	Szyfrowanie interfejsu radiowego: %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu jednostek sygnalizacyjnych z trybem szyfrowania (nie odszyfrowano); %llu nieczytelnych bloków (błąd CRC)
 none advertised	brak ogłoszonego
@@ -2111,3 +2138,44 @@ Peak dB above floor	Szczyt dB nad szumem
 Quietest slots	Najcichsze zakresy
 From MHz	Od MHz
 Width kHz	Szerokość kHz
+Propagation	Propagacja
+open	otwarte
+marginal	graniczne
+closed	zamknięte
+Best band now	Najlepsze pasmo teraz
+Stations	Stacje
+Best SNR	Najlepszy SNR
+Farthest	Najdalsza
+Heard from	Słyszane z
+Forget the history	Wyczyść historię
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Co ten odbiornik usłyszał, według pasm: radiolatarnie (NCDXF/IARU, Long Dashes, pojedyncze litery, nośne) oraz stacje FT8 / FT4 / FT2 / WSPR zdekodowane na ekranie HF cyfrowym. Pasmo jest otwarte, gdy w ciągu ostatnich 30 minut usłyszano co najmniej 3 stacje. Tylko własny odbiornik: nic nie jest pobierane, więc nie ma strumienia słonecznego ani indeksu K.
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Nic nie usłyszano w ciągu ostatnich 30 minut: uruchom radiolatarnie HF lub ekran HF cyfrowy i zostaw go włączony.
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Ostatnie 24 godziny (UTC), komórki po 15 minut, ciemniej: mniej stacji
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f bodów
+, %s wide	, szerokość %s
+, bursts (%.0f %% on)	, impulsy (%.0f %% aktywny)
+, every %.3g ms	, co %.3g ms
+, useful symbol %.4g us	, symbol użyteczny %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Wynik to część dowodów, które się zgadzają; procenty skalibrowano na własnych sygnałach testowych OnAir, a nie na każdym prawdziwym sygnale.
+Add to memory	Dodaj do Memory
+Best guess	Najlepsze przypuszczenie
+Copy as text	Kopiuj jako tekst
+Could be %s (%.0f %%) or %s (%.0f %%).	Może to być %s (%.0f %%) lub %s (%.0f %%).
+Could not open this mode.	Nie udało się otworzyć tego trybu.
+Evidence for %s:	Dowody dla %s:
+I do not know what this is: nothing I know fits well enough to say.	Nie wiem, co to jest: nic z tego, co znam, nie pasuje wystarczająco dobrze.
+Identify all signals	Zidentyfikuj wszystkie sygnały
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Identyfikacja: kliknij sygnał lub przeciągnij po nim. Esc lub I kończy narzędzie.
+Measured	Zmierzone
+Most likely %s, %.0f %% sure.	Najpewniej %s, pewność %.0f %%.
+No signal stands out of the noise here.	Żaden sygnał nie wyróżnia się tu z szumu.
+Open in %s	Otwórz w %s
+Opened %s	Otwarto %s
+Perhaps %s (%.0f %%).	Może %s (%.0f %%).
+Signals in the view	Sygnały w widoku
+The frequency list has here:	Lista częstotliwości zawiera tu:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Co to jest? Kliknij sygnał lub przeciągnij po nim, a OnAir powie, co to jest i jak jest tego pewny. Klawisz I. Shift+przeciąganie działa także bez narzędzia.
+Why?	Dlaczego?
+Identify selected	Zidentyfikuj zaznaczony
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Strojenie radia na zaznaczony sygnał i podanie, co to jest (odbiornik musi pracować w trybie, którego częstotliwość próbkowania go obejmuje)

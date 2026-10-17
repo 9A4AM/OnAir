@@ -5,6 +5,7 @@
 // offset, stepping through bands when the capture is narrower than the list). Clicking a row tunes and listens (Listen).
 #include "dect2/common/timecompat.h"
 #include "app.h"
+#include "hfprop_ui.h"
 #include "../adsb/adsb_map.h"
 #include "dect2/hfbeacon/hfbeacon_list.h"
 #include "dect2/hfbeacon/hfbeacon_rx.h"
@@ -93,7 +94,7 @@ void load(App& a) {
     S.loaded = true;
     plat::Prefs& p = plat::prefs();
     S.listen = p.getB("hfbListen", false);
-    S.view = (int)std::max(0L, std::min(4L, p.getI("hfbView", 0)));
+    S.view = (int)std::max(0L, std::min(5L, p.getI("hfbView", 0)));
     S.ppm = p.getD("hfbPpm", 0); S.clockOff = p.getD("hfbClock", 0);
     S.hop = p.getB("hfbHop", true); S.dwell = (int)p.getI("hfbDwell", 60);
     for (int k = 0; k < 4; k++) { char b[24]; snprintf(b, sizeof b, "hfbKind%d", k); S.kinds[k] = p.getB(b, true); }
@@ -505,6 +506,7 @@ void tick(App& a) {
     r.setListen(S.listen); r.setVolume(a.volume); r.setMuted(a.muted);
     if (S.sel >= 0 && S.sel < (int)S.list.size()) r.setListenFreqHz(S.list[(size_t)S.sel].khz * 1e3);
     hop(a);
+    if (live(a)) hfprop_ui::feedBeacons(S.list, a.rx.hfb);
 }
 
 void tab(App& a) {
@@ -513,12 +515,13 @@ void tab(App& a) {
     flowNext(10 * gUi);
     if (S.hop && a.rx.standard == 68 && S.plan.size() > 1) ImGui::TextDisabled("stepping %zu stops, %d s each", S.plan.size(), S.dwell);
     const int v0 = S.view;
-    subNav("hfbv", S.view, {"Beacons", "Bands open", "Map", "History", "Settings"});
+    subNav("hfbv", S.view, {"Beacons", "Bands open", "Map", "History", "Settings", tr("Propagation")});
     if (v0 != S.view) plat::prefs().setI("hfbView", S.view);
     if (S.view == 0) beaconsView(a);
     else if (S.view == 1) bandsView(a);
     else if (S.view == 2) mapView(a);
     else if (S.view == 3) historyView(a);
+    else if (S.view == 5) hfprop_ui::view(a);
     else settingsView(a);
 }
 

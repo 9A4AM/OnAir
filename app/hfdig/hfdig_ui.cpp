@@ -2,6 +2,7 @@
 // file (hfdig_rtty_ui.cpp, hfdig_sstv_ui.cpp, hfdig_freedv_ui.cpp). The shell also keeps the sound controls in step for FreeDV's speech,
 // lists what happened (ACTIVITY, on the right) and draws the spectrum and waterfall of the 8 kHz audio at the bottom, to tune the tones by eye.
 #include "app.h"
+#include "../hfbeacon/hfprop_ui.h"
 #include "gfx/gfx.h"
 #include "dect2/dsp/fftutil.h"
 #include "dect2/hfdig/hfdig_tel.h"
@@ -175,6 +176,7 @@ void tick(App& a) {
     loadDemod(a);
     if (run) a.engine.hfdig().setDemod(dect2::hfDemodResolve(S.demod, a.freqMhz));   // Auto follows the dial
     if (run && a.rx.standard == 26) {
+        hfprop_ui::feedFtx(a, a.rx.hfdig.ftx);
         if (!S.tapSet) {   // the 8 kHz audio for the spectrum, handed over from the receiver thread
             S.tapSet = true;
             a.engine.hfdig().setAudioTap([](const float* x, size_t n) {
