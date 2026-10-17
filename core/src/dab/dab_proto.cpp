@@ -29,7 +29,6 @@ uint16_t crc16(const uint8_t* d, size_t n) {
     }
     return (uint16_t)~c;
 }
-
 // ------------------------------------------------------------------ FIB and FIG
 std::vector<FigRef> fibWalk(const uint8_t* fib, size_t, int& used) {
     std::vector<FigRef> out;
@@ -53,13 +52,11 @@ FigHead figHead(int type, const uint8_t* d, size_t) {
     else if (type == 2 || type == 5) h.ext = d[0] & 7;
     return h;
 }
-
 bool fig0Eid(const uint8_t* d, size_t len, int& eid) {
     if (len < 3) return false;
     eid = (uint16_t)((d[1] << 8) | d[2]);
     return true;
 }
-
 std::vector<Fig01Sub> fig0Subchannels(const uint8_t* d, size_t len) {
     std::vector<Fig01Sub> out;
     const uint8_t* b = d + 1;
@@ -85,7 +82,6 @@ std::vector<Fig01Sub> fig0Subchannels(const uint8_t* d, size_t len) {
     }
     return out;
 }
-
 std::vector<Fig03Packet> fig0Packet(const uint8_t* d, size_t len) {   // packet mode service components: SCId -> sub-channel, address (clause 6.3.2)
     std::vector<Fig03Packet> out;
     const uint8_t* b = d + 1;
@@ -104,7 +100,6 @@ std::vector<Fig03Packet> fig0Packet(const uint8_t* d, size_t len) {   // packet 
     }
     return out;
 }
-
 std::vector<Fig02Service> fig0Services(const uint8_t* d, size_t len) {
     std::vector<Fig02Service> out;
     const int pd = (d[0] >> 5) & 1;
@@ -129,7 +124,6 @@ std::vector<Fig02Service> fig0Services(const uint8_t* d, size_t len) {
     }
     return out;
 }
-
 std::vector<Fig013App> fig0UserApps(const uint8_t* d, size_t len) {   // user applications (TS 101 756 table 16)
     std::vector<Fig013App> out;
     const int pd = (d[0] >> 5) & 1;
@@ -152,7 +146,6 @@ std::vector<Fig013App> fig0UserApps(const uint8_t* d, size_t len) {   // user ap
     }
     return out;
 }
-
 std::vector<Fig017Pty> fig0Pty(const uint8_t* d, size_t len) {   // programme type: S/D flag, P/S flag, language, programme type, complementary type
     std::vector<Fig017Pty> out;
     const uint8_t* b = d + 1;
@@ -171,7 +164,6 @@ std::vector<Fig017Pty> fig0Pty(const uint8_t* d, size_t len) {   // programme ty
     }
     return out;
 }
-
 std::vector<Fig018Support> fig0AnnSupport(const uint8_t* d, size_t len) {   // announcement support: SId, ASu flags, clusters
     std::vector<Fig018Support> out;
     const uint8_t* b = d + 1;
@@ -188,7 +180,6 @@ std::vector<Fig018Support> fig0AnnSupport(const uint8_t* d, size_t len) {   // a
     }
     return out;
 }
-
 std::vector<Fig019Switch> fig0AnnSwitch(const uint8_t* d, size_t len) {   // cluster, ASw flags, new flag, region flag, sub-channel
     std::vector<Fig019Switch> out;
     const uint8_t* b = d + 1;
@@ -206,7 +197,6 @@ std::vector<Fig019Switch> fig0AnnSwitch(const uint8_t* d, size_t len) {   // clu
     }
     return out;
 }
-
 bool fig0Time(const uint8_t* d, size_t len, Fig010Time& t) {
     const uint8_t* b = d + 1;
     const int n = (int)len - 1;
@@ -219,7 +209,6 @@ bool fig0Time(const uint8_t* d, size_t len, Fig010Time& t) {
     t.utc = t.mjd > 40587 ? (int64_t)(t.mjd - 40587) * 86400 + t.hour * 3600 + t.minute * 60 + t.second : 0;
     return true;
 }
-
 bool fig1(const uint8_t* d, size_t len, Fig1Label& l) {
     const int ext = d[0] & 7, cs = d[0] >> 4;
     const uint8_t* b = d + 1;
@@ -239,7 +228,6 @@ bool fig1(const uint8_t* d, size_t len, Fig1Label& l) {
     } else return false;
     return true;
 }
-
 // FIG 2: labels in UTF-8 or UCS-2 of up to 8 segments (EN 300 401 8.1.13, TS 103 176)
 bool fig2(const uint8_t* d, size_t length, Fig2Seg& r) {
     const int len = (int)length;
@@ -304,7 +292,6 @@ static void mjdDate(int mjd, int& y, int& m, int& d) {
     m = (int)(mm + 2 - 12 * k);
     y = (int)(100 * (c - 49) + yy + k);
 }
-
 std::string motTimeText(const MotTime& t) {
     if (t.now) return "now";
     if (!t.valid) return "-";
@@ -349,7 +336,6 @@ bool motParseHeader(const uint8_t* h, size_t n, MotHeader& o) {
     }
     return true;
 }
-
 std::string motContentTypeName(int type, int sub) {
     switch (type) {
     case 0: return sub == 1 ? "MIME / HTTP header" : "general data";
@@ -364,7 +350,6 @@ std::string motContentTypeName(int type, int sub) {
     }
     return "unknown";
 }
-
 MotGroup motParseGroup(const uint8_t* d, size_t length) {
     MotGroup g;
     int n = (int)length;
@@ -423,7 +408,6 @@ bool motParseDirectory(const uint8_t* dir, size_t n, std::vector<DirEntry>& out)
     }
     return true;
 }
-
 // ------------------------------------------------------------------ PAD
 bool padFromAu(const uint8_t* au, size_t n, PadBytes& out) {
     out = PadBytes();
@@ -437,7 +421,6 @@ bool padFromAu(const uint8_t* au, size_t n, PadBytes& out) {
     for (int k = 0; k < cnt - 2; k++) out.xpad[(size_t)k] = d[cnt - 3 - k];
     return true;
 }
-
 bool padFromMp2(const uint8_t* f, size_t length, int& lastCont, PadBytes& out) {
     out = PadBytes();
     const int len = (int)length;
@@ -467,7 +450,6 @@ bool padFromMp2(const uint8_t* f, size_t length, int& lastCont, PadBytes& out) {
     for (int k = 0; k < xlen; k++) out.xpad[(size_t)k] = f[len - 3 - k];
     return true;
 }
-
 std::vector<PadSub> padSplit(const uint8_t* xp, size_t length, const uint8_t fpad[2], int& lastType) {
     std::vector<PadSub> out;
     int xlen = (int)length;
@@ -504,14 +486,12 @@ std::vector<PadSub> padSplit(const uint8_t* xp, size_t length, const uint8_t fpa
     }
     return out;
 }
-
 int padDgLength(const uint8_t* d, size_t n, int& len) {   // type 1: data group length indicator: 14 bit length, CRC-16
     if (n < 2) return 0;
     if (n >= 4 && crc16(d, 2) != (uint16_t)((d[2] << 8) | d[3])) return 1;
     len = ((d[0] & 0x3F) << 8) | d[1];
     return 2;
 }
-
 // A dynamic label segment: a 2 byte prefix, up to 16 characters and a CRC-16. A command: the clear command has no data, the others (DL Plus) a few bytes:
 // the length is the one the CRC agrees with.
 DlsStep dlsStep(const uint8_t* dls, size_t n) {
@@ -530,7 +510,6 @@ DlsStep dlsStep(const uint8_t* dls, size_t n) {
     else if ((int)n >= 2 + most + 2) s.action = 1;
     return s;
 }
-
 // One dynamic label segment without its CRC: prefix = toggle, first, last, command flag, 4 bit field 1 (length - 1, or the command);
 // second byte: field 2 (character set in the first segment, else the segment number in bits 6..4)
 DlSegment dlSegment(const uint8_t* d, size_t n) {
@@ -541,7 +520,6 @@ DlSegment dlSegment(const uint8_t* d, size_t n) {
     s.charset = b1 >> 4;
     return s;
 }
-
 // DL Plus tags command (TS 102 980 clause 5.3): item toggle, item running, number of tags - 1, then per tag the content type, the start and the
 // length - 1 in characters of the label, 7 bits each
 bool dlPlusTags(const uint8_t* d, size_t n, bool& running, std::vector<DlpTag>& out) {
