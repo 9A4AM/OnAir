@@ -1,4 +1,4 @@
-// Seeded mutation run of the ADS-B / Mode S message layer (the Rust one under DECT2_RUST_ADSB), meant for DECT2_SANITIZE=ON: decoding, the CRC,
+// Seeded mutation run of the ADS-B / Mode S message layer, meant for DECT2_SANITIZE=ON: decoding, the CRC,
 // single-bit correction, Comm-B inference and CPR must never crash or hang on any bytes or numbers. Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/adsb/adsb_msg.h"
 #include <cstdio>

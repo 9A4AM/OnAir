@@ -1,6 +1,5 @@
-// The ADS-B / Mode S message layer on top of the Rust crate rust/onair_adsb (DECT2_RUST_ADSB): the same functions as adsb_msg.cpp, which keeps getBits,
-// setBits and toHex (helpers that take no length). Empty when the crate is not built.
-#ifdef DECT2_RUST_ADSB
+// The ADS-B / Mode S message layer on top of the Rust crate rust/onair_adsb: the same functions as adsb_msg.cpp, which keeps getBits,
+// setBits and toHex (helpers that take no length).
 #include "dect2/adsb/adsb_msg.h"
 #include "dect2/rs/adsb.h"
 #include <cstdio>
@@ -232,4 +231,3 @@ bool decodeMsg(const uint8_t* bytes, int nbits, Msg& m) {
 }
 
 } // namespace dect2::adsb
-#endif
