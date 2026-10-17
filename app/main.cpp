@@ -261,6 +261,10 @@ int main(int argc, char** argv) {
 
     App app;
     loadFonts(app, io);
+    // A layout slip (an item missing after SetCursorPos, for example) is recovered by ImGui; the red 'MESSAGE FROM DEAR IMGUI' box and the assert
+    // are for developers, so users do not get a popup over the window. The recovery message still goes to the debug log.
+    io.ConfigErrorRecoveryEnableAssert = false;
+    io.ConfigErrorRecoveryEnableTooltip = false;
 
 
     ImGui_ImplGlfw_InitForOther(window, true);
