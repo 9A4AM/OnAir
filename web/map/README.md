@@ -5,6 +5,7 @@ proxies OSM tiles and serves `/meta` (aircraft type, airline and route from adsb
 
 ## Files
 - `src/msgs.js` - ACARS messages per aircraft: sanitising, limits, merge (ingest `msgs` per aircraft track, at most 5 per track per post, 120 per station per minute, 20 kept per aircraft, 500 characters each, 48 h). `GET /msgs?id=<ICAO hex>` returns them; they are not part of `/live`. The card shows them with textContent only.
+- `src/doa.js` - direction finding: a `doa` track is a bearing line (station position, `heading` = bearing, `extra` = `{f: Hz, s: sigma deg, c: confidence}`, 10 min TTL, at most 4 per post, no trail); `computeFixes` intersects the newest line of each distinct station on one frequency (within 3 kHz) into a derived, never stored `fix` track (robust ML fit, 95 % ellipse in `extra` = `{a, b, o, n, r, f}`) that is added to `/live` and the WebSocket upserts. Fixes with a 95 % major axis over 300 km are not published.
 - `src/index.js` - Worker + MapHub. `/meta` returns type, registration, airline, flight number and `route.origin/destination` (with lat/lon).
 - `public/index.html`, `styles.css` - page shell and theme (dark tokens, drawer rail and bottom-sheet card on phones).
 - `public/app.js` - map, layers, live feed, search (callsign / registration / hex / MMSI, `/` focuses it), stats bar, selection, `#hex=` deep links.
@@ -13,6 +14,7 @@ proxies OSM tiles and serves `/meta` (aircraft type, airline and route from adsb
 - `public/types.js` - pure mapping from ICAO type / ADS-B category / AIS type to an icon shape.
 - `public/shapes.js`, `icons.js` - icon geometry (SVG paths) and lazy canvas rendering at device resolution.
 - `public/airports.js` - ~290 major airports (fallback coordinates when the route lookup has none).
+- `public/df.js` - map features for the DF layers: bearing line, wedge (one sigma) and station dot per `doa`, 95 % ellipse and marker per `fix`.
 - `public/demo.js` - `?demo=1` synthetic data.
 - `test/` - `node --test` tests for the pure modules.
 

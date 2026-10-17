@@ -1,7 +1,8 @@
+import { cleanDoa, computeFixes, DOA_TTL_MS, MAX_DOA_PER_INGEST } from "./doa.js";
 import { sanitizeList, mergeStored, takeBudget, MSG_TTL_MS, MSG_TOTAL_MAX, MSG_PER_INGEST } from "./msgs.js";
 
 const KINDS = new Set([
-  "aircraft", "vessel", "sonde", "aprs", "ham", "drone", "flarm", "sat", "buoy", "dsc", "station", "gnss",
+  "aircraft", "vessel", "sonde", "aprs", "ham", "drone", "flarm", "sat", "buoy", "dsc", "station", "gnss", "doa",
 ]);
 
 const TTL_MS = {
@@ -14,6 +15,7 @@ const TTL_MS = {
   flarm: 15 * 60e3,
   sat: 20 * 60e3,
   gnss: 10 * 60e3,
+  doa: DOA_TTL_MS,
   buoy: 2 * 3600e3,
   dsc: 60 * 60e3,
   station: 6 * 3600e3,
@@ -286,6 +288,12 @@ export class MapHub {
     this.ctx.storage.sql.exec("CREATE INDEX IF NOT EXISTS idx_tracks_kind_t ON tracks(kind, t)");
   }
 
+  /** Fix markers where bearing lines from different stations on one frequency cross (derived, never stored). */
+  currentFixes(now) {
+    const rows = this.ctx.storage.sql.exec("SELECT id, lat, lon, heading, extra, t FROM tracks WHERE kind = 'doa' AND t > ?", now - DOA_TTL_MS).toArray();
+    return rows.length > 1 ? computeFixes(rows, now) : [];
+  }
+
   trackWire(t) {
     return {
       id: t.id, kind: t.kind, label: t.label, sub: t.sub,
@@ -349,8 +357,10 @@ export class MapHub {
 
     const kept = [];
     let msgBudgetLeft = MSG_PER_INGEST;
+    let doaLeft = MAX_DOA_PER_INGEST;
     for (const raw of tracks) {
-      let t = sanitize(raw, now);
+      if (raw && raw.kind === "doa") { if (doaLeft-- <= 0) continue; }
+      let t = sanitize(raw, now, station);
       if (!t) continue;
       const prev = this.ctx.storage.sql.exec(
         "SELECT t, age, path, heading, speed, label, sub, src, squawk FROM tracks WHERE id = ?",
@@ -358,9 +368,9 @@ export class MapHub {
       ).toArray()[0];
       if (!fresherPosition(t.age, prev, now)) continue;
       let merged = prev ? mergeTrackMeta(prev, t) : t;
-      if (t.kind !== "gnss") merged.path = mergePath(prev && prev.path, merged.path, merged.lon, merged.lat);
+      if (t.kind !== "gnss" && t.kind !== "doa") merged.path = mergePath(prev && prev.path, merged.path, merged.lon, merged.lat);
       else merged.path = [];
-      const trailHdg = t.kind === "gnss" ? null : headingFromTrail(merged.path, merged.lon, merged.lat, merged.heading);
+      const trailHdg = t.kind === "gnss" || t.kind === "doa" ? null : headingFromTrail(merged.path, merged.lon, merged.lat, merged.heading);
       if (trailHdg != null) merged.heading = trailHdg;
       else if (merged.heading == null && prev && prev.heading != null) merged.heading = prev.heading;
       if (merged.speed == null && prev && prev.speed != null) merged.speed = prev.speed;
@@ -395,7 +405,7 @@ export class MapHub {
     this.touchLoad(now, "ingest");
     if (kept.length) {
       this.invalidateCaches();
-      await this.queueUpserts(kept);
+      await this.queueUpserts(kept.some((t) => t.kind === "doa") ? kept.concat(this.currentFixes(now)) : kept);
     }
     this.maybeBroadcastLoad(now);
     return json({ ok: true, n: kept.length, load: this.loadMetrics(now) });
@@ -469,6 +479,7 @@ export class MapHub {
         src: row.src, age: row.age, est: row.est ? 1 : 0,
       });
     }
+    for (const f of this.currentFixes(now)) tracks.push(this.trackWire(f));
     const st = this.ctx.storage.sql.exec("SELECT COUNT(*) AS n FROM stations WHERE last > ?", now - 30 * 60e3).toArray()[0];
     const body = { now, stations: st ? st.n : 0, tracks };
     this.snapshotCache = body;
@@ -530,13 +541,14 @@ export class MapHub {
   }
 }
 
-export function sanitize(raw, now) {
+export function sanitize(raw, now, station) {
   if (!raw || typeof raw !== "object") return null;
   const kind = String(raw.kind || "");
   if (!KINDS.has(kind)) return null;
   const lat = Number(raw.lat), lon = Number(raw.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
   if (lat === 0 && lon === 0) return null;
+  if (kind === "doa") return sanitizeDoa(raw, now, station);
   const storageId = trackStorageId(kind, raw);
   if (!storageId) return null;
   const rawId = String(raw.id || "").slice(0, 80);
@@ -575,8 +587,25 @@ export function sanitize(raw, now) {
     src: String(raw.src || "").slice(0, 16),
     cat: String(raw.cat || "").slice(0, 48),
     extra: String(raw.extra || "").slice(0, 120),
-    path: kind === "gnss" ? [] : path.slice(-80),   // no trails for navigation satellites
+    path: kind === "gnss" || kind === "doa" ? [] : path.slice(-80),   // no trails for navigation satellites
     t: now,
+  };
+}
+
+/** A bearing line from a station that runs a direction finder: the track is the station position, heading is the bearing. */
+function sanitizeDoa(raw, now, station) {
+  const lat = Number(raw.lat), lon = Number(raw.lon);
+  if (!station) return null;
+  const d = cleanDoa(raw);
+  if (!d) return null;
+  const age = Number.isFinite(Number(raw.age)) ? Number(raw.age) : 0;
+  if (age > DOA_TTL_MS / 1000) return null;
+  return {
+    id: "doa:" + String(station).slice(0, 12) + "-" + Math.round(d.freq / 1000), kind: "doa", rawId: String(station).slice(0, 12), icao: "", mmsi: "",
+    label: (d.freq / 1e6).toFixed(3) + " MHz", sub: Math.round(d.bearing) + "\u00b0",
+    lat, lon, alt: null, heading: d.bearing, speed: null, vrate: null, age, est: 0, squawk: null, src: "df", cat: "",
+    extra: JSON.stringify({ f: d.freq, s: d.sigma, c: +d.conf.toFixed(2) }),
+    path: [], t: now,
   };
 }
 

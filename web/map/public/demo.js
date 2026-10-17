@@ -1,6 +1,7 @@
 // demo.js - ?demo=1 preview data: ~60 synthetic aircraft, ships, sondes, APRS stations and satellites.
 // Everything here is invented for previewing the page offline; the page shows a DEMO banner while it is active.
 
+import { destination } from "./df.js";
 import { airportByCode } from "./airports.js";
 import { distanceNm, bearing } from "./geo.js";
 
@@ -137,6 +138,19 @@ export function generateDemo(nowMs = Date.now()) {
     push({ id, kind: "aircraft", label: "DMO" + (100 + n), sub: "ADS-B", src: "adsb", cat: ty[2], lat, lon, alt: 20000 + R() * 18000, heading: R() * 360, speed: 380 + R() * 100, vrate: 0, squawk: "2000", t: nowMs, age: 0, path: [] });
     meta[id] = { type: ty[1], icaoType: ty[0], registration: "DM-O" + n, operator: "Demo Air", origin: "", destination: "", route: null };
     n++;
+  }
+  // direction finding demo: three stations around Vilnius hear a 433.92 MHz transmitter; the server would intersect the lines into a fix
+  {
+    const tx = { lat: 54.70, lon: 25.30 };
+    [[250, 24], [120, 31], [10, 19]].forEach(([brg, km], i) => {
+      const [lon, lat] = destination(tx.lat, tx.lon, brg, km * 1000);
+      const back = (Math.atan2(Math.sin((tx.lon - lon) * Math.PI / 180) * Math.cos(tx.lat * Math.PI / 180),
+        Math.cos(lat * Math.PI / 180) * Math.sin(tx.lat * Math.PI / 180) - Math.sin(lat * Math.PI / 180) * Math.cos(tx.lat * Math.PI / 180) * Math.cos((tx.lon - lon) * Math.PI / 180)) * 180 / Math.PI + 360) % 360;
+      push({ id: "doa:demo" + i + "-433920", kind: "doa", label: "433.920 MHz", sub: Math.round(back) + "\u00b0", lat, lon, heading: back + (i - 1) * 1.5, alt: null, speed: null,
+        extra: JSON.stringify({ f: 433920000, s: 3, c: 0.85 }), t: nowMs, src: "df", age: 0 });
+    });
+    push({ id: "fix:433920", kind: "fix", label: "433.920 MHz", sub: "3 stations", lat: tx.lat + 0.002, lon: tx.lon - 0.003, alt: null, heading: null, speed: null,
+      extra: JSON.stringify({ a: 1900, b: 700, o: 35, n: 3, r: 1.4, f: 433920000 }), t: nowMs, src: "df", age: 0 });
   }
   return { tracks, meta };
 }

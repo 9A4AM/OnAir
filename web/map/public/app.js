@@ -6,6 +6,7 @@ import { iconId, installLazyIcons, paintMini } from "./icons.js";
 import { SHAPES } from "./shapes.js";
 import { iconShape } from "./types.js";
 import { createCard } from "./card.js";
+import { dfFeatures } from "./df.js";
 import { generateDemo, stepDemo } from "./demo.js";
 
 const DEMO = new URLSearchParams(location.search).get("demo") === "1";
@@ -25,6 +26,8 @@ const KINDS = [
   { id: "dsc", name: "DSC", color: "#e0ad6b", shape: "dsc" },
   { id: "station", name: "Stations", color: "#e0d48f", shape: "station" },
   { id: "gnss", name: "GNSS satellites", color: "#9ad0f0", shape: "sat" },
+  { id: "doa", name: "DF bearings", color: "#ff9a4d", shape: "station" },
+  { id: "fix", name: "DF fixes", color: "#ff5a5a", shape: "station" },
 ];
 
 const on = Object.fromEntries(KINDS.map((k) => [k.id, true]));
@@ -266,7 +269,7 @@ function shapeRotates(shape) { return !!(SHAPES[shape] && SHAPES[shape].rotates)
 function geojson() {
   const features = [];
   for (const t of tracks.values()) {
-    if (!on[t.kind]) continue;
+    if (!on[t.kind] || t.kind === "doa" || t.kind === "fix") continue;   // drawn by the DF layers
     const hdg = effectiveHeading(t);
     const dot = datalinkDotUntilHeading(t, hdg);
     const shape = shapeFor(t);
@@ -294,6 +297,12 @@ function geojson() {
 }
 
 function trailGeo() {
+  const g = trailGeoSelected();
+  g.features.push(...dfFeatures(tracks, on, Date.now()));
+  return g;
+}
+
+function trailGeoSelected() {
   const features = [];
   if (!selected) return { type: "FeatureCollection", features };
   const t = tracks.get(selected);
@@ -716,6 +725,22 @@ map.on("load", () => {
     filter: ["==", ["get", "kind"], "pred"],
     paint: { "line-color": ["get", "color"], "line-width": 1.2, "line-opacity": 0.45, "line-dasharray": [2, 2] },
   });
+  // direction finding: bearing wedges and lines from the stations, fix markers with their 95 % ellipse
+  map.addLayer({ id: "dfwedge", type: "fill", source: "trails", filter: ["==", ["get", "kind"], "dfwedge"],
+    paint: { "fill-color": "#ff9a4d", "fill-opacity": ["*", 0.12, ["get", "fade"]] } });
+  map.addLayer({ id: "dfell", type: "fill", source: "trails", filter: ["==", ["get", "kind"], "dfell"],
+    paint: { "fill-color": "#ff5a5a", "fill-opacity": 0.18 } });
+  map.addLayer({ id: "dfellline", type: "line", source: "trails", filter: ["==", ["get", "kind"], "dfell"],
+    paint: { "line-color": "#ff5a5a", "line-width": 1.5, "line-opacity": 0.9 } });
+  map.addLayer({ id: "dfline", type: "line", source: "trails", filter: ["==", ["get", "kind"], "dfline"],
+    paint: { "line-color": "#ff9a4d", "line-width": 2, "line-opacity": ["*", 0.9, ["get", "fade"]], "line-dasharray": [4, 2] } });
+  map.addLayer({ id: "dfstation", type: "circle", source: "trails", filter: ["==", ["get", "kind"], "dfstation"],
+    paint: { "circle-radius": 5, "circle-color": "#ff9a4d", "circle-stroke-width": 1.2, "circle-stroke-color": "#0b0c0d" } });
+  map.addLayer({ id: "dffix", type: "circle", source: "trails", filter: ["==", ["get", "kind"], "dffix"],
+    paint: { "circle-radius": 7, "circle-color": "#ff5a5a", "circle-stroke-width": 2, "circle-stroke-color": "#ffffff" } });
+  map.addLayer({ id: "dffixlabel", type: "symbol", source: "trails", filter: ["==", ["get", "kind"], "dffix"],
+    layout: { "text-field": ["concat", "TX ", ["get", "label"]], "text-size": 12, "text-offset": [0, 1.4], "text-anchor": "top", "text-font": ["Open Sans Regular"] },
+    paint: { "text-color": "#ffd0d0", "text-halo-color": "#0b0c0d", "text-halo-width": 1.5 } });
   // selected state: soft glow plus a ring in the track's colour
   map.addLayer({
     id: "halo", type: "circle", source: "live",
