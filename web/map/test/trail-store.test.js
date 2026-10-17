@@ -39,10 +39,10 @@ test("records spaced fixes, thins close ones, survives a restart (new store, sam
 test("per-track cap trims the oldest in batches", () => {
   const db = new Mem(); const s = new TrailStore(db);
   const id = "aircraft:CAP001";
-  for (let i = 0; i < 400; i++) s.record(id, { ...fix(i), t: NOW - 2100e3 + i * 5000 }, NOW);
+  for (let i = 0; i < 400; i++) s.record(id, { ...fix(i), t: NOW - 3500e3 + i * 10000 }, NOW);
   const n = db.count(id);
   assert.ok(n <= 330 && n >= 300, String(n));
-  assert.equal(db.read(id, 1000).at(-1).t, NOW - 2100e3 + 399 * 5000, "newest kept");
+  assert.equal(db.read(id, 1000).at(-1).t, NOW - 3500e3 + 399 * 10000, "newest kept");
 });
 
 test("kinds without a trail (sat, station) store nothing; old fixes beyond the window refused", () => {
@@ -71,8 +71,28 @@ test("prune: window expiry, orphans, global cap, then reads still work", () => {
 
 test("get/all return compact points grouped by id", () => {
   const db = new Mem(); const s = new TrailStore(db);
-  s.record("vessel:111", fix(0), NOW); s.record("vessel:111", fix(1), NOW); s.record("sonde:S1", fix(0), NOW);
+  s.record("vessel:111", fix(0), NOW); s.record("vessel:111", fix(4), NOW); s.record("sonde:S1", fix(0), NOW);
   assert.deepEqual(Object.keys(s.all()).sort(), ["sonde:S1", "vessel:111"]);
   assert.equal(s.get(["vessel:111", "vessel:none"])["vessel:111"].length, 2);
   assert.equal(s.get(["vessel:none"])["vessel:none"], undefined);
+});
+
+test("buffered mode: nothing is written until flush(), then one batch; reads flush first; trims after the inserts", () => {
+  const db = new Mem(); const s = new TrailStore(db, { buffer: true });
+  const id = "aircraft:BUF001";
+  for (let i = 0; i < 400; i++) s.record(id, { ...fix(i), t: NOW - 3500e3 + i * 10000 }, NOW);
+  assert.equal(db.total(), 0, "no SQL yet");
+  assert.equal(s.flush() > 300, true);
+  assert.ok(db.count(id) <= 330 && db.count(id) >= 300, String(db.count(id)));
+  assert.equal(s.flush(), 0, "second flush is empty");
+  s.record(id, { ...fix(0), t: NOW + 900e3, lat: 40 }, NOW);
+  assert.equal(s.get([id])[id].at(-1)[1], 40, "get() flushes the buffer first");
+});
+
+test("stepMs per kind: ships keep a point only every 30 s, corners still after 5 s", () => {
+  const db = new Mem(); const s = new TrailStore(db);
+  s.record("vessel:9", { t: NOW - 100e3, lat: 25, lon: 55, alt: null, hdg: 90 }, NOW);
+  assert.equal(s.record("vessel:9", { t: NOW - 80e3, lat: 25.01, lon: 55, alt: null, hdg: 90 }, NOW), false, "20 s");
+  assert.equal(s.record("vessel:9", { t: NOW - 60e3, lat: 25.01, lon: 55, alt: null, hdg: 90 }, NOW), true, "40 s");
+  assert.equal(s.record("vessel:9", { t: NOW - 52e3, lat: 25.0101, lon: 55, alt: null, hdg: 130 }, NOW), true, "corner at 8 s");
 });

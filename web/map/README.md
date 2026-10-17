@@ -5,6 +5,8 @@ proxies OSM tiles and serves `/meta` (aircraft type, airline and route from adsb
 
 ## Files
 - `src/msgs.js` - ACARS messages per aircraft: sanitising, limits, merge (ingest `msgs` per aircraft track, at most 5 per track per post, 120 per station per minute, 20 kept per aircraft, 500 characters each, 48 h). `GET /msgs?id=<ICAO hex>` returns them; they are not part of `/live`. The card shows them with textContent only.
+- `src/track-book.js` - the hub's live tracks in memory (merge rules, write-behind selection, deltas, expiry); `test/track-book.test.js`.
+- `test/load-sim.js` - load simulator (see Cost model); only runs with `--run`.
 - `src/index.js` - Worker + MapHub. `/meta` returns type, registration, airline, flight number and `route.origin/destination` (with lat/lon).
 - `public/index.html`, `styles.css` - page shell and theme (dark tokens, drawer rail and bottom-sheet card on phones).
 - `public/app.js` - map, layers, live feed, search (callsign / registration / hex / MMSI, `/` focuses it), stats bar, selection, `#hex=` deep links.
@@ -47,3 +49,41 @@ The owner runs `npx wrangler deploy` in `web/map`. Nothing here deploys automati
 - ETA is estimated in the browser from great-circle distance and ground speed; it is hidden when the speed is unusable, the plane is on the ground or the destination position is unknown.
 - "Departed about" is only shown when the aircraft was first seen (by this page) on the ground or below 3000 ft within 30 km of the departure airport.
 - The hub does not carry geometric altitude, Mach/IAS or a "seen by N stations" count, so those rows are not shown.
+
+## Cost model (what Cloudflare bills, and what the hub does about it)
+Prices as read from the Cloudflare docs (Workers Paid): Durable Objects "Requests: 1 million/month included, $0.15 per million";
+"Duration (GB-s, 128 MB allocation): 400,000 GB-s/month, $12.50 per million GB-s", billed on the allocated memory "regardless of actual usage";
+"SQLite rows read: first 25 billion/month, $0.001 per million"; "rows written: first 50 million/month, $1.00 per million" (deletes count as
+rows written); incoming WebSocket messages count at 20:1. Workers: "10 million included per month, +$0.30 per additional million";
+"Requests to static assets are free and unlimited." Rows written is the expensive one by far.
+
+What the hub does:
+- **In-memory tracks, write-behind** (`TrackBook`). Ingest touches no SQL. Every `FLUSH_MS` (10 s, an alarm) changed tracks are written in ONE transaction, a moving track at most every 30 s, a still one every 5 min, a changed label/squawk at once. Deletes are bulk. SQLite is read once per start.
+- No more `(kind, t)` indexes on `tracks` and `trails` (each cost an extra billed row per write); expiry is one `DELETE` with a `CASE` per prune, every 10 min (`PRUNE_EVERY_MS`), not per request.
+- Trails: points are buffered and inserted in the flush transaction; minimum spacing per kind (`stepMs` in `trail.js`: aircraft 10 s, ships 30 s, APRS 60 s) which is about `window / cap`, so the drawn line is the same. Corners still count after 5 s.
+- Stations and ACARS messages are cached in memory and written in the flush (stations at most once a minute).
+- `/live` is built from memory (cached JSON per track, cached array per version), has an `ETag`, and the Worker serves it from the edge cache (`caches.default`, `LIVE_EDGE_S` = 3 s): 1000 viewers cost one Durable Object call per 3 s per data centre. `/meta` is cached 24 h (5 min when adsbdb knew nothing).
+- `GET /live?since=<version>` returns `{ delta: true, version, tracks: [changed], removed: [ids] }` or, when the version is unknown/too old (10 min log, or the hub restarted), the normal full body. Every full body now also has `version` (additive). The page polls with it when the WebSocket is down and takes a full snapshot every 5 min. Plain `/live` is unchanged for the Android app and the Discord bot.
+- WebSockets use the Hibernation API (`acceptWebSocket`, handlers on the class); a `ping` from the client is answered by the runtime without waking the object. Fan-out serialises once, batches upserts for 1 s, and does nothing when nobody is connected. WebSocket upserts no longer rely on alarms (`setTimeout`), so alarms are 6 per minute.
+- Duration: with stations posting every few seconds the object is never idle, so it cannot hibernate; 128 MB x 24 h x 30 d is about 324,000 GB-s, inside the 400,000 included. It only matters for a quiet hub, where hibernation now lets it sleep.
+
+Tune: the constants at the top of `src/index.js` (`FLUSH_MS`, `BROADCAST_MS`, `PRUNE_EVERY_MS`, `LIVE_EDGE_S`, `META_TTL_S`), `PERSIST_GAP_MS` in `track-book.js`, `stepMs` per kind in `trail.js`. If the process is evicted, at most the last ~10 s of new tracks and ~30 s of movement are lost.
+
+### Measured (test/load-sim.js, 60 s, 70 stations x 150-300 tracks every 2-5 s, 200 /live pollers every 5 s, 50 WebSockets, real workerd + DO SQLite)
+Run: `node test/load-sim.js --run --tree <checkout> --secs 60` (starts `wrangler dev --local`, no login; the wrapper counts DO fetches/alarms and the `rowsRead`/`rowsWritten` the SQL cursors report).
+
+| per minute | before | after |
+|---|---|---|
+| ingest POSTs | 1197 | 1194 |
+| Durable Object requests (fetch + alarm) | 3690 | 1220 |
+| SQL statements | 248,000 | 8,900 |
+| SQL rows written | 192,143 | 15,200 |
+| SQL rows read | 1,955,748 | 2,641 |
+| CPU ms per DO request (wrangler+workerd, ps) | 15.7 | 21.7 (fewer, bigger requests; per minute 58,077 -> 26,469) |
+| ingest latency p50 / p95 (ms, local) | 14.7 / 135 | 5.5 / 13.9 |
+| /live latency p50 / p95 (ms, local) | 45 / 146 | 7.3 / 18 |
+
+Monthly (x 43,200 min), billing units beyond the included amounts: DO requests 159M -> 53M ($23.8 -> $7.8); rows written 8.30 B -> 657 M ($8,251 -> $607); rows read 84 B -> 0.1 B ($60 -> $0). The scenario is a stress test (about 1,400 distinct moving targets); trail points are now about 80 % of the remaining writes, and the next step would be one JSON blob per track persisted per flush instead of one row per point. The Worker request count (ingest + /live, about 3,600/min = $43/month beyond 10 M) is not changed by caching: reduce it with fewer polls and longer app post intervals.
+
+### App side (not changed, read only)
+`app/map/map_send.cpp` posts at most every 4 s (`kMinInterval`) and every 60 s as a heartbeat, up to 250 tracks, each with up to 60 path points: about 130-230 KB per post with 250 tracks. The hub only needs the path for a track it has not seen yet (it keeps its own), so sending `path` only on a track's first post and every Nth post would cut the upload by roughly 80 %; the hub already ignores a one-point path (`mergePath`). This needs a native build and test, so it is left for a separate change. zlib deflate is not available in the app (`inflate.h` is a reader only).

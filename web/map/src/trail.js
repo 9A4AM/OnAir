@@ -3,15 +3,17 @@
 
 /** Per kind: windowMs = how far back a trail reaches, max = point cap per track. Kinds not listed keep no trail. */
 export const TRAIL_RULES = {
-  aircraft: { windowMs: 60 * 60e3, max: 300 },
-  flarm: { windowMs: 60 * 60e3, max: 300 },
-  drone: { windowMs: 60 * 60e3, max: 300 },
-  vessel: { windowMs: 6 * 3600e3, max: 200 },
-  sonde: { windowMs: 4 * 3600e3, max: 1000 }, // a whole flight (ascent ~1.5 h + descent), longer than the 3 h track TTL
-  aprs: { windowMs: 6 * 3600e3, max: 100 },
-  ham: { windowMs: 6 * 3600e3, max: 100 },
-  dsc: { windowMs: 6 * 3600e3, max: 100 },
-  buoy: { windowMs: 6 * 3600e3, max: 50 },
+  // stepMs = the least time between two kept points (every kept point is a billed SQLite row, plus one deleted at the cap):
+  // about windowMs / max, so the cap is reached just as the window ends and the line looks the same.
+  aircraft: { windowMs: 60 * 60e3, max: 300, stepMs: 10e3 },
+  flarm: { windowMs: 60 * 60e3, max: 300, stepMs: 10e3 },
+  drone: { windowMs: 60 * 60e3, max: 300, stepMs: 10e3 },
+  vessel: { windowMs: 6 * 3600e3, max: 200, stepMs: 30e3 },
+  sonde: { windowMs: 4 * 3600e3, max: 1000, stepMs: 10e3 }, // a whole flight (ascent ~1.5 h + descent), longer than the 3 h track TTL
+  aprs: { windowMs: 6 * 3600e3, max: 100, stepMs: 60e3 },
+  ham: { windowMs: 6 * 3600e3, max: 100, stepMs: 60e3 },
+  dsc: { windowMs: 6 * 3600e3, max: 100, stepMs: 60e3 },
+  buoy: { windowMs: 6 * 3600e3, max: 50, stepMs: 120e3 },
   // sat: none (orbit lines are drawn elsewhere); station: fixed
 };
 
@@ -46,13 +48,14 @@ export function headingDelta(a, b) {
   return d > 180 ? 360 - d : d;
 }
 
-/** Should `pt` ({t,lat,lon,hdg}) be appended after `last` (same shape or null)? */
-export function shouldKeep(last, pt) {
+/** Should `pt` ({t,lat,lon,hdg}) be appended after `last` (same shape or null)? stepMs: the kind's own minimum spacing. */
+export function shouldKeep(last, pt, stepMs = MIN_STEP_MS) {
   if (!last) return true;
   const dt = pt.t - last.t;
   if (dt <= 0) return false;
   if (dt < MIN_STEP_MS) return false;
-  if (headingDelta(last.hdg, pt.hdg) >= TURN_DEG) return true;
+  if (headingDelta(last.hdg, pt.hdg) >= TURN_DEG) return true;   // corners are kept as soon as 5 s have passed
+  if (dt < stepMs) return false;
   return distanceM(last.lat, last.lon, pt.lat, pt.lon) >= MIN_STEP_M;
 }
 

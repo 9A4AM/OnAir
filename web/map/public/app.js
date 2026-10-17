@@ -941,7 +941,31 @@ function setLive(ok) {
   renderStats();
 }
 
+let liveVersion = 0;   // hub version of the data in `tracks` (for /live?since=)
+let liveFullAt = 0;
+
+/** A /live?since= answer: only the changed tracks and the ids that went away. */
+function takeDelta(d) {
+  for (const t of d.tracks || []) tracks.set(t.id, mergePathClient(tracks.get(t.id), t));
+  for (const id of d.removed || []) tracks.delete(id);
+  stations = d.stations || 0;
+  if (d.load) serverLoad = d.load;
+  liveVersion = d.version || liveVersion;
+  apply();
+  setLive(true);
+}
+
+/** Polling fallback (WebSocket down): small deltas, with a full snapshot at the start and every 5 minutes. */
+function pollLive() {
+  const full = !liveVersion || Date.now() - liveFullAt > 300000;
+  fetch(full ? "/live" : "/live?since=" + liveVersion).then((r) => r.json()).then((d) => {
+    if (d.delta) takeDelta(d); else takeSnapshot(d);
+  }).catch(() => setLive(false));
+}
+
 function takeSnapshot(d) {
+  liveVersion = d.version || 0;
+  liveFullAt = Date.now();
   const next = new Map();
   for (const t of d.tracks || []) next.set(t.id, mergePathClient(tracks.get(t.id), t));
   tracks = next;
@@ -972,7 +996,7 @@ function connect() {
   };
   setTimeout(() => {
     if (!wsOpen && tracks.size === 0) {
-      fetch("/live").then((r) => r.json()).then(takeSnapshot).catch(() => setLive(false));
+      pollLive();
     }
   }, 6000);
 }
@@ -1048,6 +1072,6 @@ if (DEMO) {
   // Full snapshots are expensive on the hub; rely on WebSocket when connected.
   setInterval(() => {
     if (wsOpen) return;
-    fetch("/live").then((r) => r.json()).then(takeSnapshot).catch(() => {});
+    pollLive();
   }, 30000);
 }

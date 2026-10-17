@@ -19,8 +19,10 @@ export class SqlBackend {
         hdg REAL
       );
       CREATE INDEX IF NOT EXISTS idx_trails_id_t ON trails(id, t);
-      CREATE INDEX IF NOT EXISTS idx_trails_kind_t ON trails(kind, t);
+      DROP INDEX IF EXISTS idx_trails_kind_t;
     `);
+    // The (kind, t) index was dropped: it cost one more billed row written for every trail point. Expiry by kind now scans
+    // the table once per prune (every few minutes); rows read are billed at a thousandth of rows written.
   }
   last(id) {
     const r = this.sql.exec("SELECT t, lat, lon, hdg FROM trails WHERE id = ? ORDER BY t DESC LIMIT 1", id).toArray()[0];
@@ -39,6 +41,11 @@ export class SqlBackend {
   }
   deleteBefore(kind, cutoff) {
     this.sql.exec("DELETE FROM trails WHERE kind = ? AND t < ?", kind, cutoff);
+  }
+  /** One DELETE for every kind: rules = { kind: { windowMs } }. */
+  deleteExpired(rules, now) {
+    const when = Object.entries(rules).map(([k, r]) => `WHEN '${k}' THEN ${Math.round(r.windowMs)}`).join(" ");
+    this.sql.exec(`DELETE FROM trails WHERE t < ? - CASE kind ${when} ELSE 0 END`, now);
   }
   deleteOrphans() {
     this.sql.exec("DELETE FROM trails WHERE id NOT IN (SELECT id FROM tracks)");
@@ -63,8 +70,12 @@ export class SqlBackend {
 }
 
 export class TrailStore {
-  constructor(backend) {
+  /** buffer: collect inserts in memory and write them in one batch on flush() (the hub does this inside its flush transaction). */
+  constructor(backend, { buffer = false } = {}) {
     this.db = backend;
+    this.buffer = buffer;
+    this.pending = [];         // [{ id, kind, row }]
+    this.trim = new Map();     // id -> rows to delete from the front after the pending inserts
     this.cache = new Map(); // id -> { last, n, seen }
   }
 
@@ -86,19 +97,35 @@ export class TrailStore {
     if (!rule) return false;
     if (p.t < now - rule.windowMs) return false;
     const s = this.state(id, now);
-    if (!shouldKeep(s.last, p)) return false;
+    if (!shouldKeep(s.last, p, rule.stepMs)) return false;
     const row = { t: p.t, lat: p.lat, lon: p.lon, alt: p.alt ?? null, hdg: p.hdg ?? null };
-    this.db.insert(id, kind, row);
+    if (this.buffer) this.pending.push({ id, kind, row }); else this.db.insert(id, kind, row);
     s.last = row;
     s.n += 1;
     const over = overflowCount(s.n, rule.max);
-    if (over) { this.db.deleteOldest(id, over); s.n -= over; }
+    if (over) {
+      if (this.buffer) this.trim.set(id, (this.trim.get(id) || 0) + over); else this.db.deleteOldest(id, over);
+      s.n -= over;
+    }
     return true;
+  }
+
+  /** Write what record() collected (no-op when not buffering). Call inside one storage transaction. */
+  flush() {
+    if (!this.pending.length && !this.trim.size) return 0;
+    const n = this.pending.length;
+    for (const { id, kind, row } of this.pending) this.db.insert(id, kind, row);
+    this.pending = [];
+    for (const [id, over] of this.trim) this.db.deleteOldest(id, over);
+    this.trim.clear();
+    return n;
   }
 
   /** Called from the hub's periodic prune: expiry by kind window, orphans (track gone), global cap, cache cleanup. */
   prune(now) {
-    for (const kind of Object.keys(TRAIL_RULES)) this.db.deleteBefore(kind, now - TRAIL_RULES[kind].windowMs);
+    this.flush();
+    if (this.db.deleteExpired) this.db.deleteExpired(TRAIL_RULES, now);
+    else for (const kind of Object.keys(TRAIL_RULES)) this.db.deleteBefore(kind, now - TRAIL_RULES[kind].windowMs);
     this.db.deleteOrphans();
     const extra = this.db.total() - GLOBAL_TRAIL_CAP;
     if (extra > 0) this.db.deleteOldestGlobal(extra + Math.ceil(GLOBAL_TRAIL_CAP * 0.05));
@@ -109,6 +136,7 @@ export class TrailStore {
 
   /** { id: [wire points] } for the given ids (unknown / empty ids are omitted). */
   get(ids) {
+    this.flush();
     const out = {};
     for (const id of ids) {
       const rows = this.db.read(id, MAX_POINTS_PER_TRACK);
@@ -119,6 +147,7 @@ export class TrailStore {
 
   /** Every trail, grouped by id (for /live?trails=1). */
   all() {
+    this.flush();
     const out = {};
     for (const r of this.db.readAll()) (out[r.id] || (out[r.id] = [])).push(wirePoint({ t: r.t, lat: r.lat, lon: r.lon, alt: r.alt, hdg: r.hdg }));
     return out;
