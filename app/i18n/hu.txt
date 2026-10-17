@@ -2049,3 +2049,51 @@ Save CADU	CADU mentése
 Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Minden Reed-Solomon által elfogadott keret 1024 bájtos CADU-ként a <adatmappa>/goes/frames.cadu fájlba (ugyanolyan fájl, mint amit a SatDump ír), a dekóderek összehasonlításához
 Open CADU	CADU megnyitása
 Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Egy .cadu fájl (1024 bájtos keretek, ebből a programból vagy a SatDumpból) dekódolása Reed-Solomonon, csomagokon és fájlokon át; a GOES HRIT-nek futnia kell
+Messages	Üzenetek
+Messages...	Üzenetek...
+Every decoded message in one searchable database, with filters and export	Minden dekódolt üzenet egy kereshető adatbázisban, szűrőkkel és exporttal
+The message database could not be opened:	Az üzenetadatbázist nem sikerült megnyitni:
+Search text (words, prefix*)	Keresett szöveg (szavak, előtag*)
+Identity	Azonosító
+All modes	Minden mód
+With position	Pozícióval
+matching	találat
+stored	tárolva
+Newer	Újabbak
+Older	Régebbiek
+Export CSV	CSV exportálása
+Export JSON	JSON exportálása
+Export ADIF	ADIF exportálása
+Storage	Tárolás
+Record decoded messages	Dekódolt üzenetek rögzítése
+Most rows (thousands, 0 = no limit)	Legtöbb sor (ezerben, 0 = korlátlan)
+Size cap in MB (0 = none)	Méretkorlát MB-ban (0 = nincs)
+Keep days (0 = forever)	Megőrzés napokban (0 = örökre)
+Apply limits now	Korlátok alkalmazása most
+Clear all...	Összes törlése...
+Really clear	Tényleg törlöm
+The database file:	Az adatbázisfájl:
+Voice audio and encrypted traffic are never stored.	A beszédhangot és a titkosított forgalmat soha nem tároljuk.
+Band survey	Sávfelmérés
+record every sweep into the survey	minden pásztázás felvétele a felmérésbe
+persistent at %.0f%%	tartós: %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	Egy jel tartós, ha a pásztázások legalább ekkora részében a küszöb felett van
+quiet slot %.0f kHz	csendes sáv %.0f kHz
+Clear survey	Felmérés törlése
+Save survey...	Felmérés mentése...
+Load as previous survey...	Betöltés korábbi felmérésként...
+Export occupancy CSV...	Foglaltság exportálása CSV-be...
+Export persistent signals CSV...	Tartós jelek exportálása CSV-be...
+Export picture...	Kép exportálása...
+cannot write the picture	a kép nem írható
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	Indíts egy pásztázást: minden pásztázás új sort ad a felméréshez. Ha az "ismétlés" néhány perc, órákig futhat a háttérben.
+%zu sweeps over %.1f h	%zu pásztázás %.1f óra alatt
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	az előző felmérés óta: zajszint %+.1f dB, foglaltság %+.1f%%, %zu új, %zu eltűnt
+new %.4f MHz, %.0f%% of the time	új %.4f MHz, az idő %.0f%%-ában
+gone %.4f MHz, was %.0f%% of the time	eltűnt %.4f MHz, az idő %.0f%%-ában volt jelen
+Occupancy %	Foglaltság %
+Mean dB above floor	Átlag dB a zajszint felett
+Peak dB above floor	Csúcs dB a zajszint felett
+Quietest slots	Legcsendesebb sávok
+From MHz	Innen (MHz)
+Width kHz	Szélesség kHz

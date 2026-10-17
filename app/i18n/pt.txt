@@ -2046,3 +2046,51 @@ Save CADU	Guardar CADU
 Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Cada trama que passa o Reed-Solomon, como CADU de 1024 bytes em <pasta de dados>/goes/frames.cadu (o mesmo tipo de ficheiro que o SatDump escreve), para comparar descodificadores
 Open CADU	Abrir CADU
 Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Descodifica um ficheiro .cadu (tramas de 1024 bytes, deste programa ou do SatDump) por Reed-Solomon, pacotes e ficheiros; o GOES HRIT tem de estar ativo
+Messages	Mensagens
+Messages...	Mensagens...
+Every decoded message in one searchable database, with filters and export	Todas as mensagens decodificadas numa base de dados pesquisável, com filtros e exportação
+The message database could not be opened:	Não foi possível abrir a base de dados de mensagens:
+Search text (words, prefix*)	Texto a procurar (palavras, prefixo*)
+Identity	Identidade
+All modes	Todos os modos
+With position	Com posição
+matching	correspondências
+stored	guardadas
+Newer	Mais recentes
+Older	Mais antigas
+Export CSV	Exportar CSV
+Export JSON	Exportar JSON
+Export ADIF	Exportar ADIF
+Storage	Armazenamento
+Record decoded messages	Registar as mensagens decodificadas
+Most rows (thousands, 0 = no limit)	Máximo de linhas (milhares, 0 = sem limite)
+Size cap in MB (0 = none)	Limite de tamanho em MB (0 = nenhum)
+Keep days (0 = forever)	Dias a manter (0 = sempre)
+Apply limits now	Aplicar limites agora
+Clear all...	Apagar tudo...
+Really clear	Apagar mesmo
+The database file:	O ficheiro da base de dados:
+Voice audio and encrypted traffic are never stored.	O áudio de voz e o tráfego cifrado nunca são guardados.
+Band survey	Levantamento de banda
+record every sweep into the survey	registar cada varrimento no levantamento
+persistent at %.0f%%	persistente a %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	Um sinal é persistente quando está acima do limiar em pelo menos esta parte dos varrimentos
+quiet slot %.0f kHz	faixa calma %.0f kHz
+Clear survey	Limpar levantamento
+Save survey...	Guardar levantamento...
+Load as previous survey...	Carregar como levantamento anterior...
+Export occupancy CSV...	Exportar ocupação para CSV...
+Export persistent signals CSV...	Exportar sinais persistentes para CSV...
+Export picture...	Exportar imagem...
+cannot write the picture	não é possível escrever a imagem
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	Inicie um varrimento: cada varrimento acrescenta uma linha ao levantamento. Com "a cada" em alguns minutos pode correr horas em segundo plano.
+%zu sweeps over %.1f h	%zu varrimentos em %.1f h
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	desde o levantamento anterior: ruído de fundo %+.1f dB, ocupação %+.1f%%, %zu novos, %zu desaparecidos
+new %.4f MHz, %.0f%% of the time	novo %.4f MHz, em %.0f%% do tempo
+gone %.4f MHz, was %.0f%% of the time	desaparecido %.4f MHz, estava em %.0f%% do tempo
+Occupancy %	Ocupação %
+Mean dB above floor	Média dB acima do ruído
+Peak dB above floor	Pico dB acima do ruído
+Quietest slots	Faixas mais calmas
+From MHz	De MHz
+Width kHz	Largura kHz

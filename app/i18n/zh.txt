@@ -2063,3 +2063,51 @@ Save CADU	保存 CADU
 Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	把每个通过 Reed-Solomon 的帧按 1024 字节 CADU 写入 <数据文件夹>/goes/frames.cadu(与 SatDump 写出的文件同类),用于比较解码器
 Open CADU	打开 CADU
 Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	把 .cadu 文件(1024 字节帧,来自本程序或 SatDump)依次送过 Reed-Solomon、数据包和文件解码;GOES HRIT 必须在运行
+Messages	消息
+Messages...	消息...
+Every decoded message in one searchable database, with filters and export	所有解码的消息集中在一个可搜索的数据库中,支持筛选和导出
+The message database could not be opened:	无法打开消息数据库:
+Search text (words, prefix*)	搜索文本(单词,前缀*)
+Identity	标识
+All modes	所有模式
+With position	有位置
+matching	条匹配
+stored	条已存储
+Newer	较新
+Older	较旧
+Export CSV	导出 CSV
+Export JSON	导出 JSON
+Export ADIF	导出 ADIF
+Storage	存储
+Record decoded messages	记录解码的消息
+Most rows (thousands, 0 = no limit)	最大行数(千,0 = 不限)
+Size cap in MB (0 = none)	大小上限(MB,0 = 无)
+Keep days (0 = forever)	保留天数(0 = 永久)
+Apply limits now	立即应用限制
+Clear all...	全部清除...
+Really clear	确认清除
+The database file:	数据库文件:
+Voice audio and encrypted traffic are never stored.	语音音频和加密通信从不存储。
+Band survey	频段调查
+record every sweep into the survey	将每次扫描记入调查
+persistent at %.0f%%	持续 %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	信号在至少这一比例的扫描中高于阈值即视为持续信号
+quiet slot %.0f kHz	安静频段 %.0f kHz
+Clear survey	清除调查
+Save survey...	保存调查...
+Load as previous survey...	载入为上次调查...
+Export occupancy CSV...	导出占用率为 CSV...
+Export persistent signals CSV...	导出持续信号为 CSV...
+Export picture...	导出图片...
+cannot write the picture	无法写入图片
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	开始扫描：每次扫描会为调查增加一行。将“每隔”设为几分钟，可在后台运行数小时。
+%zu sweeps over %.1f h	%zu 次扫描，历时 %.1f 小时
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	自上次调查以来：底噪 %+.1f dB，占用率 %+.1f%%，新增 %zu，消失 %zu
+new %.4f MHz, %.0f%% of the time	新增 %.4f MHz，占时间 %.0f%%
+gone %.4f MHz, was %.0f%% of the time	消失 %.4f MHz，原占时间 %.0f%%
+Occupancy %	占用率 %
+Mean dB above floor	高于底噪的平均 dB
+Peak dB above floor	高于底噪的峰值 dB
+Quietest slots	最安静的频段
+From MHz	起始 MHz
+Width kHz	宽度 kHz
