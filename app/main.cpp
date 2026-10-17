@@ -214,6 +214,7 @@ static void shotReport(App& app) {
 static void shutdownApp(App& app, gfx::Backend* gfxBackend, GLFWwindow* window) {
     delete gDiscord;   // clears the status and joins its thread
     txShutdown();      // the transmitter goes quiet before anything else is closed
+    pluginShutdown();  // plugin threads and helper processes end, the crash marker goes
     receiversShutdown(app);
     app.engine.stop();
     app.engine.flushResults();

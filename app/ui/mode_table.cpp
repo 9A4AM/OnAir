@@ -2,6 +2,9 @@
 // Adding a mode is one row here (and its family number in app.h / setFamily). Used by the mode lists, the
 // mode search, the top bar and the 1-9 keys (mode_select.cpp, ui2.cpp, main.cpp).
 #include "../app.h"
+#include <algorithm>
+#include <deque>
+#include <string>
 
 // The receiver modes. Adding a mode is one row here (and its family number in app.h / setFamily).
 // The families are also stored in the settings: 0 DVB, 1 ATSC, 2 DAB, 3 ATSC 3.0, 4 ISDB-T, 5 FM, 6 DVB-S/S2, 7 DTMB, 8 analog TV, 9 DMR, 10 DRM, 11 ADS-B, 12 GNSS, 13 radiosonde, 14 AIS, 15 marine, 16 ACARS, 17 Inmarsat-C, 18 Inmarsat Aero, 19 Iridium, 20 mesh,
@@ -21,7 +24,7 @@
 //   keys     (optional) extra search words for the mode search box
 // Rows are listed in the order they appear within a group; the keys 1-9 pick the modes in that order.
 
-const ModeDef kModes[] = {
+static const ModeDef kBuiltinModes[] = {
     {0, "DVB",        0, IM_COL32(52, 92, 108, 255),  "DVB-T2 / DVB-T, detected automatically",                                    "DVB-T2 and DVB-T, automatic (Europe, Middle East, Africa, Asia, Australia)", N_("T2 and T, automatic"),   ImVec4(0.36f, 0.74f, 0.86f, 1)},
     {1, "ATSC",       0, IM_COL32(150, 100, 30, 255), "ATSC 8-VSB, 6 MHz channel (the DVB-only settings are off)",                 "ATSC 1.0, 8-VSB (US, Canada, Mexico, South Korea)",                           N_("8-VSB, North America"),  ImVec4(0.95f, 0.66f, 0.26f, 1)},
     {3, "ATSC 3.0",   0, IM_COL32(150, 70, 40, 255),  "ATSC 3.0 (NextGen TV), 6 MHz channel, ROUTE services",                      "ATSC 3.0, NextGen TV",                                                        N_("NextGen TV"),            ImVec4(0.95f, 0.50f, 0.36f, 1)},
@@ -135,13 +138,34 @@ const ModeDef kModes[] = {
     {55, "General receiver", 13, IM_COL32(64, 104, 112, 255), "Listen anywhere in the band: NFM, WFM (mono), AM, USB, LSB and CW, click the spectrum to tune, filter width, squelch, AGC, de-emphasis, S-meter and audio recording to WAV", "General receiver: NFM, WFM, AM, USB, LSB and CW anywhere", N_("NFM / AM / SSB / CW"), ImVec4(0.52f, 0.82f, 0.86f, 1), nullptr, "general receiver scanner listen nfm fm wfm am usb lsb ssb cw morse bfo squelch agc s-meter record wav 2m 70cm pmr446 cb shortwave broadcast ham amateur sdr++ gqrx"},
     {41, "Spectrum explorer", 13, IM_COL32(70, 100, 120, 255), "Spectrum explorer: look around the band, measure carriers (bandwidth, power, SNR, symbol rate), sweep a range, LNB offsets, bookmarks; no decoder", "Spectrum explorer: look, measure and sweep", N_("Spectrum, waterfall, sweep"), ImVec4(0.55f, 0.80f, 0.95f, 1), nullptr, "spectrum analyzer analyser sweep waterfall measure bandwidth lnb survey scan"},
     {42, "Spectrum analyser", 13, IM_COL32(70, 100, 140, 255), "Wide sweeping spectrum analyser (1 - 6000 MHz in about a second with a HackRF): live, peak-hold and averaged traces, waterfall, markers, band overlay, CSV export", "Spectrum analyser: fast wide sweeps with markers and band labels", N_("Sweep, 1 - 6000 MHz"), ImVec4(0.55f, 0.75f, 0.98f, 1), nullptr, "spectrum analyser analyzer sweep hackrf_sweep wideband scan peak hold waterfall rf survey"},
+    {999, "Plugins", 14, IM_COL32(100, 110, 130, 255), "Plugins: add decoders and actions without rebuilding OnAir; installed plugins, their permissions and logs", "Plugins: manage the decoder and action plugins you installed", N_("Add-ons"), ImVec4(0.66f, 0.72f, 0.86f, 1), nullptr, "plugins plugin add-on addon extension sdk"},
 };
 
-const int kNumModes = (int)(sizeof kModes / sizeof *kModes);
-const char* const kGroupNames[kNumGroups] = {N_("TV"), N_("BROADCAST RADIO"), N_("AVIATION"), N_("MARITIME"), N_("SATELLITE & NAVIGATION"), N_("TWO-WAY RADIO"), N_("CELLULAR & RAIL"), N_("PAGERS"), N_("IoT & SENSORS"), N_("WEATHER & SCIENCE"), N_("AMATEUR - DIGITAL"), N_("AMATEUR - VOICE & PACKET"), N_("HF UTILITY"), N_("GENERAL & TOOLS")};
+// The table the program uses: the built-in rows, then the rows of the installed plugins' modes (addPluginModeRow, at start and after an install).
+// Rows are only ever appended, so a row's index stays the same for the whole run; the family numbers are the plugins' own stable numbers.
+ModeDef kModes[kModeCapacity];
+int kNumModes = 0;
+static const bool kModesFilled = [] {
+    kNumModes = (int)(sizeof kBuiltinModes / sizeof *kBuiltinModes);
+    std::copy(kBuiltinModes, kBuiltinModes + kNumModes, kModes);
+    return true;
+}();
+
+bool addPluginModeRow(int family, const std::string& name, const std::string& blurb, const std::string& sub) {
+    static std::deque<std::string> keep;   // the rows point at these; a deque never moves its elements
+    for (int i = 0; i < kNumModes; i++) if (kModes[i].family == family) return true;   // already there
+    if (kNumModes >= kModeCapacity) return false;
+    keep.push_back(name); const char* n = keep.back().c_str();
+    keep.push_back(blurb); const char* b = keep.back().c_str();
+    keep.push_back(sub); const char* sb = keep.back().c_str();
+    kModes[kNumModes++] = ModeDef{family, n, 14, IM_COL32(90, 104, 128, 255), b, b, sb, ImVec4(0.66f, 0.76f, 0.94f, 1)};
+    return true;
+}
+const char* const kGroupNames[kNumGroups] = {N_("TV"), N_("BROADCAST RADIO"), N_("AVIATION"), N_("MARITIME"), N_("SATELLITE & NAVIGATION"), N_("TWO-WAY RADIO"), N_("CELLULAR & RAIL"), N_("PAGERS"), N_("IoT & SENSORS"), N_("WEATHER & SCIENCE"), N_("AMATEUR - DIGITAL"), N_("AMATEUR - VOICE & PACKET"), N_("HF UTILITY"), N_("GENERAL & TOOLS"), N_("PLUGINS")};
 // a thin accent per group heading in the mode lists (UI only: nothing stores a group number)
 const ImU32 kGroupCols[kNumGroups] = {
     IM_COL32(92, 188, 220, 255), IM_COL32(92, 210, 148, 255), IM_COL32(132, 160, 240, 255), IM_COL32(80, 170, 210, 255),
     IM_COL32(186, 150, 236, 255), IM_COL32(150, 206, 104, 255), IM_COL32(226, 168, 112, 255), IM_COL32(214, 206, 96, 255),
     IM_COL32(110, 214, 196, 255), IM_COL32(120, 150, 230, 255), IM_COL32(218, 130, 214, 255), IM_COL32(236, 128, 140, 255),
-    IM_COL32(204, 176, 132, 255), IM_COL32(150, 162, 178, 255)};
+    IM_COL32(204, 176, 132, 255), IM_COL32(150, 162, 178, 255),
+    IM_COL32(150, 170, 210, 255)};
