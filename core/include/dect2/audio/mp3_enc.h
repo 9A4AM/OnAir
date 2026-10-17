@@ -18,14 +18,16 @@ public:
     // true when libmp3lame can be loaded
     static bool available() { return api().ok; }
 
-    bool begin(FILE* f, uint32_t rate, int kbps, const std::vector<std::string>& tags = {}) {
+    bool begin(FILE* f, uint32_t rate, int kbps, const std::vector<std::string>& tags = {}, int channels = 1) {
         const Api& a = api();
         if (!a.ok || !f) return false;
+        ch_ = channels == 2 ? 2 : 1;
+        if (ch_ == 2 && !a.encodeInter) return false;   // the caller falls back to mono
         gf_ = a.init();
         if (!gf_) return false;
         a.setRate(gf_, (int)rate);
-        a.setCh(gf_, 1);
-        a.setMode(gf_, 3);   // MONO
+        a.setCh(gf_, ch_);
+        a.setMode(gf_, ch_ == 2 ? 1 : 3);   // joint stereo, or MONO
         a.setBrate(gf_, kbps);
         a.setQuality(gf_, 5);
         if (a.id3Init && a.id3Comment) {
@@ -38,8 +40,8 @@ public:
     }
     void write(const int16_t* pcm, size_t n) {
         if (!gf_) return;
-        std::vector<unsigned char> out(n * 5 / 4 + 7200);
-        const int r = api().encode(gf_, pcm, nullptr, (int)n, out.data(), (int)out.size());
+        std::vector<unsigned char> out(n * 5 / 4 + 7200);   // n frames; stereo input is interleaved
+        const int r = ch_ == 2 ? api().encodeInter(gf_, pcm, (int)n, out.data(), (int)out.size()) : api().encode(gf_, pcm, nullptr, (int)n, out.data(), (int)out.size());
         if (r > 0) fwrite(out.data(), 1, (size_t)r, f_);
     }
     void finish() {
@@ -62,6 +64,7 @@ private:
         int (*setQuality)(void*, int) = nullptr;
         int (*initParams)(void*) = nullptr;
         int (*encode)(void*, const short*, const short*, int, unsigned char*, int) = nullptr;
+        int (*encodeInter)(void*, const short*, int, unsigned char*, int) = nullptr;
         int (*flush)(void*, unsigned char*, int) = nullptr;
         int (*close)(void*) = nullptr;
         void (*id3Init)(void*) = nullptr;
@@ -84,7 +87,7 @@ private:
 #define M(f, s) a.f = reinterpret_cast<decltype(a.f)>(sym(s))
         M(init, "lame_init"); M(setRate, "lame_set_in_samplerate"); M(setCh, "lame_set_num_channels"); M(setMode, "lame_set_mode");
         M(setBrate, "lame_set_brate"); M(setQuality, "lame_set_quality"); M(initParams, "lame_init_params");
-        M(encode, "lame_encode_buffer"); M(flush, "lame_encode_flush"); M(close, "lame_close");
+        M(encode, "lame_encode_buffer"); M(encodeInter, "lame_encode_buffer_interleaved"); M(flush, "lame_encode_flush"); M(close, "lame_close");
         M(id3Init, "id3tag_init"); M(id3Comment, "id3tag_set_comment");
 #undef M
         a.ok = a.init && a.setRate && a.setCh && a.setMode && a.setBrate && a.setQuality && a.initParams && a.encode && a.flush && a.close;
@@ -92,6 +95,7 @@ private:
     }
     void* gf_ = nullptr;
     FILE* f_ = nullptr;
+    int ch_ = 1;
 };
 
 }  // namespace dect2

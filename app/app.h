@@ -453,6 +453,9 @@ struct App {
     double diagCopiedAt = -10, diagPollAt = -10;
     bool diagWasRunning = false;
     bool recSigmf = true;               // write SigMF metadata beside IQ recordings (pref "recSigmf", default on)
+    int audioRecFmt = 0;                // audio recording format: 0 = WAV, 1 = FLAC, 2 = MP3 (pref "audioRecFmt")
+    bool audioRecGate = false, audioRecSplit = false, audioRecKeep = false;   // only while audio is present / one file per transmission / keep going across retunes (prefs "audioRec...")
+    bool audioRecWasActive = false; int audioRecMode = 0; double audioRecFreq = 0; std::string audioRecDonePath;
     int recFormat = 0;                  // IQ recording format: 0 = 8-bit, 1 = float (pref "recFormat")
     int tvBufMb = 256;                  // TV live buffer for Pause (pref "tvBufMb")
     int tvRecMin = 0, tvRecAtH = 0, tvRecAtM = 0;   // TV recording timer: stop after N minutes (0 = off), at a clock time

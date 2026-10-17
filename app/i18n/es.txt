@@ -1480,3 +1480,14 @@ Sweep	Barrer
 every %.0f s	cada %.0f s
 back to back	seguidos
 Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Barrido rápido de banda ancha con medida del suelo de ruido, registro de señales y cascada
+Record audio	Grabar audio
+Only audio	Solo audio
+Split	Dividir
+Keep going	Seguir
+Show recording	Mostrar grabación
+Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)	Guarda en un archivo el sonido que oyes, en cualquier modo (antes del volumen, así el nivel no depende de él)
+MP3 needs the LAME library (libmp3lame), which is not installed	MP3 necesita la biblioteca LAME (libmp3lame), que no está instalada
+WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo.	WAV: 16 bits, grande. FLAC: sin pérdida, la mitad de tamaño. MP3: pequeño (necesita libmp3lame). El FM estéreo se guarda en estéreo.
+Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	Guarda solo mientras hay sonido (como un silenciador): se corta el silencio, con un breve inicio y final
+One file per transmission: a new file starts after 3 s of silence	Un archivo por transmisión: tras 3 s de silencio empieza uno nuevo
+Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Sigue grabando al cambiar el modo o la frecuencia. Desactivado: la grabación se detiene entonces.

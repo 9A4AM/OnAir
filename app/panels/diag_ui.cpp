@@ -1,6 +1,9 @@
 // Radio problems where the user looks: the listing error, a failed start, a frequency the radio cannot tune and the USB hints, all under the
 // radio picker, plus a "Copy diagnostics" button that puts what a bug report needs on the clipboard.
 #include "dect2/common/u8file.h"
+#include "dect2/audio/audio_rec.h"
+#include "dect2/audio/mp3_enc.h"
+#include "dect2/source/iq_record.h"
 #include "../app.h"
 #include "dect2/source/converter.h"
 #include "dect2/engine/updater.h"
@@ -198,6 +201,92 @@ void recordUi(App& a) {
         flowNext(6 * gUi);
         if (ImGui::SmallButton("Show recording")) dect2::openUrl(a.recDonePath.substr(0, a.recDonePath.find_last_of("/\\")));
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", a.recDonePath.c_str());
+    }
+    flowEnd();
+}
+
+// "Record audio": the sound you hear, from any mode (a tap in AudioOut, before the volume). Idle: a button, the format and three switches;
+// recording: a red "Stop 12.3 s 1.2 MB". Stops by itself on a mode change or a retune unless "Keep going" is on.
+void audioRecordUi(App& a) {
+    dect2::AudioRecorder& rec = dect2::AudioRecorder::instance();
+    const dect2::AudioRecStats rs = rec.stats();
+    if (rs.active) {
+        a.audioRecWasActive = true;
+        if (!a.audioRecKeep && (!a.engine.running() || a.engine.standardMode() != a.audioRecMode || std::fabs(a.freqMhz - a.audioRecFreq) > 1e-6)) rec.stop();
+    } else if (a.audioRecWasActive) {
+        a.audioRecWasActive = false;
+        a.audioRecDonePath = rs.path;
+        char b[96];
+        snprintf(b, sizeof b, "audio recorded: %.1f s in %d file(s), %s, to ", rs.seconds, rs.files, sizeText(rs.bytes).c_str());
+        if (rs.files > 0) a.engine.log(std::string(b) + rs.path);
+        if (!rs.error.empty()) a.engine.log("audio recording stopped: " + rs.error);
+        if (rs.dropped) a.engine.log("the disk was too slow: some audio is missing from the recording");
+    }
+    if (rs.active) {
+        char b[96];
+        snprintf(b, sizeof b, "%s  %.1f s  %.1f MB%s###audiorecstop", tr("Stop"), rs.seconds, rs.bytes / 1e6, a.audioRecGate && !rs.gateOpen ? "  (waiting)" : "");
+        ImGui::PushStyleColor(ImGuiCol_Text, pal::badRed());
+        if (ImGui::SmallButton(b)) rec.stop();
+        ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", rs.path.c_str());
+    } else {
+        const bool can = a.engine.running();
+        ImGui::BeginDisabled(!can);
+        const ImVec2 p0 = ImGui::GetCursorScreenPos();
+        const float sp = ImGui::CalcTextSize(" ").x;
+        if (ImGui::SmallButton((std::string("    ") + tr("Record audio")).c_str())) {
+            dect2::AudioRecOptions o;
+            o.format = (dect2::AudioRecFormat)a.audioRecFmt; o.gated = a.audioRecGate; o.split = a.audioRecGate && a.audioRecSplit;
+            const int m = a.engine.standardMode();
+            const double hz = a.freqMhz * 1e6;
+            char tag[96]; snprintf(tag, sizeof tag, "OnAir %s %.3f MHz", dect2::recordingModeId(m).c_str(), a.freqMhz);
+            o.tag = tag;
+            const std::string path = plat::dataDir() + "/recordings/" + dect2::AudioRecorder::fileName(dect2::recordingModeId(m), hz, o.format);
+            std::string err;
+            if (rec.start(path, o, err)) { a.audioRecDonePath.clear(); a.audioRecMode = m; a.audioRecFreq = a.freqMhz; }
+            else a.engine.log("audio recording failed: " + err);
+        }
+        ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(p0.x + ImGui::GetStyle().FramePadding.x + 2.2f * sp, p0.y + ImGui::GetItemRectSize().y * 0.5f), 3.2f * gUi, can ? ImGui::GetColorU32(pal::badRed()) : IM_COL32(120, 80, 78, 255));
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+            ImGui::SetTooltip("%s", tr(!can ? "Start the radio first" : "Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)"));
+    }
+    flowNext(6 * gUi);
+    ImGui::BeginDisabled(rs.active);
+    static const char* const fm[] = {"WAV", "FLAC", "MP3"};
+    ImGui::SetNextItemWidth(ImGui::CalcTextSize("FLAC").x + ImGui::GetFrameHeight() + 2 * ImGui::GetStyle().FramePadding.x + 4 * gUi);
+    if (ImGui::BeginCombo("##audiorecfmt", fm[a.audioRecFmt])) {
+        for (int i = 0; i < 3; i++) {
+            const bool off = i == 2 && !dect2::Mp3Enc::available();
+            ImGui::BeginDisabled(off);
+            if (ImGui::Selectable(fm[i], a.audioRecFmt == i)) { a.audioRecFmt = i; plat::prefs().setI("audioRecFmt", i); }
+            ImGui::EndDisabled();
+            if (off && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("MP3 needs the LAME library (libmp3lame), which is not installed"));
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo."));
+    flowNext(6 * gUi);
+    ImGui::BeginDisabled(rs.active);
+    if (ImGui::Checkbox(tr("Only audio"), &a.audioRecGate)) plat::prefs().setB("audioRecGate", a.audioRecGate);
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail"));
+    if (a.audioRecGate) {
+        flowNext(6 * gUi);
+        ImGui::BeginDisabled(rs.active);
+        if (ImGui::Checkbox(tr("Split"), &a.audioRecSplit)) plat::prefs().setB("audioRecSplit", a.audioRecSplit);
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("One file per transmission: a new file starts after 3 s of silence"));
+    }
+    flowNext(6 * gUi);
+    if (ImGui::Checkbox(tr("Keep going"), &a.audioRecKeep)) plat::prefs().setB("audioRecKeep", a.audioRecKeep);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Keeps recording when the mode or the frequency changes. Off: the recording stops then."));
+    if (!a.audioRecDonePath.empty() && !rs.active) {
+        flowNext(6 * gUi);
+        if (ImGui::SmallButton(tr("Show recording"))) dect2::openUrl(a.audioRecDonePath.substr(0, a.audioRecDonePath.find_last_of("/\\")));
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", a.audioRecDonePath.c_str());
+        if (!rs.error.empty()) { flowNext(4 * gUi); ImGui::TextColored(pal::warnAmber(), "%s", rs.error.c_str()); }
     }
     flowEnd();
 }
@@ -435,4 +524,6 @@ void radioMessagesUi(App& a, bool vertical) {
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Saves one zip file with the diagnostics, the log and the last crash report: attach it to a GitHub issue"));
     flowNext(6 * gUi);
     recordUi(a);
+    flowNext(10 * gUi);
+    audioRecordUi(a);
 }

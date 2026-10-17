@@ -1480,3 +1480,14 @@ Sweep	Durchlauf
 every %.0f s	alle %.0f s
 back to back	nahtlos
 Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Schneller Breitband-Durchlauf mit Rauschmessung, Signalprotokoll und Wasserfall
+Record audio	Audio aufnehmen
+Only audio	Nur Ton
+Split	Teilen
+Keep going	Weiterlaufen
+Show recording	Aufnahme zeigen
+Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)	Speichert den Ton, den du hörst, in jedem Modus in eine Datei (vor dem Lautstärkeregler, der Pegel hängt also nicht davon ab)
+MP3 needs the LAME library (libmp3lame), which is not installed	MP3 braucht die LAME-Bibliothek (libmp3lame), die nicht installiert ist
+WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo.	WAV: 16 Bit, groß. FLAC: verlustfrei, etwa halb so groß. MP3: klein (braucht libmp3lame). UKW-Stereo bleibt Stereo.
+Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	Speichert nur, solange Ton da ist (wie eine Rauschsperre): Stille wird herausgeschnitten, mit kurzem Vor- und Nachlauf
+One file per transmission: a new file starts after 3 s of silence	Eine Datei pro Sendung: nach 3 s Stille beginnt eine neue Datei
+Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Nimmt weiter auf, wenn sich Modus oder Frequenz ändern. Aus: Die Aufnahme endet dann.

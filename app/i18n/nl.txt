@@ -1480,3 +1480,14 @@ Sweep	Sweep
 every %.0f s	elke %.0f s
 back to back	achter elkaar
 Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Snelle breedband-sweep met ruisvloermeting, signaallogboek en waterval
+Record audio	Audio opnemen
+Only audio	Alleen audio
+Split	Splitsen
+Keep going	Doorgaan
+Show recording	Opname tonen
+Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)	Slaat het geluid dat je hoort in elke modus op in een bestand (vóór het volume, dus het niveau hangt er niet van af)
+MP3 needs the LAME library (libmp3lame), which is not installed	MP3 heeft de LAME-bibliotheek (libmp3lame) nodig, die niet is geïnstalleerd
+WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo.	WAV: 16 bit, groot. FLAC: verliesvrij, ongeveer half zo groot. MP3: klein (heeft libmp3lame nodig). FM-stereo blijft stereo.
+Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	Slaat alleen op zolang er geluid is (zoals een squelch): stilte wordt weggelaten, met een korte aanloop en uitloop
+One file per transmission: a new file starts after 3 s of silence	Eén bestand per uitzending: na 3 s stilte begint een nieuw bestand
+Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Blijft opnemen als de modus of frequentie verandert. Uit: dan stopt de opname.

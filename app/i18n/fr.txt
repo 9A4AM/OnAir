@@ -1480,3 +1480,14 @@ Sweep	Balayer
 every %.0f s	toutes les %.0f s
 back to back	en continu
 Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Balayage large bande rapide avec mesure du plancher de bruit, journal des signaux et cascade
+Record audio	Enregistrer l'audio
+Only audio	Audio seul
+Split	Découper
+Keep going	Continuer
+Show recording	Afficher l'enregistrement
+Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)	Enregistre dans un fichier le son que vous entendez, dans tous les modes (avant le volume, le niveau n'en dépend donc pas)
+MP3 needs the LAME library (libmp3lame), which is not installed	MP3 nécessite la bibliothèque LAME (libmp3lame), qui n'est pas installée
+WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo.	WAV : 16 bits, volumineux. FLAC : sans perte, environ moitié moins gros. MP3 : petit (nécessite libmp3lame). La FM stéréo reste en stéréo.
+Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	N'enregistre que lorsqu'il y a du son (comme un squelch) : le silence est supprimé, avec une courte amorce et une courte fin
+One file per transmission: a new file starts after 3 s of silence	Un fichier par émission : un nouveau fichier commence après 3 s de silence
+Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Continue d'enregistrer quand le mode ou la fréquence change. Désactivé : l'enregistrement s'arrête alors.
