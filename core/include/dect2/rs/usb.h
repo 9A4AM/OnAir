@@ -81,8 +81,8 @@ int32_t onair_usb_rtl_read_sync(onair_usb_rtl_t* h, uint8_t* buf, size_t len);
 // Crystal frequencies in Hz (0 keeps the default 28.8 MHz).
 int32_t onair_usb_rtl_set_xtal_freq(onair_usb_rtl_t* h, uint32_t rtl_freq, uint32_t tuner_freq);
 // EEPROM access (256 bytes).
-int32_t onair_usb_rtl_read_eeprom(onair_usb_rtl_t* h, uint8_t* out, uint8_t offset, size_t len);
-int32_t onair_usb_rtl_write_eeprom(onair_usb_rtl_t* h, const uint8_t* data, uint8_t offset, size_t len);
+int32_t onair_usb_rtl_read_eeprom(onair_usb_rtl_t* h, uint8_t* out, uint32_t offset, size_t len);
+int32_t onair_usb_rtl_write_eeprom(onair_usb_rtl_t* h, const uint8_t* data, uint32_t offset, size_t len);
 // 1 when the manufacturer / product strings read at open equal the NUL terminated arguments (e.g. "RTLSDRBlog", "Blog V4"), else 0.
 int32_t onair_usb_rtl_check_dongle_model(onair_usb_rtl_t* h, const uint8_t* manufact, const uint8_t* product);
 

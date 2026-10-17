@@ -60,7 +60,7 @@ size_t onair_tetra_network_time_text(uint64_t t, uint8_t* out, size_t cap);
 // D-NWRK-BROADCASTs and their neighbours (beyond a capacity: counted, not stored). A block of len bits holds at most len / 8 + 1 broadcasts of 7 neighbours.
 int32_t onair_tetra_parse_block(const uint8_t* bits, size_t len, OnairTetraMacBlock* blk, OnairTetraNwrk* nwrk, size_t nwrk_cap, OnairTetraNeighbour* nbr, size_t nbr_cap);
 // ACCESS-ASSIGN downlink use of the slot: -1 not stated, 0 unallocated, 1 assigned control, 2 common control, 3 reserved, 4 and up traffic; and its name.
-int32_t onair_tetra_aach_dl_usage(uint16_t aa, int32_t frame18);
+int32_t onair_tetra_aach_dl_usage(uint32_t aa, int32_t frame18);
 const uint8_t* onair_tetra_dl_usage_text(int32_t u);
 
 #ifdef __cplusplus

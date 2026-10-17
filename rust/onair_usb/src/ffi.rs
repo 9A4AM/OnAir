@@ -310,20 +310,20 @@ pub unsafe extern "C" fn onair_usb_rtl_set_xtal_freq(h: *mut u8, rtl_freq: u32, 
 
 /// Read EEPROM bytes at `offset` (rtlsdr_read_eeprom).
 #[no_mangle]
-pub unsafe extern "C" fn onair_usb_rtl_read_eeprom(h: *mut u8, out: *mut u8, offset: u8, len: usize) -> i32 {
+pub unsafe extern "C" fn onair_usb_rtl_read_eeprom(h: *mut u8, out: *mut u8, offset: u32, len: usize) -> i32 {
     if out.is_null() || len == 0 {
         return -1;
     }
-    with_dev!(h, d, d.read_eeprom(core::slice::from_raw_parts_mut(out, len), offset), -1)
+    with_dev!(h, d, d.read_eeprom(core::slice::from_raw_parts_mut(out, len), offset as u8), -1)
 }
 
 /// Write EEPROM bytes at `offset` (rtlsdr_write_eeprom).
 #[no_mangle]
-pub unsafe extern "C" fn onair_usb_rtl_write_eeprom(h: *mut u8, data: *const u8, offset: u8, len: usize) -> i32 {
+pub unsafe extern "C" fn onair_usb_rtl_write_eeprom(h: *mut u8, data: *const u8, offset: u32, len: usize) -> i32 {
     if data.is_null() || len == 0 {
         return -1;
     }
-    with_dev!(h, d, d.write_eeprom(core::slice::from_raw_parts(data, len), offset), -1)
+    with_dev!(h, d, d.write_eeprom(core::slice::from_raw_parts(data, len), offset as u8), -1)
 }
 
 /// True (1) when the manufacturer / product strings read at open equal the NUL terminated `manufact` / `product` (rtlsdr_check_dongle_model); 0 otherwise.

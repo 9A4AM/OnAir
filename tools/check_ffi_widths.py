@@ -9,7 +9,7 @@ NARROW = re.compile(r'^(?:core::ffi::|std::os::raw::|libc::)?(u8|u16|i8|i16|bool
 bad = 0
 for f in sorted(glob.glob(os.path.join(root, '*', 'src', '**', '*.rs'), recursive=True)):
     s = open(f, encoding='utf-8').read()
-    for m in re.finditer(r'extern\s+"C"\s+fn\s+(\w+)\s*(?:<[^>]*>)?\s*\((.*?)\)\s*(?:->[^{;]*)?[{;]', s, re.S):
+    for m in re.finditer(r'\bpub\s+(?:unsafe\s+)?extern\s+"C"\s+fn\s+(\w+)\s*(?:<[^>]*>)?\s*\((.*?)\)\s*(?:->[^{;]*)?[{;]', s, re.S):
         for p in re.split(r',(?![^()]*\))', m.group(2)):
             if ':' not in p:
                 continue

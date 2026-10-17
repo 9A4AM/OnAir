@@ -129,8 +129,8 @@ pub unsafe extern "C" fn onair_tetra_parse_block(
 
 /// ACCESS-ASSIGN downlink usage (see header).
 #[no_mangle]
-pub extern "C" fn onair_tetra_aach_dl_usage(aa: u16, frame18: i32) -> i32 {
-    sysinfo::aach_dl_usage(aa, frame18 != 0)
+pub extern "C" fn onair_tetra_aach_dl_usage(aa: u32, frame18: i32) -> i32 {
+    sysinfo::aach_dl_usage(aa as u16, frame18 != 0)
 }
 /// Name of a downlink usage value.
 #[no_mangle]
