@@ -6,7 +6,10 @@ import { iconId, installLazyIcons, paintMini } from "./icons.js";
 import { SHAPES } from "./shapes.js";
 import { iconShape } from "./types.js";
 import { createCard } from "./card.js";
+import { createSheet } from "./sheet.js";
 import { generateDemo, stepDemo } from "./demo.js";
+import { watchMapTheme } from "./theme.js";
+import { mergeTrails, appendLive, toLine } from "./trail.js";
 
 const DEMO = new URLSearchParams(location.search).get("demo") === "1";
 const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -32,11 +35,13 @@ const kindOf = Object.fromEntries(KINDS.map((k) => [k.id, k]));
 let tracks = new Map();
 let selected = null;
 let liveOk = false;
+let everLive = false;
 let stations = 0;
 let serverLoad = null;
 let query = "";
 let followId = null;      // id being followed (map kept centred)
-let showTrack = true;     // draw the selected track's trail
+let showTrack = true;     // draw the selected track's trail (remembered across reloads)
+try { if (localStorage.getItem("onair.map.showTrack") === "0") showTrack = false; } catch { /* storage blocked */ }
 let demoMeta = {};
 
 const map = new maplibregl.Map({
@@ -299,7 +304,8 @@ function trailGeo() {
   const t = tracks.get(selected);
   if (!t || !on[t.kind] || t.kind === "gnss") return { type: "FeatureCollection", features };
   const [dlon, dlat] = displayLonLat(t);
-  const path = Array.isArray(t.path) ? t.path.slice() : [];
+  // t.tpts = server history merged with the fixes this page saw (see fetchTrail); t.path is the short fallback
+  const path = t.tpts && t.tpts.length >= 2 ? toLine(t.tpts) : Array.isArray(t.path) ? t.path.slice() : [];
   if (path.length && (path[path.length - 1][0] !== dlon || path[path.length - 1][1] !== dlat)) path.push([dlon, dlat]);
   else if (!path.length) path.push([dlon, dlat]);
   if (showTrack && path.length >= 2) {
@@ -348,6 +354,9 @@ function mergePathClient(prev, t) {
     if (prev.extra && !t.extra) t.extra = prev.extra;
     if (prev.cat && !t.cat) t.cat = prev.cat;
   }
+  // carry the timestamped trail forward and add this fix (dedupes against what the server already holds)
+  t.tpts = prev && prev.tpts ? prev.tpts : [];
+  t.tpts = appendLive(t.tpts, positionTimeMs(t), t.lat, t.lon, t.alt, t.heading);
   const moved = !prev || prev.lat !== t.lat || prev.lon !== t.lon;
   if (moved && prev) {
     t._prevPos = [prev.lon, prev.lat];
@@ -436,6 +445,8 @@ function miniUrl(shape, color) {
   }
   return u;
 }
+
+watchMapTheme(map);
 
 let layersBuilt = false;
 /** Build the layer toggles once; later calls only refresh the counts (keeps focus and hover state). */
@@ -533,7 +544,8 @@ function renderStats() {
   const pill = $("link");
   pill.classList.toggle("ok", liveOk);
   const viewers = serverLoad && serverLoad.viewers != null ? serverLoad.viewers : null;
-  const label = DEMO ? "demo" : liveOk ? (stations ? stations + " station" + (stations === 1 ? "" : "s") : "live") : "connecting";
+  if (liveOk) everLive = true;
+  const label = DEMO ? "demo" : liveOk ? (stations ? stations + " station" + (stations === 1 ? "" : "s") : "live") : everLive ? "reconnecting" : "connecting";
   pill.querySelector("span").textContent = label;
   pill.title = DEMO ? "Synthetic demo data" : [liveOk ? "Connected" : "Not connected", stations ? stations + " stations sending (30 min)" : "", viewers != null ? viewers + " viewers" : ""].filter(Boolean).join(" · ");
   const counts = {};
@@ -595,12 +607,23 @@ function loadMeta(t) {
 
 // ---------- selection and the info card ----------
 
+const sheet = createSheet({
+  host: $("card"), map, mq: window.matchMedia("(max-width: 860px)"), reduced: REDUCED,
+  getLngLat: () => (selected && tracks.has(selected) ? displayLonLat(tracks.get(selected)) : null),
+});
+
 const card = createCard($("card"), {
   demo: DEMO,
   loadPhoto: true,
   onClose: () => clearSelection(),
   onFollow: (v) => { followId = v ? selected : null; },
-  onTrack: (v) => { showTrack = v; const tr = map.getSource("trails"); if (tr) tr.setData(trailGeo()); },
+  onTrack: (v) => {
+    showTrack = v;
+    try { localStorage.setItem("onair.map.showTrack", v ? "1" : "0"); } catch { /* storage blocked */ }
+    if (v && selected) fetchTrail(selected);
+    const tr = map.getSource("trails");
+    if (tr) tr.setData(trailGeo());
+  },
   isFollowing: () => followId != null && followId === selected,
   isTrackShown: () => showTrack,
   getDisplayPos: (t) => displayLonLat(t),
@@ -626,11 +649,29 @@ function setHash(t) {
   } catch { /* sandboxed frame */ }
 }
 
+/** Pull the hub's stored history for a track (one request) and merge it with the points seen live. */
+const trailAsked = new Map(); // id -> ms of the last request, so reselecting does not hammer the hub
+function fetchTrail(id) {
+  if (DEMO || !showTrack) return;
+  const now = Date.now();
+  if (now - (trailAsked.get(id) || 0) < 30000) return;
+  trailAsked.set(id, now);
+  fetch("/trail?id=" + encodeURIComponent(id)).then((r) => (r.ok ? r.json() : null)).then((d) => {
+    const pts = d && d.trails && d.trails[id];
+    const t = tracks.get(id);
+    if (!pts || !t) return;
+    t.tpts = mergeTrails(pts, t.tpts);
+    if (selected === id) { const tr = map.getSource("trails"); if (tr) tr.setData(trailGeo()); }
+  }).catch(() => { trailAsked.delete(id); });
+}
+
 function selectTrack(t) {
   if (followId && followId !== t.id) followId = null;
   selected = t.id;
   loadMeta(t);
+  fetchTrail(t.id);
   card.open(prepForCard(t));
+  sheet.onOpen();
   setHash(t);
   applyListSel();
   const src = map.getSource("live");
@@ -644,6 +685,7 @@ function clearSelection() {
   selected = null;
   followId = null;
   card.close();
+  sheet.onClose();
   setHash(null);
   applyListSel();
   const src = map.getSource("live");
@@ -662,7 +704,8 @@ function focusTrack(id) {
   if (!t) return;
   selectTrack(t);
   const [lon, lat] = displayLonLat(t);
-  map.easeTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 6.5), duration: REDUCED ? 0 : 500 });
+  // recentre keeps the marker in the free area above the phone sheet (plain centring on desktop)
+  sheet.recentre(true, { center: [lon, lat], zoom: Math.max(map.getZoom(), 6.5), duration: REDUCED ? 0 : 500 });
 }
 
 // card refresh at 1 Hz, regardless of how often positions arrive
@@ -803,6 +846,13 @@ function setRailOpen(open) {
 }
 $("panelBtn")?.addEventListener("click", () => setRailOpen(!$("rail")?.classList.contains("open")));
 $("railBackdrop")?.addEventListener("click", () => setRailOpen(false));
+$("railClose")?.addEventListener("click", () => setRailOpen(false));
+for (const [id, v] of [["layersAll", true], ["layersNone", false]]) {
+  $(id)?.addEventListener("click", () => {
+    for (const box of $("layers").querySelectorAll("input")) { box.checked = v; on[box.dataset.k] = v; box.closest("label").classList.toggle("off", !v); }
+    apply();
+  });
+}
 
 // ---------- search: callsign, registration, ICAO hex, MMSI ----------
 
