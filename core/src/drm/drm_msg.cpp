@@ -1,6 +1,9 @@
 // DRM signalling and message formats: FAC, SDC data entities, text message, AAC audio super frame.
 #include "dect2/drm/drm_msg.h"
 #include "dect2/drm/drm_fec.h"
+#include "dect2/drm/drm_proto.h"
+#include <mutex>
+#include <set>
 #include <algorithm>
 #include <cstring>
 
@@ -42,60 +45,26 @@ void facBuild(const FacInfo& f, uint8_t* bits) {
     w.put(crc8(tmp, (size_t)cn), 8);
 }
 
-bool facParse(const uint8_t* bits, bool modeE, FacInfo& f) {
-    const int total = facInfoBits(modeE);
-    uint8_t tmp[120];
-    const int body = total - 8;
-    std::memcpy(tmp, bits, (size_t)body);
-    int cn = body;
-    if (modeE) { for (int i = 0; i < 4; i++) tmp[cn++] = 0; }
-    BitReader tail(bits + body);
-    if (crc8(tmp, (size_t)cn) != tail.get(8)) return false;
-    BitReader r(bits);
-    f = FacInfo();
-    f.enhancement = r.get(1) != 0; f.identity = (int)r.get(2); f.modeE = r.get(1) != 0;
-    f.occupancy = (int)r.get(3); f.interleaver = (int)r.get(1); f.mscMode = (int)r.get(2); f.sdcMode = (int)r.get(1);
-    f.numServicesCode = (int)r.get(4); f.reconfig = (int)r.get(3); f.toggle = (int)r.get(1); r.get(1);
-    if (f.modeE != modeE) return false;
-    f.nSvc = modeE ? 2 : 1;
-    for (int i = 0; i < f.nSvc; i++) {
-        FacService& s = f.svc[i];
-        s.id = r.get(24); s.shortId = (int)r.get(2); s.audioCa = r.get(1) != 0; s.language = (int)r.get(4);
-        s.data = r.get(1) != 0; s.descriptor = (int)r.get(5); s.dataCa = r.get(1) != 0; r.get(6);
-    }
-    return true;
+// The parsing of FAC, SDC, the text message segments and the audio super frame, and the descriptive tables, is drm_proto (Rust with DECT2_RUST_DRM).
+bool facParse(const uint8_t* bits, bool modeE, FacInfo& f) { return drmp::facParse(bits, modeE, f); }
+
+int facAudioServices(int c) { return drmp::facAudioServices(c); }
+int facDataServices(int c) { return drmp::facDataServices(c); }
+
+namespace {
+// The names are made by drm_proto; hand out a stable pointer for each distinct one.
+const char* intern(const std::string& s) {
+    static std::mutex mu;
+    static std::set<std::string> names;
+    std::lock_guard<std::mutex> lk(mu);
+    return names.insert(s).first->c_str();
+}
 }
 
-int facAudioServices(int c) {
-    static const int a[16] = {4, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, -1, 3, 3, -1, 0};
-    return a[c & 15];
-}
-int facDataServices(int c) {
-    static const int d[16] = {0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, -1, 0, 1, -1, 4};
-    return d[c & 15];
-}
-
-const char* languageName(int c) {
-    static const char* n[16] = {"", "Arabic", "Bengali", "Chinese (Mandarin)", "Dutch", "English", "French", "German", "Hindi", "Japanese", "Javanese", "Korean",
-                                "Portuguese", "Russian", "Spanish", "Other"};
-    return n[c & 15];
-}
-const char* programmeTypeName(int c) {
-    static const char* n[32] = {"", "News", "Current affairs", "Information", "Sport", "Education", "Drama", "Culture", "Science", "Varied", "Pop music",
-                                "Rock music", "Easy listening", "Light classical", "Serious classical", "Other music", "Weather", "Finance", "Children's",
-                                "Social affairs", "Religion", "Phone-in", "Travel", "Leisure", "Jazz", "Country music", "National music", "Oldies", "Folk music",
-                                "Documentary", "Alarm", "Skip"};
-    return n[c & 31];
-}
-const char* mscModeName(bool modeE, int m) {
-    if (!modeE) return m == 0 ? "64-QAM" : m == 3 ? "16-QAM" : "reserved";
-    return m == 0 ? "16-QAM" : m == 3 ? "4-QAM" : "reserved";
-}
-const char* occupancyName(bool modeE, int o) {
-    static const char* a[6] = {"4.5 kHz", "5 kHz", "9 kHz", "10 kHz", "18 kHz", "20 kHz"};
-    if (modeE) return o == 0 ? "100 kHz" : "reserved";
-    return o < 6 ? a[o] : "reserved";
-}
+const char* languageName(int c) { return intern(drmp::languageName(c)); }
+const char* programmeTypeName(int c) { return intern(drmp::programmeTypeName(c)); }
+const char* mscModeName(bool modeE, int m) { return intern(drmp::mscModeName(modeE, m)); }
+const char* occupancyName(bool modeE, int o) { return intern(drmp::occupancyName(modeE, o)); }
 
 // ---------------------------------------------------------------- SDC
 
@@ -170,67 +139,7 @@ std::vector<uint8_t> sdcEntityTime(const SdcTime& t) {
     return b;
 }
 
-int sdcParse(const uint8_t* d, int bytes, SdcInfo& out) {
-    int pos = 0, count = 0;
-    while (pos + 2 <= bytes) {
-        const int len = d[pos] >> 1, ver = d[pos] & 1, type = d[pos + 1] >> 4, nib = d[pos + 1] & 15;
-        if (len == 0 && ver == 0 && type == 0 && nib == 0) break;            // padding
-        if (pos + 2 + len > bytes) break;
-        const uint8_t* b = d + pos + 2;
-        count++;
-        if (type == 0 && len % 3 == 0 && len >= 3 && len <= 12) {
-            SdcMux m;
-            m.present = true; m.protA = (nib >> 2) & 3; m.protB = nib & 3; m.nStreams = len / 3;
-            for (int i = 0; i < m.nStreams; i++) {
-                m.stream[i].lenA = (b[i * 3] << 4) | (b[i * 3 + 1] >> 4);
-                m.stream[i].lenB = ((b[i * 3 + 1] & 15) << 8) | b[i * 3 + 2];
-            }
-            (ver ? out.muxNext : out.mux) = m;
-        } else if (type == 1) {
-            const int id = (nib >> 2) & 3;
-            SdcLabel& l = out.label[id];
-            l.present = true; l.shortId = id; l.textControl = 0; l.text.clear();
-            int start = 0;
-            if (len > 0 && b[0] >= 1 && b[0] <= 15) { l.textControl = b[0]; start = 1; }
-            for (int i = start; i < len; i++) l.text.push_back((char)b[i]);
-        } else if (type == 5 && len >= 1 && !ver) {
-            SdcApp& a = out.app[(nib >> 2) & 3];
-            a.present = true; a.shortId = (nib >> 2) & 3; a.streamId = nib & 3; a.packet = (b[0] & 0x80) != 0;
-            a.domain = b[0] & 7;
-            size_t at = 1;
-            if (a.packet) { a.dataUnit = (b[0] & 0x40) != 0; a.packetId = (b[0] >> 4) & 3; a.packetLen = len >= 2 ? b[1] : 0; at = 2; }
-            a.appData.clear();
-            for (size_t i = at; i < (size_t)len; i++) a.appData.push_back(b[i]);
-        } else if (type == 8 && len >= 3) {
-            uint8_t bits[40];
-            BitWriter w(bits);
-            w.put((uint32_t)nib, 4);
-            for (int i = 0; i < len && i < 4; i++) w.put(b[i], 8);
-            BitReader r(bits);
-            SdcTime& t = out.time;
-            t.present = true; t.mjd = (int)r.get(17); t.hour = (int)r.get(5); t.minute = (int)r.get(6);
-            t.hasOffset = len >= 4;
-            if (t.hasOffset) { r.get(2); const int sense = (int)r.get(1); const int v = (int)r.get(5); t.offsetHalfHours = sense ? -v : v; }
-        } else if (type == 9 && len >= 2 && !ver) {
-            SdcAudio a;
-            a.present = true; a.shortId = (nib >> 2) & 3; a.streamId = nib & 3;
-            a.coding = b[0] >> 6; a.sbr = (b[0] >> 5) & 1; a.mode = (b[0] >> 3) & 3; a.rateCode = b[0] & 7;
-            a.text = (b[1] & 0x80) != 0; a.enhancement = (b[1] & 0x40) != 0; a.mps = (b[1] >> 3) & 7;
-            if (a.coding == 3) a.sbr = 0;
-            a.config.assign(b + 2, b + len);
-            out.audio[a.shortId] = a;
-        } else if (type == 12 && len >= 5 && !ver) {
-            SdcLang& l = out.lang[(nib >> 2) & 3];
-            l.present = true; l.shortId = (nib >> 2) & 3;
-            l.language.assign((const char*)b, 3); l.country.assign((const char*)b + 3, 2);
-        } else {
-            out.otherTypes.push_back(type);
-        }
-        pos += 2 + len;
-    }
-    out.entities = count;
-    return count;
-}
+int sdcParse(const uint8_t* d, int bytes, SdcInfo& out) { return drmp::sdcParse(d, bytes, out); }
 
 void sdcBuildBits(int afsIndex, const std::vector<uint8_t>& field, int fieldBytes, std::vector<uint8_t>& bits) {
     bits.clear();
@@ -246,32 +155,10 @@ void sdcBuildBits(int afsIndex, const std::vector<uint8_t>& field, int fieldByte
     for (int j = 15; j >= 0; j--) bits.push_back((uint8_t)((c >> j) & 1));
 }
 
-bool sdcCheckBits(const uint8_t* bits, int fieldBytes, int& afsIndex) {
-    std::vector<uint8_t> crcIn;
-    for (int i = 0; i < 4; i++) crcIn.push_back(0);
-    afsIndex = 0;
-    for (int i = 0; i < 4; i++) { crcIn.push_back(bits[i] & 1); afsIndex = (afsIndex << 1) | (bits[i] & 1); }
-    crcIn.insert(crcIn.end(), bits + 4, bits + 4 + (size_t)fieldBytes * 8);
-    uint32_t rx = 0;
-    for (int j = 0; j < 16; j++) rx = (rx << 1) | (bits[4 + fieldBytes * 8 + j] & 1u);
-    return crc16(crcIn.data(), crcIn.size()) == rx;
-}
+bool sdcCheckBits(const uint8_t* bits, int fieldBytes, int& afsIndex) { return drmp::sdcCheckBits(bits, fieldBytes, afsIndex); }
 
-int dateToMjd(int y, int m, int d) {
-    const int a = (14 - m) / 12;
-    const int yy = y + 4800 - a, mm = m + 12 * a - 3;
-    const int jdn = d + (153 * mm + 2) / 5 + 365 * yy + yy / 4 - yy / 100 + yy / 400 - 32045;
-    return jdn - 2400001;
-}
-void mjdToDate(int mjd, int& y, int& m, int& d) {
-    const int j = mjd + 2400001 + 32044;
-    const int g = j / 146097, dg = j % 146097;
-    const int c = (dg / 36524 + 1) * 3 / 4, dc = dg - c * 36524;
-    const int b = dc / 1461, db = dc % 1461;
-    const int a = (db / 365 + 1) * 3 / 4, da = db - a * 365;
-    const int yy = g * 400 + c * 100 + b * 4 + a, mm = (da * 5 + 308) / 153 - 2, dd = da - (mm + 4) * 153 / 5 + 122;
-    y = yy - 4800 + (mm + 2) / 12; m = (mm + 2) % 12 + 1; d = dd + 1;
-}
+int dateToMjd(int y, int m, int d) { return drmp::dateToMjd(y, m, d); }
+void mjdToDate(int mjd, int& y, int& m, int& d) { drmp::mjdToDate(mjd, y, m, d); }
 
 // ---------------------------------------------------------------- text message
 
@@ -284,9 +171,7 @@ bool TextDecoder::feed(const uint8_t* four) {
     if (need_ == 0) return false;                       // idle: no segment in progress (all zero units)
     seg_.insert(seg_.end(), four, four + 4);
     if (need_ < 0 && seg_.size() >= 2) {
-        const bool command = (seg_[0] & 0x10) != 0;
-        const int n = command ? 0 : (seg_[0] & 15) + 1;
-        need_ = 2 + n + 2;
+        need_ = drmp::textSegmentNeed(seg_[0]);
     }
     if (need_ > 0 && (int)seg_.size() >= need_) { finishSegment(); need_ = 0; seg_.clear(); }
     else if (seg_.size() > 40) { need_ = 0; seg_.clear(); bad_++; }
@@ -294,16 +179,16 @@ bool TextDecoder::feed(const uint8_t* four) {
 }
 
 void TextDecoder::finishSegment() {
+    const drmp::TextSeg s = drmp::textSegment(seg_.data(), seg_.size(), need_);   // the CRC-16 and the header fields
     const int n = need_ - 4;
-    uint32_t rx = ((uint32_t)seg_[(size_t)(2 + n)] << 8) | seg_[(size_t)(3 + n)];
-    if (crc16Bytes(seg_.data(), (size_t)(2 + n)) != rx) { bad_++; return; }
+    if (!s.crcOk) { bad_++; return; }
     ok_++;
-    const bool toggle = (seg_[0] & 0x80) != 0, first = (seg_[0] & 0x40) != 0, last = (seg_[0] & 0x20) != 0, command = (seg_[0] & 0x10) != 0;
+    const bool toggle = s.toggle, last = s.last, command = s.command;
     if (command) {
-        if ((seg_[0] & 15) == 1 && !text_.empty()) { text_.clear(); changed_ = true; }       // clear display
+        if (s.cmd == 1 && !text_.empty()) { text_.clear(); changed_ = true; }       // clear display
         return;
     }
-    const int segnum = first ? 0 : (seg_[1] >> 4) & 7;
+    const int segnum = s.segnum;
     if (!haveToggle_ || toggle != toggle_) {            // a different message: start again
         haveToggle_ = true; toggle_ = toggle; got_ = 0; last_ = -1;
         for (auto& p : parts_) p.clear();
@@ -349,62 +234,10 @@ void TextEncoder::next(uint8_t* four) {
 
 // ---------------------------------------------------------------- AAC audio super frame
 
-int aacNumFrames(bool modeE, int rateHz) {
-    if (!modeE) return rateHz == 12000 ? 5 : rateHz == 24000 ? 10 : 0;
-    return rateHz == 24000 ? 5 : rateHz == 48000 ? 10 : 0;
-}
-int aacHeaderBytes(int n) { return ((n - 1) * 12 + (n == 10 ? 4 : 0) + 7) / 8; }
+int aacNumFrames(bool modeE, int rateHz) { return drmp::aacNumFrames(modeE, rateHz); }
+int aacHeaderBytes(int n) { return drmp::aacHeaderBytes(n); }
 
-bool aacSuperFrameParse(const uint8_t* lf, int len, int lenA, int n, AacSuperFrame& out) {
-    out = AacSuperFrame();
-    out.numFrames = n;
-    const int hdr = aacHeaderBytes(n);
-    if (n < 1 || len < hdr + n) return false;
-    int hp = 0;
-    if (lenA > 0) {
-        if (lenA < hdr + n || (lenA - hdr) % n != 0) return false;
-        hp = (lenA - hdr) / n - 1;
-    }
-    out.hpBytes = hp;
-    // frame borders: 12 bits each, bytes counted from the start of the audio frames; they only grow, so a wrapped value is recognised
-    std::vector<int> border((size_t)n, 0);
-    int prev = 0;
-    bool ok = true;
-    for (int i = 0; i < n - 1; i++) {
-        const int bit = i * 12;
-        int v = (lf[bit / 8] << 8 | lf[bit / 8 + 1]);
-        v = (bit % 8 == 0) ? (v >> 4) & 0xFFF : v & 0xFFF;
-        while (v < prev) v += 4096;
-        border[(size_t)i] = v; prev = v;
-    }
-    const int payload = len - hdr - n;
-    border[(size_t)n - 1] = payload;
-    int start = 0;
-    for (int i = 0; i < n; i++) {
-        if (border[(size_t)i] < start || border[(size_t)i] > payload || border[(size_t)i] - start < hp) ok = false;
-        start = border[(size_t)i];
-    }
-    out.headerOk = ok;
-    if (!ok) return false;
-    // higher protected part: for every frame its first hp bytes and then its CRC byte; lower protected part: the rest of the frames in order
-    const uint8_t* hpPart = lf + hdr;
-    const uint8_t* lpPart = lf + hdr + (size_t)n * (size_t)(hp + 1);
-    const uint8_t* end = lf + len;
-    start = 0;
-    out.frames.resize((size_t)n);
-    for (int i = 0; i < n; i++) {
-        const int fl = border[(size_t)i] - start;
-        start = border[(size_t)i];
-        auto& fr = out.frames[(size_t)i];
-        fr.assign(hpPart + (size_t)i * (size_t)(hp + 1), hpPart + (size_t)i * (size_t)(hp + 1) + (size_t)hp);
-        out.crc.push_back(hpPart[(size_t)i * (size_t)(hp + 1) + (size_t)hp]);
-        const int lpn = fl - hp;
-        if (lpPart + lpn > end) { out.headerOk = false; return false; }
-        fr.insert(fr.end(), lpPart, lpPart + lpn);
-        lpPart += lpn;
-    }
-    return true;
-}
+bool aacSuperFrameParse(const uint8_t* lf, int len, int lenA, int n, AacSuperFrame& out) { return drmp::aacSuperFrameParse(lf, len, lenA, n, out); }
 
 bool aacSuperFrameBuild(const std::vector<std::vector<uint8_t>>& frames, const std::vector<uint8_t>& crc, int hp, int len, std::vector<uint8_t>& lf) {
     const int n = (int)frames.size();

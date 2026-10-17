@@ -2,73 +2,30 @@
 #include "dect2/drm/drm_data.h"
 #include "dect2/dab/dab.h"
 #include "dect2/dab/dab_pad.h"
+#include "dect2/drm/drm_proto.h"
+#include <mutex>
+#include <set>
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
 
 namespace dect2 {
 
+// The application names, the text helpers and the data group payload are drm_proto (Rust with DECT2_RUST_DRM).
 const char* drmAppName(int domain, int app) {
-    if (domain != 0) return domain == 1 ? "DRM domain application" : "application of another domain";
-    switch (app) {
-    case 0x001: return "dynamic labels";
-    case 0x002: return "MOT slide show";
-    case 0x003: return "MOT broadcast website";
-    case 0x004: return "TPEG";
-    case 0x005: return "DGPS";
-    case 0x006: return "TMC";
-    case 0x007: return "EPG";
-    case 0x008: return "DAB Java";
-    case 0x009: return "DMB";
-    case 0x00A: return "IPDC services";
-    case 0x00B: return "voice applications";
-    case 0x00C: return "middleware";
-    case 0x00D: return "filecasting";
-    case 0x44A: return "Journaline";
-    }
-    return app < 0 ? "unknown application" : "unlisted application";
+    static std::mutex mu;
+    static std::set<std::string> names;   // a stable pointer for each distinct name
+    const std::string s = drmp::appName(domain, app);
+    std::lock_guard<std::mutex> lk(mu);
+    return names.insert(s).first->c_str();
 }
 
 namespace {
 const size_t kMaxObjects = 96;
-const size_t kTextBytes = 16384;
 
-bool validUtf8(const std::string& s) {
-    for (size_t i = 0; i < s.size();) {
-        const uint8_t c = (uint8_t)s[i];
-        const size_t n = c < 0x80 ? 1 : (c >> 5) == 6 ? 2 : (c >> 4) == 14 ? 3 : (c >> 3) == 30 ? 4 : 0;
-        if (!n || i + n > s.size()) return false;
-        for (size_t j = 1; j < n; j++) if (((uint8_t)s[i + j] >> 6) != 2) return false;
-        i += n;
-    }
-    return true;
-}
+std::string displayText(const std::vector<uint8_t>& b) { return drmp::displayText(b.data(), b.size()); }
 
-// Text of a received object for display: control characters out, ISO 8859-1 turned into UTF-8 when the bytes are not UTF-8
-std::string displayText(const std::vector<uint8_t>& b) {
-    std::string raw((const char*)b.data(), std::min(b.size(), kTextBytes));
-    std::string out;
-    const bool u8 = validUtf8(raw);
-    for (unsigned char c : raw) {
-        if (c == '\r') continue;
-        if (c < 0x20 && c != '\n' && c != '\t') { out += ' '; continue; }
-        if (c >= 0x80 && !u8) { out += (char)(0xC0 | (c >> 6)); out += (char)(0x80 | (c & 0x3F)); continue; }
-        out += (char)c;
-    }
-    return out;
-}
-
-bool looksText(const std::vector<uint8_t>& b) {
-    const size_t n = std::min<size_t>(b.size(), 512);
-    if (n < 4) return false;
-    size_t odd = 0;
-    for (size_t i = 0; i < n; i++) {
-        const uint8_t c = b[i];
-        if (c == 0) return false;
-        if (c < 0x20 && c != '\n' && c != '\r' && c != '\t') odd++;
-    }
-    return odd * 50 < n;
-}
+bool looksText(const std::vector<uint8_t>& b) { return drmp::looksText(b.data(), b.size()); }
 
 bool endsWith(const std::string& s, const char* e) {
     const std::string x(e);
@@ -85,17 +42,9 @@ uint64_t fnv(const std::vector<uint8_t>& b) {
 
 // The payload of an MSC data group (EN 300 401 clause 5.3.3.1): after the headers, before the CRC; nullptr when the group is damaged
 const uint8_t* groupPayload(const uint8_t* d, size_t n, size_t& len) {
-    if (n < 3) return nullptr;
-    const bool ext = d[0] & 0x80, crc = d[0] & 0x40, seg = d[0] & 0x20, ua = d[0] & 0x10;
-    if (crc) {
-        if (n < 5 || dab::crc16(d, (int)n - 2) != (uint16_t)((d[n - 2] << 8) | d[n - 1])) return nullptr;
-        n -= 2;
-    }
-    size_t p = 2 + (ext ? 2 : 0) + (seg ? 2 : 0);
-    if (ua) { if (p + 1 > n) return nullptr; p += 1 + (d[p] & 0x0F); }
-    if (p > n) return nullptr;
-    len = n - p;
-    return d + p;
+    size_t off = 0;
+    if (!drmp::groupPayload(d, n, off, len)) return nullptr;
+    return d + off;
 }
 } // namespace
 
