@@ -1386,3 +1386,4 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 約1.5〜3 GHz (2.4 GHz、2.3/3.4 GHz) 用の1500 MHzダウンコンバーターです。アンテナと無線機の間に接続します。無線機には RF - 1500 MHz が見えます。1500 MHz未満は非対応です。
+The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	nRSP-STにはSDRconnect経由で接続します。WebSocketサーバー（ポート5454）を有効にし、nRSP-STを選択した状態で、コンピューター上のSDRconnect（またはヘッドレス版）を起動し、そのコンピューターのアドレスを入力してください。パスワードは不要で、保存もされません。

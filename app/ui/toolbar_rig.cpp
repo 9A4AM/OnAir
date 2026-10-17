@@ -121,7 +121,7 @@ void netRadioWindow(App& a) {
     if (!ImGui::Begin(trw("Network radios"), &a.netAddOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) { ImGui::End(); return; }
     const bool busy = a.netAddProbe != nullptr;
     ImGui::BeginDisabled(busy);
-    static const char* kTypes[] = {"PlutoSDR (by IP)", "rtl_tcp", "SoapyRemote", "SpyServer", "Hermes Lite 2", "Red Pitaya", "SDR++ server"};
+    static const char* kTypes[] = {"PlutoSDR (by IP)", "rtl_tcp", "SoapyRemote", "SpyServer", "Hermes Lite 2", "Red Pitaya", "SDR++ server", "SDRplay nRSP-ST (SDRconnect)"};
     ImGui::SetNextItemWidth(200 * gUi);
     if (ImGui::Combo("Type", &a.netAddType, kTypes, IM_ARRAYSIZE(kTypes))) {
         const auto t = (NetRadio::Type)a.netAddType;
@@ -145,6 +145,9 @@ void netRadioWindow(App& a) {
     if (a.netAddType == NetRadio::SdrppServer)
         ImGui::TextDisabled("%s", tr("SDR++ running as a server (sdrpp --server). It takes one client at a time: close SDR++'s own client first. "
                                      "Its source's settings (gain mode, bias tee, AGC, ...) show up under Radio settings once connected."));
+    if (a.netAddType == NetRadio::NrspSt)
+        ImGui::TextDisabled("%s", tr("The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, "
+                                     "and type that computer's address. No password is needed or stored."));
     if (a.netAddType == NetRadio::SoapyRemote && !soapySupported()) ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "%s", tr("This build has no SoapySDR, which SoapyRemote needs."));
     if (a.netAddType == NetRadio::SoapyRemote) {
         ImGui::InputTextWithHint(tr("Remote driver"), "mirisdr  (empty: list what the server offers)", a.netAddRemote, sizeof a.netAddRemote);
