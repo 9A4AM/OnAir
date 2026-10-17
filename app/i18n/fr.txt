@@ -11,15 +11,12 @@ A P6 PPM is sent as the picture; any other or empty file uses the test picture. 
 A SAME header. ZCZC- is added when missing.	A SAME header. ZCZC- is added when missing.
 Aircraft registration	Aircraft registration
 An RS41 with this serial. Empty: the demo sondes.	An RS41 with this serial. Empty: the demo sondes.
-ANT+ is not transmitted: it would impersonate a sensor network	ANT+ is not transmitted: it would impersonate a sensor network
-TETRAPOL is not transmitted: receive only, control-channel system information	TETRAPOL n'est pas émis : réception seule, informations système du canal de contrôle
 Are you sure? This clears all previous data and cannot be undone.	Are you sure? This clears all previous data and cannot be undone.
 ATSC 3.0 uses a ROUTE / fMP4 demo; a custom MPEG-TS is not the payload path.	ATSC 3.0 uses a ROUTE / fMP4 demo; a custom MPEG-TS is not the payload path.
 Audio file	Audio file
 Audio input	Audio input
 AX.25 UI frame. Empty: the demo CubeSat cycle.	AX.25 UI frame. Empty: the demo CubeSat cycle.
 Baud	Baud
-Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser	Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser
 Browse…	Browse…
 Callsign / my ID	Callsign / my ID
 Capcode	Capcode
@@ -39,7 +36,6 @@ Destination ID	Destination ID
 Deviation (Hz)	Deviation (Hz)
 Device ID	Device ID
 Dial frequency the decoder should assume (the sound card is not tuned)	Fréquence d'affichage que le décodeur doit prendre (la carte son n'est pas accordée)
-Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements	Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements
 DVB standard	DVB standard
 Empty: the demo 802.15.4 scene.	Empty: the demo 802.15.4 scene.
 Empty: the demo FLARM scene. This ID is not packed into the unpublished newer protocol.	Empty: the demo FLARM scene. This ID is not packed into the unpublished newer protocol.
@@ -70,7 +66,6 @@ Microphone	Microphone
 MMSI	MMSI
 Mode	Mode
 Morse identification, up to four letters.	Morse identification, up to four letters.
-Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test	Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test
 NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.	NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.
 No Red Pitaya answered on this computer's networks (is its SDR transceiver app running?): type its address.	No Red Pitaya answered on this computer's networks (is its SDR transceiver app running?): type its address.
 PAN / short address	PAN / short address
@@ -114,13 +109,8 @@ The capture rate of the sound card. The engine runs at this rate; there is no ra
 The file bytes go out as a HamDRM object with this callsign. Empty file: the test picture.	The file bytes go out as a HamDRM object with this callsign. Empty file: the test picture.
 The microphone starts only when you press START TRANSMITTING.	The microphone starts only when you press START TRANSMITTING.
 The registration and free-text go on the air as an H1 / ACARS downlink. Empty: the demo traffic.	The registration and free-text go on the air as an H1 / ACARS downlink. Empty: the demo traffic.
-this is a general listening mode: there is nothing specific to transmit	this is a general listening mode: there is nothing specific to transmit
-this is a receive-only sensor harvester: there is nothing meaningful to transmit	this is a receive-only sensor harvester: there is nothing meaningful to transmit
-this is a signal workbench: it is for measurement, not a radio service	this is a signal workbench: it is for measurement, not a radio service
-this is a spectrum analyser: there is nothing to transmit	this is a spectrum analyser: there is nothing to transmit
 this mode has no transmit generator	this mode has no transmit generator
 This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
-time signals are not transmitted: the generator imitates broadcast clocks (spoofing)	time signals are not transmitted: the generator imitates broadcast clocks (spoofing)
 Timeslot	Timeslot
 To	To
 USB audio	Audio USB
@@ -155,7 +145,6 @@ stereo	stéréo
 mono	mono
 radio disconnected	radio déconnectée
 What to send	What to send
-Wi-Fi is not transmitted: the generator models access-point beacons for the decoder	Wi-Fi is not transmitted: the generator models access-point beacons for the decoder
 WPM	WPM
 yes	oui
 no lock	non verrouillé
@@ -1084,9 +1073,6 @@ This radio has no transmit driver in OnAir.	Cette radio n'a pas de pilote d'émi
 Before you transmit	Avant d'émettre
 Transmitting needs a licence or permission where you are. You are responsible for what you emit and for not interfering with others (including services that people rely on for safety). Connect an antenna, an attenuator or a dummy load to the radio before you start. OnAir does not limit the frequency or the power: the radio's own limits are the only ones.	Émettre nécessite une licence ou une autorisation là où vous êtes. Vous êtes responsable de ce que vous émettez et de ne pas gêner les autres (y compris les services dont des personnes dépendent pour leur sécurité). Branchez une antenne, un atténuateur ou une charge fictive sur la radio avant de commencer. OnAir ne limite ni la fréquence ni la puissance : seules les limites de la radio s'appliquent.
 I understand	Je comprends
-GNSS is not transmitted: its generator is a satellite-signal simulator (spoofing)	Le GNSS n'est pas émis : son générateur est un simulateur de signal satellite (usurpation)
-cellular signals are not transmitted: the generators model a network cell for testing the decoder	les signaux cellulaires ne sont pas émis : les générateurs modélisent une cellule de réseau pour tester le décodeur
-this is an analysis mode: there is nothing to transmit	ceci est un mode d'analyse : il n'y a rien à émettre
 TX VGA 0 to 47 dB; the +14 dB amplifier has its own switch	TX VGA de 0 à 47 dB ; l'amplificateur +14 dB a son propre interrupteur
 the AD9361's TX attenuation shown as a gain: -89.75 dB (least power) to 0 dB (most)	l'atténuation TX de l'AD9361 présentée comme un gain : -89,75 dB (puissance minimale) à 0 dB (maximale)
 the driver's own TX gain scale (known after the radio has been opened once)	l'échelle de gain TX propre au pilote (connue une fois la radio ouverte)

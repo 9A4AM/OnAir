@@ -71,7 +71,7 @@ New here? Press **Tour** in the app: a little TV walks you through OnAir with a 
 - **Scroll to tune:** the wheel (or a trackpad) steps the frequency field digit by digit.
 - **Share my radio:** an rtl_tcp server for the radio OnAir is running.
 - **More radios:** Fobos SDR, RX888 MkII (native USB 3 driver), RFNM, Red Pitaya, Pluto+ Ethernet, SpyServer, SDR++ server, Hermes Lite 2.
-- **Transmit** of test signals into a dummy load, with the modes offered and not offered listed in [docs/TRANSMIT.md](docs/TRANSMIT.md).
+- **Transmit** of test signals into a dummy load, with the modes offered listed in [docs/TRANSMIT.md](docs/TRANSMIT.md).
 - **New modes** since 0.2.5: Wi-SUN FAN, UAT 978 MHz, VDL Mode 4, TETRAPOL, Elektro-L, LBJ (Chinese railway warnings), DECT, ANT+ sensors, NB-IoT and 5G NR cells, MAC, DVB-C, MeshCom, Q65 and the other WSJT modes, and more (111 modes in all).
 - **Interface:** Light and High contrast themes, an accent colour, colour maps and scroll-back for the spectrum, a General receiver with up to 4 channels and MP3 / FLAC recording, a "Save bug report" zip, translations (German, French, Spanish, Chinese, Lithuanian, Hungarian, Japanese, Polish, Dutch, Portuguese, Italian, Russian).
 - **Docker image** that shows the OnAir GUI in a browser, published with each release.
@@ -346,9 +346,9 @@ OnAir is a receiver first, but it can also send the signal of a mode through a r
 - **A one-time notice** appears the first time you start a transmission and has to be accepted with "I understand".
 - **No frequency or power limits are applied by OnAir.** The frequency and the gain you enter go to the radio as typed. You are responsible for staying within the law where you are: transmitting needs a licence on most frequencies, and a radio without a filter or an antenna can disturb others.
 - **A guided panel.** Switch RX / TX at the top left: a status header with one Start / Stop button (Space starts and stops, Esc stops), then three steps: **1 Signal** (a searchable, grouped list), **2 Settings** (radio, frequency with the radio's range as a hint, output level, the signal's own options, and a **Test (dry run, no RF)** switch that runs the generator into nothing and shows the spectrum) and **3 Preview and send** (live spectrum, peak / RMS meters, clipping lamp, sample rate, occupied bandwidth, **STOP ALL**). It can pop out into its own window. A soft limiter keeps the generated signal inside the converter's range; it is not a power limit.
-- **Some modes are not offered** (for example GNSS, cellular, Bluetooth, Wi-Fi and the analysis modes).
+- **Every mode with a signal generator can be sent.** OnAir refuses no mode; only a mode without a generator says "this mode has no transmit generator".
 
-The full list of modes offered and not offered, with the reasons, is in [docs/TRANSMIT.md](docs/TRANSMIT.md).
+The full list of modes offered is in [docs/TRANSMIT.md](docs/TRANSMIT.md).
 
 ## Remote-control API
 

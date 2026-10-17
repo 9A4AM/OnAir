@@ -11,15 +11,12 @@ A P6 PPM is sent as the picture; any other or empty file uses the test picture. 
 A SAME header. ZCZC- is added when missing.	A SAME header. ZCZC- is added when missing.
 Aircraft registration	Aircraft registration
 An RS41 with this serial. Empty: the demo sondes.	An RS41 with this serial. Empty: the demo sondes.
-ANT+ is not transmitted: it would impersonate a sensor network	ANT+ is not transmitted: it would impersonate a sensor network
-TETRAPOL is not transmitted: receive only, control-channel system information	TETRAPOL is not transmitted: receive only, control-channel system information
 Are you sure? This clears all previous data and cannot be undone.	Are you sure? This clears all previous data and cannot be undone.
 ATSC 3.0 uses a ROUTE / fMP4 demo; a custom MPEG-TS is not the payload path.	ATSC 3.0 uses a ROUTE / fMP4 demo; a custom MPEG-TS is not the payload path.
 Audio file	Audio file
 Audio input	Audio input
 AX.25 UI frame. Empty: the demo CubeSat cycle.	AX.25 UI frame. Empty: the demo CubeSat cycle.
 Baud	Baud
-Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser	Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser
 Browse…	Browse…
 Callsign / my ID	Callsign / my ID
 Capcode	Capcode
@@ -39,7 +36,6 @@ Destination ID	Destination ID
 Deviation (Hz)	Deviation (Hz)
 Device ID	Device ID
 Dial frequency the decoder should assume (the sound card is not tuned)	解码器应假定的刻度频率（声卡不会调谐）
-Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements	Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements
 DVB standard	DVB standard
 Empty: the demo 802.15.4 scene.	Empty: the demo 802.15.4 scene.
 Empty: the demo FLARM scene. This ID is not packed into the unpublished newer protocol.	Empty: the demo FLARM scene. This ID is not packed into the unpublished newer protocol.
@@ -70,7 +66,6 @@ Microphone	Microphone
 MMSI	MMSI
 Mode	模式
 Morse identification, up to four letters.	Morse identification, up to four letters.
-Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test	Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test
 NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.	NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.
 No Red Pitaya answered on this computer's networks (is its SDR transceiver app running?): type its address.	No Red Pitaya answered on this computer's networks (is its SDR transceiver app running?): type its address.
 PAN / short address	PAN / short address
@@ -114,13 +109,8 @@ The capture rate of the sound card. The engine runs at this rate; there is no ra
 The file bytes go out as a HamDRM object with this callsign. Empty file: the test picture.	The file bytes go out as a HamDRM object with this callsign. Empty file: the test picture.
 The microphone starts only when you press START TRANSMITTING.	The microphone starts only when you press START TRANSMITTING.
 The registration and free-text go on the air as an H1 / ACARS downlink. Empty: the demo traffic.	The registration and free-text go on the air as an H1 / ACARS downlink. Empty: the demo traffic.
-this is a general listening mode: there is nothing specific to transmit	this is a general listening mode: there is nothing specific to transmit
-this is a receive-only sensor harvester: there is nothing meaningful to transmit	this is a receive-only sensor harvester: there is nothing meaningful to transmit
-this is a signal workbench: it is for measurement, not a radio service	this is a signal workbench: it is for measurement, not a radio service
-this is a spectrum analyser: there is nothing to transmit	this is a spectrum analyser: there is nothing to transmit
 this mode has no transmit generator	this mode has no transmit generator
 This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
-time signals are not transmitted: the generator imitates broadcast clocks (spoofing)	time signals are not transmitted: the generator imitates broadcast clocks (spoofing)
 Timeslot	Timeslot
 To	To
 USB audio	USB 音频
@@ -155,7 +145,6 @@ stereo	立体声
 mono	单声道
 radio disconnected	无线电设备已断开
 What to send	What to send
-Wi-Fi is not transmitted: the generator models access-point beacons for the decoder	Wi-Fi is not transmitted: the generator models access-point beacons for the decoder
 WPM	WPM
 yes	是
 no lock	未锁定
@@ -1084,9 +1073,6 @@ This radio has no transmit driver in OnAir.	此无线电在 OnAir 中没有发�
 Before you transmit	发射之前
 Transmitting needs a licence or permission where you are. You are responsible for what you emit and for not interfering with others (including services that people rely on for safety). Connect an antenna, an attenuator or a dummy load to the radio before you start. OnAir does not limit the frequency or the power: the radio's own limits are the only ones.	在您所在的地方发射需要许可证或许可。您对所发射的内容以及不干扰他人（包括人们依赖其保障安全的服务）负责。开始前请将天线、衰减器或假负载连接到无线电。OnAir 不限制频率或功率：只有无线电自身的限制。
 I understand	我已了解
-GNSS is not transmitted: its generator is a satellite-signal simulator (spoofing)	不发射 GNSS：其生成器是卫星信号模拟器（欺骗）
-cellular signals are not transmitted: the generators model a network cell for testing the decoder	不发射蜂窝信号：这些生成器模拟网络小区，用于测试解码器
-this is an analysis mode: there is nothing to transmit	这是分析模式：没有可发射的内容
 TX VGA 0 to 47 dB; the +14 dB amplifier has its own switch	TX VGA 0 至 47 dB；+14 dB 放大器有独立开关
 the AD9361's TX attenuation shown as a gain: -89.75 dB (least power) to 0 dB (most)	AD9361 的发射衰减以增益显示：-89.75 dB（最小功率）至 0 dB（最大）
 the driver's own TX gain scale (known after the radio has been opened once)	驱动程序自身的发射增益范围（无线电打开过一次后可知）

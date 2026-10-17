@@ -27,11 +27,11 @@ Switch the RX / TX slider at the top left to **TX**. The transmit panel fills th
 
 **Map upload** stays suspended while transmitting.
 
-## Modes offered and not offered
+## Modes offered
 
-This list is taken from the tables in `core/src/tx/tx.cpp` (`txModes()` and `txRefusalReason()`).
+This list is taken from the tables in `core/src/tx/tx.cpp` (`txModes()`).
 
-### Modes offered (76)
+### Modes offered (99)
 
 | Id | Mode | Engine code | Generator |
 |---|---|---|---|
@@ -114,23 +114,30 @@ This list is taken from the tables in `core/src/tx/tx.cpp` (`txModes()` and `txR
 | loraraw | LoRa (raw) | 73 | makeLoraRawSynth |
 | same | NOAA Weather Radio SAME | 78 | makeSameSynth |
 | dect | DECT cordless phones | 80 | makeDectSynth |
+| gnss | GNSS | 14 | makeGnssSynth |
+| ism | ISM sensors | 30 | makeIsmSynth |
+| cell | Cellular (LTE) | 34 | makeCellSynth |
+| gsmr | GSM-R | 41 | makeGsmrSynth |
+| specx | Explorer | 43 | makeSpecxSynth |
+| specan | Spectrum analyser | 44 | makeSpecanSynth |
+| astro | Radio astronomy | 50 | makeAstroSynth |
+| ble | Bluetooth LE | 53 | makeBleSynth |
+| iono | Ionospheric sounders | 54 | makeIonoSynth |
+| wifi | Wi-Fi | 56 | makeWifiSynth |
+| general | General receiver | 57 | makeGeneralSynth |
+| rid | Drone Remote ID | 58 | makeRidSynth |
+| nr | 5G NR | 59 | makeNrSynth |
+| timesig | Time signals | 60 | makeTimeSynth |
+| nbiot | NB-IoT | 71 | makeNbiotSynth |
+| halow | Wi-Fi HaLow | 72 | makeHalowSynth |
+| codar | CODAR | 74 | makeCodarSynth |
+| datawell | Datawell | 76 | makeDatawellSynth |
+| multitone | Multitone paging | 77 | makeMultitoneSynth |
+| ant | ANT+ | 79 | makeAntSynth |
+| tetrapol | TETRAPOL | 81 | makeTetrapolSynth |
+| ndb | NDB beacons | 31 | makeNdbSynth |
+| elektro | Elektro-L | 82 | makeElektroSynth |
 
-### Modes not offered
+### Modes without a generator
 
-| Engine code | Reason |
-|---|---|
-| 14 | GNSS is not transmitted: its generator is a satellite-signal simulator (spoofing) |
-| 34, 41, 59, 71 | cellular signals are not transmitted: the generators model a network cell for testing the decoder |
-| 53 | Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser |
-| 56, 72 | Wi-Fi is not transmitted: the generator models access-point beacons for the decoder |
-| 58 | Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements |
-| 79 | ANT+ is not transmitted: it would impersonate a sensor network |
-| 81 | TETRAPOL is not transmitted: receive only, control-channel system information |
-| 30, 76 | this is a receive-only sensor harvester: there is nothing meaningful to transmit |
-| 43, 50, 54, 74 | this is an analysis mode: there is nothing to transmit |
-| 44 | this is a spectrum analyser: there is nothing to transmit |
-| 57 | this is a general listening mode: there is nothing specific to transmit |
-| 60 | time signals are not transmitted: the generator imitates broadcast clocks (spoofing) |
-| 75 | this is a signal workbench: it is for measurement, not a radio service |
-| 77 | Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test |
-| any other | this mode has no transmit generator |
+Nothing is refused: OnAir blocks no mode, frequency or power. A mode can only be missing when it has no signal generator (for example the signal workbench, engine code 75); the panel then says "this mode has no transmit generator". Limits of the radio (no transmit path, a sample rate too low for the mode) are reported as they come.
