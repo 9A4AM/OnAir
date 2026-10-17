@@ -1,6 +1,5 @@
-// SAME / EAS protocol layer on top of the Rust crate rust/onair_same (DECT2_RUST_SAME): the same functions as same_proto.cpp, which keeps the
-// county table (state) and the file loader. Empty when the crate is not built.
-#ifdef DECT2_RUST_SAME
+// SAME / EAS protocol layer on top of the Rust crate rust/onair_same: the functions of same_proto.h; same_proto.cpp keeps the
+// county table (state) and the file loader.
 #include "dect2/same/same_proto.h"
 #include "dect2/rs/same.h"
 #include <cctype>
@@ -123,4 +122,3 @@ std::map<int, std::string> parseCountyCsv(const std::string& t) {
 
 } // namespace same
 } // namespace dect2
-#endif

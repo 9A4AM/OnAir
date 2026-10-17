@@ -1,4 +1,4 @@
-// Seeded mutation run of the SAME layer (the Rust one under DECT2_RUST_SAME), meant for DECT2_SANITIZE=ON: parse, trim, locate, time text and the
+// Seeded mutation run of the SAME layer, meant for DECT2_SANITIZE=ON: parse, trim, locate, time text and the
 // county reader must never crash or hang on any bytes. Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/same/same_proto.h"
 #include <cstdio>
