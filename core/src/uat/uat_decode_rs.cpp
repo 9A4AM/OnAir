@@ -1,7 +1,6 @@
-// UAT message decoding on top of the Rust crate rust/onair_uat (DECT2_RUST_UAT): uat_decode_adsb_mdb and uat_decode_uplink_mdb of dump978's uat_decode.c (which
-// keeps the C code under #ifndef DECT2_RUST_UAT and the display functions). The Rust side fills flat records; this file copies them into the C structs with
-// their bit fields and the pointers into the application data. Empty when the crate is not built.
-#ifdef DECT2_RUST_UAT
+// UAT message decoding on top of the Rust crate rust/onair_uat: uat_decode_adsb_mdb and uat_decode_uplink_mdb of dump978's uat_decode.c (which
+// keeps the display functions; the decoding half of the C code was replaced by this Rust implementation). The Rust side fills flat records; this file copies them into the C structs with
+// their bit fields and the pointers into the application data.
 #include "dect2/rs/uat.h"
 #include "dect2/uat/uat_decode_c.h"
 #include <cstdio>
@@ -74,4 +73,3 @@ extern "C" void uat_decode_uplink_mdb(uint8_t* frame, struct uat_uplink_mdb* mdb
         mdb->info_frames[r.num_info_frames].type = r.tail_kind;
     }
 }
-#endif

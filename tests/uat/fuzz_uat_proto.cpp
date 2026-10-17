@@ -1,4 +1,4 @@
-// Seeded mutation run of the UAT message decoder (the Rust one under DECT2_RUST_UAT), meant for DECT2_SANITIZE=ON: downlink and uplink decodes of any bytes
+// Seeded mutation run of the UAT message decoder, meant for DECT2_SANITIZE=ON: downlink and uplink decodes of any bytes
 // (full-size buffers, as the callers have) must never crash or hang. Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/uat/uat_decode_c.h"
 #include "dect2/uat/uat_frame.h"
