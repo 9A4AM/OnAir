@@ -359,7 +359,7 @@ void playerTab(App& a) {
         const SavedChannel* cur = nullptr;
         for (auto& c : a.channels) if (std::fabs(c.freqMhz - a.freqMhz) < 0.01) cur = &c;
         char fb[48]; snprintf(fb, sizeof fb, "%.3f MHz", a.freqMhz);
-        const std::string curLab = cur ? channelLabel(*cur) : std::string(fb);
+        const std::string curLab = cur ? channelLabel(*cur, muxName(a)) : std::string(fb);
         ImGui::AlignTextToFramePadding();
         ImGui::TextDisabled("channel");
         ImGui::SameLine();
@@ -368,7 +368,7 @@ void playerTab(App& a) {
             if (a.channels.empty()) ImGui::TextDisabled("no channels yet - run a scan (Scan tab)");
             for (size_t i = 0; i < a.channels.size(); i++) {
                 const SavedChannel& c = a.channels[i];
-                std::string l = (c.favourite ? "* " : "") + channelLabel(c);
+                std::string l = (c.favourite ? "* " : "") + channelLabel(c, muxName(a));
                 char extra[64]; snprintf(extra, sizeof extra, "   SNR %.0f dB", c.snrDb);
                 if (ImGui::Selectable((l + extra).c_str(), cur == &c)) tuneToChannel(a, c);
                 if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", c.mode.c_str());
