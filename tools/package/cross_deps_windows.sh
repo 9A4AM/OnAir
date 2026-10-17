@@ -151,7 +151,8 @@ OBJDUMP=${OBJDUMP:-$HOST-objdump}
     -DENABLE_LIME_UTIL=OFF -DENABLE_QUICKTEST=OFF -DENABLE_OCTAVE=OFF -DENABLE_DESKTOP=OFF -DENABLE_HEADERS=OFF "-DCMAKE_C_FLAGS=-std=gnu11" >/dev/null   # (gnu11: the C code has old-style declarations)
   cmake --build lime-build -j$JOBS --target LimeSuite >/dev/null
   cp lime-build/src/libLimeSuite.dll "$P/bin/"; cp LimeSuite-23.11.0/src/ConnectionFTDI/FTD3XXLibrary/x64/FTD3XX.dll "$P/bin/"
-  mkdir -p "$P/licenses"; cp LimeSuite-23.11.0/COPYING "$P/licenses/LimeSuite-COPYING.txt"; }
+  mkdir -p "$P/licenses"; cp LimeSuite-23.11.0/COPYING "$P/licenses/LimeSuite-COPYING.txt"
+  for t in LimeSuite-23.11.0/src/ConnectionFTDI/FTD3XXLibrary/*icen*; do if [ -f "$t" ]; then cp "$t" "$P/licenses/FTD3XX-$(basename "$t")"; fi; done; }
 
 # --- libairspyhf 1.6.8 (Airspy HF+): a DLL, linked to the libusb-1.0.dll that ships with UHD (one libusb, the newer MSYS2 one, for both)
 # --- Hamlib 4.6.2 (CAT rig control): libhamlib-4.dll in bin/ and headers for the cross build. Needs hamlib-4.6.2.tar.gz in build-windows-deps/src.

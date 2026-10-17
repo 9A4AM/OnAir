@@ -21,7 +21,8 @@ RUN set -eux; \
     # made at the start instead, init-onair) and Noto CJK. Matched by name so that the same list works on x86-64 and arm64.
     dpkg-query -W -f='${Package}\n' | grep -E '^(docker-ce(-cli)?|docker-(buildx|compose)-plugin|containerd\.io|iptables|nftables|cmake(-data)?|git(-man)?|locales-all|fonts-noto-cjk|(gcc|g\+\+)(-[0-9]+)?(-[a-z0-9_-]+-linux-gnu)?|lib(stdc\+\+|gcc)-[0-9]+-dev|libc6-dev|libc-dev-bin|linux-libc-dev|lib(asan|tsan|lsan|ubsan|hwasan)[0-9]+|binutils(-common|-[a-z0-9_-]+-linux-gnu)?|libbinutils|libgprofng0|libctf0|libctf-nobfd0|libsframe1)$' | xargs -r apt-get purge -y; \
     locale-gen en_US.UTF-8; \
-    rm -rf /tmp/* /var/lib/apt/lists/* /var/cache/apt/* /var/log/apt/* /var/log/dpkg.log /usr/share/doc/* /usr/share/man/* /usr/share/info/*
+    rm -rf /tmp/* /var/lib/apt/lists/* /var/cache/apt/* /var/log/apt/* /var/log/dpkg.log /usr/share/man/* /usr/share/info/*; \
+    find /usr/share/doc -type f ! -name 'copyright' ! -ipath '/usr/share/doc/onair/*' -delete; find /usr/share/doc -xtype l -delete; find /usr/share/doc -type d -empty -delete
 
 COPY root/ /
 
