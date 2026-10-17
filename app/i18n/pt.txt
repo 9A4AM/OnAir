@@ -1297,3 +1297,16 @@ Status	Estado
 Running	A funcionar
 Step	Passo
 Keyboard	Teclado
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	O som do HD Radio precisa do codec HDC, que você mesmo instala (clique em ?)
+HDC sound codec cannot be used: %s	O codec de som HDC não pode ser usado: %s
+HDC sound codec not installed (no sound; click ? for the steps)	Codec de som HDC não instalado (sem som; clique em ? para ver os passos)
+sound: HD%d (HDC)	som: HD%d (HDC)
+sound: HD%d, waiting for audio	som: HD%d, aguardando áudio
+The HD Radio sound codec (HDC) is not installed	O codec de som do HD Radio (HDC) não está instalado
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	A emissora, os dados do programa e as imagens são mostrados, mas o som do HD Radio fica mudo até você instalar o codec por conta própria. O OnAir não o inclui (o HDC é patenteado e pertence à Xperi).
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	Compile o FAAD2 com o patch HDC como explicam as instruções completas (é preciso o patch de código aberto do nrsc5).
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	Coloque a biblioteca (libfaad_hdc) na pasta de codecs do OnAir (botão abaixo).
+The HD Radio sound library cannot be used	A biblioteca de som do HD Radio não pode ser usada
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	O OnAir encontrou uma biblioteca para HDC, mas ela não é um build do FAAD2 com o patch HDC que o OnAir sabe chamar, então foi deixada de lado.
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Compile a biblioteca de novo a partir do FAAD2 2.10 ou 2.11 com o patch do nrsc5, como explicam as instruções completas.
+Replace the file in the OnAir codecs folder (button below).	Substitua o arquivo na pasta de codecs do OnAir (botão abaixo).

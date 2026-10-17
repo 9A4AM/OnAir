@@ -2,6 +2,8 @@
 
 > **DMR, P25, NXDN, dPMR and D-STAR voice is silent until you install mbelib.** The calls, IDs and data are shown without it. Its vocoders are patented, so OnAir does not include it: put `libmbe` / `mbelib` in the codecs folder (the **?** button next to the sound has an **Open codecs folder** button), then press **Look again**.
 
+> **HD Radio sound is silent until you install the HDC codec.** The stations, program data and pictures are shown without it. See [HD Radio sound](#hd-radio-sound-hdc-build-it-yourself).
+
 OnAir never ships a patented codec. You install the ones you are allowed to use yourself, and OnAir loads them. The one open codec, **codec2** (FreeDV and M17 speech), comes with OnAir: nothing to install. **Whether you may
 install or use them is your own responsibility: follow the patent and radio-listening law where you live.**
 
@@ -15,6 +17,7 @@ looks for, the exact folders it searches, an **Open codecs folder** button (it m
 |---|---|---|
 | DMR, P25 Phase 1, NXDN, dPMR | AMBE+2 / IMBE (patented) | **mbelib** (not included: you install it yourself; voice is silent until you do) |
 | D-STAR | AMBE (patented) | **mbelib** |
+| HD Radio (NRSC-5, FM and AM) | HDC (patented, owned by Xperi) | a **patched FAAD2** (`libfaad_hdc`) that you build yourself (see below); sound is silent until you do |
 | FreeDV 700D / 700E / 1600, M17 | codec2 (open, LGPL) | **codec2**: comes with OnAir (the library `libcodec2` next to the program) |
 | FreeDV RADE | RADE neural modem (open, BSD) | **librade** (not codec2): optional; without it the RADE slot stays dark |
 | TETRA | its own speech codec | nothing from you: it is not mbelib and not codec2 |
@@ -28,7 +31,7 @@ and M17. If a digital-voice mode says "mbelib not found", you need **mbelib**, a
 
 OnAir tries these file names. Folders are searched in this order; inside each folder every name is tried before the next folder.
 
-1. The `DECT2_MBELIB_PATH` / `DECT2_CODEC2_PATH` environment variable (a full path), if set.
+1. The `DECT2_MBELIB_PATH` / `DECT2_CODEC2_PATH` / `DECT2_FAAD_HDC_PATH` environment variable (a full path), if set.
 2. The OnAir **codecs folders** (below).
 3. The libraries that ship with OnAir: the program's own folder (Windows: next to `OnAir.exe`; Linux: next to `dect2`, and `../lib/onair` and `../lib` of it, which is where the `.deb` and the portable package put codec2; macOS: inside the app, `Contents/Frameworks` and `Contents/Resources`). A copy you put in a codecs folder (step 2) wins over the shipped one.
 4. The system: Windows `PATH`; macOS `/opt/homebrew/lib`, `/usr/local/lib`, `/opt/local/lib`; Linux `/usr/local/lib`, `/usr/lib`, `/usr/lib64`, the multiarch folder.
@@ -36,6 +39,7 @@ OnAir tries these file names. Folders are searched in this order; inside each fo
 | Library | Windows | macOS | Linux |
 |---|---|---|---|
 | mbelib | `mbelib.dll`, `libmbe.dll`, `libmbe-1.dll`, `mbe.dll` | `libmbe.1.3.dylib`, `libmbe.1.dylib`, `libmbe.dylib` | `libmbe.so.1.3`, `libmbe.so.1`, `libmbe.so` |
+| HDC (patched FAAD2) | `libfaad_hdc.dll`, `faad_hdc.dll`, `libfaad2-hdc.dll`, `faad2-hdc.dll` | `libfaad_hdc.dylib`, `libfaad_hdc.2.dylib`, `libfaad2-hdc.dylib` | `libfaad_hdc.so`, `libfaad_hdc.so.2`, `libfaad2-hdc.so` (any `libfaad_hdc.so.*`) |
 | codec2 | `codec2.dll`, `libcodec2.dll` | `libcodec2.1.2.dylib` ... `libcodec2.dylib` | `libcodec2.so.1.2` ... `libcodec2.so` (any `libcodec2.so.*`) |
 
 ### The OnAir codecs folders
@@ -112,10 +116,74 @@ It is only for FreeDV and M17.
 
 Open HF digital and pick FreeDV (or M17): the **?** button says `codec2 found: <path>`.
 
-## HDC (HD Radio sound)
+## HD Radio sound (HDC): build it yourself
 
-HD Radio sound uses HDC, a patented codec. OnAir shows the stations, the data and the pictures, but plays no sound. To hear HD Radio,
-use nrsc5 (<https://github.com/theori-io/nrsc5>) with an RTL-SDR or an IQ recording.
+HD Radio (NRSC-5) sound is coded with **HDC**, a modified HE-AAC. HDC is a proprietary codec owned by Xperi (HD Radio) and covered by patents.
+**OnAir does not include it, does not download it and contains no HDC or FAAD2 code.** Without it OnAir still shows the stations, the program
+list, the program data (title, artist), the pictures and the other data services; the sound stays silent and the status says
+*HDC sound codec not installed*. Whether you may build and use it depends on the patent and licence rules of your country; check them first,
+as with mbelib. Listening to radio services is regulated in many countries as well.
+
+The open-source **nrsc5** project (<https://github.com/theori-io/nrsc5>) decodes HDC with FAAD2 plus a patch of its own
+(`support/faad2-hdc-support.patch`). If you build that patched FAAD2 as a shared library, OnAir loads it and plays the program you select on
+the right (HD1, HD2, HD3 ...), with the volume and mute of the program. Steps (about five minutes):
+
+**macOS.**
+
+```
+brew install cmake git
+git clone https://github.com/theori-io/nrsc5
+git clone https://github.com/knik0/faad2
+cd faad2
+patch -p1 < ../nrsc5/support/faad2-hdc-support.patch
+mkdir build && cd build
+cmake .. -DBUILD_SHARED_LIBS=ON && make
+mkdir -p "$HOME/Library/Application Support/OnAir/codecs"
+cp libfaad_hdc*.dylib "$HOME/Library/Application Support/OnAir/codecs/"
+```
+
+**Linux.**
+
+```
+sudo apt install git patch cmake build-essential     # or your distribution's equivalent
+git clone https://github.com/theori-io/nrsc5
+git clone https://github.com/knik0/faad2
+cd faad2
+patch -p1 < ../nrsc5/support/faad2-hdc-support.patch
+mkdir build && cd build
+cmake .. -DBUILD_SHARED_LIBS=ON && make
+mkdir -p ~/.local/share/onair/codecs
+cp libfaad_hdc.so* ~/.local/share/onair/codecs/
+```
+
+**Windows (MSYS2 / MinGW).** In the "MSYS2 MINGW64" shell:
+
+```
+pacman -S --needed git patch mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make
+git clone https://github.com/theori-io/nrsc5
+git clone https://github.com/knik0/faad2
+cd faad2
+patch -p1 < ../nrsc5/support/faad2-hdc-support.patch
+mkdir build && cd build
+cmake .. -G "MSYS Makefiles" -DBUILD_SHARED_LIBS=ON && make
+```
+
+Copy `libfaad_hdc.dll` (look in the `build` folder) into `%LOCALAPPDATA%\OnAir\codecs\`, together with `libgcc_s_seh-1.dll` and
+`libwinpthread-1.dll` from `C:\msys64\mingw64\bin` if OnAir says it does not load. 64-bit with 64-bit.
+
+Then open **HD Radio** and press **Look again** in the **?** popup next to the sound (no restart needed): it says
+`HDC library found: <path>`. Pick a program in the list on the right to hear it.
+
+- **The library must be the patched build**: a plain FAAD2 (`libfaad`) has no `NeAACDecInitHDC` entry point and OnAir refuses it with that
+  reason. The patch is written for the faad2 releases around 2.10 and 2.11; if it does not apply to the newest source, check out the 2.10.x or 2.11.x tag
+  (`git checkout 2.10.1` in the faad2 folder) and apply it again.
+- OnAir checks the FAAD2 version (2.7 to 2.11) and the layout of the library's frame information when it loads, and refuses anything else with a plain
+  message instead of risking a crash. Set `DECT2_FAAD_HDC_PATH` to the full path of the file to use one that is not in a codecs folder.
+- The sound is 44.1 kHz stereo, played with the same volume, mute and automatic level control as the other modes. A missing or damaged packet is
+  silence for that packet, and the decoder starts again after it; three decode errors in a row also restart it.
+- Only the main stream of each program is played (the digital "core"); the hybrid enhancement streams are ignored, as in nrsc5.
+- OnAir has been tested against a stand-in library, not against a real patched FAAD2 and a real station; if the real library behaves differently
+  (a different file name, or a version the check refuses), please open an issue with the message the **?** popup shows.
 
 ## DRA+ (CDR sound)
 

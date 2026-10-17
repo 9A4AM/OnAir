@@ -1,7 +1,7 @@
 // HD Radio (NRSC-5) Layer 2 and above, without the audio codec: the transfer frame header (PCI), the audio PDU headers and their packet
 // locators, the HDLC-framed AAS packets (program service data, the station information guide, large objects), the fixed data
 // subchannels, and the station information service (SIS) of the PIDS channel. The audio packets themselves are HDC, a patented codec
-// that OnAir does not decode: they are counted and measured only.
+// that OnAir does not ship: they are counted and measured, and handed to HdcAudio (hdr_hdc.h) for the user's own library to play.
 //
 // The decoder follows nrsc5 (GPL-3.0, github.com/theori-io/nrsc5: src/frame.c, src/pids.c, src/output.c); the encoder, used by the test
 // signal, builds exactly what that decoder reads.
@@ -16,6 +16,8 @@
 #include <vector>
 
 namespace dect2 { namespace hdr {
+
+class HdcAudio;
 
 // ---- PCI code words (nrsc5 frame.c)
 constexpr uint32_t kPciAudio = 0x38D8D3, kPciAudioOpp = 0xCE3634, kPciAudioFixed = 0xE3634C, kPciAudioFixedOpp = 0x8D8D33, kPciFixed = 0x3634CE;
@@ -108,6 +110,7 @@ public:
     void resetTransport();              // a new block sync: restart the HDLC streams and the fixed data sync, keep the station
     void setLog(std::function<void(const std::string&)> cb) { log_ = std::move(cb); }
     void setTime(double sec) { now_ = sec; }
+    void setAudio(HdcAudio* a) { audio_ = a; }   // where the audio packets go (hdr_hdc.h); null: they are only counted. Survives reset().
     // descrambled bits from L1: a PIDS frame (80 bits) and a transfer frame of a logical channel (0 = P1, 1 = P3, 2 = P4)
     void pushPids(const uint8_t* bits);
     void pushTransfer(const uint8_t* bits, int lenBits, int channel);
@@ -137,6 +140,7 @@ private:
 
     std::function<void(const std::string&)> log_;
     double now_ = 0;
+    HdcAudio* audio_ = nullptr;
     std::unique_ptr<Sis> sis_;
     std::map<int, Prog> progs_;
     std::vector<HdrDataService> dsds_;            // from the SIS

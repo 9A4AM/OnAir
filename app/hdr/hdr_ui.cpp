@@ -1,7 +1,7 @@
 // HD Radio screens: the Radio tab (Station: call sign, names, slogan, location, message, the programs and what is playing with its album
 // art; Data: the large objects and the other data services; Signal: the receiver's figures), the program list on the right, the status
 // lamps, the analysis row (constellation, MER, P1 frames), the Receiver tab and the options of the test signal. HD Radio sound is HDC, a
-// patented codec that OnAir does not decode.
+// patented codec that OnAir does not ship: with the user's own patched FAAD2 the program selected on the right is played (hdr_hdc.h).
 #include "app.h"
 #include "dect2/hdr/hdr_l2.h"
 #include "dect2/hdr/hdr_rx.h"
@@ -24,7 +24,6 @@ bool freqStepArrow(const char* id, ImGuiDir dir);
 namespace {
 
 constexpr int kStd = 22;   // RxTelemetry::standard of HD Radio (the tuning table says 23, the engine reports 22)
-const char* const kHdcNote = "HD Radio sound uses the patented HDC codec, which OnAir does not decode";
 
 struct Pic { gfx::Image* img = nullptr; int w = 0, h = 0; uint64_t version = 0; bool failed = false; };
 
@@ -183,6 +182,11 @@ const HdrLotInfo* stationLogo(const HdrTelemetry& t) {
 // ---------------------------------------------------------------- tick
 
 void tick(App& a) {
+    {   // the sound follows the volume, the mute and the program selected on the right (HD1 .. HD4 ...); cheap atomics, so every frame
+        dect2::HdrReceiver& r = a.engine.hdr();
+        const HdrProgram* sp = selected(a.rx.hdr);
+        r.setVolume(a.volume); r.setMuted(a.muted); r.setProgram(sp ? sp->number : S.sel);
+    }
     if (!a.engine.running()) {   // forget the pictures of the last session
         for (auto& kv : S.pics) delete kv.second.img;
         S.pics.clear();
@@ -238,11 +242,17 @@ void programCards(App& a, const char* id) {
     ImGui::PopID();
 }
 
-void hdcNote() {
+// The sound line: whether the user's HDC library is there, and what is being played. The ? button opens the install guide (codec_help.cpp).
+void hdcNote(const App& a) {
+    const HdrTelemetry& t = a.rx.hdr;
     ImGui::PushTextWrapPos(0);
     codecHelpButton(CodecHelp::Hdc);
     ImGui::SameLine();
-    ImGui::TextDisabled("%s", kHdcNote);
+    if (!live(a)) ImGui::TextDisabled("%s", tr("HD Radio sound needs the HDC codec, which you install yourself (click ?)"));
+    else if (!t.hdcProblem.empty()) ImGui::TextColored(kWarn, tr("HDC sound codec cannot be used: %s"), t.hdcProblem.c_str());
+    else if (!t.hdcFound) ImGui::TextColored(kWarn, "%s", tr("HDC sound codec not installed (no sound; click ? for the steps)"));
+    else if (t.hdcPlaying) ImGui::TextColored(kGood, tr("sound: HD%d (HDC)"), t.soundProgram + 1);
+    else ImGui::TextDisabled(tr("sound: HD%d, waiting for audio"), t.soundProgram + 1);
     ImGui::PopTextWrapPos();
 }
 
@@ -365,7 +375,7 @@ void stationTab(App& a) {
         ImGui::TextDisabled("%s", a.engine.running() ? "Tune to an HD Radio station: FM 88 to 108 MHz or AM 530 to 1710 kHz (hybrid or all-digital); the waveform is found by itself."
                                                    : "Start the receiver. Test signal: pick the synthetic source.");
         ImGui::PopTextWrapPos();
-        hdcNote();
+        hdcNote(a);
         return;
     }
     // the station
@@ -401,7 +411,7 @@ void stationTab(App& a) {
     sectionHeader(Ic::Radio, "Programs");
     if (t.programs.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("reading the program list"); ImGui::PopTextWrapPos(); }
     programCards(a, "st");
-    hdcNote();
+    hdcNote(a);
     ImGui::Spacing();
     if (const HdrProgram* p = selected(t)) nowPlaying(a, *p);
 }
@@ -525,12 +535,13 @@ void signalRows(App& a) {
     kf("PIDS frames", "%llu ok, %llu bad CRC", (unsigned long long)t.pidsOk, (unsigned long long)t.pidsBad);
     kf("audio PDUs", "%llu", (unsigned long long)t.pduCount);
     kf("AAS packets", "%llu ok, %llu bad", (unsigned long long)t.aasPackets, (unsigned long long)t.aasBad);
+    if (t.hdcFound) kf("HDC sound", "HD%d: %llu decoded, %llu errors, %llu lost (silence), %llu decoder restarts", t.soundProgram + 1, (unsigned long long)t.hdcDecoded, (unsigned long long)t.hdcErrors, (unsigned long long)t.hdcLost, (unsigned long long)t.hdcResets);
     sectionHeader(Ic::Speaker, "Audio");
     for (const auto& p : t.programs) {
         snprintf(b, sizeof b, "%s, %.1f kbit/s, %llu packets ok, %llu bad", codecText(p.codecMode).c_str(), p.kbps, (unsigned long long)p.packetsOk, (unsigned long long)p.packetsBad);
         kvRow(a, (progLabel(p) + " " + progName(p)).c_str(), b, 150);
     }
-    hdcNote();
+    hdcNote(a);
 }
 
 void signalTab(App& a) {
@@ -592,7 +603,7 @@ void list(App& a) {
     if (t.programs.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", t.state >= 2 ? "reading the program list" : "searching for an HD Radio signal"); ImGui::PopTextWrapPos(); return; }
     if (!t.callSign.empty()) { ImGui::PushFont(a.ui, 18.f); ImGui::TextUnformatted(t.callSign.c_str()); ImGui::PopFont(); }
     programCards(a, "side");
-    hdcNote();
+    hdcNote(a);
 }
 
 // ---------------------------------------------------------------- status bar, summary, meters
@@ -658,7 +669,7 @@ void synth(App& a, bool& changed) {
         for (int i = 0; i < 4; i++) if (ImGui::Selectable(items[i], cur == i)) { sc.modeOpt[0] = i; changed = true; }
         ImGui::EndCombo();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Station WONR with two programs (three in MP3), program data and a picture. The audio packets are filler: HDC sound is not decoded.");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Station WONR with two programs (three in MP3), program data and a picture. The audio packets are filler, so there is nothing to hear.");
 }
 
 } // namespace

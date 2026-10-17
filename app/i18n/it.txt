@@ -1297,3 +1297,16 @@ Status	Stato
 Running	In funzione
 Step	Passo
 Keyboard	Tastiera
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	L'audio HD Radio richiede il codec HDC, che installi tu (clicca ?)
+HDC sound codec cannot be used: %s	Il codec audio HDC non può essere usato: %s
+HDC sound codec not installed (no sound; click ? for the steps)	Codec audio HDC non installato (niente audio; clicca ? per i passaggi)
+sound: HD%d (HDC)	audio: HD%d (HDC)
+sound: HD%d, waiting for audio	audio: HD%d, in attesa di audio
+The HD Radio sound codec (HDC) is not installed	Il codec audio HD Radio (HDC) non è installato
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	Stazione, dati del programma e immagini vengono mostrati, ma l'audio HD Radio resta muto finché non installi il codec da solo. OnAir non lo include (HDC è brevettato e appartiene a Xperi).
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	Compila il FAAD2 con la patch HDC come spiegano le istruzioni complete (serve la patch open source di nrsc5).
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	Metti la libreria (libfaad_hdc) nella cartella dei codec di OnAir (pulsante qui sotto).
+The HD Radio sound library cannot be used	La libreria audio HD Radio non può essere usata
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	OnAir ha trovato una libreria per HDC, ma non è una build di FAAD2 con la patch HDC che OnAir sa chiamare, quindi è stata ignorata.
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Ricompila la libreria da FAAD2 2.10 o 2.11 con la patch di nrsc5, come spiegano le istruzioni complete.
+Replace the file in the OnAir codecs folder (button below).	Sostituisci il file nella cartella dei codec di OnAir (pulsante qui sotto).

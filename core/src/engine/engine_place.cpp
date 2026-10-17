@@ -166,6 +166,7 @@ void Engine::muteReceiver(int a, bool m) {
     if (WideModes::supports(a)) wide_.setMuted(m);
     switch (a) {
     case 10: rxDmr_.setMuted(m); break;
+    case 22: rxHdr_.setMuted(m); break;
     case 26: rxHfdig_.setMuted(m); break;
     case 27: rxAirband_.setMuted(m); break;
     case 30: rxNdb_.setMuted(m); break;

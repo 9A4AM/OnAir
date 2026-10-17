@@ -1,8 +1,10 @@
 // HD Radio Layer 2 and the data services (see hdr_l2.h). The decoding logic is adapted from nrsc5 (GPL-3.0,
 // github.com/theori-io/nrsc5): the transfer frame and PDU parsing from src/frame.c, the SIS messages from src/pids.c, the ID3, SIG and LOT
-// handling from src/output.c. Nothing here touches the HDC audio codec: the audio packets are only counted.
+// handling from src/output.c. Nothing here touches the HDC audio codec: the audio packets are counted and, when a sink is set (setAudio),
+// handed on with their sequence numbers (hdr_audio.cpp plays them through the user's own library).
 #include "hdr_l2_internal.h"
 #include "dect2/hdr/hdr_fec.h"
+#include "dect2/hdr/hdr_hdc.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -275,6 +277,15 @@ void L2Decoder::pushTransfer(const uint8_t* bits, int len, int channel) {
 }
 
 namespace {
+// packets per transfer frame of a stream, which sets where the play position stands (nrsc5 frame.c calc_avg_packets)
+unsigned avgPackets(int codec, int stream) {
+    switch (codec) {
+    case 1: case 2: case 3: return stream == 0 ? 4 : 32;
+    case 10: return stream == 0 ? 32 : 4;
+    case 13: return 4;
+    default: return 32;
+    }
+}
 bool hasAudio(uint32_t pci) { return pci == kPciAudio || pci == kPciAudioOpp || pci == kPciAudioFixed || pci == kPciAudioFixedOpp; }
 bool hasFixed(uint32_t pci) { return pci == kPciAudioFixed || pci == kPciAudioFixedOpp || pci == kPciFixed; }
 size_t unescape(std::vector<uint8_t>& d) {
@@ -358,6 +369,18 @@ void L2Decoder::frameProcess(std::vector<uint8_t>& buf, int channel, uint32_t pc
         }
         Prog& P = prog(progNum);
         pdus_++;
+        unsigned seq = 0;
+        if (audio_ && stream == 0) {
+            // where this PDU's packets sit in the program's 64-slot ring, and where the play position should be (nrsc5 frame.c)
+            const unsigned pduSeq = (unsigned)((h[8] >> 6) | ((h[9] & 1) << 2));
+            const unsigned latency = (unsigned)((h[10] >> 6) | ((h[11] & 1) << 2));
+            const unsigned pfirst = (h[11] >> 1) & 1;
+            const unsigned avg = avgPackets(codec, stream);
+            seq = (64 + (unsigned)((h[11] >> 3) | ((h[12] & 1) << 5)) - pfirst) % 64;
+            unsigned at = (64 + pduSeq * avg - latency * 2) % 64;
+            if (((64 + seq - at) % 64) >= 32) at = (at + 32) % 64;
+            audio_->align(progNum, stream, at);
+        }
         P.p.onAir = true;
         if (stream == 0) {
             P.p.codecMode = codec;
@@ -373,7 +396,13 @@ void L2Decoder::frameProcess(std::vector<uint8_t>& buf, int channel, uint32_t pc
             const size_t last = start + (size_t)loc[(size_t)j];
             if (last < offset) return;
             const size_t cnt = last - offset;
-            if (crc8(&buf[offset], cnt + 1) == 0) P.p.packetsOk++; else P.p.packetsBad++;
+            const bool crcOk = crc8(&buf[offset], cnt + 1) == 0;
+            if (crcOk) P.p.packetsOk++; else P.p.packetsBad++;
+            if (audio_ && stream == 0) {
+                const bool first = j == 0 && ((h[11] >> 1) & 1), lastHalf = j == nop - 1 && ((h[11] >> 2) & 1);
+                audio_->push(progNum, stream, seq, first ? HdcAudio::HalfBack : lastHalf ? HdcAudio::HalfFront : HdcAudio::Full, crcOk, &buf[offset], cnt);
+                seq = (seq + 1) % 64;
+            }
             P.bytesNow[channel] += cnt;
             offset = last + 1;
         }

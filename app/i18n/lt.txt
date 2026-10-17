@@ -1315,3 +1315,16 @@ Status	Būsena
 Running	Veikia
 Step	Žingsnis
 Keyboard	Klaviatūra
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	HD Radio garsui reikia HDC kodeko, kurį įdiegiate patys (spustelėkite ?)
+HDC sound codec cannot be used: %s	HDC garso kodeko naudoti negalima: %s
+HDC sound codec not installed (no sound; click ? for the steps)	HDC garso kodekas neįdiegtas (nėra garso; spustelėkite ?, kad pamatytumėte veiksmus)
+sound: HD%d (HDC)	garsas: HD%d (HDC)
+sound: HD%d, waiting for audio	garsas: HD%d, laukiama garso
+The HD Radio sound codec (HDC) is not installed	HD Radio garso kodekas (HDC) neįdiegtas
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	Stotis, programos duomenys ir paveikslėliai rodomi, bet HD Radio garsas tylės, kol patys neįdiegsite kodeko. „OnAir“ jo neįtraukia (HDC yra patentuotas ir priklauso „Xperi“).
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	Sukompiliuokite FAAD2 su HDC pataisa, kaip aiškinama visose instrukcijose (reikia atvirojo kodo nrsc5 pataisos).
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	Įdėkite biblioteką (libfaad_hdc) į „OnAir“ kodekų aplanką (mygtukas žemiau).
+The HD Radio sound library cannot be used	HD Radio garso bibliotekos naudoti negalima
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	„OnAir“ rado HDC biblioteką, bet tai nėra FAAD2 versija su HDC pataisa, kurią „OnAir“ moka iškviesti, todėl ji nenaudota.
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Iš naujo sukompiliuokite biblioteką iš FAAD2 2.10 arba 2.11 su nrsc5 pataisa, kaip aiškinama visose instrukcijose.
+Replace the file in the OnAir codecs folder (button below).	Pakeiskite failą „OnAir“ kodekų aplanke (mygtukas žemiau).

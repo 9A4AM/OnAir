@@ -1297,3 +1297,16 @@ Status	Состояние
 Running	Работает
 Step	Шаг
 Keyboard	Клавиатура
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	Для звука HD Radio нужен кодек HDC, который вы устанавливаете сами (нажмите ?)
+HDC sound codec cannot be used: %s	Звуковой кодек HDC использовать нельзя: %s
+HDC sound codec not installed (no sound; click ? for the steps)	Звуковой кодек HDC не установлен (нет звука; нажмите ?, чтобы увидеть шаги)
+sound: HD%d (HDC)	звук: HD%d (HDC)
+sound: HD%d, waiting for audio	звук: HD%d, ожидание звука
+The HD Radio sound codec (HDC) is not installed	Звуковой кодек HD Radio (HDC) не установлен
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	Станция, данные программы и картинки показываются, но звук HD Radio остаётся беззвучным, пока вы сами не установите кодек. OnAir его не включает (HDC запатентован и принадлежит Xperi).
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	Соберите FAAD2 с патчем HDC, как объясняется в полной инструкции (нужен открытый патч проекта nrsc5).
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	Положите библиотеку (libfaad_hdc) в папку кодеков OnAir (кнопка ниже).
+The HD Radio sound library cannot be used	Звуковую библиотеку HD Radio использовать нельзя
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	OnAir нашёл библиотеку для HDC, но это не сборка FAAD2 с патчем HDC, которую OnAir умеет вызывать, поэтому она не использована.
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Соберите библиотеку заново из FAAD2 2.10 или 2.11 с патчем nrsc5, как объясняется в полной инструкции.
+Replace the file in the OnAir codecs folder (button below).	Замените файл в папке кодеков OnAir (кнопка ниже).
