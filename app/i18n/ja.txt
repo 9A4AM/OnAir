@@ -2345,3 +2345,31 @@ Current setting: %.2f ppm	現在の設定: %.2f ppm
 No measurements of this radio yet.	このラジオの測定はまだありません。
 History of this radio (ppm)	このラジオの履歴(ppm)
 Drift: %+.3f ppm per minute	ドリフト: 毎分 %+.3f ppm
+Band from (kHz)	帯域の下限 (kHz)
+Calibrate from two landmarks	2つの目印で校正
+Calibrated.	校正しました。
+Camera snapshot URL (JPEG)	カメラのスナップショットURL (JPEG)
+Cannot load the picture.	画像を読み込めません。
+Cannot save the snapshot.	スナップショットを保存できません。
+Centre azimuth	中心方位角
+Click the picture to set the column of the selected landmark.	画像をクリックすると、選択した目印の列が設定されます。
+Demo skyline (no camera)	デモ用スカイライン (カメラなし)
+Enable RF camera	RFカメラを有効にする
+Field of view	視野角
+Heat strength	ヒートマップの強さ
+No picture.	画像がありません。
+Normal camera lens	通常のカメラレンズ
+Panorama (equirectangular)	パノラマ (正距円筒)
+Picture	画像
+Picture or panorama file	画像またはパノラマファイル
+Projection	投影方式
+RF camera	RFカメラ
+Save snapshot	スナップショットを保存
+Snapshot saved: %s	スナップショットを保存しました: %s
+Sub-bands	サブバンド
+The two landmarks do not fit a picture.	2つの目印が画像に合いません。
+Weakest shown	表示する最小強度
+azimuth	方位角
+azimuth only; the picture is just a backdrop	方位角のみ。画像は背景にすぎません
+column	列
+to (kHz)	帯域の上限 (kHz)

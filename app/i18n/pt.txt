@@ -2328,3 +2328,31 @@ Current setting: %.2f ppm	Definição atual: %.2f ppm
 No measurements of this radio yet.	Ainda não há medições deste rádio.
 History of this radio (ppm)	Histórico deste rádio (ppm)
 Drift: %+.3f ppm per minute	Deriva: %+.3f ppm por minuto
+Band from (kHz)	Banda de (kHz)
+Calibrate from two landmarks	Calibrar com dois pontos de referência
+Calibrated.	Calibrado.
+Camera snapshot URL (JPEG)	URL do instantâneo da câmara (JPEG)
+Cannot load the picture.	Não é possível carregar a imagem.
+Cannot save the snapshot.	Não é possível guardar o instantâneo.
+Centre azimuth	Azimute central
+Click the picture to set the column of the selected landmark.	Clique na imagem para definir a coluna do ponto de referência selecionado.
+Demo skyline (no camera)	Horizonte de demonstração (sem câmara)
+Enable RF camera	Ativar a câmara RF
+Field of view	Campo de visão
+Heat strength	Intensidade do mapa de calor
+No picture.	Sem imagem.
+Normal camera lens	Objetiva de câmara normal
+Panorama (equirectangular)	Panorama (equirretangular)
+Picture	Imagem
+Picture or panorama file	Ficheiro de imagem ou panorama
+Projection	Projeção
+RF camera	Câmara RF
+Save snapshot	Guardar instantâneo
+Snapshot saved: %s	Instantâneo guardado: %s
+Sub-bands	Sub-bandas
+The two landmarks do not fit a picture.	Os dois pontos de referência não se ajustam a uma imagem.
+Weakest shown	Mais fraco mostrado
+azimuth	azimute
+azimuth only; the picture is just a backdrop	apenas azimute; a imagem é só um fundo
+column	coluna
+to (kHz)	até (kHz)

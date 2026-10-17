@@ -2345,3 +2345,31 @@ Current setting: %.2f ppm	Huidige instelling: %.2f ppm
 No measurements of this radio yet.	Nog geen metingen van deze radio.
 History of this radio (ppm)	Geschiedenis van deze radio (ppm)
 Drift: %+.3f ppm per minute	Drift: %+.3f ppm per minuut
+Band from (kHz)	Band van (kHz)
+Calibrate from two landmarks	Kalibreren met twee oriëntatiepunten
+Calibrated.	Gekalibreerd.
+Camera snapshot URL (JPEG)	Snapshot-URL van de camera (JPEG)
+Cannot load the picture.	De afbeelding kan niet worden geladen.
+Cannot save the snapshot.	De snapshot kan niet worden opgeslagen.
+Centre azimuth	Middenazimut
+Click the picture to set the column of the selected landmark.	Klik op de afbeelding om de kolom van het geselecteerde oriëntatiepunt in te stellen.
+Demo skyline (no camera)	Demo-skyline (geen camera)
+Enable RF camera	RF-camera inschakelen
+Field of view	Beeldveld
+Heat strength	Sterkte van de heatmap
+No picture.	Geen afbeelding.
+Normal camera lens	Normale cameralens
+Panorama (equirectangular)	Panorama (equirectangulair)
+Picture	Afbeelding
+Picture or panorama file	Afbeeldings- of panoramabestand
+Projection	Projectie
+RF camera	RF-camera
+Save snapshot	Snapshot opslaan
+Snapshot saved: %s	Snapshot opgeslagen: %s
+Sub-bands	Subbanden
+The two landmarks do not fit a picture.	De twee oriëntatiepunten passen niet bij een afbeelding.
+Weakest shown	Zwakste getoond
+azimuth	azimut
+azimuth only; the picture is just a backdrop	alleen azimut; de afbeelding is slechts een achtergrond
+column	kolom
+to (kHz)	tot (kHz)

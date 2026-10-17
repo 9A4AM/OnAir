@@ -2345,3 +2345,31 @@ Current setting: %.2f ppm	Réglage actuel : %.2f ppm
 No measurements of this radio yet.	Pas encore de mesures de cette radio.
 History of this radio (ppm)	Historique de cette radio (ppm)
 Drift: %+.3f ppm per minute	Dérive : %+.3f ppm par minute
+Band from (kHz)	Bande de (kHz)
+Calibrate from two landmarks	Étalonner avec deux repères
+Calibrated.	Étalonné.
+Camera snapshot URL (JPEG)	URL d'instantané de la caméra (JPEG)
+Cannot load the picture.	Impossible de charger l'image.
+Cannot save the snapshot.	Impossible d'enregistrer l'instantané.
+Centre azimuth	Azimut central
+Click the picture to set the column of the selected landmark.	Cliquez sur l'image pour fixer la colonne du repère sélectionné.
+Demo skyline (no camera)	Horizon de démonstration (sans caméra)
+Enable RF camera	Activer la caméra RF
+Field of view	Champ de vision
+Heat strength	Intensité de la carte thermique
+No picture.	Aucune image.
+Normal camera lens	Objectif de caméra normal
+Panorama (equirectangular)	Panorama (équirectangulaire)
+Picture	Image
+Picture or panorama file	Fichier image ou panorama
+Projection	Projection
+RF camera	Caméra RF
+Save snapshot	Enregistrer l'instantané
+Snapshot saved: %s	Instantané enregistré : %s
+Sub-bands	Sous-bandes
+The two landmarks do not fit a picture.	Les deux repères ne correspondent pas à une image.
+Weakest shown	Plus faible affiché
+azimuth	azimut
+azimuth only; the picture is just a backdrop	azimut seulement ; l'image n'est qu'un fond
+column	colonne
+to (kHz)	à (kHz)

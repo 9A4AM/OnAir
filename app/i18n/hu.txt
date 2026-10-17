@@ -2331,3 +2331,31 @@ Current setting: %.2f ppm	Jelenlegi beállítás: %.2f ppm
 No measurements of this radio yet.	Ehhez a rádióhoz még nincs mérés.
 History of this radio (ppm)	A rádió előzményei (ppm)
 Drift: %+.3f ppm per minute	Sodródás: %+.3f ppm percenként
+Band from (kHz)	Sáv ettől (kHz)
+Calibrate from two landmarks	Kalibrálás két tereptárgy alapján
+Calibrated.	Kalibrálva.
+Camera snapshot URL (JPEG)	Kamera pillanatkép-URL (JPEG)
+Cannot load the picture.	A kép nem tölthető be.
+Cannot save the snapshot.	A pillanatkép nem menthető.
+Centre azimuth	Középső azimut
+Click the picture to set the column of the selected landmark.	Kattints a képre a kijelölt tereptárgy oszlopának beállításához.
+Demo skyline (no camera)	Demó látkép (kamera nélkül)
+Enable RF camera	RF-kamera bekapcsolása
+Field of view	Látómező
+Heat strength	Hőtérkép erőssége
+No picture.	Nincs kép.
+Normal camera lens	Normál kameraobjektív
+Panorama (equirectangular)	Panoráma (egyenközű hengerleképezés)
+Picture	Kép
+Picture or panorama file	Kép- vagy panorámafájl
+Projection	Vetítés
+RF camera	RF-kamera
+Save snapshot	Pillanatkép mentése
+Snapshot saved: %s	Pillanatkép elmentve: %s
+Sub-bands	Részsávok
+The two landmarks do not fit a picture.	A két tereptárgy nem illik egy képhez.
+Weakest shown	Leggyengébb megjelenítve
+azimuth	azimut
+azimuth only; the picture is just a backdrop	csak azimut; a kép csupán háttér
+column	oszlop
+to (kHz)	eddig (kHz)

@@ -2345,3 +2345,31 @@ Current setting: %.2f ppm	当前设置: %.2f ppm
 No measurements of this radio yet.	此无线电尚无测量记录。
 History of this radio (ppm)	此无线电的历史(ppm)
 Drift: %+.3f ppm per minute	漂移: 每分钟 %+.3f ppm
+Band from (kHz)	频段起点 (kHz)
+Calibrate from two landmarks	用两个地标校准
+Calibrated.	已校准。
+Camera snapshot URL (JPEG)	摄像头快照网址 (JPEG)
+Cannot load the picture.	无法加载图片。
+Cannot save the snapshot.	无法保存快照。
+Centre azimuth	中心方位角
+Click the picture to set the column of the selected landmark.	点击图片可设置所选地标的列。
+Demo skyline (no camera)	演示天际线 (无摄像头)
+Enable RF camera	启用射频相机
+Field of view	视场角
+Heat strength	热图强度
+No picture.	没有图片。
+Normal camera lens	普通相机镜头
+Panorama (equirectangular)	全景图 (等距柱状)
+Picture	图片
+Picture or panorama file	图片或全景图文件
+Projection	投影
+RF camera	射频相机
+Save snapshot	保存快照
+Snapshot saved: %s	快照已保存：%s
+Sub-bands	子频段
+The two landmarks do not fit a picture.	这两个地标与图片不匹配。
+Weakest shown	显示的最弱强度
+azimuth	方位角
+azimuth only; the picture is just a backdrop	仅方位角；图片只是背景
+column	列
+to (kHz)	频段终点 (kHz)
