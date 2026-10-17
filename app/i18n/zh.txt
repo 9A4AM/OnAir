@@ -2204,6 +2204,53 @@ Forget the history	清除历史
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	本接收机按波段听到的内容:信标(NCDXF/IARU、Long Dashes、单字母、载波)以及在 HF 数字界面解码的 FT8 / FT4 / FT2 / WSPR 电台。最近 30 分钟内至少听到 3 个电台即视为波段开放。仅使用自己的接收机:不下载任何数据,因此没有太阳通量和 K 指数。
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	最近 30 分钟没有听到任何信号:请启动 HF 信标或 HF 数字界面并保持运行。
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	最近 24 小时(UTC),每格 15 分钟,颜色越深电台越少
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s 请求以下权限:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	插件崩溃或卡死时只会结束它的辅助进程。下次启动插件时生效。
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	无需重新编译 OnAir 即可添加解码器和动作:安装、启用并设置插件
+Add-ons	扩展
+Allow	允许
+Asks for	请求
+Asks for no permissions.	不请求任何权限。
+Community plugins	社区插件
+Do not allow	不允许
+Enabled	已启用
+Files: read and write its own data folder	文件:读写自己的数据文件夹
+Install from file...	从文件安装...
+Installed	已安装
+Kind	类型
+Map points	地图点
+Modes (in the mode list, group PLUGINS)	模式(在模式列表的 PLUGINS 组中)
+Network: talk to other computers	网络:与其他计算机通信
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	尚未安装插件。请使用“从文件安装”,或把插件文件夹复制到插件文件夹中。插件是一个 .onairplugin 文件。
+Not installed	未安装
+Open its folder	打开其文件夹
+PLUGINS	插件
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	权限决定 OnAir 向插件提供什么。运行在 OnAir 内部的插件仍可自行使用系统:请只安装可信的插件,或让它们在辅助进程中运行。
+Plugin idle	插件空闲
+Plugin log	插件日志
+Plugin modes run on receiver 1.	插件模式在接收器 1 上运行。
+Plugin running	插件运行中
+Plugins	插件
+Plugins are not available on this receiver.	此接收器不支持插件。
+Plugins...	插件...
+Programs: start other programs	程序:启动其他程序
+Recording: save audio or IQ	录制:保存音频或 IQ
+Refresh	刷新
+Results the plugin sent beyond the limits	超出限制的插件结果
+Run in a helper process	在辅助进程中运行
+Safe mode (no plugins)	安全模式(不加载插件)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	安全模式已开启:插件已关闭。打开“插件”模式即可退出。
+Safe mode: all plugins are switched off.	安全模式:所有插件均已关闭。
+Select a plugin.	请选择一个插件。
+Sound: play audio through the program	声音:通过程序播放音频
+The plugin was switched off after a failure. See its log in the Plugins mode.	插件因故障已被关闭。请在“插件”模式中查看其日志。
+This plugin is off.	此插件已关闭。
+This plugin mode is not installed any more.	此插件模式已不再安装。
+Try plugins again	重新尝试插件
+Turn it on	打开
+blocks	块
+by	作者
 # radio astronomy toolkit
 %d bins flagged in the last spectrum	最近一次频谱中标记了 %d 个频点
 Add spectrum at the target l	在目标 l 处添加频谱
@@ -2295,3 +2342,22 @@ grey: predicted by the downloaded elements, blue: refined, green: measured, ambe
 residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	残差 %.1f Hz -> %.1f Hz(使用 %d,剔除 %d);接收机偏移 %+.0f Hz
 mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	平近点角 %+.3f 度,平均运动 %+.5f 圈/天,倾角 %+.4f 度,RAAN %+.4f 度
 estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	预测的估计时间误差:之前 %.1f 秒,之后 %.1f 秒(1 西格玛)
+Calibrate...	校准...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	用FM电台或已知频率的载波测量此电台的频率误差
+Frequency calibration	频率校准
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	测量此无线电的时钟相对于已知频率信号的偏差，并设置ppm校正。
+Not with a converter in front of the radio.	无线电前接有变频器时不可用。
+Start the receiver first.	请先启动接收机。
+FM station (stereo pilot) at the tuned frequency	已调谐频率上的FM电台(立体声导频)
+Carrier of known frequency (MHz)	已知频率的载波(MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	请先调谐到一个强FM电台。电台的导频并不总是精确:请在两三个电台上重复。
+Ready.	就绪。
+Looking for a reference signal.	正在寻找参考信号。
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	测量中: %+.2f ppm，不确定度 %.2f ppm。
+Done: %+.2f ppm (uncertainty %.2f ppm).	完成: %+.2f ppm(不确定度 %.2f ppm)。
+No usable reference signal was found.	未找到可用的参考信号。
+Apply %+.2f ppm	应用 %+.2f ppm
+Current setting: %.2f ppm	当前设置: %.2f ppm
+No measurements of this radio yet.	此无线电尚无测量记录。
+History of this radio (ppm)	此无线电的历史(ppm)
+Drift: %+.3f ppm per minute	漂移: 每分钟 %+.3f ppm

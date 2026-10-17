@@ -2187,6 +2187,53 @@ Forget the history	Apagar o histórico
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	O que este recetor ouviu, por banda: balizas (NCDXF/IARU, Long Dashes, letras soltas, portadoras) e as estações FT8 / FT4 / FT2 / WSPR descodificadas no ecrã HF digital. Uma banda está aberta quando foram ouvidas pelo menos 3 estações nos últimos 30 minutos. Só o recetor próprio: nada é descarregado, por isso não há fluxo solar nem índice K.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Nada ouvido nos últimos 30 minutos: inicie as balizas HF ou o ecrã HF digital e deixe-o a funcionar.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Últimas 24 horas (UTC), células de 15 minutos, mais escuro: menos estações
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s pede estas permissões:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	Uma falha ou bloqueio do plugin termina apenas o seu processo auxiliar. Aplica-se na próxima vez que o plugin iniciar.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Adicione decodificadores e ações sem recompilar o OnAir: instale, ative e configure plugins
+Add-ons	Extensões
+Allow	Permitir
+Asks for	Pede
+Asks for no permissions.	Não pede permissões.
+Community plugins	Plugins da comunidade
+Do not allow	Não permitir
+Enabled	Ativado
+Files: read and write its own data folder	Ficheiros: ler e escrever na sua própria pasta de dados
+Install from file...	Instalar a partir de um ficheiro...
+Installed	Instalado
+Kind	Tipo
+Map points	Pontos do mapa
+Modes (in the mode list, group PLUGINS)	Modos (na lista de modos, grupo PLUGINS)
+Network: talk to other computers	Rede: comunicar com outros computadores
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Nenhum plugin instalado. Use «Instalar a partir de um ficheiro» ou copie a pasta de um plugin para a pasta de plugins. Um plugin é um ficheiro .onairplugin.
+Not installed	Não instalado
+Open its folder	Abrir a sua pasta
+PLUGINS	PLUGINS
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	As permissões definem o que o OnAir entrega ao plugin. Um plugin executado dentro do OnAir ainda pode usar o sistema por si: instale plugins de confiança ou execute-os num processo auxiliar.
+Plugin idle	Plugin inativo
+Plugin log	Registo do plugin
+Plugin modes run on receiver 1.	Os modos de plugin funcionam no receptor 1.
+Plugin running	Plugin em execução
+Plugins	Plugins
+Plugins are not available on this receiver.	Os plugins não estão disponíveis neste receptor.
+Plugins...	Plugins...
+Programs: start other programs	Programas: iniciar outros programas
+Recording: save audio or IQ	Gravação: guardar áudio ou IQ
+Refresh	Atualizar
+Results the plugin sent beyond the limits	Resultados do plugin acima dos limites
+Run in a helper process	Executar num processo auxiliar
+Safe mode (no plugins)	Modo seguro (sem plugins)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	O modo seguro está ativo: os plugins estão desligados. Abra o modo Plugins para sair.
+Safe mode: all plugins are switched off.	Modo seguro: todos os plugins estão desligados.
+Select a plugin.	Selecione um plugin.
+Sound: play audio through the program	Som: reproduzir áudio através do programa
+The plugin was switched off after a failure. See its log in the Plugins mode.	O plugin foi desligado após uma falha. Veja o seu registo no modo Plugins.
+This plugin is off.	Este plugin está desligado.
+This plugin mode is not installed any more.	Este modo de plugin já não está instalado.
+Try plugins again	Tentar os plugins novamente
+Turn it on	Ativá-lo
+blocks	blocos
+by	por
 # radio astronomy toolkit
 %d bins flagged in the last spectrum	%d canais marcados no último espectro
 Add spectrum at the target l	Adicionar espectro na l do alvo
@@ -2278,3 +2325,22 @@ grey: predicted by the downloaded elements, blue: refined, green: measured, ambe
 residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	resíduo %.1f Hz -> %.1f Hz (%d usadas, %d rejeitadas); desvio do recetor %+.0f Hz
 mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	anomalia média %+.3f graus, movimento médio %+.5f rev/dia, inclinação %+.4f graus, RAAN %+.4f graus
 estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	erro de tempo estimado da previsão: %.1f s antes, %.1f s depois (1 sigma)
+Calibrate...	Calibrar...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	Medir o erro de frequência deste rádio com uma estação FM ou uma portadora de frequência conhecida
+Frequency calibration	Calibração de frequência
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Mede quanto o relógio deste rádio se desvia de um sinal de frequência conhecida e define a correção em ppm.
+Not with a converter in front of the radio.	Não com um conversor à frente do rádio.
+Start the receiver first.	Inicie primeiro o recetor.
+FM station (stereo pilot) at the tuned frequency	Estação FM (piloto estéreo) na frequência sintonizada
+Carrier of known frequency (MHz)	Portadora de frequência conhecida (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Sintonize primeiro uma estação FM forte. O piloto de uma estação nem sempre é exato: repita em duas ou três estações.
+Ready.	Pronto.
+Looking for a reference signal.	A procurar um sinal de referência.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	A medir: %+.2f ppm, incerteza %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Concluído: %+.2f ppm (incerteza %.2f ppm).
+No usable reference signal was found.	Não foi encontrado nenhum sinal de referência utilizável.
+Apply %+.2f ppm	Aplicar %+.2f ppm
+Current setting: %.2f ppm	Definição atual: %.2f ppm
+No measurements of this radio yet.	Ainda não há medições deste rádio.
+History of this radio (ppm)	Histórico deste rádio (ppm)
+Drift: %+.3f ppm per minute	Deriva: %+.3f ppm por minuto

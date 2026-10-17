@@ -28,6 +28,12 @@ struct ModeTuning {
 
 // Registry (modes.cpp): nullptr when the code or the id is not one of these modes
 const ModeTuning* modeTuning(int stdMode);
+
+// Plugin modes (core/plugin): the engine standard code of a plugin mode is its mode number + 2 like every other mode, so it is 1001 or more.
+// The program registers each plugin mode's tuning at start; modeTuning() then finds it like a built-in one. Names are copied.
+constexpr int kPluginStdBase = 1001;   // the Plugins row (family 999) is 1001, the plugin modes' numbers start at 1000
+inline bool isPluginStd(int stdMode) { return stdMode >= kPluginStdBase; }
+void registerPluginTuning(int stdMode, const std::string& id, const std::string& name, double minMhz, double maxMhz, double defMhz, double sampleRate, double bandwidthMhz);
 const ModeTuning* modeTuningById(const std::string& id);
 
 // The slowest radio sample rate the receiver of an engine standard (0 auto DVB-T2/T, 1 DVB-T2, 2 DVB-T, 3 ATSC, 4 DAB, 5 ATSC 3.0, 6 ISDB-T,

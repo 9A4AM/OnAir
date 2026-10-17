@@ -2187,6 +2187,53 @@ Forget the history	Очистить историю
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Что этот приёмник слышал по диапазонам: маяки (NCDXF/IARU, Long Dashes, одиночные буквы, несущие) и станции FT8 / FT4 / FT2 / WSPR, декодированные на экране HF-цифры. Диапазон открыт, если за последние 30 минут услышаны не менее 3 станций. Только свой приёмник: ничего не скачивается, поэтому нет солнечного потока и K-индекса.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	За последние 30 минут ничего не слышно: запустите HF-маяки или экран HF-цифры и оставьте работать.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Последние 24 часа (UTC), ячейки по 15 минут, темнее: меньше станций
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s запрашивает разрешения:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	Сбой или зависание плагина завершает только его вспомогательный процесс. Действует при следующем запуске плагина.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Добавляйте декодеры и действия без пересборки OnAir: установка, включение и настройка плагинов
+Add-ons	Дополнения
+Allow	Разрешить
+Asks for	Запрашивает
+Asks for no permissions.	Не запрашивает разрешений.
+Community plugins	Плагины сообщества
+Do not allow	Не разрешать
+Enabled	Включён
+Files: read and write its own data folder	Файлы: чтение и запись в собственной папке данных
+Install from file...	Установить из файла...
+Installed	Установлено
+Kind	Вид
+Map points	Точки на карте
+Modes (in the mode list, group PLUGINS)	Режимы (в списке режимов, группа PLUGINS)
+Network: talk to other computers	Сеть: обмен данными с другими компьютерами
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Плагины не установлены. Нажмите «Установить из файла» или скопируйте папку плагина в папку плагинов. Плагин — это файл .onairplugin.
+Not installed	Не установлено
+Open its folder	Открыть его папку
+PLUGINS	ПЛАГИНЫ
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	Разрешения определяют, что OnAir передаёт плагину. Плагин, работающий внутри OnAir, всё равно может сам обращаться к системе: устанавливайте только доверенные плагины или запускайте их во вспомогательном процессе.
+Plugin idle	Плагин не работает
+Plugin log	Журнал плагина
+Plugin modes run on receiver 1.	Режимы плагинов работают на приёмнике 1.
+Plugin running	Плагин работает
+Plugins	Плагины
+Plugins are not available on this receiver.	На этом приёмнике плагины недоступны.
+Plugins...	Плагины...
+Programs: start other programs	Программы: запуск других программ
+Recording: save audio or IQ	Запись: сохранение звука или IQ
+Refresh	Обновить
+Results the plugin sent beyond the limits	Результаты плагина сверх лимитов
+Run in a helper process	Запускать во вспомогательном процессе
+Safe mode (no plugins)	Безопасный режим (без плагинов)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	Безопасный режим включён: плагины отключены. Откройте режим «Плагины», чтобы выйти из него.
+Safe mode: all plugins are switched off.	Безопасный режим: все плагины отключены.
+Select a plugin.	Выберите плагин.
+Sound: play audio through the program	Звук: воспроизведение звука через программу
+The plugin was switched off after a failure. See its log in the Plugins mode.	Плагин отключён после сбоя. Его журнал — в режиме «Плагины».
+This plugin is off.	Этот плагин отключён.
+This plugin mode is not installed any more.	Этот режим плагина больше не установлен.
+Try plugins again	Повторить с плагинами
+Turn it on	Включить
+blocks	блоков
+by	автор:
 # radio astronomy toolkit
 %d bins flagged in the last spectrum	%d бинов помечено в последнем спектре
 Add spectrum at the target l	Добавить спектр при l цели
@@ -2278,3 +2325,22 @@ grey: predicted by the downloaded elements, blue: refined, green: measured, ambe
 residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	остаток %.1f Гц -> %.1f Гц (использовано %d, отброшено %d); смещение приёмника %+.0f Гц
 mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	средняя аномалия %+.3f град., среднее движение %+.5f об/сут, наклонение %+.4f град., RAAN %+.4f град.
 estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	ожидаемая ошибка времени прогноза: %.1f с до, %.1f с после (1 сигма)
+Calibrate...	Калибровка...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	Измерить ошибку частоты этого радио по FM-станции или несущей известной частоты
+Frequency calibration	Калибровка частоты
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Измеряет, насколько тактовая частота этого радио отличается от сигнала известной частоты, и задаёт поправку в ppm.
+Not with a converter in front of the radio.	Не работает с конвертером перед радио.
+Start the receiver first.	Сначала запустите приёмник.
+FM station (stereo pilot) at the tuned frequency	FM-станция (стереопилот) на настроенной частоте
+Carrier of known frequency (MHz)	Несущая известной частоты (МГц)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Сначала настройтесь на сильную FM-станцию. Пилот станции не всегда точен: повторите на двух-трёх станциях.
+Ready.	Готово.
+Looking for a reference signal.	Поиск опорного сигнала.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	Измерение: %+.2f ppm, неопределённость %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Готово: %+.2f ppm (неопределённость %.2f ppm).
+No usable reference signal was found.	Подходящий опорный сигнал не найден.
+Apply %+.2f ppm	Применить %+.2f ppm
+Current setting: %.2f ppm	Текущая настройка: %.2f ppm
+No measurements of this radio yet.	Измерений этого радио пока нет.
+History of this radio (ppm)	История этого радио (ppm)
+Drift: %+.3f ppm per minute	Дрейф: %+.3f ppm в минуту

@@ -2204,6 +2204,53 @@ Forget the history	Wyczyść historię
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Co ten odbiornik usłyszał, według pasm: radiolatarnie (NCDXF/IARU, Long Dashes, pojedyncze litery, nośne) oraz stacje FT8 / FT4 / FT2 / WSPR zdekodowane na ekranie HF cyfrowym. Pasmo jest otwarte, gdy w ciągu ostatnich 30 minut usłyszano co najmniej 3 stacje. Tylko własny odbiornik: nic nie jest pobierane, więc nie ma strumienia słonecznego ani indeksu K.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Nic nie usłyszano w ciągu ostatnich 30 minut: uruchom radiolatarnie HF lub ekran HF cyfrowy i zostaw go włączony.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Ostatnie 24 godziny (UTC), komórki po 15 minut, ciemniej: mniej stacji
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s prosi o te uprawnienia:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	Awaria lub zawieszenie wtyczki kończy wtedy tylko jej proces pomocniczy. Działa od następnego uruchomienia wtyczki.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Dodaj dekodery i akcje bez przebudowy OnAir: instaluj, włączaj i konfiguruj wtyczki
+Add-ons	Rozszerzenia
+Allow	Zezwól
+Asks for	Wymaga
+Asks for no permissions.	Nie wymaga uprawnień.
+Community plugins	Wtyczki społeczności
+Do not allow	Nie zezwalaj
+Enabled	Włączona
+Files: read and write its own data folder	Pliki: odczyt i zapis we własnym folderze danych
+Install from file...	Zainstaluj z pliku...
+Installed	Zainstalowano
+Kind	Rodzaj
+Map points	Punkty na mapie
+Modes (in the mode list, group PLUGINS)	Tryby (na liście trybów, grupa PLUGINS)
+Network: talk to other computers	Sieć: komunikacja z innymi komputerami
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Brak zainstalowanych wtyczek. Użyj „Zainstaluj z pliku” lub skopiuj folder wtyczki do folderu wtyczek. Wtyczka to plik .onairplugin.
+Not installed	Nie zainstalowano
+Open its folder	Otwórz jej folder
+PLUGINS	WTYCZKI
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	Uprawnienia określają, co OnAir udostępnia wtyczce. Wtyczka działająca wewnątrz OnAir nadal może sama korzystać z systemu: instaluj tylko zaufane wtyczki albo uruchamiaj je w procesie pomocniczym.
+Plugin idle	Wtyczka bezczynna
+Plugin log	Dziennik wtyczki
+Plugin modes run on receiver 1.	Tryby wtyczek działają na odbiorniku 1.
+Plugin running	Wtyczka działa
+Plugins	Wtyczki
+Plugins are not available on this receiver.	Wtyczki nie są dostępne w tym odbiorniku.
+Plugins...	Wtyczki...
+Programs: start other programs	Programy: uruchamianie innych programów
+Recording: save audio or IQ	Nagrywanie: zapis dźwięku lub IQ
+Refresh	Odśwież
+Results the plugin sent beyond the limits	Wyniki wtyczki ponad limity
+Run in a helper process	Uruchom w procesie pomocniczym
+Safe mode (no plugins)	Tryb awaryjny (bez wtyczek)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	Tryb awaryjny jest włączony: wtyczki są wyłączone. Otwórz tryb Wtyczki, aby go opuścić.
+Safe mode: all plugins are switched off.	Tryb awaryjny: wszystkie wtyczki są wyłączone.
+Select a plugin.	Wybierz wtyczkę.
+Sound: play audio through the program	Dźwięk: odtwarzanie dźwięku przez program
+The plugin was switched off after a failure. See its log in the Plugins mode.	Wtyczkę wyłączono po awarii. Jej dziennik znajdziesz w trybie Wtyczki.
+This plugin is off.	Ta wtyczka jest wyłączona.
+This plugin mode is not installed any more.	Ten tryb wtyczki nie jest już zainstalowany.
+Try plugins again	Spróbuj wtyczek ponownie
+Turn it on	Włącz
+blocks	bloki
+by	autor:
 # radio astronomy toolkit
 %d bins flagged in the last spectrum	%d binów oznaczonych w ostatnim widmie
 Add spectrum at the target l	Dodaj widmo przy l celu
@@ -2295,3 +2342,22 @@ grey: predicted by the downloaded elements, blue: refined, green: measured, ambe
 residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	reszta %.1f Hz -> %.1f Hz (użyto %d, odrzucono %d); przesunięcie odbiornika %+.0f Hz
 mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	anomalia średnia %+.3f stopnia, ruch średni %+.5f obr./dobę, inklinacja %+.4f stopnia, RAAN %+.4f stopnia
 estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	szacowany błąd czasu prognozy: %.1f s przed, %.1f s po (1 sigma)
+Calibrate...	Kalibruj...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	Zmierz błąd częstotliwości tego radia względem stacji FM lub nośnej o znanej częstotliwości
+Frequency calibration	Kalibracja częstotliwości
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Mierzy, o ile zegar tego radia odbiega od sygnału o znanej częstotliwości, i ustawia korekcję w ppm.
+Not with a converter in front of the radio.	Nie z konwerterem przed radiem.
+Start the receiver first.	Najpierw uruchom odbiornik.
+FM station (stereo pilot) at the tuned frequency	Stacja FM (pilot stereo) na ustawionej częstotliwości
+Carrier of known frequency (MHz)	Nośna o znanej częstotliwości (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Najpierw dostrój silną stację FM. Pilot stacji nie zawsze jest dokładny: powtórz na dwóch lub trzech stacjach.
+Ready.	Gotowe.
+Looking for a reference signal.	Szukanie sygnału odniesienia.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	Pomiar: %+.2f ppm, niepewność %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Gotowe: %+.2f ppm (niepewność %.2f ppm).
+No usable reference signal was found.	Nie znaleziono użytecznego sygnału odniesienia.
+Apply %+.2f ppm	Zastosuj %+.2f ppm
+Current setting: %.2f ppm	Bieżące ustawienie: %.2f ppm
+No measurements of this radio yet.	Brak jeszcze pomiarów tego radia.
+History of this radio (ppm)	Historia tego radia (ppm)
+Drift: %+.3f ppm per minute	Dryf: %+.3f ppm na minutę

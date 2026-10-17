@@ -109,6 +109,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <deque>
+#include <complex>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -192,6 +193,13 @@ public:
     // Record the radio's raw samples (as they leave the ring, before any clean-up) at the radio's own rate. Not for a file source.
     bool startRecording(const std::string& path, FileFormat fmt, std::string& err);
     void stopRecording() { rec_.stop(); }
+    // A tap on the radio's raw samples (the same point the recorder takes them, at the radio's own rate): for the frequency self-calibration. Called on the
+    // analysis thread; keep it quick. An empty function removes it.
+    void setIqTap(std::function<void(const std::complex<float>*, size_t, double rateHz)> f) {
+        std::lock_guard<std::mutex> lk(iqTapMu_);
+        iqTap_ = std::move(f);
+        iqTapOn_.store((bool)iqTap_);
+    }
     void setRecordSigmf(bool on) { recSigmf_ = on; }   // SigMF metadata beside the recordings (default on)
     RecordingStats recordingStats() const { return rec_.stats(); }
     // A file name for a recording of what the radio is tuned to right now (see recordingFileName())
@@ -367,6 +375,10 @@ public:
     MultitoneReceiver& multitone() { return rxMt_; }   // Multitone paging: clear the transmission list (telemetry through latestRx)
     CodarReceiver& codar() { return rxCd_; }   // CODAR / HF ocean radar: clear the station table and the events (telemetry through latestRx)
     DectReceiver& dect() { return rxDect_; }   // DECT: the base station table and log (telemetry through latestRx)
+    // Plugin modes (standard codes of mode_tuning.h kPluginStdBase and up): the samples of the running plugin mode go to this function on the analysis
+    // thread (interleaved float I, Q; it must not block: the plugin host queues them). Empty function removes it.
+    using PluginIqSink = std::function<void(const float* iq, size_t nComplex, double sampleRate)>;
+    void setPluginSink(PluginIqSink f);
     AntReceiver& ant() { return rxAnt_; }   // ANT+ sensors: the sensor table and frame log (telemetry through latestRx)
     SameReceiver& same() { return rxSame_; }   // NOAA weather radio SAME: the alert list, country, Listen (telemetry through latestRx)
     HalowReceiver& halow() { return rxHl_; }   // Wi-Fi HaLow / 802.11ah: clear the network table and the frame log (telemetry through latestRx)
@@ -517,6 +529,9 @@ private:
     std::vector<std::string> log_;
     std::chrono::steady_clock::time_point t0_;
     IqRecorder rec_;
+    std::mutex iqTapMu_;
+    std::function<void(const std::complex<float>*, size_t, double)> iqTap_;
+    std::atomic<bool> iqTapOn_{false};
     bool recSigmf_ = true;
     std::unique_ptr<IqSource> src_;
     SpectrumAnalyzer analyzer_{8192};
@@ -599,6 +614,7 @@ private:
     DatawellReceiver rxDw_;
     SameReceiver rxSame_;
     AntReceiver rxAnt_;
+    std::shared_ptr<const PluginIqSink> pluginSink_;   // read with std::atomic_load
     DectReceiver rxDect_;
     TetrapolReceiver rxTetrapol_;
     MultitoneReceiver rxMt_;
