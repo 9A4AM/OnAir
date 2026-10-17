@@ -191,6 +191,16 @@ int main() {
     }
     CHECK(d.displayAt(14.9) != nullptr, "still shown inside the timeout");
     CHECK(d.displayAt(15.2) == nullptr, "gone after the page time-out");
+    {   // #112: the picture clock jumped (smoothed gaps, a stall) and the page was first seen only just before it expires: it stays for the minimum
+        DvbSubDecoder j;
+        j.setStream(0x200, 1, 2);
+        int jcc = 0;
+        feedTsPackets(j, pes(set1, 900000), 0x200, jcc);             // PTS 10.0 s, page_time_out 5 s
+        CHECK(j.displayAt(14.9) != nullptr, "first seen near the end of its time-out");
+        CHECK(j.displayAt(15.3) != nullptr, "kept for the minimum time on screen (%.1f s)", DvbSubDecoder::kMinShowSec);
+        CHECK(j.displayAt(16.5) == nullptr, "and then gone");
+        CHECK(j.displayAt(14.9) != nullptr, "the clock going back shows it again");
+    }
     // the 33-bit PTS circle: a clock just after a wrap still sees an older display
     CHECK(ptsDelta(1.0, 95443.0) > 0 && ptsDelta(1.0, 95443.0) < 2.0, "pts wrap distance %.3f", ptsDelta(1.0, 95443.0));
 
