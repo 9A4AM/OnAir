@@ -2347,3 +2347,6 @@ Current setting: %.2f ppm	Jelenlegi beállítás: %.2f ppm
 No measurements of this radio yet.	Ehhez a rádióhoz még nincs mérés.
 History of this radio (ppm)	A rádió előzményei (ppm)
 Drift: %+.3f ppm per minute	Sodródás: %+.3f ppm percenként
+Translate to English	Fordítás angolra
+Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	A más nyelven elhangzó beszédet a program offline angolra is lefordítja, az eredeti mellett. Többnyelvű modellt igényel, és kb. 1,5-szer több processzoridőbe kerül; kimarad, ha a motor nem bírja tartani a lépést. Semmi sem kerül elküldésre. Más nyelvekre fordítás nem érhető el.
+The loaded model is English only: translation needs a multilingual model.	A betöltött modell csak angol: a fordításhoz többnyelvű modell kell.

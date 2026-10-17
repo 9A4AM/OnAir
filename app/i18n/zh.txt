@@ -2361,3 +2361,6 @@ Current setting: %.2f ppm	当前设置: %.2f ppm
 No measurements of this radio yet.	此无线电尚无测量记录。
 History of this radio (ppm)	此无线电的历史(ppm)
 Drift: %+.3f ppm per minute	漂移: 每分钟 %+.3f ppm
+Translate to English	翻译成英语
+Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	其他语言的语音会离线翻译成英语,显示在原文旁边。需要多语言模型,大约多消耗 1.5 倍处理器时间;引擎跟不上时会跳过。不会发送任何数据。不支持翻译成其他语言。
+The loaded model is English only: translation needs a multilingual model.	已加载的模型仅支持英语:翻译需要多语言模型。

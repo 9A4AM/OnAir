@@ -126,12 +126,20 @@ struct Fake : SpeechBackend {
     std::atomic<int> delayMs{0};
     std::string text = "Lufthansa one two three descend flight level eight zero";
     SpeechResult res;
+    bool multi = false;
+    std::string lang = "de", translated = "Lufthansa one two three descend to flight level eight zero";
+    std::atomic<int> translateCalls{0};
+    std::string lastLang;
+    bool englishOnly() const override { return !multi; }
     Fake() { res.ok = true; res.confidence = 0.9f; res.avgLogprob = -0.3f; res.noSpeechProb = 0.05f; }
-    SpeechResult transcribe(const float*, size_t, const SpeechOptions&) override {
+    SpeechResult transcribe(const float*, size_t, const SpeechOptions& o) override {
         calls++;
+        lastLang = o.language;
+        if (o.translate) translateCalls++;
         if (delayMs) std::this_thread::sleep_for(std::chrono::milliseconds(delayMs.load()));
         SpeechResult r = res;
-        r.text = text;
+        r.text = o.translate ? translated : text;
+        r.lang = lang;
         return r;
     }
 };
@@ -230,6 +238,54 @@ static void transcriber() {
     CHECK(s2.dropped >= 4, "the oldest are dropped when the engine is slow (%llu)", (unsigned long long)s2.dropped);
     CHECK(s2.done + s2.dropped == 8, "every one done or dropped (%llu + %llu)", (unsigned long long)s2.done, (unsigned long long)s2.dropped);
     CHECK(!t2.active(), "idle at the end");
+}
+
+static void translation() {
+    TranscriptStore store;
+    Transcriber tr(store);
+    auto fake = std::make_shared<Fake>();
+    fake->multi = true;
+    fake->text = "Guten Tag Lufthansa eins zwei drei Landung frei";
+    TranscribeConfig cfg;
+    cfg.enabled = true; cfg.language = "auto"; cfg.translate = true;
+    tr.configure(cfg); tr.setBackend(fake); tr.setSynchronous(true);
+    SourceInfo src; src.key = 1; src.mode = "audio"; src.channel = "test"; src.domain = "general";
+    int64_t now = 1800000000000LL;
+    auto feedAll = [&](const std::vector<float>& a) {
+        for (size_t i = 0; i < a.size(); i += 160) { now += 20; tr.feed(src, a.data() + i, std::min<size_t>(160, a.size() - i), 8000, now); }
+    };
+    feedAll(audio(2.0, 0.3f)); feedAll(audio(2.0, 0.f));
+    CHECK(fake->calls == 2 && fake->translateCalls == 1, "two passes (%d, %d)", fake->calls.load(), fake->translateCalls.load());
+    CHECK(fake->lastLang == "de", "second pass uses the detected language (%s)", fake->lastLang.c_str());
+    auto all = store.find({});
+    CHECK(all.size() == 1 && all[0].lang == "de" && all[0].text.find("Guten") == 0 && all[0].translation.find("descend") != std::string::npos, "both fields stored");
+    CHECK(tr.stats().translated == 1, "counted");
+    if (!all.empty()) {
+        TranscriptEntry back;
+        CHECK(transcriptFromJson(transcriptToJson(all[0]), back) && back.translation == all[0].translation && back.lang == "de", "json round trip");
+        CHECK(transcriptsSrt(all).find("[EN] Lufthansa") != std::string::npos && transcriptsSrt(all).find("Guten") != std::string::npos, "SRT has both");
+        CHECK(transcriptsTxt(all).find("de > EN") != std::string::npos, "TXT has both");
+        CHECK(transcriptsCsv(all).find("language,text,translation") != std::string::npos && transcriptsCsv(all).find(",de,") != std::string::npos, "CSV has both");
+        TranscriptFilter f; f.query = "descend";
+        CHECK(store.find(f).size() == 1, "search finds the translation");
+    }
+    // English speech: no second pass
+    fake->lang = "en"; fake->calls = 0; fake->translateCalls = 0;
+    feedAll(audio(2.0, 0.3f)); feedAll(audio(2.0, 0.f));
+    CHECK(fake->calls == 1 && fake->translateCalls == 0, "English is not translated");
+    // English-only model: translate is ignored
+    fake->multi = false; fake->lang = "de"; fake->calls = 0;
+    feedAll(audio(2.0, 0.3f)); feedAll(audio(2.0, 0.f));
+    CHECK(fake->calls == 1, "English-only model: one pass");
+    // performance guard
+    fake->multi = true; fake->calls = 0; fake->translateCalls = 0;
+    cfg.translateMaxRtf = -1; tr.configure(cfg);
+    feedAll(audio(2.0, 0.3f)); feedAll(audio(2.0, 0.f));
+    CHECK(fake->translateCalls == 0 && tr.stats().translateSkipped >= 1, "too slow: translation skipped");
+    // translate off
+    cfg.translateMaxRtf = 0.8; cfg.translate = false; tr.configure(cfg); fake->calls = 0;
+    feedAll(audio(2.0, 0.3f)); feedAll(audio(2.0, 0.f));
+    CHECK(fake->calls == 1, "off: one pass");
 }
 
 static void store() {
@@ -331,6 +387,7 @@ int main() {
     segmenter();
     filters();
     transcriber();
+    translation();
     store();
     models();
     if (fails) { printf("%d failures\n", fails); return 1; }

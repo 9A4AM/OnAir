@@ -2344,3 +2344,6 @@ Current setting: %.2f ppm	Definição atual: %.2f ppm
 No measurements of this radio yet.	Ainda não há medições deste rádio.
 History of this radio (ppm)	Histórico deste rádio (ppm)
 Drift: %+.3f ppm per minute	Deriva: %+.3f ppm por minuto
+Translate to English	Traduzir para inglês
+Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	A fala noutro idioma também é traduzida para inglês, offline, junto ao original. Requer um modelo multilingue e custa cerca de 1,5 vezes mais tempo de processador; é ignorada quando o motor não acompanha. Nada é enviado. A tradução para outros idiomas não está disponível.
+The loaded model is English only: translation needs a multilingual model.	O modelo carregado é apenas inglês: a tradução requer um modelo multilingue.

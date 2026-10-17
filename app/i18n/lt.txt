@@ -2361,3 +2361,6 @@ Current setting: %.2f ppm	Dabartinis nustatymas: %.2f ppm
 No measurements of this radio yet.	Šio radijo matavimų dar nėra.
 History of this radio (ppm)	Šio radijo istorija (ppm)
 Drift: %+.3f ppm per minute	Dreifas: %+.3f ppm per minutę
+Translate to English	Versti į anglų kalbą
+Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	Kita kalba sakoma kalba papildomai verčiama į anglų kalbą, neprisijungus, šalia originalo. Reikia daugiakalbio modelio, procesoriaus laiko sunaudojama apie 1,5 karto daugiau; praleidžiama, kai variklis nespėja. Niekas nesiunčiama. Vertimo į kitas kalbas nėra.
+The loaded model is English only: translation needs a multilingual model.	Įkeltas modelis tik anglų kalbos: vertimui reikia daugiakalbio modelio.
