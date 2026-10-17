@@ -1633,6 +1633,66 @@ testing	тестирование
 idea	идея
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Спасибо всем, кто присылал исправления, сообщал об ошибках, делился записями, переводил и предлагал идеи. Автор — Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Хотите, чтобы ваше имя изменили или убрали? Напишите нам в Discord или создайте issue.
+# direction finder
+Cannot open the recording (interleaved complex float32, one sample of every channel after the other).	Не удаётся открыть запись (комплексный float32 с чередованием: по одному отсчёту каждого канала подряд).
+The recording has a different number of channels than the array.	В записи другое число каналов, чем в решётке.
+Choose a source first.	Сначала выберите источник.
+No data to calibrate with.	Нет данных для калибровки.
+Calibration stored.	Калибровка сохранена.
+Add this bearing	Добавить этот пеленг
+Keeps the current bearing and your position as a line. Move, or take bearings from other stations, add more lines and the position is fixed where they cross.	Запоминает текущий пеленг и ваше положение как линию. Переместитесь или возьмите пеленги других станций, добавьте линии, и положение определится там, где они пересекаются.
+Clear lines	Очистить линии
+Position	Положение
+95%% ellipse %.1f x %.1f km, %d of %d lines used	Эллипс 95%% %.1f x %.1f км, использовано линий: %d из %d
+The lines do not cross (parallel, or they meet behind the stations).	Линии не пересекаются (параллельны или сходятся позади станций).
+Direction finder	Пеленгатор
+Simulator (demo, no hardware)	Симулятор (демо, без оборудования)
+Recording (cf32 / SigMF)	Запись (cf32 / SigMF)
+KrakenSDR bearing file (JSON)	Файл пеленгов KrakenSDR (JSON)
+Lock to the tuned frequency	Привязать к настроенной частоте
+Run	Работает
+path of the recording	путь к записи
+a file the DoA server's JSON lines are saved to	файл, в который сохраняются строки JSON сервера DoA
+channels	каналы
+kS/s	кОтс/с
+Bearing	Пеленг
+Confidence	Достоверность
+Sidelobe %.0f dB, coherence %.2f	Боковой лепесток %.0f дБ, когерентность %.2f
+Waiting for a bearing.	Ожидание пеленга.
+Array and estimator	Решётка и оценщик
+Circular (KrakenSDR)	Круговая (KrakenSDR)
+Linear	Линейная
+Array	Решётка
+Elements	Элементы
+Spacing (wavelengths)	Расстояние (в длинах волн)
+Array orientation	Ориентация решётки
+Compass offset	Смещение компаса
+Added to every bearing: where the array's own north points relative to true north.	Прибавляется к каждому пеленгу: куда указывает север решётки относительно истинного севера.
+Interferometer	Интерферометр
+Estimator	Оценщик
+Sources	Источники
+Forward-backward averaging (reflections)	Усреднение вперёд-назад (отражения)
+Calibration	Калибровка
+1. Feed all channels the same signal: the receiver's noise source (KrakenSDR: switch it on in the DAQ), or a signal from a known bearing. 2. Choose the matching mode and press Calibrate. The offsets between the channels are measured and removed.	1. Подайте на все каналы один и тот же сигнал: источник шума приёмника (KrakenSDR: включите его в DAQ) или сигнал с известного пеленга. 2. Выберите подходящий режим и нажмите «Калибровать». Различия между каналами измеряются и убираются.
+Common noise source	Общий источник шума
+Known bearing	Известный пеленг
+Bearing of the source	Пеленг источника
+Calibrate	Калибровать
+Forget	Забыть
+Use calibration	Использовать калибровку
+Not calibrated.	Не откалибровано.
+Simulated channel errors	Смоделированные ошибки каналов
+Simulator	Симулятор
+Transmitter bearing	Пеленг передатчика
+Spin	Вращать
+SNR per channel	SNR на канал
+Second transmitter	Второй передатчик
+Second bearing	Второй пеленг
+Position fix	Определение положения
+Sharing	Отправка данных
+Share my bearing on the map server	Делиться моим пеленгом с сервером карты
+Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	Требуется Сервер > Отправлять данные на сервер карты. Передаются только пеленг, его неопределённость, частота и положение вашей станции; на карте видно, где пересекаются пеленги нескольких станций.
+Bearing and position of a transmitter from an antenna array such as the KrakenSDR	Пеленг и положение передатчика по антенной решётке, например KrakenSDR
 Decoded only	Только расшифрованные
 Hides tone-only pages and pages whose text could not be decoded.	Скрывает вызовы только тоном и сообщения, текст которых не удалось расшифровать.
 %zu tone-only or undecoded pages hidden (Decoded only)	Скрыто вызовов только тоном или нерасшифрованных сообщений: %zu (Только расшифрованные)

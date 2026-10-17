@@ -224,6 +224,7 @@ void sidebar(App& a) {
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr(tipText));
         };
         tool("Passes", a.passesOpen, "Satellite passes and automatic tuning");
+        tool("Direction finder", a.dfOpen, N_("Bearing and position of a transmitter from an antenna array such as the KrakenSDR"));
         tool("Images", a.galleryOpen, "The pictures the receivers have decoded");
         tool("Data feeds...", a.feedsOpen, "Send decoded data to other programs and services");
         tool("Memory...", a.memoryOpen, "The frequencies you keep, with mode and settings (Ctrl+M)");
@@ -375,6 +376,7 @@ static void viewMenu(App& a) {
         }
         ImGui::Separator();
         if (ImGui::MenuItem(tr("Passes"), nullptr, &a.passesOpen)) {}
+        ImGui::MenuItem(tr("Direction finder"), nullptr, &a.dfOpen);
         ImGui::MenuItem(tr("Images"), nullptr, &a.galleryOpen);
         ImGui::MenuItem(tr("Data feeds..."), nullptr, &a.feedsOpen);
         ImGui::MenuItem(tr("Memory..."), "Ctrl+M", &a.memoryOpen);

@@ -173,6 +173,7 @@ struct Track {
     bool hasAlt = false, hasHdg = false, hasSpd = false, hasVrate = false, hasSquawk = false;
     double alt = 0, hdg = 0, spd = 0, vrate = 0, age = 0;
     int squawk = 0;
+    double dfFreq = 0, dfSigma = 0, dfConf = 0;   // kind "doa": frequency (Hz), bearing sigma (deg) and confidence (0..1) sent next to hdg
     bool est = false;                // the position is an estimate (dead reckoning, core/src/track), not a received fix: sent as "est":1
     std::vector<std::pair<double, double>> path;
     std::vector<dect2::AcarsLogEntry> msgs;   // interesting ACARS messages not sent yet (only when the user chose to share them)
@@ -526,6 +527,7 @@ std::string buildJson(const std::string& station, const std::vector<Track>& trac
         if (t.hasVrate) { snprintf(b, sizeof b, ",\"vrate\":%.0f", t.vrate); j += b; }
         if (t.hasSquawk) { snprintf(b, sizeof b, ",\"squawk\":\"%04d\"", t.squawk); j += b; }
         snprintf(b, sizeof b, ",\"age\":%.1f", t.age); j += b;
+        if (t.dfFreq > 0) { snprintf(b, sizeof b, ",\"freq\":%.0f,\"sigma\":%.1f,\"conf\":%.2f", t.dfFreq, t.dfSigma, t.dfConf); j += b; }
         if (t.est) j += ",\"est\":1";
         if (!t.src.empty()) { j += ",\"src\":\""; j += jsonEsc(t.src); j += '"'; }
         if (!t.cat.empty()) { j += ",\"cat\":\""; j += jsonEsc(t.cat); j += '"'; }
@@ -839,6 +841,14 @@ void mapSendTick(App& a) {
     std::vector<Track> tracks;
     std::unordered_set<std::string> seen;
     for (App* r : receiversAll()) if (r) collectFrom(*r, tracks, seen);
+    {   // the direction finder's bearing, only when the user chose to share it (View > Direction finder > Sharing)
+        DfMapLine dl;
+        if (dfMapLine(s, dl) && tracks.size() < kMaxTracks) {
+            Track t; t.kind = "doa"; t.src = "df"; t.id = "df"; t.label = "DF"; t.lat = dl.lat; t.lon = dl.lon; t.age = dl.ageSec;
+            t.hasHdg = true; t.hdg = dl.bearing; t.dfFreq = dl.freqHz; t.dfSigma = dl.sigma; t.dfConf = dl.conf;
+            if (validPos(t.lat, t.lon)) tracks.push_back(std::move(t));
+        }
+    }
     if (s.mapMsgs) attachMsgs(tracks);
     const bool ping = gPingNow || needHb || (tracks.empty() && (ph == kConnecting || ph == kRetry));
     if (!gPingNow && !needHb && !tracks.empty()) {

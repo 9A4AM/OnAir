@@ -1650,6 +1650,66 @@ testing	testen
 idea	idee
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Dank aan iedereen die fixes stuurde, bugs meldde, opnames deelde, vertaalde of ideeën aandroeg. De auteur is Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Wil je dat je naam wordt aangepast of verwijderd? Laat het ons weten op Discord of open een issue.
+# direction finder
+Cannot open the recording (interleaved complex float32, one sample of every channel after the other).	De opname kan niet worden geopend (complexe float32, afwisselend: van elk kanaal om beurten één sample).
+The recording has a different number of channels than the array.	De opname heeft een ander aantal kanalen dan de array.
+Choose a source first.	Kies eerst een bron.
+No data to calibrate with.	Geen gegevens om mee te kalibreren.
+Calibration stored.	Kalibratie opgeslagen.
+Add this bearing	Deze peiling toevoegen
+Keeps the current bearing and your position as a line. Move, or take bearings from other stations, add more lines and the position is fixed where they cross.	Bewaart de huidige peiling en je positie als een lijn. Verplaats je of neem peilingen van andere stations, voeg meer lijnen toe en de positie wordt bepaald waar ze elkaar kruisen.
+Clear lines	Lijnen wissen
+Position	Positie
+95%% ellipse %.1f x %.1f km, %d of %d lines used	95%%-ellips %.1f x %.1f km, %d van %d lijnen gebruikt
+The lines do not cross (parallel, or they meet behind the stations).	De lijnen kruisen elkaar niet (parallel, of ze ontmoeten elkaar achter de stations).
+Direction finder	Peilontvanger
+Simulator (demo, no hardware)	Simulator (demo, geen hardware)
+Recording (cf32 / SigMF)	Opname (cf32 / SigMF)
+KrakenSDR bearing file (JSON)	KrakenSDR-peilbestand (JSON)
+Lock to the tuned frequency	Vergrendelen op de afgestemde frequentie
+Run	Actief
+path of the recording	pad van de opname
+a file the DoA server's JSON lines are saved to	een bestand waarin de JSON-regels van de DoA-server worden opgeslagen
+channels	kanalen
+kS/s	kS/s
+Bearing	Peiling
+Confidence	Betrouwbaarheid
+Sidelobe %.0f dB, coherence %.2f	Zijlob %.0f dB, coherentie %.2f
+Waiting for a bearing.	Wachten op een peiling.
+Array and estimator	Array en schatter
+Circular (KrakenSDR)	Cirkelvormig (KrakenSDR)
+Linear	Lineair
+Array	Array
+Elements	Elementen
+Spacing (wavelengths)	Afstand (golflengten)
+Array orientation	Oriëntatie van de array
+Compass offset	Kompasverschuiving
+Added to every bearing: where the array's own north points relative to true north.	Wordt bij elke peiling opgeteld: waar het noorden van de array naartoe wijst ten opzichte van het ware noorden.
+Interferometer	Interferometer
+Estimator	Schatter
+Sources	Bronnen
+Forward-backward averaging (reflections)	Voorwaarts-achterwaarts middelen (reflecties)
+Calibration	Kalibratie
+1. Feed all channels the same signal: the receiver's noise source (KrakenSDR: switch it on in the DAQ), or a signal from a known bearing. 2. Choose the matching mode and press Calibrate. The offsets between the channels are measured and removed.	1. Geef alle kanalen hetzelfde signaal: de ruisbron van de ontvanger (KrakenSDR: schakel die in de DAQ in) of een signaal uit een bekende richting. 2. Kies de passende modus en druk op Kalibreren. De verschillen tussen de kanalen worden gemeten en verwijderd.
+Common noise source	Gemeenschappelijke ruisbron
+Known bearing	Bekende peiling
+Bearing of the source	Peiling van de bron
+Calibrate	Kalibreren
+Forget	Vergeten
+Use calibration	Kalibratie gebruiken
+Not calibrated.	Niet gekalibreerd.
+Simulated channel errors	Gesimuleerde kanaalfouten
+Simulator	Simulator
+Transmitter bearing	Peiling van de zender
+Spin	Draaien
+SNR per channel	SNR per kanaal
+Second transmitter	Tweede zender
+Second bearing	Tweede peiling
+Position fix	Positiebepaling
+Sharing	Delen
+Share my bearing on the map server	Mijn peiling delen met de kaartserver
+Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	Vereist Server > Gegevens naar de kaartserver sturen. Alleen de peiling, de onzekerheid, de frequentie en de positie van je station gaan omhoog; de kaart toont waar peilingen van meerdere stations elkaar kruisen.
+Bearing and position of a transmitter from an antenna array such as the KrakenSDR	Peiling en positie van een zender met een antennearray zoals de KrakenSDR
 Decoded only	Alleen gedecodeerd
 Hides tone-only pages and pages whose text could not be decoded.	Verbergt alleen-toon-oproepen en berichten waarvan de tekst niet gedecodeerd kon worden.
 %zu tone-only or undecoded pages hidden (Decoded only)	%zu alleen-toon- of niet-gedecodeerde berichten verborgen (Alleen gedecodeerd)

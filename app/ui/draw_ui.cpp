@@ -170,6 +170,7 @@ static void classicShell(App& a, ImVec2 disp) {
 // the windows over the interface (passes, images, scanner, tours, feeds, map, rotator) and the per-frame ticks of the shared services
 static void floatingWindows(App& a, ImVec2 disp) {
     passesWindow(a);
+    dfWindow(a);
     galleryWindow(a);
     scannerWindow(a);
     sweepWindow(a);

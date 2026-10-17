@@ -1650,6 +1650,66 @@ testing	テスト
 idea	アイデア
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	修正の送付、バグ報告、録音の共有、翻訳、アイデアの提案をしてくださったすべての方に感謝します。作者は Kristijonas Adomaitis です。
 Want your name changed or removed? Tell us on Discord or open an issue.	名前の変更や削除をご希望ですか？ Discord でお知らせいただくか、issue を作成してください。
+# direction finder
+Cannot open the recording (interleaved complex float32, one sample of every channel after the other).	録音を開けません（複素float32のインターリーブ形式で、各チャンネルのサンプルが順に並んだもの）。
+The recording has a different number of channels than the array.	録音のチャンネル数がアレイと異なります。
+Choose a source first.	先にソースを選んでください。
+No data to calibrate with.	校正に使うデータがありません。
+Calibration stored.	校正を保存しました。
+Add this bearing	この方位を追加
+Keeps the current bearing and your position as a line. Move, or take bearings from other stations, add more lines and the position is fixed where they cross.	現在の方位とあなたの位置を1本の線として保持します。移動するか他局の方位を使って線を追加すると、交差する場所で位置が決まります。
+Clear lines	線をクリア
+Position	位置
+95%% ellipse %.1f x %.1f km, %d of %d lines used	95%%楕円 %.1f x %.1f km、%d/%d本の線を使用
+The lines do not cross (parallel, or they meet behind the stations).	線が交差しません（平行、または局の後方で交わります）。
+Direction finder	方向探知機
+Simulator (demo, no hardware)	シミュレーター（デモ、ハードウェア不要）
+Recording (cf32 / SigMF)	録音（cf32 / SigMF）
+KrakenSDR bearing file (JSON)	KrakenSDR方位ファイル（JSON）
+Lock to the tuned frequency	同調周波数に固定
+Run	実行
+path of the recording	録音のパス
+a file the DoA server's JSON lines are saved to	DoAサーバーのJSON行の保存先ファイル
+channels	チャンネル
+kS/s	kS/s
+Bearing	方位
+Confidence	信頼度
+Sidelobe %.0f dB, coherence %.2f	サイドローブ %.0f dB、コヒーレンス %.2f
+Waiting for a bearing.	方位を待っています。
+Array and estimator	アレイと推定器
+Circular (KrakenSDR)	円形（KrakenSDR）
+Linear	直線
+Array	アレイ
+Elements	素子
+Spacing (wavelengths)	間隔（波長）
+Array orientation	アレイの向き
+Compass offset	コンパスオフセット
+Added to every bearing: where the array's own north points relative to true north.	すべての方位に加算されます：アレイの北が真北に対してどこを向いているか。
+Interferometer	干渉計
+Estimator	推定器
+Sources	信号源
+Forward-backward averaging (reflections)	前後平均（反射）
+Calibration	校正
+1. Feed all channels the same signal: the receiver's noise source (KrakenSDR: switch it on in the DAQ), or a signal from a known bearing. 2. Choose the matching mode and press Calibrate. The offsets between the channels are measured and removed.	1. すべてのチャンネルに同じ信号を与えます：受信機のノイズソース（KrakenSDR：DAQでオンにする）、または既知の方位からの信号。2. 対応するモードを選んで「校正」を押します。チャンネル間の差が測定され、除去されます。
+Common noise source	共通ノイズソース
+Known bearing	既知の方位
+Bearing of the source	信号源の方位
+Calibrate	校正
+Forget	忘れる
+Use calibration	校正を使用
+Not calibrated.	未校正。
+Simulated channel errors	シミュレートしたチャンネル誤差
+Simulator	シミュレーター
+Transmitter bearing	送信機の方位
+Spin	回転
+SNR per channel	チャンネルごとのSNR
+Second transmitter	2番目の送信機
+Second bearing	2番目の方位
+Position fix	位置の算出
+Sharing	共有
+Share my bearing on the map server	自分の方位を地図サーバーで共有
+Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	サーバー > 地図サーバーにデータを送信 が必要です。送信されるのは方位とその不確かさ、周波数、あなたの局の位置だけです。地図には複数の局の方位が交差する場所が表示されます。
+Bearing and position of a transmitter from an antenna array such as the KrakenSDR	KrakenSDRのようなアンテナアレイによる送信機の方位と位置
 Decoded only	デコード済みのみ
 Hides tone-only pages and pages whose text could not be decoded.	トーンのみの呼び出しと、テキストをデコードできなかったメッセージを非表示にします。
 %zu tone-only or undecoded pages hidden (Decoded only)	トーンのみまたは未デコードのメッセージを%zu件非表示（デコード済みのみ）

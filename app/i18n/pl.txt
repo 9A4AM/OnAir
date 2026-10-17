@@ -1650,6 +1650,66 @@ testing	testy
 idea	pomysł
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Dziękujemy wszystkim, którzy przysłali poprawki, zgłosili błędy, udostępnili nagrania, tłumaczyli lub podsunęli pomysły. Autorem jest Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Chcesz zmienić lub usunąć swoje imię? Napisz do nas na Discordzie albo otwórz zgłoszenie (issue).
+# direction finder
+Cannot open the recording (interleaved complex float32, one sample of every channel after the other).	Nie można otworzyć nagrania (zespolone float32 z przeplotem, po jednej próbce każdego kanału kolejno).
+The recording has a different number of channels than the array.	Nagranie ma inną liczbę kanałów niż szyk anten.
+Choose a source first.	Najpierw wybierz źródło.
+No data to calibrate with.	Brak danych do kalibracji.
+Calibration stored.	Kalibracja zapisana.
+Add this bearing	Dodaj ten namiar
+Keeps the current bearing and your position as a line. Move, or take bearings from other stations, add more lines and the position is fixed where they cross.	Zachowuje bieżący namiar i Twoją pozycję jako linię. Przemieść się lub weź namiary z innych stacji, dodaj więcej linii, a pozycja zostanie ustalona tam, gdzie się przecinają.
+Clear lines	Wyczyść linie
+Position	Pozycja
+95%% ellipse %.1f x %.1f km, %d of %d lines used	Elipsa 95%% %.1f x %.1f km, użyto %d z %d linii
+The lines do not cross (parallel, or they meet behind the stations).	Linie się nie przecinają (są równoległe albo spotykają się za stacjami).
+Direction finder	Radiopelengator
+Simulator (demo, no hardware)	Symulator (demo, bez sprzętu)
+Recording (cf32 / SigMF)	Nagranie (cf32 / SigMF)
+KrakenSDR bearing file (JSON)	Plik namiarów KrakenSDR (JSON)
+Lock to the tuned frequency	Zablokuj na ustawionej częstotliwości
+Run	Działa
+path of the recording	ścieżka nagrania
+a file the DoA server's JSON lines are saved to	plik, do którego zapisywane są wiersze JSON serwera DoA
+channels	kanały
+kS/s	kS/s
+Bearing	Namiar
+Confidence	Pewność
+Sidelobe %.0f dB, coherence %.2f	Listek boczny %.0f dB, koherencja %.2f
+Waiting for a bearing.	Czekam na namiar.
+Array and estimator	Szyk anten i estymator
+Circular (KrakenSDR)	Kołowy (KrakenSDR)
+Linear	Liniowy
+Array	Szyk anten
+Elements	Elementy
+Spacing (wavelengths)	Odstęp (długości fali)
+Array orientation	Orientacja szyku
+Compass offset	Przesunięcie kompasu
+Added to every bearing: where the array's own north points relative to true north.	Dodawane do każdego namiaru: dokąd wskazuje północ szyku względem północy prawdziwej.
+Interferometer	Interferometr
+Estimator	Estymator
+Sources	Źródła
+Forward-backward averaging (reflections)	Uśrednianie w przód i w tył (odbicia)
+Calibration	Kalibracja
+1. Feed all channels the same signal: the receiver's noise source (KrakenSDR: switch it on in the DAQ), or a signal from a known bearing. 2. Choose the matching mode and press Calibrate. The offsets between the channels are measured and removed.	1. Podaj wszystkim kanałom ten sam sygnał: źródło szumu odbiornika (KrakenSDR: włącz je w DAQ) albo sygnał ze znanego namiaru. 2. Wybierz odpowiedni tryb i naciśnij Kalibruj. Różnice między kanałami są mierzone i usuwane.
+Common noise source	Wspólne źródło szumu
+Known bearing	Znany namiar
+Bearing of the source	Namiar źródła
+Calibrate	Kalibruj
+Forget	Zapomnij
+Use calibration	Użyj kalibracji
+Not calibrated.	Nie skalibrowano.
+Simulated channel errors	Symulowane błędy kanałów
+Simulator	Symulator
+Transmitter bearing	Namiar nadajnika
+Spin	Obracaj
+SNR per channel	SNR na kanał
+Second transmitter	Drugi nadajnik
+Second bearing	Drugi namiar
+Position fix	Wyznaczanie pozycji
+Sharing	Udostępnianie
+Share my bearing on the map server	Udostępnij mój namiar serwerowi mapy
+Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	Wymaga Serwer > Wysyłaj dane na serwer mapy. Wysyłany jest tylko namiar, jego niepewność, częstotliwość i pozycja Twojej stacji; mapa pokazuje, gdzie przecinają się namiary z kilku stacji.
+Bearing and position of a transmitter from an antenna array such as the KrakenSDR	Namiar i pozycja nadajnika z szyku anten, takiego jak KrakenSDR
 Decoded only	Tylko zdekodowane
 Hides tone-only pages and pages whose text could not be decoded.	Ukrywa wywołania samym tonem oraz wiadomości, których tekstu nie udało się zdekodować.
 %zu tone-only or undecoded pages hidden (Decoded only)	Ukryto %zu wywołań samym tonem lub niezdekodowanych wiadomości (Tylko zdekodowane)

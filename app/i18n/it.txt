@@ -1633,6 +1633,66 @@ testing	test
 idea	idea
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Grazie a tutti coloro che hanno inviato correzioni, segnalato bug, condiviso registrazioni, tradotto o proposto idee. L'autore è Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Vuoi che il tuo nome sia cambiato o rimosso? Scrivici su Discord o apri una issue.
+# direction finder
+Cannot open the recording (interleaved complex float32, one sample of every channel after the other).	Impossibile aprire la registrazione (float32 complesso interlacciato, un campione di ogni canale uno dopo l'altro).
+The recording has a different number of channels than the array.	La registrazione ha un numero di canali diverso da quello dell'array.
+Choose a source first.	Scegli prima una sorgente.
+No data to calibrate with.	Nessun dato per calibrare.
+Calibration stored.	Calibrazione salvata.
+Add this bearing	Aggiungi questo rilevamento
+Keeps the current bearing and your position as a line. Move, or take bearings from other stations, add more lines and the position is fixed where they cross.	Conserva il rilevamento attuale e la tua posizione come una linea. Spostati o prendi rilevamenti da altre stazioni, aggiungi altre linee e la posizione viene fissata dove si incrociano.
+Clear lines	Cancella le linee
+Position	Posizione
+95%% ellipse %.1f x %.1f km, %d of %d lines used	Ellisse al 95%% %.1f x %.1f km, %d linee usate su %d
+The lines do not cross (parallel, or they meet behind the stations).	Le linee non si incrociano (parallele, o si incontrano dietro le stazioni).
+Direction finder	Radiogoniometro
+Simulator (demo, no hardware)	Simulatore (demo, senza hardware)
+Recording (cf32 / SigMF)	Registrazione (cf32 / SigMF)
+KrakenSDR bearing file (JSON)	File di rilevamenti KrakenSDR (JSON)
+Lock to the tuned frequency	Blocca sulla frequenza sintonizzata
+Run	Attivo
+path of the recording	percorso della registrazione
+a file the DoA server's JSON lines are saved to	un file in cui vengono salvate le righe JSON del server DoA
+channels	canali
+kS/s	kS/s
+Bearing	Rilevamento
+Confidence	Confidenza
+Sidelobe %.0f dB, coherence %.2f	Lobo laterale %.0f dB, coerenza %.2f
+Waiting for a bearing.	In attesa di un rilevamento.
+Array and estimator	Array e stimatore
+Circular (KrakenSDR)	Circolare (KrakenSDR)
+Linear	Lineare
+Array	Array
+Elements	Elementi
+Spacing (wavelengths)	Spaziatura (lunghezze d'onda)
+Array orientation	Orientamento dell'array
+Compass offset	Offset della bussola
+Added to every bearing: where the array's own north points relative to true north.	Aggiunto a ogni rilevamento: dove punta il nord dell'array rispetto al nord vero.
+Interferometer	Interferometro
+Estimator	Stimatore
+Sources	Sorgenti
+Forward-backward averaging (reflections)	Media avanti-indietro (riflessioni)
+Calibration	Calibrazione
+1. Feed all channels the same signal: the receiver's noise source (KrakenSDR: switch it on in the DAQ), or a signal from a known bearing. 2. Choose the matching mode and press Calibrate. The offsets between the channels are measured and removed.	1. Dai a tutti i canali lo stesso segnale: la sorgente di rumore del ricevitore (KrakenSDR: attivala nel DAQ) o un segnale da un rilevamento noto. 2. Scegli la modalità corrispondente e premi Calibra. Le differenze tra i canali vengono misurate e rimosse.
+Common noise source	Sorgente di rumore comune
+Known bearing	Rilevamento noto
+Bearing of the source	Rilevamento della sorgente
+Calibrate	Calibra
+Forget	Dimentica
+Use calibration	Usa la calibrazione
+Not calibrated.	Non calibrato.
+Simulated channel errors	Errori di canale simulati
+Simulator	Simulatore
+Transmitter bearing	Rilevamento del trasmettitore
+Spin	Ruota
+SNR per channel	SNR per canale
+Second transmitter	Secondo trasmettitore
+Second bearing	Secondo rilevamento
+Position fix	Determinazione della posizione
+Sharing	Condivisione
+Share my bearing on the map server	Condividi il mio rilevamento sul server della mappa
+Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	Richiede Server > Invia dati al server della mappa. Salgono solo il rilevamento, la sua incertezza, la frequenza e la posizione della tua stazione; la mappa mostra dove si incrociano i rilevamenti di più stazioni.
+Bearing and position of a transmitter from an antenna array such as the KrakenSDR	Rilevamento e posizione di un trasmettitore con un array di antenne come il KrakenSDR
 Decoded only	Solo decodificati
 Hides tone-only pages and pages whose text could not be decoded.	Nasconde le chiamate solo tono e i messaggi il cui testo non è stato decodificato.
 %zu tone-only or undecoded pages hidden (Decoded only)	%zu chiamate solo tono o messaggi non decodificati nascosti (Solo decodificati)
