@@ -29,13 +29,23 @@ struct State {
 };
 State S;
 
+const char* airEncShort(const dect2::TetraCell& c) {
+    switch (c.airEnc()) {
+        case 1: return tr("none advertised");
+        case 2: return tr("class 2");
+        case 3: return tr("class 3");
+        case 4: return tr("available");
+        default: return tr("unknown");
+    }
+}
+
 const char* kHelp =
     "TETRA network information (ETSI EN 300 392-2), receive only.\n\n"
     "This mode reads only what a TETRA base station broadcasts in the clear to every terminal: the network code (MCC, MNC), colour code, "
     "location area, the cell's carriers and duplex spacing, its neighbour cells, the services it offers and whether the network uses air "
-    "interface encryption. The same information is shown by open-source tools such as osmo-tetra.\n\n"
+    "interface encryption is advertised. The same information is shown by open-source tools such as osmo-tetra.\n\n"
     "It does not decrypt anything, does not transmit, does not join or disturb any network, and does not decode or play voice, short "
-    "data messages or subscriber identities. Encrypted signalling is only reported as encrypted.\n\n"
+    "data messages or subscriber identities. Signalling that carries an encryption mode is only counted. A cell is described as using air interface encryption only when it advertises class 2 or 3, or its signalling says so; class 1 cells and scrambling are not encryption.\n\n"
     "You are responsible for following your country's rules on receiving radio signals.";
 
 bool live(const App& a) { return a.rx.standard == 47; }
@@ -114,7 +124,7 @@ void scanBar(App& a) {
         const std::string now = resexp::stamp();
         for (const auto& c : a.rx.tetra.cells)
             t.add({now, resexp::num(c.nominalHz, 0), "TETRA", netText(c), c.la >= 0 ? std::to_string(c.la) : "", std::to_string(c.colourCode),
-                   c.encryption() ? "yes" : (c.hasSysinfo ? "no" : ""), c.hasSysinfo ? (c.isMain ? "main" : "other") : "",
+                   c.hasSysinfo ? airEncShort(c) : "", c.hasSysinfo ? (c.isMain ? "main" : "other") : "",
                    resexp::num(c.levelDb, 0), resexp::num(c.snrDb, 0)});
         resexp::saveButton(t, "tetra", note, "svtetra");
         if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
@@ -131,8 +141,8 @@ void cellTable(App& a) {
     const ImGuiTableFlags fl = ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV;
     if (!ImGui::BeginTable("##tcells", nc, fl, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
-    if (wide) for (const char* h : {"MHz", "Network", "LA", "Colour", "Encryption", "Carrier", "Level", "SNR", "Last heard"}) ImGui::TableSetupColumn(h);
-    else for (const char* h : {"MHz", "Network", "LA", "Colour", "Encryption", "Heard"}) ImGui::TableSetupColumn(h);
+    if (wide) for (const char* h : {"MHz", "Network", "LA", "Colour", "Air encryption", "Carrier", "Level", "SNR", "Last heard"}) ImGui::TableSetupColumn(h);
+    else for (const char* h : {"MHz", "Network", "LA", "Colour", "Air encryption", "Heard"}) ImGui::TableSetupColumn(h);
     ImGui::TableHeadersRow();
     for (size_t i = 0; i < t.cells.size(); i++) {
         const auto& c = t.cells[i];
@@ -145,7 +155,7 @@ void cellTable(App& a) {
         ImGui::TableNextColumn(); if (c.la >= 0) ImGui::Text("%d", c.la); else ImGui::TextDisabled("-");
         ImGui::TableNextColumn(); ImGui::Text("%d", c.colourCode);
         ImGui::TableNextColumn();
-        if (c.encryption()) ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.35f, 1), "yes"); else if (c.hasSysinfo) ImGui::TextUnformatted("no"); else ImGui::TextDisabled("?");
+        if (c.airEnc() >= 2) ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.35f, 1), "%s", airEncShort(c)); else if (c.hasSysinfo) ImGui::TextUnformatted(airEncShort(c)); else ImGui::TextDisabled("%s", airEncShort(c));
         if (wide) { ImGui::TableNextColumn(); if (c.hasSysinfo) ImGui::TextUnformatted(c.isMain ? "main" : "other"); else ImGui::TextDisabled("-"); }
         if (wide) { ImGui::TableNextColumn(); ImGui::Text("%.0f", c.levelDb); }
         if (wide) { ImGui::TableNextColumn(); ImGui::Text("%.0f", c.snrDb); }
@@ -177,8 +187,8 @@ void detail(App& a) {
         if (c.secValid) ImGui::Text("security: authentication %s, class 1 %s, class 2 %s, class 3 %s", c.authRequired ? "required" : "not required",
                                     c.secClass1 ? "yes" : "no", c.secClass2 ? "yes" : "no", c.secClass3 ? "yes" : "no");
     }
-    ImGui::Text("encryption: %s%s", c.encryption() ? "yes" : (c.hasSysinfo ? "no" : "not known yet"),
-                c.encryptedPdus ? (", " + std::to_string(c.encryptedPdus) + " encrypted signalling PDUs (not decrypted)").c_str() : "");
+    ImGui::Text(tr("Air-interface encryption: %s"), airEncShort(c));
+    ImGui::Text(tr("%llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)"), (unsigned long long)c.encryptedPdus, (unsigned long long)c.blocksBad);
     std::string ts;
     for (int i = 0; i < 4; i++) { ts += "TS" + std::to_string(i + 1) + " " + dect2::tetra::dlUsageText(c.tsUsage[i]); if (i < 3) ts += ", "; }
     ImGui::Text("timeslots: %s", ts.c_str());
@@ -232,7 +242,7 @@ void tick(App& a) {
 void tab(App& a) {
     scanBar(a);
     ImGui::PushTextWrapPos(0);
-    ImGui::TextDisabled("Receive only: the public information every TETRA base station broadcasts to all terminals (network code, location area, services, encryption in use). Nothing is decrypted; no voice, messages or identities are decoded.");
+    ImGui::TextDisabled("Receive only: the public information every TETRA base station broadcasts to all terminals (network code, location area, services, encryption advertised). Nothing is decrypted; no voice, messages or identities are decoded.");
     ImGui::PopTextWrapPos();
     subNav("tetrav", S.view, {"Cells", "Neighbours", "Carriers", "Log"});
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to find the TETRA base stations around you"); return; }
@@ -248,7 +258,7 @@ void tab(App& a) {
 
 void list(App& a) {
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
-    for (const auto& c : a.rx.tetra.cells) ImGui::Text("%.4f %-10s %s", c.nominalHz / 1e6, netText(c).c_str(), c.encryption() ? "enc" : "");
+    for (const auto& c : a.rx.tetra.cells) ImGui::Text("%.4f %-10s %s", c.nominalHz / 1e6, netText(c).c_str(), c.airEnc() >= 2 ? "enc" : "");
     if (a.rx.tetra.cells.empty()) ImGui::TextDisabled("none yet");
 }
 

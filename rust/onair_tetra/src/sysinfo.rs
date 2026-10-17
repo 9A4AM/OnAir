@@ -121,7 +121,7 @@ pub fn service_text(v: i32, out: &mut [u8]) -> usize {
     w.n
 }
 
-/// Security information of the extended services broadcast (SYSINFO optional field 3, 21.4.4.1): bit 0 valid, 1 authentication required, 2 class 1, 3 class 2, 4 class 3.
+/// Security information of the extended services broadcast (SYSINFO optional field 3, 21.4.4.1): bit 0 valid, 1 authentication required, 2 class 1, 3 class 2, 4 class 3 (class 2 / 3 only with the cell's air interface encryption service bit).
 pub fn security(s: &Sysinfo) -> i32 {
     if s.opt_flag != 3 {
         return 0;
@@ -129,8 +129,10 @@ pub fn security(s: &Sysinfo) -> i32 {
     let sec = ((s.opt_value >> 12) & 0xFF) as i32;
     let auth = (sec >> 7) & 1;
     let c1 = (sec >> 6) & 1;
-    let c3 = (sec >> 5) & 1;
-    let c2 = (c3 == 0 && (sec >> 4) & 1 != 0) as i32;
+    // Class 2 / 3 bit (EN 300 392-7 table A.104): only meaningful when the cell's air interface encryption service bit is set.
+    let aie = s.bs_service & (1 << 1) != 0;
+    let c3 = (aie && (sec >> 5) & 1 != 0) as i32;
+    let c2 = (aie && (sec >> 5) & 1 == 0) as i32;
     1 | auth << 1 | c1 << 2 | c2 << 3 | c3 << 4
 }
 

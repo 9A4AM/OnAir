@@ -1,6 +1,7 @@
 // GNSS screens: the sky plot, the signal strength of every satellite, the position (card and map), the channel table, the search,
 // the correlator plots and the options of the test signal.
 #include "app.h"
+#include "drive_nav.h"
 #include "panels/clocksync_ui.h"
 #include "../adsb/adsb_map.h"
 #include "dect2/gnss/gnss_interf.h"
@@ -17,7 +18,7 @@ struct FixPoint { double lat, lon, h; };
 
 struct State {
     bool loaded = false;
-    int viewMode = 0;                            // 0 sky, 1 map, 2 channels, 3 interference, 4 clock
+    int viewMode = 0;                            // 0 sky, 1 map, 2 channels, 3 interference, 4 clock, 5 navigate
     std::string interfNote;                      // the result of the last CSV export
     adsbmap::View map;
     bool mapFollow = true;                       // the map follows the fix until the user drags it
@@ -83,6 +84,7 @@ std::string satNameK(int sys, int prn, int fcn) {
 void tick(App& a) {
     loadState();
     clockPublishGps(a);
+    driveNavTick(a);
     a.tune.synth.modeOpt[5] = (int)std::lround(a.freqMhz * 1000.0);    // the test signal renders the sky as the tune sees it
     if (a.engine.running()) {
         GnssReceiver& r = a.engine.gnss();
@@ -744,13 +746,14 @@ void clockView(App& a) {
 // ---------------------------------------------------------------- the hooks
 
 void tab(App& a) {
-    subNav("gnssv", S.viewMode, {"Sky", "Map", "Channels", "Interference", "Clock"});
+    subNav("gnssv", S.viewMode, {"Sky", "Map", "Channels", "Interference", "Clock", "Navigate"});
     const GnssTelemetry& t = a.rx.gnss;
     const bool on = live(a);
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     if (S.viewMode == 2) { channelTable(a, false); return; }
     if (S.viewMode == 3) { interfView(a); return; }
     if (S.viewMode == 4) { clockView(a); return; }
+    if (S.viewMode == 5) { driveNavView(a, ImGui::GetContentRegionAvail()); return; }
     const float cw = std::min(300.f * gUi, W * 0.32f);
     ImGui::BeginChild("##gnss_l", ImVec2(W - cw - 8 * gUi, H));
     if (S.viewMode == 0) {

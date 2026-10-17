@@ -42,3 +42,19 @@ Assumed: how it measures speed and the floor internally is not published in what
 The ceiling is the radio: one hop covers about 70 % of the sample rate and costs settle + dwell, so with 10 Msps, 3 ms settle and 5 ms dwell the sweep
 runs at 7 MHz / 8 ms, about 870 MHz/s on paper; USB retune latency is what usually decides. The processing (FFT, floor, detection) is not the limit: see
 tests/sweep/test_sweep.cpp, which prints the figure with an instant fake radio.
+
+## Band survey
+
+The Sweep scanner window has a Band survey section that keeps every sweep of the range as one row of a time x frequency grid (level above the sweep's
+noise floor, half-dB steps; core/src/sweep/survey.cpp). Set "every" to a few minutes and the survey runs for hours or days in the background at low CPU.
+
+- Heatmap: time down, frequency across; the picture can be exported as a PNG, the per-bin occupancy (share of sweeps above the threshold), mean and
+  peak level as CSV.
+- Persistent signals: runs of bins above the threshold in at least the chosen share of the sweeps (always-on carriers, repeaters, spurs), with
+  occupancy, mean and peak level above the floor.
+- Quietest slots: the emptiest stretches of a chosen width (lowest occupancy, then lowest strongest-ever level): where to put a weak-signal receiver.
+- What changed: load an older survey file as "previous survey" to list the persistent signals that appeared or vanished and the change of the noise
+  floor and of the mean occupancy. Memory is capped (4000 rows): past that the older half is merged pairwise by maximum.
+
+Survey files (`.oasurv`) are compact binary. On the command line: `dect2sweep --from 87.5 --to 108 --interval 300 --survey fm.oasurv` adds each sweep to
+the file (and continues it if it exists); `dect2sweep --survey-report fm.oasurv [older.oasurv]` prints the persistent signals, the quiet slots and the diff.

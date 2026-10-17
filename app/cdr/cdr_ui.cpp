@@ -73,7 +73,8 @@ std::string serviceFacts(const dect2::CdrServiceInfo& s) {
     char b[160];
     if (s.audio && !s.streams.empty()) {
         const auto& st = s.streams[0];
-        snprintf(b, sizeof b, "DRA+ %.0f kbit/s, %g kHz %s", st.bitrate / 1000.0, st.sampleRate / 1000.0, channelsText(st.channelsCode).c_str());
+        if (st.bitrate > 0) snprintf(b, sizeof b, "DRA+ %.0f kbit/s, %g kHz %s", st.bitrate / 1000.0, st.sampleRate / 1000.0, channelsText(st.channelsCode).c_str());
+        else snprintf(b, sizeof b, "DRA+ (rate not signalled), %g kHz %s", st.sampleRate / 1000.0, channelsText(st.channelsCode).c_str());   // #189: never show "0 kbit/s"
     } else if (s.data) snprintf(b, sizeof b, "data %.1f kbit/s%s", s.kbps, s.text.empty() ? "" : ", text");
     else snprintf(b, sizeof b, "%.1f kbit/s", s.kbps);
     return b;

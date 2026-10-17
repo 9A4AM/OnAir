@@ -2066,3 +2066,62 @@ This ensemble does not announce a programme guide (SPI, user application 0x007).
 The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	La guida di questo ensemble è trasmessa nel PAD di una stazione: ascolta quella stazione per raccoglierla.
 The broadcaster sends service information (names, logos) but no programme schedule.	L'emittente invia informazioni di servizio (nomi, loghi) ma non il palinsesto.
 No programme schedule received yet. A guide carousel can take several minutes to come round.	Nessun palinsesto ricevuto finora. Un carosello della guida può impiegare diversi minuti per un giro.
+Air-interface encryption: %s	Cifratura dell'interfaccia radio: %s
+%llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu PDU di segnalazione con modo di cifratura (non decifrate); %llu blocchi illeggibili (CRC errato)
+none advertised	nessuna annunciata
+class 2	classe 2
+class 3	classe 3
+available	disponibile
+unknown	sconosciuto
+Save CADU	Salva CADU
+Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Ogni frame che supera Reed-Solomon, come CADU da 1024 byte in <cartella dati>/goes/frames.cadu (lo stesso tipo di file scritto da SatDump), per confrontare i decodificatori
+Open CADU	Apri CADU
+Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Decodifica un file .cadu (frame da 1024 byte, da questo programma o da SatDump) tramite Reed-Solomon, i pacchetti e i file; GOES HRIT deve essere in esecuzione
+Messages	Messaggi
+Messages...	Messaggi...
+Every decoded message in one searchable database, with filters and export	Tutti i messaggi decodificati in un database ricercabile, con filtri ed esportazione
+The message database could not be opened:	Impossibile aprire il database dei messaggi:
+Search text (words, prefix*)	Testo da cercare (parole, prefisso*)
+Identity	Identità
+All modes	Tutti i modi
+With position	Con posizione
+matching	corrispondenti
+stored	salvati
+Newer	Più recenti
+Older	Più vecchi
+Export CSV	Esporta CSV
+Export JSON	Esporta JSON
+Export ADIF	Esporta ADIF
+Storage	Archiviazione
+Record decoded messages	Registra i messaggi decodificati
+Most rows (thousands, 0 = no limit)	Numero massimo di righe (migliaia, 0 = nessun limite)
+Size cap in MB (0 = none)	Limite di dimensione in MB (0 = nessuno)
+Keep days (0 = forever)	Giorni di conservazione (0 = per sempre)
+Apply limits now	Applica i limiti ora
+Clear all...	Cancella tutto...
+Really clear	Cancella davvero
+The database file:	Il file del database:
+Voice audio and encrypted traffic are never stored.	L'audio vocale e il traffico cifrato non vengono mai salvati.
+Band survey	Rilevamento di banda
+record every sweep into the survey	registra ogni scansione nel rilevamento
+persistent at %.0f%%	persistente al %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	Un segnale è persistente quando supera la soglia in almeno questa parte delle scansioni
+quiet slot %.0f kHz	fascia silenziosa %.0f kHz
+Clear survey	Cancella rilevamento
+Save survey...	Salva rilevamento...
+Load as previous survey...	Carica come rilevamento precedente...
+Export occupancy CSV...	Esporta occupazione in CSV...
+Export persistent signals CSV...	Esporta segnali persistenti in CSV...
+Export picture...	Esporta immagine...
+cannot write the picture	impossibile scrivere l'immagine
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	Avvia una scansione: ogni scansione aggiunge una riga al rilevamento. Con "ogni" impostato a qualche minuto può girare per ore in background.
+%zu sweeps over %.1f h	%zu scansioni in %.1f h
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	dal rilevamento precedente: rumore di fondo %+.1f dB, occupazione %+.1f%%, %zu nuovi, %zu scomparsi
+new %.4f MHz, %.0f%% of the time	nuovo %.4f MHz, per il %.0f%% del tempo
+gone %.4f MHz, was %.0f%% of the time	scomparso %.4f MHz, c'era per il %.0f%% del tempo
+Occupancy %	Occupazione %
+Mean dB above floor	Media dB sopra il rumore
+Peak dB above floor	Picco dB sopra il rumore
+Quietest slots	Fasce più silenziose
+From MHz	Da MHz
+Width kHz	Larghezza kHz

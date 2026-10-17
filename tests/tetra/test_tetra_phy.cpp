@@ -4,6 +4,7 @@
 #include "dect2/tetra/tetra_phy.h"
 #include "dect2/tetra/tetra_pdu.h"
 #include "dect2/tetra/tetra_rx.h"
+#include "dect2/tetra/tetra_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -78,6 +79,28 @@ int main() {
         CHECK(std::fabs(dlCarrierHz(3, 3696, 3) - 392.4125e6) < 1 && std::fabs(ulCarrierHz(3, 3696, 3, 0, false) - 382.4125e6) < 1, "carrier frequencies");
         const Security sec = parseSecurity(q);
         CHECK(sec.valid && sec.authRequired && sec.class3 && !sec.class1, "security");
+        {   // a real cell (France, MCC 208, seen in a 427 MHz capture): extended services with security bits 0110 0000 and no air interface encryption service bit.
+            // The class 2 / 3 bit is only meaningful with that service bit (EN 300 392-7 A.8.77): this is a clear cell, not class 3.
+            Sysinfo real = q; real.optFlag = 3; real.optValue = 0x60u << 12; real.bsService = 0xd65;
+            Security r = parseSecurity(real);
+            CHECK(r.valid && r.class1 && !r.class2 && !r.class3 && !r.authRequired, "real cell without the encryption service bit is not class 2 / 3");
+            // the same bits with the service bit set: class 3 and class 1 MS both supported; authentication bit as sent
+            real.bsService = 0xd67; real.optValue = 0xe0u << 12; r = parseSecurity(real);
+            CHECK(r.class1 && r.class3 && !r.class2 && r.authRequired, "service bit set: class 3");
+            real.optValue = 0x80u << 12; r = parseSecurity(real);
+            CHECK(!r.class1 && r.class2 && !r.class3, "service bit set, class 2 / 3 bit 0: class 2");
+            real.optValue = 0x1fu << 12;   // the five low bits are the SCK number / key services, never a class
+            real.bsService = 0xd65; r = parseSecurity(real);
+            CHECK(!r.class2 && !r.class3, "SCK bits are not a class");
+            real.optFlag = 2; CHECK(!parseSecurity(real).valid, "no security information outside the extended services broadcast");
+            // MAC header: encryption mode 0 is not counted, 2 is; unreadable blocks are not encryption
+            TetraCell tc; tc.hasSysinfo = true; tc.aie = false;
+            CHECK(tc.airEnc() == 1 && !tc.encryption(), "none advertised");
+            tc.aie = true; CHECK(tc.airEnc() == 4 && tc.encryption(), "service available, class unknown"); tc.secClass3 = true; CHECK(tc.airEnc() == 3, "class 3");
+            tc.aie = false; tc.secClass3 = false; tc.blocksBad = 1000; CHECK(!tc.encryption(), "bad blocks are not encryption");
+            tc.encryptedPdus = 1; CHECK(tc.encryption(), "encryption mode seen");
+            TetraCell nc; CHECK(nc.airEnc() == 0 && !nc.encryption(), "unknown before SYSINFO");
+        }
         MacBlock mb;
         parseMacBlock(macBroadcastResource(mleNwrkBroadcast(c.nwrk), 268, 0), mb);
         CHECK(mb.nwrk.size() == 1 && mb.nwrk[0].nbrs.size() == 2 && mb.nwrk[0].nbrs[1].la == 1003 && mb.nwrk[0].nbrs[1].hasExt && mb.nwrk[0].hasTime, "D-NWRK-BROADCAST");

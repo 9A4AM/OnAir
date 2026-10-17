@@ -38,9 +38,12 @@ struct TetraCell {
     int optFlag = 0; uint32_t optValue = 0;
     int la = -1, subscriberClass = 0, bsService = 0;
     bool secValid = false, authRequired = false, secClass1 = false, secClass2 = false, secClass3 = false;
-    bool aie = false;                  // the cell says it supports air interface encryption
-    uint64_t encryptedPdus = 0;        // signalling PDUs sent encrypted
-    bool encryption() const { return aie || secClass2 || secClass3 || encryptedPdus > 0; }
+    bool aie = false;                  // the cell's "air interface encryption service" bit (D-MLE-SYSINFO): the cell supports class 2 / 3 MS
+    uint64_t encryptedPdus = 0;        // MAC-RESOURCE PDUs whose encryption mode is not 0 (counted, never read); blocks that fail the CRC are blocksBad, not this
+    // What the cell advertises (EN 300 392-7 A.8.77 with the service bit): 0 not known yet (no SYSINFO), 1 none advertised (class 1 only), 2 class 2,
+    // 3 class 3, 4 encryption service available, class not heard yet. Scrambling (derived from MCC, MNC and colour code) is not encryption.
+    int airEnc() const { return !hasSysinfo ? 0 : !aie ? 1 : secClass3 ? 3 : secClass2 ? 2 : 4; }
+    bool encryption() const { return airEnc() >= 2 || encryptedPdus > 0; }
     // MCCH: D-NWRK-BROADCAST
     bool hasNwrk = false;
     int reselect = 0;

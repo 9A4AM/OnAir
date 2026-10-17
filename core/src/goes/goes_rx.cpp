@@ -70,6 +70,10 @@ struct GoesReceiver::Impl {
     GoesTelemetry pub;
     std::function<void(const std::string&)> logCb;
     std::function<void(const std::vector<uint8_t>&, int, int)> fileCb;
+    std::function<void(const uint8_t*)> caduCb;     // every good frame as a 1024 byte CADU (mu)
+    std::deque<std::vector<uint8_t>> caduIn;        // CADU files waiting to be decoded by the feed thread (mu)
+    bool rsDual = true;                             // the Reed-Solomon symbol basis that last decoded (CCSDS dual basis, or conventional)
+    uint64_t rsSwitches = 0;
     std::atomic<bool> resetReq{false}, clearReq{false};
     bool loadReq = false;                // loaded products (mu): the feed thread hands them to the assembler
     std::vector<std::shared_ptr<goes::Product>> loadIn;
@@ -379,13 +383,69 @@ struct GoesReceiver::Impl {
     void doFrame() {
         frames++;
         uint8_t v[meteor::kVcduBytes];
-        const int r = meteor::decodeCadu(frame, v);
-        if (r < 0) { bad++; return; }
+        // the code is the CCSDS (255,223) one; whether the symbols are sent in the dual basis or the conventional one is tried both ways
+        // (a wrong basis never decodes), and the one that works is used first from then on
+        int r = meteor::decodeCadu(frame, v, rsDual);
+        if (r < 0) {
+            const int r2 = meteor::decodeCadu(frame, v, !rsDual);
+            if (r2 < 0) { bad++; return; }
+            rsDual = !rsDual; rsSwitches++;
+            char b[96]; snprintf(b, sizeof b, "GOES HRIT: Reed-Solomon symbols are in the %s basis", rsDual ? "dual (CCSDS)" : "conventional");
+            addLog(b, true);
+            r = r2;
+        }
+        {
+            std::function<void(const uint8_t*)> cb;
+            { std::lock_guard<std::mutex> lk(mu); cb = caduCb; }
+            if (cb) { uint8_t cadu[meteor::kCaduBytes]; cadu[0] = 0x1A; cadu[1] = 0xCF; cadu[2] = 0xFC; cadu[3] = 0x1D; memcpy(cadu + 4, frame, sizeof frame); meteor::pnXor(cadu + 4, sizeof frame); cb(cadu); }
+        }
         ok++;
         corrected += (uint64_t)r;
         lastGoodSym = symIdx;
         if (!frameLockReported) { frameLockReported = true; addLog("GOES HRIT: frames found, decoding", true); }
         asmb.push(v, (double)nIn / std::max(1.0, rate));
+    }
+
+    // ---- a .cadu file (1024 byte frames: sync word, then the 1020 bytes derandomised or as sent) through Reed-Solomon and the upper layers
+    void drainCadu() {
+        for (;;) {
+            std::vector<uint8_t> d;
+            {
+                std::lock_guard<std::mutex> lk(mu);
+                if (caduIn.empty()) return;
+                d = std::move(caduIn.front());
+                caduIn.pop_front();
+            }
+            uint64_t good = 0, badN = 0;
+            // one frame through Reed-Solomon (decodeCadu() takes the randomised bytes; rnd: the file holds them derandomised, so randomise again)
+            auto tryFrame = [&](size_t o, int rnd, uint8_t* v, bool strict) {
+                uint8_t cw[meteor::kCodedBytes];
+                memcpy(cw, d.data() + o + 4, sizeof cw);
+                if (rnd) meteor::pnXor(cw, sizeof cw);
+                for (int b = 0; b < 2; b++) {
+                    const int r = meteor::decodeCadu(cw, v, b == 0 ? rsDual : !rsDual);
+                    // the randomising sequence is itself a code word, so the wrong choice can pass Reed-Solomon, but not the VCDU header
+                    meteor::Vcdu hv;
+                    if (r >= 0 && (!strict || meteor::parseVcdu(v, hv))) { if (b == 1) rsDual = !rsDual; return r; }
+                }
+                return -1;
+            };
+            // as sent (randomised) or derandomised like SatDump's files: the one that decodes more of the first frames is used for the file
+            int score[2] = {0, 0};
+            for (size_t o = 0, k = 0; o + meteor::kCaduBytes <= d.size() && k < 24; o += meteor::kCaduBytes, k++)
+                for (int rnd = 0; rnd < 2; rnd++) { uint8_t v[meteor::kVcduBytes]; score[rnd] += tryFrame(o, rnd, v, true) >= 0; }
+            const int rnd = score[1] > score[0] ? 1 : 0;
+            for (size_t o = 0; o + meteor::kCaduBytes <= d.size(); o += meteor::kCaduBytes) {
+                uint8_t v[meteor::kVcduBytes];
+                const int r = tryFrame(o, rnd, v, false);
+                frames++;
+                if (r < 0) { bad++; badN++; continue; }
+                ok++; good++; corrected += (uint64_t)r;
+                asmb.push(v, 0.0);
+            }
+            char b[96]; snprintf(b, sizeof b, "GOES HRIT: CADU file, %llu frames decoded, %llu failed", (unsigned long long)good, (unsigned long long)badN);
+            addLog(b, true);
+        }
     }
 
     // ---- input
@@ -450,6 +510,7 @@ struct GoesReceiver::Impl {
         t.carrierLock = carrierLock || decoding;
         t.frameLock = fstate != 0;
         t.invertedG2 = g2inv;
+        t.rsDualBasis = rsDual;
         t.lockMetric = std::max(0.f, lockM);
         const uint64_t df = frames - lastFrames, dc = corrected - lastCorr, dok = ok - lastOk;
         t.rsByteErrors = df ? (float)dc / (float)(df * meteor::kCodedBytes) : 0.f;
@@ -567,6 +628,7 @@ void GoesReceiver::feed(const cf32* x, size_t n) {
         m.asmb.clear(); m.logLines.clear();
         m.frames = m.ok = m.bad = m.corrected = 0; m.lastFrames = m.lastCorr = m.lastOk = 0;
     }
+    m.drainCadu();
     if (m.rate <= 0 || n == 0) return;
     // in pieces of at most a quarter second, so the reports keep their pace
     size_t i = 0;
@@ -587,6 +649,8 @@ bool GoesReceiver::telemetry(GoesTelemetry& out, uint64_t lastSeq) {
     return true;
 }
 void GoesReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->logCb = std::move(cb); }
+void GoesReceiver::setCaduCallback(std::function<void(const uint8_t*)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->caduCb = std::move(cb); }
+void GoesReceiver::importCadu(std::vector<uint8_t> data) { std::lock_guard<std::mutex> lk(p_->mu); p_->caduIn.push_back(std::move(data)); }
 void GoesReceiver::setFileCallback(std::function<void(const std::vector<uint8_t>&, int, int)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->fileCb = std::move(cb); }
 
 ModeTuning goesTuning() {

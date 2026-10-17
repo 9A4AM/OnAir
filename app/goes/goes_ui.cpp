@@ -17,6 +17,9 @@
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <functional>
+#include <iterator>
+#include <mutex>
 #include <memory>
 #include <set>
 #include <string>
@@ -31,8 +34,9 @@ namespace goes = dect2::goes;
 const char* const kFilters[] = {"All products", "Images", "Text"};
 
 struct State {
-    bool loaded = false;
+    bool loaded = false, caduSet = false;
     bool autoSave = true;
+    bool saveCadu = false;                // write the good frames to <data folder>/goes/frames.cadu
     int filter = 0;
     bool follow = true;                   // show the newest image as it comes
     uint64_t selId = 0;
@@ -52,6 +56,27 @@ void loadState() {
     S.loaded = true;
     S.autoSave = plat::prefs().getB("goesAutoSave", true);
     S.filter = std::clamp((int)plat::prefs().getI("goesFilter", 0), 0, 2);
+    S.saveCadu = plat::prefs().getB("goesSaveCadu", false);
+}
+
+// good frames as 1024 byte CADUs (sync word, then the derandomised 1020 bytes), the file other decoders write too: compare or feed it back
+std::mutex gCaduMu;
+std::ofstream gCadu;
+void setCaduSaving(App& a, bool on) {
+    {
+        std::lock_guard<std::mutex> lk(gCaduMu);
+        if (gCadu.is_open()) gCadu.close();
+        if (on) {
+            const std::string path = plat::dataDir() + "/goes/frames.cadu";
+            std::error_code ec;
+            std::filesystem::create_directories(std::filesystem::path(reinterpret_cast<const char8_t*>((plat::dataDir() + "/goes").c_str())), ec);
+            gCadu.open(std::filesystem::path(reinterpret_cast<const char8_t*>(path.c_str())), std::ios::binary | std::ios::app);
+        }
+    }
+    a.engine.goes().setCaduCallback(on ? std::function<void(const uint8_t*)>([](const uint8_t* f) {
+        std::lock_guard<std::mutex> lk(gCaduMu);
+        if (gCadu.is_open()) gCadu.write((const char*)f, 1024);
+    }) : std::function<void(const uint8_t*)>());
 }
 
 bool live(const App& a) { return a.rx.standard == 61; }   // the engine reports its standard code minus one
@@ -218,6 +243,7 @@ void showProduct(App& a, const Product& p) {
 // ---------------------------------------------------------------- tabs
 void tab(App& a) {
     loadState();
+    if (!S.caduSet) { S.caduSet = true; if (S.saveCadu) setCaduSaving(a, true); }
     const GoesTelemetry& t = a.rx.goes;
     const bool on = live(a);
     if (on) autoSave(t);
@@ -233,6 +259,20 @@ void tab(App& a) {
     flowNext(5 * gUi);
     if (ImGui::Checkbox("Save automatically", &S.autoSave)) { plat::prefs().setB("goesAutoSave", S.autoSave); plat::prefs().flush(); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Every product once it is complete, into <data folder>/goes/");
+    flowNext(5 * gUi);
+    if (ImGui::Checkbox(tr("Save CADU"), &S.saveCadu)) { plat::prefs().setB("goesSaveCadu", S.saveCadu); plat::prefs().flush(); setCaduSaving(a, S.saveCadu); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders"));
+    flowNext(5 * gUi);
+    if (ImGui::Button(tr("Open CADU"))) {
+        const std::string f = plat::openFileDialog();
+        if (!f.empty()) {
+            std::ifstream in(std::filesystem::path(reinterpret_cast<const char8_t*>(f.c_str())), std::ios::binary);
+            std::vector<uint8_t> d((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+            if (d.size() >= 1024) { a.engine.goes().importCadu(std::move(d)); S.msg = "CADU file read, decoding"; }
+            else S.msg = "not a CADU file";
+        }
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running"));
     flowNext(5 * gUi);
     if (ImGui::Button("Clear")) { a.engine.goes().clearProducts(); S.msg.clear(); S.selId = 0; S.follow = true; }
     flowEnd();
@@ -284,7 +324,7 @@ void receiver(App& a) {
     kvRow(a, "state", "%s", dect2::goesSummary(t).c_str());
     kvRow(a, "carrier", "offset %+.2f kHz, %s, lock %.2f, Es/N0 %.1f dB", t.cfoHz / 1e3, t.carrierLock ? "locked" : "searching", t.lockMetric, t.snrDb);
     kvRow(a, "symbol clock", "%.1f ksym/s (%+.0f ppm)", t.symbolRate / 1e3, (t.symbolRate / 927000.0 - 1) * 1e6);
-    kvRow(a, "code", "K = 7, r = 1/2, second output %s", t.invertedG2 ? "inverted (CCSDS)" : "plain");
+    kvRow(a, "code", "K = 7, r = 1/2, second output %s; Reed-Solomon (255,223) x4, %s basis", t.invertedG2 ? "inverted (CCSDS)" : "plain", t.rsDualBasis ? "dual" : "conventional");
     kvRow(a, "frames", "%llu good, %llu failed RS, %llu bytes corrected (%.3f%% now)%s", (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad,
           (unsigned long long)t.rsCorrected, t.rsByteErrors * 100, t.frameLock ? ", in sync" : "");
     if (t.scid >= 0) kvRow(a, "VCDU", "spacecraft %d, %llu VCDUs, %llu fill, %llu gaps", t.scid, (unsigned long long)t.vcdus, (unsigned long long)t.fillVcdus, (unsigned long long)t.vcduGaps);

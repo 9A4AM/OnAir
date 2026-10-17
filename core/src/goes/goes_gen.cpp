@@ -223,7 +223,7 @@ struct GoesGenerator::Impl {
             else { addRound(); fillLeft = c.fillFrames; mux.next(v); }
         }
         uint8_t cadu[meteor::kCaduBytes];
-        meteor::encodeCadu(v, cadu);
+        meteor::encodeCadu(v, cadu, c.dualBasis);
         for (int i = 0; i < meteor::kCaduBytes; i++)
             for (int b = 7; b >= 0; b--) {
                 uint8_t s0, s1;

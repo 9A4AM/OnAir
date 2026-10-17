@@ -95,6 +95,15 @@ static int rx(int argc, char** argv) {
     for (const auto& kv : e.packet) printf("  packet scid %d: sub %d address %d dscty %d dg %d\n", kv.first, kv.second.subId, kv.second.address, kv.second.dscty, kv.second.dg);
     if (fi.hasTime) printf("  FIG 0/10 MJD %d %02d:%02d, LTO %s%d half hours\n", fi.mjd, fi.hour, fi.minute, fi.hasLto ? "" : "(none) ", fi.ltoHalfHours);
     for (const auto& kv : e.subs) printf("  sub %d: start %d size %d CU, %d kbit/s, EEP %d-%c\n", kv.first, kv.second.start, kv.second.size, kv.second.bitrate, kv.second.level + 1, kv.second.option ? 'B' : 'A');
+    if (getenv("DABTOOL_FIC")) {   // everything the FIC said beyond the tables, and the TII the null symbols gave
+        const DabFicAnalysis fa = r.ficAnalysis();
+        const DabFicInfo fi = dabFicInfo(fa);
+        printf("TII (%d null symbols):", t.tiiFrames);
+        for (const auto& x : t.tii) printf(" %d/%d(%.1f dB)", x.mainId, x.subId, x.levelDb);
+        printf("\nECC %s%02X, LTO %s%+.1f h, table %d, %zu freq lists, %zu main ids, %zu other-ensemble entries\n", fi.hasEcc ? "" : "none ", fi.ecc, fi.hasLto ? "" : "none ", fi.ltoHalfHours / 2.0, fi.intlTable,
+               fi.freqs.size(), fi.transmitters.size(), fi.otherEnsembles.size());
+        if (atoi(getenv("DABTOOL_FIC")) > 1) printf("%s\n", dabFicText(fa).c_str());
+    }
     const DabAudioStats s = a.stats();
     if (s.sub >= 0) printf("audio sub %d: %s %d Hz %d ch, superframes ok %llu bad %llu, AU ok %llu bad %llu, RS fixed %llu, PCM frames %llu\n", s.sub, s.codec.c_str(), s.sampleRate, s.channels,
                            (unsigned long long)s.superframesOk, (unsigned long long)s.superframesBad, (unsigned long long)s.auOk, (unsigned long long)s.auBad,
