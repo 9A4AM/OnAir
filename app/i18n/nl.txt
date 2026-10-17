@@ -1403,3 +1403,173 @@ Preferred site	Preferred site
 Hear this receiver	Deze ontvanger beluisteren
 Close receiver	Ontvanger sluiten
 Radio: %s	Radio: %s
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	HD Radio-geluid heeft de HDC-codec nodig, die je zelf installeert (klik op ?)
+HDC sound codec cannot be used: %s	De HDC-geluidscodec kan niet worden gebruikt: %s
+HDC sound codec not installed (no sound; click ? for the steps)	HDC-geluidscodec niet geïnstalleerd (geen geluid; klik op ? voor de stappen)
+sound: HD%d (HDC)	geluid: HD%d (HDC)
+sound: HD%d, waiting for audio	geluid: HD%d, wacht op audio
+The HD Radio sound codec (HDC) is not installed	De HD Radio-geluidscodec (HDC) is niet geïnstalleerd
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	Zender, programmagegevens en afbeeldingen worden getoond, maar het HD Radio-geluid blijft stil totdat je de codec zelf installeert. OnAir levert hem niet mee (HDC is gepatenteerd en eigendom van Xperi).
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	Bouw de HDC-gepatchte FAAD2 zoals de volledige instructies uitleggen (je hebt de opensource-patch van nrsc5 nodig).
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	Zet de bibliotheek (libfaad_hdc) in de codecmap van OnAir (knop hieronder).
+The HD Radio sound library cannot be used	De HD Radio-geluidsbibliotheek kan niet worden gebruikt
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	OnAir vond een bibliotheek voor HDC, maar het is geen FAAD2-build met de HDC-patch die OnAir kan aanroepen, dus is hij genegeerd.
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Bouw de bibliotheek opnieuw uit FAAD2 2.10 of 2.11 met de nrsc5-patch, zoals de volledige instructies uitleggen.
+Replace the file in the OnAir codecs folder (button below).	Vervang het bestand in de codecmap van OnAir (knop hieronder).
+# band plans (scan tab, TV channel list)
+Band plan	Bandplan
+None (built-in ranges)	Geen (ingebouwde bereiken)
+My band plans	Mijn bandplannen
+Export...	Exporteren...
+Really delete?	Echt verwijderen?
+Replaced band plan "%s" (%zu bands).	Bandplan "%s" vervangen (%zu banden).
+Imported band plan "%s" (%zu bands).	Bandplan "%s" geïmporteerd (%zu banden).
+Deleted band plan %s.	Bandplan %s verwijderd.
+Not fully verified: %s	Niet volledig geverifieerd: %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	Het kanaalraster van uw land: tv-kanalen voor het scannen en de kanaallijst, en meer. Automatisch kiest een plan op basis van de interfacetaal en de regio van het systeem.
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	Leest een bandplan uit een CSV- of JSON-bestand (formaat in docs/band-plans.md), controleert het en bewaart het in uw instellingenmap. Bij een fout in het bestand verandert er niets; de melding zegt waar.
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	Slaat het plan op als JSON-bestand, of als CSV als de naam op .csv eindigt. Een ingebouwd plan is een goed beginpunt voor uw eigen plan.
+Deletes one of your own band plans. The built-in plans stay.	Verwijdert een van uw eigen bandplannen. De ingebouwde plannen blijven.
+TV channels of the band plan %s (change it in the Scan tab).	Tv-kanalen van bandplan %s (te wijzigen op het tabblad Scan).
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	Bemanning
+Operations	Operaties
+Company	Maatschappij
+Maintenance	Onderhoud
+Fault	Storing
+Show all messages	Alle berichten tonen
+ACARS messages	ACARS-berichten
+%d ACARS messages	%d ACARS-berichten
+Copy these messages as text	Kopieer deze berichten als tekst
+No ACARS messages heard from this aircraft	Geen ACARS-berichten ontvangen van dit vliegtuig
+Also share interesting ACARS messages (text becomes public on the map)	Deel ook interessante ACARS-berichten (de tekst wordt openbaar op de kaart)
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	Berichten die een vliegtuig via ACARS verstuurde (vrije tekst en berichten van bemanning, operaties, maatschappij en onderhoud), 48 uur lang getoond op de kaart van dat vliegtuig op de openbare kaart. Telefoonnummers en e-mailadressen worden eerst verwijderd. Positiemeldingen en linktests horen hier niet bij. Je kunt dit altijd uitzetten.
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	Berichten die vliegtuigen via ACARS versturen (vrije tekst en berichten van bemanning, operaties, maatschappij en onderhoud) kunnen ook op de kaart van het vliegtuig staan, zonder telefoonnummers en e-mailadressen. Dit is een aparte keuze die je in het Server-menu kunt wijzigen.
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s, %d sprongen, %d gemiddelden, %.0f ms per sweep
+pick a radio first (the test signal and files cannot sweep)	kies eerst een radio (testsignaal en bestanden kunnen niet worden gesweept)
+Save scan...	Scan opslaan...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	rtl_power-compatibele CSV: opent in Heatmap.py, rtl_power_fftw-tools en spreadsheets
+Load as baseline...	Laden als basislijn...
+Keep this scan as baseline	Deze scan als basislijn houden
+Save signal log...	Signaallogboek opslaan...
+Sweep scanner	Sweep-scanner
+from MHz	van MHz
+to MHz	tot MHz
+bin %.0f kHz	bin %.0f kHz
+dwell %.0f ms	verblijf %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Tijd per sprong: langer middelt meer FFT's (rustigere ruisvloer, zwakke signalen zichtbaar) maar de sweep is trager
+measure retune time	omstemtijd meten
+settle %.0f ms	insteltijd %.0f ms
+rate: radio's best	samplerate: het beste van de radio
+rate: 10 Msps	samplerate: 10 Msps
+rate: 5 Msps	samplerate: 5 Msps
+rate: 2.4 Msps	samplerate: 2,4 Msps
+gain %.0f dB	gain %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Pauze tussen sweeps: om de zoveel seconden sweepen spaart processor en accu
+threshold floor+%.0f dB	drempel ruisvloer+%.0f dB
+floor percentile %.0f	ruisvloer-percentiel %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	De ruisvloer is dit percentiel van het binvermogen per sprong (50 = mediaan). Verlaag het in drukke banden, verhoog het in lege
+retune settle %.1f ms	insteltijd %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	ruisvloer %.1f dBFS per bin (bins van %.0f kHz), drempel %.1f dBFS, %zu signalen in deze sweep
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	t.o.v. basislijn: ruisvloer %+.1f dB, grootste stijging %+.1f dB bij %.3f MHz
+Signals found	Gevonden signalen
+mode: as it is	modus: zoals hij is
+Tune to selected	Afstemmen op selectie
+Bandwidth kHz	Bandbreedte kHz
+Peak dBFS	Piek dBFS
+Best SNR dB	Beste SNR dB
+Sweep	Sweep
+every %.0f s	elke %.0f s
+back to back	achter elkaar
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Snelle breedband-sweep met ruisvloermeting, signaallogboek en waterval
+Record audio	Audio opnemen
+Only audio	Alleen audio
+Split	Splitsen
+Keep going	Doorgaan
+Show recording	Opname tonen
+Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)	Slaat het geluid dat je hoort in elke modus op in een bestand (vóór het volume, dus het niveau hangt er niet van af)
+MP3 needs the LAME library (libmp3lame), which is not installed	MP3 heeft de LAME-bibliotheek (libmp3lame) nodig, die niet is geïnstalleerd
+WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo.	WAV: 16 bit, groot. FLAC: verliesvrij, ongeveer half zo groot. MP3: klein (heeft libmp3lame nodig). FM-stereo blijft stereo.
+Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	Slaat alleen op zolang er geluid is (zoals een squelch): stilte wordt weggelaten, met een korte aanloop en uitloop
+One file per transmission: a new file starts after 3 s of silence	Eén bestand per uitzending: na 3 s stilte begint een nieuw bestand
+Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Blijft opnemen als de modus of frequentie verandert. Uit: dan stopt de opname.
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir, and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	De SoapyRemote-module ontbreekt in deze OnAir-installatie, dus OnAir kan geen radio op afstand bereiken. Installeer OnAir opnieuw, en meld het als het weer gebeurt. De computer van de radio moet SoapySDRServer --bind draaien.
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir (or run brew install soapyremote), and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	De SoapyRemote-module ontbreekt in deze OnAir-installatie, dus OnAir kan geen radio op afstand bereiken. Installeer OnAir opnieuw (of voer brew install soapyremote uit), en meld het als het weer gebeurt. De computer van de radio moet SoapySDRServer --bind draaien.
+SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install it (Debian/Ubuntu: sudo apt install soapysdr-module-remote; other systems: github.com/pothosware/SoapyRemote), then restart OnAir. The radio's computer must run SoapySDRServer --bind.	Deze SoapySDR heeft geen SoapyRemote-clientmodule, dus kan geen radio op afstand bereiken. Installeer die (Debian/Ubuntu: sudo apt install soapysdr-module-remote; andere systemen: github.com/pothosware/SoapyRemote) en start OnAir opnieuw. De computer van de radio moet SoapySDRServer --bind draaien.
+# frequency database
+%zu built in, %zu yours	%zu ingebouwd, %zu van jou
+Add entry...	Item toevoegen...
+Add frequency	Frequentie toevoegen
+Add to Memory	Toevoegen aan Memory
+Added to Memory.	Toegevoegd aan Memory.
+Already in Memory.	Staat al in Memory.
+An entry with this frequency and mode exists already.	Er is al een item met deze frequentie en modus.
+Category	Categorie
+Could not save 	Kon niet opslaan: 
+Could not tune to this entry.	Kon niet afstemmen op dit item.
+Exports your own entries (not the built-in ones)	Exporteert je eigen items (niet de ingebouwde)
+Frequencies	Frequenties
+Frequencies...	Frequenties...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	%zu items geïmporteerd, %zu overgeslagen (dubbele of regels zonder frequentie).
+Keeps this entry in the Memory panel	Bewaart dit item in het Memory-paneel
+Known frequencies (%zu)	Bekende frequenties (%zu)
+Mine	Mijn
+Nothing matches. Clear the search or the filters.	Niets gevonden. Wis de zoekopdracht of de filters.
+Nothing to import in this file.	Er valt niets te importeren in dit bestand.
+Only the entries you added or imported	Alleen de items die je hebt toegevoegd of geïmporteerd
+Open the Frequencies panel...	Het Frequenties-paneel openen...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	Leest een CSV- of JSON-bestand dat door Exporteren (of het Memory-paneel) is geschreven, of een eenvoudige lijst met regels 'frequentie,naam' (MHz). Items met een frequentie en modus die al bestaan worden overgeslagen.
+Search name, notes, mode, frequency (162.4)	Zoek naam, notities, modus, frequentie (162.4)
+Show Frequencies as a tab	Frequenties als tabblad tonen
+Source...	Bron...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Schakelt naar de modus van het item, past de afstemming toe en stemt af op de frequentie. Een dubbelklik op een regel doet hetzelfde. Een draaiende ontvanger herstart bij een andere modus.
+Tuned: %s  %s MHz	Afgestemd: %s  %s MHz
+Well-known frequencies of this mode: pick one to tune to it	Bekende frequenties van deze modus: kies er een om erop af te stemmen
+Carrier	Carrier
+Stop scan##dsc	Stop scan##dsc
+Scan band##dsc	Scan band##dsc
+DECT carrier %d, %.3f MHz	DECT carrier %d, %.3f MHz
+Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.	Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.
+US / Canada 1920-1930 MHz (DECT 6.0)	US / Canada 1920-1930 MHz (DECT 6.0)
+Brazil 1910-1920 MHz	Brazil 1910-1920 MHz
+Latin America 1910-1930 MHz	Latin America 1910-1930 MHz
+US ISM 902-928 MHz (DECT in ISM)	US ISM 902-928 MHz (DECT in ISM)
+Europe 1880-1900 MHz	Europe 1880-1900 MHz
+USA, Canada: the UPCS band, DECT 6.0 phones	USA, Canada: the UPCS band, DECT 6.0 phones
+Brazil	Brazil
+Several Latin American countries	Several Latin American countries
+USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT	USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT
+Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
+Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
+The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	De nRSP-ST wordt bereikt via SDRconnect: start SDRconnect (of de headless versie) op een computer met de WebSocket-server aan (poort 5454) en de nRSP-ST geselecteerd, en typ het adres van die computer. Er is geen wachtwoord nodig en er wordt er geen opgeslagen.
+Monitor audio	Audio meeluisteren
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Luister in elke modus naar het afgestemde kanaal om een signaal te herkennen: de samples van de radio worden gedemoduleerd als USB, LSB, smalle FM of AM. Stil zolang de modus eigen geluid speelt.
+Auto: USB below 30 MHz, narrow FM above	Auto: USB onder 30 MHz, smalle FM erboven
+Volume of the monitor	Volume van het meeluisteren
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Fijnafstemming ten opzichte van de afgestemde frequentie, in Hz (een SSB-signaal hoor je 1 tot 2 kHz boven of onder de draaggolf)
+(the mode plays)	(de modus speelt)
+Audio...	Audio...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	Uitvoerapparaten voor het meeluisteren, een tweede uitgang (bijv. een virtuele audiokabel voor fldigi of WSJT-X) en een lokale netwerkstream
+System default	Systeemstandaard
+Output 1	Uitgang 1
+Output 2	Uitgang 2
+Delay (ms)	Vertraging (ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Audio in de wachtrij voor het afspelen: lager is sneller, hoger overleeft een drukke computer
+Stay silent while the mode plays	Stil zolang de modus speelt
+Network audio stream	Netwerk-audiostream
+WAV header	WAV-header
+Allow other computers	Andere computers toestaan
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:POORT, of een WAV-speler met header. Beveiliging: wie de poort kan bereiken kan meeluisteren; laat 'Andere computers toestaan' uit tenzij nodig.
+Listeners:	Luisteraars:
+video	video
+audio	audio
+profile	profile
+Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work	Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work
+Open in an external player	Open in an external player
+Save the transport stream to a file	Save the transport stream to a file
+Stream it as UDP to %s	Stream it as UDP to %s
+Copy VLC command	Copy VLC command
+Copy mpv command	Copy mpv command
+Copy ffplay command	Copy ffplay command
+Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).

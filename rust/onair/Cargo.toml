@@ -40,3 +40,4 @@ onair_net = { path = "../onair_net" }
 onair_engine = { path = "../onair_engine" }
 onair_fec = { path = "../onair_fec" }
 onair_usb = { path = "../onair_usb" }
+onair_ring = { path = "../onair_ring" }

@@ -3,6 +3,7 @@
 // Split from adsb_ui.cpp; the shared state is declared in adsb_internal.h.
 #include "../panels/photo_links_ui.h"
 #include "adsb_internal.h"
+#include "adsb_acars.h"
 
 using namespace adsbui;
 
@@ -104,6 +105,10 @@ void aircraftTable(App& a, bool compact) {
         if (ImGui::Selectable(id, S.sel == ac.icao, ImGuiSelectableFlags_SpanAllColumns)) S.sel = ac.icao;
         if (ImGui::BeginPopupContextItem()) { photolinks::aircraftMenuItems(ac.icao, registrationOf(ac.icao), ac.callsign); ImGui::EndPopup(); }
         ImGui::TableNextColumn(); ImGui::TextUnformatted(ac.callsign.empty() ? "-" : ac.callsign.c_str());
+        if (const int nm = acarslog::count(ac.icao)) {   // ACARS messages from this aircraft: a mark after the callsign
+            ImGui::SameLine(0, 4 * gUi); ImGui::TextColored(kWarn, "*");
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip(tr("%d ACARS messages"), nm);
+        }
         { const std::string rg = registrationOf(ac.icao); ImGui::TableNextColumn(); ImGui::TextUnformatted(rg.empty() ? "-" : rg.c_str()); }
         if (!compact) {
             const std::string cc = countryCode(ac.icao), op = operatorOf(ac.icao);
@@ -146,6 +151,43 @@ void aircraftTable(App& a, bool compact) {
         if (emg) ImGui::PopStyleColor();
     }
     ImGui::EndTable();
+}
+
+static const char* catText(dect2::AcarsCat c) {
+    switch (c) {
+    case dect2::AcarsCat::Free: return tr("Free text");
+    case dect2::AcarsCat::Crew: return tr("Crew");
+    case dect2::AcarsCat::Ops: return tr("Operations");
+    case dect2::AcarsCat::Company: return tr("Company");
+    case dect2::AcarsCat::Maint: return tr("Maintenance");
+    case dect2::AcarsCat::Fault: return tr("Fault");
+    default: return "";
+    }
+}
+
+// The ACARS messages this aircraft sent (the interesting ones; "Show all messages" adds link tests, acknowledgements and the like).
+static void acarsLogSection(const App& a, const AdsbAircraft& ac) {
+    const std::vector<dect2::AcarsLogEntry> v = acarslog::entries(ac.icao, ac.callsign, acarslog::showAll());
+    ImGui::Dummy(ImVec2(0, 4 * gUi));
+    ImGui::Separator();
+    ImGui::Text("%s%s", tr("ACARS messages"), v.empty() ? "" : (" (" + std::to_string(v.size()) + ")").c_str());
+    ImGui::Checkbox(tr("Show all messages"), &acarslog::showAll());
+    if (!v.empty()) {
+        ImGui::SameLine();
+        if (ImGui::SmallButton(tr("Copy"))) ImGui::SetClipboardText(acarslog::asText(v).c_str());
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Copy these messages as text"));
+    }
+    if (v.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", tr("No ACARS messages heard from this aircraft")); ImGui::PopTextWrapPos(); return; }
+    ImGui::BeginChild("##acarslog", ImVec2(0, 220 * gUi), true);
+    ImGui::PushFont(a.mono, 0);
+    for (const auto& e : v) {
+        const char* cat = catText(e.cat);
+        ImGui::TextDisabled("%s  %s  %.3f MHz  %s %s", acarslog::timeText(e.wall).c_str(), e.mode.c_str(), e.freqMHz, e.label.c_str(), cat);
+        ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(e.text.empty() ? "-" : e.text.c_str()); ImGui::PopTextWrapPos();
+        ImGui::Dummy(ImVec2(0, 2 * gUi));
+    }
+    ImGui::PopFont();
+    ImGui::EndChild();
 }
 
 void detail(const App& a) {
@@ -215,6 +257,7 @@ void detail(const App& a) {
     kv("emergency", b);
     snprintf(b, sizeof b, "%u messages", ac->messages); kv("heard", b);
     snprintf(b, sizeof b, "%.0f dBFS", ac->levelDbfs); kv("level", b);
+    acarsLogSection(a, *ac);
 }
 
 // ---------------------------------------------------------------- range statistics

@@ -126,11 +126,12 @@ const std::vector<PrefKey>& keyTable() {
         shared(num("mtvGrid", AT(a.mtvGrid), 0, 0, 2, true)),
         shared(flagI("reduceCpuHidden", AT(a.reduceCpuHidden), true)),
         shared(flagI("discordOn", AT(a.discordOn), false)), shared(flagI("discordFreq", AT(a.discordFreq), true)),
-        shared(rx1(flagI("mapSend", AT(a.mapSend), false, false))), shared(rx1(flagI("mapConsent", AT(a.mapConsent), false, false))),
+        shared(rx1(flagI("mapSend", AT(a.mapSend), false, false))), shared(rx1(flagI("mapConsent", AT(a.mapConsent), false, false))), shared(rx1(flagI("mapMsgs", AT(a.mapMsgs), false, false))),
         shared(rx1(flagI("mapDeclined", AT(a.mapDeclined), false, false))), shared(rx1(text("mapDeclinedVersion", AT(a.mapDeclinedVersion)))),
         shared(rx1(text("mapStationId", AT(a.mapStationId)))), shared(rx1(text("mapServer", AT(a.mapServer)))),
         shared(flagI("lightUi", AT(a.lightUi), false)), shared(flagI("highContrast", AT(a.highContrast), false)),
         shared(text("uiLang", AT(a.uiLang))),
+        shared(text("bandPlan", AT(a.bandPlan))),
         shared(num("uiTheme", AT(a.uiTheme), 1, 0, 2, true)),
         shared(num("audioIq", AT(a.audioIqMode), 0, 0, 3)),
         shared(num("audioChan", AT(a.audioChan), 0, 0, 2)), shared(dbl("audioIfHz", AT(a.audioIfHz), 0)), shared(flagI("audioInvert", AT(a.audioInvert), false)),
@@ -314,6 +315,14 @@ void loadPrefs(App& a) {
     loadKeys(d, a, true);   // the Hamlib picker, the frequency and the gains
     a.recFormat = fixRecFormat((int)d.getI("recFormat", 0));
     a.recSigmf = d.getB("recSigmf", true);
+    a.audioRecFmt = std::max(0, std::min(2, (int)d.getI("audioRecFmt", 0)));
+    a.audioRecGate = d.getB("audioRecGate", false); a.audioRecSplit = d.getB("audioRecSplit", false); a.audioRecKeep = d.getB("audioRecKeep", false);
+    a.monOn = d.getB("monOn", false); a.monDemod = std::max(0, std::min(4, (int)d.getI("monDemod", 4)));
+    a.monVol = (float)d.getD("monVol", 1.0); a.monVol2 = (float)d.getD("monVol2", 1.0);
+    a.monLatency = std::max(20, std::min(1000, (int)d.getI("monLatency", 100))); a.monYield = d.getB("monYield", true);
+    a.monDev = d.getS("monDev", ""); a.monDev2 = d.getS("monDev2", ""); a.monOut2 = d.getB("monOut2", false);
+    a.monNet = d.getB("monNet", false); a.monPort = std::max(1024, std::min(65535, (int)d.getI("monPort", 7355)));
+    a.monBindAll = d.getB("monBindAll", false); a.monWav = d.getB("monWav", true);
     a.tvBufMb = (int)d.getI("tvBufMb", 256); a.engine.player().setBufferMB(a.tvBufMb); a.tvBufMb = a.engine.player().bufferMB();
     a.tvRecMin = std::max(0, (int)d.getI("tvRecMin", 0));
     a.tvRecAtOn = d.getB("tvRecAtOn", false);

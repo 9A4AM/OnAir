@@ -352,6 +352,29 @@ void guideTab(App& a) {
     ImGui::EndChild();
 }
 
+// Undecodable video (AVS+ ...): the picture can still be watched by saving the stream or sending it as UDP to an external player
+static void externalPlayerBox(App& a) {
+    ImGui::TextColored(pal::heading(), "%s", tr("Open in an external player"));
+    bool ch = false;
+    if (ImGui::Checkbox(tr("Save the transport stream to a file"), &a.out.file)) ch = true;
+    char url[96]; snprintf(url, sizeof url, "udp://%s:%d", a.udpHost, a.out.port);
+    char lab[160]; snprintf(lab, sizeof lab, tr("Stream it as UDP to %s"), url);
+    if (ImGui::Checkbox(lab, &a.out.udp)) ch = true;
+    if (ch) { a.selService = a.engine.player().selected(); applyOutputs(a); }   // only this service goes out
+    char cmd[160];
+    snprintf(cmd, sizeof cmd, "vlc %s", url);
+    if (ImGui::Button(tr("Copy VLC command"))) ImGui::SetClipboardText(cmd);
+    ImGui::SameLine();
+    snprintf(cmd, sizeof cmd, "mpv %s", url);
+    if (ImGui::Button(tr("Copy mpv command"))) ImGui::SetClipboardText(cmd);
+    ImGui::SameLine();
+    snprintf(cmd, sizeof cmd, "ffplay %s", url);
+    if (ImGui::Button(tr("Copy ffplay command"))) ImGui::SetClipboardText(cmd);
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextDisabled("%s", tr("Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md)."));
+    ImGui::PopTextWrapPos();
+}
+
 void playerTab(App& a) {
     Player& pl = a.engine.player();
     PlayerStats ps = pl.stats();
@@ -578,12 +601,14 @@ void rightPanel(App& a) {
     else for (const TsService& s : a.ts.services) svRows.push_back({&s, 0, 0});
     const int playSlot = multi ? a.engine.selectedTvChannel() : 0;
     if (svRows.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(run ? "waiting for PAT / SDT..." : "start the receiver to see services"); ImGui::PopTextWrapPos(); }
+    const PlayerStats cardPs = a.engine.player().stats();
     for (const SvRow& rw : svRows) {
         const TsService& sv = *rw.sv;
         std::string vc, ac;
+        int vType = -1;
         double kb = 0;
         bool hasVideo = false;
-        for (auto& st : sv.streams) { kb += st.kbps; if (st.kind == "video") { hasVideo = true; if (vc.empty()) vc = st.codec; } if (st.kind == "audio" && ac.empty()) ac = st.codec; }
+        for (auto& st : sv.streams) { kb += st.kbps; if (st.kind == "video") { hasVideo = true; if (vc.empty()) { vc = st.codec; vType = st.streamType; } } if (st.kind == "audio" && ac.empty()) ac = st.codec; }
         const bool sel = sv.id == a.engine.player().selected() && rw.slot == playSlot;
         ImGui::PushID(rw.slot * 100000 + sv.id);
         const float w = ImGui::GetContentRegionAvail().x;
@@ -626,6 +651,10 @@ void rightPanel(App& a) {
         x += tagAt(dl, ImVec2(x, ty), radio ? "radio" : hasVideo ? "TV" : sv.typeName(), IM_COL32(34, 74, 108, 255)) + 4;
         if (!vc.empty()) x += tagAt(dl, ImVec2(x, ty), vc.c_str(), IM_COL32(38, 46, 58, 255), IM_COL32(190, 200, 214, 255)) + 4;
         if (!ac.empty()) x += tagAt(dl, ImVec2(x, ty), ac.c_str(), IM_COL32(38, 46, 58, 255), IM_COL32(190, 200, 214, 255)) + 4;
+        // AVS family video (DTMB in China): say it plainly when OnAir cannot show the picture; the profile is known for the playing service only
+        const int avsProf = sel && cardPs.videoStreamType == vType ? cardPs.avsProfile : -1;
+        const bool avsUndecodable = vType == 0x42 ? avsNeverDecodable(vType, avsProf) : (vType == 0xD2 || vType == 0xD4) && !(sel && cardPs.hasVideo);
+        if (avsUndecodable) x += tagAt(dl, ImVec2(x, ty), tr("no picture"), IM_COL32(112, 52, 50, 255)) + 4;
         if (sv.scrambled) x += tagAt(dl, ImVec2(x, ty), "scrambled", IM_COL32(112, 52, 50, 255)) + 4;
         if (multi) { char cb[40]; snprintf(cb, sizeof cb, "channel %.3f MHz", radioCenterMhz(a) + rw.offHz / 1e6); x += tagAt(dl, ImVec2(x, ty), cb, IM_COL32(58, 74, 44, 255)) + 4; }
         // what is on
@@ -637,6 +666,27 @@ void rightPanel(App& a) {
         dl->PushClipRect(ImVec2(p.x + 8 * gUi, p.y), ImVec2(p.x + w - 8 * gUi, p.y + cardH), true);
         dl->AddText(ImVec2(p.x + 10 * gUi, p.y + 47 * gUi), IM_COL32(128, 136, 146, 255), ellipsize(line, w - 18 * gUi).c_str());
         dl->PopClipRect();
+        if (hov) {   // codec / profile / size / bit rate of every stream, and the plain AVS sentence
+            std::string t;
+            for (const TsStream& st : sv.streams) {
+                if (st.kind != "video" && st.kind != "audio") continue;
+                char b[200];
+                std::string c = st.codec;
+                if (st.kind == "video" && !avsFamilyName(st.streamType, st.streamType == vType ? avsProf : -1).empty()) c = avsFamilyName(st.streamType, st.streamType == vType ? avsProf : -1);
+                snprintf(b, sizeof b, "%s: %s (type 0x%02X)", st.kind == "video" ? tr("video") : tr("audio"), c.c_str(), st.streamType);
+                t += b;
+                if (st.kind == "video" && sel && cardPs.width > 0) { snprintf(b, sizeof b, ", %dx%d", cardPs.width, cardPs.height); t += b; }
+                if (st.kind == "video" && avsProf >= 0) { snprintf(b, sizeof b, ", %s 0x%02X", tr("profile"), avsProf); t += b; }
+                if (st.kbps > 0) { snprintf(b, sizeof b, ", %.0f kbit/s", st.kbps); t += b; }
+                t += "\n";
+            }
+            if (avsUndecodable) {
+                char b[260]; const std::string fam = avsFamilyName(vType, avsProf);
+                snprintf(b, sizeof b, tr("Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work"), fam.c_str());
+                t += b;
+            }
+            if (!t.empty()) ImGui::SetTooltip("%s", t.c_str());
+        }
         ImGui::PopID();
     }
     ImGui::EndChild();
@@ -710,7 +760,11 @@ void rightPanel(App& a) {
         ImGui::BeginChild("video", ImVec2(0, vh), ImGuiChildFlags_Borders);
         const PlayerStats ps = a.engine.player().stats();
         if (a.engine.player().selected() < 0) ImGui::TextDisabled("no picture");
-        else if (!ps.videoNote.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", ps.videoNote.c_str()); ImGui::PopTextWrapPos(); }
+        else if (!ps.videoNote.empty()) {
+            ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", ps.videoNote.c_str()); ImGui::PopTextWrapPos();
+            ImGui::Spacing();
+            externalPlayerBox(a);
+        }
         else if (!ps.hasVideo && ps.hasAudio) ImGui::TextDisabled("audio only");
         else if (!a.video.has()) ImGui::TextDisabled("%s", ps.status.c_str());
         else a.video.draw(ImGui::GetContentRegionAvail());

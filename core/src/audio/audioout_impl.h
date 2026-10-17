@@ -4,12 +4,14 @@
 #include "dect2/audio/audioout.h"
 #include "dect2/audio/audiolevel.h"
 #include <atomic>
+#include <string>
 #include <vector>
 #include <cstdint>
 
 namespace dect2 {
 
 struct AudioOut::Impl {
+    std::string device;               // chosen output device by name, "" = default (set before the backend starts)
     void* backend = nullptr;          // owned by the backend implementation
     int backendKind = 0;              // 1 our own backend, 2 the miniaudio fallback (Windows, Linux)
     std::vector<float> ring;          // interleaved stereo
@@ -27,6 +29,7 @@ struct AudioOut::Impl {
     void render(float* out, uint32_t nFrames);
 };
 
+std::vector<std::string> audioListOutputs();   // the platform backend's output device names
 bool audioBackendStart(AudioOut::Impl* impl, int sampleRate);   // false: no device
 bool audioMiniaudioStart(AudioOut::Impl* impl, int sampleRate);   // the miniaudio fallback (Windows, Linux)
 void audioMiniaudioStop(AudioOut::Impl* impl);

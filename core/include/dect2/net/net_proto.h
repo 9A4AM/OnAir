@@ -83,7 +83,7 @@ bool sdrppPacketHeader(const unsigned char* h8, uint32_t& type, uint32_t& bodySi
 bool sdrppErrorText(uint8_t code, std::string& text);       // false: no text for this code
 
 // ---------------------------------------------------------------- network radios
-struct Radio { uint32_t kind = 1; std::string host; int port = 0; std::string remote; };   // kind: 0 Pluto, 1 rtl_tcp, 2 SoapyRemote, 3 SpyServer, 4 HL2, 5 Red Pitaya, 6 SDR++
+struct Radio { uint32_t kind = 1; std::string host; int port = 0; std::string remote; };   // kind: 0 Pluto, 1 rtl_tcp, 2 SoapyRemote, 3 SpyServer, 4 HL2, 5 Red Pitaya, 6 SDR++, 7 nRSP-ST
 std::vector<Radio> radiosFromString(const std::string& s);
 std::string radiosToString(const std::vector<Radio>& v);
 std::string cleanHost(const std::string& typed);           // no blanks or separators, no leading "ip:" / "tcp://"

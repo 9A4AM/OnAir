@@ -348,6 +348,13 @@ int main() {
         CHECK(avsVideoNote("cavs", true, 0x48).find("AVS+") != std::string::npos, "AVS+: '%s'", avsVideoNote("cavs", true, 0x48).c_str());
         CHECK(!avsVideoNote("cavs", false, -1).empty() && !avsVideoNote("avs2", false, -1).empty() && !avsVideoNote("avs3", false, -1).empty(), "a missing decoder must get a note");
         CHECK(avsVideoNote("avs2", true, -1).empty() && avsVideoNote("h264", false, -1).empty(), "notes only for an AVS stream without a decoder");
+        // the service-level classification: stream_type + sequence header profile (GB/T 20090.2: 0x20 JiZhun, 0x48 Guangdian = AVS+)
+        CHECK(avsFamilyName(0x42, 0x48) == "AVS+" && avsFamilyName(0x42, 0x20) == "AVS" && avsFamilyName(0x42, -1) == "AVS/AVS+", "AVS family names");
+        CHECK(avsFamilyName(0xD2, 0x22) == "AVS2" && avsFamilyName(0xD4, -1) == "AVS3" && avsFamilyName(0x1B, 0x48).empty() && avsFamilyName(0x24, -1).empty(), "AVS2/AVS3 by stream_type, others empty");
+        CHECK(avsNeverDecodable(0x42, 0x48) && !avsNeverDecodable(0x42, 0x20) && !avsNeverDecodable(0x42, -1) && !avsNeverDecodable(0xD2, 0x22), "never-decodable only for non-JiZhun AVS1");
+        CHECK(avsServiceMessage(0x42, 0x48, true) == "Video: AVS+ (OnAir cannot decode this video) \xE2\x80\x94 audio, subtitles and data still work", "AVS+ message '%s'", avsServiceMessage(0x42, 0x48, true).c_str());
+        CHECK(avsServiceMessage(0x42, 0x20, true).empty() && avsServiceMessage(0x42, -1, true).empty(), "JiZhun with a decoder: no message");
+        CHECK(!avsServiceMessage(0x42, 0x20, false).empty() && avsServiceMessage(0xD2, 0x20, true).empty() && !avsServiceMessage(0xD2, 0x20, false).empty() && avsServiceMessage(0x1B, -1, false).empty(), "decoder missing / other codecs");
         CHECK(std::string(kDraAudioNote) == "DRA audio: no decoder available", "DRA note '%s'", kDraAudioNote);
         printf("AVS / DRA player notes\n");
     }

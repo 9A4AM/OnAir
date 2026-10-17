@@ -1,6 +1,12 @@
 // Radio problems where the user looks: the listing error, a failed start, a frequency the radio cannot tune and the USB hints, all under the
 // radio picker, plus a "Copy diagnostics" button that puts what a bug report needs on the clipboard.
 #include "dect2/common/u8file.h"
+#include "dect2/audio/audio_rec.h"
+#include "dect2/audio/audio_monitor.h"
+#include "dect2/audio/audioout.h"
+#include "dect2/audio/hf_demod.h"
+#include "dect2/audio/mp3_enc.h"
+#include "dect2/source/iq_record.h"
 #include "../app.h"
 #include "dect2/source/converter.h"
 #include "dect2/engine/updater.h"
@@ -198,6 +204,176 @@ void recordUi(App& a) {
         flowNext(6 * gUi);
         if (ImGui::SmallButton("Show recording")) dect2::openUrl(a.recDonePath.substr(0, a.recDonePath.find_last_of("/\\")));
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", a.recDonePath.c_str());
+    }
+    flowEnd();
+}
+
+// "Record audio": the sound you hear, from any mode (a tap in AudioOut, before the volume). Idle: a button, the format and three switches;
+// recording: a red "Stop 12.3 s 1.2 MB". Stops by itself on a mode change or a retune unless "Keep going" is on.
+void audioRecordUi(App& a) {
+    dect2::AudioRecorder& rec = dect2::AudioRecorder::instance();
+    const dect2::AudioRecStats rs = rec.stats();
+    if (rs.active) {
+        a.audioRecWasActive = true;
+        if (!a.audioRecKeep && (!a.engine.running() || a.engine.standardMode() != a.audioRecMode || std::fabs(a.freqMhz - a.audioRecFreq) > 1e-6)) rec.stop();
+    } else if (a.audioRecWasActive) {
+        a.audioRecWasActive = false;
+        a.audioRecDonePath = rs.path;
+        char b[96];
+        snprintf(b, sizeof b, "audio recorded: %.1f s in %d file(s), %s, to ", rs.seconds, rs.files, sizeText(rs.bytes).c_str());
+        if (rs.files > 0) a.engine.log(std::string(b) + rs.path);
+        if (!rs.error.empty()) a.engine.log("audio recording stopped: " + rs.error);
+        if (rs.dropped) a.engine.log("the disk was too slow: some audio is missing from the recording");
+    }
+    if (rs.active) {
+        char b[96];
+        snprintf(b, sizeof b, "%s  %.1f s  %.1f MB%s###audiorecstop", tr("Stop"), rs.seconds, rs.bytes / 1e6, a.audioRecGate && !rs.gateOpen ? "  (waiting)" : "");
+        ImGui::PushStyleColor(ImGuiCol_Text, pal::badRed());
+        if (ImGui::SmallButton(b)) rec.stop();
+        ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", rs.path.c_str());
+    } else {
+        const bool can = a.engine.running();
+        ImGui::BeginDisabled(!can);
+        const ImVec2 p0 = ImGui::GetCursorScreenPos();
+        const float sp = ImGui::CalcTextSize(" ").x;
+        if (ImGui::SmallButton((std::string("    ") + tr("Record audio")).c_str())) {
+            dect2::AudioRecOptions o;
+            o.format = (dect2::AudioRecFormat)a.audioRecFmt; o.gated = a.audioRecGate; o.split = a.audioRecGate && a.audioRecSplit;
+            const int m = a.engine.standardMode();
+            const double hz = a.freqMhz * 1e6;
+            char tag[96]; snprintf(tag, sizeof tag, "OnAir %s %.3f MHz", dect2::recordingModeId(m).c_str(), a.freqMhz);
+            o.tag = tag;
+            const std::string path = plat::dataDir() + "/recordings/" + dect2::AudioRecorder::fileName(dect2::recordingModeId(m), hz, o.format);
+            std::string err;
+            if (rec.start(path, o, err)) { a.audioRecDonePath.clear(); a.audioRecMode = m; a.audioRecFreq = a.freqMhz; }
+            else a.engine.log("audio recording failed: " + err);
+        }
+        ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(p0.x + ImGui::GetStyle().FramePadding.x + 2.2f * sp, p0.y + ImGui::GetItemRectSize().y * 0.5f), 3.2f * gUi, can ? ImGui::GetColorU32(pal::badRed()) : IM_COL32(120, 80, 78, 255));
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+            ImGui::SetTooltip("%s", tr(!can ? "Start the radio first" : "Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)"));
+    }
+    flowNext(6 * gUi);
+    ImGui::BeginDisabled(rs.active);
+    static const char* const fm[] = {"WAV", "FLAC", "MP3"};
+    ImGui::SetNextItemWidth(ImGui::CalcTextSize("FLAC").x + ImGui::GetFrameHeight() + 2 * ImGui::GetStyle().FramePadding.x + 4 * gUi);
+    if (ImGui::BeginCombo("##audiorecfmt", fm[a.audioRecFmt])) {
+        for (int i = 0; i < 3; i++) {
+            const bool off = i == 2 && !dect2::Mp3Enc::available();
+            ImGui::BeginDisabled(off);
+            if (ImGui::Selectable(fm[i], a.audioRecFmt == i)) { a.audioRecFmt = i; plat::prefs().setI("audioRecFmt", i); }
+            ImGui::EndDisabled();
+            if (off && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("MP3 needs the LAME library (libmp3lame), which is not installed"));
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo."));
+    flowNext(6 * gUi);
+    ImGui::BeginDisabled(rs.active);
+    if (ImGui::Checkbox(tr("Only audio"), &a.audioRecGate)) plat::prefs().setB("audioRecGate", a.audioRecGate);
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail"));
+    if (a.audioRecGate) {
+        flowNext(6 * gUi);
+        ImGui::BeginDisabled(rs.active);
+        if (ImGui::Checkbox(tr("Split"), &a.audioRecSplit)) plat::prefs().setB("audioRecSplit", a.audioRecSplit);
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("One file per transmission: a new file starts after 3 s of silence"));
+    }
+    flowNext(6 * gUi);
+    if (ImGui::Checkbox(tr("Keep going"), &a.audioRecKeep)) plat::prefs().setB("audioRecKeep", a.audioRecKeep);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Keeps recording when the mode or the frequency changes. Off: the recording stops then."));
+    if (!a.audioRecDonePath.empty() && !rs.active) {
+        flowNext(6 * gUi);
+        if (ImGui::SmallButton(tr("Show recording"))) dect2::openUrl(a.audioRecDonePath.substr(0, a.audioRecDonePath.find_last_of("/\\")));
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", a.audioRecDonePath.c_str());
+        if (!rs.error.empty()) { flowNext(4 * gUi); ImGui::TextColored(pal::warnAmber(), "%s", rs.error.c_str()); }
+    }
+    flowEnd();
+}
+
+// "Monitor audio": hear the tuned channel of any mode (also the ones without sound of their own), USB / LSB / NFM / AM; the outputs (two devices, a
+// local TCP stream for other programs) are in the "Audio..." pop-up. It stays silent while the mode plays its own sound.
+void audioMonitorUi(App& a) {
+    dect2::AudioMonitor& mon = a.engine.monitor();
+    dect2::MonitorConfig c;
+    c.on = a.monOn; c.demod = dect2::hfDemodResolve(a.monDemod, a.freqMhz); c.volume = a.monVol; c.device = a.monDev; c.out2 = a.monOut2; c.device2 = a.monDev2;
+    c.volume2 = a.monVol2; c.latencyMs = a.monLatency; c.yield = a.monYield; c.net = a.monNet; c.port = a.monPort; c.bindAll = a.monBindAll; c.wav = a.monWav;
+    static std::string last;
+    char key[512];
+    snprintf(key, sizeof key, "%d|%d|%.3f|%s|%d|%s|%.3f|%d|%d|%d|%d|%d|%d", c.on, c.demod, c.volume, c.device.c_str(), c.out2, c.device2.c_str(), c.volume2, c.latencyMs, c.yield, c.net, c.port, c.bindAll, c.wav);
+    if (key != last) { last = key; mon.configure(c); }
+    a.engine.setMonitorOffsetHz(a.monOffset);
+    auto save = [&] {
+        auto& d = plat::prefs();
+        d.setB("monOn", a.monOn); d.setI("monDemod", a.monDemod); d.setD("monVol", a.monVol); d.setD("monVol2", a.monVol2); d.setI("monLatency", a.monLatency);
+        d.setB("monYield", a.monYield); d.setS("monDev", a.monDev); d.setS("monDev2", a.monDev2); d.setB("monOut2", a.monOut2); d.setB("monNet", a.monNet);
+        d.setI("monPort", a.monPort); d.setB("monBindAll", a.monBindAll); d.setB("monWav", a.monWav);
+    };
+    flowNext(10 * gUi);
+    if (ImGui::Checkbox(tr("Monitor audio"), &a.monOn)) save();
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound."));
+    const dect2::MonitorStats ms = mon.stats();
+    if (a.monOn) {
+        flowNext(6 * gUi);
+        ImGui::SetNextItemWidth(ImGui::CalcTextSize("Auto").x + ImGui::GetFrameHeight() + 2 * ImGui::GetStyle().FramePadding.x + 4 * gUi);
+        if (ImGui::BeginCombo("##mondemod", dect2::hfDemodName(a.monDemod))) {
+            for (int i = 0; i < dect2::HfDemodCount; i++) if (ImGui::Selectable(dect2::hfDemodName(i), a.monDemod == i)) { a.monDemod = i; save(); }
+            ImGui::EndCombo();
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Auto: USB below 30 MHz, narrow FM above"));
+        flowNext(6 * gUi);
+        ImGui::SetNextItemWidth(70 * gUi);
+        if (ImGui::SliderFloat("##monvol", &a.monVol, 0.f, 1.f, "%.2f")) save();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Volume of the monitor"));
+        flowNext(6 * gUi);
+        ImGui::SetNextItemWidth(70 * gUi);
+        float off = (float)a.monOffset;
+        if (ImGui::InputFloat("Hz##monoff", &off, 0, 0, "%.0f")) { a.monOffset = off; }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)"));
+        flowNext(6 * gUi);
+        if (ms.yielded) ImGui::TextDisabled("%s", tr("(the mode plays)"));
+        else ImGui::TextDisabled("%.0f dB", ms.levelDb);
+    }
+    flowNext(6 * gUi);
+    if (ImGui::SmallButton(tr("Audio..."))) ImGui::OpenPopup("##audioout");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream"));
+    if (ImGui::BeginPopup("##audioout")) {
+        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 380 * gUi);
+        static std::vector<std::string> devs;
+        if (ImGui::IsWindowAppearing()) devs = dect2::AudioOut::devices();
+        auto devCombo = [&](const char* id, std::string& cur) {
+            ImGui::SetNextItemWidth(260 * gUi);
+            if (ImGui::BeginCombo(id, cur.empty() ? tr("System default") : cur.c_str())) {
+                if (ImGui::Selectable(tr("System default"), cur.empty())) { cur.clear(); save(); }
+                for (const std::string& d : devs) if (ImGui::Selectable(d.c_str(), cur == d)) { cur = d; save(); }
+                ImGui::EndCombo();
+            }
+        };
+        ImGui::TextUnformatted(tr("Output 1"));
+        devCombo("##mondev1", a.monDev);
+        if (ImGui::Checkbox(tr("Output 2"), &a.monOut2)) save();
+        if (a.monOut2) { devCombo("##mondev2", a.monDev2); ImGui::SetNextItemWidth(120 * gUi); if (ImGui::SliderFloat("##monvol2", &a.monVol2, 0.f, 1.f, "%.2f")) save(); }
+        ImGui::SetNextItemWidth(120 * gUi);
+        if (ImGui::SliderInt(tr("Delay (ms)"), &a.monLatency, 20, 1000)) save();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Audio queued before it starts playing: lower is quicker, higher survives a busy computer"));
+        if (ImGui::Checkbox(tr("Stay silent while the mode plays"), &a.monYield)) save();
+        ImGui::Separator();
+        if (ImGui::Checkbox(tr("Network audio stream"), &a.monNet)) save();
+        if (a.monNet) {
+            ImGui::SetNextItemWidth(100 * gUi);
+            if (ImGui::InputInt("Port##monport", &a.monPort, 0, 0)) { a.monPort = std::max(1024, std::min(65535, a.monPort)); save(); }
+            if (ImGui::Checkbox(tr("WAV header"), &a.monWav)) save();
+            if (ImGui::Checkbox(tr("Allow other computers"), &a.monBindAll)) save();
+            ImGui::TextDisabled(a.monBindAll ? "0.0.0.0:%d" : "127.0.0.1:%d", a.monPort);
+            ImGui::TextDisabled("%s", tr("16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it."));
+            ImGui::TextDisabled("%s %d", tr("Listeners:"), ms.clients);
+        }
+        if (!ms.error.empty()) ImGui::TextColored(pal::warnAmber(), "%s", ms.error.c_str());
+        ImGui::PopTextWrapPos();
+        ImGui::EndPopup();
     }
     flowEnd();
 }
@@ -435,4 +611,7 @@ void radioMessagesUi(App& a, bool vertical) {
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Saves one zip file with the diagnostics, the log and the last crash report: attach it to a GitHub issue"));
     flowNext(6 * gUi);
     recordUi(a);
+    flowNext(10 * gUi);
+    audioRecordUi(a);
+    audioMonitorUi(a);
 }

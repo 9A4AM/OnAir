@@ -64,7 +64,11 @@ public:
     void feedPes(const uint8_t* pes, size_t n);     // a whole PES packet (exposed for tests)
     // The segments of a PES data field (starting at the 0x0F sync byte of the first segment), presented at `pts` seconds (-1 = none)
     void feedSegments(const uint8_t* data, size_t n, double pts);
-    // What should be on screen when the video being shown has presentation time clockPts; null = nothing
+    // What should be on screen when the video being shown has presentation time clockPts; null = nothing.
+    // A display set stays up until its page_time_out or the next display set is due, but never shorter than kMinShowSec from the moment it was first
+    // returned here: the picture clock does not tick evenly (smoothed gaps, a stalled picture), so a page and its clearing page / expiry can fall
+    // between two calls and the subtitle would never be seen (#112). Call it with the picture clock, not wall time.
+    static constexpr double kMinShowSec = 1.5;
     std::shared_ptr<const DvbSubDisplay> displayAt(double clockPts) const;
     uint64_t displays() const;                      // display sets decoded so far
 
@@ -107,6 +111,8 @@ private:
     int dispW_ = 720, dispH_ = 576;
     std::deque<std::shared_ptr<DvbSubDisplay>> queue_;
     uint64_t seq_ = 0;
+    mutable std::shared_ptr<const DvbSubDisplay> shown_;   // what displayAt() returned last (guarded by mu_)
+    mutable double shownClock_ = 0;                        // the picture clock at which it first came back
 };
 
 } // namespace dect2

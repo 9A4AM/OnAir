@@ -3,7 +3,7 @@
 #   -DDECT2_RUST=AUTO (default)  use it when cargo and the Rust target for this build are there, otherwise the C++ implementations
 #   -DDECT2_RUST=ON              as AUTO, but stop with an error when it cannot be used
 #   -DDECT2_RUST=OFF             always the C++ implementations (pure C++ build, cargo is not even looked for)
-#   -DDECT2_RUST_<MODULE>=AUTO|ON|OFF   per module (PROTO = the AIS frame layer, ADSB, ACARS, ...; default AUTO): OFF keeps that module in C++
+#   -DDECT2_RUST_<MODULE>=AUTO|ON|OFF   per module (PROTO = the AIS frame layer, ADSB, ACARS, ...; default AUTO, USB default OFF): OFF keeps that module in C++
 #                                       even when Rust is available; ON stops with an error when the Rust build is unavailable
 #
 # Nothing is downloaded: the workspace has no external crates and is built with `cargo build --offline`. When the target for a cross
@@ -15,12 +15,17 @@
 # active module (so `#ifndef DECT2_RUST_<MODULE>` blocks drop out) and links onair_rs. With the Rust build unavailable it does nothing.
 set(DECT2_RUST "AUTO" CACHE STRING "Rust code: AUTO (when cargo is found), ON, OFF")
 set_property(CACHE DECT2_RUST PROPERTY STRINGS AUTO ON OFF)
-set(ONAIR_RUST_ALL_MODULES PROTO ADSB ACARS SAME PAGER AX25 DMR P25 NXDN DSTAR TETRA VDL2 HFDL MESH WISUN UAT TS DVBSI DAB DRM FILES NET ENGINE FEC USB)
+set(DECT2_RUST_RING "OFF" CACHE STRING "Rust implementation of the RING module (IqRing): AUTO, ON, OFF; OFF until proven")   # before the loop below, so it stays OFF by default
+set(ONAIR_RUST_ALL_MODULES PROTO ADSB ACARS SAME PAGER AX25 DMR P25 NXDN DSTAR TETRA VDL2 HFDL MESH WISUN UAT TS DVBSI DAB DRM FILES NET ENGINE FEC USB RING)
 set(ONAIR_RUST_ACTIVE FALSE)
 set(ONAIR_RUST_MODULES "")
 set(_rust_forced "")
 foreach(_m ${ONAIR_RUST_ALL_MODULES})
-  set(DECT2_RUST_${_m} "AUTO" CACHE STRING "Rust implementation of the ${_m} module: AUTO, ON, OFF")
+  set(_rust_default "AUTO")
+  if(_m STREQUAL "USB")
+    set(_rust_default "OFF")   # the Android USB drivers: the desktop C++ driver (librtlsdr) stays the default until a real device test is possible
+  endif()
+  set(DECT2_RUST_${_m} "${_rust_default}" CACHE STRING "Rust implementation of the ${_m} module: AUTO, ON, OFF")
   set_property(CACHE DECT2_RUST_${_m} PROPERTY STRINGS AUTO ON OFF)
   set(ONAIR_RUST_${_m} FALSE)
   if(DECT2_RUST_${_m} STREQUAL "ON")

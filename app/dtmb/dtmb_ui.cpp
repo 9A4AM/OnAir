@@ -264,7 +264,6 @@ void receiver(App& a) {
 
 // the channel width: 8 MHz (China, Hong Kong, Macau) or 6 MHz (Cuba, in the American 6 MHz raster); the signal is the same, 7.56 or 5.67 Msym/s
 void tuner(App& a, bool& retune) {
-    (void)retune;
     ImGui::TextDisabled("Channel");
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("DTMB channel width: 8 MHz in China, Hong Kong and Macau, 6 MHz in Cuba.\nA receiver set to the wrong width finds nothing.");
     sameLineIf(90 * gUi, 5 * gUi);
@@ -272,6 +271,8 @@ void tuner(App& a, bool& retune) {
     int cur = a.dtmbBwMhz == 6 ? 1 : 0;
     ImGui::SetNextItemWidth(std::min(std::max(90 * gUi, ImGui::CalcTextSize(kW[1]).x + ImGui::GetFrameHeight() + 8 * gUi), ImGui::GetContentRegionAvail().x));
     if (ImGui::Combo("##dtmbbw", &cur, kW, 2)) setDtmbBandwidth(a, cur == 1 ? 6 : 8);
+    sameLineIf(100 * gUi, 6 * gUi);
+    if (tvChannelCombo(a)) retune = true;   // the channels of the band plan (Scan tab)
 }
 
 void decoder(App& a, bool&) {

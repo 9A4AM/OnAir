@@ -340,7 +340,7 @@ static void sdrppFamily(long iters) {
 
 // ------------------------------------------------------------------------------------------------------------------------------ network radios
 static std::string radioList() {
-    static const char* keys[] = {"pluto", "rtltcp", "soapyremote", "spyserver", "hl2", "redpitaya", "sdrpp", "bogus", ""};
+    static const char* keys[] = {"pluto", "rtltcp", "soapyremote", "spyserver", "hl2", "redpitaya", "sdrpp", "nrspst", "bogus", ""};
     static const char* hosts[] = {"192.168.2.1", " 192.168.2.1 ", "ip:pluto.local", "tcp://h", "ip:tcp://h", "tcp://ip:h", "ip:", "", "h,x", "a;b", "[::1]", "host name", "\tx\t", "ip: ip:h"};
     static const char* ports[] = {"0", "1234", "65535", "65536", "-1", "x", "", "99999999999", "4294967297", " 5", "+7", "12 34"};
     std::string s;
@@ -367,7 +367,7 @@ static void radiosFamily(long iters) {
         std::vector<A::Radio> la; std::vector<R::Radio> lr;
         const int n = (int)(r32() % 4);
         for (int k = 0; k < n; k++) {
-            A::Radio x; x.kind = r32() % 9; x.port = (int)(r32() % 5 == 0 ? (int)r32() : (int)(r32() % 70000) - 100);
+            A::Radio x; x.kind = r32() % 10; x.port = (int)(r32() % 5 == 0 ? (int)r32() : (int)(r32() % 70000) - 100);
             x.host = r32() % 2 ? "h" + rtext(" ,;:ip.tcp/", 8) : rtext("ab ip:tcp://,;", 12); x.remote = rtext("ab=,; ", 8);
             la.push_back(x);
             R::Radio y; y.kind = x.kind; y.port = x.port; y.host = x.host; y.remote = x.remote;

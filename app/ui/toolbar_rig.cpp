@@ -13,6 +13,16 @@
 #include <thread>
 #include "toolbar_internal.h"
 
+// The three texts of soapyRemoteModuleHelpFor() (core/src/net/netradio.cpp): listed here so the catalogs carry them; the error line below passes the text through tr().
+[[maybe_unused]] static const char* const kSoapyRemoteModuleTexts[] = {
+    N_("The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir, and please report it if it happens again. "
+       "The radio's computer must run SoapySDRServer --bind."),
+    N_("The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir (or run brew install soapyremote), and please report it if it happens again. "
+       "The radio's computer must run SoapySDRServer --bind."),
+    N_("SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install it (Debian/Ubuntu: sudo apt install soapysdr-module-remote; "
+       "other systems: github.com/pothosware/SoapyRemote), then restart OnAir. The radio's computer must run SoapySDRServer --bind."),
+};
+
 static bool netTypeSearches(int t) { return t == NetRadio::HermesLite2 || t == NetRadio::RedPitaya; }   // found by a discovery broadcast
 
 // looks for Hermes Lite 2 (or Red Pitaya) radios, by the type chosen, on a worker thread (the broadcast waits 1.5 s for answers); netRadioWindow() takes the result
@@ -121,7 +131,7 @@ void netRadioWindow(App& a) {
     if (!ImGui::Begin(trw("Network radios"), &a.netAddOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) { ImGui::End(); return; }
     const bool busy = a.netAddProbe != nullptr;
     ImGui::BeginDisabled(busy);
-    static const char* kTypes[] = {"PlutoSDR (by IP)", "rtl_tcp", "SoapyRemote", "SpyServer", "Hermes Lite 2", "Red Pitaya", "SDR++ server"};
+    static const char* kTypes[] = {"PlutoSDR (by IP)", "rtl_tcp", "SoapyRemote", "SpyServer", "Hermes Lite 2", "Red Pitaya", "SDR++ server", "SDRplay nRSP-ST (SDRconnect)"};
     ImGui::SetNextItemWidth(200 * gUi);
     if (ImGui::Combo("Type", &a.netAddType, kTypes, IM_ARRAYSIZE(kTypes))) {
         const auto t = (NetRadio::Type)a.netAddType;
@@ -145,6 +155,9 @@ void netRadioWindow(App& a) {
     if (a.netAddType == NetRadio::SdrppServer)
         ImGui::TextDisabled("%s", tr("SDR++ running as a server (sdrpp --server). It takes one client at a time: close SDR++'s own client first. "
                                      "Its source's settings (gain mode, bias tee, AGC, ...) show up under Radio settings once connected."));
+    if (a.netAddType == NetRadio::NrspSt)
+        ImGui::TextDisabled("%s", tr("The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, "
+                                     "and type that computer's address. No password is needed or stored."));
     if (a.netAddType == NetRadio::SoapyRemote && !soapySupported()) ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "%s", tr("This build has no SoapySDR, which SoapyRemote needs."));
     if (a.netAddType == NetRadio::SoapyRemote) {
         ImGui::InputTextWithHint(tr("Remote driver"), "mirisdr  (empty: list what the server offers)", a.netAddRemote, sizeof a.netAddRemote);
@@ -164,7 +177,7 @@ void netRadioWindow(App& a) {
     }
     ImGui::EndDisabled();
     if (busy) { ImGui::SameLine(); ImGui::TextDisabled("%s", tr("connecting…")); }
-    if (!a.netAddErr.empty()) { ImGui::PushTextWrapPos(400 * gUi); ImGui::TextColored(ImVec4(1.f, 0.45f, 0.4f, 1), tr("Cannot connect: %s"), a.netAddErr.c_str()); ImGui::PopTextWrapPos(); }
+    if (!a.netAddErr.empty()) { ImGui::PushTextWrapPos(400 * gUi); ImGui::TextColored(ImVec4(1.f, 0.45f, 0.4f, 1), tr("Cannot connect: %s"), tr(a.netAddErr.c_str())); ImGui::PopTextWrapPos(); }
     if (!a.netRadios.empty()) netRadioList(a);
     ImGui::End();
 }

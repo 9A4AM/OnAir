@@ -2,6 +2,7 @@
 // the codec was found and where, what it is, how to install it on this computer, where to put it, a link to the full page, and "Look again".
 #include "../app.h"
 #include "dect2/audio/ac4_dec.h"
+#include "dect2/hdr/hdr_hdc.h"
 #include "dect2/hfdig/hfdig_freedv.h"
 #include "dect2/dstar/dstar_ambe.h"
 #include "dect2/nxdn/nxdn_ambe.h"
@@ -69,10 +70,30 @@ Text textOf(CodecHelp c) {
                 false};
     case CodecHelp::Hdc:
         return {"HDC (HD Radio sound)",
-                "HD Radio sound uses HDC, a patented codec. OnAir shows the stations, the data and the pictures, but plays no sound, and it "
-                "cannot load an HDC library.",
-                "To hear HD Radio, use the separate program nrsc5 (github.com/theori-io/nrsc5) with an RTL-SDR or an IQ recording.",
-                false};
+                "HD Radio sound uses HDC, a patented codec (a modified HE-AAC) owned by Xperi. OnAir does not ship it and contains no HDC code: "
+                "stations, program data and pictures are shown without it. When you build the HDC-patched FAAD2 yourself (the open-source nrsc5 project "
+                "publishes the patch), OnAir loads it and plays the program you select (HD1, HD2 ...). Whether you may use HDC depends on the "
+                "patent and licence rules where you live, and listening to radio services is regulated in many countries: check them first. "
+                "OnAir has only been tested against a stand-in library, not a real one.",
+#if defined(__APPLE__)
+                "Build it yourself (full steps in docs/CODECS.md):\n"
+                "  brew install cmake git\n  git clone https://github.com/theori-io/nrsc5\n  git clone https://github.com/knik0/faad2\n"
+                "  cd faad2 && patch -p1 < ../nrsc5/support/faad2-hdc-support.patch\n  mkdir build && cd build\n"
+                "  cmake .. -DBUILD_SHARED_LIBS=ON && make\nCopy the libfaad_hdc library it makes (libfaad_hdc.dylib) into the codecs folder below.",
+#elif defined(_WIN32)
+                "Build it yourself (full steps in docs/CODECS.md). In MSYS2 MINGW64:\n"
+                "  pacman -S --needed git patch mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make\n"
+                "  git clone https://github.com/theori-io/nrsc5\n  git clone https://github.com/knik0/faad2\n"
+                "  cd faad2 && patch -p1 < ../nrsc5/support/faad2-hdc-support.patch\n  mkdir build && cd build\n"
+                "  cmake .. -G \"MSYS Makefiles\" -DBUILD_SHARED_LIBS=ON && make\n"
+                "Copy libfaad_hdc.dll into the codecs folder below. Use 64-bit if OnAir is 64-bit.",
+#else
+                "Build it yourself (full steps in docs/CODECS.md):\n"
+                "  sudo apt install git patch cmake build-essential\n  git clone https://github.com/theori-io/nrsc5\n  git clone https://github.com/knik0/faad2\n"
+                "  cd faad2 && patch -p1 < ../nrsc5/support/faad2-hdc-support.patch\n  mkdir build && cd build\n"
+                "  cmake .. -DBUILD_SHARED_LIBS=ON && make\nCopy libfaad_hdc.so into the codecs folder below.",
+#endif
+                true};
     case CodecHelp::Dra:
         return {"DRA+ (CDR sound)",
                 "CDR sound uses DRA+, a patented codec without an open description. OnAir shows the services, but plays no sound.",
@@ -221,6 +242,42 @@ void codecHelpButton(CodecHelp c) {
                 ImGui::SameLine();
             }
             if (ImGui::Button("Look again")) dect2::ac4Library(true);
+            ImGui::SameLine();
+            if (ImGui::Button("Full instructions")) dect2::openUrl(kDocUrl);
+            ImGui::PopTextWrapPos();
+            ImGui::EndPopup();
+            ImGui::PopID();
+            return;
+        }
+        if (c == CodecHelp::Hdc) {   // its own layout: a patched FAAD2, neither mbelib nor codec2
+            std::string path, problem;
+            if (dect2::hdr::hdcAvailable(&path, &problem)) ImGui::TextColored(pal::okGreen(), "HDC library found: %s", path.c_str());
+            else if (!problem.empty()) ImGui::TextColored(pal::warnAmber(), "HDC library found but not usable (%s): %s", path.c_str(), problem.c_str());
+            else ImGui::TextColored(pal::warnAmber(), "HDC sound codec not installed: stations and data are shown, without sound");
+            ImGui::Spacing();
+            ImGui::TextUnformatted(t.what);
+            ImGui::Spacing();
+            ImGui::TextDisabled("Install");
+            ImGui::TextUnformatted(t.install);
+            ImGui::Spacing();
+            ImGui::TextDisabled("File names OnAir looks for");
+            std::string names;
+            for (const auto& n : dect2::hdr::hdcFileNames()) names += (names.empty() ? "" : ", ") + n;
+            ImGui::TextUnformatted(names.c_str());
+            ImGui::TextDisabled("Folders, in this order (or set DECT2_FAAD_HDC_PATH to the file)");
+            for (const auto& d : dect2::codecSearchPlaces()) ImGui::BulletText("%s", d.c_str());
+            ImGui::Spacing();
+            const auto folders = dect2::codecFolderList();
+            if (!folders.empty()) {
+                if (ImGui::Button("Open codecs folder")) {
+                    std::error_code ec;
+                    std::filesystem::create_directories(std::filesystem::path(folders.back()), ec);
+                    dect2::openUrl(folders.back());
+                }
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s\n(made if it does not exist)", folders.back().c_str());
+                ImGui::SameLine();
+            }
+            if (ImGui::Button("Look again")) dect2::hdr::hdcRescan();
             ImGui::SameLine();
             if (ImGui::Button("Full instructions")) dect2::openUrl(kDocUrl);
             ImGui::PopTextWrapPos();

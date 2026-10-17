@@ -1,3 +1,5 @@
+import { sanitizeList, mergeStored, takeBudget, MSG_TTL_MS, MSG_TOTAL_MAX, MSG_PER_INGEST } from "./msgs.js";
+
 const KINDS = new Set([
   "aircraft", "vessel", "sonde", "aprs", "ham", "drone", "flarm", "sat", "buoy", "dsc", "station", "gnss",
 ]);
@@ -185,6 +187,7 @@ export class MapHub {
     this.lastLoadBroadcast = 0;
     this.lastPrune = 0;
     this.pendingUpserts = new Map();
+    this.msgBudget = new Map();   // station -> times of recent accepted messages (rate limit)
     this.snapshotCache = null;
     this.snapshotCacheAt = 0;
     this.loadCache = null;
@@ -272,6 +275,13 @@ export class MapHub {
         t INTEGER NOT NULL
       );
     `);
+    this.ctx.storage.sql.exec(`
+      CREATE TABLE IF NOT EXISTS msgs (
+        id TEXT PRIMARY KEY,
+        json TEXT NOT NULL,
+        t INTEGER NOT NULL
+      );
+    `);
     this.ctx.storage.sql.exec("CREATE INDEX IF NOT EXISTS idx_tracks_kind_t ON tracks(kind, t)");
   }
 
@@ -310,6 +320,7 @@ export class MapHub {
     if (url.pathname === "/ingest" && req.method === "POST") return this.ingest(req);
     if (url.pathname === "/live" && req.method === "GET") return this.live();
     if (url.pathname === "/meta" && req.method === "GET") return this.meta(req);
+    if (url.pathname === "/msgs" && req.method === "GET") return this.msgs(req);
     if (url.pathname === "/ws") return this.ws(req);
     return json({ error: "not found" }, 404);
   }
@@ -336,6 +347,7 @@ export class MapHub {
     }
 
     const kept = [];
+    let msgBudgetLeft = MSG_PER_INGEST;
     for (const raw of tracks) {
       let t = sanitize(raw, now);
       if (!t) continue;
@@ -367,6 +379,12 @@ export class MapHub {
         t.squawk, t.cat, t.vrate, t.src, t.age, t.path,
       );
       kept.push({ ...t, path: pathArr });
+      if (t.kind === "aircraft" && Array.isArray(raw.msgs) && raw.msgs.length && msgBudgetLeft > 0) {
+        let list = sanitizeList(raw.msgs, now).slice(0, msgBudgetLeft);
+        list = list.slice(0, takeBudget(this.msgBudget, station, list.length, now));
+        msgBudgetLeft -= list.length;
+        if (list.length) this.storeMsgs(t.id, list, now);
+      }
     }
     this.ctx.storage.sql.exec(
       "INSERT INTO stations (id, last, n) VALUES (?, ?, 1) ON CONFLICT(id) DO UPDATE SET last=excluded.last, n=n+1",
@@ -382,7 +400,43 @@ export class MapHub {
     return json({ ok: true, n: kept.length, load: this.loadMetrics(now) });
   }
 
+  storeMsgs(id, list, now) {
+    const row = this.ctx.storage.sql.exec("SELECT json FROM msgs WHERE id = ?", id).toArray()[0];
+    let old = [];
+    if (row) { try { old = JSON.parse(row.json); } catch { old = []; } }
+    const merged = mergeStored(Array.isArray(old) ? old : [], list, now);
+    if (!merged.length) return;
+    this.ctx.storage.sql.exec(
+      "INSERT INTO msgs (id, json, t) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET json=excluded.json, t=excluded.t",
+      id, JSON.stringify(merged), merged[0].t,
+    );
+  }
+
+  pruneMsgs(now) {
+    this.ctx.storage.sql.exec("DELETE FROM msgs WHERE t < ?", now - MSG_TTL_MS);
+    const n = this.ctx.storage.sql.exec("SELECT COUNT(*) AS n FROM msgs").toArray()[0];
+    if (n && n.n > MSG_TOTAL_MAX) {
+      this.ctx.storage.sql.exec("DELETE FROM msgs WHERE id IN (SELECT id FROM msgs ORDER BY t ASC LIMIT ?)", n.n - MSG_TOTAL_MAX);
+    }
+  }
+
+  /** GET /msgs?id=<ICAO hex or track id>: the stored ACARS messages of one aircraft (newest first). Not part of /live. */
+  async msgs(req) {
+    const url = new URL(req.url);
+    const raw = String(url.searchParams.get("id") || "").slice(0, 90);
+    const hex = raw.replace(/^aircraft:/, "").toUpperCase().replace(/[^0-9A-F]/g, "");
+    const id = hex.length === 6 && /^(aircraft:)?[0-9A-Fa-f]{6}$/.test(raw) ? "aircraft:" + hex : "aircraft:" + raw.replace(/^aircraft:/, "");
+    if (id.length < 10) return json({ error: "query" }, 400);
+    const row = this.ctx.storage.sql.exec("SELECT json FROM msgs WHERE id = ?", id).toArray()[0];
+    let list = [];
+    if (row) { try { list = JSON.parse(row.json); } catch { list = []; } }
+    const now = Date.now();
+    list = list.filter((m) => now - m.t <= MSG_TTL_MS);
+    return json({ id, msgs: list });
+  }
+
   prune(now) {
+    this.pruneMsgs(now);
     for (const kind of KINDS) {
       this.ctx.storage.sql.exec("DELETE FROM tracks WHERE kind = ? AND t < ?", kind, now - ttlFor(kind));
     }
@@ -676,7 +730,7 @@ export default {
       if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (req.method === "GET") return lookupAircraft(req);
     }
-    const api = url.pathname === "/ingest" || url.pathname === "/live" || url.pathname === "/ws";
+    const api = url.pathname === "/ingest" || url.pathname === "/live" || url.pathname === "/msgs" || url.pathname === "/ws";
     if (api) {
       const id = env.MAP.idFromName("hub-v2");
       return env.MAP.get(id).fetch(req);

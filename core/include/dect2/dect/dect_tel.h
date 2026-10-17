@@ -43,7 +43,8 @@ struct DectTelemetry {
     uint64_t blocksBad = 0;              // sync words found whose A-field CRC failed
     double timeSec = 0, inputRate = 0;
     double channelMhz = 0;               // the centre the radio is tuned to (0: a file)
-    int carrier = -1;                    // DECT carrier number of the channel (-1: not one)
+    int carrier = -1;                    // carrier number of the channel within its band (-1: not one)
+    int band = -1;                       // regional band of the channel (dect::band(), -1: none)
     uint64_t baseBursts = 0, handsetBursts = 0;   // sync words heard from base stations and from handsets
     uint64_t crcPlain = 0, crcInverted = 0;       // which CRC form matched
     std::vector<DectBase> bases;         // most recently heard first

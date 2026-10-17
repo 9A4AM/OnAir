@@ -4,7 +4,9 @@
 // 64-bit A-field: an 8-bit header (tail type TA 3 bits, Q1, BA 3 bits, Q2), 40 tail bits and a 16-bit CRC over the first 48. The B-field
 // (voice or data, scrambled, and encrypted once a call has keys) is not decoded. EN 300 175-3.
 #pragma once
+#include <algorithm>
 #include <cstdint>
+#include <utility>
 #include <string>
 
 namespace dect {
@@ -22,6 +24,59 @@ inline int carrierOf(double mhz) {
     const int n = (int)(x + (x < 0 ? -0.5 : 0.5));
     return n >= 0 && n < kCarriers && (x - n < 0.2 && n - x < 0.2) ? n : -1;
 }
+
+// The regional bands. Every DECT carrier sits on one raster, 1.728 MHz apart (EN 300 175-2 clause 5.2 and annex F):
+//   Europe       Fc = 1897.344 - c x 1.728 MHz, c = 0..9 (1880-1900 MHz)
+//   other bands  Fc = F9 + c x 1.728 MHz, F9 = 1881.792, c = 10..63 (RF band 00001; the Europe raster continued upwards): US c = 23..27
+//                (1921.536 - 1928.448), Brazil c = 17..21, Latin America c = 17..27
+//   US ISM 900   Fc = 903.744 + (c - 10) x 1.728 MHz, c = 10..23 (RF band 01000, 902-928 MHz)
+// A band here lists the carriers whose whole 1.728 MHz channel lies inside the allocation. Carrier n of a band counts from 0 at the band's
+// first entry; the ETSI carrier number c is not used (it differs per RF band). Korea, Taiwan, Japan and China are not listed: no carrier plan
+// for them is given in EN 300 175-2.
+struct Band {
+    const char* id;          // short code for settings
+    const char* name;        // for the user
+    const char* where;       // allocation and where it is used
+    double firstMhz;         // centre of carrier 0
+    int dir;                 // +1: carriers go up from carrier 0, -1: down (Europe counts down from 1897.344)
+    int count;
+    double loMhz, hiMhz;     // the allocation
+};
+constexpr int kBands = 5;
+inline const Band& band(int b) {
+    static const Band t[kBands] = {
+        {"eu", "Europe 1880-1900 MHz", "Europe, most of Asia, Africa, Australia: the common DECT band", kCarrier0Mhz, -1, 10, 1880, 1900},
+        {"us", "US / Canada 1920-1930 MHz (DECT 6.0)", "USA, Canada: UPCS band, DECT 6.0 phones", 1881.792 + 23 * kSpacingMhz, +1, 5, 1920, 1930},
+        {"br", "Brazil 1910-1920 MHz", "Brazil", 1881.792 + 17 * kSpacingMhz, +1, 5, 1910, 1920},
+        {"la", "Latin America 1910-1930 MHz", "Several Latin American countries", 1881.792 + 17 * kSpacingMhz, +1, 11, 1910, 1930},
+        {"us900", "US ISM 902-928 MHz (DECT in ISM)", "USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT", 903.744, +1, 14, 902, 928},
+    };
+    return t[b < 0 ? 0 : b >= kBands ? kBands - 1 : b];
+}
+inline double carrierMhz(int b, int n) { const Band& x = band(b); return x.firstMhz + x.dir * kSpacingMhz * n; }
+// the carrier of band b whose centre is within 0.2 carrier spacings of mhz (-1: none)
+inline int carrierOf(int b, double mhz) {
+    const Band& x = band(b);
+    const double v = x.dir * (mhz - x.firstMhz) / kSpacingMhz;
+    const int n = (int)(v + (v < 0 ? -0.5 : 0.5));
+    return n >= 0 && n < x.count && (v - n < 0.2 && n - v < 0.2) ? n : -1;
+}
+// the band that has a carrier at mhz (-1: none); *carrier gets its number
+inline int bandOf(double mhz, int* carrier = nullptr) {
+    for (int b = 0; b < kBands; b++) { const int n = carrierOf(b, mhz); if (n >= 0) { if (carrier) *carrier = n; return b; } }
+    return -1;
+}
+// the scan plan of a band: carrier centres in the order they are visited: ascending frequency
+inline int scanPlan(int b, double* out, int cap) {
+    const Band& x = band(b);
+    int k = 0;
+    for (int n = 0; n < x.count && k < cap; n++) out[k++] = carrierMhz(b, n);
+    for (int i = 0; i < k; i++) for (int j = i + 1; j < k; j++) if (out[j] < out[i]) std::swap(out[i], out[j]);
+    return k;
+}
+// lowest and highest centre a radio must reach to cover a band
+inline double bandLowMhz(int b) { const Band& x = band(b); return std::min(carrierMhz(b, 0), carrierMhz(b, x.count - 1)); }
+inline double bandHighMhz(int b) { const Band& x = band(b); return std::max(carrierMhz(b, 0), carrierMhz(b, x.count - 1)); }
 
 // the A-field CRC: x^16 + x^10 + x^8 + x^7 + x^3 + 1 over the 48 bits (first bit sent = bit 47 of v), register starting at zero
 inline uint16_t rcrc(uint64_t v48) {

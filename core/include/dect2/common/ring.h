@@ -13,9 +13,9 @@ namespace dect2 {
 
 using cf32 = std::complex<float>;
 
-class IqRing {
+class IqRingCpp {
 public:
-    explicit IqRing(size_t capacityPow2 = 1u << 24) : buf_(capacityPow2), mask_(capacityPow2 - 1) {}
+    explicit IqRingCpp(size_t capacityPow2 = 1u << 24) : buf_(capacityPow2), mask_(capacityPow2 - 1) {}
 
     // Producer. Returns number written; samples that do not fit are counted as dropped.
     size_t write(const cf32* src, size_t n) {
@@ -108,5 +108,53 @@ private:
     std::atomic<int64_t> writeNs_{0};
     std::atomic<size_t> lastN_{0};
 };
+
+// The same ring implemented in Rust (rust/onair_ring), with the same API and behaviour. The storage stays here, the algorithm is in Rust.
+// DECT2_RUST_RING (CMake option, default OFF) makes IqRing this class; DECT2_RING_BOTH makes both classes available (tests, benchmark).
+#if defined(DECT2_RUST_RING) || defined(DECT2_RING_BOTH)
+}
+#include "dect2/rs/ring.h"
+#include <cstdio>
+#include <cstdlib>
+namespace dect2 {
+class IqRingRs {
+public:
+    explicit IqRingRs(size_t capacityPow2 = 1u << 24) : buf_(capacityPow2) {
+        static_assert(alignof(cf32) <= 128, "");
+        if (onair_ring_hdr_size() > sizeof(hdr_) || onair_ring_hdr_align() > 128 ||
+            onair_ring_init(hdr_, reinterpret_cast<uint8_t*>(buf_.data()), capacityPow2, sizeof(cf32), 0) != 0) {
+            std::fprintf(stderr, "IqRing: capacity %zu is not a power of two, or the Rust header does not fit\n", capacityPow2);
+            std::abort();
+        }
+    }
+    IqRingRs(const IqRingRs&) = delete;
+    IqRingRs& operator=(const IqRingRs&) = delete;
+
+    size_t write(const cf32* src, size_t n) {
+        const int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        return onair_ring_write(hdr_, reinterpret_cast<const uint8_t*>(src), n, ns);
+    }
+    bool lastWrite(uint64_t& offered, int64_t& ns, size_t& n) const { return onair_ring_last_write(hdr_, &offered, &ns, &n) != 0; }
+    size_t capacity() const { return onair_ring_capacity(hdr_); }
+    size_t read(cf32* dst, size_t n) { return onair_ring_read(hdr_, reinterpret_cast<uint8_t*>(dst), n); }
+    size_t skipToNewest(size_t keep) { return onair_ring_skip_to_newest(hdr_, keep); }
+    size_t dropBacklog() { return onair_ring_drop_backlog(hdr_); }
+    size_t available() const { return onair_ring_available(hdr_); }
+    uint64_t dropped() const { return onair_ring_dropped(hdr_); }
+    void noteLost(uint64_t n) { onair_ring_note_lost(hdr_, n); }
+    void clear() { onair_ring_clear(hdr_); }
+    void resetDropped() { onair_ring_reset_dropped(hdr_); }
+
+private:
+    std::vector<cf32> buf_;
+    alignas(128) uint8_t hdr_[ONAIR_RING_HDR_BYTES];
+};
+#endif
+
+#ifdef DECT2_RUST_RING
+using IqRing = IqRingRs;
+#else
+using IqRing = IqRingCpp;
+#endif
 
 } // namespace dect2

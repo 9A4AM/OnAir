@@ -1,6 +1,7 @@
 // Several receivers at once: see receivers.h and docs/multi-sdr.md.
 #include "receivers.h"
 #include "rxbar.h"
+#include "adsb/adsb_acars.h"
 #include "dect2/engine/device_claims.h"
 #include <memory>
 #ifndef _WIN32
@@ -340,6 +341,7 @@ void receiversFrame(App& first, ImVec2 disp) {
     }
     strip(first, disp, h);
     drawWarning(first);
+    acarslog::tick(first);
     mapSendTick(first);
 }
 

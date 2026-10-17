@@ -1,0 +1,199 @@
+# Data and licence-free radio: ISM, LoRa, pagers, Wi-Fi, BLE, DECT, cellular, trunked radio
+# freq_mhz|name|bandwidth_khz|notes[|mode|region|category]   @mode / @region / @category / @source set the defaults for the lines below
+@region GLOBAL
+@category ism
+@source ETSI EN 300 220 / EN 300 328, FCC Part 15, ITU-R SM.1896, LoRa Alliance regional parameters (RP002), Meshtastic and MeshCore regional documentation, IEEE 802.11, 802.15.1, 802.15.4, ETSI EN 300 175 (DECT)
+@mode ism
+433.920|ISM 433.92 MHz|200|Sensors, remotes (EU, wide use)|ism|EU|
+868.300|SRD 868 MHz|200|EU 868.0-868.6 MHz sensor band; also wM-Bus mode S meters|ism|EU|
+915.000|ISM 915 MHz|200|North America and Australia|ism|NA|
+315.000|ISM 315 MHz|200|North America and Asia: garage doors, car keys, TPMS|ism|NA|
+345.000|Security sensors 345 MHz|200|North America alarm sensors|ism|NA|
+868.950|wM-Bus mode T/C meters|100|Wireless M-Bus|ism|EU|utility
+169.4125|wM-Bus 169 MHz N-mode|12.5|Utility meters in several countries|ism|EU|utility
+@mode lorawan
+868.1|LoRaWAN EU868 default channel|125|SF7-SF12, BW125|lorawan|EU|
+868.3|LoRaWAN EU868 default channel|125|SF7-SF12, BW125|lorawan|EU|
+868.5|LoRaWAN EU868 default channel|125|SF7-SF12, BW125|lorawan|EU|
+869.525|LoRaWAN EU868 RX2|125||lorawan|EU|
+902.3|LoRaWAN US915 channel 0|125|Upstream 902.3-914.9 MHz, 200 kHz steps|lorawan|US|
+903.9|LoRaWAN US915 sub-band 2 (TTN)|125||lorawan|US|
+915.2|LoRaWAN AU915 channel 0|125||lorawan|AU|
+923.2|LoRaWAN AS923 channel|125||lorawan|GLOBAL|
+865.0625|LoRaWAN IN865|125||lorawan|IN|
+922.1|LoRaWAN KR920|125||lorawan|KR|
+433.175|LoRaWAN EU433|125||lorawan|EU|
+@mode meshtastic
+869.525|Meshtastic EU868 default (LongFast)|250||meshtastic|EU|
+906.875|Meshtastic US default (LongFast)|250||meshtastic|US|
+433.875|Meshtastic EU433 default|250||meshtastic|EU|
+919.875|Meshtastic ANZ default|250||meshtastic|AU|
+@mode meshcore
+869.618|MeshCore EU 868|62.5|Narrow preset|meshcore|EU|
+910.525|MeshCore USA / Canada|62.5||meshcore|NA|
+@mode loraraw
+868.1|LoRa raw EU868|125||loraraw|EU|
+915.0|LoRa raw 915 MHz|125||loraraw|NA|
+@mode pocsag
+@category pager
+@region GLOBAL
+@source National frequency plans (BNetzA, ANFR, ComReg-style public lists, FCC 47 CFR 22/90); typical operator allocations, networks come and go
+466.075|POCSAG pager band (Germany)|12.5||pocsag|DE|
+466.230|POCSAG pager band (Germany)|12.5||pocsag|DE|
+439.9875|Skyper (Germany)|12.5|Skyper / ERMES descendants|pocsag|DE|
+153.025|POCSAG (UK)|12.5|UK paging allocation|pocsag|UK|
+138.275|POCSAG (UK hospital paging)|12.5||pocsag|UK|
+929.6625|FLEX / POCSAG (US 929 MHz band)|25||flex|US|
+931.4375|FLEX / POCSAG (US 931 MHz band)|25||flex|US|
+169.650|P2000 FLEX (Netherlands)|12.5|Emergency-services pagers|flex|NL|public-safety
+@mode wifi
+@category wifi
+@region GLOBAL
+@source IEEE 802.11 channel numbering: 2.4 GHz channels 1-14, 5 GHz UNII, 6 GHz preferred scanning channels
+2412|Wi-Fi 2.4 GHz channel 1|20|
+2417|Wi-Fi 2.4 GHz channel 2|20|
+2422|Wi-Fi 2.4 GHz channel 3|20|
+2427|Wi-Fi 2.4 GHz channel 4|20|
+2432|Wi-Fi 2.4 GHz channel 5|20|
+2437|Wi-Fi 2.4 GHz channel 6|20|
+2442|Wi-Fi 2.4 GHz channel 7|20|
+2447|Wi-Fi 2.4 GHz channel 8|20|
+2452|Wi-Fi 2.4 GHz channel 9|20|
+2457|Wi-Fi 2.4 GHz channel 10|20|
+2462|Wi-Fi 2.4 GHz channel 11|20|
+2467|Wi-Fi 2.4 GHz channel 12|20|
+2472|Wi-Fi 2.4 GHz channel 13|20|
+2484|Wi-Fi 2.4 GHz channel 14|20|Japan only, 802.11b
+5180|Wi-Fi 5 GHz channel 36|20|
+5200|Wi-Fi 5 GHz channel 40|20|
+5220|Wi-Fi 5 GHz channel 44|20|
+5240|Wi-Fi 5 GHz channel 48|20|
+5260|Wi-Fi 5 GHz channel 52|20|
+5280|Wi-Fi 5 GHz channel 56|20|
+5300|Wi-Fi 5 GHz channel 60|20|
+5320|Wi-Fi 5 GHz channel 64|20|
+5500|Wi-Fi 5 GHz channel 100|20|
+5520|Wi-Fi 5 GHz channel 104|20|
+5540|Wi-Fi 5 GHz channel 108|20|
+5560|Wi-Fi 5 GHz channel 112|20|
+5580|Wi-Fi 5 GHz channel 116|20|
+5600|Wi-Fi 5 GHz channel 120|20|
+5620|Wi-Fi 5 GHz channel 124|20|
+5640|Wi-Fi 5 GHz channel 128|20|
+5660|Wi-Fi 5 GHz channel 132|20|
+5680|Wi-Fi 5 GHz channel 136|20|
+5700|Wi-Fi 5 GHz channel 140|20|
+5720|Wi-Fi 5 GHz channel 144|20|
+5745|Wi-Fi 5 GHz channel 149|20|
+5765|Wi-Fi 5 GHz channel 153|20|
+5785|Wi-Fi 5 GHz channel 157|20|
+5805|Wi-Fi 5 GHz channel 161|20|
+5825|Wi-Fi 5 GHz channel 165|20|
+5845|Wi-Fi 5 GHz channel 169|20|
+5865|Wi-Fi 5 GHz channel 173|20|
+5885|Wi-Fi 5 GHz channel 177|20|
+5975|Wi-Fi 6 GHz channel 5|20|Preferred scanning channel (PSC)
+6055|Wi-Fi 6 GHz channel 21|20|Preferred scanning channel (PSC)
+6135|Wi-Fi 6 GHz channel 37|20|Preferred scanning channel (PSC)
+6215|Wi-Fi 6 GHz channel 53|20|Preferred scanning channel (PSC)
+6295|Wi-Fi 6 GHz channel 69|20|Preferred scanning channel (PSC)
+6375|Wi-Fi 6 GHz channel 85|20|Preferred scanning channel (PSC)
+6455|Wi-Fi 6 GHz channel 101|20|Preferred scanning channel (PSC)
+6535|Wi-Fi 6 GHz channel 117|20|Preferred scanning channel (PSC)
+6615|Wi-Fi 6 GHz channel 133|20|Preferred scanning channel (PSC)
+6695|Wi-Fi 6 GHz channel 149|20|Preferred scanning channel (PSC)
+6775|Wi-Fi 6 GHz channel 165|20|Preferred scanning channel (PSC)
+6855|Wi-Fi 6 GHz channel 181|20|Preferred scanning channel (PSC)
+6935|Wi-Fi 6 GHz channel 197|20|Preferred scanning channel (PSC)
+7015|Wi-Fi 6 GHz channel 213|20|Preferred scanning channel (PSC)
+7095|Wi-Fi 6 GHz channel 229|20|Preferred scanning channel (PSC)
+@mode ble
+2402|Bluetooth LE advertising channel 37|2000|
+2426|Bluetooth LE advertising channel 38|2000|
+2480|Bluetooth LE advertising channel 39|2000|
+@mode zigbee
+2405|Zigbee / 802.15.4 channel 11|2000|
+2410|Zigbee / 802.15.4 channel 12|2000|
+2415|Zigbee / 802.15.4 channel 13|2000|
+2420|Zigbee / 802.15.4 channel 14|2000|
+2425|Zigbee / 802.15.4 channel 15|2000|
+2430|Zigbee / 802.15.4 channel 16|2000|
+2435|Zigbee / 802.15.4 channel 17|2000|
+2440|Zigbee / 802.15.4 channel 18|2000|
+2445|Zigbee / 802.15.4 channel 19|2000|
+2450|Zigbee / 802.15.4 channel 20|2000|
+2455|Zigbee / 802.15.4 channel 21|2000|
+2460|Zigbee / 802.15.4 channel 22|2000|
+2465|Zigbee / 802.15.4 channel 23|2000|
+2470|Zigbee / 802.15.4 channel 24|2000|
+2475|Zigbee / 802.15.4 channel 25|2000|
+2480|Zigbee / 802.15.4 channel 26|2000|
+@mode ant
+2457|ANT+ sensors|1000|Sports and fitness sensors|ant||
+@mode halow
+863.5|Wi-Fi HaLow EU channel 1|1000|EU 863-868 MHz|halow|EU|
+903.5|Wi-Fi HaLow US channel|1000|902-928 MHz|halow|US|
+@mode wisun
+921.5|Wi-SUN FAN ANZ band centre|200||wisun|AU|
+868.1|Wi-SUN FAN EU|200||wisun|EU|
+@mode dect
+@category telephony
+1897.344|DECT channel 0|1728|Europe 1880-1900 MHz|dect|EU|
+1895.616|DECT channel 1|1728|Europe 1880-1900 MHz|dect|EU|
+1893.888|DECT channel 2|1728|Europe 1880-1900 MHz|dect|EU|
+1892.160|DECT channel 3|1728|Europe 1880-1900 MHz|dect|EU|
+1890.432|DECT channel 4|1728|Europe 1880-1900 MHz|dect|EU|
+1888.704|DECT channel 5|1728|Europe 1880-1900 MHz|dect|EU|
+1886.976|DECT channel 6|1728|Europe 1880-1900 MHz|dect|EU|
+1885.248|DECT channel 7|1728|Europe 1880-1900 MHz|dect|EU|
+1883.520|DECT channel 8|1728|Europe 1880-1900 MHz|dect|EU|
+1881.792|DECT channel 9|1728|Europe 1880-1900 MHz|dect|EU|
+@mode gsmr
+@category railway
+921.2|GSM-R downlink start|200|UIC GSM-R downlink 921-925 MHz (Europe)|gsmr|EU|
+922.8|GSM-R downlink (app default)|200||gsmr|EU|
+925.8|GSM-R downlink upper end|200||gsmr|EU|
+@mode lbj
+@category railway
+821.2375|LBJ train approach warning (China)|12.5||lbj|CN|
+@mode tetra
+@category public-safety
+392.5|TETRA emergency services downlink|25|380-385 / 390-395 MHz in Europe|tetra|EU|
+420.0|TETRA band 420-430 MHz|25|Civil trunking in some countries|tetra|EU|
+@mode tetrapol
+392.0|TETRAPOL downlink (app default)|12.5|France and others|tetrapol|EU|
+@mode p25
+851.0125|P25 800 MHz public safety|12.5|800 MHz band starts 851.0125 MHz (NPSPAC)|p25|US|
+769.0|P25 700 MHz public safety|12.5||p25|US|
+@mode cell
+@category telecom
+806.0|LTE band 20 downlink centre|10000|Europe 791-821 MHz|cell|EU|
+942.5|GSM-900 downlink centre|200|925-960 MHz|cell|EU|
+1842.5|LTE band 3 downlink centre|20000|1805-1880 MHz|cell|EU|
+2140.0|UMTS / LTE band 1 downlink centre|20000|2110-2170 MHz|cell|EU|
+@mode nbiot
+806.0|NB-IoT band 20 downlink|200||nbiot|EU|
+1842.5|NB-IoT band 3 downlink|200||nbiot|EU|
+@mode nr
+3541.44|5G NR n78 (app default)|100000|n78 GSCN 7875|nr|GLOBAL|
+3700.0|5G NR n77/n78 C-band|100000||nr|GLOBAL|
+@mode sonde
+@category weather
+@region GLOBAL
+@source WMO radiosonde frequency allocations (400.15-406 MHz, 1675-1683 MHz meteorological aids service)
+400.150|Radiosonde band start|20|400.15-406 MHz meteorological aids|sonde||
+403.000|Radiosonde band (app default)|20||sonde||
+405.999|Radiosonde band end|20||sonde||
+1680.000|Radiosonde 1680 MHz band|100|Older Vaisala and Meteolabor sondes|sonde||
+@mode astro
+@category astronomy
+@region GLOBAL
+@source IAU / ITU Radio Regulations footnote 5.340 protected radio-astronomy lines
+1420.4058|Neutral hydrogen (HI) line|2|21 cm line|astro||
+1612.231|OH line|1||astro||
+1665.402|OH main line|1||astro||
+1667.359|OH main line|1||astro||
+1720.530|OH line|1||astro||
+327.384|Deuterium line|1||astro||
+4829.66|Formaldehyde line|1||astro||
+20.1|Jupiter decametric emission|10|Typical observing frequency 20.1 MHz (HF)|astro||

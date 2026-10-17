@@ -1,0 +1,93 @@
+# Licence-free voice radio: PMR446, FRS/GMRS, CB, MURS, LPD433
+# freq_mhz|name|bandwidth_khz|notes[|mode|region|category]   @mode / @region / @category / @source set the defaults for the lines below
+@mode general
+@category pmr
+@source ETSI EN 300 296 (PMR446); FCC 47 CFR Part 95 (FRS, GMRS, MURS, CB); CEPT ERC/REC 70-03 (CB 27 MHz, LPD433)
+@region EU
+446.00625|PMR446 analogue channel 1|12.5|NFM|general|EU|
+446.01875|PMR446 analogue channel 2|12.5|NFM|general|EU|
+446.03125|PMR446 analogue channel 3|12.5|NFM|general|EU|
+446.04375|PMR446 analogue channel 4|12.5|NFM|general|EU|
+446.05625|PMR446 analogue channel 5|12.5|NFM|general|EU|
+446.06875|PMR446 analogue channel 6|12.5|NFM|general|EU|
+446.08125|PMR446 analogue channel 7|12.5|NFM|general|EU|
+446.09375|PMR446 analogue channel 8|12.5|NFM|general|EU|
+446.10625|PMR446 analogue channel 9|12.5|NFM|general|EU|
+446.11875|PMR446 analogue channel 10|12.5|NFM|general|EU|
+446.13125|PMR446 analogue channel 11|12.5|NFM|general|EU|
+446.14375|PMR446 analogue channel 12|12.5|NFM|general|EU|
+446.15625|PMR446 analogue channel 13|12.5|NFM|general|EU|
+446.16875|PMR446 analogue channel 14|12.5|NFM|general|EU|
+446.18125|PMR446 analogue channel 15|12.5|NFM|general|EU|
+446.19375|PMR446 analogue channel 16|12.5|NFM|general|EU|
+@region US
+462.5625|FRS / GMRS channel 1|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+462.5875|FRS / GMRS channel 2|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+462.6125|FRS / GMRS channel 3|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+462.6375|FRS / GMRS channel 4|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+462.6625|FRS / GMRS channel 5|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+462.6875|FRS / GMRS channel 6|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+462.7125|FRS / GMRS channel 7|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+467.5625|FRS / GMRS channel 8|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+467.5875|FRS / GMRS channel 9|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+467.6125|FRS / GMRS channel 10|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+467.6375|FRS / GMRS channel 11|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+467.6625|FRS / GMRS channel 12|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+467.6875|FRS / GMRS channel 13|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+467.7125|FRS / GMRS channel 14|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+462.5500|FRS / GMRS channel 15|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+462.5750|FRS / GMRS channel 16|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+462.6000|FRS / GMRS channel 17|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+462.6250|FRS / GMRS channel 18|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+462.6500|FRS / GMRS channel 19|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+462.6750|FRS / GMRS channel 20|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+462.7000|FRS / GMRS channel 21|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+462.7250|FRS / GMRS channel 22|12.5|NFM; channels 8-14 are low power FRS only|general|US|
+151.820|MURS 151.820 MHz|12.5|NFM|general|US|
+151.880|MURS 151.880 MHz|12.5|NFM|general|US|
+151.940|MURS 151.940 MHz|12.5|NFM|general|US|
+154.570|MURS 154.570 MHz|12.5|NFM|general|US|
+154.600|MURS 154.600 MHz|12.5|NFM|general|US|
+26.965|CB channel 1|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+26.975|CB channel 2|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+26.985|CB channel 3|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.005|CB channel 4|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.015|CB channel 5|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.025|CB channel 6|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.035|CB channel 7|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.055|CB channel 8|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.065|CB channel 9 (emergency)|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.075|CB channel 10|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.085|CB channel 11|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.105|CB channel 12|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.115|CB channel 13|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.125|CB channel 14|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.135|CB channel 15|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.155|CB channel 16|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.165|CB channel 17|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.175|CB channel 18|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.185|CB channel 19 (truckers, traffic)|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.205|CB channel 20|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.215|CB channel 21|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.225|CB channel 22|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.255|CB channel 23|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.235|CB channel 24|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.245|CB channel 25|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.265|CB channel 26|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.275|CB channel 27|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.285|CB channel 28|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.295|CB channel 29|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.305|CB channel 30|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.315|CB channel 31|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.325|CB channel 32|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.335|CB channel 33|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.345|CB channel 34|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.355|CB channel 35|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.365|CB channel 36|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.375|CB channel 37|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.385|CB channel 38|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.395|CB channel 39|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+27.405|CB channel 40|10|AM (FM in much of Europe), 26.965-27.405 MHz|general|GLOBAL|cb
+433.075|LPD433 channel 1|25|69 channels 25 kHz apart up to 434.775 MHz|general|EU|
+433.925|LPD433 channel 35|25||general|EU|
+434.775|LPD433 channel 69|25||general|EU|

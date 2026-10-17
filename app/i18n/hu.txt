@@ -1388,3 +1388,173 @@ Preferred site	Preferred site
 Hear this receiver	Ennek a vevőnek a hallgatása
 Close receiver	Vevő bezárása
 Radio: %s	Rádió: %s
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	A HD Radio hangjához a HDC kodek kell, amelyet magad telepítesz (kattints a ?-re)
+HDC sound codec cannot be used: %s	A HDC hangkodek nem használható: %s
+HDC sound codec not installed (no sound; click ? for the steps)	A HDC hangkodek nincs telepítve (nincs hang; a ?-re kattintva láthatod a lépéseket)
+sound: HD%d (HDC)	hang: HD%d (HDC)
+sound: HD%d, waiting for audio	hang: HD%d, hangra vár
+The HD Radio sound codec (HDC) is not installed	A HD Radio hangkodek (HDC) nincs telepítve
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	Az állomás, a műsoradatok és a képek megjelennek, de a HD Radio hang néma marad, amíg nem telepíted magad a kodeket. Az OnAir nem tartalmazza (a HDC szabadalmaztatott, az Xperi tulajdona).
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	Fordítsd le a HDC-javítással ellátott FAAD2-t, ahogy a teljes útmutató leírja (kell hozzá az nrsc5 nyílt forrású javítása).
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	Tedd a könyvtárat (libfaad_hdc) az OnAir kodekmappájába (gomb alul).
+The HD Radio sound library cannot be used	A HD Radio hangkönyvtár nem használható
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	Az OnAir talált egy HDC-könyvtárat, de ez nem olyan FAAD2-fordítás HDC-javítással, amelyet az OnAir hívni tud, ezért nem használta.
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Fordítsd le újra a könyvtárat a FAAD2 2.10 vagy 2.11 változatából az nrsc5 javításával, ahogy a teljes útmutató leírja.
+Replace the file in the OnAir codecs folder (button below).	Cseréld ki a fájlt az OnAir kodekmappájában (gomb alul).
+# band plans (scan tab, TV channel list)
+Band plan	Sávterv
+None (built-in ranges)	Nincs (beépített tartományok)
+My band plans	Saját sávterveim
+Export...	Exportálás...
+Really delete?	Biztosan törli?
+Replaced band plan "%s" (%zu bands).	A(z) "%s" sávterv lecserélve (%zu sáv).
+Imported band plan "%s" (%zu bands).	A(z) "%s" sávterv importálva (%zu sáv).
+Deleted band plan %s.	A(z) %s sávterv törölve.
+Not fully verified: %s	Nem teljesen ellenőrzött: %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	Az Ön országának csatornakiosztása: TV-csatornák a kereséshez és a csatornalistához, és más. Az Automatikus a felület nyelve és a rendszer régiója alapján választ tervet.
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	Sávtervet olvas be CSV- vagy JSON-fájlból (formátum: docs/band-plans.md), ellenőrzi, és a beállítások mappájában tárolja. Hibás fájlnál semmi sem változik; az üzenet megmondja, hol a hiba.
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	A tervet JSON-fájlként menti, vagy CSV-ként, ha a név .csv-re végződik. A beépített terv jó kiindulópont a sajátodhoz.
+Deletes one of your own band plans. The built-in plans stay.	Töröl egy saját sávtervet. A beépített tervek megmaradnak.
+TV channels of the band plan %s (change it in the Scan tab).	A(z) %s sávterv TV-csatornái (a Keresés fülön módosítható).
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	Személyzet
+Operations	Üzemeltetés
+Company	Légitársaság
+Maintenance	Karbantartás
+Fault	Hiba
+Show all messages	Összes üzenet mutatása
+ACARS messages	ACARS-üzenetek
+%d ACARS messages	%d ACARS-üzenet
+Copy these messages as text	Üzenetek másolása szövegként
+No ACARS messages heard from this aircraft	Ettől a légi járműtől nem érkezett ACARS-üzenet
+Also share interesting ACARS messages (text becomes public on the map)	Az érdekes ACARS-üzenetek megosztása is (a szöveg nyilvános lesz a térképen)
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	A légi jármű ACARS-on küldött üzenetei (szabad szöveg, valamint személyzeti, üzemeltetési, társasági és karbantartási üzenetek) 48 órán át látszanak a jármű kártyáján a nyilvános térképen. A telefonszámokat és e-mail-címeket előtte eltávolítjuk. A helyzetjelentések és a kapcsolatpróbák nem tartoznak ide. Bármikor kikapcsolhatod.
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	A légi járművek ACARS-on küldött üzenetei (szabad szöveg, valamint személyzeti, üzemeltetési, társasági és karbantartási üzenetek) megjelenhetnek a jármű kártyáján is, telefonszámok és e-mail-címek nélkül. Ez külön választás, a Szerver menüben módosíthatod.
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s, %d ugrás, %d átlagolás, %.0f ms söprésenként
+pick a radio first (the test signal and files cannot sweep)	előbb válassz rádiót (a tesztjel és a fájlok nem söpörhetők)
+Save scan...	Söprés mentése...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	rtl_power-kompatibilis CSV: megnyitható a Heatmap.py-ban, rtl_power_fftw eszközökben és táblázatokban
+Load as baseline...	Betöltés alapként...
+Keep this scan as baseline	Ez a söprés legyen az alap
+Save signal log...	Jelnapló mentése...
+Sweep scanner	Söprő szkenner
+from MHz	MHz-től
+to MHz	MHz-ig
+bin %.0f kHz	bin %.0f kHz
+dwell %.0f ms	várakozás %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Az egyes ugrásokra fordított idő: hosszabb = több FFT átlagolása (nyugodtabb zajpadló, gyenge jelek látszanak), de lassabb söprés
+measure retune time	átállási idő mérése
+settle %.0f ms	beállás %.0f ms
+rate: radio's best	mintavétel: a rádió legjobbja
+rate: 10 Msps	mintavétel: 10 Msps
+rate: 5 Msps	mintavétel: 5 Msps
+rate: 2.4 Msps	mintavétel: 2,4 Msps
+gain %.0f dB	erősítés %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Szünet a söpréssorozatok között: néhány másodpercenkénti söprés kíméli a processzort és az akkut
+threshold floor+%.0f dB	küszöb zajpadló+%.0f dB
+floor percentile %.0f	zajpadló percentilis %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	A zajpadló az egyes ugrások bin-teljesítményének ez a percentilise (50 = medián). Zsúfolt sávban csökkentsd, üresben növeld
+retune settle %.1f ms	beállási idő %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	zajpadló %.1f dBFS binenként (%.0f kHz-es binek), küszöb %.1f dBFS, %zu jel ebben a söprésben
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	az alaphoz képest: zajpadló %+.1f dB, legnagyobb emelkedés %+.1f dB %.3f MHz-en
+Signals found	Talált jelek
+mode: as it is	mód: marad
+Tune to selected	Hangolás a kijelöltre
+Bandwidth kHz	Sávszélesség kHz
+Peak dBFS	Csúcs dBFS
+Best SNR dB	Legjobb SNR dB
+Sweep	Söprés
+every %.0f s	%.0f s-onként
+back to back	egymás után
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Gyors szélessávú söprés zajpadló-méréssel, jelnaplóval és vízeséssel
+Record audio	Hang felvétele
+Only audio	Csak hang
+Split	Szétosztás
+Keep going	Folytatás
+Show recording	Felvétel megjelenítése
+Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)	Fájlba menti a hallott hangot, bármely módban (a hangerő előtt, így a szint nem függ tőle)
+MP3 needs the LAME library (libmp3lame), which is not installed	Az MP3-hoz a LAME könyvtár (libmp3lame) kell, amely nincs telepítve
+WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo.	WAV: 16 bites, nagy. FLAC: veszteségmentes, nagyjából fele méret. MP3: kicsi (libmp3lame kell). Az FM sztereó sztereó marad.
+Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	Csak akkor ment, amikor van hang (mint egy zajzár): a csend kimarad, rövid előzmény és lecsengés marad
+One file per transmission: a new file starts after 3 s of silence	Adásonként egy fájl: 3 s csend után új fájl kezdődik
+Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Folytatja a felvételt, ha a mód vagy a frekvencia változik. Kikapcsolva: ilyenkor leáll a felvétel.
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir, and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	Ebből az OnAir-telepítésből hiányzik a SoapyRemote modul, ezért nem éri el a távoli rádiót. Telepítse újra az OnAir-t, és jelezze, ha újra előfordul. A rádió számítógépén futnia kell a SoapySDRServer --bind parancsnak.
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir (or run brew install soapyremote), and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	Ebből az OnAir-telepítésből hiányzik a SoapyRemote modul, ezért nem éri el a távoli rádiót. Telepítse újra az OnAir-t (vagy futtassa: brew install soapyremote), és jelezze, ha újra előfordul. A rádió számítógépén futnia kell a SoapySDRServer --bind parancsnak.
+SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install it (Debian/Ubuntu: sudo apt install soapysdr-module-remote; other systems: github.com/pothosware/SoapyRemote), then restart OnAir. The radio's computer must run SoapySDRServer --bind.	Ebből a SoapySDR-ből hiányzik a SoapyRemote kliensmodul, ezért nem éri el a távoli rádiót. Telepítse (Debian/Ubuntu: sudo apt install soapysdr-module-remote; más rendszereken: github.com/pothosware/SoapyRemote), majd indítsa újra az OnAir-t. A rádió számítógépén futnia kell a SoapySDRServer --bind parancsnak.
+# frequency database
+%zu built in, %zu yours	%zu beépített, %zu saját
+Add entry...	Bejegyzés hozzáadása...
+Add frequency	Frekvencia hozzáadása
+Add to Memory	Hozzáadás a Memoryhoz
+Added to Memory.	Hozzáadva a Memoryhoz.
+Already in Memory.	Már a Memoryban van.
+An entry with this frequency and mode exists already.	Ilyen frekvenciájú és üzemmódú bejegyzés már van.
+Category	Kategória
+Could not save 	Nem sikerült menteni: 
+Could not tune to this entry.	Erre a bejegyzésre nem sikerült ráhangolni.
+Exports your own entries (not the built-in ones)	Csak a saját bejegyzéseidet exportálja (a beépítetteket nem)
+Frequencies	Frekvenciák
+Frequencies...	Frekvenciák...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	%zu bejegyzés importálva, %zu kihagyva (ismétlődés vagy frekvencia nélküli sor).
+Keeps this entry in the Memory panel	Elmenti ezt a bejegyzést a Memory panelbe
+Known frequencies (%zu)	Ismert frekvenciák (%zu)
+Mine	Sajátok
+Nothing matches. Clear the search or the filters.	Nincs találat. Töröld a keresést vagy a szűrőket.
+Nothing to import in this file.	Ebben a fájlban nincs mit importálni.
+Only the entries you added or imported	Csak a te hozzáadott vagy importált bejegyzéseid
+Open the Frequencies panel...	A Frekvenciák panel megnyitása...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	Beolvas egy Exportálással (vagy a Memory panellel) írt CSV vagy JSON fájlt, vagy egyszerű 'frekvencia,név' sorokat (MHz). A már létező frekvenciájú és üzemmódú bejegyzések kimaradnak.
+Search name, notes, mode, frequency (162.4)	Keresés: név, megjegyzés, üzemmód, frekvencia (162.4)
+Show Frequencies as a tab	Frekvenciák megjelenítése fülként
+Source...	Forrás...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Átvált a bejegyzés üzemmódjára, alkalmazza a hangolását, és ráhangol a frekvenciára. A sorra kattintva duplán ugyanez történik. A futó vevő üzemmódváltáskor újraindul.
+Tuned: %s  %s MHz	Hangolva: %s  %s MHz
+Well-known frequencies of this mode: pick one to tune to it	Ennek az üzemmódnak az ismert frekvenciái: válassz egyet a ráhangoláshoz
+Carrier	Carrier
+Stop scan##dsc	Stop scan##dsc
+Scan band##dsc	Scan band##dsc
+DECT carrier %d, %.3f MHz	DECT carrier %d, %.3f MHz
+Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.	Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.
+US / Canada 1920-1930 MHz (DECT 6.0)	US / Canada 1920-1930 MHz (DECT 6.0)
+Brazil 1910-1920 MHz	Brazil 1910-1920 MHz
+Latin America 1910-1930 MHz	Latin America 1910-1930 MHz
+US ISM 902-928 MHz (DECT in ISM)	US ISM 902-928 MHz (DECT in ISM)
+Europe 1880-1900 MHz	Europe 1880-1900 MHz
+USA, Canada: the UPCS band, DECT 6.0 phones	USA, Canada: the UPCS band, DECT 6.0 phones
+Brazil	Brazil
+Several Latin American countries	Several Latin American countries
+USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT	USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT
+Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
+Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
+The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	Az nRSP-ST az SDRconnecten keresztül érhető el: futtasd az SDRconnectet (vagy a headless változatát) egy számítógépen bekapcsolt WebSocket-szerverrel (5454-es port) és kiválasztott nRSP-ST-vel, majd írd be a gép címét. Jelszóra nincs szükség, és nem tárolunk ilyet.
+Monitor audio	Hang figyelése
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Hallgasd a behangolt csatornát bármely módban egy jel felismeréséhez: a rádió mintáit USB, LSB, keskeny FM vagy AM szerint demodulálja. Néma, amíg a mód saját hangot játszik.
+Auto: USB below 30 MHz, narrow FM above	Auto: USB 30 MHz alatt, keskeny FM felette
+Volume of the monitor	A figyelés hangereje
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Finomhangolás a behangolt frekvenciához képest, Hz-ben (az SSB jel 1–2 kHz-cel a vivő felett vagy alatt hallható)
+(the mode plays)	(a mód játszik)
+Audio...	Hang...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	A figyelés kimeneti eszközei, egy második kimenet (pl. virtuális audiokábel fldigihez vagy WSJT-X-hez) és helyi hálózati adatfolyam
+System default	Rendszer alapértelmezett
+Output 1	1. kimenet
+Output 2	2. kimenet
+Delay (ms)	Késleltetés (ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Lejátszás előtt sorban álló hang: kevesebb gyorsabb, több kibírja a terhelt gépet
+Stay silent while the mode plays	Néma, amíg a mód játszik
+Network audio stream	Hálózati hangfolyam
+WAV header	WAV-fejléc
+Allow other computers	Más gépek engedélyezése
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16 bites sztereó, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, vagy fejléces WAV-lejátszó. Biztonság: bárki hallgathat, aki eléri a portot; ne kapcsold be a „Más gépek engedélyezése” opciót, ha nem kell.
+Listeners:	Hallgatók:
+video	video
+audio	audio
+profile	profile
+Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work	Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work
+Open in an external player	Open in an external player
+Save the transport stream to a file	Save the transport stream to a file
+Stream it as UDP to %s	Stream it as UDP to %s
+Copy VLC command	Copy VLC command
+Copy mpv command	Copy mpv command
+Copy ffplay command	Copy ffplay command
+Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).
