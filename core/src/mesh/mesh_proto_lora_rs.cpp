@@ -1,7 +1,6 @@
-// LoRa APRS, MeshCom and LoRaWAN packet layers on top of the Rust crate rust/onair_mesh (DECT2_RUST_MESH): the same functions as mesh_proto_aprs.cpp and
-// mesh_proto_lorawan.cpp, which keep the C++ under #ifndef DECT2_RUST_MESH (and the settings tables and packet builders). The APRS information field itself
-// is parsed by aprs::parse here. Empty when the crate is not built.
-#ifdef DECT2_RUST_MESH
+// LoRa APRS, MeshCom and LoRaWAN packet layers on top of the Rust crate rust/onair_mesh: the decoders of mesh_proto.h;
+// mesh_proto_aprs.cpp and mesh_proto_lorawan.cpp keep the settings tables and packet builders. The APRS information field itself
+// is parsed by aprs::parse here.
 #include "mesh_proto_internal.h"
 #include "mesh_rs_util.h"
 #include <cstring>
@@ -163,4 +162,3 @@ MeshDecodeResult meshDecodeLorawan(const uint8_t* p, size_t n) {
 }
 
 } // namespace dect2
-#endif

@@ -1,6 +1,6 @@
-// Differential test of the mesh packet layer, part 2: MeshCore packets (adverts with valid / forged signatures, group text on the Public channel and a user channel,
+// Golden-vector test of the mesh packet layer, part 2: MeshCore packets (adverts with valid / forged signatures, group text on the Public channel and a user channel,
 // end-to-end headers, ACK, TRACE, CONTROL, random headers and bodies), LoRaWAN (every MType, FOpts MAC commands, join / rejoin requests, random and mutated
-// frames, the name helpers), LoRa APRS and MeshCom frames. Same method as test_mesh_proto_rs.cpp: Rust-backed dect2:: against the frozen dect2_mesh_ref::.
+// frames, the name helpers), LoRa APRS and MeshCom frames. Same method as test_mesh_proto_rs.cpp: every result goes into its digest.
 #include "mesh_rs_cmp.h"
 #include "dect2/mesh/mesh_crypto.h"
 
@@ -21,19 +21,15 @@ static A::MeshCoreNode mcNode() {
 
 static void testMeshCore(long iters) {
     A::MeshProto pa;
-    R::MeshProto pr;
     const char* sec = "00112233445566778899aabbccddeeff";
     pa.addMeshCoreChannel("#friends", "");
-    pr.addMeshCoreChannel("#friends", "");
     pa.addMeshCoreChannel("Club", sec);
-    pr.addMeshCoreChannel("Club", sec);
     uint8_t clubSecret[16], pubSecret[16];
     for (int i = 0; i < 16; i++) clubSecret[i] = (uint8_t)(i * 0x11);
     memcpy(pubSecret, A::meshcorePublicSecret(), 16);
     uint8_t hashSecret[32];
     dect2::meshcrypto::sha256((const uint8_t*)"#friends", 8, hashSecret);
     const A::MeshRadioInfo radio{};
-    const R::MeshRadioInfo radioR{};
     long adverts = 0, groups = 0, others = 0;
     for (long i = 0; i < iters; i++) {
         std::vector<uint8_t> pkt;
@@ -69,9 +65,7 @@ static void testMeshCore(long iters) {
         }
         if (pkt.size() > 255) pkt.resize(255);
         const auto ra = pa.decodeMeshCore(pkt.data(), pkt.size(), radio);
-        const auto rr = pr.decodeMeshCore(pkt.data(), pkt.size(), radioR);
-        SAME(resEq(ra, rr), "meshcore mode %d size %zu type '%s'/'%s' note '%s'/'%s' detail '%s'/'%s'", mode, pkt.size(), ra.packet.type.c_str(), rr.packet.type.c_str(),
-             ra.packet.note.c_str(), rr.packet.note.c_str(), ra.packet.detail.c_str(), rr.packet.detail.c_str());
+        addRes(ra);
     }
     printf("  meshcore: %ld packets (%ld adverts, %ld group, %ld other)\n", iters, adverts, groups, others);
 }
@@ -120,24 +114,22 @@ static void testLorawan(long iters) {
         }
         if (g() % 8 == 0) f = mutateBytes(f);
         const auto ra = A::meshDecodeLorawan(f.empty() ? nullptr : f.data(), f.size());
-        const auto rr = R::meshDecodeLorawan(f.empty() ? nullptr : f.data(), f.size());
-        SAME(resEq(ra, rr), "lorawan mode %d size %zu: '%s' vs '%s' | '%s' vs '%s'", mode, f.size(), ra.packet.detail.c_str(), rr.packet.detail.c_str(), ra.packet.note.c_str(),
-             rr.packet.note.c_str());
+        addRes(ra);
         parsed += ra.ok;
         // the helpers
         const uint32_t da = r32();
-        int ta = -2, tb = -2; uint32_t na = 11, nb = 11, ea = 22, eb = 22;
-        SAME(A::lorawanNetwork(da, &ta, &na, &ea) == R::lorawanNetwork(da, &tb, &nb, &eb) && ta == tb && na == nb && ea == eb, "network %08x", da);
-        SAME(A::lorawanMacName((uint8_t)i, i & 0x100) == R::lorawanMacName((uint8_t)i, i & 0x100), "mac name");
+        int ta = -2; uint32_t na = 11, ea = 22;
+        dig.add(A::lorawanNetwork(da, &ta, &na, &ea), ta, na, ea);
+        dig.add(A::lorawanMacName((uint8_t)i, i & 0x100));
         const uint64_t eui = i % 3 ? ((uint64_t)r32() << 32 | r32()) : (0x70B3D57EDull << 28 | (r32() & 0xFFFFFFF));
-        SAME(std::string(A::lorawanVendor(eui)) == R::lorawanVendor(eui) && A::lorawanEui(eui) == R::lorawanEui(eui), "vendor / eui");
-        SAME(std::string(A::lorawanMTypeName((int)(i % 12) - 2)) == R::lorawanMTypeName((int)(i % 12) - 2), "mtype name");
-        SAME(A::meshHexString(f.data(), f.size()) == R::meshHexString(f.data(), f.size()), "hex string");
+        dig.add(std::string(A::lorawanVendor(eui)), A::lorawanEui(eui));
+        dig.add(std::string(A::lorawanMTypeName((int)(i % 12) - 2)));
+        dig.add(A::meshHexString(f.data(), f.size()));
     }
     for (uint32_t k = 0; k < 4096; k++) {          // every DevAddr prefix type and NwkID shape
         const uint32_t da = (k << 20) | (r32() & 0xFFFFF);
-        int ta = -2, tb = -2; uint32_t na = 0, nb = 0, ea = 0, eb = 0;
-        SAME(A::lorawanNetwork(da, &ta, &na, &ea) == R::lorawanNetwork(da, &tb, &nb, &eb) && ta == tb && na == nb && ea == eb, "network sweep %08x", da);
+        int ta = -2; uint32_t na = 0, ea = 0;
+        dig.add(A::lorawanNetwork(da, &ta, &na, &ea), ta, na, ea);
     }
     printf("  lorawan: %ld frames, %ld parsed\n", iters, parsed);
 }
@@ -178,9 +170,8 @@ static void testLoraAprs(long iters) {
         }
         if (f.size() > 255) f.resize(255);
         const auto ra = A::meshDecodeLoraAprs(f.empty() ? nullptr : f.data(), f.size());
-        const auto rr = R::meshDecodeLoraAprs(f.empty() ? nullptr : f.data(), f.size());
-        SAME(resEq(ra, rr), "lora aprs mode %d size %zu '%s' vs '%s'", mode, f.size(), ra.packet.note.c_str(), rr.packet.note.c_str());
-        SAME(A::meshPrintable(f.data(), f.size()) == R::meshPrintable(f.data(), f.size()), "printable");
+        addRes(ra);
+        dig.add(A::meshPrintable(f.data(), f.size()));
         parsed += ra.ok;
     }
     printf("  lora aprs: %ld frames, %ld parsed\n", iters, parsed);
@@ -216,9 +207,7 @@ static void testMeshCom(long iters) {
         }
         if (f.size() > 255) f.resize(255);
         const auto ra = A::meshDecodeMeshCom(f.empty() ? nullptr : f.data(), f.size());
-        const auto rr = R::meshDecodeMeshCom(f.empty() ? nullptr : f.data(), f.size());
-        SAME(resEq(ra, rr), "meshcom mode %d size %zu '%s' vs '%s' | '%s' vs '%s'", mode, f.size(), ra.packet.note.c_str(), rr.packet.note.c_str(), ra.packet.detail.c_str(),
-             rr.packet.detail.c_str());
+        addRes(ra);
         parsed += ra.ok;
     }
     printf("  meshcom: %ld frames, %ld parsed (%ld ack candidates)\n", iters, parsed, acks);

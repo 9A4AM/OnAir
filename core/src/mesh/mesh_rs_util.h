@@ -1,6 +1,5 @@
-// Shared by the Rust-backed mesh files (mesh_*_rs.cpp, DECT2_RUST_MESH): conversions from the flat records of rs/mesh.h and the start-up layout check.
+// Shared by the Rust-backed mesh files (mesh_*_rs.cpp): conversions from the flat records of rs/mesh.h and the start-up layout check.
 #pragma once
-#ifdef DECT2_RUST_MESH
 #include "dect2/mesh/mesh_proto.h"
 #include "dect2/rs/mesh.h"
 #include <string>
@@ -29,4 +28,3 @@ inline void message(const OnairMeshMessage& c, MeshTextMessage& m) {
 
 } // namespace meshrs
 } // namespace dect2
-#endif

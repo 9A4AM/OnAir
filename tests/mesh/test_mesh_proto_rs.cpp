@@ -1,13 +1,13 @@
-// Differential test of the mesh packet layer, part 1: the protobuf reader, the Meshtastic name / key helpers and the Meshtastic packet decoder. The Rust-backed
-// dect2:: implementation (DECT2_RUST_MESH) against the frozen C++ copy dect2_mesh_ref:: (cmake/gen_mesh_ref.cmake) on identical inputs: random and structured
-// protobuf, every port payload (text, position, node info, telemetry, routing, traceroute, neighbours) encrypted with the default key and with a user key, mutated and
-// truncated packets, headers of every length. ONAIR_DIFF_ITERS (default 100000, 200000 verified) per family. Part 2 is rs_part2_mesh.cpp.
+// Golden-vector test of the mesh packet layer (rust/onair_mesh behind dect2::), part 1: the protobuf reader, the Meshtastic name / key helpers and the Meshtastic
+// packet decoder on random and structured protobuf, every port payload (text, position, node info, telemetry, routing, traceroute, neighbours) encrypted with the
+// default key and with a user key, mutated and truncated packets, headers of every length. ONAIR_DIFF_ITERS (default 100000, 200000 verified) per family. Part 2 is
+// rs_part2_mesh.cpp. Every result goes into a digest (tests/common/golden.h; doubles rounded to 1e-6) compared with the one recorded from the C++ mesh layer the
+// Rust code replaced.
 #include "mesh_rs_cmp.h"
 #include "dect2/mesh/mesh_pb.h"
-#include "mesh_pb_ref.h"
 #include "dect2/mesh/mesh_crypto.h"
 
-long g_fails = 0, g_checks = 0;
+golden::Digest dig;
 std::mt19937 g(31337);
 
 std::vector<uint8_t> mutateBytes(std::vector<uint8_t> v) {
@@ -45,51 +45,49 @@ std::vector<uint8_t> randProto(int fields, const std::vector<int>& nums, int gar
 
 // ---- protobuf reader ----
 static void testPb(long iters) {
-    namespace PA = dect2::meshpb;
-    namespace PR = dect2_mesh_ref::meshpb;
+    namespace PA = A::meshpb;
     for (long i = 0; i < iters; i++) {
         std::vector<uint8_t> d = (i % 3 == 0) ? std::vector<uint8_t>() : randProto(1 + (int)(g() % 8), {}, 40);
         if (i % 3 == 0) { const size_t n = g() % 40; for (size_t k = 0; k < n; k++) d.push_back(rb()); }
         PA::Reader a(d.empty() ? nullptr : d.data(), d.size());
-        PR::Reader b(d.empty() ? nullptr : d.data(), d.size());
         for (int step = 0; step < 40; step++) {
-            PA::Field x; PR::Field y;
-            const bool ra = a.next(x), rb2 = b.next(y);
-            SAME(ra == rb2 && a.ok() == b.ok() && a.atEnd() == b.atEnd(), "pb next/ok/end step %d", step);
-            if (!ra || !rb2) break;
-            SAME(x.num == y.num && x.wire == y.wire && x.value == y.value && x.len == y.len && (x.data == nullptr) == (y.data == nullptr) &&
-                 (!x.data || (x.data - d.data() == y.data - d.data())) && x.asInt32() == y.asInt32() && x.asSint32() == y.asSint32() && x.asString() == y.asString(), "pb field");
-            uint32_t fa = x.asFloat() == x.asFloat() ? 0 : 1, fb = y.asFloat() == y.asFloat() ? 0 : 1;
-            SAME(fa == fb && (fa || x.asFloat() == y.asFloat()), "pb float");
-            std::vector<uint32_t> p32, q32;
-            std::vector<uint64_t> p64, q64;
-            PA::readRepeatedFixed32(x, p32); PR::readRepeatedFixed32(y, q32);
-            PA::readRepeatedVarint(x, p64); PR::readRepeatedVarint(y, q64);
-            SAME(p32 == q32 && p64 == q64, "pb repeated");
+            PA::Field x;
+            const bool ra = a.next(x);
+            dig.add(ra, a.ok(), a.atEnd());
+            if (!ra) break;
+            dig.add(x.num, x.wire, x.value, x.len, x.data == nullptr, x.data ? (int64_t)(x.data - d.data()) : (int64_t)-1, x.asInt32(), x.asSint32(), x.asString());
+            dig.add(x.asFloat() == x.asFloat() ? 0 : 1);
+            if (x.asFloat() == x.asFloat()) dig.add(x.asFloat());
+            std::vector<uint32_t> p32;
+            std::vector<uint64_t> p64;
+            PA::readRepeatedFixed32(x, p32);
+            PA::readRepeatedVarint(x, p64);
+            dig.add(p32);
+            dig.add(p64);
         }
     }
 }
 
 // ---- Meshtastic helpers ----
 static void testHelpers(long iters) {
-    for (int hw = -5; hw < 400; hw++) SAME(A::meshtasticHwModelName(hw) == R::meshtasticHwModelName(hw), "hw name %d", hw);
+    for (int hw = -5; hw < 400; hw++) dig.add(A::meshtasticHwModelName(hw));
     for (int hw = 0; hw < 400; hw++) {
-        const std::string n = R::meshtasticHwModelName(hw);
-        SAME(A::meshtasticHwModelValue(n) == R::meshtasticHwModelValue(n), "hw value %s", n.c_str());
+        const std::string n = A::meshtasticHwModelName(hw);
+        dig.add(A::meshtasticHwModelValue(n));
     }
-    SAME(A::meshtasticHwModelValue("NOPE") == R::meshtasticHwModelValue("NOPE") && A::meshtasticHwModelValue("") == R::meshtasticHwModelValue(""), "hw value unknown");
+    dig.add(A::meshtasticHwModelValue("NOPE"), A::meshtasticHwModelValue(""));
     for (long i = 0; i < iters; i++) {
         const uint32_t n = r32();
-        SAME(A::meshtasticNodeIdString(n) == R::meshtasticNodeIdString(n), "node id");
+        dig.add(A::meshtasticNodeIdString(n));
         std::string name;
         for (size_t k = g() % 20; k > 0; k--) name += (char)rb();
         std::vector<uint8_t> key(g() % 40);
         for (auto& b : key) b = rb();
-        SAME(A::meshtasticChannelHash(name, key) == R::meshtasticChannelHash(name, key), "channel hash");
-        std::vector<uint8_t> psk(g() % 36), ka, kb;
+        dig.add(A::meshtasticChannelHash(name, key));
+        std::vector<uint8_t> psk(g() % 36), ka;
         for (auto& b : psk) b = (g() % 4 == 0) ? (uint8_t)(g() % 4) : rb();
-        const bool oa = A::meshtasticExpandPsk(psk, ka), ob = R::meshtasticExpandPsk(psk, kb);
-        SAME(oa == ob && ka == kb, "expand psk len %zu", psk.size());
+        const bool oa = A::meshtasticExpandPsk(psk, ka);
+        dig.add(oa, ka);
     }
 }
 
@@ -122,19 +120,15 @@ static std::vector<uint8_t> portPayload(int port) {
 
 static void testMeshtastic(long iters) {
     A::MeshProto pa;
-    R::MeshProto pr;
     // two user channels: the default key under another name, and a 32 byte key
     const char* kSecretB64 = "q83vASNFZ4mrze8BI0VniavN7wEjRWeJq83vASNFZ4k=";
     pa.addMeshtasticChannel("Friends", "1PG7OiApB1nwvP+rz05pAQ==");
-    pr.addMeshtasticChannel("Friends", "1PG7OiApB1nwvP+rz05pAQ==");
     pa.addMeshtasticChannel("Secret", kSecretB64);
-    pr.addMeshtasticChannel("Secret", kSecretB64);
     std::vector<uint8_t> keyDefault, keySecret;
     A::meshtasticExpandPsk({1}, keyDefault);
     dect2::meshcrypto::base64Decode(kSecretB64, keySecret);
     const int ports[] = {1, 3, 4, 67, 5, 70, 71, 0, 8, 66, 72, 256};
     const A::MeshRadioInfo radio{};
-    const R::MeshRadioInfo radioR{};
     long decoded = 0, withNode = 0, withMsg = 0;
     for (long i = 0; i < iters; i++) {
         std::vector<uint8_t> pkt;
@@ -181,9 +175,7 @@ static void testMeshtastic(long iters) {
         }
         if (pkt.size() > 255) pkt.resize(255);
         const auto ra = pa.decodeMeshtastic(pkt.data(), pkt.size(), radio);
-        const auto rr = pr.decodeMeshtastic(pkt.data(), pkt.size(), radioR);
-        SAME(resEq(ra, rr), "meshtastic packet mode %d size %zu: '%s' vs '%s' | '%s' vs '%s'", mode, pkt.size(), ra.packet.type.c_str(), rr.packet.type.c_str(),
-             ra.packet.detail.c_str(), rr.packet.detail.c_str());
+        addRes(ra);
         decoded += ra.packet.decrypted;
         withNode += !ra.nodes.empty();
         withMsg += !ra.messages.empty();
@@ -197,6 +189,6 @@ int main() {
     testHelpers(iters);
     testMeshtastic(iters);
     const int rc2 = runMeshProto2();
-    printf("test_mesh_proto_rs: %ld checks, %ld mismatches\n", g_checks, g_fails);
-    return (g_fails || rc2) ? 1 : 0;
+    if (rc2) return 1;
+    return golden::check("mesh_proto_rs", dig, 0x9c82d2bce01c85a6ull, !getenv("ONAIR_DIFF_ITERS"));
 }

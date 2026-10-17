@@ -1,6 +1,5 @@
-// Protobuf reader of the mesh messages on top of the Rust crate rust/onair_mesh (DECT2_RUST_MESH): Reader::next and the repeated field readers of mesh_pb.h
-// (mesh_pb.cpp keeps the C++ and the Writer). Empty when the crate is not built.
-#ifdef DECT2_RUST_MESH
+// Protobuf reader of the mesh messages on top of the Rust crate rust/onair_mesh: Reader::next and the repeated field readers of mesh_pb.h
+// (mesh_pb.cpp keeps the Writer).
 #include "dect2/mesh/mesh_pb.h"
 #include "dect2/rs/mesh.h"
 
@@ -32,4 +31,3 @@ void readRepeatedVarint(const Field& f, std::vector<uint64_t>& out) {
 
 } // namespace meshpb
 } // namespace dect2
-#endif

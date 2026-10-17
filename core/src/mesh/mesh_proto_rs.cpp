@@ -1,7 +1,6 @@
-// Meshtastic and MeshCore packet layers and the Meshtastic name / key helpers on top of the Rust crate rust/onair_mesh (DECT2_RUST_MESH): the same functions
-// as mesh_proto.cpp, mesh_proto_meshtastic.cpp and mesh_proto_meshcore.cpp, which keep the C++ under #ifndef DECT2_RUST_MESH. Rust parses and formats; the
-// channel tables, AES-CTR, AES-ECB / HMAC and Ed25519 stay here because they need keys. Empty when the crate is not built.
-#ifdef DECT2_RUST_MESH
+// Meshtastic and MeshCore packet layers and the Meshtastic name / key helpers on top of the Rust crate rust/onair_mesh: the functions of
+// mesh_proto.h; mesh_proto.cpp, mesh_proto_meshtastic.cpp and mesh_proto_meshcore.cpp keep the key-dependent parts and the packet builders. Rust parses and formats; the
+// channel tables, AES-CTR, AES-ECB / HMAC and Ed25519 stay here because they need keys.
 #include "mesh_proto_internal.h"
 #include "mesh_rs_util.h"
 #include "dect2/mesh/mesh_crypto.h"
@@ -226,4 +225,3 @@ MeshDecodeResult MeshProto::decodeMeshCore(const uint8_t* p, size_t n, const Mes
 }
 
 } // namespace dect2
-#endif
