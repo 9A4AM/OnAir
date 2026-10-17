@@ -2363,6 +2363,60 @@ Current setting: %.2f ppm	当前设置: %.2f ppm
 No measurements of this radio yet.	此无线电尚无测量记录。
 History of this radio (ppm)	此无线电的历史(ppm)
 Drift: %+.3f ppm per minute	漂移: 每分钟 %+.3f ppm
+Band from (kHz)	频段起点 (kHz)
+Calibrate from two landmarks	用两个地标校准
+Calibrated.	已校准。
+Camera snapshot URL (JPEG)	摄像头快照网址 (JPEG)
+Cannot load the picture.	无法加载图片。
+Cannot save the snapshot.	无法保存快照。
+Centre azimuth	中心方位角
+Click the picture to set the column of the selected landmark.	点击图片可设置所选地标的列。
+Demo skyline (no camera)	演示天际线 (无摄像头)
+Enable RF camera	启用射频相机
+Field of view	视场角
+Heat strength	热图强度
+No picture.	没有图片。
+Normal camera lens	普通相机镜头
+Panorama (equirectangular)	全景图 (等距柱状)
+Picture	图片
+Picture or panorama file	图片或全景图文件
+Projection	投影
+RF camera	射频相机
+Save snapshot	保存快照
+Snapshot saved: %s	快照已保存：%s
+Sub-bands	子频段
+The two landmarks do not fit a picture.	这两个地标与图片不匹配。
+Weakest shown	显示的最弱强度
+azimuth	方位角
+azimuth only; the picture is just a backdrop	仅方位角；图片只是背景
+column	列
+to (kHz)	频段终点 (kHz)
+Translate to English	翻译成英语
+Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	其他语言的语音会离线翻译成英语,显示在原文旁边。需要多语言模型,大约多消耗 1.5 倍处理器时间;引擎跟不上时会跳过。不会发送任何数据。不支持翻译成其他语言。
+The loaded model is English only: translation needs a multilingual model.	已加载的模型仅支持英语:翻译需要多语言模型。
+Live: stop the room	直播中：停止房间
+Copy room link	复制房间链接
+Host PIN (to moderate on the room page):	主持人 PIN（用于在房间页面上管理）：
+Go live (Live rooms)...	开始直播（直播房间）...
+Could not create the room	无法创建房间
+Lost the connection to the rooms server	与房间服务器的连接已断开
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	直播房间：直播期间，任何拥有房间链接的人都可以查看此接收机的瀑布图、模式和调谐频率，并相互聊天。网页上的房间列表也会显示其标题。在您点击“开始直播”之前不会发送任何内容，房间结束后也不会保存任何内容。您的位置、姓名和音频绝不会被发送。
+Room title	房间标题
+Also show decoded ACARS text in the room (public)	同时在房间中显示解码的 ACARS 文本（公开）
+Needs Server > Send data to map server and Also share interesting ACARS messages.	需要 服务器 > 向地图服务器发送数据 以及 同时分享有趣的 ACARS 消息。
+Go live	开始直播
+Schedule passes by itself	自动安排过境
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	按优先级从高到低逐个处理已勾选分组的过境,无需你操作即可自动启动、调谐并录制。重叠的过境会被缩短或跳过;你自己启动的接收机不会被改动。
+Priority (higher wins)	优先级(越高越优先)
+Keep the SDR free every day	每天保持 SDR 空闲
+from %d:00	从 %d:00
+to %d:00	到 %d:00
+Nothing planned.	没有计划。
+planned	已计划
+trimmed	已缩短
+skipped: SDR reserved	已跳过:SDR 已预留
+skipped: too short	已跳过:太短
+skipped: higher priority	已跳过:有更高优先级
 # passive radar
 Aircraft from the echoes of a broadcast transmitter, with two coherent channels	利用广播发射机的回波探测飞机，需要两个相干通道
 Baseline %.1f km, transmitter bearing %.0f degrees	基线 %.1f 公里，发射机方位 %.0f 度
@@ -2412,3 +2466,159 @@ In the General receiver mode; for other events use an automation rule with the a
 Save now	立即保存
 Save the rewind	保存回溯
 Seconds to keep after the event	事件后保留的秒数
+FM broadcast	FM 广播
+Airband	航空频段
+DAB / VHF band III	DAB / VHF 三频段
+UHF TV	UHF 电视
+868 MHz ISM	868 MHz ISM
+ADS-B 1090 MHz	ADS-B 1090 MHz
+Measuring %s (%d/%d)	正在测量 %s (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	请先选择一台无线电（测试信号和文件无法测量）
+None of the measuring bands is inside this radio's range	测量频段都不在这台无线电的范围内
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s：ADC 过载（%.2f%% 的采样被削波）。请降低增益或加装衰减器。
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s：一个强信号（高出底噪 %.0f dB）使 ADC 过载，而在这个增益下其他频段又太弱。请为该频段加装带阻滤波器（FM 频段用 FM 陷波器），而不是降低增益。
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s：ADC 电平偏高（%.1f dBFS 有效值），给强信号留下的余量很小。请稍微降低增益。
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s：接收机噪声只比 ADC 自身噪声高 %.1f dB，所以弱信号会丢失。请提高增益。
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s：接收机噪声只比 ADC 自身噪声高 %.1f dB，而且增益已经最大。请在天线旁加装低噪声放大器（LNA）。
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s：增益可以再降低约 %.0f dB 而不损失灵敏度，这样对强信号有更多余量。
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s：底噪比最安静的频段高 %.0f dB。请查找本地噪声源（LED 照明、开关电源、电脑），让天线远离它，或在线缆上加装磁环。
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	没有找到 %s 电台，而通常是有的。请检查天线和线缆；也可能是你所在地区该频段本来就没有信号。
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	最强的 %s 电台只比噪声高 %.0f dB（好的天线至少能达到 %.0f dB）。请把天线架高或放到室外，或加装带通滤波器和 LNA。
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	无线电的时钟偏差为 %+.1f ppm。请在无线电设置中把频率校正（ppm）设为 %+.1f。
+The radio's clock is %+.1f ppm off: fine.	无线电的时钟偏差为 %+.1f ppm：正常。
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	ADS-B 作用距离偏短：最远的飞机在 %.0f 海里（空旷的室外天线可达 150 海里或更远）；最弱的方向在约 %.0f 度。请把天线架高，保证天空视野开阔。
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	从 %.0f 度开始的 %.0f 个 10 度扇区里完全没有飞机，而相邻方向能到很远：那里有东西挡住了视野（墙、山丘或建筑）。
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	ADS-B 作用距离：位置数据还不够。请设置好天线位置后运行 ADS-B 模式几分钟，然后再次生成报告。
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	没有发现问题。增益、底噪和参考电台看起来都正常。
+Station health report	电台状态报告
+Gain: %.0f dB	增益：%.0f dB
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s：底噪每格 %.1f dBFS，ADC 余量 %.1f dB，最强信号高出底噪 %.0f dB，ADC 电平 %.1f dBFS，削波 %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   找到的 %s 电台：%d，最强的高出底噪 %.0f dB
+The numbers are relative to the receiver itself (not calibrated to dBm).	这些数值是相对接收机自身的（未校准为 dBm）。
+Station health	电台状态
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	在几个频段上测量底噪和 ADC 电平，查找 FM、DAB 和 DVB-T 电台，并告诉你天线处该改什么。测量期间接收机会停止（约一分钟）。
+known carrier MHz (optional)	已知载波 MHz（可选）
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	一个你信任其频率的载波（ATSC 导频、基站信标、授时信号）。报告会据此给出无线电的时钟误差（ppm）。保持 0 则跳过。
+Save report...	保存报告...
+Save as JSON...	保存为 JSON...
+Noise floor	底噪
+ADC margin	ADC 余量
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f dB
+none found	未找到
+%s: %d, best %.0f dB	%s：%d，最佳 %.0f dB
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	时钟误差：%+.2f ppm（%+.0f Hz，位于 %.4f MHz）
+No carrier found at the frequency given	在给定频率上没有找到载波
+What to do	怎么做
+ADS-B range by direction	按方向的 ADS-B 作用距离
+Check station	检查电台
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	按频段显示底噪、ADC 电平和参考电台，并对增益、滤波器和天线位置给出清晰建议
+# interference hunter
+Unknown	未知
+Switching power supply	开关电源
+LED lamp or driver	LED灯或驱动器
+Powerline (PLC)	电力线 (PLC)
+Local oscillator or clock leak	本振或时钟泄漏
+Cannot open the GPS device or file.	无法打开GPS设备或文件。
+Waiting for a position fix.	正在等待定位。
+Interference gone	干扰已消失
+The noise floor rose by %.1f dB	底噪上升了 %.1f dB
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	新的宽带噪声 %.2f - %.2f MHz，%.0f dB：%s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	%.4f MHz 出现新信号，高于基线 %.0f dB：%s
+Demo (simulated sweeps)	演示（模拟扫描）
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	谱线梳需要至少5个频点的间隔才能与宽带信号区分：使用更细的频点可看到间隔更小的杂散
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	扫描间的暂停：监测可用较长暂停运行数小时；步行查找需要连续扫描
+spur threshold %.0f dB	杂散阈值 %.0f dB
+floor alert %.0f dB	底噪报警 %.0f dB
+confirm in %d sweeps	%d 次扫描后确认
+floor change dB	底噪变化 dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	正在学习基线：%d / %d 次扫描。请保持频段处于通常状态。
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	监测中。底噪 %.1f dBFS，基线 %.1f dBFS，已知信号 %zu 个。
+Press Start. The first sweeps become the baseline: what is normal in this band.	按“开始”。最初几次扫描将成为基线：该频段的正常状态。
+Learn the baseline again	重新学习基线
+What is there now is normal	当前的情况视为正常
+Adds the interference that has been reported to the baseline, so it raises no more alerts	把已报告的干扰加入基线，不再产生报警
+Save the alerts...	保存报警...
+Save the noise floor log...	保存底噪记录...
+Interference now	当前干扰
+Likely source	可能的来源
+To MHz	至 MHz
+Spacing kHz	间隔 kHz
+Alerts	报警
+Event	事件
+dB above baseline	高于基线 dB
+new signal	新信号
+noise floor up	底噪上升
+new broadband noise	新宽带噪声
+gone	已消失
+no position	无位置
+the receiver position (set for ADS-B)	接收机位置（为ADS-B设置）
+type a position	输入位置
+GPS device or NMEA file	GPS设备或NMEA文件
+latitude	纬度
+longitude	经度
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	串口GPS（例如 /dev/cu.usbmodem1101，PC上为COM3；9600波特率）或包含NMEA语句的文本文件
+Reconnect	重新连接
+Readings are logged at %.5f, %.5f	读数将记录在 %.5f, %.5f
+Readings are logged without a position.	读数将不带位置记录。
+%+.1f dB above the quiet level	高于安静电平 %+.1f dB
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	按“开始”并走动。当干扰比目前最安静处高25 dB时，指示条满格。
+Quiet	安静
+Some interference	有一些干扰
+Loud	强
+- getting louder	- 正在变强
+- getting quieter	- 正在变弱
+- steady	- 稳定
+strongest spur %.4f MHz, %.0f dB	最强杂散 %.4f MHz，%.0f dB
+This is the quiet level	设为安静电平
+Leave out the signals seen now	排除当前看到的信号
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	已知的广播载波和设备将不计入指示条：请在开始走动前于安静处执行
+Clear the readings	清除读数
+Save as CSV...	另存为CSV...
+Save as GPX...	另存为GPX...
+reading	读数
+dB above the quiet level	高于安静电平 dB
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	最强读数：%+.1f dB，位置 %.5f, %.5f（%s）
+Loudest reading: %+.1f dB (%s), no position	最强读数：%+.1f dB（%s），无位置
+Strongest spur MHz	最强杂散 MHz
+Interference hunter	干扰猎手
+Monitor	监测
+Walk	步行
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	监视频段中的新干扰，判断其类型，并用强/弱指示条步行查找来源
+The watchlist file could not be read:	无法读取监视列表文件:
+APRS call signs	APRS 呼号
+Words in messages	消息中的词语
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	每行一项: ICAO 十六进制地址 (4840D6)、注册号 (A6-EDA) 或呼号 (KLM1023)。末尾的 * 匹配开头 (KLM*)。可通过 ADS-B、ACARS、VDL2 和 HFDL 收到。
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	每行一项: MMSI 号码、船名或呼号。末尾的 * 匹配开头 (2190*)。可通过 AIS 和 DSC 收到。
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	每行一项: 呼号。不带 SSID (LY1ABC) 时匹配所有 SSID，带 SSID (LY1ABC-9) 时只匹配该 SSID。
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	每行一项: 以 MHz 为单位的频率 (162.025)、带单位 (162025 kHz) 或范围 (144-146)。在该频率上解码的任何内容都会计入。
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	每行一项: 一个词或短语 (不区分大小写)。末尾的 * 匹配词首 (fire*)。在寻呼机、ACARS、APRS 及其他解码文本中搜索。
+New list...	新建列表...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	在左侧创建列表: 飞机、船舶、APRS 呼号、频率或词语。收到列表中的内容时，OnAir 会通知你。
+On	启用
+Tolerance (kHz)	容差 (kHz)
+entries	项
+Delete list	删除列表
+Desktop notification	桌面通知
+Sound (follows Mute)	声音 (遵循静音)
+WAV file, empty = three beeps	WAV 文件，留空 = 三声提示音
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	推送提醒会发送到你选择的服务，使用你提供的地址和令牌。它们保存在你的数据文件夹中，绝不会写入日志。
+optional	可选
+optional, sent as a Bearer token	可选，作为 Bearer 令牌发送
+Send a test alert	发送测试提醒
+Most alerts per hour (0 = no limit)	每小时最多提醒数 (0 = 不限)
+Same station again after (minutes)	同一电台再次提醒间隔 (分钟)
+Quiet hours (no alerts, still listed in the history)	静默时段 (不提醒，但仍记录在历史中)
+From	从
+Until	到
+Local time of this computer.	此计算机的本地时间。
+alerts sent	条提醒已发送
+Heard	收到
+What happened	处理结果
+held back: quiet hours	已拦截: 静默时段
+held back: rate limit	已拦截: 达到上限
+Watchlists	监视列表
+Watch for these	监视这些
+Lists	列表
+Watchlists...	监视列表...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	当收到列表中的飞机、船舶、呼号、频率或词语时提醒: 通知、声音、ntfy、Telegram 或 Webhook

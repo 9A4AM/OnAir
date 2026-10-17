@@ -56,9 +56,21 @@ bool fetchUrl(const std::string& url, const std::string& file, const std::string
 #endif
 }
 
-bool postJson(const std::string& url, const std::string& json, const std::string& userAgent) {
+// reply: when not null, the response body goes there (up to 64 KB)
+static bool postImpl(const std::string& url, const std::string& json, const std::string& userAgent, std::string* reply) {
     static std::atomic<unsigned> counter{0};   // the map upload and the automations' webhooks may post at the same time
     const std::string file = cacheDir() + "/post_" + std::to_string(counter++ % 1000) + ".json";
+    const std::string outFile = file + ".out";
+    auto readReply = [&]() {
+        if (!reply) return;
+        reply->clear();
+#ifdef _WIN32
+        FILE* f = _wfopen(wide(outFile).c_str(), L"rb");
+#else
+        FILE* f = fopen(outFile.c_str(), "rb");
+#endif
+        if (f) { char b[4096]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0 && reply->size() < 65536) reply->append(b, n); fclose(f); }
+    };
 #ifdef _WIN32
     {
         FILE* f = _wfopen(wide(file).c_str(), L"wb");
@@ -70,7 +82,7 @@ bool postJson(const std::string& url, const std::string& json, const std::string
     std::wstring exe = GetSystemDirectoryW(sys, MAX_PATH) ? std::wstring(sys) + L"\\curl.exe" : std::wstring(L"curl.exe");
     if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) exe = L"curl.exe";
     std::wstring cmd = L"\"" + exe + L"\" -fsSL --max-time 12 -A \"" + wide(userAgent) +
-                       L"\" -H \"Content-Type: application/json\" --data-binary @\"" + wide(file) + L"\" -o NUL \"" + wide(url) + L"\"";
+                       L"\" -H \"Content-Type: application/json\" --data-binary @\"" + wide(file) + L"\" -o \"" + (reply ? wide(outFile) : std::wstring(L"NUL")) + L"\" \"" + wide(url) + L"\"";
     STARTUPINFOW si{};
     si.cb = sizeof si;
     PROCESS_INFORMATION pi{};
@@ -82,6 +94,8 @@ bool postJson(const std::string& url, const std::string& json, const std::string
     CloseHandle(pi.hThread);
     CloseHandle(pi.hProcess);
     DeleteFileW(wide(file).c_str());
+    readReply();
+    if (reply) DeleteFileW(wide(outFile).c_str());
     return rc == 0;
 #else
     {
@@ -92,12 +106,69 @@ bool postJson(const std::string& url, const std::string& json, const std::string
     }
     auto q = [](const std::string& s) { std::string o = "'"; for (char c : s) { if (c == '\'') o += "'\\''"; else o += c; } return o + "'"; };
     const std::string cmd = "curl -fsSL --max-time 12 -A " + q(userAgent) +
-                            " -H 'Content-Type: application/json' --data-binary @" + q(file) + " -o /dev/null " + q(url) + " 2>/dev/null";
+                            " -H 'Content-Type: application/json' --data-binary @" + q(file) + " -o " + (reply ? q(outFile) : std::string("/dev/null")) + " " + q(url) + " 2>/dev/null";
     const int rc = system(cmd.c_str());
     std::remove(file.c_str());
+    readReply();
+    if (reply) std::remove(outFile.c_str());
     return rc == 0;
 #endif
 }
+
+bool postRequest(const std::string& url, const std::string& body, const std::string& contentType, const std::vector<std::string>& headers, const std::string& userAgent) {
+    static std::atomic<unsigned> counter{0};
+    const unsigned n = counter++ % 1000;
+    const std::string bodyFile = cacheDir() + "/postr_" + std::to_string(n) + ".dat", hdrFile = cacheDir() + "/postr_" + std::to_string(n) + ".hdr";
+    auto put = [](const std::string& path, const std::string& data, bool priv) {
+#ifdef _WIN32
+        FILE* f = _wfopen(wide(path).c_str(), L"wb");
+        (void)priv;
+#else
+        FILE* f = fopen(path.c_str(), "wb");
+        if (f && priv) fchmod(fileno(f), 0600);
+#endif
+        if (!f) return false;
+        fwrite(data.data(), 1, data.size(), f);
+        fclose(f);
+        return true;
+    };
+    std::string hdr = "Content-Type: " + (contentType.empty() ? std::string("application/json") : contentType) + "\n";
+    for (const std::string& h : headers) {
+        if (h.find('\n') != std::string::npos || h.find('\r') != std::string::npos) return false;
+        hdr += h + "\n";
+    }
+    if (!put(bodyFile, body, false) || !put(hdrFile, hdr, true)) return false;
+#ifdef _WIN32
+    wchar_t sys[MAX_PATH + 1] = {0};
+    std::wstring exe = GetSystemDirectoryW(sys, MAX_PATH) ? std::wstring(sys) + L"\\curl.exe" : std::wstring(L"curl.exe");
+    if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) exe = L"curl.exe";
+    std::wstring line = L"\"" + exe + L"\" -fsSL --max-time 12 -A \"" + wide(userAgent) + L"\" -H @\"" + wide(hdrFile) + L"\" --data-binary @\"" + wide(bodyFile) + L"\" -o NUL \"" + wide(url) + L"\"";
+    STARTUPINFOW si{};
+    si.cb = sizeof si;
+    PROCESS_INFORMATION pi{};
+    bool ok = false;
+    if (CreateProcessW(nullptr, line.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {
+        if (WaitForSingleObject(pi.hProcess, 15000) != WAIT_OBJECT_0) TerminateProcess(pi.hProcess, 1);
+        DWORD rc = 1;
+        GetExitCodeProcess(pi.hProcess, &rc);
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+        ok = rc == 0;
+    }
+    DeleteFileW(wide(bodyFile).c_str());
+    DeleteFileW(wide(hdrFile).c_str());
+    return ok;
+#else
+    auto q = [](const std::string& s) { std::string o = "'"; for (char c : s) { if (c == '\'') o += "'\\''"; else o += c; } return o + "'"; };
+    const std::string cmd = "curl -fsSL --max-time 12 -A " + q(userAgent) + " -H @" + q(hdrFile) + " --data-binary @" + q(bodyFile) + " -o /dev/null " + q(url) + " 2>/dev/null";
+    const int rc = system(cmd.c_str());
+    std::remove(bodyFile.c_str());
+    std::remove(hdrFile.c_str());
+    return rc == 0;
+#endif
+}
+bool postJson(const std::string& url, const std::string& json, const std::string& userAgent) { return postImpl(url, json, userAgent, nullptr); }
+bool postJsonReply(const std::string& url, const std::string& json, const std::string& userAgent, std::string& reply) { return postImpl(url, json, userAgent, &reply); }
 
 // the map tiles are PNG: OnAir's own decoder (these systems have none it could call without an extra library)
 bool decodeImage(const std::string& path, int& w, int& h, std::vector<uint32_t>& rgba) {

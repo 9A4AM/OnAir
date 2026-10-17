@@ -2363,6 +2363,60 @@ Current setting: %.2f ppm	Huidige instelling: %.2f ppm
 No measurements of this radio yet.	Nog geen metingen van deze radio.
 History of this radio (ppm)	Geschiedenis van deze radio (ppm)
 Drift: %+.3f ppm per minute	Drift: %+.3f ppm per minuut
+Band from (kHz)	Band van (kHz)
+Calibrate from two landmarks	Kalibreren met twee oriëntatiepunten
+Calibrated.	Gekalibreerd.
+Camera snapshot URL (JPEG)	Snapshot-URL van de camera (JPEG)
+Cannot load the picture.	De afbeelding kan niet worden geladen.
+Cannot save the snapshot.	De snapshot kan niet worden opgeslagen.
+Centre azimuth	Middenazimut
+Click the picture to set the column of the selected landmark.	Klik op de afbeelding om de kolom van het geselecteerde oriëntatiepunt in te stellen.
+Demo skyline (no camera)	Demo-skyline (geen camera)
+Enable RF camera	RF-camera inschakelen
+Field of view	Beeldveld
+Heat strength	Sterkte van de heatmap
+No picture.	Geen afbeelding.
+Normal camera lens	Normale cameralens
+Panorama (equirectangular)	Panorama (equirectangulair)
+Picture	Afbeelding
+Picture or panorama file	Afbeeldings- of panoramabestand
+Projection	Projectie
+RF camera	RF-camera
+Save snapshot	Snapshot opslaan
+Snapshot saved: %s	Snapshot opgeslagen: %s
+Sub-bands	Subbanden
+The two landmarks do not fit a picture.	De twee oriëntatiepunten passen niet bij een afbeelding.
+Weakest shown	Zwakste getoond
+azimuth	azimut
+azimuth only; the picture is just a backdrop	alleen azimut; de afbeelding is slechts een achtergrond
+column	kolom
+to (kHz)	tot (kHz)
+Translate to English	Vertalen naar Engels
+Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	Spraak in een andere taal wordt ook offline naar het Engels vertaald, naast het origineel. Vereist een meertalig model en kost ongeveer 1,5 keer meer processortijd; wordt overgeslagen als de engine het niet bijhoudt. Er wordt niets verzonden. Vertalen naar andere talen is niet mogelijk.
+The loaded model is English only: translation needs a multilingual model.	Het geladen model is alleen Engels: vertalen vereist een meertalig model.
+Live: stop the room	Live: de ruimte stoppen
+Copy room link	Ruimtelink kopiëren
+Host PIN (to moderate on the room page):	Host-pincode (om te modereren op de ruimtepagina):
+Go live (Live rooms)...	Live gaan (Live-ruimtes)...
+Could not create the room	De ruimte kon niet worden gemaakt
+Lost the connection to the rooms server	Verbinding met de ruimteserver verbroken
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Live-ruimtes: zolang je live bent, kan iedereen met de ruimtelink het waterfalldiagram van deze ontvanger, de modus en de ingestelde frequentie zien en met elkaar chatten. De ruimtelijst op het web toont ook de titel. Er wordt niets verzonden voordat je op Live gaan drukt en er wordt niets bewaard nadat de ruimte is afgelopen. Je locatie, je naam en het geluid worden nooit verzonden.
+Room title	Titel van de ruimte
+Also show decoded ACARS text in the room (public)	Ook gedecodeerde ACARS-tekst in de ruimte tonen (openbaar)
+Needs Server > Send data to map server and Also share interesting ACARS messages.	Vereist Server > Gegevens naar kaartserver sturen en Ook interessante ACARS-berichten delen.
+Go live	Live gaan
+Schedule passes by itself	Overvluchten zelf plannen
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Neemt de overvluchten van de aangevinkte groepen één voor één op, hoogste prioriteit eerst, en start, stemt af en neemt elk op zonder jouw tussenkomst. Overlappende overvluchten worden ingekort of overgeslagen; een ontvanger die je zelf startte blijft ongemoeid.
+Priority (higher wins)	Prioriteit (hoger wint)
+Keep the SDR free every day	SDR elke dag vrijhouden
+from %d:00	vanaf %d:00
+to %d:00	tot %d:00
+Nothing planned.	Niets gepland.
+planned	gepland
+trimmed	ingekort
+skipped: SDR reserved	overgeslagen: SDR gereserveerd
+skipped: too short	overgeslagen: te kort
+skipped: higher priority	overgeslagen: hogere prioriteit
 # passive radar
 Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Vliegtuigen uit de echo's van een omroepzender, met twee coherente kanalen
 Baseline %.1f km, transmitter bearing %.0f degrees	Basislijn %.1f km, richting van de zender %.0f graden
@@ -2412,3 +2466,159 @@ In the General receiver mode; for other events use an automation rule with the a
 Save now	Nu opslaan
 Save the rewind	Terugspoelen opslaan
 Seconds to keep after the event	Seconden bewaren na de gebeurtenis
+FM broadcast	FM-radio
+Airband	Luchtvaartband
+DAB / VHF band III	DAB / VHF band III
+UHF TV	UHF-tv
+868 MHz ISM	868 MHz ISM
+ADS-B 1090 MHz	ADS-B 1090 MHz
+Measuring %s (%d/%d)	%s meten (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	Kies eerst een radio (het testsignaal en bestanden kunnen niet gemeten worden)
+None of the measuring bands is inside this radio's range	Geen van de meetbanden valt binnen het bereik van deze radio
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s: de ADC is overstuurd (%.2f%% van de samples wordt afgekapt). Verlaag de versterking of plaats een verzwakker.
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s: een sterk signaal (%.0f dB boven de ruisvloer) stuurt de ADC over terwijl andere banden bij deze versterking te zwak zijn. Plaats voor die band een bandstopfilter (een FM-notchfilter voor de FM-band) in plaats van de versterking te verlagen.
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s: het ADC-niveau is hoog (%.1f dBFS eff.), er is weinig ruimte over voor sterke signalen. Verlaag de versterking een beetje.
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s: de ontvangerruis ligt maar %.1f dB boven die van de ADC zelf, waardoor zwakke signalen verloren gaan. Verhoog de versterking.
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s: de ontvangerruis ligt maar %.1f dB boven die van de ADC zelf en de versterking staat al op maximum. Plaats een low-noise-versterker (LNA) vlak bij de antenne.
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s: de versterking kan ongeveer %.0f dB lager zonder gevoeligheid te verliezen, wat meer ruimte geeft voor sterke signalen.
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s: de ruisvloer ligt %.0f dB hoger dan in de rustigste band. Zoek een lokale ruisbron (ledverlichting, schakelende voedingen, computers), zet de antenne er verder vandaan of plaats een ferrietkern op de kabel.
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	Er zijn geen %s-zenders gevonden, terwijl die er normaal wel zijn. Controleer de antenne en de kabel; de band kan in jouw omgeving ook leeg zijn.
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	De sterkste %s-zender ligt maar %.0f dB boven de ruis (een goede antenne geeft minstens %.0f dB). Plaats de antenne hoger of buiten, of voeg een bandfilter en een LNA toe.
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	De klok van de radio wijkt %+.1f ppm af. Vul %+.1f in als frequentiecorrectie (ppm) in de instellingen van de radio.
+The radio's clock is %+.1f ppm off: fine.	De klok van de radio wijkt %+.1f ppm af: prima.
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	Het ADS-B-bereik is kort: het verste vliegtuig was %.0f nm weg (een vrijstaande buitenantenne haalt 150 nm of meer); de zwakste richting ligt rond %.0f graden. Plaats de antenne hoger, met vrij zicht op de lucht.
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	Helemaal geen vliegtuigen in %.0f sectoren van 10 graden vanaf %.0f graden, terwijl de aangrenzende richtingen ver reiken: daar blokkeert iets het zicht (een muur, een heuvel, een gebouw).
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	ADS-B-bereik: nog niet genoeg posities. Draai de ADS-B-modus enkele minuten met de antennepositie ingesteld en voer het rapport daarna opnieuw uit.
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	Niets mis gevonden. De versterking, de ruisvloer en de referentiezenders zien er gezond uit.
+Station health report	Stationsrapport
+Gain: %.0f dB	Versterking: %.0f dB
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s: ruisvloer %.1f dBFS per bin, ADC-marge %.1f dB, sterkste signaal %.0f dB boven de vloer, ADC-niveau %.1f dBFS, afkapping %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   %s-zenders gevonden: %d, sterkste %.0f dB boven de vloer
+The numbers are relative to the receiver itself (not calibrated to dBm).	De getallen zijn relatief ten opzichte van de ontvanger zelf (niet gekalibreerd naar dBm).
+Station health	Stationsconditie
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	Meet de ruisvloer en het ADC-niveau op een paar banden, zoekt FM-, DAB- en DVB-T-zenders en vertelt wat je aan de antenne kunt veranderen. De ontvanger stopt tijdens het meten (ongeveer een minuut).
+known carrier MHz (optional)	bekende draaggolf MHz (optioneel)
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	Een draaggolf waarvan je de frequentie vertrouwt (een ATSC-pilot, de baken van een zendmast, een tijdsignaal). Het rapport geeft daaruit de klokfout van de radio in ppm. Laat op 0 om over te slaan.
+Save report...	Rapport opslaan...
+Save as JSON...	Opslaan als JSON...
+Noise floor	Ruisvloer
+ADC margin	ADC-marge
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f dB
+none found	geen gevonden
+%s: %d, best %.0f dB	%s: %d, beste %.0f dB
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	Klokfout: %+.2f ppm (%+.0f Hz bij %.4f MHz)
+No carrier found at the frequency given	Geen draaggolf gevonden op de opgegeven frequentie
+What to do	Wat te doen
+ADS-B range by direction	ADS-B-bereik per richting
+Check station	Station controleren
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	Ruisvloer, ADC-niveau en referentiezenders per band, met duidelijk advies over versterking, filters en antenneplaatsing
+# interference hunter
+Unknown	Onbekend
+Switching power supply	Schakelende voeding
+LED lamp or driver	LED-lamp of driver
+Powerline (PLC)	Stroomnet (PLC)
+Local oscillator or clock leak	Lek van oscillator of klok
+Cannot open the GPS device or file.	Kan het GPS-apparaat of het bestand niet openen.
+Waiting for a position fix.	Wachten op een positiebepaling.
+Interference gone	Storing verdwenen
+The noise floor rose by %.1f dB	De ruisvloer is %.1f dB gestegen
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	Nieuwe breedbandruis %.2f - %.2f MHz, %.0f dB: %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	Nieuw signaal op %.4f MHz, %.0f dB boven de basislijn: %s
+Demo (simulated sweeps)	Demo (gesimuleerde sweeps)
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	Een kam van spurs heeft minstens 5 bins afstand nodig om van een breed signaal te worden onderscheiden: fijnere bins tonen dichter bij elkaar liggende spurs
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	Pauze tussen sweeps: de monitor kan uren draaien met lange pauzes; bij het lopen is direct achter elkaar nodig
+spur threshold %.0f dB	spur-drempel %.0f dB
+floor alert %.0f dB	ruisvloeralarm %.0f dB
+confirm in %d sweeps	bevestigen in %d sweeps
+floor change dB	ruisvloerverandering dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	Basislijn leren: %d van %d sweeps. Laat de band zoals hij normaal is.
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	Bewaking actief. Ruisvloer %.1f dBFS, basislijn %.1f dBFS, %zu bekende signalen.
+Press Start. The first sweeps become the baseline: what is normal in this band.	Druk op Start. De eerste sweeps worden de basislijn: wat normaal is in deze band.
+Learn the baseline again	Basislijn opnieuw leren
+What is there now is normal	Wat er nu is, is normaal
+Adds the interference that has been reported to the baseline, so it raises no more alerts	Voegt de gemelde storing toe aan de basislijn, zodat ze geen alarmen meer geeft
+Save the alerts...	Alarmen opslaan...
+Save the noise floor log...	Ruisvloerlogboek opslaan...
+Interference now	Huidige storingen
+Likely source	Waarschijnlijke bron
+To MHz	Tot MHz
+Spacing kHz	Afstand kHz
+Alerts	Alarmen
+Event	Gebeurtenis
+dB above baseline	dB boven basislijn
+new signal	nieuw signaal
+noise floor up	ruisvloer gestegen
+new broadband noise	nieuwe breedbandruis
+gone	verdwenen
+no position	geen positie
+the receiver position (set for ADS-B)	de ontvangerpositie (ingesteld voor ADS-B)
+type a position	positie intypen
+GPS device or NMEA file	GPS-apparaat of NMEA-bestand
+latitude	breedtegraad
+longitude	lengtegraad
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	Een seriële GPS (bijvoorbeeld /dev/cu.usbmodem1101 of COM3 op een pc; 9600 baud) of een tekstbestand met NMEA-zinnen
+Reconnect	Opnieuw verbinden
+Readings are logged at %.5f, %.5f	Metingen worden vastgelegd op %.5f, %.5f
+Readings are logged without a position.	Metingen worden zonder positie vastgelegd.
+%+.1f dB above the quiet level	%+.1f dB boven het rustige niveau
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	Druk op Start en loop. De meter is vol als de storing 25 dB boven de tot nu toe stilste plek ligt.
+Quiet	Rustig
+Some interference	Enige storing
+Loud	Luid
+- getting louder	- wordt luider
+- getting quieter	- wordt zachter
+- steady	- constant
+strongest spur %.4f MHz, %.0f dB	sterkste spur %.4f MHz, %.0f dB
+This is the quiet level	Dit is het rustige niveau
+Leave out the signals seen now	Nu geziene signalen weglaten
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	Bekende omroepdragers en apparaten worden uit de meter gelaten: doe dit op een rustige plek voordat je gaat lopen
+Clear the readings	Metingen wissen
+Save as CSV...	Opslaan als CSV...
+Save as GPX...	Opslaan als GPX...
+reading	meting
+dB above the quiet level	dB boven het rustige niveau
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	Luidste meting: %+.1f dB op %.5f, %.5f (%s)
+Loudest reading: %+.1f dB (%s), no position	Luidste meting: %+.1f dB (%s), geen positie
+Strongest spur MHz	Sterkste spur MHz
+Interference hunter	Stoorzenderjager
+Monitor	Bewaking
+Walk	Wandeling
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Bewaak een band op nieuwe storingen, bepaal het soort en spoor ze lopend op met een luid / stil meter
+The watchlist file could not be read:	Het bestand met kijklijsten kon niet worden gelezen:
+APRS call signs	APRS-roepletters
+Words in messages	Woorden in berichten
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Een per regel: een ICAO-hexadres (4840D6), een registratie (A6-EDA) of een roepnaam (KLM1023). Een * aan het eind komt overeen met het begin (KLM*). Gehoord via ADS-B, ACARS, VDL2 en HFDL.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Een per regel: een MMSI-nummer, een scheepsnaam of een roepnaam. Een * aan het eind komt overeen met het begin (2190*). Gehoord via AIS en DSC.
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Een per regel: een roepnaam. Zonder SSID (LY1ABC) komt elke SSID overeen, met SSID (LY1ABC-9) alleen die ene.
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Een per regel: een frequentie in MHz (162.025), met een eenheid (162025 kHz) of een bereik (144-146). Alles wat erop wordt gedecodeerd telt mee.
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Een per regel: een woord of zin (hoofdletterongevoelig). Een * aan het eind komt overeen met woordbegin (fire*). Gezocht in pager-, ACARS-, APRS- en andere gedecodeerde teksten.
+New list...	Nieuwe lijst...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	Maak links een lijst: vliegtuigen, schepen, APRS-roepnamen, frequenties of woorden. OnAir meldt het als er iets van wordt gehoord.
+On	Aan
+Tolerance (kHz)	Tolerantie (kHz)
+entries	items
+Delete list	Lijst verwijderen
+Desktop notification	Bureaubladmelding
+Sound (follows Mute)	Geluid (volgt Dempen)
+WAV file, empty = three beeps	WAV-bestand, leeg = drie piepjes
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	Pushmeldingen gaan naar een dienst naar keuze, met het adres en de token die je opgeeft. Ze worden bewaard in je gegevensmap en nooit in een logboek geschreven.
+optional	optioneel
+optional, sent as a Bearer token	optioneel, verzonden als Bearer-token
+Send a test alert	Testmelding sturen
+Most alerts per hour (0 = no limit)	Maximaal aantal meldingen per uur (0 = geen limiet)
+Same station again after (minutes)	Hetzelfde station opnieuw na (minuten)
+Quiet hours (no alerts, still listed in the history)	Stille uren (geen meldingen, wel in de geschiedenis)
+From	Van
+Until	Tot
+Local time of this computer.	Lokale tijd van deze computer.
+alerts sent	meldingen verzonden
+Heard	Gehoord
+What happened	Wat er gebeurde
+held back: quiet hours	tegengehouden: stille uren
+held back: rate limit	tegengehouden: limiet bereikt
+Watchlists	Kijklijsten
+Watch for these	Hierop letten
+Lists	Lijsten
+Watchlists...	Kijklijsten...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Meldingen als aangewezen vliegtuigen, schepen, roepnamen, frequenties of woorden worden gehoord: melding, geluid, ntfy, Telegram of webhook

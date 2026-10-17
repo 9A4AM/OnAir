@@ -7,6 +7,7 @@
 #include "dect2/engine/mode_tuning.h"
 #include "netcompat.h"
 #include "tcp_client.h"
+#include "tls_conn.h"
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -63,7 +64,17 @@ std::string trim(const std::string& s) {
     while (b > a && (s[b - 1] == ' ' || s[b - 1] == '\t' || s[b - 1] == '\r')) b--;
     return s.substr(a, b - a);
 }
+// The connection of this thread (every connection has a thread of its own): TLS when the server was given a certificate, else plain sockets
+thread_local tls::Conn* gTls = nullptr;
+bool ioSendAll(sock_t s, const void* d, size_t n) {
+    if (!gTls) return sockSendAll(s, d, n);
+    const char* p = (const char*)d;
+    while (n > 0) { const long k = tls::write(gTls, p, n); if (k <= 0) return false; p += k; n -= (size_t)k; }
+    return true;
+}
+long long ioRecv(sock_t s, void* d, size_t n) { return gTls ? (long long)tls::read(gTls, d, n) : sockRecv(s, d, n); }
 bool waitReadable(sock_t s, int ms) {
+    if (gTls && tls::pending(gTls)) return true;
     fd_set rd;
     FD_ZERO(&rd); FD_SET(s, &rd);
     timeval tv{ms / 1000, (ms % 1000) * 1000};
@@ -110,7 +121,7 @@ struct RemoteApiServer::Impl {
         if (th.joinable()) th.join();   // the accept thread closes and joins its connections on the way out
         quit = false;
         std::lock_guard<std::mutex> lk(mu);
-        st.listening = false; st.httpClients = st.wsClients = 0;
+        st.listening = false; st.tls = false; st.httpClients = st.wsClients = 0;
     }
     void reap() {   // under no lock: joins the connections that finished
         for (size_t i = 0; i < conns.size();) {
@@ -123,12 +134,13 @@ struct RemoteApiServer::Impl {
         st.httpClients = http; st.wsClients = ws;
     }
     std::atomic<int> wsActive{0};
+    tls::Ctx* tctx = nullptr;   // set while listening with TLS
 
     // ---- responses
     bool send(sock_t s, int code, const std::string& body, const char* type = "application/json", const std::string& extra = "") {
         std::string r = "HTTP/1.1 " + std::to_string(code) + " " + statusText(code) + "\r\nContent-Type: " + type + "\r\nContent-Length: " + std::to_string(body.size()) +
                         "\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nConnection: close\r\n" + extra + "\r\n" + body;
-        return sockSendAll(s, r.data(), r.size());
+        return ioSendAll(s, r.data(), r.size());
     }
     bool sendErr(sock_t s, int code, const std::string& msg, const std::string& extra = "") {
         rejected++;
@@ -147,7 +159,7 @@ struct RemoteApiServer::Impl {
             if (late()) { sendErr(s, 408, "request timeout"); return false; }
             if (!waitReadable(s, 100)) continue;
             char b[2048];
-            const long long k = sockRecv(s, b, sizeof b);
+            const long long k = ioRecv(s, b, sizeof b);
             if (k <= 0) return false;
             buf.append(b, (size_t)k);
             const int sc = netp::httpScan(buf, hdrEnd);   // 0 not yet, 1 found, 2 over 8192 bytes
@@ -166,7 +178,7 @@ struct RemoteApiServer::Impl {
             if (late()) { sendErr(s, 408, "request timeout"); return false; }
             if (!waitReadable(s, 100)) continue;
             char b[2048];
-            const long long k = sockRecv(s, b, sizeof b);
+            const long long k = ioRecv(s, b, sizeof b);
             if (k <= 0) return false;
             rest.append(b, (size_t)k);
         }
@@ -214,6 +226,13 @@ struct RemoteApiServer::Impl {
             { std::lock_guard<std::mutex> lk(hostMu); j = f(); }
             send(s, 200, j);
         };
+        if (p == "/" || p == "/index.html") {
+            std::string page;
+            if (isGet) { std::lock_guard<std::mutex> lk(hostMu); page = host.indexHtml(); }
+            if (page.empty()) { sendErr(s, 404, "no web page in this program"); return; }
+            send(s, 200, page, "text/html; charset=utf-8", "Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self' ws: wss:; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'\r\nReferrer-Policy: no-referrer\r\n");
+            return;
+        }
         if (p == "/api/v1" || p == "/api/v1/") {
             getOnly([] { return std::string("{\"name\":\"OnAir remote API\",\"version\":1,\"endpoints\":[\"GET /api/v1/status\",\"GET /api/v1/devices\",\"GET /api/v1/modes\",\"GET /api/v1/telemetry\","
                                             "\"GET /api/v1/spectrum?bins=N\",\"GET /api/v1/rotator\",\"GET /api/v1/ws\",\"POST /api/v1/start\",\"POST /api/v1/stop\",\"POST /api/v1/mode\",\"POST /api/v1/frequency\","
@@ -236,6 +255,19 @@ struct RemoteApiServer::Impl {
             return;
         }
         if (p == "/api/v1/ws") { sendErr(s, 426, "WebSocket upgrade required", "Upgrade: websocket\r\n"); return; }   // a proper upgrade is handled before route()
+        if (p.compare(0, 10, "/api/v1/x/") == 0) {   // the host program's own endpoints
+            std::map<std::string, JsonVal> jb;
+            if (isPost) {
+                if (!needJson(rq)) { sendErr(s, 415, "Content-Type: application/json required"); return; }
+                if (!rq.body.empty() && !parseFlatJson(rq.body, jb)) { sendErr(s, 400, "body must be a flat JSON object"); return; }
+            }
+            std::string out;
+            int code;
+            { std::lock_guard<std::mutex> lk(hostMu); code = host.handleExtra(rq.method, p, jb, out); }
+            if (code == 0) { sendErr(s, 404, "no such endpoint"); return; }
+            if (code >= 400) sendErr(s, code, out); else send(s, code, out);
+            return;
+        }
         const bool known = p == "/api/v1/start" || p == "/api/v1/stop" || p == "/api/v1/mode" || p == "/api/v1/frequency" || p == "/api/v1/samplerate" || p == "/api/v1/gain"
                          || p == "/api/v1/rotator/goto" || p == "/api/v1/rotator/stop" || p == "/api/v1/rotator/park";
         if (!known) { sendErr(s, 404, "no such endpoint"); return; }
@@ -296,9 +328,10 @@ struct RemoteApiServer::Impl {
         struct Dec { std::atomic<int>& n; ~Dec() { n--; } } dec{wsActive};
         cn.ws = true;
         const std::string r = "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: " + wsAcceptKey(key) + "\r\n\r\n";
-        if (!sockSendAll(s, r.data(), r.size())) return;
-        bool wantTel = true, wantSpec = false;
-        int bins = 512;
+        if (!ioSendAll(s, r.data(), r.size())) return;
+        bool wantTel = true, wantSpec = false, binSpec = false;
+        int bins = 512, fps = 5, slow = 1, audioId = -1;   // slow: the spectrum interval is stretched by this while the client cannot keep up
+        struct AudioGuard { RemoteApiHost& h; std::mutex& m; int& id; ~AudioGuard() { if (id >= 0) { std::lock_guard<std::mutex> lk(m); h.audioClose(id); } } } audioGuard{host, hostMu, audioId};
         uint64_t telSeq = ~0ull, specSeq = ~0ull;
         auto lastTel = std::chrono::steady_clock::now() - std::chrono::seconds(1), lastSpec = lastTel;
         std::string in;
@@ -306,13 +339,13 @@ struct RemoteApiServer::Impl {
             std::string pl;
             pl.push_back((char)(code >> 8)); pl.push_back((char)(code & 0xFF));
             const std::string f = wsFrame(8, pl);
-            sockSendAll(s, f.data(), f.size());
+            ioSendAll(s, f.data(), f.size());
         };
-        auto sendText = [&](const std::string& t) { const std::string f = wsFrame(1, t); return sockSendAll(s, f.data(), f.size()); };
+        auto sendText = [&](const std::string& t) { const std::string f = wsFrame(1, t); return ioSendAll(s, f.data(), f.size()); };
         while (!quit) {
-            if (waitReadable(s, 50)) {
+            if (waitReadable(s, audioId >= 0 ? 15 : 50)) {
                 char b[1024];
-                const long long k = sockRecv(s, b, sizeof b);
+                const long long k = ioRecv(s, b, sizeof b);
                 if (k <= 0) return;
                 in.append(b, (size_t)k);
                 if (in.size() > 2 * (kMaxWsFrame + 16)) { closeWith(1009); return; }
@@ -325,16 +358,28 @@ struct RemoteApiServer::Impl {
                 const int op = fr.op;
                 const std::string& pl = fr.payload;
                 if (op == 8) { closeWith(1000); return; }
-                if (op == 9) { const std::string f = wsFrame(10, pl.substr(0, 125)); if (!sockSendAll(s, f.data(), f.size())) return; continue; }
+                if (op == 9) { const std::string f = wsFrame(10, pl.substr(0, 125)); if (!ioSendAll(s, f.data(), f.size())) return; continue; }
                 if (op == 10) continue;
                 std::map<std::string, JsonVal> j;
                 if (!parseFlatJson(pl, j)) { if (!sendText("{\"type\":\"error\",\"error\":\"send a flat JSON object like {\\\"spectrum\\\":true}\"}")) return; continue; }
                 if (j.count("telemetry") && j["telemetry"].kind == JsonVal::Bool) wantTel = j["telemetry"].b;
                 if (j.count("spectrum") && j["spectrum"].kind == JsonVal::Bool) wantSpec = j["spectrum"].b;
                 if (j.count("bins") && j["bins"].kind == JsonVal::Num) bins = std::max(16, std::min(2048, (int)j["bins"].num));
+                if (j.count("fps") && j["fps"].kind == JsonVal::Num) fps = std::max(1, std::min(30, (int)j["fps"].num));
+                if (j.count("fmt") && j["fmt"].kind == JsonVal::Str) binSpec = j["fmt"].str == "u8";   // bytes instead of JSON: about a tenth of the bandwidth
+                if (j.count("audio") && j["audio"].kind == JsonVal::Bool) {
+                    std::lock_guard<std::mutex> lk(hostMu);
+                    if (audioId >= 0) { host.audioClose(audioId); audioId = -1; }
+                    if (j["audio"].b) {
+                        const int ar = j.count("arate") && j["arate"].kind == JsonVal::Num ? std::max(8000, std::min(48000, (int)j["arate"].num)) : 16000;
+                        audioId = host.audioOpen(ar);
+                        if (audioId < 0 && !sendText("{\"type\":\"error\",\"error\":\"this program has no audio to send\"}")) return;
+                    }
+                }
+                slow = 1;
                 telSeq = specSeq = ~0ull;   // the new choice is answered with the current values
                 lastTel = lastSpec = std::chrono::steady_clock::now() - std::chrono::seconds(1);
-                if (!sendText(std::string("{\"type\":\"subscribed\",\"telemetry\":") + (wantTel ? "true" : "false") + ",\"spectrum\":" + (wantSpec ? "true" : "false") + ",\"bins\":" + std::to_string(bins) + "}")) return;
+                if (!sendText(std::string("{\"type\":\"subscribed\",\"telemetry\":") + (wantTel ? "true" : "false") + ",\"spectrum\":" + (wantSpec ? "true" : "false") + ",\"bins\":" + std::to_string(bins) + ",\"fps\":" + std::to_string(fps) + ",\"audio\":" + (audioId >= 0 ? "true" : "false") + "}")) return;
             }
             const auto now = std::chrono::steady_clock::now();
             if (wantTel && now - lastTel >= std::chrono::milliseconds(100)) {
@@ -346,13 +391,31 @@ struct RemoteApiServer::Impl {
                     if (!sendText("{\"type\":\"telemetry\",\"data\":" + j + "}")) return;
                 }
             }
-            if (wantSpec && now - lastSpec >= std::chrono::milliseconds(200)) {
+            if (wantSpec && now - lastSpec >= std::chrono::milliseconds(std::min(2000, 1000 / fps * slow))) {
                 uint64_t sq = specSeq;
                 std::string j;
-                { std::lock_guard<std::mutex> lk(hostMu); j = host.spectrumJson(bins, sq); }
+                bool bin = false;
+                { std::lock_guard<std::mutex> lk(hostMu); bin = binSpec && host.spectrumBinary(bins, sq, j); if (!bin) j = host.spectrumJson(bins, sq); }
                 if (sq != specSeq) {
                     specSeq = sq; lastSpec = now;
-                    if (!sendText("{\"type\":\"spectrum\",\"data\":" + j + "}")) return;
+                    const std::string f = bin ? wsFrame(2, j) : wsFrame(1, "{\"type\":\"spectrum\",\"data\":" + j + "}");
+                    const auto t1 = std::chrono::steady_clock::now();
+                    if (!ioSendAll(s, f.data(), f.size())) return;
+                    // bandwidth-aware: a send that took a big part of the interval means the link is slow, so frames come less often until it keeps up again
+                    const long us = (long)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t1).count();
+                    const long interval = 1000000L / fps * slow;
+                    if (us > interval / 2 && slow < 16) slow *= 2;
+                    else if (us < interval / 16 && slow > 1) slow--;
+                }
+            }
+            if (audioId >= 0) {
+                std::string pcm;
+                bool alive;
+                { std::lock_guard<std::mutex> lk(hostMu); alive = host.audioRead(audioId, pcm); }
+                if (!alive) { { std::lock_guard<std::mutex> lk(hostMu); host.audioClose(audioId); } audioId = -1; }
+                else if (!pcm.empty()) {
+                    const std::string f = wsFrame(2, std::string(1, '\x02') + pcm);   // [0x02] then 16 bit little endian mono samples
+                    if (!ioSendAll(s, f.data(), f.size())) return;
                 }
             }
         }
@@ -361,21 +424,36 @@ struct RemoteApiServer::Impl {
     void serve(Conn* cn) {
         sock_t s = cn->s;
         sockSendTimeout(s, 3000);
+        bool tlsOk = true;
+        if (tctx) {
+            sockRecvTimeout(s, kRequestMs);
+            std::string terr;
+            gTls = tls::accept(tctx, s, terr);
+            tlsOk = gTls != nullptr;
+            if (!tlsOk) rejected++;
+        }
         Request rq;
         rq.loopback = cn->loopback;
         RemoteApiConfig c;
         { std::lock_guard<std::mutex> lk(mu); c = live; }
-        if (readRequest(s, rq) && authorise(s, rq, c)) {
+        if (tlsOk && readRequest(s, rq) && authorise(s, rq, c)) {
             requests++;
             if (rq.method == "GET" && rq.path == "/api/v1/ws" && !rq.hdr("upgrade").empty()) serveWs(s, rq, *cn);
             else route(s, rq);
         }
+        if (gTls) { tls::close(gTls); gTls = nullptr; }
         sockShutdown(s);
         cn->done = true;
     }
 
     void run(RemoteApiConfig c) {
         netInit();
+        if (!c.tlsCert.empty() || !c.tlsKey.empty()) {
+            std::string terr;
+            tctx = c.tlsCert.empty() || c.tlsKey.empty() ? nullptr : tls::makeCtx(c.tlsCert, c.tlsKey, terr);
+            if (!tctx) { std::lock_guard<std::mutex> lk(mu); st.lastError = terr.empty() ? "TLS needs both a certificate file and a key file" : terr; return; }
+        }
+        struct CtxFree { tls::Ctx*& c; ~CtxFree() { tls::freeCtx(c); c = nullptr; } } ctxFree{tctx};
         sock_t ls = socket(AF_INET, SOCK_STREAM, 0);
         if (ls == kBadSock) { std::lock_guard<std::mutex> lk(mu); st.lastError = "cannot open a socket"; return; }
 #ifndef _WIN32
@@ -397,7 +475,7 @@ struct RemoteApiServer::Impl {
             if (getsockname(ls, (sockaddr*)&b, &bl) == 0) live.port = ntohs(b.sin_port);
         }
         sockSetNonBlocking(ls, true);
-        { std::lock_guard<std::mutex> lk(mu); st.listening = true; st.lastError.clear(); }
+        { std::lock_guard<std::mutex> lk(mu); st.listening = true; st.tls = tctx != nullptr; st.lastError.clear(); }
         while (!quit) {
             if (waitReadable(ls, 50)) {
                 sockaddr_in pa{}; socklen_t pl = sizeof pa;
@@ -411,7 +489,7 @@ struct RemoteApiServer::Impl {
                     if (conns.size() >= kMaxConns) {
                         rejected++;
                         const std::string r = "HTTP/1.1 503 Service Unavailable\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
-                        sockSendAll(k, r.data(), r.size());
+                        ioSendAll(k, r.data(), r.size());
                         sockClose(k);
                     } else {
                         auto cn = std::make_unique<Conn>();
@@ -440,7 +518,7 @@ bool RemoteApiServer::configure(const RemoteApiConfig& cIn) {
     {
         std::lock_guard<std::mutex> lk(p.mu);
         const int cur = p.cfg.on && p.cfg.port == 0 ? p.live.port : p.cfg.port;
-        const bool same = c.on == p.cfg.on && c.port == cur && c.lan == p.cfg.lan && p.st.listening == c.on;
+        const bool same = c.on == p.cfg.on && c.port == cur && c.lan == p.cfg.lan && c.tlsCert == p.cfg.tlsCert && c.tlsKey == p.cfg.tlsKey && p.st.listening == c.on;
         if (same) {   // only the token changed (or nothing): it takes effect at once
             if (c.lan && c.token.size() < 16) { p.st.lastError = "LAN access needs a token of at least 16 characters"; }
             else { p.cfg.token = c.token; p.live.token = c.token; p.st.lastError.clear(); }

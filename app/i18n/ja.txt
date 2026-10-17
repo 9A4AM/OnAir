@@ -2363,6 +2363,60 @@ Current setting: %.2f ppm	現在の設定: %.2f ppm
 No measurements of this radio yet.	このラジオの測定はまだありません。
 History of this radio (ppm)	このラジオの履歴(ppm)
 Drift: %+.3f ppm per minute	ドリフト: 毎分 %+.3f ppm
+Band from (kHz)	帯域の下限 (kHz)
+Calibrate from two landmarks	2つの目印で校正
+Calibrated.	校正しました。
+Camera snapshot URL (JPEG)	カメラのスナップショットURL (JPEG)
+Cannot load the picture.	画像を読み込めません。
+Cannot save the snapshot.	スナップショットを保存できません。
+Centre azimuth	中心方位角
+Click the picture to set the column of the selected landmark.	画像をクリックすると、選択した目印の列が設定されます。
+Demo skyline (no camera)	デモ用スカイライン (カメラなし)
+Enable RF camera	RFカメラを有効にする
+Field of view	視野角
+Heat strength	ヒートマップの強さ
+No picture.	画像がありません。
+Normal camera lens	通常のカメラレンズ
+Panorama (equirectangular)	パノラマ (正距円筒)
+Picture	画像
+Picture or panorama file	画像またはパノラマファイル
+Projection	投影方式
+RF camera	RFカメラ
+Save snapshot	スナップショットを保存
+Snapshot saved: %s	スナップショットを保存しました: %s
+Sub-bands	サブバンド
+The two landmarks do not fit a picture.	2つの目印が画像に合いません。
+Weakest shown	表示する最小強度
+azimuth	方位角
+azimuth only; the picture is just a backdrop	方位角のみ。画像は背景にすぎません
+column	列
+to (kHz)	帯域の上限 (kHz)
+Translate to English	英語に翻訳
+Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	他の言語の音声は、原文の横にオフラインで英語にも翻訳されます。多言語モデルが必要で、プロセッサ時間が約1.5倍かかります。エンジンが追いつかない場合はスキップされます。何も送信されません。他の言語への翻訳はできません。
+The loaded model is English only: translation needs a multilingual model.	読み込まれたモデルは英語専用です。翻訳には多言語モデルが必要です。
+Live: stop the room	ライブ中: ルームを停止
+Copy room link	ルームのリンクをコピー
+Host PIN (to moderate on the room page):	ホストPIN（ルームのページで管理するため）:
+Go live (Live rooms)...	ライブ配信を開始（ライブルーム）...
+Could not create the room	ルームを作成できませんでした
+Lost the connection to the rooms server	ルームサーバーとの接続が切れました
+Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	ライブルーム: ライブ中は、ルームのリンクを知っている人なら誰でも、この受信機のウォーターフォール、モード、受信周波数を見て、互いにチャットできます。ウェブのルーム一覧にはタイトルも表示されます。「ライブ配信を開始」を押すまでは何も送信されず、ルームが終了すると何も保存されません。あなたの位置情報、名前、音声は送信されません。
+Room title	ルームのタイトル
+Also show decoded ACARS text in the room (public)	デコードしたACARSテキストもルームに表示する（公開）
+Needs Server > Send data to map server and Also share interesting ACARS messages.	サーバー > 地図サーバーにデータを送信 と 興味深いACARSメッセージも共有 が必要です。
+Go live	ライブ配信を開始
+Schedule passes by itself	通過を自動でスケジュール
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	チェックしたグループの通過を優先度の高い順に1つずつ取り、操作なしで開始・同調・録音します。重なる通過は短縮またはスキップされ、自分で起動した受信機には手を触れません。
+Priority (higher wins)	優先度(高い方が優先)
+Keep the SDR free every day	毎日SDRを空けておく
+from %d:00	%d:00から
+to %d:00	%d:00まで
+Nothing planned.	予定なし。
+planned	予定済み
+trimmed	短縮
+skipped: SDR reserved	スキップ: SDR予約中
+skipped: too short	スキップ: 短すぎる
+skipped: higher priority	スキップ: 優先度が高い通過あり
 # passive radar
 Aircraft from the echoes of a broadcast transmitter, with two coherent channels	放送局の反射波から航空機を検出（コヒーレントな2チャンネル）
 Baseline %.1f km, transmitter bearing %.0f degrees	基線 %.1f km、送信所の方位 %.0f 度
@@ -2412,3 +2466,159 @@ In the General receiver mode; for other events use an automation rule with the a
 Save now	今すぐ保存
 Save the rewind	巻き戻しを保存
 Seconds to keep after the event	イベント後に保持する秒数
+FM broadcast	FMラジオ
+Airband	航空無線
+DAB / VHF band III	DAB / VHFバンドIII
+UHF TV	UHFテレビ
+868 MHz ISM	868 MHz ISM
+ADS-B 1090 MHz	ADS-B 1090 MHz
+Measuring %s (%d/%d)	%s を測定中 (%d/%d)
+Pick a radio first (the test signal and files cannot be measured)	先に無線機を選んでください (テスト信号とファイルは測定できません)
+None of the measuring bands is inside this radio's range	測定する帯域がこの無線機の範囲内にありません
+%s: the ADC is overloaded (%.2f%% of the samples clip). Lower the gain or add an attenuator.	%s: ADC が過負荷です (サンプルの %.2f%% がクリップしています)。ゲインを下げるか、アッテネータを入れてください。
+%s: a strong signal (%.0f dB over the floor) overloads the ADC while other bands are starved at this gain. Add a band-stop filter for that band (an FM notch for the FM band) instead of lowering the gain.	%s: 強い信号 (ノイズフロアより %.0f dB 上) が ADC を過負荷にしていて、このゲインでは他の帯域の信号が弱すぎます。ゲインを下げる代わりに、その帯域用のバンドストップフィルタ (FM 帯なら FM ノッチ) を入れてください。
+%s: the ADC level is high (%.1f dBFS rms), little headroom is left for strong signals. Lower the gain a little.	%s: ADC のレベルが高く (%.1f dBFS rms)、強い信号に対する余裕がほとんどありません。ゲインを少し下げてください。
+%s: the receiver noise is only %.1f dB above the ADC's own, so weak signals are lost. Raise the gain.	%s: 受信機のノイズが ADC 自身のノイズより %.1f dB しか高くないため、弱い信号が失われます。ゲインを上げてください。
+%s: the receiver noise is only %.1f dB above the ADC's own and the gain is already at its maximum. Add a low-noise amplifier (LNA) next to the antenna.	%s: 受信機のノイズが ADC 自身のノイズより %.1f dB しか高くなく、ゲインはすでに最大です。アンテナのそばに低雑音アンプ (LNA) を入れてください。
+%s: the gain could be about %.0f dB lower without losing sensitivity, which gives more headroom against strong signals.	%s: 感度を落とさずにゲインを約 %.0f dB 下げられます。強い信号に対する余裕が増えます。
+%s: the noise floor is %.0f dB higher than in the quietest band. Look for a local noise source (LED lighting, switching power supplies, computers), move the antenna away from it, or add a ferrite choke on the cable.	%s: ノイズフロアが最も静かな帯域より %.0f dB 高くなっています。近くのノイズ源 (LED 照明、スイッチング電源、パソコン) を探し、アンテナを離すか、ケーブルにフェライトコアを付けてください。
+No %s stations were found, though there are normally some. Check the antenna and the cable; the band may also be empty in your area.	%s の局が見つかりませんでした。通常はいくつかあるはずです。アンテナとケーブルを確認してください。お住まいの地域でその帯域が空いている可能性もあります。
+The strongest %s station is only %.0f dB over the noise (a healthy antenna gives at least %.0f dB). Move the antenna higher or outdoors, or add a band filter and an LNA.	最も強い %s の局でもノイズより %.0f dB しか高くありません (良いアンテナなら少なくとも %.0f dB)。アンテナを高い場所か屋外に移すか、バンドフィルタと LNA を追加してください。
+The radio's clock is %+.1f ppm off. Enter %+.1f as the frequency correction (ppm) in the radio's settings.	無線機のクロックが %+.1f ppm ずれています。無線機の設定の周波数補正 (ppm) に %+.1f を入力してください。
+The radio's clock is %+.1f ppm off: fine.	無線機のクロックのずれは %+.1f ppm: 問題ありません。
+ADS-B range is short: the farthest aircraft was %.0f nm away (a clear outdoor antenna reaches 150 nm or more); the weakest direction is around %.0f degrees. Move the antenna higher, with a clear view of the sky.	ADS-B の到達距離が短いです。最も遠い航空機は %.0f nm でした (見通しの良い屋外アンテナなら 150 nm 以上届きます)。最も弱い方向は約 %.0f 度です。空がよく見える高い場所にアンテナを移してください。
+No aircraft at all in %.0f sectors of 10 degrees starting at %.0f degrees, while the neighbouring directions reach far: something blocks the view there (a wall, a hill, a building).	%.0f 度から始まる 10 度ごとの %.0f 個のセクターで航空機が 1 機も見つかりません。隣接する方向は遠くまで届いているので、そこで何か (壁、丘、建物) が視界をふさいでいます。
+ADS-B range: not enough positions yet. Run the ADS-B mode with the antenna position set for a few minutes, then run the report again.	ADS-B の到達距離: 位置情報がまだ足りません。アンテナ位置を設定して ADS-B モードを数分動かしてから、もう一度レポートを実行してください。
+Nothing wrong found. The gain, noise floor and reference stations look healthy.	問題は見つかりませんでした。ゲイン、ノイズフロア、基準局は良好です。
+Station health report	局の状態レポート
+Gain: %.0f dB	ゲイン: %.0f dB
+%s: noise floor %.1f dBFS per bin, ADC margin %.1f dB, strongest signal %.0f dB over the floor, ADC level %.1f dBFS, clipping %.2f%%	%s: ノイズフロア 1 ビンあたり %.1f dBFS、ADC マージン %.1f dB、最強信号はフロアより %.0f dB 上、ADC レベル %.1f dBFS、クリップ %.2f%%
+   %s stations found: %d, strongest %.0f dB over the floor	   見つかった %s の局: %d、最強はフロアより %.0f dB 上
+The numbers are relative to the receiver itself (not calibrated to dBm).	数値は受信機自身を基準にした相対値です (dBm には校正されていません)。
+Station health	局の状態
+Measures the noise floor and the ADC level on a few bands, looks for FM, DAB and DVB-T stations, and tells you what to change at the antenna. The receiver stops while it measures (about a minute).	いくつかの帯域でノイズフロアと ADC レベルを測り、FM、DAB、DVB-T の局を探して、アンテナで何を変えるべきかを教えます。測定中は受信が止まります (約 1 分)。
+known carrier MHz (optional)	既知のキャリア MHz (任意)
+A carrier whose frequency you trust (an ATSC pilot, a cell tower's beacon, a time signal). The report gives the radio's clock error in ppm from it. Leave at 0 to skip.	周波数を信頼できるキャリア (ATSC パイロット、携帯基地局のビーコン、標準時信号など)。レポートはそこから無線機のクロック誤差を ppm で出します。0 のままにすると省略します。
+Save report...	レポートを保存...
+Save as JSON...	JSON で保存...
+Noise floor	ノイズフロア
+ADC margin	ADC マージン
+%.1f dBFS	%.1f dBFS
+%.0f dB	%.0f dB
+none found	見つかりません
+%s: %d, best %.0f dB	%s: %d、最良 %.0f dB
+Clock error: %+.2f ppm (%+.0f Hz at %.4f MHz)	クロック誤差: %+.2f ppm (%+.0f Hz、%.4f MHz にて)
+No carrier found at the frequency given	指定した周波数にキャリアが見つかりません
+What to do	対処方法
+ADS-B range by direction	方向別の ADS-B 到達距離
+Check station	局をチェック
+Noise floor, ADC level and reference stations per band, with plain advice on gain, filters and antenna placement	帯域ごとのノイズフロア、ADC レベル、基準局を測定し、ゲイン、フィルタ、アンテナの設置場所について分かりやすく助言します
+# interference hunter
+Unknown	不明
+Switching power supply	スイッチング電源
+LED lamp or driver	LEDランプまたはドライバ
+Powerline (PLC)	電力線 (PLC)
+Local oscillator or clock leak	発振器またはクロックの漏れ
+Cannot open the GPS device or file.	GPSデバイスまたはファイルを開けません。
+Waiting for a position fix.	位置情報を待っています。
+Interference gone	干渉が消えました
+The noise floor rose by %.1f dB	ノイズフロアが %.1f dB 上昇しました
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	新しい広帯域ノイズ %.2f - %.2f MHz、%.0f dB: %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	%.4f MHz に新しい信号、基準より %.0f dB 上: %s
+Demo (simulated sweeps)	デモ（シミュレーションのスイープ）
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	スプリアスの櫛は、広帯域信号と区別するため5ビン以上の間隔が必要です。間隔の狭いスプリアスを見るにはビンを細かくしてください
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	スイープ間の待ち時間: 監視は長い待ち時間で何時間も動かせます。歩き回るときは連続にします
+spur threshold %.0f dB	スプリアスしきい値 %.0f dB
+floor alert %.0f dB	ノイズフロア警報 %.0f dB
+confirm in %d sweeps	%d 回のスイープで確認
+floor change dB	ノイズフロア変化 dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	基準を学習中: %d / %d 回。バンドは通常の状態のままにしてください。
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	監視中。ノイズフロア %.1f dBFS、基準 %.1f dBFS、既知の信号 %zu 件。
+Press Start. The first sweeps become the baseline: what is normal in this band.	開始を押してください。最初の数回のスイープが基準（このバンドの通常状態）になります。
+Learn the baseline again	基準を学習し直す
+What is there now is normal	今あるものは正常
+Adds the interference that has been reported to the baseline, so it raises no more alerts	報告済みの干渉を基準に加え、以後は警報を出しません
+Save the alerts...	警報を保存...
+Save the noise floor log...	ノイズフロアの記録を保存...
+Interference now	現在の干渉
+Likely source	推定される発生源
+To MHz	終了 MHz
+Spacing kHz	間隔 kHz
+Alerts	警報
+Event	イベント
+dB above baseline	基準より dB
+new signal	新しい信号
+noise floor up	ノイズフロア上昇
+new broadband noise	新しい広帯域ノイズ
+gone	消失
+no position	位置なし
+the receiver position (set for ADS-B)	受信機の位置（ADS-B用に設定）
+type a position	位置を入力
+GPS device or NMEA file	GPSデバイスまたはNMEAファイル
+latitude	緯度
+longitude	経度
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	シリアルGPS（例: /dev/cu.usbmodem1101、PCではCOM3、9600ボー）またはNMEA文のテキストファイル
+Reconnect	再接続
+Readings are logged at %.5f, %.5f	測定値は %.5f, %.5f で記録されます
+Readings are logged without a position.	測定値は位置なしで記録されます。
+%+.1f dB above the quiet level	静かなレベルより %+.1f dB
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	開始を押して歩いてください。干渉がこれまでで最も静かな場所より25 dB高いとメーターが満タンになります。
+Quiet	静か
+Some interference	やや干渉あり
+Loud	強い
+- getting louder	- 強くなっています
+- getting quieter	- 弱くなっています
+- steady	- 安定
+strongest spur %.4f MHz, %.0f dB	最強のスプリアス %.4f MHz、%.0f dB
+This is the quiet level	これを静かなレベルにする
+Leave out the signals seen now	今見えている信号を除外
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	既知の放送波や機器をメーターから除外します。歩き始める前に静かな場所で行ってください
+Clear the readings	測定値を消去
+Save as CSV...	CSVとして保存...
+Save as GPX...	GPXとして保存...
+reading	測定値
+dB above the quiet level	静かなレベルより dB
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	最も強い測定値: %+.1f dB、%.5f, %.5f（%s）
+Loudest reading: %+.1f dB (%s), no position	最も強い測定値: %+.1f dB（%s）、位置なし
+Strongest spur MHz	最強スプリアス MHz
+Interference hunter	干渉ハンター
+Monitor	監視
+Walk	歩き回り
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	バンドの新しい干渉を監視し、種類を判別し、大きい/小さいのメーターを頼りに歩いて発生源を探します
+The watchlist file could not be read:	ウォッチリストのファイルを読み込めませんでした:
+APRS call signs	APRSコールサイン
+Words in messages	メッセージ内の単語
+One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	1行に1件: ICAO の16進アドレス (4840D6)、登録記号 (A6-EDA)、またはコールサイン (KLM1023)。末尾の * は前方一致 (KLM*)。ADS-B、ACARS、VDL2、HFDL で検出されます。
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	1行に1件: MMSI 番号、船名、またはコールサイン。末尾の * は前方一致 (2190*)。AIS と DSC で検出されます。
+One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	1行に1件: コールサイン。SSID なし (LY1ABC) ではすべての SSID に一致し、SSID 付き (LY1ABC-9) ではそれだけに一致します。
+One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	1行に1件: MHz 単位の周波数 (162.025)、単位付き (162025 kHz)、または範囲 (144-146)。その周波数でデコードされたものはすべて対象になります。
+One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	1行に1件: 単語またはフレーズ (大文字小文字は区別しません)。末尾の * は単語の先頭に一致します (fire*)。ポケベル、ACARS、APRS などのデコードされたテキストから検索します。
+New list...	新しいリスト...
+Make a list on the left: aircraft, ships, APRS call signs, frequencies or words. OnAir tells you when something on it is heard.	左側でリストを作成します: 航空機、船舶、APRS コールサイン、周波数、単語。リストにあるものが受信されると OnAir が知らせます。
+On	オン
+Tolerance (kHz)	許容差 (kHz)
+entries	件
+Delete list	リストを削除
+Desktop notification	デスクトップ通知
+Sound (follows Mute)	音 (ミュートに従う)
+WAV file, empty = three beeps	WAV ファイル、空欄 = ビープ音3回
+Push alerts go to a service you choose, with the address and token you give. They are stored in your data folder and never written to a log.	プッシュ通知は、指定したアドレスとトークンで、選んだサービスに送られます。これらはデータフォルダーに保存され、ログには書き込まれません。
+optional	任意
+optional, sent as a Bearer token	任意、Bearer トークンとして送信
+Send a test alert	テスト通知を送信
+Most alerts per hour (0 = no limit)	1時間あたりの最大通知数 (0 = 無制限)
+Same station again after (minutes)	同じ局を再通知するまで (分)
+Quiet hours (no alerts, still listed in the history)	おやすみ時間 (通知なし、履歴には残ります)
+From	開始
+Until	終了
+Local time of this computer.	このコンピューターの現地時間。
+alerts sent	件の通知を送信
+Heard	受信
+What happened	結果
+held back: quiet hours	保留: おやすみ時間
+held back: rate limit	保留: 上限に到達
+Watchlists	ウォッチリスト
+Watch for these	これらを監視する
+Lists	リスト
+Watchlists...	ウォッチリスト...
+Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	リストにある航空機、船舶、コールサイン、周波数、単語を受信したときに通知: 通知、音、ntfy、Telegram、Webhook

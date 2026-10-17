@@ -25,6 +25,7 @@ struct SimSource {          // one transmitter in the simulated scene
     double bearingDeg = 0;
     double snrDb = 10;      // per-element SNR
     double offsetHz = 0;    // baseband frequency offset of this source (decorrelates two sources)
+    double bandwidthHz = 0; // 0 = white (fills the whole sample rate); > 0 = a narrowband message of about this width around offsetHz
     int copyOf = -1;        // >= 0: coherent copy of that source's waveform (a reflection), delayed by `delay` samples
     int delay = 0;
     uint64_t seed = 0;
@@ -54,6 +55,7 @@ private:
     Rng rng_;
     uint64_t t_ = 0;
     std::vector<Rng> srcRng_;
+    std::vector<std::array<cd, 2>> lp_;   // narrowband message filter state per source
     std::vector<std::vector<cd>> hist_;   // per-source waveform history for delayed copies
 };
 

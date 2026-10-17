@@ -59,9 +59,9 @@ public:
     double outRate() const { return out_; }
     int factor() const { return 1 << (int)st_.size(); }
 private:
-    struct Stage { std::vector<float> h; std::vector<cf32> hist; int pos = 0, ph = 0; };
+    struct Stage { std::vector<float> h; std::vector<cf32> hist; int ph = 0; };   // hist: the last taps - 1 inputs
     std::vector<Stage> st_;
-    std::vector<cf32> a_, b_;
+    std::vector<cf32> a_, b_, ext_;
     double out_ = 0;
 };
 
