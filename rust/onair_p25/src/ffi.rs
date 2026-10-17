@@ -150,7 +150,8 @@ pub extern "C" fn onair_p25_hamming10_encode(hex: i32) -> u16 {
 }
 /// Hamming (10,6,3) decode: the hexbit; `*errs` (if not null) gets the distance.
 #[no_mangle]
-pub unsafe extern "C" fn onair_p25_hamming10_decode(cw: u16, errs: *mut i32) -> i32 {
+pub unsafe extern "C" fn onair_p25_hamming10_decode(cw: u32, errs: *mut i32) -> i32 {
+    let cw = cw as u16;
     let (h, e) = golay::hamming10_decode(cw);
     if !errs.is_null() {
         *errs = e;

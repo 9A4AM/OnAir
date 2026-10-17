@@ -79,12 +79,12 @@ size_t onair_ax25_addr_str(const OnairAx25AddrIn* a, uint8_t* out, size_t cap); 
 size_t onair_ax25_path_str(const OnairAx25AddrIn* path, size_t n, uint8_t* out, size_t cap);                     // WIDE1-1*,WIDE2-1
 size_t onair_ax25_tnc2(const OnairAx25AddrIn* from, const OnairAx25AddrIn* to, const OnairAx25AddrIn* path, size_t n, const uint8_t* info,
                        size_t info_len, uint8_t* out, size_t cap);                                               // FROM>TO,PATH:info
-size_t onair_ax25_type_name(uint8_t control, uint8_t* out, size_t cap);                                          // "UI", "RR", ...
+size_t onair_ax25_type_name(uint32_t control, uint8_t* out, size_t cap);                                          // "UI", "RR", ...
 
 // ---- HDLC receiver
 void onair_ax25_hdlc_reset(OnairAx25Hdlc* h);
 // One bit (NRZI level when nrzi): 0 nothing, 1 good frame (buf[0..*len) without FCS), 2 bad FCS (buf[0..*len) all bytes).
-int32_t onair_ax25_hdlc_bit(OnairAx25Hdlc* h, int32_t level, bool nrzi, size_t* len);
+int32_t onair_ax25_hdlc_bit(OnairAx25Hdlc* h, int32_t level, uint32_t nrzi, size_t* len);
 
 // ---- APRS
 // Parses an information field: 1 true, 0 false, -1 text buffer too small. info_out is filled as far as the parser got; strings are spans of text.

@@ -314,7 +314,8 @@ pub extern "C" fn onair_dmr_sync_direct_slot(s: i32) -> i32 {
 }
 /// Pattern of a family and kind.
 #[no_mangle]
-pub extern "C" fn onair_dmr_sync_of(family: i32, voice: bool) -> i32 {
+pub extern "C" fn onair_dmr_sync_of(family: i32, voice: u32) -> i32 {
+    let voice = voice != 0;
     burst::sync_of(family, voice)
 }
 /// The 24 symbols (+3 / -3) of pattern `s` as signed bytes; false when `s` is out of range.
@@ -459,21 +460,24 @@ pub extern "C" fn onair_dmr_flco_name(f: i32) -> *const u8 {
 }
 /// Service options in words into `out`; returns the length or SIZE_MAX.
 #[no_mangle]
-pub unsafe extern "C" fn onair_dmr_service_options_text(svc: u8, out: *mut u8, cap: usize) -> usize {
+pub unsafe extern "C" fn onair_dmr_service_options_text(svc: u32, out: *mut u8, cap: usize) -> usize {
+    let svc = svc as u8;
     let mut b = Buf::new(wr(out, cap));
     lc::service_options_text(svc, &mut b);
     b.result()
 }
 /// Header / terminator burst info bits (96) of a nine byte LC.
 #[no_mangle]
-pub unsafe extern "C" fn onair_dmr_lc_burst_info(lc: *const u8, terminator: bool, info96: *mut u8) {
+pub unsafe extern "C" fn onair_dmr_lc_burst_info(lc: *const u8, terminator: u32, info96: *mut u8) {
+    let terminator = terminator != 0;
     if let (Some(l), Some(i)) = (ar::<u8, 9>(lc), am::<u8, 96>(info96)) {
         lc::lc_burst_info(l, terminator, i);
     }
 }
 /// Decodes a header / terminator burst: 0 clean, 1 one octet corrected, -1 failed; the nine bytes are always written.
 #[no_mangle]
-pub unsafe extern "C" fn onair_dmr_lc_burst_decode(info96: *const u8, terminator: bool, lc: *mut u8) -> i32 {
+pub unsafe extern "C" fn onair_dmr_lc_burst_decode(info96: *const u8, terminator: u32, lc: *mut u8) -> i32 {
+    let terminator = terminator != 0;
     match (ar::<u8, 96>(info96), am::<u8, 9>(lc)) {
         (Some(i), Some(l)) => lc::lc_burst_decode(i, terminator, l),
         _ => -1,
@@ -481,14 +485,16 @@ pub unsafe extern "C" fn onair_dmr_lc_burst_decode(info96: *const u8, terminator
 }
 /// 96 bits of ten octets plus their CRC-CCITT XOR `mask`.
 #[no_mangle]
-pub unsafe extern "C" fn onair_dmr_crc_block_info(data10: *const u8, mask: u16, info96: *mut u8) {
+pub unsafe extern "C" fn onair_dmr_crc_block_info(data10: *const u8, mask: u32, info96: *mut u8) {
+    let mask = mask as u16;
     if let (Some(d), Some(i)) = (ar::<u8, 10>(data10), am::<u8, 96>(info96)) {
         lc::crc_block_info(d, mask, i);
     }
 }
 /// Checks the CRC of a 96 bit block; the ten octets are always written.
 #[no_mangle]
-pub unsafe extern "C" fn onair_dmr_crc_block_check(info96: *const u8, mask: u16, data10: *mut u8) -> bool {
+pub unsafe extern "C" fn onair_dmr_crc_block_check(info96: *const u8, mask: u32, data10: *mut u8) -> bool {
+    let mask = mask as u16;
     match (ar::<u8, 96>(info96), am::<u8, 10>(data10)) {
         (Some(i), Some(d)) => lc::crc_block_check(i, mask, d),
         _ => false,
@@ -555,12 +561,14 @@ pub unsafe extern "C" fn onair_dmr_parse_data_header(in10: *const u8, h: *mut On
 }
 /// Octets of a data block of type `dt`.
 #[no_mangle]
-pub extern "C" fn onair_dmr_data_block_bytes(dt: i32, confirmed: bool) -> i32 {
+pub extern "C" fn onair_dmr_data_block_bytes(dt: i32, confirmed: u32) -> i32 {
+    let confirmed = confirmed != 0;
     data::data_block_bytes(dt, confirmed)
 }
 /// Encodes a data block (`n` user bytes) into 196 payload bits.
 #[no_mangle]
-pub unsafe extern "C" fn onair_dmr_data_block_encode(dt: i32, user: *const u8, n: usize, confirmed: bool, dbsn: u32, out196: *mut u8) {
+pub unsafe extern "C" fn onair_dmr_data_block_encode(dt: i32, user: *const u8, n: usize, confirmed: u32, dbsn: u32, out196: *mut u8) {
+    let confirmed = confirmed != 0;
     if let Some(o) = am::<u8, 196>(out196) {
         *o = data::data_block_encode(dt, rd(user, n), confirmed, dbsn);
     }
@@ -571,9 +579,10 @@ pub unsafe extern "C" fn onair_dmr_data_block_parse(
     dt: i32,
     oct: *const u8,
     n: usize,
-    confirmed: bool,
+    confirmed: u32,
     out: *mut OnairDmrDataBlock,
 ) -> bool {
+    let confirmed = confirmed != 0;
     if out.is_null() {
         return false;
     }
@@ -595,7 +604,8 @@ pub extern "C" fn onair_dmr_dd_name(dd: i32) -> *const u8 {
 }
 /// Short data / talker alias text of `n` bytes; the text needs at most 2 * n + 80 bytes. Returns its length or SIZE_MAX.
 #[no_mangle]
-pub unsafe extern "C" fn onair_dmr_text_from_bytes(p: *const u8, n: usize, format: i32, ta: bool, out: *mut u8, cap: usize) -> usize {
+pub unsafe extern "C" fn onair_dmr_text_from_bytes(p: *const u8, n: usize, format: i32, ta: u32, out: *mut u8, cap: usize) -> usize {
+    let ta = ta != 0;
     let mut b = Buf::new(wr(out, cap));
     text::text_from_bytes(rd(p, n), format, ta, &mut b);
     b.result()

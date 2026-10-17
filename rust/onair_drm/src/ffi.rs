@@ -64,7 +64,8 @@ pub unsafe extern "C" fn onair_drm_crc16_bits(b: *const u8, n: usize) -> u32 {
 
 /// Parse a descrambled FAC block (72 or 116 bits); false when the CRC is wrong or the RM flag disagrees.
 #[no_mangle]
-pub unsafe extern "C" fn onair_drm_fac_parse(b: *const u8, n: usize, mode_e: bool, out: *mut FacInfo) -> bool {
+pub unsafe extern "C" fn onair_drm_fac_parse(b: *const u8, n: usize, mode_e: u32, out: *mut FacInfo) -> bool {
+    let mode_e = mode_e != 0;
     match fac::fac_parse(rd(b, n), mode_e) {
         Some(f) if !out.is_null() => {
             *out = f;
@@ -95,7 +96,8 @@ pub unsafe extern "C" fn onair_drm_sdc_check_bits(b: *const u8, n: usize, field_
 
 /// Audio frames per super frame (5, 10 or 0).
 #[no_mangle]
-pub extern "C" fn onair_drm_aac_num_frames(mode_e: bool, rate_hz: i32) -> i32 {
+pub extern "C" fn onair_drm_aac_num_frames(mode_e: u32, rate_hz: i32) -> i32 {
+    let mode_e = mode_e != 0;
     aac::num_frames(mode_e, rate_hz)
 }
 
@@ -144,13 +146,15 @@ pub unsafe extern "C" fn onair_drm_programme_type_name(c: i32, out: *mut u8, cap
 
 /// MSC mode name; 16 bytes are enough.
 #[no_mangle]
-pub unsafe extern "C" fn onair_drm_msc_mode_name(mode_e: bool, m: i32, out: *mut u8, cap: usize) -> usize {
+pub unsafe extern "C" fn onair_drm_msc_mode_name(mode_e: u32, m: i32, out: *mut u8, cap: usize) -> usize {
+    let mode_e = mode_e != 0;
     name(names::msc_mode_name(mode_e, m), out, cap)
 }
 
 /// Spectrum occupancy name; 16 bytes are enough.
 #[no_mangle]
-pub unsafe extern "C" fn onair_drm_occupancy_name(mode_e: bool, o: i32, out: *mut u8, cap: usize) -> usize {
+pub unsafe extern "C" fn onair_drm_occupancy_name(mode_e: u32, o: i32, out: *mut u8, cap: usize) -> usize {
+    let mode_e = mode_e != 0;
     name(names::occupancy_name(mode_e, o), out, cap)
 }
 
@@ -217,7 +221,8 @@ pub unsafe extern "C" fn onair_drm_looks_text(b: *const u8, n: usize) -> bool {
 
 /// Bytes a text message segment needs, from its first byte.
 #[no_mangle]
-pub extern "C" fn onair_drm_text_segment_need(b0: u8) -> i32 {
+pub extern "C" fn onair_drm_text_segment_need(b0: u32) -> i32 {
+    let b0 = b0 as u8;
     text::segment_need(b0)
 }
 

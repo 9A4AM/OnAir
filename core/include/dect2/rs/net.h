@@ -90,7 +90,7 @@ uint32_t onair_net_sdrpp_id_flags(const uint8_t* id, size_t n);
 size_t onair_net_sdrpp_label_from_id(const uint8_t* id, size_t n, uint8_t* out, size_t cap);
 double onair_net_sdrpp_rate_text(const char* t);
 size_t onair_net_sdrpp_command(uint32_t cmd, const uint8_t* arg, size_t n, uint8_t* out, size_t cap);
-size_t onair_net_sdrpp_ui_action(const uint8_t* id, size_t n, uint32_t ty, int32_t i, float f, bool b, bool sync, uint8_t* out, size_t cap);
+size_t onair_net_sdrpp_ui_action(const uint8_t* id, size_t n, uint32_t ty, int32_t i, float f, uint32_t b, uint32_t sync, uint8_t* out, size_t cap);
 bool onair_net_sdrpp_packet_header(const uint8_t* h, size_t n, uint32_t* ty, uint32_t* body);
 size_t onair_net_sdrpp_error_text(uint32_t c, uint8_t* out, size_t cap);
 

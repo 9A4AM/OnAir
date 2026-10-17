@@ -67,7 +67,8 @@ pub unsafe extern "C" fn onair_wisun_struct_sizes(out: *mut usize) {
 
 /// Splits a PHR value.
 #[no_mangle]
-pub unsafe extern "C" fn onair_wisun_parse_phr(v: u16, out: *mut Phr) {
+pub unsafe extern "C" fn onair_wisun_parse_phr(v: u32, out: *mut Phr) {
+    let v = v as u16;
     if !out.is_null() {
         *out = phy::parse_phr(v);
     }
@@ -103,7 +104,8 @@ pub unsafe extern "C" fn onair_wisun_crc32(d: *const u8, n: usize) -> u32 {
 
 /// True when the FCS at the end of the `n` octet PSDU is right.
 #[no_mangle]
-pub unsafe extern "C" fn onair_wisun_fcs_ok(p: *const u8, n: usize, fcs2: bool) -> bool {
+pub unsafe extern "C" fn onair_wisun_fcs_ok(p: *const u8, n: usize, fcs2: u32) -> bool {
+    let fcs2 = fcs2 != 0;
     phy::fcs_ok(rd(p, n), fcs2)
 }
 

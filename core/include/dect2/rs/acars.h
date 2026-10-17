@@ -31,14 +31,14 @@ uint32_t onair_acars_version(void);
 size_t onair_acars_block_size(void);   // sizeof(OnairAcarsBlock) as Rust sees it
 
 // Block check sequence: CRC-16 KERMIT (reflected 0x1021, start 0, no final xor); 0 for a good block with its two check bytes (low byte first).
-uint16_t onair_acars_crc_update(uint16_t crc, uint8_t byte);
-uint16_t onair_acars_crc(const uint8_t* p, size_t n, uint16_t crc);
+uint16_t onair_acars_crc_update(uint32_t crc, uint32_t byte);
+uint16_t onair_acars_crc(const uint8_t* p, size_t n, uint32_t crc);
 // The CRC residue left by one flipped bit; pos_from_end 0 is the last check byte, 1 the first. 0 when out of range.
 uint16_t onair_acars_syndrome(int32_t pos_from_end, int32_t bit);
 // Parity and check-sequence repair of txt (len bytes, in place); true when the block is good.
-bool onair_acars_repair_block(uint8_t* txt, size_t len, uint8_t crc0, uint8_t crc1, int32_t max_parity_errors, int32_t* fixed_bits, int32_t* parity_errors);
+bool onair_acars_repair_block(uint8_t* txt, size_t len, uint32_t crc0, uint32_t crc1, int32_t max_parity_errors, int32_t* fixed_bits, int32_t* parity_errors);
 // Name of a label as a static NUL-terminated string ("" when unknown).
-const uint8_t* onair_acars_label_text(uint8_t a, uint8_t b);
+const uint8_t* onair_acars_label_text(uint32_t a, uint32_t b);
 // Short reading of fixed-format text (OOOI times, media advisory); length written, SIZE_MAX when cap is too small, 0 when nothing fits.
 size_t onair_acars_decode_text(const uint8_t* label, size_t label_len, const uint8_t* text, size_t text_len, uint8_t* out, size_t cap);
 // Parses a good block (bytes after SOH up to and including the suffix, parity removed); returns the stage reached.

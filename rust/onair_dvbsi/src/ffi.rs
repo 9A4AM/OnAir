@@ -113,7 +113,8 @@ pub unsafe extern "C" fn onair_dvbsi_clean(p: *const u8, n: usize, out: *mut u8,
 
 /// A DVB text field to clean UTF-8 (needs 4 * n + 16 bytes).
 #[no_mangle]
-pub unsafe extern "C" fn onair_dvbsi_dvb_text(p: *const u8, n: usize, gb_default: bool, out: *mut u8, cap: usize) -> usize {
+pub unsafe extern "C" fn onair_dvbsi_dvb_text(p: *const u8, n: usize, gb_default: u32, out: *mut u8, cap: usize) -> usize {
+    let gb_default = gb_default != 0;
     let conv = |name: &[u8], src: &[u8], dst: &mut [u8]| -> Option<usize> {
         let f = CONVERT.load(Ordering::SeqCst);
         if f == 0 {
@@ -136,7 +137,8 @@ pub unsafe extern "C" fn onair_dvbsi_dvb_text(p: *const u8, n: usize, gb_default
 
 /// Hamming 8/4 decode: nibble or -1.
 #[no_mangle]
-pub extern "C" fn onair_dvbsi_ttx_hamming84(b: u8) -> i32 {
+pub extern "C" fn onair_dvbsi_ttx_hamming84(b: u32) -> i32 {
+    let b = b as u8;
     teletext::hamming84(b)
 }
 
@@ -152,13 +154,15 @@ pub unsafe extern "C" fn onair_dvbsi_ttx_hamming2418(b3: *const u8) -> i32 {
 
 /// Bit reversal of a byte.
 #[no_mangle]
-pub extern "C" fn onair_dvbsi_ttx_reverse8(b: u8) -> u8 {
+pub extern "C" fn onair_dvbsi_ttx_reverse8(b: u32) -> u8 {
+    let b = b as u8;
     teletext::reverse8(b)
 }
 
 /// G0 code to Unicode in a national option subset.
 #[no_mangle]
-pub extern "C" fn onair_dvbsi_ttx_g0(code: u8, national: i32) -> u32 {
+pub extern "C" fn onair_dvbsi_ttx_g0(code: u32, national: i32) -> u32 {
+    let code = code as u8;
     teletext::g0(code, national)
 }
 
@@ -320,12 +324,13 @@ pub unsafe extern "C" fn onair_dvbsi_sub_decode_field(
     x0: i32,
     y0: i32,
     line_step: i32,
-    double_lines: bool,
+    double_lines: u32,
     reg_w: i32,
     reg_h: i32,
     reg_depth: i32,
     pix: *mut u8,
 ) {
+    let double_lines = double_lines != 0;
     if pix.is_null() || reg_w <= 0 || reg_h <= 0 {
         return;
     }

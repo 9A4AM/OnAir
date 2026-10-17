@@ -34,11 +34,14 @@ pub extern "C" fn onair_acars_block_size() -> usize {
 }
 
 #[no_mangle]
-pub extern "C" fn onair_acars_crc_update(c: u16, b: u8) -> u16 {
+pub extern "C" fn onair_acars_crc_update(c: u32, b: u32) -> u16 {
+    let c = c as u16;
+    let b = b as u8;
     crc::update(c, b)
 }
 #[no_mangle]
-pub unsafe extern "C" fn onair_acars_crc(p: *const u8, n: usize, c: u16) -> u16 {
+pub unsafe extern "C" fn onair_acars_crc(p: *const u8, n: usize, c: u32) -> u16 {
+    let c = c as u16;
     crc::crc(rd(p, n), c)
 }
 #[no_mangle]
@@ -51,12 +54,14 @@ pub extern "C" fn onair_acars_syndrome(pos_from_end: i32, bit: i32) -> u16 {
 pub unsafe extern "C" fn onair_acars_repair_block(
     txt: *mut u8,
     len: usize,
-    crc0: u8,
-    crc1: u8,
+    crc0: u32,
+    crc1: u32,
     max_parity_errors: i32,
     fixed_bits: *mut i32,
     parity_errors: *mut i32,
 ) -> bool {
+    let crc0 = crc0 as u8;
+    let crc1 = crc1 as u8;
     let r = repair::repair_block(wr(txt, len), [crc0, crc1], max_parity_errors);
     if !fixed_bits.is_null() {
         *fixed_bits = r.fixed_bits;
@@ -69,7 +74,9 @@ pub unsafe extern "C" fn onair_acars_repair_block(
 
 /// Label name as a static NUL-terminated string ("" when unknown); `a` and `b` are the two label characters (the DEL written as 'd').
 #[no_mangle]
-pub extern "C" fn onair_acars_label_text(a: u8, b: u8) -> *const u8 {
+pub extern "C" fn onair_acars_label_text(a: u32, b: u32) -> *const u8 {
+    let a = a as u8;
+    let b = b as u8;
     label::label_text(a, b).as_ptr()
 }
 

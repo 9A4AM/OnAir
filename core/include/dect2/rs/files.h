@@ -48,7 +48,7 @@ size_t onair_files_csv_quote_len(const uint8_t* f, size_t n);
 size_t onair_files_csv_quote(const uint8_t* f, size_t n, uint8_t* out, size_t n_out);
 // Items of a sep separated list, trimmed (space, tab, CR), empty ones dropped: ends[2k], ends[2k+1] = start, end of item k. Returns the item count (SIZE_MAX if ends is
 // too short; an empty ends only counts).
-size_t onair_files_split_list(const uint8_t* s, size_t n, uint8_t sep, uint32_t* ends, size_t n_ends);
+size_t onair_files_split_list(const uint8_t* s, size_t n, uint32_t sep, uint32_t* ends, size_t n_ends);
 
 // ---- JSON / SigMF
 // Resolves the escapes of a JSON string's raw bytes; returns the full length of the result (never more than n).
@@ -81,11 +81,11 @@ int32_t onair_files_sqlite_varint(const uint8_t* p, size_t n, uint64_t* v);
 // Column count (more than cap = cols too short), SIZE_MAX for a damaged record.
 size_t onair_files_sqlite_record(const uint8_t* r, size_t n, OnairFilesCol* cols, size_t cap);
 // 0 rejected, 1 all of the payload is on the page (*local = total), 2 *local bytes on the page, the rest on overflow pages.
-int32_t onair_files_sqlite_payload_local(uint64_t total, uint64_t usable, bool index_tree, uint64_t* local);
+int32_t onair_files_sqlite_payload_local(uint64_t total, uint64_t usable, uint32_t index_tree, uint64_t* local);
 // out[0] = page type, out[1] = cell count, out[2] = right-most child.
 bool onair_files_sqlite_page_header(const uint8_t* pg, size_t n, size_t base, uint32_t* out);
 // kind: 13 table leaf, 5 table interior, 6 table interior with key, 10 index leaf, 2 index interior.
-bool onair_files_sqlite_cell(const uint8_t* pg, size_t n, uint8_t kind, size_t base, size_t i, size_t cells, OnairFilesCell* out);
+bool onair_files_sqlite_cell(const uint8_t* pg, size_t n, uint32_t kind, size_t base, size_t i, size_t cells, OnairFilesCell* out);
 bool onair_files_sqlite_tile_row(int32_t z, int32_t x, int32_t y, int64_t* row);
 bool onair_files_sqlite_is_raster(const uint8_t* d, size_t n);
 bool onair_files_sqlite_is_png(const uint8_t* d, size_t n);

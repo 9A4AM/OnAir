@@ -31,7 +31,7 @@ bool onair_p25_rs_encode(uint8_t* sym, int32_t n, int32_t k);
 bool onair_p25_rs_decode(uint8_t* sym, int32_t n, int32_t k, int32_t* errs);
 
 uint16_t onair_p25_hamming10_encode(int32_t hex);
-int32_t onair_p25_hamming10_decode(uint16_t cw, int32_t* errs);
+int32_t onair_p25_hamming10_decode(uint32_t cw, int32_t* errs);
 uint32_t onair_p25_golay24_encode(int32_t d12);
 int32_t onair_p25_golay24_decode(uint32_t cw, int32_t* errs);   // -1 beyond three errors
 uint32_t onair_p25_golay18_encode(int32_t hex);

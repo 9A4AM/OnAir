@@ -111,7 +111,9 @@ pub extern "C" fn onair_ais_mmsi_plausible(m: u32) -> bool {
     mmsi::mmsi_plausible(m)
 }
 #[no_mangle]
-pub extern "C" fn onair_ais_acceptable(typ: i32, valid: bool, mmsi: u32, decoded: bool) -> bool {
+pub extern "C" fn onair_ais_acceptable(typ: i32, valid: u32, mmsi: u32, decoded: u32) -> bool {
+    let valid = valid != 0;
+    let decoded = decoded != 0;
     mmsi::acceptable_ais(typ, valid, mmsi, decoded)
 }
 #[no_mangle]

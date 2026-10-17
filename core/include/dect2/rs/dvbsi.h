@@ -42,13 +42,13 @@ size_t onair_dvbsi_ucs2be(const uint8_t* p, size_t n, uint8_t* out, size_t cap);
 size_t onair_dvbsi_dab_charset(int32_t cs, const uint8_t* p, size_t n, uint8_t* out, size_t cap);
 size_t onair_dvbsi_iso6937(const uint8_t* p, size_t n, uint8_t* out, size_t cap);
 size_t onair_dvbsi_clean(const uint8_t* p, size_t n, uint8_t* out, size_t cap);
-size_t onair_dvbsi_dvb_text(const uint8_t* p, size_t n, bool gb_default, uint8_t* out, size_t cap);
+size_t onair_dvbsi_dvb_text(const uint8_t* p, size_t n, uint32_t gb_default, uint8_t* out, size_t cap);
 
 // Teletext (EN 300 706): Hamming 8/4 (nibble or -1), Hamming 24/18 of 3 bytes (-1 for two errors), bit reversal, G0 code to Unicode in a national subset.
-int32_t onair_dvbsi_ttx_hamming84(uint8_t b);
+int32_t onair_dvbsi_ttx_hamming84(uint32_t b);
 int32_t onair_dvbsi_ttx_hamming2418(const uint8_t* b3);
-uint8_t onair_dvbsi_ttx_reverse8(uint8_t b);
-uint32_t onair_dvbsi_ttx_g0(uint8_t code, int32_t national);
+uint8_t onair_dvbsi_ttx_reverse8(uint32_t b);
+uint32_t onair_dvbsi_ttx_g0(uint32_t code, int32_t national);
 // Offsets of the 44 byte data units of a teletext PES packet (the count found, also past the capacity).
 size_t onair_dvbsi_ttx_pes_units(const uint8_t* pes, size_t n, uint32_t* out, size_t cap);
 void onair_dvbsi_ttx_decode_unit(const uint8_t* u44, OnairDvbsiTtxUnit* out);
@@ -67,7 +67,7 @@ bool onair_dvbsi_sub_object_data(const uint8_t* d, size_t n, OnairDvbsiSubObject
 void onair_dvbsi_sub_default_clut(uint32_t* e2, uint32_t* e4, uint32_t* e8);   // 4, 16, 256 entries
 uint32_t onair_dvbsi_sub_ycrcb(int32_t y, int32_t cr, int32_t cb, int32_t t);
 // Pixel data of one field into a region of reg_w * reg_h palette indices.
-void onair_dvbsi_sub_decode_field(const uint8_t* f, size_t n, int32_t x0, int32_t y0, int32_t line_step, bool double_lines, int32_t reg_w, int32_t reg_h,
+void onair_dvbsi_sub_decode_field(const uint8_t* f, size_t n, int32_t x0, int32_t y0, int32_t line_step, uint32_t double_lines, int32_t reg_w, int32_t reg_h,
                                   int32_t reg_depth, uint8_t* pix);
 void onair_dvbsi_sub_region_rgba(const uint8_t* pix, size_t n, int32_t depth, const uint32_t* e2, const uint32_t* e4, const uint32_t* e8, uint8_t* out);   // 4 * n bytes
 void onair_dvbsi_sub_blend_region(uint8_t* out, int32_t dw, int32_t dh, int32_t rx, int32_t ry, int32_t rw, int32_t rh, const uint8_t* rgba);

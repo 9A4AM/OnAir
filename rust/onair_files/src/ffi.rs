@@ -140,7 +140,8 @@ pub unsafe extern "C" fn onair_files_csv_quote(f: *const u8, n: usize, out: *mut
 /// Splits a `sep` separated list into trimmed non-empty items: `ends[2k]` / `ends[2k + 1]` = start / end of item k. Returns the item count; `usize::MAX` if `ends` is
 /// too short (an empty `ends` only counts).
 #[no_mangle]
-pub unsafe extern "C" fn onair_files_split_list(s: *const u8, n: usize, sep: u8, ends: *mut u32, n_ends: usize) -> usize {
+pub unsafe extern "C" fn onair_files_split_list(s: *const u8, n: usize, sep: u32, ends: *mut u32, n_ends: usize) -> usize {
+    let sep = sep as u8;
     csv::split_list(rd(s, n), sep, wr(ends, n_ends))
 }
 
@@ -314,7 +315,8 @@ pub unsafe extern "C" fn onair_files_sqlite_record(r: *const u8, n: usize, cols:
 
 /// Payload split: 0 = rejected, 1 = the whole payload is on the page (`*local` = total), 2 = `*local` bytes on the page and the rest on overflow pages.
 #[no_mangle]
-pub unsafe extern "C" fn onair_files_sqlite_payload_local(total: u64, usable: u64, index_tree: bool, local: *mut u64) -> i32 {
+pub unsafe extern "C" fn onair_files_sqlite_payload_local(total: u64, usable: u64, index_tree: u32, local: *mut u64) -> i32 {
+    let index_tree = index_tree != 0;
     match sqlite::payload_local(total, usable, index_tree) {
         Some((l, ov)) => {
             if !local.is_null() {
@@ -349,12 +351,13 @@ pub unsafe extern "C" fn onair_files_sqlite_page_header(pg: *const u8, n: usize,
 pub unsafe extern "C" fn onair_files_sqlite_cell(
     pg: *const u8,
     n: usize,
-    kind: u8,
+    kind: u32,
     base: usize,
     i: usize,
     cells: usize,
     out: *mut Cell,
 ) -> bool {
+    let kind = kind as u8;
     match sqlite::cell(rd(pg, n), kind, base, i, cells) {
         Some(c) if !out.is_null() => {
             *out = c;

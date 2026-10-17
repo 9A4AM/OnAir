@@ -42,11 +42,11 @@ bool onair_pager_looks_alpha(const uint8_t* bits, size_t n);
 // Bits -> 7-bit characters (printable, CR, LF, tab); buffer must hold n / 7 bytes. Returns the length.
 size_t onair_pager_alpha_from_bits(const uint8_t* bits, size_t n, uint8_t* out, size_t cap);
 // Bits -> 4-bit digits (flex: FLEX character set, filler 12 dropped); buffer must hold n / 4 bytes. Returns the length.
-size_t onair_pager_numeric_from_bits(const uint8_t* bits, size_t n, bool flex, uint8_t* out, size_t cap);
+size_t onair_pager_numeric_from_bits(const uint8_t* bits, size_t n, uint32_t flex, uint8_t* out, size_t cap);
 
 // ---- FLEX
 // Speed table: index of the entry closest to a sync code (within max_distance bits), of a PagerSpeed; -1 when none.
-int32_t onair_pager_flex_mode_for_code(uint16_t code, int32_t max_distance);
+int32_t onair_pager_flex_mode_for_code(uint32_t code, int32_t max_distance);
 int32_t onair_pager_flex_mode_for_speed(int32_t speed);
 int32_t onair_pager_flex_mode_count(void);
 // Fields of an entry; false for an index out of range.

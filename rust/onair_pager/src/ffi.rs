@@ -100,14 +100,16 @@ pub unsafe extern "C" fn onair_pager_alpha_from_bits(bits: *const u8, n: usize, 
 
 /// The bits read as 4-bit digits; `flex` 1 picks the FLEX character set and drops filler 12, 0 the POCSAG one. The buffer must hold n / 4 bytes.
 #[no_mangle]
-pub unsafe extern "C" fn onair_pager_numeric_from_bits(bits: *const u8, n: usize, flex: bool, out: *mut u8, cap: usize) -> usize {
+pub unsafe extern "C" fn onair_pager_numeric_from_bits(bits: *const u8, n: usize, flex: u32, out: *mut u8, cap: usize) -> usize {
+    let flex = flex != 0;
     let table = if flex { text::NUM_FLEX } else { text::NUM_POCSAG };
     text::numeric_from_bits(rd(bits, n), table, flex, wr(out, cap))
 }
 
 /// Index of the FLEX speed table entry closest to `code` within `max_distance` bits, or -1.
 #[no_mangle]
-pub extern "C" fn onair_pager_flex_mode_for_code(code: u16, max_distance: i32) -> i32 {
+pub extern "C" fn onair_pager_flex_mode_for_code(code: u32, max_distance: i32) -> i32 {
+    let code = code as u16;
     flex::mode_for_code(code, max_distance).map_or(-1, |i| i as i32)
 }
 

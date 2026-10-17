@@ -439,11 +439,13 @@ pub unsafe extern "C" fn onair_net_sdrpp_ui_action(
     ty: u32,
     i: i32,
     f: f32,
-    b: bool,
-    sync: bool,
+    b: u32,
+    sync: u32,
     out: *mut u8,
     cap: usize,
 ) -> usize {
+    let b = b != 0;
+    let sync = sync != 0;
     sdrpp::ui_action_arg(rd(id, n), ty as u8, i, f, b, sync, wr(out, cap))
 }
 

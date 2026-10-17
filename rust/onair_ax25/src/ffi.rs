@@ -195,7 +195,8 @@ pub unsafe extern "C" fn onair_ax25_tnc2(
 
 /// Frame type name ("UI", "RR", ...) from the control byte.
 #[no_mangle]
-pub unsafe extern "C" fn onair_ax25_type_name(control: u8, out: *mut u8, cap: usize) -> usize {
+pub unsafe extern "C" fn onair_ax25_type_name(control: u32, out: *mut u8, cap: usize) -> usize {
+    let control = control as u8;
     let mut o = Arena::new(wr(out, cap));
     o.put(frame::type_name(control).as_bytes());
     if o.overflow {
@@ -215,7 +216,8 @@ pub unsafe extern "C" fn onair_ax25_hdlc_reset(h: *mut Hdlc) {
 
 /// Feeds one bit (NRZI level when `nrzi`, plain HDLC bit otherwise). Returns 0 nothing, 1 good frame (`buf[..*len]` without FCS), 2 bad FCS (`buf[..*len]` every byte).
 #[no_mangle]
-pub unsafe extern "C" fn onair_ax25_hdlc_bit(h: *mut Hdlc, level: i32, nrzi: bool, len: *mut usize) -> i32 {
+pub unsafe extern "C" fn onair_ax25_hdlc_bit(h: *mut Hdlc, level: i32, nrzi: u32, len: *mut usize) -> i32 {
+    let nrzi = nrzi != 0;
     if h.is_null() {
         return 0;
     }

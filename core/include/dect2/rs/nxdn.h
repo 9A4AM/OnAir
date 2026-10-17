@@ -26,7 +26,7 @@ size_t onair_nxdn_struct_size(void);
 void onair_nxdn_pn9(uint8_t* out, size_t n);
 // LICH byte (8 bits MSB first, even parity last) and its decoding into out[4] = rfct, fct, opt, dir; false: parity wrong.
 uint8_t onair_nxdn_lich_encode(int32_t rfct, int32_t fct, int32_t opt, int32_t dir);
-bool onair_nxdn_lich_decode(uint8_t v, int32_t* out);
+bool onair_nxdn_lich_decode(uint32_t v, int32_t* out);
 // CRC-6 / 12 / 16 over n bits.
 uint32_t onair_nxdn_crc6(const uint8_t* bits, size_t n);
 uint32_t onair_nxdn_crc12(const uint8_t* bits, size_t n);

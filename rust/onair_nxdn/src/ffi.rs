@@ -68,7 +68,8 @@ pub extern "C" fn onair_nxdn_lich_encode(rfct: i32, fct: i32, opt: i32, dir: i32
 
 /// Decodes a LICH byte into `out[4]` (rfct, fct, opt, dir); false when the parity is wrong (`out` untouched).
 #[no_mangle]
-pub unsafe extern "C" fn onair_nxdn_lich_decode(v: u8, out: *mut i32) -> bool {
+pub unsafe extern "C" fn onair_nxdn_lich_decode(v: u32, out: *mut i32) -> bool {
+    let v = v as u8;
     match lich::decode(v) {
         Some(l) => {
             let o = wr(out, 4);

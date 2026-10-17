@@ -137,14 +137,14 @@ bool onair_mesh_mt_decode(const uint8_t* plain, size_t n, uint32_t from, uint32_
 // MeshCore: split a packet (false and a note when it is not one); everything that needs no key; decrypted group bytes (kind 5 text, 6 data) with the hop text;
 // the note when no channel decrypted a group packet (any: a channel with that hash exists).
 bool onair_mesh_mc_header(const uint8_t* p, size_t n, OnairMeshMcParsed* h, OnairMeshS128* note);
-void onair_mesh_mc_decode(const uint8_t* p, size_t n, const OnairMeshMcParsed* h, bool sig_ok, OnairMeshMcOut* out);
-void onair_mesh_mc_group_plain(uint8_t kind, uint8_t hcnt, const uint8_t* via, size_t vlen, const uint8_t* d, size_t dlen, OnairMeshMcGroup* out);
-void onair_mesh_mc_group_fail(uint8_t hash, bool any, OnairMeshS128* out);
+void onair_mesh_mc_decode(const uint8_t* p, size_t n, const OnairMeshMcParsed* h, uint32_t sig_ok, OnairMeshMcOut* out);
+void onair_mesh_mc_group_plain(uint32_t kind, uint32_t hcnt, const uint8_t* via, size_t vlen, const uint8_t* d, size_t dlen, OnairMeshMcGroup* out);
+void onair_mesh_mc_group_fail(uint32_t hash, uint32_t any, OnairMeshS128* out);
 
 // LoRaWAN
 void onair_mesh_lorawan_decode(const uint8_t* p, size_t n, OnairMeshLorawan* out);
 size_t onair_mesh_lorawan_mtype_name(int32_t t, uint8_t* out, size_t cap);
-size_t onair_mesh_lorawan_mac_name(uint8_t cid, bool uplink, uint8_t* out, size_t cap);
+size_t onair_mesh_lorawan_mac_name(uint32_t cid, uint32_t uplink, uint8_t* out, size_t cap);
 size_t onair_mesh_lorawan_network(uint32_t dev_addr, uint8_t* out, size_t cap, int32_t* kind, uint32_t* nwk, uint32_t* net);   // kind / nwk / net may be NULL
 size_t onair_mesh_lorawan_vendor(uint64_t eui, uint8_t* out, size_t cap);
 size_t onair_mesh_lorawan_eui(uint64_t eui, uint8_t* out, size_t cap);

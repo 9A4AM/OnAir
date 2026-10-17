@@ -157,19 +157,19 @@ bool onair_adsb_altitude_to_gillham(int32_t alt, uint32_t* code);
 int32_t onair_adsb_decode_id13(uint32_t id);
 uint32_t onair_adsb_encode_id13(int32_t squawk);
 uint8_t onair_adsb_char_from_6bit(uint32_t c);
-int32_t onair_adsb_char_to_6bit(uint8_t ch);
+int32_t onair_adsb_char_to_6bit(uint32_t ch);
 size_t onair_adsb_category_code(int32_t tc, int32_t ca, uint8_t* out);   // 2 bytes ("A3"), returns 2, or 0 when out of range
 const uint8_t* onair_adsb_category_name(int32_t tc, int32_t ca);
 const uint8_t* onair_adsb_emergency_name(int32_t state);
 
 // Compact position reporting (17 bit, NZ = 15).
 int32_t onair_adsb_cpr_nl(double lat);
-bool onair_adsb_cpr_global_airborne(int32_t lat_e, int32_t lon_e, int32_t lat_o, int32_t lon_o, bool odd_latest, double* lat, double* lon);
-bool onair_adsb_cpr_local_airborne(int32_t lat_cpr, int32_t lon_cpr, bool odd, double ref_lat, double ref_lon, double* lat, double* lon);
-bool onair_adsb_cpr_global_surface(int32_t lat_e, int32_t lon_e, int32_t lat_o, int32_t lon_o, bool odd_latest, double ref_lat, double ref_lon, double* lat, double* lon);
-bool onair_adsb_cpr_local_surface(int32_t lat_cpr, int32_t lon_cpr, bool odd, double ref_lat, double ref_lon, double* lat, double* lon);
-void onair_adsb_cpr_encode_airborne(double lat, double lon, bool odd, int32_t* lat_cpr, int32_t* lon_cpr);
-void onair_adsb_cpr_encode_surface(double lat, double lon, bool odd, int32_t* lat_cpr, int32_t* lon_cpr);
+bool onair_adsb_cpr_global_airborne(int32_t lat_e, int32_t lon_e, int32_t lat_o, int32_t lon_o, uint32_t odd_latest, double* lat, double* lon);
+bool onair_adsb_cpr_local_airborne(int32_t lat_cpr, int32_t lon_cpr, uint32_t odd, double ref_lat, double ref_lon, double* lat, double* lon);
+bool onair_adsb_cpr_global_surface(int32_t lat_e, int32_t lon_e, int32_t lat_o, int32_t lon_o, uint32_t odd_latest, double ref_lat, double ref_lon, double* lat, double* lon);
+bool onair_adsb_cpr_local_surface(int32_t lat_cpr, int32_t lon_cpr, uint32_t odd, double ref_lat, double ref_lon, double* lat, double* lon);
+void onair_adsb_cpr_encode_airborne(double lat, double lon, uint32_t odd, int32_t* lat_cpr, int32_t* lon_cpr);
+void onair_adsb_cpr_encode_surface(double lat, double lon, uint32_t odd, int32_t* lat_cpr, int32_t* lon_cpr);
 
 // Geometry and small physical models.
 double onair_adsb_distance_nm(double lat1, double lon1, double lat2, double lon2);
@@ -182,7 +182,7 @@ double onair_adsb_isa_temp_c(double alt_ft);
 
 // Comm-B: mb = the 7 bytes of the MB field; alt_ft the altitude of the reply or -100000 (kNoAltitude).
 void onair_adsb_infer_commb(const uint8_t* mb, int32_t alt_ft, OnairAdsbCommB* out);
-size_t onair_adsb_ra_text(uint32_t ara, uint32_t rac, bool terminated, uint8_t* out, size_t cap);   // SIZE_MAX when cap is too small
+size_t onair_adsb_ra_text(uint32_t ara, uint32_t rac, uint32_t terminated, uint8_t* out, size_t cap);   // SIZE_MAX when cap is too small
 
 // Field extraction of a message of nbits bits (the caller has done the CRC and address checks); out is written even when false is returned.
 bool onair_adsb_decode_msg(const uint8_t* bytes, int32_t nbits, OnairAdsbMsg* out);

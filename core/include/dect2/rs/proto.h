@@ -54,7 +54,7 @@ size_t onair_ais_hdlc_frames(const uint8_t* b, size_t n, uint8_t* out, size_t ou
 
 bool onair_ais_decode_message(const uint8_t* b, size_t n, OnairAisMsg* m);
 bool onair_ais_mmsi_plausible(uint32_t mmsi);
-bool onair_ais_acceptable(int32_t type, bool valid, uint32_t mmsi, bool decoded);
+bool onair_ais_acceptable(int32_t type, uint32_t valid, uint32_t mmsi, uint32_t decoded);
 int32_t onair_ais_class_of_mmsi(uint32_t mmsi, int32_t type);
 double onair_ais_rate_of_turn(int32_t raw);
 

@@ -74,7 +74,8 @@ pub extern "C" fn onair_fec_bch_ctx_size() -> usize {
 
 /// Initialises a BCH context of `ctx_len` bytes for a short (16200 bit) or normal (64800 bit) frame with t errors (1..12). False for a null / small context or bad t.
 #[no_mangle]
-pub unsafe extern "C" fn onair_fec_bch_init(ctx: *mut u8, ctx_len: usize, short_frame: bool, t: i32) -> bool {
+pub unsafe extern "C" fn onair_fec_bch_init(ctx: *mut u8, ctx_len: usize, short_frame: u32, t: i32) -> bool {
+    let short_frame = short_frame != 0;
     if ctx.is_null() || ctx_len < BchCtx::size() || (ctx as usize) % core::mem::align_of::<BchCtx>() != 0 || t < 1 {
         return false;
     }

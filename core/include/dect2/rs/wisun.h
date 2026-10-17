@@ -57,12 +57,12 @@ uint32_t onair_wisun_version(void);
 void onair_wisun_struct_sizes(size_t* out);
 
 // PHY: PHR split / build, PN9 whitening in place (own inverse), the 2- and 4-octet FCS, FCS check of a PSDU with the FCS at its end.
-void onair_wisun_parse_phr(uint16_t v, OnairWisunPhr* out);
+void onair_wisun_parse_phr(uint32_t v, OnairWisunPhr* out);
 uint16_t onair_wisun_build_phr(const OnairWisunPhr* p);
 void onair_wisun_whiten(uint8_t* d, size_t n);
 uint16_t onair_wisun_crc16(const uint8_t* d, size_t n);   // CRC-16/KERMIT
 uint32_t onair_wisun_crc32(const uint8_t* d, size_t n);   // IEEE 802.3 CRC-32
-bool onair_wisun_fcs_ok(const uint8_t* p, size_t n, bool fcs2);
+bool onair_wisun_fcs_ok(const uint8_t* p, size_t n, uint32_t fcs2);
 
 // MAC: parse an MPDU of n octets (FCS excluded); the frame says how far the header could be read (ok).
 void onair_wisun_parse(const uint8_t* d, size_t n, OnairWisunFrame* out);

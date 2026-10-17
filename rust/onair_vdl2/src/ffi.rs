@@ -198,7 +198,8 @@ pub unsafe extern "C" fn onair_vdl2_hdlc_frames(
 
 /// Writes an AVLC address into 4 octets.
 #[no_mangle]
-pub unsafe extern "C" fn onair_vdl2_put_addr(a: *const Addr, last: bool, out4: *mut u8) {
+pub unsafe extern "C" fn onair_vdl2_put_addr(a: *const Addr, last: u32, out4: *mut u8) {
+    let last = last != 0;
     if a.is_null() || out4.is_null() {
         return;
     }

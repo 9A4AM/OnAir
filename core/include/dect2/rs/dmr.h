@@ -69,7 +69,7 @@ bool onair_dmr_rate1_decode(const uint8_t* tx196, uint8_t* data24);             
 const uint8_t* onair_dmr_sync_name(int32_t s);
 uint64_t onair_dmr_sync_word(int32_t s);
 int32_t onair_dmr_sync_direct_slot(int32_t s);
-int32_t onair_dmr_sync_of(int32_t family, bool voice);
+int32_t onair_dmr_sync_of(int32_t family, uint32_t voice);
 bool onair_dmr_sync_symbols(int32_t s, int8_t* out24);
 int32_t onair_dmr_match_sync(const uint8_t* centre48, int32_t max_diff, int32_t* diff);
 const uint8_t* onair_dmr_data_type_name(int32_t dt);
@@ -84,11 +84,11 @@ size_t onair_dmr_bits_to_symbols(const uint8_t* bits, size_t n, int8_t* out, siz
 void onair_dmr_pack_full_lc(const OnairDmrFullLc* lc, uint8_t* out9);
 void onair_dmr_parse_full_lc(const uint8_t* in9, OnairDmrFullLc* lc);
 const uint8_t* onair_dmr_flco_name(int32_t f);
-size_t onair_dmr_service_options_text(uint8_t svc, uint8_t* out, size_t cap);
-void onair_dmr_lc_burst_info(const uint8_t* lc9, bool terminator, uint8_t* info96);
-int32_t onair_dmr_lc_burst_decode(const uint8_t* info96, bool terminator, uint8_t* lc9);   // 0 clean, 1 one octet corrected, -1 failed
-void onair_dmr_crc_block_info(const uint8_t* data10, uint16_t mask, uint8_t* info96);
-bool onair_dmr_crc_block_check(const uint8_t* info96, uint16_t mask, uint8_t* data10);     // data10 always written
+size_t onair_dmr_service_options_text(uint32_t svc, uint8_t* out, size_t cap);
+void onair_dmr_lc_burst_info(const uint8_t* lc9, uint32_t terminator, uint8_t* info96);
+int32_t onair_dmr_lc_burst_decode(const uint8_t* info96, uint32_t terminator, uint8_t* lc9);   // 0 clean, 1 one octet corrected, -1 failed
+void onair_dmr_crc_block_info(const uint8_t* data10, uint32_t mask, uint8_t* info96);
+bool onair_dmr_crc_block_check(const uint8_t* info96, uint32_t mask, uint8_t* data10);     // data10 always written
 void onair_dmr_csbk_info(const OnairDmrCsbk* c, uint8_t* info96);
 bool onair_dmr_csbk_parse(const uint8_t* info96, OnairDmrCsbk* c);                         // c written only when true
 const uint8_t* onair_dmr_csbk_name(int32_t op, int32_t fid);
@@ -98,13 +98,13 @@ const uint8_t* onair_dmr_dpf_name(int32_t d);
 const uint8_t* onair_dmr_sap_name(int32_t s);
 void onair_dmr_pack_data_header(const OnairDmrDataHeader* h, uint8_t* out10);
 bool onair_dmr_parse_data_header(const uint8_t* in10, OnairDmrDataHeader* h);              // h always written
-int32_t onair_dmr_data_block_bytes(int32_t dt, bool confirmed);
-void onair_dmr_data_block_encode(int32_t dt, const uint8_t* user, size_t n, bool confirmed, uint32_t dbsn, uint8_t* out196);
-bool onair_dmr_data_block_parse(int32_t dt, const uint8_t* oct, size_t n, bool confirmed, OnairDmrDataBlock* out);
+int32_t onair_dmr_data_block_bytes(int32_t dt, uint32_t confirmed);
+void onair_dmr_data_block_encode(int32_t dt, const uint8_t* user, size_t n, uint32_t confirmed, uint32_t dbsn, uint8_t* out196);
+bool onair_dmr_data_block_parse(int32_t dt, const uint8_t* oct, size_t n, uint32_t confirmed, OnairDmrDataBlock* out);
 
 // ---- text and talker alias
 const uint8_t* onair_dmr_dd_name(int32_t dd);
-size_t onair_dmr_text_from_bytes(const uint8_t* p, size_t n, int32_t format, bool ta, uint8_t* out, size_t cap);   // at most 2n + 80 bytes
+size_t onair_dmr_text_from_bytes(const uint8_t* p, size_t n, int32_t format, uint32_t ta, uint8_t* out, size_t cap);   // at most 2n + 80 bytes
 void onair_dmr_ta_add(OnairDmrTa* t, const OnairDmrFullLc* lc);
 bool onair_dmr_ta_complete(const OnairDmrTa* t);
 size_t onair_dmr_ta_text(const OnairDmrTa* t, uint8_t* out, size_t cap);

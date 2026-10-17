@@ -132,7 +132,8 @@ pub extern "C" fn onair_adsb_char_from_6bit(c: u32) -> u8 {
     altitude::char_from_6bit(c)
 }
 #[no_mangle]
-pub extern "C" fn onair_adsb_char_to_6bit(ch: u8) -> i32 {
+pub extern "C" fn onair_adsb_char_to_6bit(ch: u32) -> i32 {
+    let ch = ch as u8;
     altitude::char_to_6bit(ch)
 }
 /// Category code ("A3") into `out` (2 bytes); the length written, 0 outside tc 1 - 4 / ca 0 - 7.
@@ -168,22 +169,24 @@ pub unsafe extern "C" fn onair_adsb_cpr_global_airborne(
     xe: i32,
     lo: i32,
     xo: i32,
-    odd_latest: bool,
+    odd_latest: u32,
     lat: *mut f64,
     lon: *mut f64,
 ) -> bool {
+    let odd_latest = odd_latest != 0;
     cpr::global_airborne(le, xe, lo, xo, odd_latest).map(|p| (put(lat, p.lat), put(lon, p.lon))).is_some()
 }
 #[no_mangle]
 pub unsafe extern "C" fn onair_adsb_cpr_local_airborne(
     lc: i32,
     xc: i32,
-    odd: bool,
+    odd: u32,
     ref_lat: f64,
     ref_lon: f64,
     lat: *mut f64,
     lon: *mut f64,
 ) -> bool {
+    let odd = odd != 0;
     cpr::local_airborne(lc, xc, odd, ref_lat, ref_lon).map(|p| (put(lat, p.lat), put(lon, p.lon))).is_some()
 }
 #[no_mangle]
@@ -193,34 +196,38 @@ pub unsafe extern "C" fn onair_adsb_cpr_global_surface(
     xe: i32,
     lo: i32,
     xo: i32,
-    odd_latest: bool,
+    odd_latest: u32,
     ref_lat: f64,
     ref_lon: f64,
     lat: *mut f64,
     lon: *mut f64,
 ) -> bool {
+    let odd_latest = odd_latest != 0;
     cpr::global_surface(le, xe, lo, xo, odd_latest, ref_lat, ref_lon).map(|p| (put(lat, p.lat), put(lon, p.lon))).is_some()
 }
 #[no_mangle]
 pub unsafe extern "C" fn onair_adsb_cpr_local_surface(
     lc: i32,
     xc: i32,
-    odd: bool,
+    odd: u32,
     ref_lat: f64,
     ref_lon: f64,
     lat: *mut f64,
     lon: *mut f64,
 ) -> bool {
+    let odd = odd != 0;
     cpr::local_surface(lc, xc, odd, ref_lat, ref_lon).map(|p| (put(lat, p.lat), put(lon, p.lon))).is_some()
 }
 #[no_mangle]
-pub unsafe extern "C" fn onair_adsb_cpr_encode_airborne(lat: f64, lon: f64, odd: bool, lat_cpr: *mut i32, lon_cpr: *mut i32) {
+pub unsafe extern "C" fn onair_adsb_cpr_encode_airborne(lat: f64, lon: f64, odd: u32, lat_cpr: *mut i32, lon_cpr: *mut i32) {
+    let odd = odd != 0;
     let (a, b) = cpr::encode_airborne(lat, lon, odd);
     put(lat_cpr, a);
     put(lon_cpr, b);
 }
 #[no_mangle]
-pub unsafe extern "C" fn onair_adsb_cpr_encode_surface(lat: f64, lon: f64, odd: bool, lat_cpr: *mut i32, lon_cpr: *mut i32) {
+pub unsafe extern "C" fn onair_adsb_cpr_encode_surface(lat: f64, lon: f64, odd: u32, lat_cpr: *mut i32, lon_cpr: *mut i32) {
+    let odd = odd != 0;
     let (a, b) = cpr::encode_surface(lat, lon, odd);
     put(lat_cpr, a);
     put(lon_cpr, b);
@@ -264,7 +271,8 @@ pub unsafe extern "C" fn onair_adsb_infer_commb(mb: *const u8, alt_ft: i32, out:
 }
 /// The text of an ACAS resolution advisory.
 #[no_mangle]
-pub unsafe extern "C" fn onair_adsb_ra_text(ara: u32, rac: u32, terminated: bool, out: *mut u8, cap: usize) -> usize {
+pub unsafe extern "C" fn onair_adsb_ra_text(ara: u32, rac: u32, terminated: u32, out: *mut u8, cap: usize) -> usize {
+    let terminated = terminated != 0;
     let mut b = Buf::new(wr(out, cap));
     commb::ra_text(ara, rac, terminated, &mut b);
     if b.overflow {

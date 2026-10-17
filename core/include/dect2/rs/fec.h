@@ -23,7 +23,7 @@ int32_t onair_fec_rs_decode(int32_t code, uint8_t* r, size_t n);
 // Size of the context the caller allocates (8-byte aligned, e.g. a vector<uint64_t>), then initialises once per code.
 size_t onair_fec_bch_ctx_size(void);
 // short_frame: 16200 bit frames (GF(2^14)) instead of 64800 (GF(2^16)); t = 1..12 errors. False for a null / small / misaligned context or a bad t.
-bool onair_fec_bch_init(uint8_t* ctx, size_t ctx_len, bool short_frame, int32_t t);
+bool onair_fec_bch_init(uint8_t* ctx, size_t ctx_len, uint32_t short_frame, int32_t t);
 // Parity bits of an initialised context (m * t); 0 for a null pointer.
 size_t onair_fec_bch_parity_bits(const uint8_t* ctx);
 // Encoder: message bits[0..k), parity written to bits[k..k + parity bits). False when the n byte buffer is too short.

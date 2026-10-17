@@ -40,18 +40,18 @@ void onair_drm_struct_sizes(size_t out[4]);
 uint32_t onair_drm_crc8_bits(const uint8_t* b, size_t n);     // FAC CRC over unpacked bits
 uint32_t onair_drm_crc16_bits(const uint8_t* b, size_t n);    // SDC CRC over unpacked bits
 
-bool onair_drm_fac_parse(const uint8_t* b, size_t n, bool mode_e, OnairDrmFacInfo* out);   // 72 / 116 bits; false: wrong CRC or RM flag
+bool onair_drm_fac_parse(const uint8_t* b, size_t n, uint32_t mode_e, OnairDrmFacInfo* out);   // 72 / 116 bits; false: wrong CRC or RM flag
 // Parses the SDC data field into info (in and out: entities refine what is there); entity types that are not interpreted go to other (info->n_other of them).
 int32_t onair_drm_sdc_parse(const uint8_t* d, size_t n, OnairDrmSdcInfo* info, uint8_t* other, size_t ocap);
 bool onair_drm_sdc_check_bits(const uint8_t* b, size_t n, size_t field_bytes, int32_t* afs);
-int32_t onair_drm_aac_num_frames(bool mode_e, int32_t rate_hz);
+int32_t onair_drm_aac_num_frames(uint32_t mode_e, int32_t rate_hz);
 int32_t onair_drm_aac_header_bytes(int32_t n);
 bool onair_drm_aac_super_frame_parse(const uint8_t* lf, size_t n, int32_t len_a, int32_t frames_n, OnairDrmAacInfo* info, uint8_t* frames, size_t cap);   // frames: the bytes of the logical frame
 
 size_t onair_drm_language_name(int32_t c, uint8_t* out, size_t cap);           // 24 bytes are enough
 size_t onair_drm_programme_type_name(int32_t c, uint8_t* out, size_t cap);     // 24
-size_t onair_drm_msc_mode_name(bool mode_e, int32_t m, uint8_t* out, size_t cap);   // 16
-size_t onair_drm_occupancy_name(bool mode_e, int32_t o, uint8_t* out, size_t cap);  // 16
+size_t onair_drm_msc_mode_name(uint32_t mode_e, int32_t m, uint8_t* out, size_t cap);   // 16
+size_t onair_drm_occupancy_name(uint32_t mode_e, int32_t o, uint8_t* out, size_t cap);  // 16
 size_t onair_drm_app_name(int32_t domain, int32_t app, uint8_t* out, size_t cap);   // 32
 int32_t onair_drm_fac_audio_services(int32_t c);
 int32_t onair_drm_fac_data_services(int32_t c);
@@ -61,7 +61,7 @@ int32_t onair_drm_date_to_mjd(int32_t y, int32_t m, int32_t d);
 bool onair_drm_group_payload(const uint8_t* d, size_t n, size_t* off, size_t* len);
 size_t onair_drm_display_text(const uint8_t* b, size_t n, uint8_t* out, size_t cap);   // 2 * min(n, 16384) bytes
 bool onair_drm_looks_text(const uint8_t* b, size_t n);
-int32_t onair_drm_text_segment_need(uint8_t b0);
+int32_t onair_drm_text_segment_need(uint32_t b0);
 void onair_drm_text_segment_parse(const uint8_t* seg, size_t n, int32_t need, OnairDrmTextSeg* out);
 
 #ifdef __cplusplus

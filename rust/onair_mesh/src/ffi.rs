@@ -320,7 +320,8 @@ pub unsafe extern "C" fn onair_mesh_mc_header(p: *const u8, n: usize, h: *mut Pa
 
 /// Decodes what needs no key of a packet already split by `onair_mesh_mc_header`; `sig_ok` is the Ed25519 verdict for adverts of 101 bytes or more.
 #[no_mangle]
-pub unsafe extern "C" fn onair_mesh_mc_decode(p: *const u8, n: usize, h: *const Parsed, sig_ok: bool, out: *mut McOut) {
+pub unsafe extern "C" fn onair_mesh_mc_decode(p: *const u8, n: usize, h: *const Parsed, sig_ok: u32, out: *mut McOut) {
+    let sig_ok = sig_ok != 0;
     if h.is_null() || out.is_null() {
         return;
     }
@@ -337,14 +338,16 @@ pub unsafe extern "C" fn onair_mesh_mc_decode(p: *const u8, n: usize, h: *const 
 /// Interprets decrypted group bytes (`kind` 5 text, 6 data); `via` is the hop text from the header.
 #[no_mangle]
 pub unsafe extern "C" fn onair_mesh_mc_group_plain(
-    kind: u8,
-    hcnt: u8,
+    kind: u32,
+    hcnt: u32,
     via: *const u8,
     vlen: usize,
     d: *const u8,
     dlen: usize,
     out: *mut GroupOut,
 ) {
+    let kind = kind as u8;
+    let hcnt = hcnt as u8;
     if !out.is_null() {
         *out = meshcore::group_plain(kind, hcnt, rd(via, vlen), rd(d, dlen));
     }
@@ -352,7 +355,9 @@ pub unsafe extern "C" fn onair_mesh_mc_group_plain(
 
 /// The note when no channel decrypted a group packet.
 #[no_mangle]
-pub unsafe extern "C" fn onair_mesh_mc_group_fail(hash: u8, any: bool, out: *mut S128) {
+pub unsafe extern "C" fn onair_mesh_mc_group_fail(hash: u32, any: u32, out: *mut S128) {
+    let hash = hash as u8;
+    let any = any != 0;
     if !out.is_null() {
         *out = meshcore::group_fail_note(hash, any);
     }
@@ -376,7 +381,9 @@ pub unsafe extern "C" fn onair_mesh_lorawan_mtype_name(t: i32, out: *mut u8, cap
 
 /// MAC command name for a command id and direction.
 #[no_mangle]
-pub unsafe extern "C" fn onair_mesh_lorawan_mac_name(cid: u8, uplink: bool, out: *mut u8, cap: usize) -> usize {
+pub unsafe extern "C" fn onair_mesh_lorawan_mac_name(cid: u32, uplink: u32, out: *mut u8, cap: usize) -> usize {
+    let cid = cid as u8;
+    let uplink = uplink != 0;
     put(out, cap, |w| lorawan_names::mac_name(w, cid, uplink))
 }
 

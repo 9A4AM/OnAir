@@ -58,7 +58,7 @@ bool onair_vdl2_fcs_ok(const uint8_t* p, size_t n);
 bool onair_vdl2_hdlc_frames(const uint8_t* bits, size_t n, uint8_t* out, size_t out_cap, uint32_t* lens, size_t lens_cap, size_t* frames, size_t* octets);
 
 // AVLC: addresses, type names (static NUL terminated text), frame decode (false when n < 9; n octets without the FCS).
-void onair_vdl2_put_addr(const OnairVdl2Addr* a, bool last, uint8_t* out4);
+void onair_vdl2_put_addr(const OnairVdl2Addr* a, uint32_t last, uint8_t* out4);
 void onair_vdl2_get_addr(const uint8_t* in4, OnairVdl2Addr* out);
 const char* onair_vdl2_addr_type_name(int32_t t);
 bool onair_vdl2_parse_frame(const uint8_t* f, size_t n, OnairVdl2Parsed* out);
