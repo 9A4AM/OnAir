@@ -154,9 +154,9 @@ public:
     std::vector<std::string> log(const std::string& id, size_t n = 200) const;
     std::string pluginsDir() const { return cfg_.pluginsDir; }
 
+    struct Impl;   // public so the implementation file's helpers can name it
 private:
-    struct Impl;
-    std::unique_ptr<Impl> p_;
+    std::shared_ptr<Impl> p_;   // shared: a plugin thread that had to be abandoned may still log through it after the Manager is gone
     ManagerConfig cfg_;
 };
 
