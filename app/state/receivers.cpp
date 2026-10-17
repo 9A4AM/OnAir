@@ -1,5 +1,7 @@
 // Several receivers at once: see receivers.h and docs/multi-sdr.md.
 #include "receivers.h"
+#include "rxbar.h"
+#include "adsb/adsb_acars.h"
 #include "dect2/engine/device_claims.h"
 #include <memory>
 #ifndef _WIN32
@@ -110,52 +112,158 @@ void drawWarning(App& first) {
     (void)first;
 }
 
+float stripHeight(const App& first) { return ImGui::GetFrameHeight() * (first.touchUi ? 1.35f : 1.f) + 10 * gUi; }
+
+float gScroll = 0;   // horizontal scroll of the chips when many receivers are open
+
+// the loudspeaker: a box and a cone, with waves when audible and a slash when not
+void drawSpeaker(ImDrawList* dl, ImVec2 c, float s, ImU32 col, bool on) {
+    dl->AddRectFilled(ImVec2(c.x - s * 0.9f, c.y - s * 0.3f), ImVec2(c.x - s * 0.35f, c.y + s * 0.3f), col);
+    dl->AddTriangleFilled(ImVec2(c.x - s * 0.35f, c.y - s * 0.3f), ImVec2(c.x + s * 0.25f, c.y - s * 0.75f), ImVec2(c.x + s * 0.25f, c.y + s * 0.75f), col);
+    dl->AddTriangleFilled(ImVec2(c.x - s * 0.35f, c.y + s * 0.3f), ImVec2(c.x - s * 0.35f, c.y - s * 0.3f), ImVec2(c.x + s * 0.25f, c.y + s * 0.75f), col);
+    if (on) {
+        dl->PathArcTo(c, s * 0.8f, -0.7f, 0.7f, 6); dl->PathStroke(col, 0, 1.3f * gUi);
+        dl->PathArcTo(c, s * 1.2f, -0.7f, 0.7f, 8); dl->PathStroke(col, 0, 1.3f * gUi);
+    } else dl->AddLine(ImVec2(c.x + s * 0.4f, c.y - s * 0.55f), ImVec2(c.x + s * 1.1f, c.y + s * 0.55f), col, 1.5f * gUi);
+}
+
 void strip(App& first, ImVec2 disp, float h) {
+    ImGuiIO& io = ImGui::GetIO();
+    const std::vector<App*> all = receiversAll();
+    if (!io.WantTextInput && io.KeyCtrl && !io.KeyAlt && !io.KeySuper)   // Ctrl+1..9 switch receiver
+        for (int k = 1; k <= 9; k++)
+            if (ImGui::IsKeyPressed((ImGuiKey)(ImGuiKey_0 + k), false)) { const int ix = rxbar::indexForDigit(k, (int)all.size()); if (ix >= 0) gSel = all[ix]->rxId; }
     ImGui::SetNextWindowPos(ImVec2(0, disp.y - h));
     ImGui::SetNextWindowSize(ImVec2(disp.x, h));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6 * gUi, 3 * gUi));
     ImGui::Begin("##rxstrip", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar);
     ImGui::PopStyleVar();
+    tourMark("receivers", ImGui::GetWindowPos(), ImVec2(ImGui::GetWindowPos().x + disp.x, ImGui::GetWindowPos().y + h));
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const bool compact = disp.x < 720 * gUi;
+    const float chipH = h - 6 * gUi, rad = pal::rnd(5 * gUi) + (pal::dev() ? 0.f : 0.f);
+    const float x0 = ImGui::GetWindowPos().x + 6 * gUi, y0 = ImGui::GetWindowPos().y + 3 * gUi;
+    const float btn = chipH, plusW = chipH + 2 * gUi;
+    char cpu[24];
+    snprintf(cpu, sizeof cpu, "CPU %.0f%%", gCpuPct);
+    const float cpuW = compact ? 0.f : ImGui::CalcTextSize(cpu).x + 14 * gUi;
+    const float viewR = ImGui::GetWindowPos().x + disp.x - cpuW - plusW - 10 * gUi;   // chips are clipped here
+    const float viewW = std::max(40.f, viewR - x0);
+    const float maxChip = (compact ? 190.f : 330.f) * gUi, minChip = 96 * gUi;
+    const ImVec4 grey = pal::grey();
+    // layout pass: widths
+    struct Chip { App* r; std::string txt; float x, w; };
+    static std::vector<Chip> chips;   // reused: no per-frame allocation once warm
+    chips.clear();
+    float x = 0;
+    for (App* r : all) {
+        const char* mn = modeName(*r);
+        std::string t = rxbar::label(r->rxId, mn, r->freqMhz);
+        const float tw = ImGui::CalcTextSize(t.c_str()).x;
+        const float w = rxbar::chipWidth(tw, 12 * gUi + 14 * gUi + btn * (r->rxId > 1 ? 2.f : 1.f), minChip, maxChip);
+        chips.push_back({r, std::move(t), x, w});
+        x += w + 4 * gUi;
+    }
+    // mouse wheel over the strip scrolls; the selected chip is kept in view
+    const bool over = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
+    if (over && io.MouseWheel != 0 && x > viewW) gScroll -= io.MouseWheel * 60 * gUi;
+    for (const Chip& c : chips) if (c.r->rxId == gSel && ImGui::IsMouseDown(0) == false && x > viewW) {
+        static int lastSel = 0;
+        if (lastSel != gSel) { gScroll = rxbar::scrollToShow(gScroll, c.x, c.x + c.w, viewW); lastSel = gSel; }
+    }
+    gScroll = std::clamp(gScroll, 0.f, std::max(0.f, x - 4 * gUi - viewW));
     int closeId = 0;
-    for (App* r : receiversAll()) {
+    dl->PushClipRect(ImVec2(x0, y0 - 2 * gUi), ImVec2(viewR, y0 + chipH + 2 * gUi), true);
+    for (const Chip& c : chips) {
+        App* r = c.r;
+        const bool sel = r->rxId == gSel, run = r->engine.running(), snd = r->rxId == gAudio;
+        const ImVec2 a(x0 + c.x - gScroll, y0), b(a.x + c.w, y0 + chipH);
         ImGui::PushID(r->rxId);
-        const bool sel = r->rxId == gSel;
-        char lab[160];
-        snprintf(lab, sizeof lab, "RX %d  %s  %.3f MHz", r->rxId, modeName(*r), r->freqMhz);
-        if (sel) ImGui::PushStyleColor(ImGuiCol_Button, pal::accent(0.55f));
-        const ImVec2 p = ImGui::GetCursorScreenPos();
-        if (ImGui::Button(lab)) gSel = r->rxId;
-        if (sel) ImGui::PopStyleColor();
-        if (r->engine.running()) ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(p.x + 5 * gUi, p.y + 5 * gUi), 3 * gUi, IM_COL32(60, 210, 90, 255));
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", r->engine.running() ? tr("Receiving") : tr("Stopped"));
-        ImGui::SameLine(0, 2 * gUi);
-        const bool snd = r->rxId == gAudio;
-        if (snd) ImGui::PushStyleColor(ImGuiCol_Button, pal::accent(0.55f));
-        if (ImGui::SmallButton(snd ? tr("sound") : tr("mute"))) gAudio = r->rxId;
-        if (snd) ImGui::PopStyleColor();
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Only one receiver plays its sound at a time: click to hear this one"));
-        if (r->rxId > 1) {
-            ImGui::SameLine(0, 2 * gUi);
-            if (ImGui::SmallButton("x")) closeId = r->rxId;
-            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Close this receiver: it stops and lets go of its radio"));
+        ImGui::SetCursorScreenPos(a);
+        ImGui::InvisibleButton("chip", ImVec2(c.w, chipH));
+        const bool hov = ImGui::IsItemHovered() && ImGui::IsMouseHoveringRect(ImVec2(std::max(a.x, x0), a.y), ImVec2(std::min(b.x, viewR), b.y));
+        const ImVec2 mp = io.MousePos;
+        const bool showX = r->rxId > 1 && (hov || sel);
+        const ImVec2 xa(b.x - btn, a.y), sa(b.x - btn * (r->rxId > 1 ? 2.f : 1.f), a.y);
+        const bool onX = hov && showX && mp.x >= xa.x, onS = hov && !onX && mp.x >= sa.x;
+        ImVec4 bg = sel ? ImVec4(0.14f, 0.15f, 0.165f, 1) : (hov ? ImVec4(0.12f, 0.125f, 0.135f, 1) : ImVec4(0.085f, 0.09f, 0.095f, 1));
+        dl->AddRectFilled(a, b, ImGui::GetColorU32(bg), rad);
+        if (sel) {
+            dl->AddRect(a, b, ImGui::GetColorU32(pal::accent(0.45f)), rad);
+            dl->AddRectFilled(ImVec2(a.x + 6 * gUi, a.y), ImVec2(b.x - 6 * gUi, a.y + 2 * gUi), ImGui::GetColorU32(pal::accent()), 1.f);
+        } else dl->AddRect(a, b, ImGui::GetColorU32(ImVec4(0.2f, 0.21f, 0.22f, 1)), rad);
+        const ImVec4 dot = run ? pal::okGreen() : ImVec4(0.42f, 0.44f, 0.46f, 1);
+        dl->AddCircleFilled(ImVec2(a.x + 10 * gUi, a.y + chipH * 0.5f), 3.5f * gUi, ImGui::GetColorU32(dot));
+        // text: shorten the mode name first so the frequency stays readable
+        const float room = c.w - 12 * gUi - 14 * gUi - btn * (r->rxId > 1 ? 2.f : 1.f);
+        std::string t = c.txt;
+        if (ImGui::CalcTextSize(t.c_str()).x > room) {
+            const std::string fq = rxbar::label(r->rxId, "", r->freqMhz);
+            t = std::string(c.txt);
+            int n = (int)t.size();
+            while (n > 4 && ImGui::CalcTextSize(rxbar::ellipsize(t, n).c_str()).x > room) n--;
+            t = rxbar::ellipsize(t, n);
+            (void)fq;
         }
-        ImGui::SameLine(0, 10 * gUi);
+        dl->AddText(ImVec2(a.x + 18 * gUi, a.y + (chipH - ImGui::GetTextLineHeight()) * 0.5f), ImGui::GetColorU32(sel ? ImVec4(0.93f, 0.94f, 0.95f, 1) : ImVec4(0.72f, 0.74f, 0.76f, 1)), t.c_str());
+        // speaker: lit when this receiver is the audible one
+        const ImVec2 sc(sa.x + btn * 0.5f, a.y + chipH * 0.5f);
+        if (onS) dl->AddRectFilled(ImVec2(sa.x + 1, a.y + 2 * gUi), ImVec2(sa.x + btn - 1, b.y - 2 * gUi), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.08f)), 3 * gUi);
+        drawSpeaker(dl, ImVec2(sc.x - 1 * gUi, sc.y), 5 * gUi, ImGui::GetColorU32(snd ? pal::accent() : ImVec4(grey.x, grey.y, grey.z, onS ? 0.9f : 0.5f)), snd);
+        if (showX) {
+            if (onX) dl->AddRectFilled(ImVec2(xa.x + 1, a.y + 2 * gUi), ImVec2(xa.x + btn - 1, b.y - 2 * gUi), ImGui::GetColorU32(pal::badRed()), 3 * gUi);
+            const ImVec2 xc(xa.x + btn * 0.5f, a.y + chipH * 0.5f);
+            const float d = 3.2f * gUi;
+            const ImU32 xcol = ImGui::GetColorU32(onX ? ImVec4(1, 1, 1, 1) : ImVec4(grey.x, grey.y, grey.z, 0.9f));
+            dl->AddLine(ImVec2(xc.x - d, xc.y - d), ImVec2(xc.x + d, xc.y + d), xcol, 1.4f * gUi);
+            dl->AddLine(ImVec2(xc.x - d, xc.y + d), ImVec2(xc.x + d, xc.y - d), xcol, 1.4f * gUi);
+        }
+        if (hov && ImGui::IsMouseReleased(0)) { if (onX) closeId = r->rxId; else if (onS) gAudio = r->rxId; else gSel = r->rxId; }
+        if (hov && ImGui::IsMouseClicked(2) && r->rxId > 1) closeId = r->rxId;
+        if (hov && io.MouseWheel == 0) {
+            if (onX) ImGui::SetTooltip("%s", tr("Close this receiver: it stops and lets go of its radio"));
+            else if (onS) ImGui::SetTooltip("%s", tr("Only one receiver plays its sound at a time: click to hear this one"));
+            else {
+                const DeviceInfo* di = r->devIdx >= 0 && r->devIdx < (int)r->devices.size() ? &r->devices[r->devIdx] : nullptr;
+                ImGui::BeginTooltip();
+                ImGui::Text("RX %d: %s, %.3f MHz", r->rxId, modeName(*r), r->freqMhz);
+                ImGui::TextColored(run ? pal::okGreen() : grey, "%s", run ? tr("Receiving") : tr("Stopped"));
+                if (di) ImGui::Text(tr("Radio: %s"), di->name.c_str());
+                ImGui::EndTooltip();
+            }
+        }
+        if (hov && ImGui::IsMouseClicked(1)) ImGui::OpenPopup("chipmenu");
+        if (ImGui::BeginPopup("chipmenu")) {
+            if (ImGui::MenuItem(tr("Hear this receiver"), nullptr, snd)) gAudio = r->rxId;
+            if (r->rxId > 1 && ImGui::MenuItem(tr("Close receiver"))) closeId = r->rxId;
+            ImGui::EndPopup();
+        }
         ImGui::PopID();
     }
-    {
-        const bool room = (int)receiversAll().size() < kMaxReceivers;
+    dl->PopClipRect();
+    {   // the + button, right after the chips (or at the right edge when they overflow)
+        const bool room = (int)all.size() < kMaxReceivers;
+        const float px = std::min(x0 + x - gScroll, viewR) + 4 * gUi;
+        ImGui::SetCursorScreenPos(ImVec2(px, y0));
         ImGui::BeginDisabled(!room);
-        if (ImGui::Button("+")) {
+        ImGui::InvisibleButton("##add", ImVec2(plusW, chipH));
+        const bool hv = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
+        ImGui::EndDisabled();
+        const ImVec2 a(px, y0), b(px + plusW, y0 + chipH), c((a.x + b.x) * 0.5f, (a.y + b.y) * 0.5f);
+        dl->AddRectFilled(a, b, ImGui::GetColorU32(hv && room ? ImVec4(0.17f, 0.18f, 0.19f, 1) : ImVec4(0.085f, 0.09f, 0.095f, 1)), rad);
+        dl->AddRect(a, b, ImGui::GetColorU32(ImVec4(0.2f, 0.21f, 0.22f, 1)), rad);
+        const ImU32 pc = ImGui::GetColorU32(room ? ImVec4(0.8f, 0.82f, 0.84f, 1) : ImVec4(0.4f, 0.4f, 0.4f, 1));
+        dl->AddLine(ImVec2(c.x - 4.5f * gUi, c.y), ImVec2(c.x + 4.5f * gUi, c.y), pc, 1.6f * gUi);
+        dl->AddLine(ImVec2(c.x, c.y - 4.5f * gUi), ImVec2(c.x, c.y + 4.5f * gUi), pc, 1.6f * gUi);
+        if (room && hv && ImGui::IsMouseReleased(0)) {
             if (plat::prefs().getB("rxWarnDone", false)) addReceiver(); else gWarnAsk = true;
         }
-        ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", room ? tr("Add a receiver: another radio with its own mode") : tr("The most receivers are open"));
+        if (hv) ImGui::SetTooltip("%s", room ? tr("Add a receiver: another radio with its own mode") : tr("The most receivers are open"));
     }
-    {
-        char b[48];
-        snprintf(b, sizeof b, "CPU %.0f%%", gCpuPct);
-        ImGui::SameLine(std::max(ImGui::GetCursorPosX(), disp.x - ImGui::CalcTextSize(b).x - 14 * gUi));
-        ImGui::TextColored(gCpuPct > 250 * (float)receiversAll().size() / 2 ? pal::warnAmber() : ImVec4(0.6f, 0.6f, 0.6f, 1), "%s", b);
+    if (cpuW > 0) {
+        const float cw = ImGui::CalcTextSize(cpu).x;
+        dl->AddText(ImVec2(ImGui::GetWindowPos().x + disp.x - cw - 12 * gUi, y0 + (chipH - ImGui::GetTextLineHeight()) * 0.5f),
+                    ImGui::GetColorU32(gCpuPct > 250 * (float)all.size() / 2 ? pal::warnAmber() : ImVec4(0.6f, 0.6f, 0.6f, 1)), cpu);
     }
     ImGui::End();
     if (closeId) closeReceiver(closeId);
@@ -222,7 +330,7 @@ void receiversFrame(App& first, ImVec2 disp) {
     sampleCpu();
     if (!receiverById(gSel)) gSel = 1;
     if (!receiverById(gAudio)) gAudio = gSel;
-    const float h = ImGui::GetFrameHeight() + 10 * gUi;
+    const float h = stripHeight(first);
     const ImVec2 d(disp.x, disp.y - h);
     for (App* r : receiversAll()) {
         PrefScope ps(r->rxId);
@@ -234,6 +342,7 @@ void receiversFrame(App& first, ImVec2 disp) {
     }
     strip(first, disp, h);
     drawWarning(first);
+    acarslog::tick(first);
     mapSendTick(first);
 }
 

@@ -1,6 +1,6 @@
 // Globalstar activity monitor telemetry, shared by the receiver and the UI.
 // The first members are copied into RxTelemetry (history plot, top bar): keep them and their meaning.
-// Receive only: the CDMA downlink is encrypted and its content is neither decoded nor decodable here; this is power, occupancy and Doppler.
+// Receive only: the CDMA signal (the L-band terminal uplink) is encrypted and its content is neither decoded nor decodable here; this is power, occupancy and Doppler.
 #pragma once
 #include <cstdint>
 #include <cstdio>
@@ -9,7 +9,7 @@
 
 namespace dect2 {
 
-constexpr int kGsChannels = 13;              // the 1.23 MHz CDMA channels of the 1610 - 1626.5 MHz band
+constexpr int kGsChannels = 13;              // the 1.23 MHz CDMA channels of the 1610 - 1626.5 MHz terminal uplink band
 constexpr double kGsChanHz = 1.23e6;         // channel spacing
 constexpr double kGsFirstHz = 1611.25e6;     // centre of channel 1
 constexpr double kGsDefaultDialHz = 1618.25e6;   // the band centre: assumed for a file without a tuned frequency
@@ -63,7 +63,7 @@ inline std::string globalstarSummary(const GlobalstarTelemetry& t) {
     char b[160];
     if (t.activeNow > 0) { snprintf(b, sizeof b, "%d channel%s active, Doppler %+.1f kHz, SNR %.0f dB", t.activeNow, t.activeNow == 1 ? "" : "s", t.cfoHz / 1e3, t.snrDb); return b; }
     if (t.state >= 1) return "activity seen lately, idle now";
-    return "listening: no Globalstar downlink";
+    return "listening: no Globalstar terminal uplink";
 }
 
 } // namespace dect2

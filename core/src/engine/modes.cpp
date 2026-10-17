@@ -49,6 +49,7 @@
 #include "dect2/vdl2/vdl2_gen.h"
 #include "dect2/vdl4/vdl4_rx.h"
 #include "dect2/vdl4/vdl4_gen.h"
+#include "dect2/lbj/lbj_gen.h"
 #include "dect2/ism/ism_rx.h"
 #include "dect2/ism/ism_gen.h"
 #include "dect2/vor/vor_rx.h"
@@ -331,6 +332,8 @@ static const SubMode kSubModes[] = {
     {"thor",       "THOR",       27, 32, 3, 14.0770, {29, 0, 0}},
     {"dominoex",   "DominoEX",   27, 32, 4, 14.0715, {30, 0, 0}},
     {"hell",       "Hellschreiber", 27, 32, 5, 14.0630, {31, 0, 0}},
+    // AM broadcast (MW / SW): the general receiver (57) opened in AM with the MW and SW presets; the plain General receiver stays its own entry
+    {"am",         "AM broadcast", 57, 0, 0, 0.999, {0, 0, 0}},
 };
 const SubMode* subModes(int& count) { count = (int)(sizeof kSubModes / sizeof *kSubModes); return kSubModes; }
 const SubMode* subModeById(const std::string& id) {
@@ -436,7 +439,7 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 80: return makeDectSynth(cfg, sampleRate);
     case 81: return makeTetrapolSynth(cfg, sampleRate);
     case 82: return makeElektroSynth(cfg, sampleRate);
-    case 83: return nullptr;
+    case 83: return makeLbjSynth(cfg, sampleRate);
     case 85: return makeUatSynth(cfg, sampleRate);
     case 77: return makeMultitoneSynth(cfg, sampleRate);
     case 73: return makeLoraRawSynth(cfg, sampleRate);

@@ -212,7 +212,7 @@ void DvbSubDecoder::setStream(int pid, int comp, int anc) {
     if (pid == pid_ && comp == comp_ && anc == anc_) return;
     pid_ = pid; comp_ = comp; anc_ = anc;
     pes_.clear(); inPes_ = false; cc_ = -1;
-    havePage_ = false; pageRegs_.clear(); regions_.clear(); cluts_.clear(); objects_.clear(); queue_.clear();
+    havePage_ = false; pageRegs_.clear(); regions_.clear(); cluts_.clear(); objects_.clear(); queue_.clear(); shown_.reset();
     pageVersion_ = -1; dispW_ = 720; dispH_ = 576;
 }
 int DvbSubDecoder::pid() const { std::lock_guard<std::mutex> lk(mu_); return pid_; }
@@ -221,7 +221,7 @@ uint64_t DvbSubDecoder::displays() const { std::lock_guard<std::mutex> lk(mu_); 
 void DvbSubDecoder::reset() {
     std::lock_guard<std::mutex> lk(mu_);
     pes_.clear(); inPes_ = false; cc_ = -1;
-    havePage_ = false; pageRegs_.clear(); regions_.clear(); cluts_.clear(); objects_.clear(); queue_.clear();
+    havePage_ = false; pageRegs_.clear(); regions_.clear(); cluts_.clear(); objects_.clear(); queue_.clear(); shown_.reset();
     pageVersion_ = -1; dispW_ = 720; dispH_ = 576; seq_ = 0;
 }
 
@@ -476,9 +476,17 @@ std::shared_ptr<const DvbSubDisplay> DvbSubDecoder::displayAt(double clock) cons
     std::lock_guard<std::mutex> lk(mu_);
     std::shared_ptr<DvbSubDisplay> best;
     for (const auto& d : queue_) if (d->pts < 0 || ptsDelta(d->pts, clock) <= 0.0) best = d;   // the newest one already due
-    if (!best || best->regions.empty()) return nullptr;
-    if (best->pts >= 0 && best->timeout > 0 && ptsDelta(clock, best->pts) > best->timeout) return nullptr;
-    return best;
+    if (best && (best->regions.empty() || (best->pts >= 0 && best->timeout > 0 && ptsDelta(clock, best->pts) > best->timeout))) best = nullptr;
+    if (best) {
+        if (best != shown_) { shown_ = best; shownClock_ = clock; }
+        return best;
+    }
+    if (shown_) {   // cleared or expired: keep what was on screen until it has been up for the minimum, measured on the picture clock
+        const double up = ptsDelta(clock, shownClock_);
+        if (up >= 0 && up < kMinShowSec) return shown_;
+        shown_.reset();
+    }
+    return nullptr;
 }
 
 } // namespace dect2

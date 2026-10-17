@@ -90,7 +90,7 @@ void standardSwitch(App& a) {
                 for (const auto& m : allModes()) if (m.group == g && modeMatches(m, q)) {
                     ImGui::PushID(&m);
                     if (ImGui::Selectable(m.name, modeSelected(a, m))) selectMode(a, m.family, m.subId);
-                    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", m.tip);
+                    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s%s", m.tip, modeCreditsLine(m.name).c_str());
                     ImGui::PopID();
                 }
             }
@@ -120,7 +120,7 @@ void standardSwitch(App& a) {
         ImGui::PushID(i);
         if (ImGui::InvisibleButton("##seg", ImVec2(segW[i], h))) selectMode(a, kModes[i].family, kModes[i].subId);
         const bool hov = ImGui::IsItemHovered();
-        if (hov) ImGui::SetTooltip("%s", kModes[i].tip);
+        if (hov) ImGui::SetTooltip("%s%s", kModes[i].tip, modeCreditsLine(kModes[i].name).c_str());
         ImGui::PopID();
         const ImVec2 ts = ImGui::CalcTextSize(kModes[i].name);
         dl->AddText(ImVec2(segX[i] + (segW[i] - ts.x) * 0.5f, p.y + (h - ts.y) * 0.5f), modeSelected(a, kModes[i]) ? IM_COL32(255, 255, 255, 255) : hov ? IM_COL32(220, 228, 236, 255) : IM_COL32(140, 152, 166, 255), kModes[i].name);
@@ -128,5 +128,7 @@ void standardSwitch(App& a) {
     ImGui::SetCursorScreenPos(ImVec2(p.x + total + 14, p.y));
     ImGui::AlignTextToFramePadding();
     ImGui::TextDisabled("%s", cur->blurb);
-    ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + h + ImGui::GetStyle().ItemSpacing.y));
+    // the cursor to the line below: a Dummy after the move, as a bare SetCursorScreenPos at the end of a pane does not extend it and ImGui asserts (a Debug build, #104)
+    ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + h));
+    ImGui::Dummy(ImVec2(0, 0));
 }

@@ -123,6 +123,32 @@ int main() {
         const Quality q = compare(im, ref, 1);
         FCHECK(q.ok && q.meanCorr > 0.97, "last image correlation %.3f", q.meanCorr);
     }
+    // Clearing by hand in mid-picture: the lines go to 0, the image is empty and the sequence number moves; the next
+    // transmission then decodes clean, with no rows of the old picture in it.
+    {
+        Opts o; o.lines = 60; o.phasingS = 12; o.seconds = 115;
+        const auto a = makeAudio(o);
+        FaxDecoder d;
+        d.configure(o.rate);
+        const size_t cut = static_cast<size_t>(35 * o.rate);        // the first picture is under way (starts at 17.5 s)
+        feedAll(d, std::vector<float>(a.begin(), a.begin() + cut), 4096);
+        FaxImage im; uint64_t seq = 0;
+        d.latestImage(im, seq);
+        FCHECK(d.status().lines > 5 && im.height > 5, "before the clear: lines %d image %d", d.status().lines, im.height);
+        const uint64_t before = seq;
+        d.reset();
+        FaxImage e2; uint64_t s2 = seq;
+        FCHECK(d.latestImage(e2, s2) && s2 != before, "clear: the sequence number did not move");
+        FCHECK(e2.height == 0 && e2.pix.empty(), "clear: image still %d rows", e2.height);
+        FCHECK(d.status().lines == 0 && d.status().state == 0 && d.status().phasingLines == 0, "clear: lines %d state %d phasing %d", d.status().lines, d.status().state, d.status().phasingLines);
+        // the rest of the signal: the stop tone of the first transmission, then the second one in full
+        feedAll(d, std::vector<float>(a.begin() + cut, a.end()), 4096);
+        FaxImage fin; uint64_t sf = 0;
+        d.latestImage(fin, sf);
+        const Quality q = compare(fin, faxTestChart(1809, 60, 1), 1);
+        printf("after a clear in mid-picture: %dx%d corr %.3f\n", fin.width, fin.height, q.meanCorr);
+        FCHECK(fin.height == 61 && q.ok && q.meanCorr > 0.97, "after the clear the next picture is %d rows, corr %.3f", fin.height, q.meanCorr);
+    }
     if (fails) { printf("%d failures\n", fails); return 1; }
     printf("OK\n");
     return 0;

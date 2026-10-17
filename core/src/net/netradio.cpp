@@ -10,8 +10,8 @@
 #ifdef DECT2_HAVE_SOAPY
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Registry.hpp>
-#include "dect2/common/str.h"
 #endif
+#include "dect2/common/str.h"   // (also without SoapySDR)
 
 namespace dect2 {
 
@@ -32,8 +32,8 @@ std::string hostPort(const std::string& host, int port) {
 
 // the type tables and the settings text of the list are in net_proto.h (C++ or the Rust crate onair_net)
 const char* netRadioTypeName(NetRadio::Type t) {
-    static const std::string names[7] = {netp::radioTypeName(0), netp::radioTypeName(1), netp::radioTypeName(2), netp::radioTypeName(3), netp::radioTypeName(4), netp::radioTypeName(5), netp::radioTypeName(6)};
-    return names[(unsigned)t < 7 ? (unsigned)t : 1].c_str();
+    static const std::string names[8] = {netp::radioTypeName(0), netp::radioTypeName(1), netp::radioTypeName(2), netp::radioTypeName(3), netp::radioTypeName(4), netp::radioTypeName(5), netp::radioTypeName(6), netp::radioTypeName(7)};
+    return names[(unsigned)t < 8 ? (unsigned)t : 1].c_str();
 }
 int netRadioDefaultPort(NetRadio::Type t) { return netp::radioDefaultPort((uint32_t)t); }
 const char* netRadioDefaultHost(NetRadio::Type t) {
@@ -112,11 +112,29 @@ bool soapyRemoteModuleAvailable() {
 #endif
 }
 
-const char* soapyRemoteModuleHelp() {
-    return "SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install SoapyRemote (github.com/pothosware/SoapyRemote) "
-           "on this computer: Windows, PothosSDR; macOS, brew install soapyremote; Debian/Ubuntu, apt install soapyremote-server (it brings the client module); "
-           "then restart OnAir. The server needs SoapySDRServer --bind running on the radio's computer.";
+// What is missing and what to do about it, for the platform OnAir runs on (0 Windows, 1 macOS, 2 Linux and others; -1 = this one).
+// Windows and macOS packages carry the module themselves, so there it means a damaged installation, not something to install.
+const char* soapyRemoteModuleHelpFor(int platform) {
+    if (platform < 0) {
+#if defined(_WIN32)
+        platform = 0;
+#elif defined(__APPLE__)
+        platform = 1;
+#else
+        platform = 2;
+#endif
+    }
+    if (platform == 0)
+        return "The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir, and please report it if it happens again. "
+               "The radio's computer must run SoapySDRServer --bind.";
+    if (platform == 1)
+        return "The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir (or run brew install soapyremote), and please report it if it happens again. "
+               "The radio's computer must run SoapySDRServer --bind.";
+    return "SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install it (Debian/Ubuntu: sudo apt install soapysdr-module-remote; "
+           "other systems: github.com/pothosware/SoapyRemote), then restart OnAir. The radio's computer must run SoapySDRServer --bind.";
 }
+
+const char* soapyRemoteModuleHelp() { return soapyRemoteModuleHelpFor(-1); }
 
 std::string soapyRemoteArgs(const NetRadio& r) {
     std::string a = remoteBase(r);
@@ -208,6 +226,7 @@ std::string netRadioDeviceName(const NetRadio& r) {
     case NetRadio::HermesLite2: return native::hermesLite2Device(cleanHost(r.host), netRadioPort(r)).name;
     case NetRadio::RedPitaya: return native::redPitayaDevice(cleanHost(r.host), netRadioPort(r)).name;
     case NetRadio::SdrppServer: return native::sdrppDevice(cleanHost(r.host), netRadioPort(r)).name;
+    case NetRadio::NrspSt: return native::nrspStDevice(cleanHost(r.host), netRadioPort(r)).name;
     default: return native::rtlTcpDevice(cleanHost(r.host), netRadioPort(r)).name;
     }
 }
@@ -223,6 +242,7 @@ std::vector<DeviceInfo> netRadioDevices(const std::vector<NetRadio>& v) {
         case NetRadio::HermesLite2: out.push_back(native::hermesLite2Device(cleanHost(r.host), netRadioPort(r))); break;
         case NetRadio::RedPitaya: out.push_back(native::redPitayaDevice(cleanHost(r.host), netRadioPort(r))); break;
         case NetRadio::SdrppServer: out.push_back(native::sdrppDevice(cleanHost(r.host), netRadioPort(r))); break;
+        case NetRadio::NrspSt: out.push_back(native::nrspStDevice(cleanHost(r.host), netRadioPort(r))); break;
         case NetRadio::SoapyRemote:
 #ifdef DECT2_HAVE_SOAPY
         {
@@ -253,6 +273,7 @@ bool probeNetRadio(const NetRadio& r, int timeoutMs, std::string& err) {
     if (r.type == NetRadio::SpyServer) return native::spyServerProbe(host, netRadioPort(r), timeoutMs, err);   // HELLO, then its DEVICE_INFO
     if (r.type == NetRadio::HermesLite2) return native::hermesLite2Probe(host, netRadioPort(r), timeoutMs, err);   // UDP: a discovery to it
     if (r.type == NetRadio::RedPitaya) return native::redPitayaProbe(host, netRadioPort(r), timeoutMs, err);
+    if (r.type == NetRadio::NrspSt) return native::nrspStProbe(host, netRadioPort(r), timeoutMs, err);   // WebSocket upgrade, then api_version
     if (r.type == NetRadio::SdrppServer) return native::sdrppProbe(host, netRadioPort(r), timeoutMs, err);   // GET_UI, then its menu
     const sock_t s = tcpConnect(host, netRadioPort(r), timeoutMs, err);
     if (s == kBadSock) return false;

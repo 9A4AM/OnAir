@@ -1,0 +1,90 @@
+// The first-run tour, pure part (no ImGui): the step list, the anchor registry (screen rectangles the interface reports each
+// frame) and the rules for which steps are shown and when the tour starts by itself. Drawn by tour.cpp; tested by tests/app/test_tour.cpp.
+#pragma once
+#include <map>
+#include <string>
+
+namespace tour {
+
+struct Rect {
+    float x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+    bool valid() const { return x1 > x0 && y1 > y0; }
+};
+
+// `anchor` names the part of the window the step points at (see tour::mark in the interface code). `text` may hold one %d: the number of modes.
+struct Step {
+    const char* anchor;
+    const char* title;
+    const char* text;
+};
+
+#ifndef N_
+#define N_(s) s
+#define TOUR_UNDEF_N_
+#endif
+inline const Step* steps(int* n) {
+    static const Step kSteps[] = {
+        {"source", N_("Source"),
+         N_("Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.")},
+        {"tuning", N_("Tuning and gain"),
+         N_("Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.")},
+        {"modes", N_("Modes"),
+         N_("%d modes, grouped by family. Use the search box to find one by name.")},
+        {"spectrum", N_("Spectrum and waterfall"),
+         N_("Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.")},
+        {"panel", N_("Mode panel"),
+         N_("Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.")},
+        {"memory", N_("Memory and frequencies"),
+         N_("Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.")},
+        {"receivers", N_("Receivers"),
+         N_("Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.")},
+        {"audio", N_("Audio"),
+         N_("Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.")},
+        {"server", N_("Server and support"),
+         N_("Server sends decoded positions to the public map. Support helps fund development.")},
+        {"help", N_("Help"),
+         N_("Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.")},
+    };
+    if (n) *n = (int)(sizeof kSteps / sizeof *kSteps);
+    return kSteps;
+}
+#ifdef TOUR_UNDEF_N_
+#undef N_
+#undef TOUR_UNDEF_N_
+#endif
+
+inline int count() { int n = 0; steps(&n); return n; }
+
+// Rectangles reported by the interface; a rectangle counts as present when it was reported this frame or the one before.
+class Anchors {
+public:
+    void set(const std::string& id, Rect r, long frame) { m_[id] = {r, frame}; }
+    bool has(const std::string& id, long frame) const {
+        auto it = m_.find(id);
+        return it != m_.end() && it->second.first.valid() && frame - it->second.second <= 1;
+    }
+    Rect get(const std::string& id) const { auto it = m_.find(id); return it == m_.end() ? Rect() : it->second.first; }
+    void clear() { m_.clear(); }
+private:
+    std::map<std::string, std::pair<Rect, long>> m_;
+};
+
+inline bool shown(const Anchors& a, long frame, int i) { int n = count(); return i >= 0 && i < n && a.has(steps(nullptr)[i].anchor, frame); }
+
+// The step after (dir = 1) or before (dir = -1) `cur` that can be shown; -1 when there is none. cur = -1 starts from the beginning.
+inline int next(const Anchors& a, long frame, int cur, int dir) {
+    const int n = count();
+    for (int i = cur + (dir > 0 ? 1 : -1); i >= 0 && i < n; i += dir) if (shown(a, frame, i)) return i;
+    return -1;
+}
+inline int visibleCount(const Anchors& a, long frame) { int c = 0; for (int i = 0; i < count(); i++) c += shown(a, frame, i); return c; }
+// 1-based position of step `cur` among the steps that are shown
+inline int position(const Anchors& a, long frame, int cur) { int c = 0; for (int i = 0; i <= cur && i < count(); i++) c += shown(a, frame, i); return c; }
+
+// Preference key of "the tour has been seen". It keeps the key of the earlier tour, so nobody sees it again after an update.
+inline const char* prefKey() { return "wizardDone"; }
+
+// Whether the tour opens by itself at start-up: first start only (not after an update), not with command-line arguments, and after the setup
+inline bool autoStart(bool noArgs, bool done, bool setupPending) { return noArgs && !done && !setupPending; }
+
+}  // namespace tour

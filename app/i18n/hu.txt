@@ -175,7 +175,6 @@ Back	Vissza
 Next	Tovább
 Finish	Befejezés
 Skip	Kihagyás
-Skip tour	Bemutató kihagyása
 Dismiss	Elvetés
 Again	Újra
 Auto	Auto
@@ -218,7 +217,6 @@ New interface	Új felület
 Try the new interface. You can switch back at any time.	Próbáld ki az új felületet. Bármikor visszaválthatsz.
 Guided tour	Vezetett bemutató
 Tour	Bemutató
-Take the guided tour with Onny	Vezetett bemutató Onnyval
 by: Kristijonas Adomaitis, made with help from the community	készítette: Kristijonas Adomaitis, a közösség segítségével
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Köszönet mindenkinek, aki hibákat jelentett, felvételeket küldött és pull requesteket nyitott.
 Source	Forrás
@@ -476,20 +474,6 @@ Radio settings (%d changed)	Rádióbeállítások (%d módosítva)
 %s: frequency correction and the other settings of this radio	%s: frekvenciakorrekció és a rádió egyéb beállításai
 The driver's own settings show up here\nonce this radio has been started.	Az illesztőprogram saját beállításai itt jelennek meg,\nmiután a rádiót elindítottad.
 0 = libiio's default	0 = a libiio alapértéke
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	Szia, Onny vagyok! Egy kis TV vagyok, aki az OnAirben él. Kérsz egy gyors bemutatót? Körülbelül egy percig tart, és egy demójellel mutatok meg mindent, így még hardver sem kell hozzá.
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Itt fent kapcsolod át, milyen adást szeretnél: DVB a világ legtöbb digitális TV-jéhez, ATSC Észak-Amerikához, DAB a digitális rádióhoz. Az OnAirben mind a három egy helyen van.
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	Nézzük működés közben! Elindítok egy képzelt jelet. Ez egy tesztadó az alkalmazáson belül, így semmit sem kell csatlakoztatni.
-Start the demo signal	A demójel indítása
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	Látod a hullámzó vonalat? Ez a spektrum: balról jobbra mutatja, mennyire erős minden az éterben. A közepén lévő magas púp a mi csatornánk. Alatta a vízesés ugyanezt mutatja, lassan gördülve az időben.
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	Ez a négy doboz pedig a vevő által látott pontokat mutatja. Jó jelnél a pontok szép csoportokba állnak össze. A szétszórt pontok zajos jelet jeleznek. Most tiszta demó van, így rendezettnek kell látszaniuk!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Itt találod a csatornákat, miután a vevő bekapcsolódott. Kattints egyre, és nézheted. Van lejátszó képpel és hanggal, óra, valamint lehetőségek a nézett adás rögzítésére vagy továbbítására.
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	Most jöhet az igazi. Itt választhatod ki a rádiódat, adhatsz meg frekvenciát, és állíthatod az erősítést. Az erősítés azt jelenti, mennyire erősíti a rádió a jelet: kevés esetén elvész, sok esetén torzul. Az Automatikus hangolás gomb jó értéket talál neked.
-Stop the demo and look for my radio	A demó leállítása és a rádióm keresése
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	Nem tudod, hol vannak a csatornák? A Keresés fül megkeresi helyetted. Egy jó, magasra és ablak közelébe tett antenna többet számít bármi másnál. Ígérem!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	Ennyi volt a bemutató! A csatornáidat megoszthatod más eszközökkel a Folyam fülről (Kimenetek), és bármikor visszahívhatsz a jobb felső sarokban lévő Bemutató gombbal. Jó nézelődést!
-Good news: I can see "%s"!	Jó hír: látom ezt: "%s"!
-(I can't see a radio right now. Plug it in and press the button again.)	(Most nem látok rádiót. Dugd be, és nyomd meg újra a gombot.)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	Windowson a HackRF-nek egyszer szüksége van a WinUSB illesztőprogramra: telepítsd a Zadiggal, a zadig.akeo.ie oldalról.
 Weather (137 MHz)	Időjárás (137 MHz)
 Amateur	Amatőr
 Amateur satellites	Amatőr műholdak
@@ -941,13 +925,11 @@ holds	tart
 last send %s	utolsó küldés %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	figyel: %s, %d. port, %d kliens, %.1f MB elküldve, %.1f MB eldobva
 max	max
-mute	néma
 on air	adásban
 partial	részleges
 point %s	pont: %s
 power (dBm)	teljesítmény (dBm)
 searching for Hermes Lite 2 radios…	Hermes Lite 2 rádiók keresése…
-sound	hang
 up-converter	felfelé konverter
 waiting	várakozik
 waterfall dB##wfdb	vízesés dB##wfdb
@@ -1254,7 +1236,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	A LimeSDR Minihez Windowson az FTDI FT60x illesztőprogramja kell (nem a Zadig), Linuxon az udev szabályok, és egyszer a "LimeUtil --update", hogy a gateware egyezzen a könyvtárral.
 Real (mono)	Valós (mono)
 Left	Bal
 Right	Jobb
@@ -1440,3 +1421,271 @@ Carrier	Vivő
 Sync	Szinkron
 The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).	The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).
 LW time service, Poland	LW időszolgáltatás, Lengyelország
+Predict positions	Pozíciók előrejelzése
+Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	Kitölti a pozíciójelentések közötti réseket: a repülő egyenletesen mozog, és ha az üzenetek elmaradnak, a pályája mentén (és az útvonal mentén, ha egy üzenet megnevezte az úticélt) számítja a helyét. Az előrejelzett pozíciókat szellemként, szaggatott gyűrűvel rajzolja.
+uncertainty	bizonytalanság
+Draws the uncertainty ellipse (95 percent) of every estimated position.	Kirajzolja minden becsült pozíció bizonytalansági ellipszisét (95 százalék).
+predicted from the last position %s ago, +-%.1f NM	az utolsó pozícióból előrejelezve, %s ezelőtt, +-%.1f NM
+estimated from the ground station only, within about %.0f NM	csak a földi állomásból becsülve, kb. %.0f NM-en belül
+Hear this receiver	Ennek a vevőnek a hallgatása
+Close receiver	Vevő bezárása
+Radio: %s	Rádió: %s
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	A HD Radio hangjához a HDC kodek kell, amelyet magad telepítesz (kattints a ?-re)
+HDC sound codec cannot be used: %s	A HDC hangkodek nem használható: %s
+HDC sound codec not installed (no sound; click ? for the steps)	A HDC hangkodek nincs telepítve (nincs hang; a ?-re kattintva láthatod a lépéseket)
+sound: HD%d (HDC)	hang: HD%d (HDC)
+sound: HD%d, waiting for audio	hang: HD%d, hangra vár
+The HD Radio sound codec (HDC) is not installed	A HD Radio hangkodek (HDC) nincs telepítve
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	Az állomás, a műsoradatok és a képek megjelennek, de a HD Radio hang néma marad, amíg nem telepíted magad a kodeket. Az OnAir nem tartalmazza (a HDC szabadalmaztatott, az Xperi tulajdona).
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	Fordítsd le a HDC-javítással ellátott FAAD2-t, ahogy a teljes útmutató leírja (kell hozzá az nrsc5 nyílt forrású javítása).
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	Tedd a könyvtárat (libfaad_hdc) az OnAir kodekmappájába (gomb alul).
+The HD Radio sound library cannot be used	A HD Radio hangkönyvtár nem használható
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	Az OnAir talált egy HDC-könyvtárat, de ez nem olyan FAAD2-fordítás HDC-javítással, amelyet az OnAir hívni tud, ezért nem használta.
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Fordítsd le újra a könyvtárat a FAAD2 2.10 vagy 2.11 változatából az nrsc5 javításával, ahogy a teljes útmutató leírja.
+Replace the file in the OnAir codecs folder (button below).	Cseréld ki a fájlt az OnAir kodekmappájában (gomb alul).
+# band plans (scan tab, TV channel list)
+Band plan	Sávterv
+None (built-in ranges)	Nincs (beépített tartományok)
+My band plans	Saját sávterveim
+Export...	Exportálás...
+Really delete?	Biztosan törli?
+Replaced band plan "%s" (%zu bands).	A(z) "%s" sávterv lecserélve (%zu sáv).
+Imported band plan "%s" (%zu bands).	A(z) "%s" sávterv importálva (%zu sáv).
+Deleted band plan %s.	A(z) %s sávterv törölve.
+Not fully verified: %s	Nem teljesen ellenőrzött: %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	Az Ön országának csatornakiosztása: TV-csatornák a kereséshez és a csatornalistához, és más. Az Automatikus a felület nyelve és a rendszer régiója alapján választ tervet.
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	Sávtervet olvas be CSV- vagy JSON-fájlból (formátum: docs/band-plans.md), ellenőrzi, és a beállítások mappájában tárolja. Hibás fájlnál semmi sem változik; az üzenet megmondja, hol a hiba.
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	A tervet JSON-fájlként menti, vagy CSV-ként, ha a név .csv-re végződik. A beépített terv jó kiindulópont a sajátodhoz.
+Deletes one of your own band plans. The built-in plans stay.	Töröl egy saját sávtervet. A beépített tervek megmaradnak.
+TV channels of the band plan %s (change it in the Scan tab).	A(z) %s sávterv TV-csatornái (a Keresés fülön módosítható).
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	Személyzet
+Operations	Üzemeltetés
+Company	Légitársaság
+Maintenance	Karbantartás
+Fault	Hiba
+Show all messages	Összes üzenet mutatása
+ACARS messages	ACARS-üzenetek
+%d ACARS messages	%d ACARS-üzenet
+Copy these messages as text	Üzenetek másolása szövegként
+No ACARS messages heard from this aircraft	Ettől a légi járműtől nem érkezett ACARS-üzenet
+Also share interesting ACARS messages (text becomes public on the map)	Az érdekes ACARS-üzenetek megosztása is (a szöveg nyilvános lesz a térképen)
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	A légi jármű ACARS-on küldött üzenetei (szabad szöveg, valamint személyzeti, üzemeltetési, társasági és karbantartási üzenetek) 48 órán át látszanak a jármű kártyáján a nyilvános térképen. A telefonszámokat és e-mail-címeket előtte eltávolítjuk. A helyzetjelentések és a kapcsolatpróbák nem tartoznak ide. Bármikor kikapcsolhatod.
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	A légi járművek ACARS-on küldött üzenetei (szabad szöveg, valamint személyzeti, üzemeltetési, társasági és karbantartási üzenetek) megjelenhetnek a jármű kártyáján is, telefonszámok és e-mail-címek nélkül. Ez külön választás, a Szerver menüben módosíthatod.
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s, %d ugrás, %d átlagolás, %.0f ms söprésenként
+pick a radio first (the test signal and files cannot sweep)	előbb válassz rádiót (a tesztjel és a fájlok nem söpörhetők)
+Save scan...	Söprés mentése...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	rtl_power-kompatibilis CSV: megnyitható a Heatmap.py-ban, rtl_power_fftw eszközökben és táblázatokban
+Load as baseline...	Betöltés alapként...
+Keep this scan as baseline	Ez a söprés legyen az alap
+Save signal log...	Jelnapló mentése...
+Sweep scanner	Söprő szkenner
+from MHz	MHz-től
+to MHz	MHz-ig
+bin %.0f kHz	bin %.0f kHz
+dwell %.0f ms	várakozás %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Az egyes ugrásokra fordított idő: hosszabb = több FFT átlagolása (nyugodtabb zajpadló, gyenge jelek látszanak), de lassabb söprés
+measure retune time	átállási idő mérése
+settle %.0f ms	beállás %.0f ms
+rate: radio's best	mintavétel: a rádió legjobbja
+rate: 10 Msps	mintavétel: 10 Msps
+rate: 5 Msps	mintavétel: 5 Msps
+rate: 2.4 Msps	mintavétel: 2,4 Msps
+gain %.0f dB	erősítés %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Szünet a söpréssorozatok között: néhány másodpercenkénti söprés kíméli a processzort és az akkut
+threshold floor+%.0f dB	küszöb zajpadló+%.0f dB
+floor percentile %.0f	zajpadló percentilis %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	A zajpadló az egyes ugrások bin-teljesítményének ez a percentilise (50 = medián). Zsúfolt sávban csökkentsd, üresben növeld
+retune settle %.1f ms	beállási idő %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	zajpadló %.1f dBFS binenként (%.0f kHz-es binek), küszöb %.1f dBFS, %zu jel ebben a söprésben
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	az alaphoz képest: zajpadló %+.1f dB, legnagyobb emelkedés %+.1f dB %.3f MHz-en
+Signals found	Talált jelek
+mode: as it is	mód: marad
+Tune to selected	Hangolás a kijelöltre
+Bandwidth kHz	Sávszélesség kHz
+Peak dBFS	Csúcs dBFS
+Best SNR dB	Legjobb SNR dB
+Sweep	Söprés
+every %.0f s	%.0f s-onként
+back to back	egymás után
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Gyors szélessávú söprés zajpadló-méréssel, jelnaplóval és vízeséssel
+Record audio	Hang felvétele
+Only audio	Csak hang
+Split	Szétosztás
+Keep going	Folytatás
+Show recording	Felvétel megjelenítése
+Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)	Fájlba menti a hallott hangot, bármely módban (a hangerő előtt, így a szint nem függ tőle)
+MP3 needs the LAME library (libmp3lame), which is not installed	Az MP3-hoz a LAME könyvtár (libmp3lame) kell, amely nincs telepítve
+WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo.	WAV: 16 bites, nagy. FLAC: veszteségmentes, nagyjából fele méret. MP3: kicsi (libmp3lame kell). Az FM sztereó sztereó marad.
+Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	Csak akkor ment, amikor van hang (mint egy zajzár): a csend kimarad, rövid előzmény és lecsengés marad
+One file per transmission: a new file starts after 3 s of silence	Adásonként egy fájl: 3 s csend után új fájl kezdődik
+Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Folytatja a felvételt, ha a mód vagy a frekvencia változik. Kikapcsolva: ilyenkor leáll a felvétel.
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir, and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	Ebből az OnAir-telepítésből hiányzik a SoapyRemote modul, ezért nem éri el a távoli rádiót. Telepítse újra az OnAir-t, és jelezze, ha újra előfordul. A rádió számítógépén futnia kell a SoapySDRServer --bind parancsnak.
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir (or run brew install soapyremote), and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	Ebből az OnAir-telepítésből hiányzik a SoapyRemote modul, ezért nem éri el a távoli rádiót. Telepítse újra az OnAir-t (vagy futtassa: brew install soapyremote), és jelezze, ha újra előfordul. A rádió számítógépén futnia kell a SoapySDRServer --bind parancsnak.
+SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install it (Debian/Ubuntu: sudo apt install soapysdr-module-remote; other systems: github.com/pothosware/SoapyRemote), then restart OnAir. The radio's computer must run SoapySDRServer --bind.	Ebből a SoapySDR-ből hiányzik a SoapyRemote kliensmodul, ezért nem éri el a távoli rádiót. Telepítse (Debian/Ubuntu: sudo apt install soapysdr-module-remote; más rendszereken: github.com/pothosware/SoapyRemote), majd indítsa újra az OnAir-t. A rádió számítógépén futnia kell a SoapySDRServer --bind parancsnak.
+# frequency database
+%zu built in, %zu yours	%zu beépített, %zu saját
+Add entry...	Bejegyzés hozzáadása...
+Add frequency	Frekvencia hozzáadása
+Add to Memory	Hozzáadás a Memoryhoz
+Added to Memory.	Hozzáadva a Memoryhoz.
+Already in Memory.	Már a Memoryban van.
+An entry with this frequency and mode exists already.	Ilyen frekvenciájú és üzemmódú bejegyzés már van.
+Category	Kategória
+Could not save 	Nem sikerült menteni: 
+Could not tune to this entry.	Erre a bejegyzésre nem sikerült ráhangolni.
+Exports your own entries (not the built-in ones)	Csak a saját bejegyzéseidet exportálja (a beépítetteket nem)
+Frequencies	Frekvenciák
+Frequencies...	Frekvenciák...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	%zu bejegyzés importálva, %zu kihagyva (ismétlődés vagy frekvencia nélküli sor).
+Keeps this entry in the Memory panel	Elmenti ezt a bejegyzést a Memory panelbe
+Known frequencies (%zu)	Ismert frekvenciák (%zu)
+Mine	Sajátok
+Nothing matches. Clear the search or the filters.	Nincs találat. Töröld a keresést vagy a szűrőket.
+Nothing to import in this file.	Ebben a fájlban nincs mit importálni.
+Only the entries you added or imported	Csak a te hozzáadott vagy importált bejegyzéseid
+Open the Frequencies panel...	A Frekvenciák panel megnyitása...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	Beolvas egy Exportálással (vagy a Memory panellel) írt CSV vagy JSON fájlt, vagy egyszerű 'frekvencia,név' sorokat (MHz). A már létező frekvenciájú és üzemmódú bejegyzések kimaradnak.
+Search name, notes, mode, frequency (162.4)	Keresés: név, megjegyzés, üzemmód, frekvencia (162.4)
+Show Frequencies as a tab	Frekvenciák megjelenítése fülként
+Source...	Forrás...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Átvált a bejegyzés üzemmódjára, alkalmazza a hangolását, és ráhangol a frekvenciára. A sorra kattintva duplán ugyanez történik. A futó vevő üzemmódváltáskor újraindul.
+Tuned: %s  %s MHz	Hangolva: %s  %s MHz
+Well-known frequencies of this mode: pick one to tune to it	Ennek az üzemmódnak az ismert frekvenciái: válassz egyet a ráhangoláshoz
+Stop scan##dsc	Stop scan##dsc
+Scan band##dsc	Scan band##dsc
+DECT carrier %d, %.3f MHz	DECT carrier %d, %.3f MHz
+Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.	Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.
+US / Canada 1920-1930 MHz (DECT 6.0)	US / Canada 1920-1930 MHz (DECT 6.0)
+Brazil 1910-1920 MHz	Brazil 1910-1920 MHz
+Latin America 1910-1930 MHz	Latin America 1910-1930 MHz
+US ISM 902-928 MHz (DECT in ISM)	US ISM 902-928 MHz (DECT in ISM)
+Europe 1880-1900 MHz	Europe 1880-1900 MHz
+USA, Canada: the UPCS band, DECT 6.0 phones	USA, Canada: the UPCS band, DECT 6.0 phones
+Brazil	Brazil
+Several Latin American countries	Several Latin American countries
+USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT	USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT
+Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
+Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
+The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	Az nRSP-ST az SDRconnecten keresztül érhető el: futtasd az SDRconnectet (vagy a headless változatát) egy számítógépen bekapcsolt WebSocket-szerverrel (5454-es port) és kiválasztott nRSP-ST-vel, majd írd be a gép címét. Jelszóra nincs szükség, és nem tárolunk ilyet.
+#  the guided tour
+Tuning and gain	Hangolás és erősítés
+Modes	Módok
+Spectrum and waterfall	Spektrum és vízesés
+Mode panel	Mód panel
+Memory and frequencies	Memória és frekvenciák
+Receivers	Vevők
+Audio	Hang
+Server and support	Szerver és támogatás
+Done	Kész
+Take the guided tour	Útmutató indítása
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Válassza ki a mintákat szolgáltató rádiót vagy felvételt. A Record IQ elmenti a nyers jelet a későbbi lejátszáshoz.
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Itt állítható be a frekvencia, a sáv és a mintavételi sebesség. Az erősítés és az AGC a bemeneti szintet szabja meg; a Második mód ugyanabból a felvételből dekódol egy másik módot.
+%d modes, grouped by family. Use the search box to find one by name.	%d mód, családok szerint csoportosítva. A keresőmezővel név alapján találhat meg egyet.
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	Kattintással hangolhat, görgetéssel nagyíthat. A Peak hold megőrzi az egyes frekvenciákon látott legerősebb szintet.
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	Minden módnak saját fülei vannak a dekódolt kimenethez, a beállításokhoz és az eszközökhöz. A kiválasztott móddal együtt változnak.
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	A Memória a frekvenciákat móddal és beállításokkal együtt tárolja. A Frekvenciák és a sávtervek módonként mutatják, mi van adásban.
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	Minden vevő egy rádiót párosít egy móddal. Ez a sáv vált közöttük, és kijelöli, melyik szólaljon meg.
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	A Listen a demodulált jelet játssza le. A hangerő és a némítás itt van; a Record audio fájlba menti.
+Server sends decoded positions to the public map. Support helps fund development.	A Szerver a dekódolt pozíciókat a nyilvános térképre küldi. A Támogatás segít finanszírozni a fejlesztést.
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Itt található a dokumentáció, a hibaelhárítás, a közreműködők és a licencek. Az Útmutató újra elindítja ezt a bemutatót.
+Monitor audio	Hang figyelése
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Hallgasd a behangolt csatornát bármely módban egy jel felismeréséhez: a rádió mintáit USB, LSB, keskeny FM vagy AM szerint demodulálja. Néma, amíg a mód saját hangot játszik.
+Auto: USB below 30 MHz, narrow FM above	Auto: USB 30 MHz alatt, keskeny FM felette
+Volume of the monitor	A figyelés hangereje
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Finomhangolás a behangolt frekvenciához képest, Hz-ben (az SSB jel 1–2 kHz-cel a vivő felett vagy alatt hallható)
+(the mode plays)	(a mód játszik)
+Audio...	Hang...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	A figyelés kimeneti eszközei, egy második kimenet (pl. virtuális audiokábel fldigihez vagy WSJT-X-hez) és helyi hálózati adatfolyam
+System default	Rendszer alapértelmezett
+Output 1	1. kimenet
+Output 2	2. kimenet
+Delay (ms)	Késleltetés (ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Lejátszás előtt sorban álló hang: kevesebb gyorsabb, több kibírja a terhelt gépet
+Stay silent while the mode plays	Néma, amíg a mód játszik
+Network audio stream	Hálózati hangfolyam
+WAV header	WAV-fejléc
+Allow other computers	Más gépek engedélyezése
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16 bites sztereó, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, vagy fejléces WAV-lejátszó. Biztonság: bárki hallgathat, aki eléri a portot; ne kapcsold be a „Más gépek engedélyezése” opciót, ha nem kell.
+Listeners:	Hallgatók:
+video	video
+audio	audio
+profile	profile
+Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work	Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work
+Open in an external player	Open in an external player
+Save the transport stream to a file	Save the transport stream to a file
+Stream it as UDP to %s	Stream it as UDP to %s
+Copy VLC command	Copy VLC command
+Copy mpv command	Copy mpv command
+Copy ffplay command	Copy ffplay command
+Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).
+# credits and contributors
+Credits	Köszönetnyilvánítás
+Contributors	Közreműködők
+Projects and licences	Projektek és licencek
+People	Személyek
+By mode	Módok szerint
+pull request	pull request
+optimisation	optimalizálás
+fix	javítás
+bug report	hibajelentés
+samples	felvételek
+translation	fordítás
+testing	tesztelés
+idea	ötlet
+Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Köszönet mindenkinek, aki javítást küldött, hibát jelentett, felvételt osztott meg, fordított vagy ötletet adott. A szerző Kristijonas Adomaitis.
+Want your name changed or removed? Tell us on Discord or open an issue.	Szeretnéd, ha módosítanánk vagy törölnénk a neved? Szólj a Discordon, vagy nyiss egy issue-t.
+Decoded only	Csak dekódolt
+Hides tone-only pages and pages whose text could not be decoded.	Elrejti a csak hangjelzéses hívásokat és azokat az üzeneteket, amelyek szövege nem volt dekódolható.
+%zu tone-only or undecoded pages hidden (Decoded only)	%zu csak hangjelzéses vagy dekódolatlan üzenet elrejtve (Csak dekódolt)
+%zu tone-only or undecoded pages hidden	%zu csak hangjelzéses vagy dekódolatlan üzenet elrejtve
+hidden	elrejtve
+# LBJ (Chinese railway train warning)
+What LBJ carries	Mit visz az LBJ
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	Az LBJ a kínai vonat-közeledési figyelmeztetés kb. 821,2375 MHz-en. Minden mozdony 1200 bit/s sebességű numerikus POCSAG-üzeneteket küld: néhány másodpercenként rövid üzenetet a vonatszámmal, a sebességgel (km/h) és a kilométerszelvénnyel, valamint hosszabb üzeneteket a mozdony típusával, számával és az útvonallal.\n\nAz OnAir maga dekódolja az üzeneteket (csak vétel). Az üres érték sérült számjegyeket jelent; a szürke sorban javított hibák voltak, ezért ellenőrizd ugyanannak a vonatnak a következő üzenetével.
+tune to about 821.2375 MHz and start the receiver	hangolj kb. 821,2375 MHz-re és indítsd el a vevőt
+FM, 1200 bit/s FSK, %.2f Msps	FM, 1200 bit/s FSK, %.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu üzenet, %llu szinkronszó, %llu üres, %llu sikertelen ellenőrzés
+listening (level %.0f dBFS, offset %+.0f Hz)	figyel (szint %.0f dBFS, eltérés %+.0f Hz)
+Train	Vonat
+Speed km/h	Sebesség km/h
+Km post	Szelvény km
+Direction	Irány
+Locomotive	Mozdony
+Route	Útvonal
+Up	Fel
+Down	Le
+Some digits were corrected or lost: check this row against the next message of the train	Néhány számjegyet javítottunk vagy elveszett: ellenőrizd ezt a sort a vonat következő üzenetével
+Train warning, 821 MHz	Vonatfigyelmeztetés, 821 MHz
+clear picture	kép törlése
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Törli a képet és a dekóder által összegyűjtött sorokat, és a következő indítóhangnál vagy fázisjelnél új képet kezd. A jobb oldali listában lévő képek megmaradnak.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Törli a NAVTEX- és DSC-listákat, valamint az időjárási fax képét.
+# radio clips
+Clip	Klip
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Rádióklip: az utolsó pillanatokat (spektrogram, hang, dekódolt üzenetek) menti megosztható fájlként. Billentyű: C
+Radio clip	Rádióklip
+Last:	Utolsó:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Amit a vevő látott, a legrégebbi balra. A világosabb erősebb jel. Húzással jelölheted ki a mentendő részt.
+Include:	Tartalom:
+Spectrogram picture	Spektrogramkép
+Decoded messages	Dekódolt üzenetek
+Title	Cím
+Your station position is never included.	A állomásod helyzete soha nem kerül bele.
+Could not save:	A mentés nem sikerült:
+Saved: %s (zip %.1f MB)	Mentve: %s (zip %.1f MB)
+Save clip	Klip mentése
+Nothing to save: no waterfall, audio or decoded rows in this range	Nincs mit menteni: ebben a tartományban nincs vízesés, hang vagy dekódolt sor
+Saving...	Mentés...
+Copy Discord post text	Discord-szöveg másolása
+Copied: paste it into Discord and attach the files	Másolva: illeszd be a Discordba, és csatold a fájlokat
+Open folder	Mappa megnyitása
+Memory kept for clips	Klipekhez tartott memória
+Waterfall history	Vízesés-előzmények
+%d min	%d perc
+%d MB max	max. %d MB
+Audio history	Hangelőzmények
+%d s	%d mp
+Decoded rows history	Dekódolt sorok előzményei
+Uses about %.1f MB now	Jelenleg kb. %.1f MB-ot használ
+Decoded rows are kept from the results tables you have open.	A dekódolt sorokat a megnyitott eredménytáblákból őrzi meg.

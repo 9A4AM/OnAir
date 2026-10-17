@@ -168,7 +168,6 @@ Back	戻る
 Next	次へ
 Finish	完了
 Skip	スキップ
-Skip tour	ツアーをスキップ
 Dismiss	閉じる
 Again	もう一度
 Auto	自動
@@ -212,7 +211,6 @@ New interface	新しいインターフェース
 Try the new interface. You can switch back at any time.	新しいインターフェースを試せます。いつでも元に戻せます。
 Guided tour	ガイドツアー
 Tour	ツアー
-Take the guided tour with Onny	Onny と一緒にガイドツアーを見る
 by: Kristijonas Adomaitis, made with help from the community	作者: Kristijonas Adomaitis、コミュニティの協力で制作
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	不具合の報告、録音の提供、プルリクエストをしてくださったみなさん、ありがとうございます。
 Source	ソース
@@ -477,21 +475,6 @@ Radio settings (%d changed)	無線機の設定 (%d 件変更)
 %s: frequency correction and the other settings of this radio	%s: この無線機の周波数補正とその他の設定
 The driver's own settings show up here\nonce this radio has been started.	ドライバー固有の設定は、この無線機を一度\n開始するとここに表示されます。
 0 = libiio's default	0 = libiio の既定値
-#  the guided tour
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	こんにちは、Onny です! OnAir に住んでいる小さなテレビです。簡単なツアーはいかがですか? 約 1 分で、デモ信号を使ってすべてをご案内しますので、ハードウェアはまだ必要ありません。
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	ここ上部では、受信したい放送の種類を切り替えます。世界の多くのデジタルテレビは DVB、北米は ATSC、デジタルラジオは DAB です。OnAir ならこの 3 つがひとつにまとまっています。
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	実際に動かしてみましょう! 模擬信号を開始します。アプリの中で動くテスト用の送信機なので、何もつなぐ必要はありません。
-Start the demo signal	デモ信号を開始
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	このくねくねした線が見えますか? これがスペクトラムで、電波の強さを左から右へ表しています。中央の高い山が私たちのチャンネルです。その下のウォーターフォールは、同じ内容を時間とともにゆっくりスクロールして表示します。
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	そしてこの 4 つの枠は、受信機が見ている点を表示します。信号が良いと点はきれいにまとまります。点が乱れているのはノイズが多い信号です。今はきれいなデモなので、整って見えるはずです!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	ここには、受信機がロックするとチャンネルが並びます。クリックすると視聴できます。映像と音声のプレーヤー、時計、視聴中の番組を録画・配信するオプションもあります。
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	では本番です。ここで無線機を選び、周波数を決め、ゲインを設定します。ゲインは無線機が信号をどれだけ増幅するかで、小さすぎると信号が埋もれ、大きすぎると歪みます。自動調整ボタンが良い値を見つけてくれます。
-Stop the demo and look for my radio	デモを停止して無線機を探す
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	チャンネルの場所がわかりませんか? スキャンタブが探してくれます。高い場所の窓際に置いた良いアンテナは、何よりも大きな違いを生みます。約束します!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	ツアーは以上です! ストリームタブ (出力) から、チャンネルを他の機器と共有できます。右上のツアーボタンを押せば、いつでも私を呼び戻せます。楽しい視聴を!
-Good news: I can see "%s"!	朗報です: 「%s」が見つかりました!
-(I can't see a radio right now. Plug it in and press the button again.)	(今は無線機が見つかりません。接続してもう一度ボタンを押してください。)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	Windows では、HackRF に WinUSB ドライバーが一度だけ必要です。zadig.akeo.ie の Zadig でインストールしてください。
 #  passes
 Weather (137 MHz)	気象 (137 MHz)
 Amateur	アマチュア
@@ -947,13 +930,11 @@ holds	保持中
 last send %s	最終送信 %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	%s ポート %d で待ち受け中、クライアント %d 件、送信 %.1f MB、破棄 %.1f MB
 max	最大
-mute	ミュート
 on air	運用中
 partial	一部
 point %s	地点 %s
 power (dBm)	電力 (dBm)
 searching for Hermes Lite 2 radios…	Hermes Lite 2 を検索中…
-sound	音声
 up-converter	アップコンバーター
 waiting	待機中
 waterfall dB##wfdb	ウォーターフォール dB##wfdb
@@ -1269,7 +1250,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	LimeSDR Mini には、Windows では FTDI の FT60x ドライバ(Zadig ではありません)、Linux では udev ルール、そしてゲートウェアをライブラリに合わせるための一度きりの「LimeUtil --update」が必要です。
 Real (mono)	実数（モノ）
 Left	左
 Right	右
@@ -1455,3 +1435,271 @@ Carrier	搬送波
 Sync	同期
 The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).	The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).
 LW time service, Poland	長波時報サービス（ポーランド）
+Predict positions	位置を予測
+Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	位置報告の間の空白を補います。機体は滑らかに動き、メッセージが途絶えると進路に沿って(目的地が通知されていれば航路に沿って)推測航法で位置を求めます。予測位置は破線の輪を付けた半透明の機影で描かれます。
+uncertainty	不確かさ
+Draws the uncertainty ellipse (95 percent) of every estimated position.	推定した各位置の不確かさの楕円(95パーセント)を描きます。
+predicted from the last position %s ago, +-%.1f NM	%s前の最後の位置から予測、+-%.1f NM
+estimated from the ground station only, within about %.0f NM	地上局のみから推定、約%.0f NM以内
+Hear this receiver	この受信機の音を聞く
+Close receiver	受信機を閉じる
+Radio: %s	無線機: %s
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	HD Radio の音声には HDC コーデックが必要です。ご自分でインストールしてください(? をクリック)
+HDC sound codec cannot be used: %s	HDC 音声コーデックは使用できません: %s
+HDC sound codec not installed (no sound; click ? for the steps)	HDC 音声コーデックが未インストールです(音なし。手順は ? をクリック)
+sound: HD%d (HDC)	音声: HD%d (HDC)
+sound: HD%d, waiting for audio	音声: HD%d、音声を待っています
+The HD Radio sound codec (HDC) is not installed	HD Radio 音声コーデック (HDC) がインストールされていません
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	放送局、番組データ、画像は表示されますが、ご自分でコーデックをインストールするまで HD Radio の音声は無音のままです。OnAir には同梱されていません (HDC は特許があり Xperi が所有しています)。
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	完全な手順の説明に従って、HDC パッチ付きの FAAD2 をビルドしてください (オープンソースの nrsc5 のパッチが必要です)。
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	ライブラリ (libfaad_hdc) を OnAir のコーデックフォルダに置いてください (下のボタン)。
+The HD Radio sound library cannot be used	HD Radio 音声ライブラリは使用できません
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	OnAir は HDC 用のライブラリを見つけましたが、OnAir が呼び出せる HDC パッチ付き FAAD2 のビルドではないため、使用しませんでした。
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	完全な手順の説明に従って、FAAD2 2.10 または 2.11 と nrsc5 のパッチでライブラリをビルドし直してください。
+Replace the file in the OnAir codecs folder (button below).	OnAir のコーデックフォルダのファイルを置き換えてください (下のボタン)。
+# band plans (scan tab, TV channel list)
+Band plan	バンドプラン
+None (built-in ranges)	なし（内蔵の範囲）
+My band plans	マイバンドプラン
+Export...	エクスポート...
+Really delete?	本当に削除しますか？
+Replaced band plan "%s" (%zu bands).	バンドプラン「%s」を置き換えました（%zu バンド）。
+Imported band plan "%s" (%zu bands).	バンドプラン「%s」をインポートしました（%zu バンド）。
+Deleted band plan %s.	バンドプラン %s を削除しました。
+Not fully verified: %s	完全には検証されていません: %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	お住まいの国のチャンネル配置です。スキャンとチャンネル一覧のテレビチャンネルなどに使います。「自動」は表示言語とシステムの地域からプランを選びます。
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	CSV または JSON ファイル（形式は docs/band-plans.md）からバンドプランを読み込み、検査して設定フォルダーに保存します。ファイルに誤りがあれば何も変更されず、メッセージに場所が示されます。
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	プランを JSON ファイルとして、名前が .csv で終わる場合は CSV として保存します。内蔵プランは自作プランの出発点に最適です。
+Deletes one of your own band plans. The built-in plans stay.	自分のバンドプランを 1 つ削除します。内蔵プランは残ります。
+TV channels of the band plan %s (change it in the Scan tab).	バンドプラン %s のテレビチャンネル（スキャンタブで変更できます）。
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	乗員
+Operations	運航
+Company	航空会社
+Maintenance	整備
+Fault	故障
+Show all messages	すべてのメッセージを表示
+ACARS messages	ACARSメッセージ
+%d ACARS messages	ACARSメッセージ %d 件
+Copy these messages as text	これらのメッセージをテキストとしてコピー
+No ACARS messages heard from this aircraft	この機体からのACARSメッセージは受信されていません
+Also share interesting ACARS messages (text becomes public on the map)	興味深いACARSメッセージも共有する（テキストは地図上で公開されます）
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	機体がACARSで送信したメッセージ（自由文、乗員・運航・会社・整備のメッセージ）を、公開地図のその機体のカードに48時間表示します。電話番号とメールアドレスは事前に削除されます。位置報告とリンクテストは含まれません。いつでもオフにできます。
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	機体がACARSで送信するメッセージ（自由文、乗員・運航・会社・整備のメッセージ）を、電話番号とメールアドレスを除いて機体のカードにも表示できます。これは別の選択で、サーバーメニューで変更できます。
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s、%dホップ、%d回平均、1スイープ %.0f ms
+pick a radio first (the test signal and files cannot sweep)	先に無線機を選んでください(テスト信号とファイルはスイープできません)
+Save scan...	スキャンを保存...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	rtl_power互換CSV: Heatmap.py、rtl_power_fftwツール、表計算で開けます
+Load as baseline...	基準として読み込む...
+Keep this scan as baseline	このスキャンを基準にする
+Save signal log...	信号ログを保存...
+Sweep scanner	スイープスキャナー
+from MHz	開始 MHz
+to MHz	終了 MHz
+bin %.0f kHz	ビン %.0f kHz
+dwell %.0f ms	滞留 %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	各ホップの時間: 長いほどFFTを多く平均します(ノイズフロアが安定し弱い信号が見える)がスイープは遅くなります
+measure retune time	再同調時間を測定
+settle %.0f ms	整定 %.0f ms
+rate: radio's best	レート: 無線機の最大
+rate: 10 Msps	レート: 10 Msps
+rate: 5 Msps	レート: 5 Msps
+rate: 2.4 Msps	レート: 2.4 Msps
+gain %.0f dB	ゲイン %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	スイープ間の休止: 数秒おきに実行するとCPUとバッテリーを節約できます
+threshold floor+%.0f dB	しきい値 フロア+%.0f dB
+floor percentile %.0f	フロア百分位 %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	ノイズフロアは各ホップのビン電力のこの百分位です(50=中央値)。混雑した帯域では下げ、空いた帯域では上げます
+retune settle %.1f ms	整定時間 %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	ノイズフロア ビンあたり %.1f dBFS(%.0f kHzビン)、しきい値 %.1f dBFS、このスイープで %zu 信号
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	基準との差: フロア %+.1f dB、最大上昇 %+.1f dB(%.3f MHz)
+Signals found	検出した信号
+mode: as it is	モード: そのまま
+Tune to selected	選択に同調
+Bandwidth kHz	帯域幅 kHz
+Peak dBFS	ピーク dBFS
+Best SNR dB	最大SNR dB
+Sweep	スイープ
+every %.0f s	%.0f 秒ごと
+back to back	連続
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	ノイズフロア測定、信号ログ、ウォーターフォール付きの高速広帯域スイープ
+Record audio	音声を録音
+Only audio	音声のみ
+Split	分割
+Keep going	継続
+Show recording	録音を表示
+Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)	どのモードでも、聞こえている音をファイルに保存します（音量の前の信号なので、レベルは音量に左右されません）
+MP3 needs the LAME library (libmp3lame), which is not installed	MP3にはLAMEライブラリ(libmp3lame)が必要ですが、インストールされていません
+WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo.	WAV: 16ビット、大きい。FLAC: ロスレスで約半分のサイズ。MP3: 小さい(libmp3lameが必要)。FMステレオはステレオのまま保存します。
+Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	音がある間だけ保存します（スケルチのように）。無音は削除され、前後に短い余白が付きます
+One file per transmission: a new file starts after 3 s of silence	送信ごとに1ファイル：3秒の無音の後に新しいファイルを開始します
+Keeps recording when the mode or the frequency changes. Off: the recording stops then.	モードや周波数が変わっても録音を続けます。オフの場合、その時点で録音を停止します。
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir, and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	このOnAirにはSoapyRemoteモジュールが含まれていないため、リモートのラジオに接続できません。OnAirを再インストールしてください。再発する場合はご報告ください。ラジオのコンピューターでSoapySDRServer --bindを実行しておく必要があります。
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir (or run brew install soapyremote), and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	このOnAirにはSoapyRemoteモジュールが含まれていないため、リモートのラジオに接続できません。OnAirを再インストールしてください(またはbrew install soapyremoteを実行)。再発する場合はご報告ください。ラジオのコンピューターでSoapySDRServer --bindを実行しておく必要があります。
+SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install it (Debian/Ubuntu: sudo apt install soapysdr-module-remote; other systems: github.com/pothosware/SoapyRemote), then restart OnAir. The radio's computer must run SoapySDRServer --bind.	このSoapySDRにはSoapyRemoteクライアントモジュールがないため、リモートのラジオに接続できません。インストールして(Debian/Ubuntu: sudo apt install soapysdr-module-remote、その他: github.com/pothosware/SoapyRemote)、OnAirを再起動してください。ラジオのコンピューターでSoapySDRServer --bindを実行しておく必要があります。
+# frequency database
+%zu built in, %zu yours	内蔵 %zu 件、自分の %zu 件
+Add entry...	項目を追加...
+Add frequency	周波数を追加
+Add to Memory	Memory に追加
+Added to Memory.	Memory に追加しました。
+Already in Memory.	すでに Memory にあります。
+An entry with this frequency and mode exists already.	この周波数とモードの項目はすでにあります。
+Category	カテゴリ
+Could not save 	保存できませんでした: 
+Could not tune to this entry.	この項目に同調できませんでした。
+Exports your own entries (not the built-in ones)	自分の項目をエクスポートします(内蔵のものは含みません)
+Frequencies	周波数
+Frequencies...	周波数...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	%zu 件をインポートし、%zu 件をスキップしました(重複、または周波数のない行)。
+Keeps this entry in the Memory panel	この項目を Memory パネルに保存します
+Known frequencies (%zu)	既知の周波数 (%zu)
+Mine	自分の
+Nothing matches. Clear the search or the filters.	一致するものがありません。検索またはフィルタを解除してください。
+Nothing to import in this file.	このファイルにはインポートするものがありません。
+Only the entries you added or imported	自分で追加またはインポートした項目のみ
+Open the Frequencies panel...	周波数パネルを開く...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	エクスポート(または Memory パネル)で書き出した CSV / JSON ファイル、または「周波数,名前」の行の単純なリスト(MHz)を読み込みます。周波数とモードがすでにある項目はスキップされます。
+Search name, notes, mode, frequency (162.4)	名前・メモ・モード・周波数で検索 (162.4)
+Show Frequencies as a tab	周波数をタブとして表示
+Source...	出典...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	項目のモードに切り替え、そのモードの同調設定を適用して周波数に同調します。行をダブルクリックしても同じです。動作中の受信機はモードが変わると再起動します。
+Tuned: %s  %s MHz	同調: %s  %s MHz
+Well-known frequencies of this mode: pick one to tune to it	このモードの既知の周波数: 選ぶと同調します
+Stop scan##dsc	Stop scan##dsc
+Scan band##dsc	Scan band##dsc
+DECT carrier %d, %.3f MHz	DECT carrier %d, %.3f MHz
+Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.	Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.
+US / Canada 1920-1930 MHz (DECT 6.0)	US / Canada 1920-1930 MHz (DECT 6.0)
+Brazil 1910-1920 MHz	Brazil 1910-1920 MHz
+Latin America 1910-1930 MHz	Latin America 1910-1930 MHz
+US ISM 902-928 MHz (DECT in ISM)	US ISM 902-928 MHz (DECT in ISM)
+Europe 1880-1900 MHz	Europe 1880-1900 MHz
+USA, Canada: the UPCS band, DECT 6.0 phones	USA, Canada: the UPCS band, DECT 6.0 phones
+Brazil	Brazil
+Several Latin American countries	Several Latin American countries
+USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT	USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT
+Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
+Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
+The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	nRSP-STにはSDRconnect経由で接続します。WebSocketサーバー（ポート5454）を有効にし、nRSP-STを選択した状態で、コンピューター上のSDRconnect（またはヘッドレス版）を起動し、そのコンピューターのアドレスを入力してください。パスワードは不要で、保存もされません。
+#  the guided tour
+Tuning and gain	チューニングとゲイン
+Modes	モード
+Spectrum and waterfall	スペクトルとウォーターフォール
+Mode panel	モードパネル
+Memory and frequencies	メモリと周波数
+Receivers	受信機
+Audio	オーディオ
+Server and support	サーバーとサポート
+Done	完了
+Take the guided tour	ガイドツアーを開始
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	サンプルを供給する無線機または録音を選びます。Record IQ は生の信号を保存し、後で再生できます。
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	ここで周波数、バンド、サンプルレートを設定します。ゲインと AGC は入力レベルを決め、セカンドモードは同じ受信データから別のモードをデコードします。
+%d modes, grouped by family. Use the search box to find one by name.	%d 個のモードをファミリーごとに分類しています。検索ボックスで名前から探せます。
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	クリックで同調し、スクロールで拡大します。ピークホールドは各周波数で観測した最大レベルを保持します。
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	各モードには、デコード結果、設定、ツール用の専用タブがあります。選択したモードに応じて変わります。
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	メモリは周波数をモードと設定とともに保存します。周波数とバンドプランは、モードごとの運用状況を示します。
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	各受信機は無線機とモードの組み合わせです。このバーで切り替え、音声を出す受信機を選びます。
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen は復調した信号を再生します。音量とミュートはここにあり、Record audio はファイルに保存します。
+Server sends decoded positions to the public map. Support helps fund development.	サーバーはデコードした位置情報を公開マップに送信します。サポートは開発資金に役立ちます。
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	ドキュメント、トラブルシューティング、クレジット、ライセンスはここにあります。ガイドツアーでこのツアーを再開できます。
+Monitor audio	音声モニター
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	どのモードでも同調したチャンネルを聞いて信号を識別できます。無線のサンプルをUSB、LSB、狭帯域FM、AMとして復調します。モードが自分の音を出している間は無音です。
+Auto: USB below 30 MHz, narrow FM above	自動: 30 MHz未満はUSB、以上は狭帯域FM
+Volume of the monitor	モニターの音量
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	同調周波数からの微調整(Hz)。SSB信号はキャリアの1〜2 kHz上または下で聞こえます
+(the mode plays)	(モードが再生中)
+Audio...	音声...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	モニターの出力デバイス、2つ目の出力(fldigiやWSJT-X用の仮想オーディオケーブルなど)、ローカルネットワークストリーム
+System default	システム既定
+Output 1	出力1
+Output 2	出力2
+Delay (ms)	遅延(ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	再生前にためる音声: 小さいほど速く、大きいほど負荷の高いPCに強い
+Stay silent while the mode plays	モードが再生中は無音
+Network audio stream	ネットワーク音声ストリーム
+WAV header	WAVヘッダー
+Allow other computers	他のコンピューターを許可
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16ビットステレオ、48 kHz。ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:ポート、またはヘッダー付きWAVプレーヤー。セキュリティ: ポートに到達できる人は誰でも聞けます。必要がなければ「他のコンピューターを許可」はオフのままにしてください。
+Listeners:	リスナー:
+video	video
+audio	audio
+profile	profile
+Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work	Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work
+Open in an external player	Open in an external player
+Save the transport stream to a file	Save the transport stream to a file
+Stream it as UDP to %s	Stream it as UDP to %s
+Copy VLC command	Copy VLC command
+Copy mpv command	Copy mpv command
+Copy ffplay command	Copy ffplay command
+Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).
+# credits and contributors
+Credits	クレジット
+Contributors	貢献者
+Projects and licences	プロジェクトとライセンス
+People	人物
+By mode	モード別
+pull request	プルリクエスト
+optimisation	最適化
+fix	修正
+bug report	バグ報告
+samples	録音データ
+translation	翻訳
+testing	テスト
+idea	アイデア
+Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	修正の送付、バグ報告、録音の共有、翻訳、アイデアの提案をしてくださったすべての方に感謝します。作者は Kristijonas Adomaitis です。
+Want your name changed or removed? Tell us on Discord or open an issue.	名前の変更や削除をご希望ですか？ Discord でお知らせいただくか、issue を作成してください。
+Decoded only	デコード済みのみ
+Hides tone-only pages and pages whose text could not be decoded.	トーンのみの呼び出しと、テキストをデコードできなかったメッセージを非表示にします。
+%zu tone-only or undecoded pages hidden (Decoded only)	トーンのみまたは未デコードのメッセージを%zu件非表示（デコード済みのみ）
+%zu tone-only or undecoded pages hidden	トーンのみまたは未デコードのメッセージを%zu件非表示
+hidden	非表示
+# LBJ (Chinese railway train warning)
+What LBJ carries	LBJが伝える内容
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	LBJは中国の列車接近警報で、約821.2375 MHzで送信されます。各機関車は1200 bit/sのPOCSAG数字ページを送ります。数秒ごとに列車番号・速度(km/h)・キロ程を含む短いメッセージと、機関車の形式と番号・路線を含む長いメッセージです。\n\nOnAir自身がページを復号します(受信のみ)。空欄の値は桁が壊れていたものです。灰色の行は誤りを訂正したものなので、同じ列車の次のメッセージと照合してください。
+tune to about 821.2375 MHz and start the receiver	約821.2375 MHzに合わせて受信を開始してください
+FM, 1200 bit/s FSK, %.2f Msps	FM、1200 bit/s FSK、%.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	メッセージ%llu件、同期ワード%llu件、空%llu件、検査失敗%llu件
+listening (level %.0f dBFS, offset %+.0f Hz)	受信待ち(レベル %.0f dBFS、オフセット %+.0f Hz)
+Train	列車
+Speed km/h	速度 km/h
+Km post	キロ程
+Direction	方向
+Locomotive	機関車
+Route	路線
+Up	上り
+Down	下り
+Some digits were corrected or lost: check this row against the next message of the train	一部の桁が訂正または欠落しました。同じ列車の次のメッセージと照合してください
+Train warning, 821 MHz	列車警報、821 MHz
+clear picture	画像を消去
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	画像とデコーダーが集めたラインを消去し、次のスタートトーンまたは位相合わせから新しい画像を始めます。右のリストにある画像はそのまま残ります。
+Clears the NAVTEX and DSC lists and the weather fax picture.	NAVTEX と DSC のリストと気象ファックスの画像を消去します。
+# radio clips
+Clip	クリップ
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	ラジオクリップ: 直近の様子(スペクトログラム、音声、デコードしたメッセージ)を共有用のファイルとして保存します。キー: C
+Radio clip	ラジオクリップ
+Last:	直近:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	受信機が捉えた内容(左が最も古い)。明るいほど強い信号です。ドラッグして保存する範囲を選びます。
+Include:	含める:
+Spectrogram picture	スペクトログラム画像
+Decoded messages	デコードしたメッセージ
+Title	タイトル
+Your station position is never included.	あなたの局の位置情報は含まれません。
+Could not save:	保存できませんでした:
+Saved: %s (zip %.1f MB)	保存しました: %s (zip %.1f MB)
+Save clip	クリップを保存
+Nothing to save: no waterfall, audio or decoded rows in this range	保存するものがありません: この範囲にはウォーターフォール、音声、デコード済みの行がありません
+Saving...	保存中...
+Copy Discord post text	Discord用の文章をコピー
+Copied: paste it into Discord and attach the files	コピーしました: Discordに貼り付けてファイルを添付してください
+Open folder	フォルダーを開く
+Memory kept for clips	クリップ用に保持するメモリ
+Waterfall history	ウォーターフォールの履歴
+%d min	%d 分
+%d MB max	最大 %d MB
+Audio history	音声の履歴
+%d s	%d 秒
+Decoded rows history	デコード済み行の履歴
+Uses about %.1f MB now	現在およそ %.1f MB 使用
+Decoded rows are kept from the results tables you have open.	デコード済みの行は、開いている結果テーブルから保持されます。

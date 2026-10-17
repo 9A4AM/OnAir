@@ -1,3 +1,8 @@
+import { sanitizeList, mergeStored, takeBudget, MSG_TTL_MS, MSG_TOTAL_MAX, MSG_PER_INGEST } from "./msgs.js";
+import { parseIngestBody } from "./lenient-json.js";
+import { TrailStore, SqlBackend } from "./trail-store.js";
+import { parseTrailRequest } from "./trail.js";
+
 const KINDS = new Set([
   "aircraft", "vessel", "sonde", "aprs", "ham", "drone", "flarm", "sat", "buoy", "dsc", "station", "gnss",
 ]);
@@ -185,6 +190,7 @@ export class MapHub {
     this.lastLoadBroadcast = 0;
     this.lastPrune = 0;
     this.pendingUpserts = new Map();
+    this.msgBudget = new Map();   // station -> times of recent accepted messages (rate limit)
     this.snapshotCache = null;
     this.snapshotCacheAt = 0;
     this.loadCache = null;
@@ -265,6 +271,7 @@ export class MapHub {
     add("src", "TEXT");
     add("age", "REAL");
     add("path", "TEXT");
+    add("est", "INTEGER");   // 1: the position is an estimate (dead reckoning) the app sent, not a received fix
     this.ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS meta (
         k TEXT PRIMARY KEY,
@@ -272,7 +279,16 @@ export class MapHub {
         t INTEGER NOT NULL
       );
     `);
+    this.ctx.storage.sql.exec(`
+      CREATE TABLE IF NOT EXISTS msgs (
+        id TEXT PRIMARY KEY,
+        json TEXT NOT NULL,
+        t INTEGER NOT NULL
+      );
+    `);
     this.ctx.storage.sql.exec("CREATE INDEX IF NOT EXISTS idx_tracks_kind_t ON tracks(kind, t)");
+    // Position history per track (see trail.js for the limits). Lives in the same DO storage, so it survives restarts.
+    this.trails = new TrailStore(new SqlBackend(this.ctx.storage.sql));
   }
 
   trackWire(t) {
@@ -280,7 +296,7 @@ export class MapHub {
       id: t.id, kind: t.kind, label: t.label, sub: t.sub,
       lat: t.lat, lon: t.lon, alt: t.alt, heading: t.heading, speed: t.speed,
       extra: t.extra, t: t.t, squawk: t.squawk, cat: t.cat, vrate: t.vrate,
-      src: t.src, age: t.age,
+      src: t.src, age: t.age, est: t.est ? 1 : 0,
     };
   }
 
@@ -308,8 +324,10 @@ export class MapHub {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
     if (url.pathname === "/ingest" && req.method === "POST") return this.ingest(req);
-    if (url.pathname === "/live" && req.method === "GET") return this.live();
+    if (url.pathname === "/live" && req.method === "GET") return this.live(url);
+    if ((url.pathname === "/trail" || url.pathname === "/trails") && req.method === "GET") return this.trailsReq(url);
     if (url.pathname === "/meta" && req.method === "GET") return this.meta(req);
+    if (url.pathname === "/msgs" && req.method === "GET") return this.msgs(req);
     if (url.pathname === "/ws") return this.ws(req);
     return json({ error: "not found" }, 404);
   }
@@ -318,7 +336,7 @@ export class MapHub {
     const ip = req.headers.get("CF-Connecting-IP") || "0";
     let body;
     try {
-      body = await req.json();
+      body = parseIngestBody(await req.text());
     } catch {
       return json({ error: "bad json" }, 400);
     }
@@ -336,6 +354,7 @@ export class MapHub {
     }
 
     const kept = [];
+    let msgBudgetLeft = MSG_PER_INGEST;
     for (const raw of tracks) {
       let t = sanitize(raw, now);
       if (!t) continue;
@@ -355,18 +374,28 @@ export class MapHub {
       let pathArr = [];
       try { pathArr = JSON.parse(t.path); } catch { pathArr = []; }
       this.ctx.storage.sql.exec(
-        `INSERT INTO tracks (id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, path)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO tracks (id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, path, est)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            kind=excluded.kind, label=excluded.label, sub=excluded.sub,
            lat=excluded.lat, lon=excluded.lon, alt=excluded.alt,
            heading=excluded.heading, speed=excluded.speed, extra=excluded.extra, t=excluded.t,
            squawk=excluded.squawk, cat=excluded.cat, vrate=excluded.vrate, src=excluded.src,
-           age=excluded.age, path=excluded.path`,
+           age=excluded.age, path=excluded.path, est=excluded.est`,
         t.id, t.kind, t.label, t.sub, t.lat, t.lon, t.alt, t.heading, t.speed, t.extra, t.t,
-        t.squawk, t.cat, t.vrate, t.src, t.age, t.path,
+        t.squawk, t.cat, t.vrate, t.src, t.age, t.path, t.est ? 1 : 0,
       );
+      // Same synchronous run as the track upsert, so the DO commits both in one storage transaction.
+      this.trails.record(t.id, {
+        t: positionTimeMs(now, t.age), lat: t.lat, lon: t.lon, alt: t.alt, hdg: t.heading,
+      }, now);
       kept.push({ ...t, path: pathArr });
+      if (t.kind === "aircraft" && Array.isArray(raw.msgs) && raw.msgs.length && msgBudgetLeft > 0) {
+        let list = sanitizeList(raw.msgs, now).slice(0, msgBudgetLeft);
+        list = list.slice(0, takeBudget(this.msgBudget, station, list.length, now));
+        msgBudgetLeft -= list.length;
+        if (list.length) this.storeMsgs(t.id, list, now);
+      }
     }
     this.ctx.storage.sql.exec(
       "INSERT INTO stations (id, last, n) VALUES (?, ?, 1) ON CONFLICT(id) DO UPDATE SET last=excluded.last, n=n+1",
@@ -382,11 +411,48 @@ export class MapHub {
     return json({ ok: true, n: kept.length, load: this.loadMetrics(now) });
   }
 
+  storeMsgs(id, list, now) {
+    const row = this.ctx.storage.sql.exec("SELECT json FROM msgs WHERE id = ?", id).toArray()[0];
+    let old = [];
+    if (row) { try { old = JSON.parse(row.json); } catch { old = []; } }
+    const merged = mergeStored(Array.isArray(old) ? old : [], list, now);
+    if (!merged.length) return;
+    this.ctx.storage.sql.exec(
+      "INSERT INTO msgs (id, json, t) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET json=excluded.json, t=excluded.t",
+      id, JSON.stringify(merged), merged[0].t,
+    );
+  }
+
+  pruneMsgs(now) {
+    this.ctx.storage.sql.exec("DELETE FROM msgs WHERE t < ?", now - MSG_TTL_MS);
+    const n = this.ctx.storage.sql.exec("SELECT COUNT(*) AS n FROM msgs").toArray()[0];
+    if (n && n.n > MSG_TOTAL_MAX) {
+      this.ctx.storage.sql.exec("DELETE FROM msgs WHERE id IN (SELECT id FROM msgs ORDER BY t ASC LIMIT ?)", n.n - MSG_TOTAL_MAX);
+    }
+  }
+
+  /** GET /msgs?id=<ICAO hex or track id>: the stored ACARS messages of one aircraft (newest first). Not part of /live. */
+  async msgs(req) {
+    const url = new URL(req.url);
+    const raw = String(url.searchParams.get("id") || "").slice(0, 90);
+    const hex = raw.replace(/^aircraft:/, "").toUpperCase().replace(/[^0-9A-F]/g, "");
+    const id = hex.length === 6 && /^(aircraft:)?[0-9A-Fa-f]{6}$/.test(raw) ? "aircraft:" + hex : "aircraft:" + raw.replace(/^aircraft:/, "");
+    if (id.length < 10) return json({ error: "query" }, 400);
+    const row = this.ctx.storage.sql.exec("SELECT json FROM msgs WHERE id = ?", id).toArray()[0];
+    let list = [];
+    if (row) { try { list = JSON.parse(row.json); } catch { list = []; } }
+    const now = Date.now();
+    list = list.filter((m) => now - m.t <= MSG_TTL_MS);
+    return json({ id, msgs: list });
+  }
+
   prune(now) {
+    this.pruneMsgs(now);
     for (const kind of KINDS) {
       this.ctx.storage.sql.exec("DELETE FROM tracks WHERE kind = ? AND t < ?", kind, now - ttlFor(kind));
     }
     this.ctx.storage.sql.exec("DELETE FROM stations WHERE last < ?", now - 24 * 3600e3);
+    this.trails.prune(now); // after the tracks: trails of expired tracks go with them
     this.lastPrune = now;
     this.invalidateCaches();
   }
@@ -405,13 +471,13 @@ export class MapHub {
     }
     const tracks = [];
     for (const row of this.ctx.storage.sql.exec(
-      "SELECT id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age FROM tracks",
+      "SELECT id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, est FROM tracks",
     )) {
       tracks.push({
         id: row.id, kind: row.kind, label: row.label, sub: row.sub,
         lat: row.lat, lon: row.lon, alt: row.alt, heading: row.heading, speed: row.speed,
         extra: row.extra, t: row.t, squawk: row.squawk, cat: row.cat, vrate: row.vrate,
-        src: row.src, age: row.age,
+        src: row.src, age: row.age, est: row.est ? 1 : 0,
       });
     }
     const st = this.ctx.storage.sql.exec("SELECT COUNT(*) AS n FROM stations WHERE last > ?", now - 30 * 60e3).toArray()[0];
@@ -421,8 +487,19 @@ export class MapHub {
     return { ...body, load: this.loadMetrics(now) };
   }
 
-  live() {
-    return json(this.snapshot());
+  /** /live as before; `?trails=1` adds `trail` (array of [t_ms, lat, lon, alt, heading]) to each track that has one. */
+  live(url) {
+    const snap = this.snapshot();
+    if (!url || url.searchParams.get("trails") !== "1") return json(snap);
+    const all = this.trails.all();
+    return json({ ...snap, tracks: snap.tracks.map((t) => (all[t.id] ? { ...t, trail: all[t.id] } : t)) });
+  }
+
+  /** GET /trail?id=<track id> or /trails?ids=a,b,c -> { trails: { id: [points] } } (one request for every visible track). */
+  trailsReq(url) {
+    const q = parseTrailRequest(url.searchParams);
+    if (!q) return json({ error: "query" }, 400);
+    return json({ now: Date.now(), trails: this.trails.get(q.ids) });
   }
 
   async meta(req) {
@@ -515,6 +592,7 @@ export function sanitize(raw, now) {
     label: String(raw.label || rawId).slice(0, 48),
     sub: String(raw.sub || "").slice(0, 32),
     lat, lon, alt, heading, speed, vrate, age,
+    est: raw.est === 1 || raw.est === true ? 1 : 0,
     squawk,
     src: String(raw.src || "").slice(0, 16),
     cat: String(raw.cat || "").slice(0, 48),
@@ -676,7 +754,8 @@ export default {
       if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (req.method === "GET") return lookupAircraft(req);
     }
-    const api = url.pathname === "/ingest" || url.pathname === "/live" || url.pathname === "/ws";
+    const api = url.pathname === "/ingest" || url.pathname === "/live" || url.pathname === "/msgs" || url.pathname === "/ws"
+      || url.pathname === "/trail" || url.pathname === "/trails";
     if (api) {
       const id = env.MAP.idFromName("hub-v2");
       return env.MAP.get(id).fetch(req);

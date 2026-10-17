@@ -2,10 +2,14 @@
 // Split from adsb_ui.cpp; the tile map itself (projection, tiles, controls) is in adsb_map.cpp.
 // The shared state and helpers are declared in adsb_internal.h.
 #include "adsb_internal.h"
+#include "map/pos_predict.h"
+#include "adsb_acars.h"
 
 using namespace adsbui;
 
 namespace adsbui {
+
+static pospred::Layer gPred;   // position estimates: smooth interpolation between ADS-B updates (on by default), uncertainty ellipses (off)
 
 static double pathDistanceM(double lat1, double lon1, double lat2, double lon2) {
     const double p = M_PI / 180.0, dLat = (lat2 - lat1) * p, dLon = (lon2 - lon1) * p;
@@ -178,13 +182,18 @@ static void drawWinds(ImDrawList* dl, const AdsbTelemetry& t) {
 
 // the aircraft icons with their label boxes; the one nearest a click (within 16 px) becomes `hit`
 static void drawAircraft(ImDrawList* dl, const AdsbTelemetry& t, ImVec2 p0, ImVec2 size, ImVec2 click, bool clicked, float& best, const AdsbAircraft*& hit) {
+    const double nowT = ImGui::GetTime();
     for (const auto& ac : t.aircraft) {
         if (!ac.hasPos) continue;
-        const ImVec2 q = adsbmap::project(ac.lat, ac.lon);
+        dect2::track::PosEstimate pe;
+        const bool est = gPred.get(dect2::track::keyFromIcao(ac.icao), nowT, pe, ac.posAgeSec) && pe.valid;
+        const ImVec2 q = est ? adsbmap::project(pe.lat, pe.lon) : adsbmap::project(ac.lat, ac.lon);
         if (q.x < p0.x - 40 || q.y < p0.y - 40 || q.x > p0.x + size.x + 40 || q.y > p0.y + size.y + 40) continue;
         const bool sel = ac.icao == S.sel;
         const ImU32 fill = ac.emergency ? ImGui::ColorConvertFloat4ToU32(pal::badRed()) : adsbmap::acColour(adsbmap::AcSrc::Adsb, ac.posAgeSec);
         { float hdg = 0.f; drawPlane(dl, q, planeHeadingDeg(ac, hdg) ? hdg : 0.f, (sel ? 14.f : 12.f) * gUi, fill, sel); }
+        if (est) { pospred::drawPredictionMarks(dl, pe, q, fill, gPred.ellipses); pospred::hoverTooltip(pe, q); }
+        if (acarslog::count(ac.icao) > 0) dl->AddCircleFilled(ImVec2(q.x + 8 * gUi, q.y - 8 * gUi), 3.f * gUi, IM_COL32(245, 160, 40, 255));   // it has sent ACARS messages
         if (S.map.zoom >= 6 || sel) {
             char l1[48]; snprintf(l1, sizeof l1, "%s", ac.callsign.empty() ? icaoText(ac.icao).c_str() : ac.callsign.c_str());
             char l2[48] = "", l3[48] = "";
@@ -248,6 +257,9 @@ static void mapCorner(App& a, ImVec2 p0, ImVec2 size, bool wrongRef, double area
     if (ImGui::Checkbox("winds aloft", &S.winds)) { plat::prefs().setB("adsbWinds", S.winds); plat::prefs().flush(); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Wind arrows (downwind) at the aircraft, coloured by altitude: derived from Comm-B 5,0 + 6,0 replies, or reported in 4,4.");
     ImGui::SameLine(0, 6 * gUi);
+    gPred.load("adsb", true, false);
+    gPred.controls();
+    ImGui::SameLine(0, 6 * gUi);
     adsbmap::tileControls(nullptr);
     if (wrongRef) {
         ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + 38 * gUi));
@@ -296,6 +308,8 @@ void mapView(App& a, ImVec2 size) {
     }
     const AdsbAircraft* hit = nullptr; float best = 16 * gUi;
     ImVec2 click; const bool clicked = adsbmap::clickedAt(click);
+    gPred.load("adsb", true, false);
+    if (on && gPred.predict) gPred.feedAdsb(t.aircraft, ImGui::GetTime());
     if (on) {
         drawTrails(dl, t);
         if (S.winds) drawWinds(dl, t);

@@ -818,6 +818,12 @@ static void testSoapyRemote() {
     setSoapyRemoteModuleOverride(0);
     CHECK(!soapyRemoteModuleAvailable());
     CHECK(std::string(soapyRemoteModuleHelp()).find("SoapyRemote") != std::string::npos && std::string(soapyRemoteModuleHelp()).find("install") != std::string::npos);
+    // the message is chosen for the platform: a damaged install on Windows/macOS, an apt package on Linux; the server side is always named
+    for (int pf = 0; pf < 3; ++pf) CHECK(std::string(soapyRemoteModuleHelpFor(pf)).find("SoapySDRServer --bind") != std::string::npos);
+    CHECK(std::string(soapyRemoteModuleHelpFor(0)).find("missing from this installation") != std::string::npos && std::string(soapyRemoteModuleHelpFor(0)).find("apt") == std::string::npos);
+    CHECK(std::string(soapyRemoteModuleHelpFor(1)).find("missing from this installation") != std::string::npos);
+    CHECK(std::string(soapyRemoteModuleHelpFor(2)).find("apt install soapysdr-module-remote") != std::string::npos);
+    CHECK(std::string(soapyRemoteModuleHelpFor(-1)) == soapyRemoteModuleHelp());
     CHECK(soapyRemoteFailureHelp(soapyRemoteArgs(plain)) == soapyRemoteModuleHelp());
     std::string perr;
     CHECK(!probeNetRadio(plain, 300, perr) && perr == soapyRemoteModuleHelp());

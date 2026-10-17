@@ -162,12 +162,19 @@ void modeList(App& a) {
 
 void sidebar(App& a) {
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8 * gUi, 4 * gUi));
+    // the tour points at the sections: Source, and Gain with Tuner (next to each other)
+    const float sideX0 = ImGui::GetWindowPos().x, sideX1 = sideX0 + ImGui::GetWindowSize().x;
+    const float srcY0 = ImGui::GetCursorScreenPos().y;
+    float gainY0 = srcY0;
+    auto sectionDone = [&]() { gainY0 = ImGui::GetCursorScreenPos().y; };
     if (section(N_("Source"))) {
         ImGui::Indent(6 * gUi);
         toolbarParts(a, TbSource, true);
         ImGui::Unindent(6 * gUi);
         ImGui::Spacing();
     }
+    sectionDone();
+    tourMark("source", ImVec2(sideX0, srcY0), ImVec2(sideX1, gainY0));
     if (section(N_("Gain"))) {
         ImGui::Indent(6 * gUi);
         toolbarParts(a, TbGain, true);
@@ -180,6 +187,7 @@ void sidebar(App& a) {
         ImGui::Unindent(6 * gUi);
         ImGui::Spacing();
     }
+    tourMark("tuning", ImVec2(sideX0, gainY0), ImVec2(sideX1, ImGui::GetCursorScreenPos().y));
     if (section(N_("Mode"))) { ImGui::Indent(6 * gUi); modeList(a); ImGui::Unindent(6 * gUi); ImGui::Spacing(); }
     if (section(N_("Display"))) {
         ImGui::Indent(6 * gUi);
@@ -219,9 +227,11 @@ void sidebar(App& a) {
         tool("Images", a.galleryOpen, "The pictures the receivers have decoded");
         tool("Data feeds...", a.feedsOpen, "Send decoded data to other programs and services");
         tool("Memory...", a.memoryOpen, "The frequencies you keep, with mode and settings (Ctrl+M)");
+        tool("Frequencies...", a.freqOpen, "Known frequencies of every mode (Ctrl+Shift+F)");
         tool("Transmit...", txViewFlag(), N_("Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission."));
         tool("Map", a.mapOpen, "A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location");
         tool("Antenna rotator...", a.rotatorOpen, "Connect a GS-232-compatible rotator (serial or TCP), set azimuth and elevation");
+        tool("Sweep scanner", a.sweepOpen, N_("Fast wideband sweep with a noise-floor measurement, signal log and waterfall"));
         tool("Scanner (highly experimental)", a.scannerOpen, "HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity");
         ImGui::Separator();
         themeChoice(a, false);
@@ -368,9 +378,12 @@ static void viewMenu(App& a) {
         ImGui::MenuItem(tr("Images"), nullptr, &a.galleryOpen);
         ImGui::MenuItem(tr("Data feeds..."), nullptr, &a.feedsOpen);
         ImGui::MenuItem(tr("Memory..."), "Ctrl+M", &a.memoryOpen);
+        ImGui::MenuItem(tr("Frequencies..."), "Ctrl+Shift+F", &a.freqOpen);
+        if (ImGui::MenuItem(tr("Show Frequencies as a tab"), nullptr, a.freqTab)) freqdbTabToggle(a);
         ImGui::MenuItem(tr("Transmit..."), nullptr, &txViewFlag());
         ImGui::MenuItem(tr("Map"), nullptr, &a.mapOpen);
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location"));
+        if (ImGui::MenuItem(tr("Sweep scanner"), nullptr, &a.sweepOpen)) {}
         if (ImGui::MenuItem(tr("Scanner (highly experimental)"), nullptr, &a.scannerOpen)) {}
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity"));
         ImGui::MenuItem(tr("Antenna rotator..."), nullptr, &a.rotatorOpen);
@@ -407,7 +420,7 @@ static void menuBarRight(App& a) {
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.08f));
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.62f, 0.68f, 0.75f, 1));
             ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
-            if (ImGui::SmallButton(credit)) a.creditsOpen = true;
+            if (ImGui::SmallButton(credit)) { a.creditsOpen = true; a.creditsTab = 0; }
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(4);
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Thank you to everyone who reported bugs, sent recordings and opened pull requests."));
@@ -442,19 +455,28 @@ float menuBar(App& a) {
             ImGui::EndMenu();
         }
         viewMenu(a);
+        const float mx0 = ImGui::GetCursorScreenPos().x, my0 = ImGui::GetWindowPos().y, my1 = my0 + ImGui::GetWindowHeight();
         memoryMenu(a);
+        const float mx1 = ImGui::GetCursorScreenPos().x;
+        tourMark("memory", ImVec2(mx0, my0), ImVec2(mx1, my1));
         mapSendServerMenu(a);
+        const float sx1 = ImGui::GetCursorScreenPos().x;
+        tourMark("server", ImVec2(mx1, my0), ImVec2(sx1, my1));
+        const float hx0 = ImGui::GetCursorScreenPos().x;
         if (ImGui::BeginMenu(tr("Help"))) {
+            if (ImGui::MenuItem(tr("Credits"))) { a.creditsOpen = true; a.creditsTab = 0; }
+            ImGui::Separator();
             if (ImGui::MenuItem(tr("Setup wizard"))) setupWizardOpen(a);
-            if (ImGui::MenuItem(tr("Guided tour"))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
+            if (ImGui::MenuItem(tr("Guided tour"))) tourStart(a);
             ImGui::Separator();
             if (ImGui::MenuItem(tr("Documentation"))) dect2::openUrl("https://on-air.dev/docs/");
             if (ImGui::MenuItem(tr("Troubleshooting"))) dect2::openUrl("https://on-air.dev/docs/troubleshooting/");
             if (ImGui::MenuItem(tr("Voice codecs (mbelib)"))) dect2::openUrl("https://on-air.dev/docs/codecs/");
             if (ImGui::MenuItem(tr("Website"))) dect2::openUrl("https://on-air.dev/");
-            if (ImGui::MenuItem(tr("Credits and licences"))) a.creditsOpen = true;
+            if (ImGui::MenuItem(tr("Credits and licences"))) { a.creditsOpen = true; a.creditsTab = 1; }
             ImGui::EndMenu();
         }
+        tourMark("help", ImVec2(hx0, my0), ImVec2(ImGui::GetCursorScreenPos().x, my1));
         menuBarRight(a);
         ImGui::EndMainMenuBar();
     }
@@ -498,6 +520,7 @@ void topBar(App& a, ImVec2 disp) {
         if (mw > 0) levelMeter(a, meterX, o.y, mw);
         ImGui::SetCursorScreenPos(ImVec2(o.x + W - vw + 4 * gUi, o.y + 8 * gUi));
         volumeControl(a, vw);
+        tourMark("audio", ImVec2(o.x + W - vw, o.y), ImVec2(o.x + W, o.y + 40 * gUi));
     }
     ImGui::EndChild();
     ImGui::PopStyleColor();
@@ -541,7 +564,7 @@ void modeCombo(App& a, float w) {
             for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g && modeMatches(kModes[i], q)) {
                 ImGui::PushID(i);
                 if (ImGui::Selectable(kModes[i].name, modeSelected(a, kModes[i]))) selectMode(a, kModes[i].family, kModes[i].subId);
-                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", kModes[i].tip);
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s%s", kModes[i].tip, modeCreditsLine(kModes[i].name).c_str());
                 ImGui::PopID();
             }
         }

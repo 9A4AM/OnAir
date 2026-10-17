@@ -258,3 +258,10 @@ A sound card ("Sound card: ..." in the radio list) feeds real audio to the decod
 - **Sample rate**: 8 kHz to 192 kHz (8, 11.025, 12, 16, 22.05, 24, 32, 44.1, 48, 88.2, 96, 176.4, 192); the card resamples to it. Applies when the receiver starts. A 455 kHz IF does not fit a sound card (half the rate is the limit): mix it down first.
 
 Settings are saved. Tested with synthetic audio files through the sound-card path (`tests/audio/test_audio_if.cpp`: tone, FT8-like, RTTY-like, offsets, sideband, all rates, channels, DC, gain); not with a real card or rig.
+
+# SDRplay nRSP-ST (network)
+
+Through SDRconnect's WebSocket API (spec 1.0.3, port 5454), not straight to the radio: SDRconnect (GUI or headless) must run with its WebSocket
+server on and the nRSP-ST selected. Frequency, rate, RF gain (LNA state), antenna port and the radio / network mode are set; AGC, IF gain, bias-T
+and the notch filters are not in that API. **Not tested on a real nRSP-ST**: only against a fake SDRconnect in the test suite (`test_nrspst`).
+What is public and what is assumed: [docs/nrsp-st.md](docs/nrsp-st.md).

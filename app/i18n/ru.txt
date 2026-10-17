@@ -166,7 +166,6 @@ Back	Назад
 Next	Далее
 Finish	Готово
 Skip	Пропустить
-Skip tour	Пропустить обзор
 Dismiss	Скрыть
 Again	Ещё раз
 Auto	Авто
@@ -209,7 +208,6 @@ New interface	Новый интерфейс
 Try the new interface. You can switch back at any time.	Попробуйте новый интерфейс. Вернуться назад можно в любой момент.
 Guided tour	Обзор программы
 Tour	Обзор
-Take the guided tour with Onny	Пройти обзор с Onny
 by: Kristijonas Adomaitis, made with help from the community	автор: Kristijonas Adomaitis, при участии сообщества
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Спасибо всем, кто сообщал об ошибках, присылал записи и отправлял pull request'ы.
 Source	Источник
@@ -467,20 +465,6 @@ Radio settings (%d changed)	Настройки радио (изменено: %d)
 %s: frequency correction and the other settings of this radio	%s: поправка частоты и остальные настройки этого радио
 The driver's own settings show up here\nonce this radio has been started.	Собственные настройки драйвера появятся здесь\nпосле запуска этого радио.
 0 = libiio's default	0 = значение libiio по умолчанию
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	Привет, я Onny! Я маленький телевизор, живущий в OnAir. Хотите быстрый обзор? Он займёт около минуты, и я покажу всё на демонстрационном сигнале, так что оборудование пока не нужно.
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Вверху - переключатель вида вещания: DVB для большей части цифрового ТВ в мире, ATSC для Северной Америки и DAB для цифрового радио. В OnAir все три собраны в одном месте.
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	Посмотрим в действии! Я запущу ненастоящий сигнал. Это тестовый передатчик внутри программы, так что ничего подключать не нужно.
-Start the demo signal	Запустить демо-сигнал
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	Видите волнистую линию? Это спектр: насколько силён каждый сигнал в эфире, слева направо. Высокий горб посередине - наш канал. Ниже водопад показывает то же самое, медленно прокручиваясь во времени.
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	А эти четыре окошка показывают точки, которые видит приёмник. Когда сигнал хороший, точки собираются в аккуратные кластеры. Разбросанные точки означают шумный сигнал. Сейчас это чистая демонстрация, так что всё должно выглядеть аккуратно!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Здесь появятся каналы, когда приёмник захватит сигнал. Щёлкните по одному, чтобы смотреть. Есть и плеер с изображением и звуком, часы и параметры записи или трансляции того, что вы смотрите.
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	Теперь по-настоящему. Выберите здесь своё радио, частоту и задайте усиление. Усиление - это то, насколько радио усиливает сигнал: слишком мало - и он теряется, слишком много - и искажается. Кнопка «Автонастройка» подберёт хорошее значение за вас.
-Stop the demo and look for my radio	Остановить демо и найти моё радио
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	Не знаете, где каналы? Вкладка «Сканирование» поищет за вас. Хорошая антенна, расположенная высоко и у окна, даёт больше, чем что-либо другое. Обещаю!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	Вот и весь обзор! Каналы можно раздавать на другие устройства со вкладки «Трансляция» (Выходы), а меня можно позвать в любой момент кнопкой «Обзор» вверху справа. Приятного просмотра!
-Good news: I can see "%s"!	Хорошие новости: я вижу «%s»!
-(I can't see a radio right now. Plug it in and press the button again.)	(Сейчас я не вижу радио. Подключите его и нажмите кнопку ещё раз.)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	В Windows для HackRF один раз нужен драйвер WinUSB: установите его через Zadig, zadig.akeo.ie.
 Weather (137 MHz)	Погода (137 MHz)
 Amateur	Любительская связь
 Amateur satellites	Любительские спутники
@@ -929,13 +913,11 @@ holds	удерживает
 last send %s	последняя отправка %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	слушает %s порт %d, клиентов: %d, отправлено %.1f MB, отброшено %.1f MB
 max	макс
-mute	без звука
 on air	в эфире
 partial	частично
 point %s	точка %s
 power (dBm)	мощность (dBm)
 searching for Hermes Lite 2 radios…	поиск радио Hermes Lite 2…
-sound	звук
 up-converter	повышающий конвертер
 waiting	ожидание
 waterfall dB##wfdb	водопад dB##wfdb
@@ -1251,7 +1233,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	LimeSDR Mini требует в Windows драйвер FT60x от FTDI (не Zadig), в Linux правила udev и однократный запуск "LimeUtil --update", чтобы его gateware соответствовал библиотеке.
 Real (mono)	Вещественный (моно)
 Left	Левый
 Right	Правый
@@ -1437,3 +1418,271 @@ Carrier	Несущая
 Sync	Синхр.
 The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).	The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).
 LW time service, Poland	служба времени на ДВ, Польша
+Predict positions	Прогноз позиций
+Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	Заполняет промежутки между донесениями о позиции: самолёт движется плавно, а когда сообщения прекращаются, его положение рассчитывается по курсу (и по маршруту, если сообщение называло пункт назначения). Прогнозируемые позиции рисуются как призрак с пунктирным кольцом.
+uncertainty	погрешность
+Draws the uncertainty ellipse (95 percent) of every estimated position.	Рисует эллипс погрешности (95 процентов) каждой оценённой позиции.
+predicted from the last position %s ago, +-%.1f NM	прогноз по последней позиции %s назад, +-%.1f NM
+estimated from the ground station only, within about %.0f NM	оценка только по наземной станции, в пределах примерно %.0f NM
+Hear this receiver	Слушать этот приёмник
+Close receiver	Закрыть приёмник
+Radio: %s	Радио: %s
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	Для звука HD Radio нужен кодек HDC, который вы устанавливаете сами (нажмите ?)
+HDC sound codec cannot be used: %s	Звуковой кодек HDC использовать нельзя: %s
+HDC sound codec not installed (no sound; click ? for the steps)	Звуковой кодек HDC не установлен (нет звука; нажмите ?, чтобы увидеть шаги)
+sound: HD%d (HDC)	звук: HD%d (HDC)
+sound: HD%d, waiting for audio	звук: HD%d, ожидание звука
+The HD Radio sound codec (HDC) is not installed	Звуковой кодек HD Radio (HDC) не установлен
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	Станция, данные программы и картинки показываются, но звук HD Radio остаётся беззвучным, пока вы сами не установите кодек. OnAir его не включает (HDC запатентован и принадлежит Xperi).
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	Соберите FAAD2 с патчем HDC, как объясняется в полной инструкции (нужен открытый патч проекта nrsc5).
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	Положите библиотеку (libfaad_hdc) в папку кодеков OnAir (кнопка ниже).
+The HD Radio sound library cannot be used	Звуковую библиотеку HD Radio использовать нельзя
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	OnAir нашёл библиотеку для HDC, но это не сборка FAAD2 с патчем HDC, которую OnAir умеет вызывать, поэтому она не использована.
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Соберите библиотеку заново из FAAD2 2.10 или 2.11 с патчем nrsc5, как объясняется в полной инструкции.
+Replace the file in the OnAir codecs folder (button below).	Замените файл в папке кодеков OnAir (кнопка ниже).
+# band plans (scan tab, TV channel list)
+Band plan	Частотный план
+None (built-in ranges)	Нет (встроенные диапазоны)
+My band plans	Мои частотные планы
+Export...	Экспорт...
+Really delete?	Точно удалить?
+Replaced band plan "%s" (%zu bands).	Частотный план «%s» заменён (диапазонов: %zu).
+Imported band plan "%s" (%zu bands).	Частотный план «%s» импортирован (диапазонов: %zu).
+Deleted band plan %s.	Частотный план %s удалён.
+Not fully verified: %s	Проверен не полностью: %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	Сетка каналов вашей страны: ТВ-каналы для сканирования и списка каналов и не только. «Автоматически» выбирает план по языку интерфейса и региону системы.
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	Читает частотный план из файла CSV или JSON (формат в docs/band-plans.md), проверяет его и сохраняет в папке настроек. Если в файле ошибка, ничего не меняется; сообщение указывает место.
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	Сохраняет план как файл JSON или как CSV, если имя оканчивается на .csv. Встроенный план — хорошая основа для собственного.
+Deletes one of your own band plans. The built-in plans stay.	Удаляет один из ваших частотных планов. Встроенные планы остаются.
+TV channels of the band plan %s (change it in the Scan tab).	ТВ-каналы частотного плана %s (меняется на вкладке «Сканирование»).
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	Экипаж
+Operations	Эксплуатация
+Company	Авиакомпания
+Maintenance	Обслуживание
+Fault	Неисправность
+Show all messages	Показывать все сообщения
+ACARS messages	Сообщения ACARS
+%d ACARS messages	Сообщений ACARS: %d
+Copy these messages as text	Скопировать эти сообщения как текст
+No ACARS messages heard from this aircraft	От этого воздушного судна сообщений ACARS не принято
+Also share interesting ACARS messages (text becomes public on the map)	Также делиться интересными сообщениями ACARS (текст становится публичным на карте)
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	Сообщения, которые воздушное судно отправило по ACARS (свободный текст, сообщения экипажа, эксплуатации, авиакомпании и обслуживания), показываются 48 часов в карточке этого судна на публичной карте. Номера телефонов и адреса e-mail предварительно удаляются. Отчёты о положении и проверки связи сюда не входят. Это можно отключить в любой момент.
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	Сообщения, которые воздушные суда отправляют по ACARS (свободный текст, сообщения экипажа, эксплуатации, авиакомпании и обслуживания), можно показывать и в карточке судна, без номеров телефонов и адресов e-mail. Это отдельный выбор, его можно изменить в меню «Сервер».
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f МГц/с, %d скачков, %d усреднений, %.0f мс на проход
+pick a radio first (the test signal and files cannot sweep)	сначала выберите радио (тестовый сигнал и файлы сканировать нельзя)
+Save scan...	Сохранить скан...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	CSV, совместимый с rtl_power: открывается в Heatmap.py, инструментах rtl_power_fftw и электронных таблицах
+Load as baseline...	Загрузить как базу...
+Keep this scan as baseline	Взять этот скан за базу
+Save signal log...	Сохранить журнал сигналов...
+Sweep scanner	Сканер-свип
+from MHz	от МГц
+to MHz	до МГц
+bin %.0f kHz	бин %.0f кГц
+dwell %.0f ms	задержка %.0f мс
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Время на каждый скачок: дольше — больше усреднений БПФ (ровнее шум, видны слабые сигналы), но проход медленнее
+measure retune time	измерить время перестройки
+settle %.0f ms	установка %.0f мс
+rate: radio's best	частота: максимум радио
+rate: 10 Msps	частота: 10 Msps
+rate: 5 Msps	частота: 5 Msps
+rate: 2.4 Msps	частота: 2,4 Msps
+gain %.0f dB	усиление %.0f дБ
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Пауза между проходами: проход раз в несколько секунд бережёт процессор и батарею
+threshold floor+%.0f dB	порог шум+%.0f дБ
+floor percentile %.0f	перцентиль шума %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	Шум — это данный перцентиль мощности бинов в каждом скачке (50 = медиана). В занятых диапазонах уменьшайте, в пустых увеличивайте
+retune settle %.1f ms	установка %.1f мс
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	шум %.1f dBFS на бин (бины %.0f кГц), порог %.1f dBFS, сигналов в проходе: %zu
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	относительно базы: шум %+.1f дБ, наибольший рост %+.1f дБ на %.3f МГц
+Signals found	Найденные сигналы
+mode: as it is	режим: как есть
+Tune to selected	Настроиться на выбранный
+Bandwidth kHz	Полоса кГц
+Peak dBFS	Пик dBFS
+Best SNR dB	Лучший ОСШ дБ
+Sweep	Проход
+every %.0f s	каждые %.0f с
+back to back	подряд
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Быстрый широкополосный проход с измерением шума, журналом сигналов и водопадом
+Record audio	Записать звук
+Only audio	Только звук
+Split	Разделять
+Keep going	Продолжать
+Show recording	Показать запись
+Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)	Сохраняет в файл звук, который вы слышите, в любом режиме (до регулятора громкости, поэтому уровень от него не зависит)
+MP3 needs the LAME library (libmp3lame), which is not installed	Для MP3 нужна библиотека LAME (libmp3lame), она не установлена
+WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo.	WAV: 16 бит, большой. FLAC: без потерь, примерно вдвое меньше. MP3: маленький (нужна libmp3lame). FM-стерео сохраняется как стерео.
+Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	Сохраняет только при наличии звука (как шумоподавитель): тишина вырезается, с короткими началом и концом
+One file per transmission: a new file starts after 3 s of silence	Один файл на передачу: после 3 с тишины начинается новый файл
+Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Продолжает запись при смене режима или частоты. Выключено: запись тогда останавливается.
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir, and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	В этой установке OnAir нет модуля SoapyRemote, поэтому она не может подключиться к удалённому радио. Переустановите OnAir, и сообщите, если повторится. На компьютере с радио должен работать SoapySDRServer --bind.
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir (or run brew install soapyremote), and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	В этой установке OnAir нет модуля SoapyRemote, поэтому она не может подключиться к удалённому радио. Переустановите OnAir (или выполните brew install soapyremote), и сообщите, если повторится. На компьютере с радио должен работать SoapySDRServer --bind.
+SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install it (Debian/Ubuntu: sudo apt install soapysdr-module-remote; other systems: github.com/pothosware/SoapyRemote), then restart OnAir. The radio's computer must run SoapySDRServer --bind.	В этом SoapySDR нет клиентского модуля SoapyRemote, поэтому он не может подключиться к удалённому радио. Установите его (Debian/Ubuntu: sudo apt install soapysdr-module-remote; другие системы: github.com/pothosware/SoapyRemote) и перезапустите OnAir. На компьютере с радио должен работать SoapySDRServer --bind.
+# frequency database
+%zu built in, %zu yours	встроенных %zu, ваших %zu
+Add entry...	Добавить запись...
+Add frequency	Добавить частоту
+Add to Memory	Добавить в Memory
+Added to Memory.	Добавлено в Memory.
+Already in Memory.	Уже есть в Memory.
+An entry with this frequency and mode exists already.	Запись с такой частотой и режимом уже есть.
+Category	Категория
+Could not save 	Не удалось сохранить 
+Could not tune to this entry.	Не удалось настроиться на эту запись.
+Exports your own entries (not the built-in ones)	Экспортирует ваши собственные записи (без встроенных)
+Frequencies	Частоты
+Frequencies...	Частоты...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	Импортировано записей: %zu, пропущено: %zu (дубликаты или строки без частоты).
+Keeps this entry in the Memory panel	Сохраняет эту запись в панели Memory
+Known frequencies (%zu)	Известные частоты (%zu)
+Mine	Мои
+Nothing matches. Clear the search or the filters.	Ничего не найдено. Очистите поиск или фильтры.
+Nothing to import in this file.	В этом файле нечего импортировать.
+Only the entries you added or imported	Только записи, которые вы добавили или импортировали
+Open the Frequencies panel...	Открыть панель частот...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	Читает файл CSV или JSON, записанный через Экспорт (или панелью Memory), либо простой список строк «частота,название» (МГц). Записи с уже существующими частотой и режимом пропускаются.
+Search name, notes, mode, frequency (162.4)	Поиск: название, заметки, режим, частота (162.4)
+Show Frequencies as a tab	Показывать Частоты как вкладку
+Source...	Источник...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Переключается на режим записи, применяет его настройку и настраивается на частоту. Двойной щелчок по строке делает то же самое. Работающий приёмник перезапускается при смене режима.
+Tuned: %s  %s MHz	Настроено: %s  %s МГц
+Well-known frequencies of this mode: pick one to tune to it	Известные частоты этого режима: выберите одну, чтобы настроиться
+Stop scan##dsc	Stop scan##dsc
+Scan band##dsc	Scan band##dsc
+DECT carrier %d, %.3f MHz	DECT carrier %d, %.3f MHz
+Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.	Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.
+US / Canada 1920-1930 MHz (DECT 6.0)	US / Canada 1920-1930 MHz (DECT 6.0)
+Brazil 1910-1920 MHz	Brazil 1910-1920 MHz
+Latin America 1910-1930 MHz	Latin America 1910-1930 MHz
+US ISM 902-928 MHz (DECT in ISM)	US ISM 902-928 MHz (DECT in ISM)
+Europe 1880-1900 MHz	Europe 1880-1900 MHz
+USA, Canada: the UPCS band, DECT 6.0 phones	USA, Canada: the UPCS band, DECT 6.0 phones
+Brazil	Brazil
+Several Latin American countries	Several Latin American countries
+USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT	USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT
+Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
+Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
+The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	К nRSP-ST подключаются через SDRconnect: запустите SDRconnect (или его headless-версию) на компьютере с включённым WebSocket-сервером (порт 5454) и выбранным nRSP-ST и введите адрес этого компьютера. Пароль не нужен и не сохраняется.
+#  the guided tour
+Tuning and gain	Настройка и усиление
+Modes	Режимы
+Spectrum and waterfall	Спектр и водопад
+Mode panel	Панель режима
+Memory and frequencies	Память и частоты
+Receivers	Приёмники
+Audio	Звук
+Server and support	Сервер и поддержка
+Done	Готово
+Take the guided tour	Запустить обзор
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Выберите радио или запись, которая поставляет отсчёты. Record IQ сохраняет исходный сигнал для последующего воспроизведения.
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Здесь задаются частота, диапазон и частота дискретизации. Усиление и АРУ определяют входной уровень; Второй режим декодирует другой режим из той же записи.
+%d modes, grouped by family. Use the search box to find one by name.	Режимов: %d, сгруппированных по семействам. Найти нужный по названию можно в поле поиска.
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	Щёлкните для настройки, прокрутите для масштаба. Peak hold удерживает наибольший уровень, замеченный на каждой частоте.
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	У каждого режима свои вкладки для декодированных данных, настроек и инструментов. Они меняются вместе с выбранным режимом.
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	Память хранит частоты вместе с режимом и настройками. Частоты и диапазонные планы показывают, что есть в эфире, по режимам.
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	Каждый приёмник сочетает радио и режим. Эта панель переключает их и выбирает, какой воспроизводит звук.
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen воспроизводит демодулированный сигнал. Громкость и отключение звука здесь; Record audio сохраняет звук в файл.
+Server sends decoded positions to the public map. Support helps fund development.	Сервер отправляет декодированные позиции на общедоступную карту. Поддержка помогает финансировать разработку.
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Здесь находятся документация, устранение неполадок, благодарности и лицензии. Обзор запускает этот обзор снова.
+Monitor audio	Прослушивание
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Слушать настроенный канал в любом режиме, чтобы опознать сигнал: отсчёты радио демодулируются как USB, LSB, узкая FM или AM. Тишина, пока режим играет свой звук.
+Auto: USB below 30 MHz, narrow FM above	Авто: USB ниже 30 МГц, узкая FM выше
+Volume of the monitor	Громкость прослушивания
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Точная подстройка относительно частоты, в Гц (SSB-сигнал слышен на 1–2 кГц выше или ниже несущей)
+(the mode plays)	(режим играет)
+Audio...	Звук...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	Устройства вывода для прослушивания, второй выход (например, виртуальный аудиокабель для fldigi или WSJT-X) и локальный сетевой поток
+System default	По умолчанию
+Output 1	Выход 1
+Output 2	Выход 2
+Delay (ms)	Задержка (мс)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Звук в очереди перед воспроизведением: меньше — быстрее, больше — выдержит нагруженный компьютер
+Stay silent while the mode plays	Тишина, пока режим играет
+Network audio stream	Сетевой аудиопоток
+WAV header	Заголовок WAV
+Allow other computers	Разрешить другие компьютеры
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16-бит стерео, 48 кГц. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:ПОРТ или WAV-плеер с заголовком. Безопасность: слушать может любой, кто достучится до порта; не включайте «Разрешить другие компьютеры» без нужды.
+Listeners:	Слушатели:
+video	video
+audio	audio
+profile	profile
+Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work	Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work
+Open in an external player	Open in an external player
+Save the transport stream to a file	Save the transport stream to a file
+Stream it as UDP to %s	Stream it as UDP to %s
+Copy VLC command	Copy VLC command
+Copy mpv command	Copy mpv command
+Copy ffplay command	Copy ffplay command
+Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).
+# credits and contributors
+Credits	Благодарности
+Contributors	Участники
+Projects and licences	Проекты и лицензии
+People	Люди
+By mode	По режимам
+pull request	pull request
+optimisation	оптимизация
+fix	исправление
+bug report	сообщение об ошибке
+samples	записи
+translation	перевод
+testing	тестирование
+idea	идея
+Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Спасибо всем, кто присылал исправления, сообщал об ошибках, делился записями, переводил и предлагал идеи. Автор — Kristijonas Adomaitis.
+Want your name changed or removed? Tell us on Discord or open an issue.	Хотите, чтобы ваше имя изменили или убрали? Напишите нам в Discord или создайте issue.
+Decoded only	Только расшифрованные
+Hides tone-only pages and pages whose text could not be decoded.	Скрывает вызовы только тоном и сообщения, текст которых не удалось расшифровать.
+%zu tone-only or undecoded pages hidden (Decoded only)	Скрыто вызовов только тоном или нерасшифрованных сообщений: %zu (Только расшифрованные)
+%zu tone-only or undecoded pages hidden	Скрыто вызовов только тоном или нерасшифрованных сообщений: %zu
+hidden	скрыто
+# LBJ (Chinese railway train warning)
+What LBJ carries	Что передаёт LBJ
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	LBJ — китайское предупреждение о приближении поезда на частоте около 821,2375 МГц. Каждый локомотив передаёт цифровые страницы POCSAG на 1200 бит/с: раз в несколько секунд короткое сообщение с номером поезда, скоростью (км/ч) и километровым столбом, а также более длинные сообщения с типом и номером локомотива и маршрутом.\n\nOnAir сам декодирует страницы (только приём). Пустое значение имело повреждённые цифры; серая строка содержала исправленные ошибки, поэтому сверьте её со следующим сообщением того же поезда.
+tune to about 821.2375 MHz and start the receiver	настройтесь примерно на 821,2375 МГц и запустите приёмник
+FM, 1200 bit/s FSK, %.2f Msps	FM, FSK 1200 бит/с, %.2f Мвыб/с
+%llu messages, %llu sync words, %llu blank, %llu failed checks	сообщений: %llu, слов синхронизации: %llu, пустых: %llu, не прошли проверку: %llu
+listening (level %.0f dBFS, offset %+.0f Hz)	прослушивание (уровень %.0f dBFS, смещение %+.0f Гц)
+Train	Поезд
+Speed km/h	Скорость км/ч
+Km post	Км
+Direction	Направление
+Locomotive	Локомотив
+Route	Маршрут
+Up	Вверх
+Down	Вниз
+Some digits were corrected or lost: check this row against the next message of the train	Часть цифр исправлена или потеряна: сверьте эту строку со следующим сообщением поезда
+Train warning, 821 MHz	Предупреждение о поездах, 821 МГц
+clear picture	очистить картинку
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Очищает картинку и строки, накопленные декодером, и начинает новую картинку со следующего стартового тона или фазировки. Картинки, уже находящиеся в списке справа, остаются.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Очищает списки NAVTEX и DSC и картинку метеофакса.
+# radio clips
+Clip	Клип
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Радиоклип: сохраняет последние моменты (спектрограмму, звук, декодированные сообщения) в файл, которым можно поделиться. Клавиша: C
+Radio clip	Радиоклип
+Last:	Последние:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Что видел приёмник, самое старое слева. Ярче значит сильнее сигнал. Перетащите, чтобы выбрать сохраняемую часть.
+Include:	Включить:
+Spectrogram picture	Картинка спектрограммы
+Decoded messages	Декодированные сообщения
+Title	Заголовок
+Your station position is never included.	Положение вашей станции никогда не включается.
+Could not save:	Не удалось сохранить:
+Saved: %s (zip %.1f MB)	Сохранено: %s (zip %.1f МБ)
+Save clip	Сохранить клип
+Nothing to save: no waterfall, audio or decoded rows in this range	Нечего сохранять: в этом диапазоне нет водопада, звука и декодированных строк
+Saving...	Сохранение...
+Copy Discord post text	Копировать текст для Discord
+Copied: paste it into Discord and attach the files	Скопировано: вставьте в Discord и приложите файлы
+Open folder	Открыть папку
+Memory kept for clips	Память для клипов
+Waterfall history	История водопада
+%d min	%d мин
+%d MB max	макс. %d МБ
+Audio history	История звука
+%d s	%d с
+Decoded rows history	История декодированных строк
+Uses about %.1f MB now	Сейчас занимает около %.1f МБ
+Decoded rows are kept from the results tables you have open.	Декодированные строки сохраняются из открытых таблиц результатов.

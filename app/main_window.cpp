@@ -108,26 +108,27 @@ GLFWwindow* createMainWindow(int argc, char** argv) {
 }
 
 // the UI and monospace fonts, with the CJK system fonts merged in
-void loadFonts(App& app, ImGuiIO& io) {
-    ImFont* ui = nullptr;
-    app.mono = nullptr;
-    for (const auto& f : plat::monoFontCandidates()) if (access(f.c_str(), R_OK) == 0 && (ui = io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f))) break; // the whole UI is monospaced
-    for (const auto& f : plat::monoFontCandidates()) if (access(f.c_str(), R_OK) == 0 && (app.mono = io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f))) break;
-    if (!ui) ui = io.Fonts->AddFontDefault();
-    // CJK (Korean/Japanese/Chinese): merge every system font that loads (Menlo has no Hangul; DRM Journaline needs it).
+// (ImGui 1.92: MergeMode always merges into the font added LAST, whatever ImFontConfig::DstFont says, so each base font gets its CJK fonts before the next base font is added;
+// merging into the first font after the second was added trips an assert in ImFontAtlasBuildSetupFontSpecialGlyphs in a Debug build, #104)
+static void mergeCjk(ImGuiIO& io, ImFont* dst) {
     for (const auto& f : plat::cjkFontCandidates()) {
         if (access(f.c_str(), R_OK) != 0) continue;
         ImFontConfig mc;
         mc.MergeMode = true;
-        mc.DstFont = ui;
-        if (!io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f, &mc)) continue;
-        if (app.mono && app.mono != ui) {
-            ImFontConfig mm;
-            mm.MergeMode = true;
-            mm.DstFont = app.mono;
-            io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f, &mm);
-        }
+        mc.DstFont = dst;
+        io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f, &mc);
     }
+}
+
+void loadFonts(App& app, ImGuiIO& io) {
+    ImFont* ui = nullptr;
+    app.mono = nullptr;
+    for (const auto& f : plat::monoFontCandidates()) if (access(f.c_str(), R_OK) == 0 && (ui = io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f))) break; // the whole UI is monospaced
+    if (!ui) ui = io.Fonts->AddFontDefault();
+    // CJK (Korean/Japanese/Chinese): merge every system font that loads (Menlo has no Hangul; DRM Journaline needs it).
+    mergeCjk(io, ui);
+    for (const auto& f : plat::monoFontCandidates()) if (access(f.c_str(), R_OK) == 0 && (app.mono = io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f))) break;
+    if (app.mono) mergeCjk(io, app.mono);
     app.ui = ui;
     if (!app.mono) app.mono = ui;
 }

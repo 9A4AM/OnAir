@@ -1,10 +1,13 @@
 #include "audioout_impl.h"
+#include "dect2/audio/audio_rec.h"
+#include "dect2/audio/clip_ring.h"
 #include <algorithm>
 #include <cstring>
 #include <cstdint>
 #include <cstdlib>
 #include <cstdio>
 #include <string>
+#include <chrono>
 #ifdef __linux__
 #include <unistd.h>
 #include <sys/stat.h>
@@ -15,6 +18,11 @@ namespace dect2 {
 // DECT2_MUTE=1: everything plays silence (the device still runs, so the timing that tests and the player rely on is unchanged). The tests
 // set it (CMakeLists.txt): the engine tests of FM, DAB, DRM, ATSC and the others otherwise played their test signals out loud.
 static const bool kForceMute = [] { const char* e = getenv("DECT2_MUTE"); return e && *e && *e != '0'; }();
+
+static std::atomic<int64_t> gModeWriteMs{INT64_MIN / 4};
+static int64_t nowMs() { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
+int AudioOut::msSinceModeWrite() { const int64_t d = nowMs() - gModeWriteMs.load(std::memory_order_relaxed); return d > 1000000000 ? 1000000000 : (int)d; }
+std::vector<std::string> AudioOut::devices() { return audioListOutputs(); }
 
 void AudioOut::Impl::render(float* out, uint32_t nFrames) {
     if (flushReq.exchange(false)) { r.store(w.load()); playing = false; leveler.reset(); }
@@ -51,6 +59,7 @@ AudioOut::~AudioOut() { stop(); }
 bool AudioOut::start(int rate) {
     if (running_) return true;
     rate_ = rate;
+    p_->device = device_;
 #ifdef __linux__
     // run with sudo, the sound server of the user who ran sudo is not found (issue #67): point PulseAudio/PipeWire at it
     if (geteuid() == 0 && !getenv("PULSE_SERVER") && !getenv("XDG_RUNTIME_DIR")) {
@@ -87,6 +96,9 @@ int AudioOut::write(const float* s, int frames) {
     }
     p_->w.store(w + n, std::memory_order_release);
     p_->written.fetch_add(n);
+    if (!monitor_ && !p_->muted.load(std::memory_order_relaxed) && n > 0) gModeWriteMs.store(nowMs(), std::memory_order_relaxed);   // the mode is playing: a monitor yields
+    AudioRecorder::offer(this, s, n, rate_);   // "Record audio": the sound before the volume, from any mode
+    AudioClipRing::offer(this, s, n, rate_);   // radio clips: the last seconds, kept in a ring
     return n;
 }
 

@@ -1,5 +1,6 @@
 // application state: preferences, device list, bandwidth, ingesting spectrum and receiver telemetry, channel list
 #include "../app.h"
+#include "../clips/clips_ui.h"
 #include <cstring>
 #include "dect2/source/usb_diag.h"
 #include "dect2/engine/rate_choice.h"
@@ -66,6 +67,7 @@ int subIndexOf(const char* id) {
     return 0;
 }
 int firstSubOf(int f) {   // HF digital, mesh, pagers and marine are only listed as their protocols: 0 for the other families
+    for (const auto& m : allModes()) if (m.family == f && !m.subId) return 0;   // a family with a plain entry of its own (the general receiver next to AM broadcast) keeps it
     int n = 0;
     const SubMode* t = subModes(n);
     for (int i = 0; i < n; i++) if (t[i].stdMode == f + 2) return i + 1;
@@ -373,6 +375,7 @@ void ingestSpectrum(App& a) {
     if (a.holdDecay > 0) for (size_t i = 0; i < n; i++) pk[i] = std::max(pk[i] - fall, in[i]);
     else for (size_t i = 0; i < n; i++) pk[i] = std::max(pk[i], in[i]);
     if (a.wf.offer(f.dbfs, now)) a.wf.stamp(now);
+    clipsui::feed(f.dbfs);   // radio clips: the retroactive history
     if (a.wf.autoTrack && !a.wf.paused && now - a.wf.trackT > 0.25) { a.wf.trackT = now; a.wf.fitRange(a.smooth, false); }
 }
 

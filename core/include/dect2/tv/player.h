@@ -60,6 +60,8 @@ struct PlayerStats {
     std::string concealBackend;          // how missing pictures are made: "Apple ML" or "motion search"
     // what of the service the FFmpeg in OnAir cannot show or play (AVS+ / AVS2 / AVS3 video, DRA sound; docs/CODECS.md), one sentence, else empty
     std::string videoNote, audioNote;
+    int videoStreamType = -1;   // PMT stream_type of the video (0x42 AVS family, 0xD2 AVS2, 0xD4 AVS3), -1 unknown
+    int avsProfile = -1;        // profile_id of the AVS sequence header (0x20 JiZhun, 0x48 Guangdian = AVS+), -1 not seen yet
 };
 
 // The profile_id of the first AVS1-P2 / AVS+ sequence header (start code 00 00 01 B0) in p, -1 when there is none
@@ -67,6 +69,14 @@ int avsProfileId(const uint8_t* p, size_t n);
 // Why an AVS family video stream gives no picture: codec as FFmpeg names it ("cavs", "avs2", "avs3"), whether this FFmpeg has a decoder for
 // it, the profile from avsProfileId() (-1 not seen yet). Empty when it can be decoded (or nothing is known yet).
 std::string avsVideoNote(const std::string& codec, bool haveDecoder, int profile);
+// Which member of the Chinese AVS family a video stream is, from the PMT stream_type and (when seen) the sequence header profile_id:
+// "AVS" (JiZhun, 0x20), "AVS+" (0x48), "AVS2" (0xD2), "AVS3" (0xD4); "AVS/AVS+" when stream_type 0x42 has no profile yet; empty for any other stream.
+std::string avsFamilyName(int streamType, int profile);
+// true when FFmpeg's cavs decoder cannot decode it whatever the build (AVS+ and other non-JiZhun AVS1 profiles); AVS2/AVS3 depend on the build (false here)
+bool avsNeverDecodable(int streamType, int profile);
+// The plain sentence for the service list and the player: "Video: AVS+ (OnAir cannot decode this video) - audio, subtitles and data still work"
+// (also for an AVS2/AVS3 or AVS stream whose decoder is missing: pass haveDecoder). Empty when the video can be decoded.
+std::string avsServiceMessage(int streamType, int profile, bool haveDecoder);
 extern const char* const kDraAudioNote;   // a service whose sound is DRA only
 
 class Player {

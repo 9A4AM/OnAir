@@ -1,5 +1,5 @@
 // Globalstar screens: the 13 CDMA channels (power, SNR, occupancy, Doppler), the Doppler track against time with the pass planner's satellites drawn over it
-// (predicted Doppler of the Globalstar satellites above the horizon, from the TLEs the planner loaded), and the event log. Receive only: the downlink is
+// (predicted Doppler of the Globalstar satellites above the horizon, from the TLEs the planner loaded), and the event log. Receive only: the L-band signal (the terminal uplink) is
 // spread and encrypted and nothing of its content is decoded.
 #include "app.h"
 #include "dect2/globalstar/globalstar_rx.h"
@@ -57,7 +57,7 @@ ImU32 chanCol(int c) {
 void channelsView(App& a) {
     const bool on = live(a);
     ImGui::PushTextWrapPos(0);
-    ImGui::TextDisabled("Receive only. The Globalstar downlink is spread (CDMA) and encrypted: this screen shows which of its 1.23 MHz channels carry a signal, how strongly and how often, and the Doppler shift. "
+    ImGui::TextDisabled("Receive only. The Globalstar L-band signal (1610 - 1626.5 MHz, the terminal uplink; the satellite downlink is S-band, 2483.5 - 2500 MHz, and is not received here) is spread (CDMA) and encrypted: this screen shows which of its 1.23 MHz channels carry a signal, how strongly and how often, and the Doppler shift. "
                         "Nothing is decoded, and nothing can be: the content is not for listening.");
     ImGui::PopTextWrapPos();
     if (!on) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }

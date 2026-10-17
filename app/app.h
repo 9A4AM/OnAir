@@ -46,7 +46,6 @@
 #include "ui/theme.h"
 #include "gfx/gfx.h"
 #include "ui/icons.h"
-#include "ui/mascot.h"
 #include "ui/scale.h"
 #include "platform/platform.h"
 
@@ -254,7 +253,7 @@ using SavedChannel = plat::Channel;
 enum WizTarget { TgNone = 0, TgSwitch, TgToolbar, TgMain, TgRight, TgConst, TgCount };
 
 constexpr int kNumFamilies = 86;   // App::family runs from 0 to kNumFamilies - 1
-constexpr int kNumSubModes = 31;   // dect2::subModes(): the protocols of HF digital, mesh, pagers, marine and VOR / ILS listed as modes of their own
+constexpr int kNumSubModes = 32;   // dect2::subModes(): the protocols of HF digital, mesh, pagers, marine and VOR / ILS listed as modes of their own
 constexpr int kNumSlots = kNumFamilies + kNumSubModes;   // what keeps its own frequency and gains: each family, and each protocol entry
 
 struct App {
@@ -267,11 +266,15 @@ struct App {
     char netKey[32] = "";
     // first-run tour (wizard.inc)
     bool wizOpen = false, wizStart = false, wizAcked = false;
+    int creditsTab = 0;         // 0 Contributors, 1 Projects and licences (the tab the Credits window opens on)
     bool creditsOpen = false;   // the Credits window (Help menu, the "by: ..." button)
     bool galleryOpen = false;           // the picture gallery (View > Images)
     bool passesOpen = false;            // the satellite pass planner window (View > Passes)
+    bool sweepOpen = false;             // the sweep scanner window (View > Sweep scanner)
     bool scannerOpen = false;           // the scanner window (View > Scanner, highly experimental)
     bool memoryOpen = false;            // the Memory window (View > Memory, Ctrl+M; app/memory)
+    bool freqOpen = false;              // the Frequencies window (View > Frequencies, Ctrl+Shift+F; app/freqdb)
+    bool freqTab = false;               // the Frequencies panel as a tab of the main screen (saved as freqTab)
     bool memoryTab = false;             // the Memory panel as a tab of the main screen (View > Memory as a tab; saved as memTab)
     bool mapOpen = false;               // the map window (View > Map): positions and Maidenhead locators
     bool rotatorOpen = false;           // View > Antenna rotator (rotator_ui.cpp)
@@ -369,6 +372,7 @@ struct App {
     bool reduceCpuHidden = true;   // View > Reduce CPU when hidden: no drawing while the window is minimised or hidden (decoding goes on)
     bool discordOn = false, discordFreq = true;   // View > Show in Discord (opt-in Rich Presence, discord_rpc.cpp) and its "Show the frequency"
     bool mapSend = false, mapConsent = false;     // Server > Send data to map server (opt-in; consent once)
+    bool mapMsgs = false;                         // Server > also share interesting ACARS messages (free text becomes public); off until chosen
     std::string mapDeclinedVersion;               // ONAIR_VERSION when "No, do not ask again" was chosen; another version asks again
     bool mapDeclined = false;                     // the start-up question was answered "No, do not ask again" (the Server menu still works)
     std::string mapStationId;                     // client id for /ingest, generated once
@@ -451,6 +455,13 @@ struct App {
     double diagCopiedAt = -10, diagPollAt = -10;
     bool diagWasRunning = false;
     bool recSigmf = true;               // write SigMF metadata beside IQ recordings (pref "recSigmf", default on)
+    int audioRecFmt = 0;                // audio recording format: 0 = WAV, 1 = FLAC, 2 = MP3 (pref "audioRecFmt")
+    bool audioRecGate = false, audioRecSplit = false, audioRecKeep = false;   // only while audio is present / one file per transmission / keep going across retunes (prefs "audioRec...")
+    // "Monitor audio" (prefs "mon...") and the audio output devices
+    bool monOn = false; int monDemod = 4; float monVol = 1.f; int monLatency = 100; bool monYield = true;   // demod 4 = Auto (USB below 30 MHz, NFM above)
+    std::string monDev, monDev2; bool monOut2 = false; float monVol2 = 1.f; double monOffset = 0;
+    bool monNet = false; int monPort = 7355; bool monBindAll = false, monWav = true;
+    bool audioRecWasActive = false; int audioRecMode = 0; double audioRecFreq = 0; std::string audioRecDonePath;
     int recFormat = 0;                  // IQ recording format: 0 = 8-bit, 1 = float (pref "recFormat")
     int tvBufMb = 256;                  // TV live buffer for Pause (pref "tvBufMb")
     int tvRecMin = 0, tvRecAtH = 0, tvRecAtM = 0;   // TV recording timer: stop after N minutes (0 = off), at a clock time
@@ -522,6 +533,7 @@ struct App {
     Scanner scanner;
     ScanConfig scanCfg;
     int scanPreset = 0;
+    std::string bandPlan;     // the active band plan (bandplan_ui.cpp): empty = automatic from the language and region, "none" = the built-in ranges
     bool scanWasRunning = false;
     std::unique_ptr<Updater> upd;      // update check and installer
     bool updCheck = true, updAuto = true, updPre = false, updStarted = false;   // official updates on; betas off until asked
@@ -657,6 +669,10 @@ void passesDevTle(const std::string& path);       // dev (--tle): TLEs from a fi
 std::vector<std::pair<std::string, double>> passesGlobalstarDoppler(double unixSec, double freqHz);   // passes_ui.cpp: Globalstar satellites above the horizon and their Doppler (TLEs from the planner)
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
 void memoryWindow(App& a);                         // memory_ui.cpp: the Memory window (a.memoryOpen), the Ctrl+M key, the scan of the flagged memories, every frame
+void freqdbWindow(App& a);                          // freqdb_ui.cpp: the Frequencies window (a.freqOpen), the Ctrl+Shift+F key, every frame
+void freqdbTabItem(App& a);                         // freqdb_ui.cpp: the "Frequencies" tab when it is switched on (inside the main tab bar)
+void freqdbTabToggle(App& a);
+void freqdbKnownCombo(App& a, float width);         // freqdb_ui.cpp: the Tuner panel's "Known frequencies" drop-down for the mode on screen
 void memoryTabItem(App& a);                        // memory_ui.cpp: the "Memory" tab when View > Memory as a tab is on (inside the main tab bar)
 int memorySelfTest(App& a);                        // memory_selftest.cpp: --memory-selftest, the recall checked on a hidden run (exit code = failures)
 void memoryDev(int what);                          // memory_ui.cpp: --memdev (screenshots)
@@ -664,6 +680,7 @@ void memoryToolbarButton(App& a);                  // memory_ui.cpp: the same qu
 void memoryMenu(App& a);                           // memory_ui.cpp: the "M" menu of the menu bar: open, store, the favourites and the ten most recent
 double generalListenHz(const App& a);
 void generalRecallHz(App& a, double hz);          // general_ui.cpp: a memory's frequency: the dial on hz, the channel marker back on the dial              // general_ui.cpp: the general receiver's listening frequency (the dial plus its offset)
+void sweepWindow(App& a);                          // sweep_ui.cpp: the fast sweep scanner window (a.sweepOpen)
 void scannerWindow(App& a);                        // scanner_ui.cpp: the scanner window (a.scannerOpen) and its scan loop, every frame (HIGHLY EXPERIMENTAL)
 void scannerButton(App& a);                        // a button that opens it (the classic interface's Scan tab)
 GLFWmonitor* monitorFor(int x, int y, int w, int h);   // widgets.cpp: the monitor holding most of the rectangle
@@ -942,8 +959,10 @@ void isdbtReceiverTab(App& a);
 void updateTick(App& a);
 void updateButton(App& a);
 void supportButton();
+std::string modeCreditsLine(const char* modeName);   // "\n\nCredits: a, b" for a mode's tooltip, empty when nobody is credited for it (credits_ui.cpp)
 void creditsWindow(App& a);   // Help, Credits and licences: the projects OnAir uses (app/panels/credits_ui.cpp)
 void clearAllButton(App& a);   // top bar, next to the version: empties every decoded list, after an "are you sure"
+void marineFaxClearUi();     // marine_ui.cpp: empties the weather fax picture on screen and in the saved copy (engine side: MarineReceiver::clearFax)
 bool updateOnExit(App& a);
 void constellationsTab(App& a);
 void channelTab(App& a);
@@ -1003,6 +1022,12 @@ void drawUI(App& a, ImVec2 disp, bool draw = true);   // draw = false: only the 
 // dab_ui.cpp
 const char* dabChannelName(double mhz);
 bool dabChannelCombo(App& a);
+// bandplan_ui.cpp: band plans (channel rasters of a country). The picker with import / export / delete returns true when the active plan changed;
+// the channel list of the TV modes sets a.freqMhz; the scan ranges are the TV bands of the active plan for the mode (empty: use the built-in lists)
+struct TvRange { std::string label; double startMhz = 0, stopMhz = 0, stepMhz = 0, bwMhz = 0; };
+bool bandPlanPicker(App& a);
+bool tvChannelCombo(App& a);
+std::vector<TvRange> tvBandRanges(App& a);
 void dabStatus(App& a);
 void dabHistory(App& a);
 void dabPanels(App& a);
@@ -1033,9 +1058,11 @@ void fmRadioPanel(App& a);
 void fmTune(App& a, double mhz);
 // wizard.cpp
 void wizEnter(App& a, int step);
-void wizAction(App& a, int step);
-void wizFinish(App& a);
-void wizard(App& a, ImVec2 disp);
+void wizAction(App& a, int step);   // tour.cpp: step 2 starts the synthetic demo signal (the DECT2_DEMO test hook)
+void wizard(App& a, ImVec2 disp);                      // tour.cpp: the first-run tour, each frame
+void tourStart(App& a);                                // tour.cpp: (re)start the tour from the first step
+void tourMark(const char* id, ImVec2 lo, ImVec2 hi);   // tour.cpp: report where a part of the window is this frame (the tour points at it)
+void wizEnter(App& a, int step);
 void setupWizardOpen(App& a);                        // wizard.cpp: (re)start the setup wizard
 void setupWizard(App& a, ImVec2 disp);               // wizard.cpp: the window, each frame
 #include "dect2/engine/device_claims.h"

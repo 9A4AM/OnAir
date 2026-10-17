@@ -48,6 +48,7 @@ struct MarineReceiver::Impl {
     std::atomic<double> faxSlant{0};
     std::atomic<bool> faxAuto{true};
     std::atomic<bool> faxDirty{true};
+    std::atomic<bool> faxClearReq{false};     // clearFax(): the receiver thread zeroes its fax bookkeeping
     std::function<void(const std::string&)> log;
 
     Front front;
@@ -151,6 +152,7 @@ struct MarineReceiver::Impl {
     }
 
     void applyFaxSettings() {
+        if (faxClearReq.exchange(false)) { faxLinesSeen = 0; prevFaxState = 0; }
         if (!faxDirty.exchange(false)) return;
         fax.setLpm(faxLpm.load());
         fax.setIoc(faxIoc.load());
@@ -307,7 +309,11 @@ void MarineReceiver::clearMessages() {
     p_->tel.navtex.clear(); p_->tel.dsc.clear();
     p_->tel.seq++;
 }
-void MarineReceiver::clearResults() { clearMessages(); }
+void MarineReceiver::clearFax() {
+    p_->fax.reset();                 // takes the decoder's own lock, so it is safe while the receiver thread pushes audio
+    p_->faxClearReq = true;
+}
+void MarineReceiver::clearResults() { clearMessages(); clearFax(); }
 std::string MarineReceiver::saveResults() const {
     std::lock_guard<std::mutex> lk(p_->telMu);
     return results::pack(p_->lastNow, p_->tel.navtex, p_->tel.dsc, p_->tel.navtexCount, p_->tel.dscCount);

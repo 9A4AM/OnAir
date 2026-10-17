@@ -1,4 +1,4 @@
-// Globalstar activity monitor (L-band downlink 1610 - 1626.5 MHz, 13 CDMA channels of 1.23 MHz). Receive only: the downlink is spread and
+// Globalstar activity monitor (L-band 1610 - 1626.5 MHz = the terminal UPLINK, mobile to satellite; 13 CDMA channels of 1.23 MHz. The satellite downlink is S-band, 2483.5 - 2500 MHz, and is not tuned). Receive only: the CDMA signal is spread and
 // encrypted, nothing of its content is decoded. What the receiver does: per channel power, noise floor, activity (occupancy over the last
 // minute, an event log of activity stretches) and the Doppler shift of every active channel from its spectral centroid, as a track in time.
 //

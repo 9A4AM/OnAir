@@ -3,6 +3,7 @@
 #include "dect2/hdr/hdr_rx.h"
 #include "dect2/dsp/exact_resampler.h"
 #include "dect2/hdr/hdr_fec.h"
+#include "dect2/hdr/hdr_hdc.h"
 #include "dect2/hdr/hdr_l2.h"
 #include "dect2/hdr/hdr_phy.h"
 #include <atomic>
@@ -49,6 +50,7 @@ struct HdrReceiver::Impl {
     double curRate = 0;
     ExactResampler rs;
     std::vector<cf32> bb;
+    hdr::HdcAudio audio;                   // HDC sound (its own lock): the controls reach it from any thread
     hdr::L2Decoder l2;
     Sink fmSink, amSink;
     hdr::FmRx fm{&fmSink};
@@ -76,8 +78,10 @@ struct HdrReceiver::Impl {
     uint64_t lastPids = 0;
     double lastPidsAt = -1e9;
     uint64_t lotVersion = 0;
+    bool hdcSaid = false;                  // the "codec not installed" line has been logged for this signal
 
     Impl() {
+        l2.setAudio(&audio);
         fmSink.l2 = &l2; fmSink.now = &now;
         amSink.l2 = &l2; amSink.now = &now;
         amSinkM.l2 = &l2m; amSinkM.now = &now;
@@ -94,6 +98,8 @@ struct HdrReceiver::Impl {
         fmOk = curRate >= 500000 - 1;             // slower: AM only (the FM sidebands reach 198 kHz from the centre; kHdrFmMinRate leaves room for the filters)
         rs.reset();
         l2.reset();
+        audio.reset();
+        hdcSaid = false;
         l2.setLog(cb);
         fm.reset();
         am.reset();
@@ -134,6 +140,17 @@ struct HdrReceiver::Impl {
         else tel.modeName = s.mode < 12 ? fmModes[s.mode] : "MP" + std::to_string(s.mode);
         l2.setTime(now);
         l2.fill(tel);
+        const hdr::HdcAudio::Stats as = audio.stats();
+        tel.hdcFound = as.libFound; tel.hdcPath = as.libPath; tel.hdcProblem = as.libProblem;
+        tel.soundProgram = as.program;
+        tel.hdcPlaying = now - as.lastAudioSec < 1.0;
+        tel.hdcDecoded = as.decoded; tel.hdcErrors = as.errors; tel.hdcLost = as.lost; tel.hdcResets = as.resets;
+        // once per signal, when there is something to hear: say why there is no sound (the diagnostics offer the fix-it guide for this text)
+        if (!hdcSaid && tel.state >= 3 && !as.libFound && tel.pduCount > 0) {
+            hdcSaid = true;
+            say(as.libProblem.empty() ? "HD Radio: HDC sound codec not installed (no sound; see the ? next to the sound)"
+                                      : "HD Radio: HDC sound codec cannot be used: " + as.libProblem);
+        }
         tel.blocksOk = l2.pciOk(0);
         tel.blocksBad = l2.pciBad(0);
         tel.p3Ok = l2.pciOk(1) + l2.pciOk(2);
@@ -201,6 +218,7 @@ struct HdrReceiver::Impl {
         }
         nIn += (int64_t)n;
         now = (double)nIn / curRate;
+        audio.advanceTo(now);
         busy += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
         while (now >= nextReport) {      // about four reports a second of signal
             nextReport += 0.25;
@@ -255,6 +273,11 @@ void HdrReceiver::setLogCallback(std::function<void(const std::string&)> cb) {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->log = std::move(cb);        // the decoder takes it over at the next reset (configure() asks for one)
 }
+void HdrReceiver::setProgram(int p) { p_->audio.setProgram(p < 0 ? 0 : p > 7 ? 7 : p); }
+void HdrReceiver::setVolume(float v) { p_->audio.setVolume(v); }
+void HdrReceiver::setMuted(bool m) { p_->audio.setMuted(m); }
+void HdrReceiver::setSilent(bool s) { p_->audio.setSilent(s); }
+void HdrReceiver::setAudioTap(std::function<void(const float*, size_t)> cb) { p_->audio.setTap(std::move(cb)); }
 bool HdrReceiver::lotBytes(int port, int lot, std::vector<uint8_t>& out) const {
     std::lock_guard<std::mutex> lk(p_->mu);
     auto it = p_->pubLots.find(std::make_pair(port, lot));

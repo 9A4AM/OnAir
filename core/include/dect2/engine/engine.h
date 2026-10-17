@@ -3,6 +3,7 @@
 #include "dect2/dsp/iq_correct.h"
 #include "dect2/source/offset_tune.h"
 #include "dect2/dsp/exact_resampler.h"
+#include "dect2/audio/audio_monitor.h"
 #include "dect2/source/delivery_check.h"
 #include "dect2/source/source.h"
 #include "dect2/source/iq_record.h"
@@ -222,6 +223,11 @@ public:
     double secondaryRate() const { return secRate_.load(); }   // the rate it decodes at: its mode's own, the capture resampled down to it
     // Its sound: off by default (the first mode keeps the speakers); applies to the modes that play any (DMR, dPMR, airband, CW, ...)
     void setSecondarySound(bool on);
+    // Monitor audio: the tuned channel of any mode, demodulated (USB / LSB / NFM / AM) to the speaker, a second device or a local TCP stream
+    // (dect2/audio/audio_monitor.h). It uses a copy of the samples on its own thread, so it works beside every mode, the second mode included.
+    // offsetHz: fine tuning from the tuned frequency (a SSB dial sits below the carrier). The monitor yields while the mode plays its own sound.
+    AudioMonitor& monitor() { return monitor_; }
+    void setMonitorOffsetHz(double hz) { monitorOffsetHz_ = hz; }
     bool latestRx2(RxTelemetry& out, uint64_t lastSeq);   // the second mode's report (as latestRx)
     double captureCentreHz() const;   // the frequency at the centre of the samples the receivers get
     // The modes that can run second: narrow channels that neither retune the radio, nor make a transport stream, picture or player sound
@@ -645,6 +651,8 @@ private:
     void configureReceiver(int a, double rateHz);
     void muteReceiver(int a, bool muted);
     std::atomic<bool> secSound_{false};
+    AudioMonitor monitor_;
+    std::atomic<double> monitorOffsetHz_{0};
     std::atomic<double> secRate_{0};          // the second receiver's rate: its mode's own, the capture resampled down to it
     std::atomic<double> secChanHz_{0}, secWantRate_{0}, secSym_{0};   // setSecondaryDvbs: the channel's width, the rate it wants, its symbol rate (0 = the mode's own)
     bool setSecondaryImpl(int sm, double hz, double chanHz, double wantRate, double sym);

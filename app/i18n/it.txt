@@ -166,7 +166,6 @@ Back	Indietro
 Next	Avanti
 Finish	Fine
 Skip	Salta
-Skip tour	Salta il tour
 Dismiss	Ignora
 Again	Ancora
 Auto	Auto
@@ -209,7 +208,6 @@ New interface	Nuova interfaccia
 Try the new interface. You can switch back at any time.	Prova la nuova interfaccia. Puoi tornare indietro in qualsiasi momento.
 Guided tour	Tour guidato
 Tour	Tour
-Take the guided tour with Onny	Fai il tour guidato con Onny
 by: Kristijonas Adomaitis, made with help from the community	di: Kristijonas Adomaitis, realizzato con l'aiuto della comunità
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Grazie a tutti coloro che hanno segnalato bug, inviato registrazioni e aperto pull request.
 Source	Sorgente
@@ -467,20 +465,6 @@ Radio settings (%d changed)	Impostazioni radio (%d modificate)
 %s: frequency correction and the other settings of this radio	%s: correzione di frequenza e le altre impostazioni di questa radio
 The driver's own settings show up here\nonce this radio has been started.	Le impostazioni proprie del driver compaiono qui\ndopo che questa radio è stata avviata.
 0 = libiio's default	0 = predefinito di libiio
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	Ciao, sono Onny! Sono una piccola TV che vive in OnAir. Vuoi un tour veloce? Dura circa un minuto e ti mostro tutto con un segnale dimostrativo, quindi non ti serve ancora nessun hardware.
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Quassù c'è il selettore del tipo di trasmissione che vuoi: DVB per la maggior parte della TV digitale del mondo, ATSC per il Nord America e DAB per la radio digitale. OnAir li ha tutti e tre in un unico posto.
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	Vediamolo in azione! Avvio un segnale finto. È un trasmettitore di prova che gira dentro l'app, quindi non serve collegare nulla.
-Start the demo signal	Avvia il segnale dimostrativo
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	Vedi la linea ondulata? È lo spettro: quanto è forte tutto ciò che c'è in onda, da sinistra a destra. Il gobbone al centro è il nostro canale. Sotto, il waterfall mostra la stessa cosa che scorre lentamente nel tempo.
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	E questi quattro riquadri mostrano i punti che vede il ricevitore. Quando il segnale è buono, i punti si raccolgono in gruppi ordinati. Punti disordinati significano un segnale rumoroso. Ora è una demo pulita, quindi dovrebbero essere ordinati!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Qui trovi i canali quando il ricevitore si aggancia. Clicca su uno per guardarlo. C'è anche un lettore con immagine e audio, un orologio e opzioni per registrare o trasmettere in streaming ciò che guardi.
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	Passiamo al sodo. Scegli qui la tua radio, scegli una frequenza e imposta il guadagno. Il guadagno è quanto la radio amplifica il segnale: poco e si perde, troppo e distorce. Il pulsante Sintonia auto trova un buon valore per te.
-Stop the demo and look for my radio	Ferma la demo e cerca la mia radio
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	Non sai dove sono i canali? La scheda Scansione li cerca per te. Una buona antenna, messa in alto e vicino a una finestra, fa più differenza di qualsiasi altra cosa. Promesso!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	Il tour è finito! Puoi condividere i tuoi canali con altri dispositivi dalla scheda Stream (Uscite), e richiamarmi quando vuoi con il pulsante Tour in alto a destra. Buona visione!
-Good news: I can see "%s"!	Buone notizie: vedo "%s"!
-(I can't see a radio right now. Plug it in and press the button again.)	(Al momento non vedo nessuna radio. Collegala e premi di nuovo il pulsante.)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	Su Windows un HackRF ha bisogno una volta del driver WinUSB: installalo con Zadig, su zadig.akeo.ie.
 Weather (137 MHz)	Meteo (137 MHz)
 Amateur	Radioamatori
 Amateur satellites	Satelliti radioamatoriali
@@ -929,13 +913,11 @@ holds	trattiene
 last send %s	ultimo invio %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	in ascolto su %s porta %d, %d client, %.1f MB inviati, %.1f MB scartati
 max	max
-mute	muto
 on air	in onda
 partial	parziale
 point %s	punto %s
 power (dBm)	potenza (dBm)
 searching for Hermes Lite 2 radios…	ricerca di radio Hermes Lite 2…
-sound	audio
 up-converter	up-converter
 waiting	in attesa
 waterfall dB##wfdb	waterfall dB##wfdb
@@ -1251,7 +1233,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	Un LimeSDR Mini richiede su Windows il driver FT60x di FTDI (non Zadig), su Linux le regole udev, e una volta "LimeUtil --update" perché il suo gateware corrisponda alla libreria.
 Real (mono)	Reale (mono)
 Left	Sinistra
 Right	Destra
@@ -1437,3 +1418,271 @@ Carrier	Portante
 Sync	Sincr.
 The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).	The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).
 LW time service, Poland	servizio orario LW, Polonia
+Predict positions	Prevedi le posizioni
+Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	Riempie i vuoti tra i rapporti di posizione: l'aereo si muove in modo fluido e, quando i messaggi cessano, la sua posizione è stimata lungo la rotta (e lungo il piano di volo se un messaggio ha indicato la destinazione). Le posizioni previste sono disegnate come un fantasma con un anello tratteggiato.
+uncertainty	incertezza
+Draws the uncertainty ellipse (95 percent) of every estimated position.	Disegna l'ellisse di incertezza (95 per cento) di ogni posizione stimata.
+predicted from the last position %s ago, +-%.1f NM	prevista dall'ultima posizione di %s fa, +-%.1f NM
+estimated from the ground station only, within about %.0f NM	stimata solo dalla stazione a terra, entro circa %.0f NM
+Hear this receiver	Ascolta questo ricevitore
+Close receiver	Chiudi ricevitore
+Radio: %s	Radio: %s
+HD Radio sound needs the HDC codec, which you install yourself (click ?)	L'audio HD Radio richiede il codec HDC, che installi tu (clicca ?)
+HDC sound codec cannot be used: %s	Il codec audio HDC non può essere usato: %s
+HDC sound codec not installed (no sound; click ? for the steps)	Codec audio HDC non installato (niente audio; clicca ? per i passaggi)
+sound: HD%d (HDC)	audio: HD%d (HDC)
+sound: HD%d, waiting for audio	audio: HD%d, in attesa di audio
+The HD Radio sound codec (HDC) is not installed	Il codec audio HD Radio (HDC) non è installato
+The station, program data and pictures are shown, but HD Radio sound stays silent until you install the codec yourself. OnAir does not ship it (HDC is patented and owned by Xperi).	Stazione, dati del programma e immagini vengono mostrati, ma l'audio HD Radio resta muto finché non installi il codec da solo. OnAir non lo include (HDC è brevettato e appartiene a Xperi).
+Build the HDC-patched FAAD2 as the full instructions explain (it needs the open-source nrsc5 patch).	Compila il FAAD2 con la patch HDC come spiegano le istruzioni complete (serve la patch open source di nrsc5).
+Put the library (libfaad_hdc) in the OnAir codecs folder (button below).	Metti la libreria (libfaad_hdc) nella cartella dei codec di OnAir (pulsante qui sotto).
+The HD Radio sound library cannot be used	La libreria audio HD Radio non può essere usata
+OnAir found a library for HDC, but it is not a FAAD2 build with the HDC patch that OnAir knows how to call, so it was left alone.	OnAir ha trovato una libreria per HDC, ma non è una build di FAAD2 con la patch HDC che OnAir sa chiamare, quindi è stata ignorata.
+Build the library again from FAAD2 2.10 or 2.11 with the nrsc5 patch, as the full instructions explain.	Ricompila la libreria da FAAD2 2.10 o 2.11 con la patch di nrsc5, come spiegano le istruzioni complete.
+Replace the file in the OnAir codecs folder (button below).	Sostituisci il file nella cartella dei codec di OnAir (pulsante qui sotto).
+# band plans (scan tab, TV channel list)
+Band plan	Piano di banda
+None (built-in ranges)	Nessuno (intervalli integrati)
+My band plans	I miei piani di banda
+Export...	Esporta...
+Really delete?	Eliminare davvero?
+Replaced band plan "%s" (%zu bands).	Piano di banda "%s" sostituito (%zu bande).
+Imported band plan "%s" (%zu bands).	Piano di banda "%s" importato (%zu bande).
+Deleted band plan %s.	Piano di banda %s eliminato.
+Not fully verified: %s	Non del tutto verificato: %s
+The channel raster of your country: TV channels for the scan and the channel list, and more. Automatic picks a plan from the interface language and the system's region.	La griglia dei canali del tuo paese: canali TV per la scansione e l'elenco dei canali, e altro. Automatico sceglie un piano dalla lingua dell'interfaccia e dalla regione del sistema.
+Reads a band plan from a CSV or JSON file (format in docs/band-plans.md), checks it and keeps it in your settings folder. Nothing is changed when the file has a mistake; the message says where.	Legge un piano di banda da un file CSV o JSON (formato in docs/band-plans.md), lo controlla e lo conserva nella cartella delle impostazioni. Se il file ha un errore non cambia nulla; il messaggio indica dove.
+Saves the plan as a JSON file, or as CSV when the name ends in .csv. A built-in plan makes a good starting point for your own.	Salva il piano come file JSON, o come CSV se il nome termina in .csv. Un piano integrato è un buon punto di partenza per il tuo.
+Deletes one of your own band plans. The built-in plans stay.	Elimina uno dei tuoi piani di banda. I piani integrati restano.
+TV channels of the band plan %s (change it in the Scan tab).	Canali TV del piano di banda %s (si cambia nella scheda Scansione).
+# ACARS messages on the aircraft, and sharing them with the map
+Crew	Equipaggio
+Operations	Operazioni
+Company	Compagnia
+Maintenance	Manutenzione
+Fault	Guasto
+Show all messages	Mostra tutti i messaggi
+ACARS messages	Messaggi ACARS
+%d ACARS messages	%d messaggi ACARS
+Copy these messages as text	Copia questi messaggi come testo
+No ACARS messages heard from this aircraft	Nessun messaggio ACARS ricevuto da questo aeromobile
+Also share interesting ACARS messages (text becomes public on the map)	Condividi anche i messaggi ACARS interessanti (il testo diventa pubblico sulla mappa)
+Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time.	Messaggi inviati da un aeromobile via ACARS (testo libero e messaggi di equipaggio, operazioni, compagnia e manutenzione), mostrati per 48 ore nella scheda di quell'aeromobile sulla mappa pubblica. Numeri di telefono e indirizzi e-mail vengono rimossi prima. I rapporti di posizione e i test di collegamento non ne fanno parte. Puoi disattivarlo in qualsiasi momento.
+Messages that aircraft send by ACARS (free text and crew, operations, company and maintenance messages) can be shown on the aircraft's card as well, with phone numbers and e-mail addresses removed. This is a separate choice that you can change in the Server menu.	I messaggi che gli aeromobili inviano via ACARS (testo libero e messaggi di equipaggio, operazioni, compagnia e manutenzione) possono comparire anche nella scheda dell'aeromobile, senza numeri di telefono né indirizzi e-mail. È una scelta separata, modificabile nel menu Server.
+#  sweep scanner
+%.0f MHz/s, %d hops, %d averages, %.0f ms per sweep	%.0f MHz/s, %d salti, %d medie, %.0f ms per scansione
+pick a radio first (the test signal and files cannot sweep)	scegli prima una radio (il segnale di prova e i file non si possono scandire)
+Save scan...	Salva scansione...
+rtl_power compatible CSV: opens in Heatmap.py, rtl_power_fftw tools and spreadsheets	CSV compatibile con rtl_power: si apre in Heatmap.py, negli strumenti rtl_power_fftw e nei fogli di calcolo
+Load as baseline...	Carica come riferimento...
+Keep this scan as baseline	Usa questa scansione come riferimento
+Save signal log...	Salva registro segnali...
+Sweep scanner	Scanner a scansione rapida
+from MHz	da MHz
+to MHz	a MHz
+bin %.0f kHz	bin %.0f kHz
+dwell %.0f ms	sosta %.0f ms
+Time spent on each hop: longer averages more FFTs (a steadier floor, weak signals show) but sweeps slower	Tempo su ogni salto: più lungo media più FFT (rumore più stabile, segnali deboli visibili) ma la scansione è più lenta
+measure retune time	misura il tempo di risintonia
+settle %.0f ms	assestamento %.0f ms
+rate: radio's best	frequenza: la migliore della radio
+rate: 10 Msps	frequenza: 10 Msps
+rate: 5 Msps	frequenza: 5 Msps
+rate: 2.4 Msps	frequenza: 2,4 Msps
+gain %.0f dB	guadagno %.0f dB
+Pause between sweeps: a repeated sweep every so many seconds keeps the CPU and the battery calm	Pausa tra le scansioni: una scansione ogni tot secondi risparmia CPU e batteria
+threshold floor+%.0f dB	soglia fondo+%.0f dB
+floor percentile %.0f	percentile del fondo %.0f
+The noise floor is this percentile of the bin power in each hop (50 = median). Lower it in crowded bands, raise it on empty ones	Il fondo di rumore è questo percentile della potenza dei bin in ogni salto (50 = mediana). Abbassalo nelle bande affollate, alzalo in quelle vuote
+retune settle %.1f ms	assestamento %.1f ms
+noise floor %.1f dBFS per bin (%.0f kHz bins), threshold %.1f dBFS, %zu signals in this sweep	fondo di rumore %.1f dBFS per bin (bin da %.0f kHz), soglia %.1f dBFS, %zu segnali in questa scansione
+vs baseline: floor %+.1f dB, largest rise %+.1f dB at %.3f MHz	rispetto al riferimento: fondo %+.1f dB, massimo aumento %+.1f dB a %.3f MHz
+Signals found	Segnali trovati
+mode: as it is	modalità: com'è
+Tune to selected	Sintonizza la selezione
+Bandwidth kHz	Larghezza di banda kHz
+Peak dBFS	Picco dBFS
+Best SNR dB	Miglior SNR dB
+Sweep	Scansiona
+every %.0f s	ogni %.0f s
+back to back	di seguito
+Fast wideband sweep with a noise-floor measurement, signal log and waterfall	Scansione rapida a banda larga con misura del fondo di rumore, registro segnali e cascata
+Record audio	Registra audio
+Only audio	Solo audio
+Split	Dividi
+Keep going	Continua
+Show recording	Mostra registrazione
+Saves the sound you hear, in any mode, to a file (before the volume slider, so the level does not depend on it)	Salva in un file il suono che ascolti, in qualsiasi modo (prima del volume, quindi il livello non ne dipende)
+MP3 needs the LAME library (libmp3lame), which is not installed	MP3 richiede la libreria LAME (libmp3lame), che non è installata
+WAV: 16-bit, large. FLAC: lossless, about half the size. MP3: small (needs libmp3lame). FM stereo is kept as stereo.	WAV: 16 bit, grande. FLAC: senza perdita, circa metà dimensione. MP3: piccolo (richiede libmp3lame). L'FM stereo resta stereo.
+Saves only while there is sound (like a squelch): silence is cut out, with a short lead-in and tail	Salva solo quando c'è suono (come uno squelch): il silenzio viene tagliato, con un breve inizio e coda
+One file per transmission: a new file starts after 3 s of silence	Un file per trasmissione: dopo 3 s di silenzio ne inizia uno nuovo
+Keeps recording when the mode or the frequency changes. Off: the recording stops then.	Continua a registrare quando cambiano modo o frequenza. Disattivato: la registrazione si ferma.
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir, and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	Il modulo SoapyRemote manca in questa installazione di OnAir, quindi non può raggiungere una radio remota. Reinstalla OnAir, e segnalalo se succede di nuovo. Il computer della radio deve eseguire SoapySDRServer --bind.
+The SoapyRemote module is missing from this installation of OnAir, so it cannot reach a remote radio. Reinstall OnAir (or run brew install soapyremote), and please report it if it happens again. The radio's computer must run SoapySDRServer --bind.	Il modulo SoapyRemote manca in questa installazione di OnAir, quindi non può raggiungere una radio remota. Reinstalla OnAir (o esegui brew install soapyremote), e segnalalo se succede di nuovo. Il computer della radio deve eseguire SoapySDRServer --bind.
+SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install it (Debian/Ubuntu: sudo apt install soapysdr-module-remote; other systems: github.com/pothosware/SoapyRemote), then restart OnAir. The radio's computer must run SoapySDRServer --bind.	Questo SoapySDR non ha il modulo client SoapyRemote, quindi non può raggiungere una radio remota. Installalo (Debian/Ubuntu: sudo apt install soapysdr-module-remote; altri sistemi: github.com/pothosware/SoapyRemote) e riavvia OnAir. Il computer della radio deve eseguire SoapySDRServer --bind.
+# frequency database
+%zu built in, %zu yours	%zu integrate, %zu tue
+Add entry...	Aggiungi voce...
+Add frequency	Aggiungi frequenza
+Add to Memory	Aggiungi a Memory
+Added to Memory.	Aggiunta a Memory.
+Already in Memory.	Già in Memory.
+An entry with this frequency and mode exists already.	Esiste già una voce con questa frequenza e modo.
+Category	Categoria
+Could not save 	Impossibile salvare 
+Could not tune to this entry.	Impossibile sintonizzare questa voce.
+Exports your own entries (not the built-in ones)	Esporta le tue voci (non quelle integrate)
+Frequencies	Frequenze
+Frequencies...	Frequenze...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	Importate %zu voci, %zu saltate (duplicati o righe senza frequenza).
+Keeps this entry in the Memory panel	Tiene questa voce nel pannello Memory
+Known frequencies (%zu)	Frequenze note (%zu)
+Mine	Mie
+Nothing matches. Clear the search or the filters.	Nessuna corrispondenza. Svuota la ricerca o i filtri.
+Nothing to import in this file.	Niente da importare in questo file.
+Only the entries you added or imported	Solo le voci che hai aggiunto o importato
+Open the Frequencies panel...	Apri il pannello Frequenze...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	Legge un file CSV o JSON scritto da Esporta (o dal pannello Memory), o un semplice elenco di righe 'frequenza,nome' (MHz). Le voci con frequenza e modo già presenti vengono saltate.
+Search name, notes, mode, frequency (162.4)	Cerca nome, note, modo, frequenza (162.4)
+Show Frequencies as a tab	Mostra Frequenze come scheda
+Source...	Fonte...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Passa al modo della voce, applica la sua sintonia e sintonizza la frequenza. Un doppio clic su una riga fa lo stesso. Un ricevitore attivo riparte quando cambia il modo.
+Tuned: %s  %s MHz	Sintonizzato: %s  %s MHz
+Well-known frequencies of this mode: pick one to tune to it	Frequenze note di questo modo: sceglierne una per sintonizzarla
+Stop scan##dsc	Stop scan##dsc
+Scan band##dsc	Scan band##dsc
+DECT carrier %d, %.3f MHz	DECT carrier %d, %.3f MHz
+Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.	Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard.
+US / Canada 1920-1930 MHz (DECT 6.0)	US / Canada 1920-1930 MHz (DECT 6.0)
+Brazil 1910-1920 MHz	Brazil 1910-1920 MHz
+Latin America 1910-1930 MHz	Latin America 1910-1930 MHz
+US ISM 902-928 MHz (DECT in ISM)	US ISM 902-928 MHz (DECT in ISM)
+Europe 1880-1900 MHz	Europe 1880-1900 MHz
+USA, Canada: the UPCS band, DECT 6.0 phones	USA, Canada: the UPCS band, DECT 6.0 phones
+Brazil	Brazil
+Several Latin American countries	Several Latin American countries
+USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT	USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT
+Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
+Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
+The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	L'nRSP-ST si raggiunge tramite SDRconnect: avvia SDRconnect (o la sua versione headless) su un computer con il server WebSocket attivo (porta 5454) e l'nRSP-ST selezionato, poi scrivi l'indirizzo di quel computer. Non serve né viene salvata alcuna password.
+#  the guided tour
+Tuning and gain	Sintonia e guadagno
+Modes	Modi
+Spectrum and waterfall	Spettro e cascata
+Mode panel	Pannello del modo
+Memory and frequencies	Memoria e frequenze
+Receivers	Ricevitori
+Audio	Audio
+Server and support	Server e supporto
+Done	Fatto
+Take the guided tour	Avvia il tour guidato
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Scegli la radio o la registrazione che fornisce i campioni. Record IQ salva il segnale grezzo per riprodurlo in seguito.
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Imposta qui frequenza, banda e frequenza di campionamento. Guadagno e AGC fissano il livello d'ingresso; Secondo modo decodifica un altro modo dalla stessa acquisizione.
+%d modes, grouped by family. Use the search box to find one by name.	%d modi, raggruppati per famiglia. Usa la casella di ricerca per trovarne uno per nome.
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	Fai clic per sintonizzare e scorri per ingrandire. Peak hold mantiene il livello più alto visto su ogni frequenza.
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	Ogni modo ha schede proprie per l'uscita decodificata, le impostazioni e gli strumenti. Cambiano con il modo selezionato.
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	Memoria conserva le frequenze con il loro modo e le impostazioni. Frequenze e piani di banda elencano cosa è in onda, per modo.
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	Ogni ricevitore abbina una radio a un modo. Questa barra permette di passare dall'uno all'altro e sceglie quale riproduce l'audio.
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen riproduce il segnale demodulato. Volume e muto sono qui; Record audio lo salva in un file.
+Server sends decoded positions to the public map. Support helps fund development.	Server invia le posizioni decodificate alla mappa pubblica. Supporto aiuta a finanziare lo sviluppo.
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Qui trovi documentazione, risoluzione dei problemi, crediti e licenze. Tour guidato avvia di nuovo questo tour.
+Monitor audio	Monitor audio
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Ascolta il canale sintonizzato in qualsiasi modo per riconoscere un segnale: i campioni della radio sono demodulati come USB, LSB, FM stretta o AM. Muto mentre il modo riproduce il proprio audio.
+Auto: USB below 30 MHz, narrow FM above	Auto: USB sotto i 30 MHz, FM stretta sopra
+Volume of the monitor	Volume del monitor
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Regolazione fine rispetto alla frequenza sintonizzata, in Hz (un segnale SSB si sente 1-2 kHz sopra o sotto la portante)
+(the mode plays)	(il modo suona)
+Audio...	Audio...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	Dispositivi di uscita del monitor, una seconda uscita (ad es. un cavo audio virtuale per fldigi o WSJT-X) e uno stream di rete locale
+System default	Predefinito di sistema
+Output 1	Uscita 1
+Output 2	Uscita 2
+Delay (ms)	Ritardo (ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Audio in coda prima della riproduzione: meno è più veloce, più regge un computer occupato
+Stay silent while the mode plays	Muto mentre il modo suona
+Network audio stream	Stream audio di rete
+WAV header	Intestazione WAV
+Allow other computers	Consenti altri computer
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	Stereo a 16 bit, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORTA, o un lettore WAV con l'intestazione. Sicurezza: chiunque raggiunga la porta può ascoltare; lascia 'Consenti altri computer' disattivato se non serve.
+Listeners:	Ascoltatori:
+video	video
+audio	audio
+profile	profile
+Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work	Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work
+Open in an external player	Open in an external player
+Save the transport stream to a file	Save the transport stream to a file
+Stream it as UDP to %s	Stream it as UDP to %s
+Copy VLC command	Copy VLC command
+Copy mpv command	Copy mpv command
+Copy ffplay command	Copy ffplay command
+Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).
+# credits and contributors
+Credits	Crediti
+Contributors	Collaboratori
+Projects and licences	Progetti e licenze
+People	Persone
+By mode	Per modalità
+pull request	pull request
+optimisation	ottimizzazione
+fix	correzione
+bug report	segnalazione di bug
+samples	registrazioni
+translation	traduzione
+testing	test
+idea	idea
+Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Grazie a tutti coloro che hanno inviato correzioni, segnalato bug, condiviso registrazioni, tradotto o proposto idee. L'autore è Kristijonas Adomaitis.
+Want your name changed or removed? Tell us on Discord or open an issue.	Vuoi che il tuo nome sia cambiato o rimosso? Scrivici su Discord o apri una issue.
+Decoded only	Solo decodificati
+Hides tone-only pages and pages whose text could not be decoded.	Nasconde le chiamate solo tono e i messaggi il cui testo non è stato decodificato.
+%zu tone-only or undecoded pages hidden (Decoded only)	%zu chiamate solo tono o messaggi non decodificati nascosti (Solo decodificati)
+%zu tone-only or undecoded pages hidden	%zu chiamate solo tono o messaggi non decodificati nascosti
+hidden	nascosti
+# LBJ (Chinese railway train warning)
+What LBJ carries	Cosa trasmette l'LBJ
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	L'LBJ è l'avviso cinese di avvicinamento dei treni su circa 821,2375 MHz. Ogni locomotiva invia pagine numeriche POCSAG a 1200 bit/s: ogni pochi secondi un messaggio breve con numero del treno, velocità (km/h) e progressiva chilometrica, e messaggi più lunghi con tipo e numero della locomotiva e linea.\n\nOnAir decodifica le pagine da solo (solo ricezione). Un valore vuoto aveva cifre danneggiate; una riga grigia aveva errori corretti, quindi confrontala con il messaggio successivo dello stesso treno.
+tune to about 821.2375 MHz and start the receiver	sintonizza circa 821,2375 MHz e avvia il ricevitore
+FM, 1200 bit/s FSK, %.2f Msps	FM, FSK a 1200 bit/s, %.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu messaggi, %llu parole di sincronismo, %llu vuoti, %llu controlli falliti
+listening (level %.0f dBFS, offset %+.0f Hz)	in ascolto (livello %.0f dBFS, scostamento %+.0f Hz)
+Train	Treno
+Speed km/h	Velocità km/h
+Km post	Progr. km
+Direction	Direzione
+Locomotive	Locomotiva
+Route	Linea
+Up	Ascendente
+Down	Discendente
+Some digits were corrected or lost: check this row against the next message of the train	Alcune cifre sono state corrette o perse: confronta questa riga con il messaggio successivo del treno
+Train warning, 821 MHz	Avviso treni, 821 MHz
+clear picture	cancella immagine
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Cancella l'immagine e le righe raccolte dal decodificatore e avvia una nuova immagine al prossimo tono di avvio o alla prossima fasatura. Le immagini già nell'elenco a destra restano.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Cancella gli elenchi NAVTEX e DSC e l'immagine del fax meteo.
+# radio clips
+Clip	Clip
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Clip radio: salva gli ultimi momenti (spettrogramma, audio, messaggi decodificati) in un file da condividere. Tasto: C
+Radio clip	Clip radio
+Last:	Ultimi:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Ciò che il ricevitore ha visto, il più vecchio a sinistra. Più chiaro significa segnale più forte. Trascina per scegliere la parte da salvare.
+Include:	Includi:
+Spectrogram picture	Immagine dello spettrogramma
+Decoded messages	Messaggi decodificati
+Title	Titolo
+Your station position is never included.	La posizione della tua stazione non viene mai inclusa.
+Could not save:	Salvataggio non riuscito:
+Saved: %s (zip %.1f MB)	Salvato: %s (zip %.1f MB)
+Save clip	Salva clip
+Nothing to save: no waterfall, audio or decoded rows in this range	Niente da salvare: in questo intervallo non ci sono waterfall, audio o righe decodificate
+Saving...	Salvataggio...
+Copy Discord post text	Copia il testo per Discord
+Copied: paste it into Discord and attach the files	Copiato: incollalo su Discord e allega i file
+Open folder	Apri cartella
+Memory kept for clips	Memoria per i clip
+Waterfall history	Cronologia del waterfall
+%d min	%d min
+%d MB max	max %d MB
+Audio history	Cronologia audio
+%d s	%d s
+Decoded rows history	Cronologia delle righe decodificate
+Uses about %.1f MB now	Ora usa circa %.1f MB
+Decoded rows are kept from the results tables you have open.	Le righe decodificate vengono conservate dalle tabelle dei risultati aperte.
