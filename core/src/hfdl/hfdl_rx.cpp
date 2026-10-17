@@ -22,7 +22,7 @@ constexpr int kChunk = 8;
 constexpr double kMaxCfo = 250.0;
 constexpr int kCoarseHyp = 4;          // trial offsets of the preamble search: -4 .. 4 steps
 constexpr double kCoarseStep = 100.0;   // Hz (covers +-400 Hz in 8-symbol chunks; burst() refines +-250 Hz more)
-constexpr double kCoarseThr = 0.40;     // blind preamble correlation
+constexpr double kCoarseThr = 0.50;     // blind preamble correlation (noise alone averages 1/sqrt(8) = 0.35 per hypothesis, more as the best of 9)
 constexpr double kCoarseThrNearDc = 0.52; // dial channel sits on the LO: need a higher bar (DC spur false locks)
 constexpr double kNearDcHz = 2500.0;
 constexpr int kL = 12;               // feed-forward taps each side, half a symbol apart
@@ -251,22 +251,17 @@ struct HfdlReceiver::Impl {
     void process(Chan& k) {
         const int64_t end = k.xBase + (int64_t)k.x.size();
         const int64_t span = (int64_t)kSearchSyms * kSps + 16;
-        const int64_t preLen = (int64_t)kHfdlPrekey * kSps;
         const double thr = std::fabs(k.offHz) < kNearDcHz ? kCoarseThrNearDc : kCoarseThr;
         if (k.searchAt < k.xBase) k.searchAt = k.xBase;
         if (end < k.waitUntil) return;
         while (k.searchAt + span + (int64_t)(kHfdlPreLen + 8) * kSps < end) {
             const int64_t s = k.searchAt;
-            double m = coarse(k, s);
-            int64_t tryS = s;
-            if (m < thr && s + preLen + span < end) {
-                const double m2 = coarse(k, s + preLen);
-                if (m2 > m) { m = m2; tryS = s + preLen; }
-            }
+            // no look-ahead past the prekey: a false preamble there moves searchAt beyond the real one
+            const double m = coarse(k, s);
             if (m < thr) { k.searchAt += 2; continue; }
-            int64_t best = tryS;
+            int64_t best = s;
             double bm = m;
-            for (int64_t q = tryS - 2; q <= tryS + 10; q++) {
+            for (int64_t q = s - 2; q <= s + 10; q++) {
                 if (q < k.xBase) continue;
                 const double v = coarse(k, q);
                 if (v > bm) { bm = v; best = q; }
