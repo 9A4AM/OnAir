@@ -99,6 +99,7 @@ const std::vector<PrefKey>& keyTable() {
         flagI("fmMono", AT(a.fmMono), false),
         numFix("fmDeemph", AT(a.fmDeemph), 50, fixDeemph),
         numFix("fmChanKhz", AT(a.fmChanKhz), 0, fixChanKhz),
+        flagI("pagerNarrow", AT(a.pagerNarrow), false), flagI("packetNarrow", AT(a.packetNarrow), false),
         shared(num("compute", AT(a.computeMode), 0, 0, 2, true, true)),   // indexes the CPU / GPU / Auto names
         num("standard", AT(a.stdMode), 0, 0, 2, true, true),      // 0 auto, 1 DVB-T2, 2 DVB-T: engineStd() hands it on
         num("bw", AT(a.bwIdx), 0, 0, (int)(sizeof kBw / sizeof *kBw) - 1),

@@ -45,6 +45,7 @@ struct PacketReceiver::Impl {
     std::function<void(const std::string&)> log;
 
     double fs = 0;
+    bool narrow = false;                   // setNarrowChannel()
     bool wideInput = false;                // setWideInput(): one carrier brought to 192 ksps by the whole-span bank (the radio's minimum rate does not apply)
     bool isReady = false;
     pktdemod::FmFront fe;
@@ -78,6 +79,10 @@ struct PacketReceiver::Impl {
     void configure(double rate) {
         fs = rate;
         isReady = false;
+        // 25 kHz channel: 9 / 17 kHz (FmFront's default). 12.5 kHz channel: 6.5 / 10.5 kHz, so a neighbour 12.5 kHz away is cut hard
+        fe.chanPass = narrow ? 6500.0 : 9000.0; fe.chanStop = narrow ? 10500.0 : 17000.0;
+        // the AFC follows a carrier up to 12 kHz off; in a 12.5 kHz channel that would be the neighbour's carrier, so it only follows radios within 4 kHz
+        fe.afcMaxHz = narrow ? 4000.0 : 12000.0;
         if (!fe.configure(fs, wideInput ? 192000.0 : packetTuning().minSampleRate)) return;
         audio8.design(dmr::lowpassTaps(3200.0, 800.0, 48000.0, 50, 9), 6);
         audio48.design(dmr::lowpassTaps(3300.0, 8000.0, kMidRate, 50, 9), 2);
@@ -274,6 +279,16 @@ void PacketReceiver::setWideInput(bool on) {
     std::lock_guard<std::mutex> lk(p_->procMu);
     p_->wideInput = on;
     if (p_->fs > 0) p_->configure(p_->fs);
+}
+void PacketReceiver::setNarrowChannel(bool on) {
+    std::lock_guard<std::mutex> lk(p_->procMu);
+    if (p_->narrow == on) return;
+    p_->narrow = on;
+    if (p_->fs > 0) p_->configure(p_->fs);   // rebuilds the channel filter
+}
+bool PacketReceiver::narrowChannel() const {
+    std::lock_guard<std::mutex> lk(p_->procMu);
+    return p_->narrow;
 }
 void PacketReceiver::setSignalOffset(double hz) {
     std::lock_guard<std::mutex> lk(p_->procMu);

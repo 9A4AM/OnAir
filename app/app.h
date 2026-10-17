@@ -423,6 +423,8 @@ struct App {
     std::deque<float> fmSnrH, fmPilotH, fmRdsH;
     bool fmMono = false;      // FM: force mono (a weak station is quieter in mono)
     int fmDeemph = 50;        // FM de-emphasis in microseconds: 50 (Europe, Middle East, most of the world) or 75 (Americas, South Korea)
+    bool pagerNarrow = false;  // pagers: 12.5 kHz channel filter instead of 25 kHz (saved as pagerNarrow)
+    bool packetNarrow = false; // APRS / packet: 12.5 kHz channel filter instead of 25 kHz (saved as packetNarrow)
     int fmChanKhz = 0;        // FM channel filter: 0 = automatic (the receiver's standard 220 kHz), else a manual width of 100 to 300 kHz
     struct DabScan {
         bool running = false; int idx = -1; double t0 = 0, lockT = 0, savedFreq = 218.64;

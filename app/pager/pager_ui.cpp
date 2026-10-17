@@ -21,6 +21,7 @@ struct State {
     bool pocsag = true, flex = true;
     bool baud512 = true, baud1200 = true, baud2400 = true;
     int pushedBaud = -1;
+    int pushedNarrow = -1;
     bool loaded = false;
     int readMode = dect2::kPocsagReadAuto;   // PocsagReadMode, saved as "pocsagRead"
     std::map<uint32_t, int> byAddress;       // POCSAG address -> kPocsagReadAlpha or kPocsagReadNumeric, saved as "pocsagReadAddr" ("ric:a ric:n ...")
@@ -155,6 +156,15 @@ void messageView(App& a) {
     flowNext(10 * gUi);
     ImGui::Checkbox("FLEX", &S.flex);
     flowNext(12 * gUi);
+    ImGui::TextDisabled("%s", tr("Channel")); ImGui::SameLine(0, 5 * gUi);
+    ImGui::SetNextItemWidth(80 * gUi);
+    if (ImGui::BeginCombo("##pgbw", a.pagerNarrow ? tr("12.5 kHz") : tr("25 kHz"))) {
+        if (ImGui::Selectable(tr("25 kHz"), !a.pagerNarrow)) { a.pagerNarrow = false; savePrefs(a); }
+        if (ImGui::Selectable(tr("12.5 kHz"), a.pagerNarrow)) { a.pagerNarrow = true; savePrefs(a); }
+        ImGui::EndCombo();
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Receive filter width. 12.5 kHz cuts a neighbouring channel better but needs the signal on the channel centre; 25 kHz is the wider, more forgiving filter."));
+    flowNext(12 * gUi);
     if (S.pocsag) {
         ImGui::Checkbox("512 bd", &S.baud512);
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("Decode POCSAG at 512 baud.");
@@ -288,6 +298,7 @@ void statsView(App& a) {
 void tick(App& a) {
     loadRead();
     const int m = baudMask();
+    if ((int)a.pagerNarrow != S.pushedNarrow) { a.engine.pager().setNarrowChannel(a.pagerNarrow); S.pushedNarrow = a.pagerNarrow; }
     if (m != S.pushedBaud) { a.engine.pager().setPocsagBauds(m); S.pushedBaud = m; }
 }
 

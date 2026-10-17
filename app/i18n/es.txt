@@ -1277,3 +1277,7 @@ test (no RF)	prueba (sin RF)
 test running	prueba en curso
 test, no RF	prueba, sin RF
 the limiter is working: %.2f%% of samples (lower the level)	el limitador está actuando: %.2f%% de las muestras (baja el nivel)
+25 kHz	25 kHz
+12.5 kHz	12.5 kHz
+Receive filter width. 12.5 kHz cuts a neighbouring channel better but needs the signal on the channel centre; 25 kHz is the wider, more forgiving filter.	Receive filter width. 12.5 kHz cuts a neighbouring channel better but needs the signal on the channel centre; 25 kHz is the wider, more forgiving filter.
+Receive filter width. 12.5 kHz cuts a neighbouring channel better (often best for APRS) but needs the signal on the channel centre; 25 kHz is the wider, more forgiving filter.	Receive filter width. 12.5 kHz cuts a neighbouring channel better (often best for APRS) but needs the signal on the channel centre; 25 kHz is the wider, more forgiving filter.

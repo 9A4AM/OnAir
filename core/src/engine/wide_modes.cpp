@@ -54,6 +54,7 @@ struct WideModes::Impl {
     std::unique_ptr<WideBank<P25Receiver, P25Telemetry>> p25;
     std::unique_ptr<WideBank<PagerReceiver, PagerTelemetry>> pager;
     std::unique_ptr<WideBank<PacketReceiver, PacketTelemetry>> packet;
+    bool pagerNarrow = false, packetNarrow = false;   // the single receivers' channel width, copied to every carrier receiver (setNarrowChannels)
     int pagerProtos = 3, pagerBauds = 7;   // the single receiver's settings, copied to every carrier's receiver (setPagerOptions)
     bool muted = false;
     int sel = 0;
@@ -115,7 +116,7 @@ struct WideModes::Impl {
         // so a carrier found late gets the half second before it was found, and a carrier stays for half a minute after its last burst.
         WideOps<PagerReceiver, PagerTelemetry> g;
         g.outRate = 192000; g.occupiedHz = 24000; g.preRollSec = 0.5;
-        g.setup = [this](PagerReceiver& r) { r.setWideInput(true); r.setProtocols(pagerProtos); r.setPocsagBauds(pagerBauds); };
+        g.setup = [this](PagerReceiver& r) { r.setWideInput(true); r.setProtocols(pagerProtos); r.setPocsagBauds(pagerBauds); r.setNarrowChannel(pagerNarrow); };
         g.clear = [](PagerReceiver& r) { r.clearResults(); };
         g.clearLists = [](PagerTelemetry& t) {
             t.messages.reset(); t.messagesTotal = 0; t.blocksOk = t.blocksBad = 0; t.signal = t.sync = false;
@@ -148,7 +149,7 @@ struct WideModes::Impl {
         // APRS / packet: one 25 kHz FM channel each (144.800, 144.390 and the neighbours inside one capture); no sound from the carrier receivers
         WideOps<PacketReceiver, PacketTelemetry> k;
         k.outRate = 192000; k.occupiedHz = 24000; k.preRollSec = 0.5;
-        k.setup = [](PacketReceiver& r) { r.setWideInput(true); r.setSilent(true); };
+        k.setup = [this](PacketReceiver& r) { r.setWideInput(true); r.setSilent(true); r.setNarrowChannel(packetNarrow); };
         k.clear = [](PacketReceiver& r) { r.clearResults(); };
         k.clearLists = [](PacketTelemetry& t) {
             t.frames.clear(); t.stations.clear(); t.blocksOk = t.blocksBad = 0; t.ok1200 = t.bad1200 = t.ok9600 = t.bad9600 = t.aprsFrames = 0; t.carrier = false;
@@ -283,6 +284,12 @@ void WideModes::setPagerOptions(int protocols, int bauds) {
     if (protocols == p_->pagerProtos && bauds == p_->pagerBauds) return;
     p_->pagerProtos = protocols; p_->pagerBauds = bauds;
     p_->pager->forEach([&](PagerReceiver& r) { r.setProtocols(protocols); r.setPocsagBauds(bauds); });
+}
+
+// The carriers stay 25 kHz apart in the bank (WideBank steps by stepHz); the width only narrows the filter inside each carrier's receiver
+void WideModes::setNarrowChannels(bool pager, bool packet) {
+    if (pager != p_->pagerNarrow) { p_->pagerNarrow = pager; p_->pager->forEach([&](PagerReceiver& r) { r.setNarrowChannel(pager); }); }
+    if (packet != p_->packetNarrow) { p_->packetNarrow = packet; p_->packet->forEach([&](PacketReceiver& r) { r.setNarrowChannel(packet); }); }
 }
 
 void WideModes::setLogCallback(std::function<void(const std::string&)> cb) { p_->log = std::move(cb); }
