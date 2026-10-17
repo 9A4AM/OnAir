@@ -600,10 +600,6 @@ Region %s, %s wide	Sritis %s, plotis %s
 collecting samples	renkami mėginiai
 Working it out...	Nustatoma...
 Nothing to identify here.	Čia nėra ką atpažinti.
-Looks like: %s	Panašu į: %s
-Looks like: %s (frame sync found %dx)	Panašu į: %s (kadro sinchronizacija rasta %dx)
-No mode fits well.	Joks režimas gerai netinka.
-Open %s on this frequency	Atidaryti %s šiuo dažniu
 Switch to %s and tune to %s	Perjungti į %s ir suderinti %s
 Candidates	Kandidatai
 (sync %dx)	(sinchr. %dx)
@@ -2155,3 +2151,31 @@ Forget the history	Išvalyti istoriją
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Ką šis imtuvas girdėjo pagal diapazoną: švyturiai (NCDXF/IARU, Long Dashes, pavienės raidės, nešlys) ir HF skaitmeniniame ekrane dekoduotos FT8 / FT4 / FT2 / WSPR stotys. Diapazonas atidarytas, kai per paskutines 30 minučių išgirstos bent 3 stotys. Tik savo imtuvas: nieko neatsisiunčiama, todėl nėra saulės srauto ir K indekso.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Per paskutines 30 minučių nieko negirdėta: paleiskite HF švyturius arba HF skaitmeninį ekraną ir palikite veikti.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Paskutinės 24 valandos (UTC), 15 minučių langeliai, tamsiau: mažiau stočių
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f bodų
+, %s wide	, plotis %s
+, bursts (%.0f %% on)	, impulsai (%.0f %% įjungta)
+, every %.3g ms	, kas %.3g ms
+, useful symbol %.4g us	, naudingas simbolis %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Įvertis yra patvirtintų įrodymų dalis; procentai sukalibruoti pagal paties OnAir bandomuosius signalus, o ne pagal visus tikrus signalus.
+Add to memory	Pridėti į Memory
+Best guess	Geriausias spėjimas
+Copy as text	Kopijuoti kaip tekstą
+Could be %s (%.0f %%) or %s (%.0f %%).	Gali būti %s (%.0f %%) arba %s (%.0f %%).
+Could not open this mode.	Nepavyko atidaryti šio režimo.
+Evidence for %s:	%s įrodymai:
+I do not know what this is: nothing I know fits well enough to say.	Nežinau, kas tai: nieko, ką žinau, pakankamai gerai neatitinka.
+Identify all signals	Atpažinti visus signalus
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Atpažinimas: spustelėkite signalą arba pervilkite per jį. Esc arba I išjungia įrankį.
+Measured	Išmatuota
+Most likely %s, %.0f %% sure.	Greičiausiai %s, %.0f %% tikra.
+No signal stands out of the noise here.	Čia joks signalas neišsiskiria iš triukšmo.
+Open in %s	Atidaryti: %s
+Opened %s	Atidaryta: %s
+Perhaps %s (%.0f %%).	Galbūt %s (%.0f %%).
+Signals in the view	Signalai rodinyje
+The frequency list has here:	Dažnių sąraše čia yra:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Kas tai? Spustelėkite signalą arba pervilkite per jį, ir OnAir pasakys, kas tai yra ir kiek tuo tikra. Klavišas I. Shift+vilkimas veikia ir be įrankio.
+Why?	Kodėl?
+Identify selected	Atpažinti pažymėtą
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Suderina radiją su pažymėtu signalu ir pasako, kas tai yra (imtuvas turi veikti režimu, kurio atrankos dažnis jį apima)

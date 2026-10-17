@@ -600,10 +600,6 @@ Region %s, %s wide	Zona %s, %s de ancho
 collecting samples	recogiendo muestras
 Working it out...	Analizando...
 Nothing to identify here.	Aquí no hay nada que identificar.
-Looks like: %s	Parece: %s
-Looks like: %s (frame sync found %dx)	Parece: %s (sincronía de trama encontrada %dx)
-No mode fits well.	Ningún modo encaja bien.
-Open %s on this frequency	Abrir %s en esta frecuencia
 Switch to %s and tune to %s	Cambiar a %s y sintonizar %s
 Candidates	Candidatos
 (sync %dx)	(sincronía %dx)
@@ -2155,3 +2151,31 @@ Forget the history	Borrar el historial
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Lo que este receptor ha oído, por banda: balizas (NCDXF/IARU, Long Dashes, letras sueltas, portadoras) y las estaciones FT8 / FT4 / FT2 / WSPR decodificadas en la pantalla HF digital. Una banda está abierta cuando se oyeron al menos 3 estaciones en los últimos 30 minutos. Solo el receptor propio: no se descarga nada, así que no hay flujo solar ni índice K.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Nada oído en los últimos 30 minutos: inicia las balizas HF o la pantalla HF digital y déjala funcionando.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Últimas 24 horas (UTC), celdas de 15 minutos, más oscuro: menos estaciones
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f baudios
+, %s wide	, %s de ancho
+, bursts (%.0f %% on)	, ráfagas (%.0f %% activa)
+, every %.3g ms	, cada %.3g ms
+, useful symbol %.4g us	, símbolo útil %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Una puntuación es la parte de las pruebas que se cumplen; los porcentajes están calibrados con las señales de prueba de OnAir, no con todas las señales reales.
+Add to memory	Añadir a Memory
+Best guess	Mejor hipótesis
+Copy as text	Copiar como texto
+Could be %s (%.0f %%) or %s (%.0f %%).	Podría ser %s (%.0f %%) o %s (%.0f %%).
+Could not open this mode.	No se pudo abrir este modo.
+Evidence for %s:	Pruebas de %s:
+I do not know what this is: nothing I know fits well enough to say.	No sé qué es: nada de lo que conozco encaja lo bastante bien.
+Identify all signals	Identificar todas las señales
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Identificar: haz clic en una señal o arrastra sobre ella. Esc o I sale de la herramienta.
+Measured	Medido
+Most likely %s, %.0f %% sure.	Lo más probable es %s, %.0f %% seguro.
+No signal stands out of the noise here.	Aquí ninguna señal destaca del ruido.
+Open in %s	Abrir en %s
+Opened %s	Abierto %s
+Perhaps %s (%.0f %%).	Quizá %s (%.0f %%).
+Signals in the view	Señales en la vista
+The frequency list has here:	La lista de frecuencias tiene aquí:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	¿Qué es esto? Haz clic en una señal o arrastra sobre ella y OnAir dice qué es y con qué seguridad. Tecla I. Mayús+arrastrar lo hace sin la herramienta.
+Why?	¿Por qué?
+Identify selected	Identificar la seleccionada
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Sintoniza la radio en la señal seleccionada y dice qué es (el receptor debe estar en un modo cuya tasa de muestreo la cubra)

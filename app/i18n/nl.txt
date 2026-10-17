@@ -593,10 +593,6 @@ Region %s, %s wide	Gebied %s, %s breed
 collecting samples	samples verzamelen
 Working it out...	Bezig met uitzoeken...
 Nothing to identify here.	Hier valt niets te identificeren.
-Looks like: %s	Lijkt op: %s
-Looks like: %s (frame sync found %dx)	Lijkt op: %s (framesync %dx gevonden)
-No mode fits well.	Geen enkele modus past goed.
-Open %s on this frequency	%s openen op deze frequentie
 Switch to %s and tune to %s	Naar %s overschakelen en afstemmen op %s
 Candidates	Kandidaten
 (sync %dx)	(sync %dx)
@@ -2155,3 +2151,31 @@ Forget the history	Geschiedenis wissen
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Wat deze ontvanger heeft gehoord, per band: bakens (NCDXF/IARU, Long Dashes, losse letters, dragers) en de FT8- / FT4- / FT2- / WSPR-stations die in het HF-digitaalscherm zijn gedecodeerd. Een band is open als in de laatste 30 minuten minstens 3 stations zijn gehoord. Alleen de eigen ontvanger: er wordt niets gedownload, dus geen zonneflux of K-index.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Niets gehoord in de laatste 30 minuten: start de HF-bakens of het HF-digitaalscherm en laat het draaien.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Laatste 24 uur (UTC), cellen van 15 minuten, donkerder: minder stations
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f baud
+, %s wide	, %s breed
+, bursts (%.0f %% on)	, bursts (%.0f %% aan)
+, every %.3g ms	, elke %.3g ms
+, useful symbol %.4g us	, nuttig symbool %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Een score is het aandeel van het bewijs dat klopt; de percentages zijn gekalibreerd op de eigen testsignalen van OnAir, niet op elk echt signaal.
+Add to memory	Toevoegen aan Memory
+Best guess	Beste gok
+Copy as text	Kopiëren als tekst
+Could be %s (%.0f %%) or %s (%.0f %%).	Kan %s (%.0f %%) of %s (%.0f %%) zijn.
+Could not open this mode.	Deze modus kon niet worden geopend.
+Evidence for %s:	Bewijs voor %s:
+I do not know what this is: nothing I know fits well enough to say.	Ik weet niet wat dit is: niets dat ik ken past goed genoeg.
+Identify all signals	Alle signalen identificeren
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Identificeren: klik op een signaal of sleep eroverheen. Esc of I verlaat het gereedschap.
+Measured	Gemeten
+Most likely %s, %.0f %% sure.	Waarschijnlijk %s, %.0f %% zeker.
+No signal stands out of the noise here.	Hier steekt geen signaal boven de ruis uit.
+Open in %s	Openen in %s
+Opened %s	%s geopend
+Perhaps %s (%.0f %%).	Misschien %s (%.0f %%).
+Signals in the view	Signalen in beeld
+The frequency list has here:	De frequentielijst heeft hier:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Wat is dit? Klik op een signaal of sleep eroverheen en OnAir zegt wat het is en hoe zeker dat is. Toets I. Shift+slepen werkt ook zonder het gereedschap.
+Why?	Waarom?
+Identify selected	Geselecteerde identificeren
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Stemt de radio af op het geselecteerde signaal en zegt wat het is (de ontvanger moet in een modus staan waarvan de samplefrequentie het dekt)
