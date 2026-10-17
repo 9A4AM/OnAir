@@ -617,6 +617,13 @@ void wfDisplayPopup(App& a) {
     ImGui::TextDisabled("%s", tr("Colour map"));
     colourMapList(a);
     ImGui::Separator();
+    ImGui::TextDisabled("%s", tr("Contrast"));
+    ImGui::SetNextItemWidth(170 * gUi);
+    if (ImGui::SliderFloat("##wfgam", &a.wf.gamma, 0.4f, 2.5f, "%.2f")) a.wf.palette();
+    if (ImGui::IsItemDeactivatedAfterEdit()) savePrefs(a);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Below 1 lifts the weak signals, above 1 darkens the noise (double click: 1)"));
+    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) { a.wf.gamma = 1.f; a.wf.palette(); savePrefs(a); }
+    ImGui::Separator();
     ImGui::TextDisabled("%s", tr("Intensity (dB)"));
     ImGui::SetNextItemWidth(170 * gUi);
     if (ImGui::DragFloatRange2("##wfdbp", &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f")) a.wf.autoTrack = false;

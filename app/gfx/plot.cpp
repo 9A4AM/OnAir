@@ -303,6 +303,17 @@ void finishSetup() {
             else { const float y = std::floor(py(t.v)) + 0.5f; if (y >= C.plot.Min.y && y <= C.plot.Max.y) C.dl->AddLine(ImVec2(C.plot.Min.x, y), ImVec2(C.plot.Max.x, y), grid); }
         }
     }
+    if (C.flags & Flags_Equal) {   // constellation-like plots: the zero axes, a little stronger than the grid, with a tick at every grid step
+        const ImU32 zc = ImGui::ColorConvertFloat4ToU32(ImVec4(gStyle.Grid.x, gStyle.Grid.y, gStyle.Grid.z, std::min(1.f, gStyle.Grid.w * 2.2f)));
+        const float zx = std::floor(px(0)) + 0.5f, zy = std::floor(py(0)) + 0.5f, tl = 3 * sc;
+        if (zx >= C.plot.Min.x && zx <= C.plot.Max.x) C.dl->AddLine(ImVec2(zx, C.plot.Min.y), ImVec2(zx, C.plot.Max.y), zc);
+        if (zy >= C.plot.Min.y && zy <= C.plot.Max.y) C.dl->AddLine(ImVec2(C.plot.Min.x, zy), ImVec2(C.plot.Max.x, zy), zc);
+        for (int a = 0; a < 2; a++)
+            for (const auto& t : (a == 0 ? makeTicks(0, C.plot.GetWidth(), 50 * sc) : makeTicks(1, C.plot.GetHeight(), 50 * sc))) {
+                if (a == 0) { const float x = std::floor(px(t.v)) + 0.5f; if (x > C.plot.Min.x && x < C.plot.Max.x && zy >= C.plot.Min.y && zy <= C.plot.Max.y) C.dl->AddLine(ImVec2(x, zy - tl), ImVec2(x, zy + tl), zc); }
+                else { const float y = std::floor(py(t.v)) + 0.5f; if (y > C.plot.Min.y && y < C.plot.Max.y && zx >= C.plot.Min.x && zx <= C.plot.Max.x) C.dl->AddLine(ImVec2(zx - tl, y), ImVec2(zx + tl, y), zc); }
+            }
+    }
     C.dl->PushClipRect(C.plot.Min, C.plot.Max, true);
 }
 
@@ -408,7 +419,8 @@ template <class T> void PlotLine(const char*, const T* xs, const T* ys, int n, c
     const ImVec4 col = pick(s.LineColor);
     const ImU32 u = ImGui::ColorConvertFloat4ToU32(col);
     const ImU32 uf = ImGui::ColorConvertFloat4ToU32(pick(s.MarkerFillColor.w >= 0 ? s.MarkerFillColor : col));
-    const float wgt = std::max(0.5f, s.LineWeight) * gStyle.Scale;
+    const float wgt = std::max(1.3f, s.LineWeight) * gStyle.Scale;   // never thinner than 1.3: the same weight on every plot
+    if (s.FillFade > 0 && n > 1) { Spec fs = s; fs.FillColor = ImVec4(col.x, col.y, col.z, 0.22f); fs.LineColor = ImVec4(0, 0, 0, 0); PlotShaded(nullptr, xs, ys, n, C.lo[1], fs); }
     static std::vector<ImVec2> pts;   // kept between calls: no allocation per line per frame
     pts.clear();
     pts.reserve((size_t)n);
@@ -436,9 +448,10 @@ template <class T> void PlotLine(const char* label, const T* ys, int n, const Sp
 template <class T> void PlotScatter(const char*, const T* xs, const T* ys, int n, const Spec& s) {
     if (!C.active) return;
     finishSetup();
-    const ImVec4 col = pick(s.MarkerFillColor.w >= 0 ? s.MarkerFillColor : s.LineColor);
+    ImVec4 col = pick(s.MarkerFillColor.w >= 0 ? s.MarkerFillColor : s.LineColor);
+    if (n > 600 && s.MarkerSize < 3.f) col.w *= scatterAlphaFactor(n);   // a dense cloud: each dot fainter, so where dots pile up the colour builds up (persistence)
     const ImU32 fill = ImGui::ColorConvertFloat4ToU32(col);
-    const ImU32 line = ImGui::ColorConvertFloat4ToU32(s.MarkerLineColor.w >= 0 ? s.MarkerLineColor : col);
+    const ImU32 line = ImGui::ColorConvertFloat4ToU32(s.MarkerLineColor.w >= 0 ? ImVec4(s.MarkerLineColor.x, s.MarkerLineColor.y, s.MarkerLineColor.z, s.MarkerLineColor.w * col.w / std::max(1e-3f, pick(s.MarkerFillColor.w >= 0 ? s.MarkerFillColor : s.LineColor).w)) : col);
     const MarkerType m = s.Marker == Marker_None ? Marker_Circle : s.Marker;
     // Round dots larger than a pixel go through one batch (all the same colour and size, so the order does not matter and the pixels
     // are those of one AddCircleFilled each: see plot_batch.h); the rest are drawn one by one as before.
@@ -475,7 +488,7 @@ template <class T> void PlotBars(const char*, const T* xs, const T* ys, int n, d
         fitData(x, y); fitData(x, base);
         if (!std::isfinite(x) || !std::isfinite(y) || (C.ax[1].scale == Scale_Log10 && y <= 0)) continue;
         const float x0 = px(x - width * 0.5), x1 = px(x + width * 0.5);
-        C.dl->AddRectFilled(ImVec2(std::min(x0, x1), std::min(py(y), py(base))), ImVec2(std::max(x0, x1) - (std::fabs(x1 - x0) > 2 ? 1.0f : 0.0f), std::max(py(y), py(base))), fill);
+        C.dl->AddRectFilled(ImVec2(std::min(x0, x1), std::min(py(y), py(base))), ImVec2(std::max(x0, x1) - (std::fabs(x1 - x0) > 2 ? 1.0f : 0.0f), std::max(py(y), py(base))), fill, std::fabs(x1 - x0) > 6 ? 1.5f : 0.f, ImDrawFlags_RoundCornersTop);
     }
     (void)s;
 }

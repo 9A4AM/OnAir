@@ -369,7 +369,8 @@ void historyPlot(const char* id, const char* ylabel, const std::deque<float>& h,
         plt::SetupAxisLimits(plt::X1, 0, 600, plt::Cond_Always);
         if (!h.empty()) {
             std::vector<float> v(h.begin(), h.end());
-            plt::PlotLine("h", v.data(), (int)v.size());
+            plt::Spec hs; hs.LineColor = pal::accent(); hs.FillFade = 0.9f;
+            plt::PlotLine("h", v.data(), (int)v.size(), hs);
         }
         plt::EndPlot();
     }

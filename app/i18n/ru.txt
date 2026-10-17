@@ -1368,3 +1368,5 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: понижающий конвертер 1500 МГц примерно для 1,5-3 ГГц (2,4 ГГц, 2,3/3,4 ГГц). Включите его между антенной и радио; радио видит RF - 1500 МГц. Ниже 1500 МГц не поддерживается.
+Contrast	Контраст
+Below 1 lifts the weak signals, above 1 darkens the noise (double click: 1)	Below 1 lifts the weak signals, above 1 darkens the noise (double click: 1)

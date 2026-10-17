@@ -52,4 +52,7 @@ inline std::string formatFreqUnit(double mhz) {
 // Alpha (0..1) at the bottom of a faded fill, from the fade amount (0: none).
 inline float fillBottomAlpha(float fade) { return 1.f - std::min(1.f, std::max(0.f, fade)); }
 
+// Alpha factor of a dense scatter of n dots (alpha accumulation): 1 up to 600 dots, then falling with the square root, never below 0.22.
+inline float scatterAlphaFactor(int n) { return n <= 600 ? 1.f : std::max(0.22f, std::sqrt(600.f / (float)n)); }
+
 } // namespace plt
