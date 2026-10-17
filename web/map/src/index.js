@@ -1,3 +1,6 @@
+import { TrailStore, SqlBackend } from "./trail-store.js";
+import { parseTrailRequest } from "./trail.js";
+
 const KINDS = new Set([
   "aircraft", "vessel", "sonde", "aprs", "ham", "drone", "flarm", "sat", "buoy", "dsc", "station",
 ]);
@@ -271,6 +274,8 @@ export class MapHub {
       );
     `);
     this.ctx.storage.sql.exec("CREATE INDEX IF NOT EXISTS idx_tracks_kind_t ON tracks(kind, t)");
+    // Position history per track (see trail.js for the limits). Lives in the same DO storage, so it survives restarts.
+    this.trails = new TrailStore(new SqlBackend(this.ctx.storage.sql));
   }
 
   trackWire(t) {
@@ -306,7 +311,8 @@ export class MapHub {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
     if (url.pathname === "/ingest" && req.method === "POST") return this.ingest(req);
-    if (url.pathname === "/live" && req.method === "GET") return this.live();
+    if (url.pathname === "/live" && req.method === "GET") return this.live(url);
+    if ((url.pathname === "/trail" || url.pathname === "/trails") && req.method === "GET") return this.trailsReq(url);
     if (url.pathname === "/meta" && req.method === "GET") return this.meta(req);
     if (url.pathname === "/ws") return this.ws(req);
     return json({ error: "not found" }, 404);
@@ -363,6 +369,10 @@ export class MapHub {
         t.id, t.kind, t.label, t.sub, t.lat, t.lon, t.alt, t.heading, t.speed, t.extra, t.t,
         t.squawk, t.cat, t.vrate, t.src, t.age, t.path,
       );
+      // Same synchronous run as the track upsert, so the DO commits both in one storage transaction.
+      this.trails.record(t.id, {
+        t: positionTimeMs(now, t.age), lat: t.lat, lon: t.lon, alt: t.alt, hdg: t.heading,
+      }, now);
       kept.push({ ...t, path: pathArr });
     }
     this.ctx.storage.sql.exec(
@@ -384,6 +394,7 @@ export class MapHub {
       this.ctx.storage.sql.exec("DELETE FROM tracks WHERE kind = ? AND t < ?", kind, now - ttlFor(kind));
     }
     this.ctx.storage.sql.exec("DELETE FROM stations WHERE last < ?", now - 24 * 3600e3);
+    this.trails.prune(now); // after the tracks: trails of expired tracks go with them
     this.lastPrune = now;
     this.invalidateCaches();
   }
@@ -418,8 +429,19 @@ export class MapHub {
     return { ...body, load: this.loadMetrics(now) };
   }
 
-  live() {
-    return json(this.snapshot());
+  /** /live as before; `?trails=1` adds `trail` (array of [t_ms, lat, lon, alt, heading]) to each track that has one. */
+  live(url) {
+    const snap = this.snapshot();
+    if (!url || url.searchParams.get("trails") !== "1") return json(snap);
+    const all = this.trails.all();
+    return json({ ...snap, tracks: snap.tracks.map((t) => (all[t.id] ? { ...t, trail: all[t.id] } : t)) });
+  }
+
+  /** GET /trail?id=<track id> or /trails?ids=a,b,c -> { trails: { id: [points] } } (one request for every visible track). */
+  trailsReq(url) {
+    const q = parseTrailRequest(url.searchParams);
+    if (!q) return json({ error: "query" }, 400);
+    return json({ now: Date.now(), trails: this.trails.get(q.ids) });
   }
 
   async meta(req) {
@@ -673,7 +695,8 @@ export default {
       if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (req.method === "GET") return lookupAircraft(req);
     }
-    const api = url.pathname === "/ingest" || url.pathname === "/live" || url.pathname === "/ws";
+    const api = url.pathname === "/ingest" || url.pathname === "/live" || url.pathname === "/ws"
+      || url.pathname === "/trail" || url.pathname === "/trails";
     if (api) {
       const id = env.MAP.idFromName("hub-v2");
       return env.MAP.get(id).fetch(req);

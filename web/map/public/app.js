@@ -7,6 +7,7 @@ import { SHAPES } from "./shapes.js";
 import { iconShape } from "./types.js";
 import { createCard } from "./card.js";
 import { generateDemo, stepDemo } from "./demo.js";
+import { mergeTrails, appendLive, toLine } from "./trail.js";
 
 const DEMO = new URLSearchParams(location.search).get("demo") === "1";
 const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -35,7 +36,8 @@ let stations = 0;
 let serverLoad = null;
 let query = "";
 let followId = null;      // id being followed (map kept centred)
-let showTrack = true;     // draw the selected track's trail
+let showTrack = true;     // draw the selected track's trail (remembered across reloads)
+try { if (localStorage.getItem("onair.map.showTrack") === "0") showTrack = false; } catch { /* storage blocked */ }
 let demoMeta = {};
 
 const map = new maplibregl.Map({
@@ -290,7 +292,8 @@ function trailGeo() {
   const t = tracks.get(selected);
   if (!t || !on[t.kind]) return { type: "FeatureCollection", features };
   const [dlon, dlat] = displayLonLat(t);
-  const path = Array.isArray(t.path) ? t.path.slice() : [];
+  // t.tpts = server history merged with the fixes this page saw (see fetchTrail); t.path is the short fallback
+  const path = t.tpts && t.tpts.length >= 2 ? toLine(t.tpts) : Array.isArray(t.path) ? t.path.slice() : [];
   if (path.length && (path[path.length - 1][0] !== dlon || path[path.length - 1][1] !== dlat)) path.push([dlon, dlat]);
   else if (!path.length) path.push([dlon, dlat]);
   if (showTrack && path.length >= 2) {
@@ -339,6 +342,9 @@ function mergePathClient(prev, t) {
     if (prev.extra && !t.extra) t.extra = prev.extra;
     if (prev.cat && !t.cat) t.cat = prev.cat;
   }
+  // carry the timestamped trail forward and add this fix (dedupes against what the server already holds)
+  t.tpts = prev && prev.tpts ? prev.tpts : [];
+  t.tpts = appendLive(t.tpts, positionTimeMs(t), t.lat, t.lon, t.alt, t.heading);
   const moved = !prev || prev.lat !== t.lat || prev.lon !== t.lon;
   if (moved && prev) {
     t._prevPos = [prev.lon, prev.lat];
@@ -591,7 +597,13 @@ const card = createCard($("card"), {
   loadPhoto: true,
   onClose: () => clearSelection(),
   onFollow: (v) => { followId = v ? selected : null; },
-  onTrack: (v) => { showTrack = v; const tr = map.getSource("trails"); if (tr) tr.setData(trailGeo()); },
+  onTrack: (v) => {
+    showTrack = v;
+    try { localStorage.setItem("onair.map.showTrack", v ? "1" : "0"); } catch { /* storage blocked */ }
+    if (v && selected) fetchTrail(selected);
+    const tr = map.getSource("trails");
+    if (tr) tr.setData(trailGeo());
+  },
   isFollowing: () => followId != null && followId === selected,
   isTrackShown: () => showTrack,
   getDisplayPos: (t) => displayLonLat(t),
@@ -617,10 +629,27 @@ function setHash(t) {
   } catch { /* sandboxed frame */ }
 }
 
+/** Pull the hub's stored history for a track (one request) and merge it with the points seen live. */
+const trailAsked = new Map(); // id -> ms of the last request, so reselecting does not hammer the hub
+function fetchTrail(id) {
+  if (DEMO || !showTrack) return;
+  const now = Date.now();
+  if (now - (trailAsked.get(id) || 0) < 30000) return;
+  trailAsked.set(id, now);
+  fetch("/trail?id=" + encodeURIComponent(id)).then((r) => (r.ok ? r.json() : null)).then((d) => {
+    const pts = d && d.trails && d.trails[id];
+    const t = tracks.get(id);
+    if (!pts || !t) return;
+    t.tpts = mergeTrails(pts, t.tpts);
+    if (selected === id) { const tr = map.getSource("trails"); if (tr) tr.setData(trailGeo()); }
+  }).catch(() => { trailAsked.delete(id); });
+}
+
 function selectTrack(t) {
   if (followId && followId !== t.id) followId = null;
   selected = t.id;
   loadMeta(t);
+  fetchTrail(t.id);
   card.open(prepForCard(t));
   setHash(t);
   applyListSel();
