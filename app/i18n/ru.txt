@@ -2094,3 +2094,59 @@ Peak dB above floor	Пик дБ над шумом
 Quietest slots	Самые тихие участки
 From MHz	От МГц
 Width kHz	Ширина кГц
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Выберите передачу, чтобы увидеть подробности.
+Cancel recording	Отменить запись
+Record	Записать
+Stop series	Остановить сериал
+Record series	Записывать сериал
+The broadcaster sends no series identifier for this programme.	Вещатель не передаёт идентификатор сериала для этой передачи.
+No reminder	Без напоминания
+Remind me	Напомнить
+Watch	Смотреть
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	Не хватает тюнеров: пересекается с записью на другом мультиплексе и записана не будет.
+No description broadcast.	Описание не передаётся.
+Waiting for the service list...	Ожидание списка служб...
+Search title or description	Поиск по названию или описанию
+Now	Сейчас
+This multiplex only	Только этот мультиплекс
+programmes	передач
+time zone:	часовой пояс:
+this computer	этот компьютер
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Информация о программе пока не получена. Вещатели передают её в таблицах EIT, которые повторяются каждые несколько секунд (сейчас/далее) или минут (расписание). Некоторые мультиплексы не передают её вовсе.
+Opening the recording...	Открытие записи...
+Pause (timeshift)	Пауза (таймшифт)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Ставит эфир на паузу и продолжает записывать его на диск, чтобы можно было продолжить или перемотать назад.
+buffered	в буфере
+Timeshift	Таймшифт
+Play	Воспроизвести
+behind live	позади эфира
+Live	Эфир
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	Запись работает только пока OnAir открыт и компьютер не спит; спящий компьютер ничего не записывает. Скремблированные службы записываются как есть и не расшифровываются. Только для личного использования.
+Scheduled	Запланировано
+recording	запись
+conflict	конфликт
+any multiplex	любой мультиплекс
+series	сериал
+waiting for the tuner	ожидание тюнера
+scheduled	запланировано
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Ничего не запланировано. Выберите передачу в телегиде или добавьте запись вручную ниже.
+Manual recording	Запись вручную
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Начинается в это время (сегодня, а если оно прошло – завтра), без запаса.
+Recorded	Записано
+No recordings yet.	Записей пока нет.
+Export	Экспорт
+Delete this recording and its subtitle files?	Удалить эту запись и файлы субтитров?
+free	свободно
+Recorder settings	Настройки рекордера
+Folder	Папка
+Start earlier (s)	Начать раньше (с)
+End later (s)	Закончить позже (с)
+Tuners	Тюнеры
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Сколько разных мультиплексов можно принимать одновременно. Службы одного мультиплекса всегда записываются вместе.
+Keep free (GB)	Оставлять свободным (ГБ)
+Stop after signal loss (s, 0 = never)	Остановить после потери сигнала (с, 0 = никогда)
+Save teletext subtitles next to recordings (.srt, .vtt)	Сохранять субтитры телетекста рядом с записями (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Настраиваться на канал запланированной записи при её начале
+Timeshift buffer on disk	Буфер таймшифта на диске
+minutes	минут

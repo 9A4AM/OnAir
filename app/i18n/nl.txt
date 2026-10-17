@@ -2111,3 +2111,59 @@ Peak dB above floor	Piek dB boven ruisvloer
 Quietest slots	Stilste gebieden
 From MHz	Van MHz
 Width kHz	Breedte kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Kies een programma om de details te zien.
+Cancel recording	Opname annuleren
+Record	Opnemen
+Stop series	Serie stoppen
+Record series	Serie opnemen
+The broadcaster sends no series identifier for this programme.	De zender stuurt geen serie-identificatie voor dit programma.
+No reminder	Geen herinnering
+Remind me	Herinner mij
+Watch	Kijken
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	Niet genoeg tuners: dit overlapt met een opname op een andere multiplex en wordt niet opgenomen.
+No description broadcast.	Geen beschrijving uitgezonden.
+Waiting for the service list...	Wachten op de dienstenlijst...
+Search title or description	Zoek titel of beschrijving
+Now	Nu
+This multiplex only	Alleen deze multiplex
+programmes	programma's
+time zone:	tijdzone:
+this computer	deze computer
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Nog geen programma-informatie ontvangen. Zenders sturen die in de EIT-tabellen, die om de paar seconden (nu/straks) tot om de paar minuten (programmaoverzicht) worden herhaald. Sommige multiplexen sturen er geen.
+Opening the recording...	Opname openen...
+Pause (timeshift)	Pauze (timeshift)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Zet live-tv stil en blijft opnemen op schijf, zodat je kunt hervatten of terugspoelen.
+buffered	gebufferd
+Timeshift	Timeshift
+Play	Afspelen
+behind live	achter live
+Live	Live
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	Opnames lopen alleen zolang OnAir open is en de computer wakker is; een slapende computer neemt niets op. Versleutelde diensten worden opgenomen zoals ze binnenkomen en niet ontsleuteld. Alleen voor persoonlijk gebruik.
+Scheduled	Gepland
+recording	neemt op
+conflict	conflict
+any multiplex	elke multiplex
+series	serie
+waiting for the tuner	wacht op de tuner
+scheduled	gepland
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Niets gepland. Kies een programma in de gids of voeg hieronder een handmatige opname toe.
+Manual recording	Handmatige opname
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Begint op dit tijdstip (vandaag, of morgen als het voorbij is), zonder marge.
+Recorded	Opgenomen
+No recordings yet.	Nog geen opnames.
+Export	Exporteren
+Delete this recording and its subtitle files?	Deze opname en de bijbehorende ondertitelbestanden verwijderen?
+free	vrij
+Recorder settings	Recorderinstellingen
+Folder	Map
+Start earlier (s)	Eerder beginnen (s)
+End later (s)	Later stoppen (s)
+Tuners	Tuners
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Hoeveel verschillende multiplexen tegelijk ontvangen kunnen worden. Diensten van dezelfde multiplex worden altijd samen opgenomen.
+Keep free (GB)	Vrij houden (GB)
+Stop after signal loss (s, 0 = never)	Stoppen na signaalverlies (s, 0 = nooit)
+Save teletext subtitles next to recordings (.srt, .vtt)	Teletekst-ondertitels naast opnames opslaan (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Bij de start van een geplande opname afstemmen op het kanaal
+Timeshift buffer on disk	Timeshift-buffer op schijf
+minutes	minuten

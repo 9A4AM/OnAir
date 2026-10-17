@@ -2111,3 +2111,59 @@ Peak dB above floor	Pico dB sobre el ruido
 Quietest slots	Franjas más tranquilas
 From MHz	Desde MHz
 Width kHz	Ancho kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Elige un programa para ver sus detalles.
+Cancel recording	Cancelar grabación
+Record	Grabar
+Stop series	Detener serie
+Record series	Grabar serie
+The broadcaster sends no series identifier for this programme.	La emisora no envía un identificador de serie para este programa.
+No reminder	Sin recordatorio
+Remind me	Recordarme
+Watch	Ver
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	No hay sintonizadores suficientes: coincide con una grabación en otro múltiplex y no se grabará.
+No description broadcast.	No se emite descripción.
+Waiting for the service list...	Esperando la lista de servicios...
+Search title or description	Buscar título o descripción
+Now	Ahora
+This multiplex only	Solo este múltiplex
+programmes	programas
+time zone:	zona horaria:
+this computer	este equipo
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Aún no se ha recibido información de programación. Las emisoras la envían en las tablas EIT, que se repiten cada pocos segundos (ahora/siguiente) o cada pocos minutos (programación). Algunos múltiplex no envían ninguna.
+Opening the recording...	Abriendo la grabación...
+Pause (timeshift)	Pausa (timeshift)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Congela la TV en directo y sigue grabándola en el disco, para que puedas reanudar o retroceder.
+buffered	en búfer
+Timeshift	Timeshift
+Play	Reproducir
+behind live	detrás del directo
+Live	Directo
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	Las grabaciones solo funcionan mientras OnAir está abierto y el equipo activo; un equipo suspendido no graba nada. Los servicios cifrados se graban tal como llegan y no se descifran. Solo para uso personal.
+Scheduled	Programadas
+recording	grabando
+conflict	conflicto
+any multiplex	cualquier múltiplex
+series	serie
+waiting for the tuner	esperando al sintonizador
+scheduled	programada
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Nada programado. Elige un programa en la guía o añade una grabación manual abajo.
+Manual recording	Grabación manual
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Empieza a esta hora (hoy, o mañana si ya pasó), sin margen.
+Recorded	Grabadas
+No recordings yet.	Aún no hay grabaciones.
+Export	Exportar
+Delete this recording and its subtitle files?	¿Eliminar esta grabación y sus archivos de subtítulos?
+free	libres
+Recorder settings	Ajustes del grabador
+Folder	Carpeta
+Start earlier (s)	Empezar antes (s)
+End later (s)	Terminar después (s)
+Tuners	Sintonizadores
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Cuántos múltiplex distintos se pueden recibir a la vez. Los servicios del mismo múltiplex siempre se graban juntos.
+Keep free (GB)	Mantener libre (GB)
+Stop after signal loss (s, 0 = never)	Detener tras perder la señal (s, 0 = nunca)
+Save teletext subtitles next to recordings (.srt, .vtt)	Guardar subtítulos de teletexto junto a las grabaciones (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Sintonizar el canal de una grabación programada al empezar
+Timeshift buffer on disk	Búfer de timeshift en disco
+minutes	minutos
