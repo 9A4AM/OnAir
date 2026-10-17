@@ -7,6 +7,7 @@
 #define ONAIR_VERSION "dev"
 #endif
 #include "dect2/flarm/flarm_proto.h"
+#include "dect2/gnss/gnss_tel.h"
 #include <atomic>
 #include <chrono>
 #include <cmath>
@@ -44,6 +45,7 @@ double maxIngestPosAgeSec(const char* kind, const std::string& src) {
     if (!std::strcmp(kind, "aprs") || !std::strcmp(kind, "ham")) return 120;
     if (!std::strcmp(kind, "sonde")) return 900;
     if (!std::strcmp(kind, "sat")) return 180;
+    if (!std::strcmp(kind, "gnss")) return 120;
     if (!std::strcmp(kind, "dsc")) return 600;
     if (!std::strcmp(kind, "buoy")) return 7200;
     if (!std::strcmp(kind, "station")) return 3600;
@@ -379,6 +381,19 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
             t.hasHdg = true; t.hdg = a.trackDeg; t.hasSpd = true; t.spd = a.speedKmh / 1.852;
             t.cat = dect2::flarm::aircraftTypeName(a.acType);
             for (const auto& p : a.track) t.path.push_back({p.lat, p.lon});
+            addTrack(v, seen, std::move(t));
+        }
+    }
+
+    {   // GNSS satellites decoded by this receiver: sub-points from the broadcast ephemeris, nothing from an almanac
+        const dect2::GnssTelemetry& g = rx.rx.gnss;
+        if (rx.rx.standard == 13) for (const dect2::GnssSatPos& s : g.sats) {
+            dect2::GnssMapRow r;
+            if (!dect2::gnssMapRow(s, r)) continue;
+            Track t; t.kind = "gnss"; t.src = "gnss";
+            t.id = r.id; t.label = r.id; t.sub = r.sub; t.extra = r.extra;
+            t.lat = r.lat; t.lon = r.lon; t.hasAlt = true; t.alt = r.altKm;
+            t.hasHeard = true; t.heardAt = g.signalSecs;   // grows while the receiver runs, so every report counts as heard again
             addTrack(v, seen, std::move(t));
         }
     }
