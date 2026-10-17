@@ -2063,6 +2063,31 @@ Save CADU	Zapisz CADU
 Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Każda ramka, która przejdzie Reed-Solomon, jako CADU o 1024 bajtach do <folder danych>/goes/frames.cadu (taki sam plik, jaki zapisuje SatDump), do porównywania dekoderów
 Open CADU	Otwórz CADU
 Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Dekoduje plik .cadu (ramki po 1024 bajty, z tego programu lub SatDump) przez Reed-Solomon, pakiety i pliki; GOES HRIT musi działać
+Messages	Wiadomości
+Messages...	Wiadomości...
+Every decoded message in one searchable database, with filters and export	Każda zdekodowana wiadomość w jednej przeszukiwalnej bazie, z filtrami i eksportem
+The message database could not be opened:	Nie udało się otworzyć bazy wiadomości:
+Search text (words, prefix*)	Szukany tekst (słowa, przedrostek*)
+Identity	Identyfikator
+All modes	Wszystkie tryby
+With position	Z pozycją
+matching	pasuje
+stored	zapisano
+Newer	Nowsze
+Older	Starsze
+Export CSV	Eksportuj CSV
+Export JSON	Eksportuj JSON
+Export ADIF	Eksportuj ADIF
+Storage	Pamięć
+Record decoded messages	Zapisuj zdekodowane wiadomości
+Most rows (thousands, 0 = no limit)	Maks. liczba wierszy (tysiące, 0 = bez limitu)
+Size cap in MB (0 = none)	Limit rozmiaru w MB (0 = brak)
+Keep days (0 = forever)	Przechowuj dni (0 = zawsze)
+Apply limits now	Zastosuj limity teraz
+Clear all...	Wyczyść wszystko...
+Really clear	Naprawdę wyczyść
+The database file:	Plik bazy danych:
+Voice audio and encrypted traffic are never stored.	Dźwięk mowy i ruch szyfrowany nigdy nie są zapisywane.
 Band survey	Badanie pasma
 record every sweep into the survey	zapisuj każde przemiatanie w badaniu
 persistent at %.0f%%	stały od %.0f%%

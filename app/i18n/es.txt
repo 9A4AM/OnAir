@@ -2063,6 +2063,31 @@ Save CADU	Guardar CADU
 Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Cada trama que pasa Reed-Solomon, como CADU de 1024 bytes en <carpeta de datos>/goes/frames.cadu (el mismo tipo de archivo que escribe SatDump), para comparar decodificadores
 Open CADU	Abrir CADU
 Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Decodifica un archivo .cadu (tramas de 1024 bytes, de este programa o de SatDump) con Reed-Solomon, los paquetes y los archivos; GOES HRIT debe estar en marcha
+Messages	Mensajes
+Messages...	Mensajes...
+Every decoded message in one searchable database, with filters and export	Todos los mensajes decodificados en una base de datos con búsqueda, filtros y exportación
+The message database could not be opened:	No se pudo abrir la base de datos de mensajes:
+Search text (words, prefix*)	Texto a buscar (palabras, prefijo*)
+Identity	Identidad
+All modes	Todos los modos
+With position	Con posición
+matching	coincidencias
+stored	guardados
+Newer	Más nuevos
+Older	Más antiguos
+Export CSV	Exportar CSV
+Export JSON	Exportar JSON
+Export ADIF	Exportar ADIF
+Storage	Almacenamiento
+Record decoded messages	Registrar los mensajes decodificados
+Most rows (thousands, 0 = no limit)	Máximo de filas (miles, 0 = sin límite)
+Size cap in MB (0 = none)	Límite de tamaño en MB (0 = ninguno)
+Keep days (0 = forever)	Días a conservar (0 = siempre)
+Apply limits now	Aplicar límites ahora
+Clear all...	Borrar todo...
+Really clear	Borrar de verdad
+The database file:	El archivo de la base de datos:
+Voice audio and encrypted traffic are never stored.	El audio de voz y el tráfico cifrado nunca se guardan.
 Band survey	Estudio de banda
 record every sweep into the survey	registrar cada barrido en el estudio
 persistent at %.0f%%	persistente al %.0f%%

@@ -2063,6 +2063,31 @@ Save CADU	Įrašyti CADU
 Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Kiekvienas Reed-Solomon patikrą praėjęs kadras kaip 1024 baitų CADU į <duomenų aplankas>/goes/frames.cadu (tokio paties tipo failas, kokį rašo SatDump), dekoderiams palyginti
 Open CADU	Atverti CADU
 Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Dekoduoja .cadu failą (1024 baitų kadrai iš šios programos ar SatDump) per Reed-Solomon, paketus ir failus; GOES HRIT turi veikti
+Messages	Pranešimai
+Messages...	Pranešimai...
+Every decoded message in one searchable database, with filters and export	Visi iškoduoti pranešimai vienoje ieškomoje duomenų bazėje, su filtrais ir eksportu
+The message database could not be opened:	Nepavyko atidaryti pranešimų duomenų bazės:
+Search text (words, prefix*)	Ieškomas tekstas (žodžiai, priešdėlis*)
+Identity	Tapatybė
+All modes	Visi režimai
+With position	Su vieta
+matching	atitinka
+stored	išsaugota
+Newer	Naujesni
+Older	Senesni
+Export CSV	Eksportuoti CSV
+Export JSON	Eksportuoti JSON
+Export ADIF	Eksportuoti ADIF
+Storage	Saugojimas
+Record decoded messages	Įrašyti iškoduotus pranešimus
+Most rows (thousands, 0 = no limit)	Daugiausia eilučių (tūkstančiais, 0 = be ribos)
+Size cap in MB (0 = none)	Dydžio riba MB (0 = nėra)
+Keep days (0 = forever)	Laikyti dienas (0 = visada)
+Apply limits now	Taikyti ribas dabar
+Clear all...	Išvalyti viską...
+Really clear	Tikrai išvalyti
+The database file:	Duomenų bazės failas:
+Voice audio and encrypted traffic are never stored.	Balso garsas ir šifruotas eismas niekada nesaugomi.
 Band survey	Juostos tyrimas
 record every sweep into the survey	įrašyti kiekvieną skenavimą į tyrimą
 persistent at %.0f%%	nuolatinis %.0f%%

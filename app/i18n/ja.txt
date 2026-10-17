@@ -2063,6 +2063,31 @@ Save CADU	CADUを保存
 Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Reed-Solomonを通過した全フレームを1024バイトのCADUとして<データフォルダ>/goes/frames.cadu に保存します(SatDumpが書き出すのと同種のファイル)。デコーダの比較用です
 Open CADU	CADUを開く
 Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	このプログラムまたはSatDumpの.caduファイル(1024バイトのフレーム)をReed-Solomon、パケット、ファイルの順にデコードします。GOES HRITを実行しておく必要があります
+Messages	メッセージ
+Messages...	メッセージ...
+Every decoded message in one searchable database, with filters and export	デコードしたすべてのメッセージを、検索・フィルター・エクスポートできる1つのデータベースに
+The message database could not be opened:	メッセージデータベースを開けませんでした:
+Search text (words, prefix*)	検索テキスト(単語、前方一致*)
+Identity	識別子
+All modes	すべてのモード
+With position	位置あり
+matching	件一致
+stored	件保存
+Newer	新しい方へ
+Older	古い方へ
+Export CSV	CSVでエクスポート
+Export JSON	JSONでエクスポート
+Export ADIF	ADIFでエクスポート
+Storage	保存
+Record decoded messages	デコードしたメッセージを記録
+Most rows (thousands, 0 = no limit)	最大行数(千単位、0 = 無制限)
+Size cap in MB (0 = none)	サイズ上限(MB、0 = なし)
+Keep days (0 = forever)	保存日数(0 = 無期限)
+Apply limits now	今すぐ上限を適用
+Clear all...	すべて消去...
+Really clear	本当に消去
+The database file:	データベースファイル:
+Voice audio and encrypted traffic are never stored.	音声と暗号化された通信は保存されません。
 Band survey	帯域サーベイ
 record every sweep into the survey	すべてのスイープをサーベイに記録
 persistent at %.0f%%	常時 %.0f%%

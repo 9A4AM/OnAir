@@ -2063,6 +2063,31 @@ Save CADU	Enregistrer CADU
 Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Chaque trame validée par Reed-Solomon, en CADU de 1024 octets dans <dossier de données>/goes/frames.cadu (le même type de fichier que SatDump), pour comparer les décodeurs
 Open CADU	Ouvrir CADU
 Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Décode un fichier .cadu (trames de 1024 octets, de ce programme ou de SatDump) via Reed-Solomon, les paquets et les fichiers ; GOES HRIT doit être en marche
+Messages	Messages
+Messages...	Messages...
+Every decoded message in one searchable database, with filters and export	Tous les messages décodés dans une base de données consultable, avec filtres et export
+The message database could not be opened:	La base de données des messages n'a pas pu être ouverte :
+Search text (words, prefix*)	Texte à chercher (mots, préfixe*)
+Identity	Identité
+All modes	Tous les modes
+With position	Avec position
+matching	correspondants
+stored	enregistrés
+Newer	Plus récents
+Older	Plus anciens
+Export CSV	Exporter en CSV
+Export JSON	Exporter en JSON
+Export ADIF	Exporter en ADIF
+Storage	Stockage
+Record decoded messages	Enregistrer les messages décodés
+Most rows (thousands, 0 = no limit)	Nombre maximal de lignes (milliers, 0 = sans limite)
+Size cap in MB (0 = none)	Taille maximale en Mo (0 = aucune)
+Keep days (0 = forever)	Jours de conservation (0 = toujours)
+Apply limits now	Appliquer les limites maintenant
+Clear all...	Tout effacer...
+Really clear	Effacer vraiment
+The database file:	Le fichier de la base :
+Voice audio and encrypted traffic are never stored.	L'audio vocal et le trafic chiffré ne sont jamais enregistrés.
 Band survey	Relevé de bande
 record every sweep into the survey	enregistrer chaque balayage dans le relevé
 persistent at %.0f%%	persistant à %.0f%%

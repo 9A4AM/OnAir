@@ -362,8 +362,20 @@ std::string Engine::scriptError(const std::string& id) const {
 std::vector<Firing> Engine::firings() const { std::lock_guard<std::mutex> lk(p_->mu); return std::vector<Firing>(p_->firings.begin(), p_->firings.end()); }
 void Engine::clearFirings() { std::lock_guard<std::mutex> lk(p_->mu); p_->firings.clear(); }
 
+void Engine::setTap(std::function<void(const Event&)> f, uint32_t familyMask) {
+    std::lock_guard<std::mutex> lk(tapMu_);
+    tap_ = std::move(f);
+    tapMask_.store(tap_ ? familyMask : 0);
+}
+
 void Engine::submit(Event&& ev) {
-    if (!wants(familyOf(ev.type))) return;
+    const int fam = familyOf(ev.type);
+    if (fam >= 0 && (tapMask_.load(std::memory_order_relaxed) >> fam & 1)) {
+        std::function<void(const Event&)> t;
+        { std::lock_guard<std::mutex> lk(tapMu_); t = tap_; }
+        if (t) t(ev);
+    }
+    if (!(fam >= 0 && (mask_.load(std::memory_order_relaxed) >> fam & 1))) return;
     {
         std::lock_guard<std::mutex> lk(p_->qmu);
         if (p_->q.size() >= kQueueMax) { dropped_++; return; }
