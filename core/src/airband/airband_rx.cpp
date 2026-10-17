@@ -34,7 +34,7 @@ constexpr int kBlock = 256;               // carrier search FFT at the channel r
 constexpr int kHop = kBlock / 2;
 constexpr int kWide = 1024;               // the tuning error spectrum at the CIC rate
 constexpr double kDelaySec = 0.06;        // the audio runs this late, so the squelch has decided before a sample plays
-constexpr double kMaxTuneErr = 7800;      // the tuning error searched
+constexpr double kMaxTuneErr = 12000;     // the tuning error searched: +-88 ppm at 137 MHz (cheap radios without a TCXO are off by 50 - 100 ppm); beyond +-4.1 kHz it needs two channels that agree
 constexpr double kSingleLimit = 4100;     // what one channel alone may move it by
 constexpr double kScanResume = 2.0;       // scan: seconds after the channel closed before it moves on
 
@@ -427,6 +427,7 @@ struct AirbandReceiver::Impl {
     // ------------------------------------------------ squelch, once per hop
 
     void block(Chan& c, int idx) {
+        const double sql = c.cfg.squelchDb > -50 ? (double)std::max(-5.f, std::min(45.f, c.cfg.squelchDb)) : (double)this->sql;   // this channel's threshold
         std::vector<cf32> b(kBlock);
         for (int i = 0; i < kBlock; i++) b[(size_t)i] = c.ring[(size_t)((c.nCh + i) % kBlock)] * win[(size_t)i];
         fftN.forward(b.data());
@@ -795,6 +796,26 @@ void AirbandReceiver::setNoiseRemover(bool on, float strength) { p_->nr.setStren
 void AirbandReceiver::setSilent(bool s) { p_->silent = s; }
 void AirbandReceiver::setChannelTap(std::function<void(int, const float*, size_t)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->chanTapSet = std::move(cb); p_->tapsReq = true; }
 void AirbandReceiver::setMixTap(std::function<void(const float*, size_t)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->mixTapSet = std::move(cb); p_->tapsReq = true; }
+
+double airbandUsableSpanHz(double rate) {
+    // a channel is in band when |pos| + 12.5 kHz + 7.8 kHz < 0.45 rate; the radio's centre sits tuneOffsetHz above the dial, which is rounded to 25 kHz
+    return std::max(0.0, 2 * (0.45 * rate - 12500 - kMaxTuneErr - 25000.0 / 2 - airbandTuning().tuneOffsetHz));
+}
+
+std::vector<AirbandGroup> airbandPlanGroups(const std::vector<double>& f, double span) {
+    std::vector<size_t> ord(f.size());
+    for (size_t i = 0; i < ord.size(); i++) ord[i] = i;
+    std::sort(ord.begin(), ord.end(), [&](size_t a, size_t b) { return f[a] < f[b]; });
+    std::vector<AirbandGroup> g;
+    for (size_t i : ord) {
+        if (!std::isfinite(f[i])) continue;
+        if (g.empty() || f[i] - g.back().loHz > span) { AirbandGroup n; n.loHz = n.hiHz = f[i]; g.push_back(n); }
+        g.back().hiHz = f[i];
+        g.back().members.push_back(i);
+    }
+    for (auto& x : g) x.centerHz = 0.5 * (x.loHz + x.hiHz);
+    return g;
+}
 
 ModeTuning airbandTuning() {
     ModeTuning t;

@@ -40,17 +40,19 @@ void add(std::vector<AirbandChannel>& v, const std::vector<std::string>& f, bool
     AirbandChannel c;
     c.freqHz = atof(f[0].c_str()); c.is833 = f[1] == "1"; c.muted = f[2] == "1"; c.solo = f[3] == "1"; c.priority = f[4] == "1";
     if (f.size() > 5) c.label = escaped ? unesc(f[5]) : f[5];
+    if (escaped && f.size() > 6 && !f[6].empty()) { const double q = atof(f[6].c_str()); if (q >= -5 && q <= 45) c.squelchDb = (float)q; }
     if (airbandOnRaster(c.freqHz, c.is833)) v.push_back(c);
 }
 }   // namespace
 
 std::string airbandEncode(const std::vector<AirbandChannel>& v) {
-    std::string s = "v2:";
+    std::string s = "v3:";
     for (const auto& c : v) {
         char b[96];
         snprintf(b, sizeof b, "%.1f,%d,%d,%d,%d,", c.freqHz, c.is833 ? 1 : 0, c.muted ? 1 : 0, c.solo ? 1 : 0, c.priority ? 1 : 0);
         s += b;
         s += esc(c.label);
+        if (c.squelchDb > -50) { snprintf(b, sizeof b, ",%.1f", c.squelchDb); s += b; }
         s += ';';
     }
     return s;
@@ -58,7 +60,7 @@ std::string airbandEncode(const std::vector<AirbandChannel>& v) {
 
 std::vector<AirbandChannel> airbandDecode(const std::string& s) {
     std::vector<AirbandChannel> v;
-    if (s.compare(0, 3, "v2:") == 0) {
+    if (s.compare(0, 3, "v2:") == 0 || s.compare(0, 3, "v3:") == 0) {
         for (const auto& rec : split(s.substr(3), ';')) if (!rec.empty()) add(v, split(rec, ','), true);
         return v;
     }

@@ -38,12 +38,15 @@ struct AirbandTelemetry;   // airband_tel.h
 constexpr double kAirbandAudioRate = 8000.0;   // the audio of each channel and of the mix
 constexpr double kAirband833 = 25000.0 / 3;    // the 8.33 kHz raster step
 
+constexpr float kAirbandSquelchGlobal = -99;   // AirbandChannel::squelchDb: follow the global squelch
+
 // A channel of the user's list
 struct AirbandChannel {
     double freqHz = 0;           // carrier frequency
     bool is833 = false;          // 8.33 kHz channel spacing (narrow filter)
     std::string label;           // the user's tag ("Tower")
     bool muted = false, solo = false, priority = false;
+    float squelchDb = kAirbandSquelchGlobal;   // this channel's own carrier to noise threshold (-5 .. 45 dB), or the global one
 };
 
 // Channel names (ICAO): a 25 kHz channel is named by its frequency ("118.025"); the three 8.33 kHz channels of the 25 kHz block that starts
@@ -54,6 +57,13 @@ struct AirbandChannel {
 bool airbandParse(const std::string& text, double& freqHz, bool& is833);
 std::string airbandName(double freqHz, bool is833);   // the channel name: "118.010"
 bool airbandOnRaster(double freqHz, bool is833);      // within 10 Hz of the raster
+
+// Splitting a list of frequencies into captures: each group fits in spanHz (the usable width, see airbandUsableSpanHz) around its centre.
+// The groups come in order of frequency; members are indices into the input.
+struct AirbandGroup { double centerHz = 0; double loHz = 0, hiHz = 0; std::vector<size_t> members; };
+std::vector<AirbandGroup> airbandPlanGroups(const std::vector<double>& freqsHz, double spanHz);
+// The width of the band that holds channels completely at a sample rate, with the radio's offset and the tuning error margin counted
+double airbandUsableSpanHz(double sampleRateHz);
 
 class AirbandReceiver {
 public:
