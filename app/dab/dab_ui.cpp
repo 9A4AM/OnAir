@@ -363,6 +363,15 @@ static void dabLogoUpdate(App& a, const DabEnsemble& ens) {
         t.w = l.w; t.h = l.h;
     }
 }
+void dabLogoSet(uint16_t eid, uint32_t sid, int w, int h, const uint32_t* rgba) {
+    if (!gGfx || w <= 0 || h <= 0) return;
+    DabLogoCache::Tex& t = gDabLogos.byEns[eid][sid];
+    if (t.img && t.w == w && t.h == h) { t.img->update(0, 0, w, h, rgba); return; }
+    delete t.img;
+    t.img = gGfx->createImage(w, h, 0xFF000000u);
+    t.img->update(0, 0, w, h, rgba);
+    t.w = w; t.h = h;
+}
 // The logo of a service in a box `h` high (square at most 1.4 times as wide); false when none is known
 bool dabLogoImage(App& a, const DabEnsemble& ens, uint32_t sid, float h) {
     dabLogoUpdate(a, ens);
@@ -517,6 +526,7 @@ static void dabAnnouncementUi(App& a, const DabEnsemble& ens) {
 
 void dabStations(App& a) {
     const bool run = a.engine.running();
+    dabSpiTick(a);
     const DabEnsemble ens = a.engine.dabEnsemble();
     const int cur = a.engine.dabSelected();
     sectionHeader(Ic::Radio, "Stations");
@@ -629,9 +639,12 @@ void dabStations(App& a) {
         std::string name = "no station";
         std::string dls;
         std::vector<std::pair<std::string, std::string>> tags;
-        for (const auto& kv : ens.services) { const DabComponent* ac = kv.second.playable(); if (ac && ac->subId == cur) { name = kv.second.label; dls = kv.second.dls; dlPlusLines(kv.second, tags); } }
+        uint32_t playSid = 0;
+        for (const auto& kv : ens.services) { const DabComponent* ac = kv.second.playable(); if (ac && ac->subId == cur) { name = kv.second.label; dls = kv.second.dls; dlPlusLines(kv.second, tags); playSid = kv.first; } }
+        const std::string guideNow = playSid ? dabSpiNowText(a, playSid) : std::string();   // now / next from the programme guide (SPI)
         auto drawTags = [&](float bw) {   // the tagged parts of the label (DL Plus), the plain label as well when it says more
             for (const auto& t : tags) { ImGui::SetCursorPosX(8); ImGui::PushTextWrapPos(bw - 8); ImGui::TextDisabled("%s", t.first.c_str()); ImGui::SameLine(); ImGui::Text("%s", t.second.c_str()); ImGui::PopTextWrapPos(); }
+            if (!guideNow.empty()) { ImGui::SetCursorPosX(8); ImGui::PushTextWrapPos(bw - 8); ImGui::TextDisabled("%s", guideNow.c_str()); ImGui::PopTextWrapPos(); }
         };
         if (video && a.video.has()) { a.video.draw(ImGui::GetContentRegionAvail()); ImGui::EndChild(); return; }   // the DMB picture, drawn as the TV modes draw theirs
         dabSlideUpdate(a);
@@ -643,7 +656,7 @@ void dabStations(App& a) {
             const float dlsH = tags.empty() ? (dls.empty() ? 0.f : ImGui::CalcTextSize(dls.c_str(), nullptr, false, std::max(1.f, bw - 16)).y + ImGui::GetStyle().ItemSpacing.y)
                                             : (float)tags.size() * (ImGui::GetTextLineHeight() + ImGui::GetStyle().ItemSpacing.y);
             const ImVec2 av = ImGui::GetContentRegionAvail();
-            const float sc = std::min(std::min(av.x / (float)gDabSlide.w, (av.y - dlsH) / (float)gDabSlide.h), 4.f);
+            const float sc = std::min(std::min(av.x / (float)gDabSlide.w, (av.y - dlsH - (guideNow.empty() ? 0.f : 2.f * (ImGui::GetTextLineHeight() + ImGui::GetStyle().ItemSpacing.y))) / (float)gDabSlide.h), 4.f);
             if (sc > 0.f) {
                 const ImVec2 sz((float)gDabSlide.w * sc, (float)gDabSlide.h * sc);
                 ImGui::SetCursorPosX(std::max(0.f, (bw - sz.x) * 0.5f));
@@ -712,7 +725,12 @@ void dabRadioTab(App& a) {
             ImGui::TableNextColumn(); ImGui::TextDisabled("%s", ac ? (ac->dmb() ? "DMB (video)" : sv.dabPlus() ? "DAB+ (HE-AAC)" : "DAB (MP2)") : "data");
             ImGui::TableNextColumn(); ImGui::TextDisabled("%s", ac ? dabSubText(ens, ac->subId).c_str() : "");
             ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextDisabled("%04X", sv.sid); ImGui::PopFont();
-            ImGui::TableNextColumn(); { const std::string dp = dlPlusShort(sv); ImGui::TextDisabled("%s", dp.empty() ? sv.dls.c_str() : dp.c_str()); }
+            ImGui::TableNextColumn(); {
+                const std::string dp = dlPlusShort(sv);
+                const std::string gd = dabSpiNowText(a, sv.sid);
+                ImGui::TextDisabled("%s", dp.empty() ? sv.dls.c_str() : dp.c_str());
+                if (!gd.empty()) ImGui::TextDisabled("%s", gd.c_str());   // from the programme guide (SPI)
+            }
             ImGui::PopTextWrapPos();
         }
         ImGui::EndTable();

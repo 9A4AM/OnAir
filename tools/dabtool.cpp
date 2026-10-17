@@ -5,6 +5,7 @@
 //   dabtool info
 #include "dect2/dab/dab.h"
 #include "dect2/dab/dab_gen.h"
+#include "dect2/dab/dab_fig.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -66,8 +67,11 @@ static int rx(int argc, char** argv) {
     if (argc > 4) r.select(atoi(argv[4]));
     std::vector<int8_t> q(2 * 65536);
     std::vector<cf32> x(65536);
-    size_t n;
-    while ((n = fread(q.data(), 2, 65536, f)) > 0) {
+    size_t n, total = 0;
+    const char* mx = getenv("DABTOOL_MAXSEC");   // stop after this many seconds of the file
+    const size_t maxSamples = mx ? (size_t)(atof(mx) * atof(argv[3])) : (size_t)-1;
+    while (total < maxSamples && (n = fread(q.data(), 2, 65536, f)) > 0) {
+        total += n;
         for (size_t i = 0; i < n; i++) x[i] = cf32(q[2 * i] / 127.f, q[2 * i + 1] / 127.f);
         r.feed(x.data(), n);
     }
@@ -82,11 +86,93 @@ static int rx(int argc, char** argv) {
         const DabComponent* c = kv.second.audio();
         printf("  %04X \"%s\" sub %d %s\n", (unsigned)kv.first, kv.second.label.c_str(), c ? c->subId : -1, kv.second.dabPlus() ? "DAB+" : "DAB");
     }
+    const DabFicInfo fi = dabFicInfo(r.ficAnalysis());
+    for (const auto& kv : e.services) {
+        for (const DabComponent& c : kv.second.comps) printf("  %04X comp tmid %d sub %d scid %d dscty %d%s\n", (unsigned)kv.first, c.tmid, c.subId, c.scid, c.dscty, c.primary ? " primary" : "");
+        auto ua = fi.userApps.find(kv.first);
+        if (ua != fi.userApps.end()) for (int t : ua->second) printf("  %04X user app 0x%03X %s\n", (unsigned)kv.first, t, dabUserAppName(t).c_str());
+    }
+    for (const auto& kv : e.packet) printf("  packet scid %d: sub %d address %d dscty %d dg %d\n", kv.first, kv.second.subId, kv.second.address, kv.second.dscty, kv.second.dg);
+    if (fi.hasTime) printf("  FIG 0/10 MJD %d %02d:%02d, LTO %s%d half hours\n", fi.mjd, fi.hour, fi.minute, fi.hasLto ? "" : "(none) ", fi.ltoHalfHours);
     for (const auto& kv : e.subs) printf("  sub %d: start %d size %d CU, %d kbit/s, EEP %d-%c\n", kv.first, kv.second.start, kv.second.size, kv.second.bitrate, kv.second.level + 1, kv.second.option ? 'B' : 'A');
     const DabAudioStats s = a.stats();
     if (s.sub >= 0) printf("audio sub %d: %s %d Hz %d ch, superframes ok %llu bad %llu, AU ok %llu bad %llu, RS fixed %llu, PCM frames %llu\n", s.sub, s.codec.c_str(), s.sampleRate, s.channels,
                            (unsigned long long)s.superframesOk, (unsigned long long)s.superframesBad, (unsigned long long)s.auOk, (unsigned long long)s.auBad,
                            (unsigned long long)s.rsCorrected, (unsigned long long)s.pcmFrames);
+    return 0;
+}
+
+// dabtool spi <in.cs8> <sampleRate> [dumpDir]: decodes the programme guide (SPI) of the ensemble in the file and prints what it holds
+static int spiCmd(int argc, char** argv) {
+    if (argc < 4) return usage();
+    FILE* f = fopen(argv[2], "rb");
+    if (!f) { perror(argv[2]); return 1; }
+    DabReceiver r;
+    const double rate = atof(argv[3]);
+    r.configure(rate);
+    r.audio().setSilent(true);
+    const char* dump = argc > 4 ? argv[4] : nullptr;
+    int nobj = 0;
+    if (const char* fr = getenv("DABTOOL_FRAMES")) {
+        FILE* ff = fopen(fr, "wb");
+        r.setFrameTap([ff](int, const uint8_t* b, int n) { if (ff) fwrite(b, 1, (size_t)n, ff); });
+    }
+    r.spi().setObjectTap([&](const MotObject& o) {
+        nobj++;
+        if (nobj <= 6 || nobj % 50 == 0) printf("  object %d: tid %u name \"%s\" type %d/%d size %zu params %zu%s\n", nobj, o.tid, o.name.c_str(), o.contentType, o.subtype, o.body.size(), o.params.size(), o.fromDirectory ? " (dir)" : "");
+        if (dump) { char b[512]; snprintf(b, sizeof b, "%s/obj%04d.bin", dump, nobj); FILE* g = fopen(b, "wb"); if (g) { fwrite(o.body.data(), 1, o.body.size(), g); fclose(g); } }
+    });
+    std::vector<int8_t> q(2 * 65536);
+    std::vector<cf32> x(65536);
+    size_t n, total = 0;
+    const char* mx = getenv("DABTOOL_MAXSEC");
+    const size_t maxSamples = mx ? (size_t)(atof(mx) * rate) : (size_t)-1;
+    bool sel = false;
+    double nextReport = 10;
+    while (total < maxSamples && (n = fread(q.data(), 2, 65536, f)) > 0) {
+        total += n;
+        for (size_t i = 0; i < n; i++) x[i] = cf32(q[2 * i] / 127.f, q[2 * i + 1] / 127.f);
+        r.feed(x.data(), n);
+        if (!sel) {
+            const DabEnsemble e = r.ensemble();
+            for (const auto& kv : e.services) {
+                if (!kv.second.spi) continue;
+                for (const DabComponent& c : kv.second.comps) {
+                    auto pk = c.tmid == 3 ? e.packet.find(c.scid) : e.packet.end();
+                    if (pk != e.packet.end() && e.subs.count(pk->second.subId)) { r.selectSpi(pk->second.subId, pk->second.address); sel = true; printf("SPI service %08X: sub %d address %d, profiles", (unsigned)kv.first, pk->second.subId, pk->second.address); for (int p : kv.second.spiProfiles) printf(" %d", p); printf("\n"); }
+                }
+            }
+        }
+        if (total / rate >= nextReport) {
+            nextReport += 10;
+            const DabSpiDecoder::Progress p = r.spi().progress();
+            const SpiStats st = r.spi().store().stats();
+            printf("t=%.0fs: groups %llu directory %d have %d (%.0f%%), objects %llu (bad %llu) SI %llu PI %llu events %llu\n", total / rate, (unsigned long long)p.groups, p.expected, p.have, p.percent,
+                   (unsigned long long)st.objects, (unsigned long long)st.objectsBad, (unsigned long long)st.siObjects, (unsigned long long)st.piObjects, (unsigned long long)st.events);
+        }
+    }
+    fclose(f);
+    const SpiSnapshot s = r.spi().store().snapshot();
+    const SpiStats st = r.spi().store().stats();
+    printf("final: objects %llu (bad %llu, binary %llu, xml %llu, gzip %llu), SI %llu PI %llu, services %zu, programmes %zu, events %zu\n", (unsigned long long)st.objects, (unsigned long long)st.objectsBad,
+           (unsigned long long)st.binary, (unsigned long long)st.xml, (unsigned long long)st.compressed, (unsigned long long)st.siObjects, (unsigned long long)st.piObjects, s.services.size(), s.programmes.size(), s.events.size());
+    for (const auto& kv : s.services) printf("  svc %08X \"%s\" / \"%s\" media %zu\n", (unsigned)kv.first, kv.second.mediumName.c_str(), kv.second.longName.c_str(), kv.second.media.size());
+    int shown = 0;
+    for (const SpiEvent& e : s.events) {
+        if (shown++ >= 12) break;
+        auto p = s.programmes.find(e.progKey);
+        printf("  %08X %s +%ds \"%s\"\n", (unsigned)e.sid, spiFormatTime(e.start, e.offMin).c_str(), e.duration, p != s.programmes.end() ? p->second.title().c_str() : "?");
+    }
+    for (const MotObject& m : r.spi().directoryEntries()) {
+        std::string ps;
+        for (const MotParam& p : m.params) { char b[24]; snprintf(b, sizeof b, " %02X[", p.id); ps += b; for (size_t i = 0; i < p.data.size() && i < 8; i++) { snprintf(b, sizeof b, "%02X", p.data[i]); ps += b; } ps += "]"; }
+        printf("  dir tid %5u name \"%s\" type %d/%d body %zu%s\n", m.tid, m.name.c_str(), m.contentType, m.subtype, m.bodySize, ps.c_str());
+    }
+    const DabReceiver::SpiLink lk = r.spiLink();
+    printf("packets: good %llu bad %llu lost %llu orphan %llu other-id %llu empty %llu; data units ok %llu dropped %llu\n", (unsigned long long)lk.packets, (unsigned long long)lk.bad, (unsigned long long)lk.lost, (unsigned long long)lk.orphan,
+           (unsigned long long)lk.other, (unsigned long long)lk.empty, (unsigned long long)lk.unitsOk, (unsigned long long)lk.unitsDropped);
+    const MotStats ms = r.spi().motStats();
+    printf("mot: repeats %llu groups %llu bad %llu directories %llu dir segs %llu body segs %llu objects %llu\n", (unsigned long long)ms.repeats, (unsigned long long)ms.groups, (unsigned long long)ms.groupsBad, (unsigned long long)ms.directories, (unsigned long long)ms.directorySegments, (unsigned long long)ms.bodySegments, (unsigned long long)ms.objects);
     return 0;
 }
 
@@ -107,6 +193,7 @@ int main(int argc, char** argv) {
     if (argc < 2) return usage();
     if (!strcmp(argv[1], "gen")) return gen(argc, argv);
     if (!strcmp(argv[1], "rx")) return rx(argc, argv);
+    if (!strcmp(argv[1], "spi")) return spiCmd(argc, argv);
     if (!strcmp(argv[1], "info")) return info();
     return usage();
 }

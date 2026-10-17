@@ -2035,3 +2035,34 @@ How to install	Como instalar
 The services, signal information and data work without it.	Os serviços, as informações do sinal e os dados funcionam sem ele.
 Interface and windows	Interface e janelas
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Ver altera a disposição (Sidebar, Scope, Tiles, Faceplate, Panel), a interface clássica, o tamanho do texto e a paleta; a interface tátil está em Ferramentas. Janelas como Frequências, Scanner de varrimento, Radiogoniómetro e Automatizações abrem-se a partir daqui.
+# programme guide (SPI)
+Guide	Guia
+until	até
+Genre	Género
+Saved	Guardado
+Now	Agora
+objects	objetos
+services	serviços
+programmes	programas
+scheduled	agendados
+objects decoded	objetos descodificados
+Guide data	Dados do guia
+last update	última atualização
+no update yet	ainda sem atualização
+not collecting	a não recolher
+from the cache	da cache
+cached data, expires with time	dados em cache, expiram com o tempo
+waiting for the carousel directory...	a aguardar o diretório do carrossel...
+Export XMLTV	Exportar XMLTV
+Collect the guide in the background	Recolher o guia em segundo plano
+Could not write the file.	Não foi possível escrever o ficheiro.
+Listen to this station	Ouvir esta estação
+search title or description	pesquisar por título ou descrição
+Nothing matches.	Nada corresponde.
+No description in the guide.	Sem descrição no guia.
+Click a programme in the grid or the search results to see its details.	Clique num programa na grelha ou nos resultados para ver os detalhes.
+Start the receiver on a DAB channel to see the guide.	Inicie o recetor num canal DAB para ver o guia.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Este ensemble não anuncia guia de programas (SPI, aplicação de utilizador 0x007).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	O guia deste ensemble é enviado no PAD de uma estação: reproduza essa estação para o recolher.
+The broadcaster sends service information (names, logos) but no programme schedule.	O emissor envia informação de serviço (nomes, logótipos) mas não a programação.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Ainda não foi recebida programação. Um carrossel de guia pode demorar vários minutos a dar uma volta.

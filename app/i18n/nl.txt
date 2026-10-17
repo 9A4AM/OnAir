@@ -2052,3 +2052,34 @@ How to install	Zo installeer je het
 The services, signal information and data work without it.	De diensten, signaalinformatie en data werken ook zonder.
 Interface and windows	Interface en vensters
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Beeld wisselt de indeling (Sidebar, Scope, Tiles, Faceplate, Panel), de klassieke interface, tekstgrootte en palet; de touchinterface staat onder Tools. Vensters zoals Frequenties, Sweepscanner, Peilontvanger en Automatiseringen openen vanaf hier.
+# programme guide (SPI)
+Guide	Gids
+until	tot
+Genre	Genre
+Saved	Opgeslagen
+Now	Nu
+objects	objecten
+services	diensten
+programmes	programma's
+scheduled	gepland
+objects decoded	gedecodeerde objecten
+Guide data	Gidsgegevens
+last update	laatste update
+no update yet	nog geen update
+not collecting	verzamelt niet
+from the cache	uit de cache
+cached data, expires with time	gegevens uit de cache, verlopen na verloop van tijd
+waiting for the carousel directory...	wachten op de map van de carrousel...
+Export XMLTV	XMLTV exporteren
+Collect the guide in the background	Gids op de achtergrond verzamelen
+Could not write the file.	Het bestand kon niet worden geschreven.
+Listen to this station	Naar dit station luisteren
+search title or description	zoeken op titel of beschrijving
+Nothing matches.	Niets gevonden.
+No description in the guide.	Geen beschrijving in de gids.
+Click a programme in the grid or the search results to see its details.	Klik op een programma in het raster of de zoekresultaten voor details.
+Start the receiver on a DAB channel to see the guide.	Start de ontvanger op een DAB-kanaal om de gids te zien.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Dit ensemble kondigt geen programmagids aan (SPI, gebruikerstoepassing 0x007).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	De gids van dit ensemble wordt in de PAD van een station verzonden: speel dat station af om hem te verzamelen.
+The broadcaster sends service information (names, logos) but no programme schedule.	De zender verstuurt service-informatie (namen, logo's) maar geen programmering.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Nog geen programmering ontvangen. Een gidscarrousel kan enkele minuten nodig hebben voor een ronde.

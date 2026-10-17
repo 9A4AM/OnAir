@@ -289,6 +289,8 @@ public:
     int dabSelected() const { return rxD_.selected(); }
     void dabSelectJournaline(int sub, int packetAddress, int ext) { rxD_.selectJournaline(sub, packetAddress, ext); }
     dect2::JournalineDecoder& dabJournaline() { return rxD_.journaline(); }
+    void dabSelectSpi(int sub, int packetAddress) { rxD_.selectSpi(sub, packetAddress); }   // the programme guide (SPI): the sub-channel to collect it from (-1 off, address -2: the PAD)
+    dect2::DabSpiDecoder& dabSpi() { return rxD_.spi(); }
     DabAudio& dabAudio() { return rxD_.audio(); }
     FmReceiver& fm() { return rxFm_; }   // volume, mute and de-emphasis of the FM receiver
     DvbsReceiver& dvbs() { return rxDvbs_; }   // DVB-S/S2: the receiver's own controls and results (the interface reads telemetry through latestRx)

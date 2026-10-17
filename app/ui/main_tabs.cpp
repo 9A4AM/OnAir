@@ -130,6 +130,7 @@ void mainTabs(App& a) {
         if (!a.fmMode && tabItem(a.dabMode ? N_("Ensemble") : N_("Receiver"), Ic::Antenna)) { receiverTab(a); ImGui::EndTabItem(); }
         if (a.dabMode && tabItem(N_("Map"), Ic::Compass)) { dabTransmittersTab(a); ImGui::EndTabItem(); }
         if (a.dabMode && tabItem(N_("Analyzer"), Ic::Grid)) { dabAnalyzerTab(a); ImGui::EndTabItem(); }
+        if (a.dabMode && dabHasSpi(a.engine.dabEnsemble()) && tabItem(N_("Guide"), Ic::Clock)) { dabGuideTab(a); ImGui::EndTabItem(); }
         if (a.dabMode && dabHasJournaline(a.engine.dabEnsemble()) && tabItem(N_("Journaline"), Ic::Doc)) { dabJournalineTab(a); ImGui::EndTabItem(); }
         if (a.dabMode && tabItem(N_("FIC"), Ic::Doc)) { dabFicTab(a); ImGui::EndTabItem(); }
         if (!a.dabMode && !a.fmMode && tabItem(N_("Stream"), Ic::Layers)) { streamTab(a); ImGui::EndTabItem(); }

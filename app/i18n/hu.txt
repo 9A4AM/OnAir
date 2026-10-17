@@ -2038,3 +2038,34 @@ How to install	Telepítés menete
 The services, signal information and data work without it.	A szolgáltatások, a jelinformációk és az adatok enélkül is működnek.
 Interface and windows	Felület és ablakok
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	A Nézet menüben váltható az elrendezés (Sidebar, Scope, Tiles, Faceplate, Panel), a klasszikus felület, a szövegméret és a paletta; az érintőfelület az Eszközök alatt van. Az olyan ablakok, mint a Frekvenciák, a Végigsöprő szkenner, az Iránykereső és az Automatizálások innen nyílnak.
+# programme guide (SPI)
+Guide	Műsorfüzet
+until	eddig:
+Genre	Műfaj
+Saved	Mentve
+Now	Most
+objects	objektum
+services	szolgáltatás
+programmes	műsor
+scheduled	ütemezett
+objects decoded	dekódolt objektum
+Guide data	Műsorfüzet-adatok
+last update	utolsó frissítés
+no update yet	még nincs frissítés
+not collecting	nem gyűjt
+from the cache	a gyorsítótárból
+cached data, expires with time	gyorsítótárazott adat, idővel lejár
+waiting for the carousel directory...	várakozás a körhinta könyvtárára...
+Export XMLTV	XMLTV exportálása
+Collect the guide in the background	Műsorfüzet gyűjtése a háttérben
+Could not write the file.	A fájl nem írható.
+Listen to this station	Az adó meghallgatása
+search title or description	keresés cím vagy leírás alapján
+Nothing matches.	Nincs találat.
+No description in the guide.	Nincs leírás a műsorfüzetben.
+Click a programme in the grid or the search results to see its details.	Kattintson egy műsorra a rácson vagy a találatok között a részletekhez.
+Start the receiver on a DAB channel to see the guide.	Indítsa el a vevőt egy DAB csatornán a műsorfüzet megtekintéséhez.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Ez az egyveleg nem jelez műsorfüzetet (SPI, 0x007 felhasználói alkalmazás).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	Ennek az egyvelegnek a műsorfüzete egy adó PAD-jében megy: játssza le azt az adót a gyűjtéshez.
+The broadcaster sends service information (names, logos) but no programme schedule.	A műsorszóró szolgáltatásinformációt (nevek, logók) küld, de műsorrendet nem.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Még nem érkezett műsorrend. Egy műsorfüzet-körhinta több percig is eltarthat egy körrel.
