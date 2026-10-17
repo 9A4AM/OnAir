@@ -2265,3 +2265,22 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Miért?
 Identify selected	A kijelölt azonosítása
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	A rádiót a kijelölt jelre hangolja, és megmondja, mi az (a vevőnek olyan módban kell lennie, amelynek mintavételi sebessége lefedi)
+Calibrate...	Kalibrálás...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	A rádió frekvenciahibájának mérése egy FM-adóhoz vagy ismert frekvenciájú vivőhöz képest
+Frequency calibration	Frekvenciakalibrálás
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Megméri, mennyire tér el a rádió órajele egy ismert frekvenciájú jeltől, és beállítja a ppm-korrekciót.
+Not with a converter in front of the radio.	Nem a rádió előtti konverterrel.
+Start the receiver first.	Előbb indítsa el a vevőt.
+FM station (stereo pilot) at the tuned frequency	FM-adó (sztereó pilot) a beállított frekvencián
+Carrier of known frequency (MHz)	Ismert frekvenciájú vivő (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Előbb hangoljon egy erős FM-adóra. Az adók pilotjele nem mindig pontos: ismételje meg két-három adón.
+Ready.	Kész.
+Looking for a reference signal.	Referenciajel keresése.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	Mérés: %+.2f ppm, bizonytalanság %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Kész: %+.2f ppm (bizonytalanság %.2f ppm).
+No usable reference signal was found.	Nem található használható referenciajel.
+Apply %+.2f ppm	%+.2f ppm alkalmazása
+Current setting: %.2f ppm	Jelenlegi beállítás: %.2f ppm
+No measurements of this radio yet.	Ehhez a rádióhoz még nincs mérés.
+History of this radio (ppm)	A rádió előzményei (ppm)
+Drift: %+.3f ppm per minute	Sodródás: %+.3f ppm percenként

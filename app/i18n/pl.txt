@@ -2279,3 +2279,22 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Dlaczego?
 Identify selected	Zidentyfikuj zaznaczony
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Strojenie radia na zaznaczony sygnał i podanie, co to jest (odbiornik musi pracować w trybie, którego częstotliwość próbkowania go obejmuje)
+Calibrate...	Kalibruj...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	Zmierz błąd częstotliwości tego radia względem stacji FM lub nośnej o znanej częstotliwości
+Frequency calibration	Kalibracja częstotliwości
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Mierzy, o ile zegar tego radia odbiega od sygnału o znanej częstotliwości, i ustawia korekcję w ppm.
+Not with a converter in front of the radio.	Nie z konwerterem przed radiem.
+Start the receiver first.	Najpierw uruchom odbiornik.
+FM station (stereo pilot) at the tuned frequency	Stacja FM (pilot stereo) na ustawionej częstotliwości
+Carrier of known frequency (MHz)	Nośna o znanej częstotliwości (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Najpierw dostrój silną stację FM. Pilot stacji nie zawsze jest dokładny: powtórz na dwóch lub trzech stacjach.
+Ready.	Gotowe.
+Looking for a reference signal.	Szukanie sygnału odniesienia.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	Pomiar: %+.2f ppm, niepewność %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Gotowe: %+.2f ppm (niepewność %.2f ppm).
+No usable reference signal was found.	Nie znaleziono użytecznego sygnału odniesienia.
+Apply %+.2f ppm	Zastosuj %+.2f ppm
+Current setting: %.2f ppm	Bieżące ustawienie: %.2f ppm
+No measurements of this radio yet.	Brak jeszcze pomiarów tego radia.
+History of this radio (ppm)	Historia tego radia (ppm)
+Drift: %+.3f ppm per minute	Dryf: %+.3f ppm na minutę

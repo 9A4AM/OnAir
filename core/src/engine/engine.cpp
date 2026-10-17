@@ -68,6 +68,7 @@ bool Engine::offsetAllowed() const {
 void Engine::ingest(cf32* x, size_t n) {
     if (convSwap_.load(std::memory_order_relaxed)) swapIq(x, n);   // a converter that mirrors the spectrum: the signal reads the right way round from here on
     rec_.push(x, n);   // the raw samples, before anything touches them
+    if (iqTapOn_.load(std::memory_order_relaxed)) { std::lock_guard<std::mutex> lk(iqTapMu_); if (iqTap_) iqTap_(x, n, srcRate_); }   // selfcal
     ShareServer::get().offer(x, n);   // "Share my radio": the same samples to the rtl_tcp clients (nothing while sharing is off)
     dropNonFinite(x, n);
     cleanSamples(iqFix_, offMix_, offsetDc_.load(), x, n, activeStd_.load());

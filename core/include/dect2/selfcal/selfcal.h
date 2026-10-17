@@ -72,6 +72,14 @@ private:
 // A frequency error measured by another decoder: the carrier should be nominalHz and was found at measuredHz (absolute), +- sigmaHz.
 Estimate fromFreqError(const std::string& source, double nominalHz, double measuredHz, double sigmaHz, double seconds = 0);
 
+// The cell decoders (core/src/cell, nr): a cell's carrier is on the 100 kHz raster at centerHz, the decoder found it cfoHz away (CellTelemetry::cfoHz,
+// carrier offset against the candidate centre). The operators' carriers are good to about 0.05 ppm. Only meaningful when cfoHz is within the
+// range a clock error can explain (< 60 ppm of the carrier); otherwise the estimate is not valid.
+Estimate fromCell(double centerHz, double cfoHz, double sigmaHz = 0);
+// GPS L1 C/A (1575.42 MHz): residualHz = the tracked carrier minus its predicted Doppler (and minus the satellite clock term), i.e. what the
+// radio's clock leaves over.
+Estimate fromGpsCarrier(double residualHz, double sigmaHz = 5.0);
+
 // Several estimates (stations, cells, ...) into one: the median of the valid ones is taken, those more than 3 sigma-or-0.3-ppm away are
 // dropped as bad references (a station that is off), the rest are averaged with weight 1 / sigma^2.
 Estimate combine(const std::vector<Estimate>& v);
@@ -97,12 +105,33 @@ public:
     bool value(const std::string& serial, double& ppm) const;
     bool save(const std::string& path) const;
     bool load(const std::string& path);
+    std::string toText() const;                   // the same lines as the file (the app keeps them in its preferences)
+    void fromText(const std::string& text);
     size_t size() const { return e_.size(); }
 private:
     std::vector<Entry> e_;
 };
 // Put a ppm into a radio settings map (key "ppm", "" = removed when 0), the format radioPpm() reads.
 void applyPpm(std::map<std::string, std::string>& radio, double ppm);
+
+// The live feed of the Calibrate dialog: raw blocks straight from the radio (any rate, any centre) into the chosen reference.
+//   FmStation: the station at absoluteHz is mixed to the centre, filtered to about 200 kHz and given to an FmPilotMeter.
+//   Carrier:   a steady carrier at absoluteHz (an ATSC pilot, a beacon, a test oscillator) goes to a ToneMeter.
+// A change of rate or centre starts the measurement over. Thread safe: push() from the analysis thread, estimate() from the UI.
+class LiveCal {
+public:
+    enum Kind { FmStation, Carrier };
+    LiveCal(Kind k, double absoluteHz);
+    ~LiveCal();
+    void push(const std::complex<float>* x, size_t n, double rateHz, double centerHz);
+    Estimate estimate() const;
+    Kind kind() const { return kind_; }
+    double seconds() const;
+private:
+    struct Impl;
+    Kind kind_;
+    Impl* d_;
+};
 
 // The stages of the Calibrate dialog.
 class Wizard {

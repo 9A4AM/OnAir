@@ -109,6 +109,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <deque>
+#include <complex>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -192,6 +193,13 @@ public:
     // Record the radio's raw samples (as they leave the ring, before any clean-up) at the radio's own rate. Not for a file source.
     bool startRecording(const std::string& path, FileFormat fmt, std::string& err);
     void stopRecording() { rec_.stop(); }
+    // A tap on the radio's raw samples (the same point the recorder takes them, at the radio's own rate): for the frequency self-calibration. Called on the
+    // analysis thread; keep it quick. An empty function removes it.
+    void setIqTap(std::function<void(const std::complex<float>*, size_t, double rateHz)> f) {
+        std::lock_guard<std::mutex> lk(iqTapMu_);
+        iqTap_ = std::move(f);
+        iqTapOn_.store((bool)iqTap_);
+    }
     void setRecordSigmf(bool on) { recSigmf_ = on; }   // SigMF metadata beside the recordings (default on)
     RecordingStats recordingStats() const { return rec_.stats(); }
     // A file name for a recording of what the radio is tuned to right now (see recordingFileName())
@@ -517,6 +525,9 @@ private:
     std::vector<std::string> log_;
     std::chrono::steady_clock::time_point t0_;
     IqRecorder rec_;
+    std::mutex iqTapMu_;
+    std::function<void(const std::complex<float>*, size_t, double)> iqTap_;
+    std::atomic<bool> iqTapOn_{false};
     bool recSigmf_ = true;
     std::unique_ptr<IqSource> src_;
     SpectrumAnalyzer analyzer_{8192};

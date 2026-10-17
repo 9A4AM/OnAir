@@ -46,7 +46,15 @@ the median and weights the others by 1 / sigma^2. A single odd station therefore
 SNR) and a synthetic FM station with audio, pilot and a stereo subcarrier at 240 ksps all come back within 0.2 ppm; noise alone gives no result;
 combine, store (save/load, drift, value) and the wizard are checked.
 
-## Not done yet
+## In the app
 
-The Calibrate dialog in the radio panel and the feed of live IQ to the meters (and the decoders' carrier errors to `fromFreqError()`) are not
-connected in the app: the module is the measuring and bookkeeping core.
+Radio settings -> **Calibrate...** (shown for radios that have the ppm setting; not with a converter). The dialog offers the FM stereo pilot of
+the station you are tuned to (`LiveCal::FmStation`: the station is mixed to the centre of the raw capture, filtered to about 200 kHz and given to
+`FmPilotMeter`; it works with offset tuning and any rate from 128 ksps up) or a carrier of known frequency (`LiveCal::Carrier`). The engine hands
+the raw samples over through `Engine::setIqTap()` (the point where the recorder takes them). The measurement is the error left on top of the ppm
+already set, so **Apply** writes the old setting plus the measurement. Every finished measurement goes into the history (kept in the preferences
+under `selfcal.hist`, per radio), shown as a graph with the warm-up drift.
+
+`fromCell()` and `fromGpsCarrier()` turn a cell's carrier offset (CellTelemetry::cfoHz) and a tracked GPS carrier residual into estimates, and
+`combine()` merges them with the others; the dialog itself does not use the cell and GPS decoders yet (it needs their modes running on the same
+capture).

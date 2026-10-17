@@ -2279,3 +2279,22 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	なぜ?
 Identify selected	選択を識別
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	選択した信号に無線機を合わせて、その正体を示します (サンプルレートが信号をカバーするモードでレシーバーが動作している必要があります)
+Calibrate...	校正...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	FM局または周波数既知のキャリアに対して、このラジオの周波数誤差を測定します
+Frequency calibration	周波数校正
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	周波数が既知の信号に対してこのラジオのクロックがどれだけずれているかを測り、ppm補正を設定します。
+Not with a converter in front of the radio.	ラジオの前にコンバーターがある場合は使えません。
+Start the receiver first.	先に受信を開始してください。
+FM station (stereo pilot) at the tuned frequency	同調している周波数のFM局(ステレオパイロット)
+Carrier of known frequency (MHz)	周波数既知のキャリア(MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	まず強いFM局に同調してください。局のパイロットは常に正確とは限りません。2〜3局で繰り返してください。
+Ready.	準備完了。
+Looking for a reference signal.	基準信号を探しています。
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	測定中: %+.2f ppm、不確かさ %.2f ppm。
+Done: %+.2f ppm (uncertainty %.2f ppm).	完了: %+.2f ppm(不確かさ %.2f ppm)。
+No usable reference signal was found.	使える基準信号が見つかりませんでした。
+Apply %+.2f ppm	%+.2f ppm を適用
+Current setting: %.2f ppm	現在の設定: %.2f ppm
+No measurements of this radio yet.	このラジオの測定はまだありません。
+History of this radio (ppm)	このラジオの履歴(ppm)
+Drift: %+.3f ppm per minute	ドリフト: 毎分 %+.3f ppm

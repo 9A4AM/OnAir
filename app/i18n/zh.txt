@@ -2279,3 +2279,22 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	为什么?
 Identify selected	识别所选
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	将无线电调谐到所选信号并说明它是什么(接收器须处于采样率能覆盖该信号的模式)
+Calibrate...	校准...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	用FM电台或已知频率的载波测量此电台的频率误差
+Frequency calibration	频率校准
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	测量此无线电的时钟相对于已知频率信号的偏差，并设置ppm校正。
+Not with a converter in front of the radio.	无线电前接有变频器时不可用。
+Start the receiver first.	请先启动接收机。
+FM station (stereo pilot) at the tuned frequency	已调谐频率上的FM电台(立体声导频)
+Carrier of known frequency (MHz)	已知频率的载波(MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	请先调谐到一个强FM电台。电台的导频并不总是精确:请在两三个电台上重复。
+Ready.	就绪。
+Looking for a reference signal.	正在寻找参考信号。
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	测量中: %+.2f ppm，不确定度 %.2f ppm。
+Done: %+.2f ppm (uncertainty %.2f ppm).	完成: %+.2f ppm(不确定度 %.2f ppm)。
+No usable reference signal was found.	未找到可用的参考信号。
+Apply %+.2f ppm	应用 %+.2f ppm
+Current setting: %.2f ppm	当前设置: %.2f ppm
+No measurements of this radio yet.	此无线电尚无测量记录。
+History of this radio (ppm)	此无线电的历史(ppm)
+Drift: %+.3f ppm per minute	漂移: 每分钟 %+.3f ppm

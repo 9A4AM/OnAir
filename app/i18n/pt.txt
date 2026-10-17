@@ -2262,3 +2262,22 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Porquê?
 Identify selected	Identificar a selecionada
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Sintoniza o rádio no sinal selecionado e diz o que é (o recetor tem de estar num modo cuja taxa de amostragem o abranja)
+Calibrate...	Calibrar...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	Medir o erro de frequência deste rádio com uma estação FM ou uma portadora de frequência conhecida
+Frequency calibration	Calibração de frequência
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Mede quanto o relógio deste rádio se desvia de um sinal de frequência conhecida e define a correção em ppm.
+Not with a converter in front of the radio.	Não com um conversor à frente do rádio.
+Start the receiver first.	Inicie primeiro o recetor.
+FM station (stereo pilot) at the tuned frequency	Estação FM (piloto estéreo) na frequência sintonizada
+Carrier of known frequency (MHz)	Portadora de frequência conhecida (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Sintonize primeiro uma estação FM forte. O piloto de uma estação nem sempre é exato: repita em duas ou três estações.
+Ready.	Pronto.
+Looking for a reference signal.	A procurar um sinal de referência.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	A medir: %+.2f ppm, incerteza %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Concluído: %+.2f ppm (incerteza %.2f ppm).
+No usable reference signal was found.	Não foi encontrado nenhum sinal de referência utilizável.
+Apply %+.2f ppm	Aplicar %+.2f ppm
+Current setting: %.2f ppm	Definição atual: %.2f ppm
+No measurements of this radio yet.	Ainda não há medições deste rádio.
+History of this radio (ppm)	Histórico deste rádio (ppm)
+Drift: %+.3f ppm per minute	Deriva: %+.3f ppm por minuto

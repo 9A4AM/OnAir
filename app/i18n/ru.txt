@@ -2262,3 +2262,22 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Почему?
 Identify selected	Определить выбранный
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Настроить радио на выбранный сигнал и сказать, что это (приёмник должен работать в режиме, частота дискретизации которого его покрывает)
+Calibrate...	Калибровка...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	Измерить ошибку частоты этого радио по FM-станции или несущей известной частоты
+Frequency calibration	Калибровка частоты
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Измеряет, насколько тактовая частота этого радио отличается от сигнала известной частоты, и задаёт поправку в ppm.
+Not with a converter in front of the radio.	Не работает с конвертером перед радио.
+Start the receiver first.	Сначала запустите приёмник.
+FM station (stereo pilot) at the tuned frequency	FM-станция (стереопилот) на настроенной частоте
+Carrier of known frequency (MHz)	Несущая известной частоты (МГц)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Сначала настройтесь на сильную FM-станцию. Пилот станции не всегда точен: повторите на двух-трёх станциях.
+Ready.	Готово.
+Looking for a reference signal.	Поиск опорного сигнала.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	Измерение: %+.2f ppm, неопределённость %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Готово: %+.2f ppm (неопределённость %.2f ppm).
+No usable reference signal was found.	Подходящий опорный сигнал не найден.
+Apply %+.2f ppm	Применить %+.2f ppm
+Current setting: %.2f ppm	Текущая настройка: %.2f ppm
+No measurements of this radio yet.	Измерений этого радио пока нет.
+History of this radio (ppm)	История этого радио (ppm)
+Drift: %+.3f ppm per minute	Дрейф: %+.3f ppm в минуту

@@ -2279,3 +2279,22 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Pourquoi ?
 Identify selected	Identifier la sélection
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Accorde la radio sur le signal sélectionné et dit ce que c'est (le récepteur doit être dans un mode dont le taux d'échantillonnage le couvre)
+Calibrate...	Étalonner...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	Mesurer l'erreur de fréquence de cette radio avec une station FM ou une porteuse de fréquence connue
+Frequency calibration	Étalonnage en fréquence
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Mesure l'écart de l'horloge de cette radio par rapport à un signal de fréquence connue et règle la correction en ppm.
+Not with a converter in front of the radio.	Pas avec un convertisseur devant la radio.
+Start the receiver first.	Démarrez d'abord le récepteur.
+FM station (stereo pilot) at the tuned frequency	Station FM (pilote stéréo) sur la fréquence accordée
+Carrier of known frequency (MHz)	Porteuse de fréquence connue (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Accordez d'abord une station FM puissante. Le pilote d'une station n'est pas toujours exact : recommencez sur deux ou trois stations.
+Ready.	Prêt.
+Looking for a reference signal.	Recherche d'un signal de référence.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	Mesure : %+.2f ppm, incertitude %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Terminé : %+.2f ppm (incertitude %.2f ppm).
+No usable reference signal was found.	Aucun signal de référence utilisable n'a été trouvé.
+Apply %+.2f ppm	Appliquer %+.2f ppm
+Current setting: %.2f ppm	Réglage actuel : %.2f ppm
+No measurements of this radio yet.	Pas encore de mesures de cette radio.
+History of this radio (ppm)	Historique de cette radio (ppm)
+Drift: %+.3f ppm per minute	Dérive : %+.3f ppm par minute

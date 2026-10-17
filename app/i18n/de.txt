@@ -2279,3 +2279,22 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Warum?
 Identify selected	Ausgewählte identifizieren
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Das Radio auf das ausgewählte Signal abstimmen und sagen, was es ist (der Empfänger muss in einem Modus laufen, dessen Abtastrate es abdeckt)
+Calibrate...	Kalibrieren...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	Den Frequenzfehler dieses Radios an einem UKW-Sender oder einem Träger bekannter Frequenz messen
+Frequency calibration	Frequenzkalibrierung
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Misst, wie weit der Takt dieses Radios gegenüber einem Signal bekannter Frequenz abweicht, und setzt die ppm-Korrektur.
+Not with a converter in front of the radio.	Nicht mit einem Konverter vor dem Radio.
+Start the receiver first.	Zuerst den Empfänger starten.
+FM station (stereo pilot) at the tuned frequency	UKW-Sender (Stereo-Pilotton) auf der eingestellten Frequenz
+Carrier of known frequency (MHz)	Träger bekannter Frequenz (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Zuerst einen starken UKW-Sender einstellen. Der Pilotton eines Senders ist nicht immer exakt: auf zwei oder drei Sendern wiederholen.
+Ready.	Bereit.
+Looking for a reference signal.	Suche ein Referenzsignal.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	Messung: %+.2f ppm, Unsicherheit %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Fertig: %+.2f ppm (Unsicherheit %.2f ppm).
+No usable reference signal was found.	Es wurde kein brauchbares Referenzsignal gefunden.
+Apply %+.2f ppm	%+.2f ppm übernehmen
+Current setting: %.2f ppm	Aktuelle Einstellung: %.2f ppm
+No measurements of this radio yet.	Noch keine Messungen dieses Radios.
+History of this radio (ppm)	Verlauf dieses Radios (ppm)
+Drift: %+.3f ppm per minute	Drift: %+.3f ppm pro Minute

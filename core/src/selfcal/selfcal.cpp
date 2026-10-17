@@ -5,6 +5,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <memory>
+#include <mutex>
 #include <sstream>
 
 namespace dect2::selfcal {
@@ -187,6 +189,19 @@ Estimate fromFreqError(const std::string& source, double nominalHz, double measu
     return e;
 }
 
+Estimate fromCell(double centerHz, double cfoHz, double sigmaHz) {
+    Estimate e = fromFreqError("cell carrier", centerHz, centerHz + cfoHz, std::max(sigmaHz, 0.05e-6 * centerHz));
+    if (e.valid && std::fabs(e.ppm) > 60.0) e.valid = false;
+    return e;
+}
+
+Estimate fromGpsCarrier(double residualHz, double sigmaHz) {
+    const double l1 = 1575.42e6;
+    Estimate e = fromFreqError("GPS L1", l1, l1 + residualHz, std::max(sigmaHz, 0.05e-6 * l1));
+    if (e.valid && std::fabs(e.ppm) > 60.0) e.valid = false;
+    return e;
+}
+
 Estimate combine(const std::vector<Estimate>& v) {
     std::vector<Estimate> ok;
     for (const auto& e : v) if (e.valid && e.sigmaPpm >= 0) ok.push_back(e);
@@ -275,24 +290,37 @@ namespace {
 std::string clean(std::string s) { for (char& c : s) if (c == '\t' || c == '\n' || c == '\r') c = ' '; return s; }
 }
 
-bool Store::save(const std::string& path) const {
-    std::ofstream f(path, std::ios::trunc);
-    if (!f) return false;
-    f << "# serial\tutc\tppm\tsigmaPpm\ttempC\tsource\n";
+std::string Store::toText() const {
+    std::string r = "# serial\tutc\tppm\tsigmaPpm\ttempC\tsource\n";
     for (const auto& e : e_) {
         char b[160];
         snprintf(b, sizeof b, "\t%.0f\t%.4f\t%.4f\t%.1f\t", e.utc, e.ppm, e.sigmaPpm, e.tempC);
-        f << clean(e.serial) << b << clean(e.source) << "\n";
+        r += clean(e.serial) + b + clean(e.source) + "\n";
     }
+    return r;
+}
+
+bool Store::save(const std::string& path) const {
+    std::ofstream f(path, std::ios::trunc);
+    if (!f) return false;
+    f << toText();
     return (bool)f;
 }
 
 bool Store::load(const std::string& path) {
     std::ifstream f(path);
     if (!f) return false;
+    std::stringstream ss;
+    ss << f.rdbuf();
+    fromText(ss.str());
+    return true;
+}
+
+void Store::fromText(const std::string& text) {
     e_.clear();
+    std::stringstream in(text);
     std::string line;
-    while (std::getline(f, line)) {
+    while (std::getline(in, line)) {
         if (line.empty() || line[0] == '#') continue;
         std::vector<std::string> c;
         std::stringstream ss(line);
@@ -305,7 +333,6 @@ bool Store::load(const std::string& path) {
         if (c.size() > 5) e.source = c[5];
         e_.push_back(e);
     }
-    return true;
 }
 
 void applyPpm(std::map<std::string, std::string>& radio, double ppm) {
@@ -313,6 +340,89 @@ void applyPpm(std::map<std::string, std::string>& radio, double ppm) {
     char b[48];
     snprintf(b, sizeof b, "%.4g", ppm);
     radio["ppm"] = b;
+}
+
+// ---------------------------------------------------------------- LiveCal
+
+struct LiveCal::Impl {
+    mutable std::mutex mu;
+    double hz = 0, rate = 0, center = 0;
+    // FM: mixer, low-pass FIR (about 100 kHz cutoff), decimation
+    std::unique_ptr<FmPilotMeter> fm;
+    std::unique_ptr<ToneMeter> tone;
+    std::vector<float> taps;
+    std::vector<std::complex<float>> hist, out;
+    int dec = 1;
+    long phase = 0;            // samples until the next output
+    cd rot{1, 0}, step{1, 0};
+    unsigned long long n = 0;
+    double seconds = 0;
+};
+
+LiveCal::LiveCal(Kind k, double hz) : kind_(k), d_(new Impl) { d_->hz = hz; }
+LiveCal::~LiveCal() { delete d_; }
+
+double LiveCal::seconds() const { std::lock_guard<std::mutex> lk(d_->mu); return d_->seconds; }
+
+void LiveCal::push(const std::complex<float>* x, size_t n, double rate, double center) {
+    Impl& d = *d_;
+    std::lock_guard<std::mutex> lk(d.mu);
+    if (rate != d.rate || center != d.center || (!d.fm && !d.tone)) {
+        d.rate = rate; d.center = center; d.seconds = 0; d.fm.reset(); d.tone.reset();
+        const double b = d.hz - center;
+        if (kind_ == Carrier) d.tone.reset(new ToneMeter(rate, b, center, 100.0));
+        else {
+            d.dec = std::max(1, (int)std::floor(rate / 240000.0));
+            const double fo = rate / d.dec;
+            if (fo < 128000.0) return;              // too slow for an FM channel
+            d.fm.reset(new FmPilotMeter(fo));
+            const int nt = 8 * d.dec + 1;           // windowed sinc, cutoff 95 kHz
+            d.taps.assign((size_t)nt, 0.f);
+            const double fc = 95000.0 / rate;
+            double sum = 0;
+            for (int i = 0; i < nt; i++) {
+                const double t = i - (nt - 1) / 2.0;
+                const double h = (t == 0 ? 2 * fc : std::sin(2 * kPi * fc * t) / (kPi * t)) * (0.54 - 0.46 * std::cos(2 * kPi * i / (nt - 1)));
+                d.taps[(size_t)i] = (float)h; sum += h;
+            }
+            for (auto& v : d.taps) v = (float)(v / sum);
+            d.hist.assign((size_t)nt - 1, {0.f, 0.f});
+            d.phase = 0; d.n = 0;
+            d.step = std::polar(1.0, -2 * kPi * b / rate);
+        }
+    }
+    d.seconds += (double)n / rate;
+    if (kind_ == Carrier) { if (d.tone) d.tone->push(x, n); return; }
+    if (!d.fm) return;
+    // mix the station to DC, filter and decimate
+    std::vector<std::complex<float>> buf(d.hist);
+    buf.reserve(d.hist.size() + n);
+    for (size_t i = 0; i < n; i++) {
+        if ((d.n & 4095) == 0) d.rot = std::polar(1.0, -2 * kPi * (d.hz - d.center) / rate * (double)d.n);
+        const cd m = cd(x[i].real(), x[i].imag()) * d.rot;
+        d.rot *= d.step; d.n++;
+        buf.push_back({(float)m.real(), (float)m.imag()});
+    }
+    const size_t nt = d.taps.size();
+    d.out.clear();
+    size_t i = (size_t)d.phase;
+    for (; i + nt <= buf.size(); i += (size_t)d.dec) {
+        float re = 0, im = 0;
+        for (size_t k = 0; k < nt; k++) { re += d.taps[k] * buf[i + k].real(); im += d.taps[k] * buf[i + k].imag(); }
+        d.out.push_back({re, im});
+    }
+    d.phase = (long)(i - (buf.size() - (nt - 1)));   // may be negative-free: i >= buf.size() - nt + 1 here
+    if (d.phase < 0) d.phase = 0;
+    d.hist.assign(buf.end() - (long)(nt - 1), buf.end());
+    if (!d.out.empty()) d.fm->push(d.out.data(), d.out.size());
+}
+
+Estimate LiveCal::estimate() const {
+    std::lock_guard<std::mutex> lk(d_->mu);
+    Estimate e;
+    if (d_->fm) e = d_->fm->estimate();
+    else if (d_->tone) { e = d_->tone->estimate(); e.source = "carrier"; }
+    return e;
 }
 
 // ---------------------------------------------------------------- Wizard

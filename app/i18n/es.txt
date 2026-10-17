@@ -2279,3 +2279,22 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	¿Por qué?
 Identify selected	Identificar la seleccionada
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Sintoniza la radio en la señal seleccionada y dice qué es (el receptor debe estar en un modo cuya tasa de muestreo la cubra)
+Calibrate...	Calibrar...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	Medir el error de frecuencia de esta radio con una emisora FM o una portadora de frecuencia conocida
+Frequency calibration	Calibración de frecuencia
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Mide cuánto se desvía el reloj de esta radio respecto a una señal de frecuencia conocida y ajusta la corrección en ppm.
+Not with a converter in front of the radio.	No con un conversor delante de la radio.
+Start the receiver first.	Inicie primero el receptor.
+FM station (stereo pilot) at the tuned frequency	Emisora FM (piloto estéreo) en la frecuencia sintonizada
+Carrier of known frequency (MHz)	Portadora de frecuencia conocida (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Sintonice primero una emisora FM potente. El piloto de una emisora no siempre es exacto: repita con dos o tres emisoras.
+Ready.	Listo.
+Looking for a reference signal.	Buscando una señal de referencia.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	Midiendo: %+.2f ppm, incertidumbre %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Hecho: %+.2f ppm (incertidumbre %.2f ppm).
+No usable reference signal was found.	No se encontró ninguna señal de referencia utilizable.
+Apply %+.2f ppm	Aplicar %+.2f ppm
+Current setting: %.2f ppm	Ajuste actual: %.2f ppm
+No measurements of this radio yet.	Aún no hay mediciones de esta radio.
+History of this radio (ppm)	Historial de esta radio (ppm)
+Drift: %+.3f ppm per minute	Deriva: %+.3f ppm por minuto

@@ -2279,3 +2279,22 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Waarom?
 Identify selected	Geselecteerde identificeren
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Stemt de radio af op het geselecteerde signaal en zegt wat het is (de ontvanger moet in een modus staan waarvan de samplefrequentie het dekt)
+Calibrate...	Kalibreren...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	De frequentiefout van deze radio meten aan een FM-zender of een draaggolf met bekende frequentie
+Frequency calibration	Frequentiekalibratie
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Meet hoeveel de klok van deze radio afwijkt van een signaal met bekende frequentie en stelt de ppm-correctie in.
+Not with a converter in front of the radio.	Niet met een converter voor de radio.
+Start the receiver first.	Start eerst de ontvanger.
+FM station (stereo pilot) at the tuned frequency	FM-zender (stereopiloot) op de afgestemde frequentie
+Carrier of known frequency (MHz)	Draaggolf met bekende frequentie (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Stem eerst af op een sterke FM-zender. De piloot van een zender is niet altijd exact: herhaal op twee of drie zenders.
+Ready.	Klaar.
+Looking for a reference signal.	Zoeken naar een referentiesignaal.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	Meten: %+.2f ppm, onzekerheid %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Klaar: %+.2f ppm (onzekerheid %.2f ppm).
+No usable reference signal was found.	Er is geen bruikbaar referentiesignaal gevonden.
+Apply %+.2f ppm	%+.2f ppm toepassen
+Current setting: %.2f ppm	Huidige instelling: %.2f ppm
+No measurements of this radio yet.	Nog geen metingen van deze radio.
+History of this radio (ppm)	Geschiedenis van deze radio (ppm)
+Drift: %+.3f ppm per minute	Drift: %+.3f ppm per minuut
