@@ -9,7 +9,11 @@ BUILD=build-release
 # Homebrew dependencies from the macOS 15 release runners set the supported floor.
 MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-15.0}
 export MACOSX_DEPLOYMENT_TARGET
-cmake -S . -B $BUILD -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_TESTS=OFF -DDECT2_BUILD_APP=ON -DDECT2_HAVE_HAMLIB=ON -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET" -DONAIR_VERSION="$VERSION"
+# FFmpeg: the LGPL static build of tools/package/build_ffmpeg_static.sh (the same as on Linux), never Homebrew's, which is configured with --enable-gpl.
+# The workflow caches $FFMPEG_PREFIX; built here when it is missing.
+FFMPEG_PREFIX=${FFMPEG_PREFIX:-$PWD/$BUILD/ffmpeg}
+[ -f "$FFMPEG_PREFIX/lib/libavcodec.a" ] || tools/package/build_ffmpeg_static.sh "$FFMPEG_PREFIX"
+cmake -S . -B $BUILD -DDECT2_FFMPEG_PREFIX="$FFMPEG_PREFIX" -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_TESTS=OFF -DDECT2_BUILD_APP=ON -DDECT2_HAVE_HAMLIB=ON -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET" -DONAIR_VERSION="$VERSION"
 cmake --build $BUILD -j"$(sysctl -n hw.ncpu)" --target dect2
 APP=$BUILD/OnAir.app
 rm -rf "$APP"
@@ -56,6 +60,19 @@ bash tools/package/build_rtlsdr_blog_macos.sh "$RTL_FW"
 export ONAIR_RTLSDR_FRAMEWORK="$RTL_FW"
 python3 tools/package/bundle_macos.py "$APP" || { echo "Failed to bundle radio libraries"; exit 1; }
 python3 tools/package/check_macos_target.py "$APP"
+# FFmpeg licence notice and source offer (LGPL-2.1+): how the library inside the program was built, and the script that rebuilds it
+mkdir -p "$APP/Contents/Resources/licenses/ffmpeg"
+cp tools/package/build_ffmpeg_static.sh "$APP/Contents/Resources/licenses/ffmpeg/"
+cp "$FFMPEG_PREFIX/share/ffmpeg-configuration.txt" "$APP/Contents/Resources/licenses/ffmpeg/configuration.txt"
+cp LICENSES/LGPL-2.1.txt "$APP/Contents/Resources/licenses/ffmpeg/COPYING.LGPLv2.1"
+cat > "$APP/Contents/Resources/licenses/ffmpeg/NOTICE.md" <<'NOTE'
+OnAir uses the FFmpeg libraries (https://ffmpeg.org, version 8.0), LGPL-2.1-or-later, linked statically into the program.
+They were built without --enable-gpl, --enable-version3 and --enable-nonfree: configuration.txt is the exact configure line.
+Source: https://ffmpeg.org/releases/ffmpeg-8.0.tar.xz (unmodified). To rebuild: run build_ffmpeg_static.sh <folder> (this folder),
+then build OnAir from its public source with -DDECT2_FFMPEG_PREFIX=<folder> (see LICENSE-NOTICES-BINARIES.md). The patent licences of
+the video and audio formats (H.264, H.265, AAC, AC-3 ...) are the user's matter, as with FFmpeg everywhere.
+NOTE
+tools/package/check_lgpl_bundle.sh "$APP/Contents/MacOS/OnAir" "$APP/Contents/Frameworks" || { echo "Licence check failed"; exit 1; }
 # licence files: the project's own, and the licence file of the Homebrew formula behind every bundled library
 mkdir -p "$APP/Contents/Resources"
 tools/package/add_license_files.sh "$APP/Contents/Resources"
