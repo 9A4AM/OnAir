@@ -2138,6 +2138,59 @@ Peak dB above floor	フロア上のピーク dB
 Quietest slots	最も静かな帯
 From MHz	開始 MHz
 Width kHz	幅 kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	番組を選ぶと詳細が表示されます。
+Cancel recording	録画を取り消す
+Record	録画
+Stop series	シリーズ録画を止める
+Record series	シリーズを録画
+The broadcaster sends no series identifier for this programme.	この番組にはシリーズ識別子が放送されていません。
+No reminder	通知しない
+Remind me	通知する
+Watch	視聴
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	チューナーが足りません。別のマルチプレックスの録画と重なるため、録画されません。
+No description broadcast.	説明は放送されていません。
+Waiting for the service list...	サービス一覧を待っています...
+Search title or description	タイトルまたは説明を検索
+This multiplex only	このマルチプレックスのみ
+time zone:	タイムゾーン:
+this computer	このコンピューター
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	番組情報はまだ受信されていません。放送局はEITテーブルで送信し、数秒ごと(現在/次)から数分ごと(番組表)に繰り返されます。まったく送信しないマルチプレックスもあります。
+Opening the recording...	録画を開いています...
+Pause (timeshift)	一時停止(タイムシフト)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	ライブ放送を一時停止し、ディスクへ記録し続けるので、再開や巻き戻しができます。
+buffered	バッファ
+Timeshift	タイムシフト
+Play	再生
+behind live	ライブより遅れ
+Live	ライブ
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	録画はOnAirが開いていてコンピューターが動作している間のみ行われ、スリープ中は何も録画されません。スクランブルされたサービスは受信したまま記録され、復号されません。個人利用に限ります。
+Scheduled	予約済み
+recording	録画中
+conflict	競合
+any multiplex	任意のマルチプレックス
+series	シリーズ
+waiting for the tuner	チューナー待ち
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	予約はありません。番組表から番組を選ぶか、下で手動録画を追加してください。
+Manual recording	手動録画
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	この時刻に開始します(過ぎていれば翌日)。余裕時間はありません。
+Recorded	録画済み
+No recordings yet.	録画はまだありません。
+Export	書き出し
+Delete this recording and its subtitle files?	この録画と字幕ファイルを削除しますか?
+free	空き
+Recorder settings	レコーダー設定
+Folder	フォルダー
+Start earlier (s)	早めに開始(秒)
+End later (s)	遅めに終了(秒)
+Tuners	チューナー数
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	同時に受信できる異なるマルチプレックスの数。同じマルチプレックスのサービスは常に同時に録画できます。
+Keep free (GB)	空き容量を確保(GB)
+Stop after signal loss (s, 0 = never)	信号消失後に停止(秒、0=しない)
+Save teletext subtitles next to recordings (.srt, .vtt)	テレテキスト字幕を録画の横に保存(.srt、.vtt)
+Tune to a scheduled recording's channel when it starts	予約録画の開始時にそのチャンネルへ合わせる
+Timeshift buffer on disk	ディスク上のタイムシフトバッファ
+minutes	分
 Propagation	伝搬
 open	オープン
 marginal	限界
@@ -2151,6 +2204,100 @@ Forget the history	履歴を消去
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	この受信機がバンド別に聞いたもの:ビーコン(NCDXF/IARU、Long Dashes、単文字、キャリア)と、HFデジタル画面でデコードしたFT8 / FT4 / FT2 / WSPR局。直近30分に3局以上が聞こえたバンドはオープンです。自分の受信機のみ:何もダウンロードしないため、太陽フラックスやKインデックスはありません。
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	直近30分は何も聞こえていません:HFビーコンまたはHFデジタル画面を起動したままにしてください。
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	直近24時間(UTC)、15分ごとのセル、濃いほど局が少ない
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s は次の権限を要求しています:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	プラグインがクラッシュまたはフリーズしても、ヘルパープロセスが終了するだけです。次回プラグインを起動したときに有効になります。
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	OnAir を再ビルドせずにデコーダーやアクションを追加: プラグインのインストール、有効化、設定
+Add-ons	拡張
+Allow	許可
+Asks for	要求する権限
+Asks for no permissions.	権限は要求しません。
+Community plugins	コミュニティのプラグイン
+Do not allow	許可しない
+Enabled	有効
+Files: read and write its own data folder	ファイル: 専用のデータフォルダーの読み書き
+Install from file...	ファイルからインストール...
+Installed	インストールしました
+Kind	種類
+Map points	地図上の点
+Modes (in the mode list, group PLUGINS)	モード(モード一覧の PLUGINS グループ)
+Network: talk to other computers	ネットワーク: 他のコンピューターと通信
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	インストールされたプラグインはありません。「ファイルからインストール」を使うか、プラグインのフォルダーをプラグインフォルダーにコピーしてください。プラグインは .onairplugin ファイルです。
+Not installed	インストールできませんでした
+Open its folder	そのフォルダーを開く
+PLUGINS	プラグイン
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	権限は OnAir がプラグインに渡す機能を決めるものです。OnAir 内で動くプラグインは、それでもシステムを直接使える可能性があります。信頼できるプラグインだけをインストールするか、ヘルパープロセスで実行してください。
+Plugin idle	プラグインは待機中
+Plugin log	プラグインのログ
+Plugin modes run on receiver 1.	プラグインのモードは受信機 1 で動作します。
+Plugin running	プラグイン実行中
+Plugins	プラグイン
+Plugins are not available on this receiver.	このレシーバーではプラグインを使えません。
+Plugins...	プラグイン...
+Programs: start other programs	プログラム: 他のプログラムの起動
+Recording: save audio or IQ	録音: 音声または IQ の保存
+Refresh	更新
+Results the plugin sent beyond the limits	上限を超えてプラグインが送った結果
+Run in a helper process	ヘルパープロセスで実行
+Safe mode (no plugins)	セーフモード(プラグインなし)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	セーフモードがオンです。プラグインは無効です。解除するには「プラグイン」モードを開いてください。
+Safe mode: all plugins are switched off.	セーフモード: すべてのプラグインが無効です。
+Select a plugin.	プラグインを選んでください。
+Sound: play audio through the program	サウンド: プログラム経由で音声を再生
+The plugin was switched off after a failure. See its log in the Plugins mode.	プラグインは障害のため無効にされました。ログは「プラグイン」モードで確認できます。
+This plugin is off.	このプラグインはオフです。
+This plugin mode is not installed any more.	このプラグインのモードはもうインストールされていません。
+Try plugins again	プラグインを再試行
+Turn it on	オンにする
+blocks	ブロック
+by	作者:
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	直近のスペクトルで %d ビンをフラグ
+Add spectrum at the target l	目標の l にスペクトルを追加
+Az %.1f  El %.1f   site %.3f, %.3f	方位 %.1f  仰角 %.1f   地点 %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	天体                  方位   仰角   南中 (UTC)  出     入
+Calibration / RFI	校正 / RFI
+Capture cold	低温を取得
+Capture hot	高温を取得
+Cassiopeia A	カシオペヤ座A
+Clear map	マップを消去
+Compute	計算
+Custom (RA / Dec)	カスタム (RA / Dec)
+Cygnus A	はくちょう座A
+Elevation of the selected body over the UTC day (hours)	選択した天体の UTC 一日の仰角 (時間)
+Fit lines	線をフィット
+Flag and interpolate RFI	RFI をフラグして補間
+Galactic position	銀河座標
+IAU standard solar motion (off: Schoenrich 2010)	IAU 標準太陽運動 (オフ: Schoenrich 2010)
+LSR axis	LSR 軸
+Moon	月
+No processed spectrum yet.	処理済みスペクトルはまだありません。
+Nothing logged yet.	まだ記録はありません。
+Open session	セッションを開く
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	アンテナを b = 0 の各銀経 l に向け (速度タブで設定)、積分してからここにスペクトルを追加します。
+Pointing	ポインティング
+R0 kpc	R0 kpc
+Sagittarius A*	いて座A*
+Save CSV	CSV を保存
+Save FITS	FITS を保存
+Save SigMF text	SigMF テキストを保存
+Save session	セッションを保存
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	地点は受信機の位置 (表示 > マップ)、時刻はコンピュータの時計 (UTC) です。
+Sun	太陽
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	回転曲線には 0〜90 (または 270〜360) の複数の銀経のスペクトルが必要です。
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	目標方向: 地球自転 %+.2f、公転 %+.2f、太陽 %+.2f、合計 %+.2f km/s (トポセントリック速度に加算)
+Tsys K	Tsys K
+V0 km/s	V0 km/s
+Velocity	速度
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   受信機 %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Y ファクター: 高温負荷 (室温の吸収体) と低温負荷 (または冷たい空) のスペクトルをそれぞれの温度とともに取得します。
+cold K	低温 K
+fit rms %.3f K	フィット rms %.3f K
+hot K	高温 K
+no positions yet	位置はまだありません
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	ピーク K、中心 km/s (LSR)、FWHM km/s、面積 K km/s; 1 シグマ
+sigma	シグマ
+sky + spill K	空 + スピルオーバー K
 # identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
 , %.0f baud	, %.0f ボー
 , %s wide	, 幅 %s
@@ -2179,3 +2326,22 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	なぜ?
 Identify selected	選択を識別
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	選択した信号に無線機を合わせて、その正体を示します (サンプルレートが信号をカバーするモードでレシーバーが動作している必要があります)
+Calibrate...	校正...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	FM局または周波数既知のキャリアに対して、このラジオの周波数誤差を測定します
+Frequency calibration	周波数校正
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	周波数が既知の信号に対してこのラジオのクロックがどれだけずれているかを測り、ppm補正を設定します。
+Not with a converter in front of the radio.	ラジオの前にコンバーターがある場合は使えません。
+Start the receiver first.	先に受信を開始してください。
+FM station (stereo pilot) at the tuned frequency	同調している周波数のFM局(ステレオパイロット)
+Carrier of known frequency (MHz)	周波数既知のキャリア(MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	まず強いFM局に同調してください。局のパイロットは常に正確とは限りません。2〜3局で繰り返してください。
+Ready.	準備完了。
+Looking for a reference signal.	基準信号を探しています。
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	測定中: %+.2f ppm、不確かさ %.2f ppm。
+Done: %+.2f ppm (uncertainty %.2f ppm).	完了: %+.2f ppm(不確かさ %.2f ppm)。
+No usable reference signal was found.	使える基準信号が見つかりませんでした。
+Apply %+.2f ppm	%+.2f ppm を適用
+Current setting: %.2f ppm	現在の設定: %.2f ppm
+No measurements of this radio yet.	このラジオの測定はまだありません。
+History of this radio (ppm)	このラジオの履歴(ppm)
+Drift: %+.3f ppm per minute	ドリフト: 毎分 %+.3f ppm

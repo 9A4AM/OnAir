@@ -2124,6 +2124,59 @@ Peak dB above floor	Csúcs dB a zajszint felett
 Quietest slots	Legcsendesebb sávok
 From MHz	Innen (MHz)
 Width kHz	Szélesség kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Válassz egy műsort a részletek megtekintéséhez.
+Cancel recording	Felvétel törlése
+Record	Felvétel
+Stop series	Sorozat leállítása
+Record series	Sorozat felvétele
+The broadcaster sends no series identifier for this programme.	A műsorszolgáltató nem küld sorozatazonosítót ehhez a műsorhoz.
+No reminder	Nincs emlékeztető
+Remind me	Emlékeztess
+Watch	Megnézem
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	Nincs elég tuner: ez egy másik multiplexen zajló felvétellel ütközik, ezért nem lesz rögzítve.
+No description broadcast.	Nincs leírás a adásban.
+Waiting for the service list...	Várakozás a szolgáltatáslistára...
+Search title or description	Cím vagy leírás keresése
+This multiplex only	Csak ez a multiplex
+time zone:	időzóna:
+this computer	ez a számítógép
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Még nem érkezett műsorinformáció. A műsorszolgáltatók az EIT táblákban küldik, amelyek néhány másodpercenként (most/következő) vagy néhány percenként (műsorrend) ismétlődnek. Egyes multiplexek egyáltalán nem küldenek.
+Opening the recording...	Felvétel megnyitása...
+Pause (timeshift)	Szünet (időeltolás)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Megállítja az élő adást, és tovább rögzíti a lemezre, így folytathatod vagy visszatekerhetsz.
+buffered	pufferelve
+Timeshift	Időeltolás
+Play	Lejátszás
+behind live	az élő adás mögött
+Live	Élő
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	A felvételek csak akkor futnak, ha az OnAir meg van nyitva és a számítógép ébren van; alvó gép nem rögzít semmit. A kódolt szolgáltatások úgy kerülnek rögzítésre, ahogy megérkeznek, nem lesznek dekódolva. Kizárólag személyes használatra.
+Scheduled	Ütemezett
+recording	rögzít
+conflict	ütközés
+any multiplex	bármely multiplex
+series	sorozat
+waiting for the tuner	várakozik a tunerre
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Nincs ütemezve semmi. Válassz műsort az útmutatóban, vagy adj hozzá kézi felvételt lent.
+Manual recording	Kézi felvétel
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Ekkor kezdődik (ma, vagy holnap, ha már elmúlt), ráhagyás nélkül.
+Recorded	Felvett
+No recordings yet.	Még nincs felvétel.
+Export	Exportálás
+Delete this recording and its subtitle files?	Törlöd ezt a felvételt és a feliratfájljait?
+free	szabad
+Recorder settings	Felvevő beállításai
+Folder	Mappa
+Start earlier (s)	Korábbi kezdés (mp)
+End later (s)	Későbbi befejezés (mp)
+Tuners	Tunerek
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Hány különböző multiplex fogható egyszerre. Ugyanazon multiplex szolgáltatásai mindig együtt rögzíthetők.
+Keep free (GB)	Szabadon hagyandó (GB)
+Stop after signal loss (s, 0 = never)	Leállítás jelvesztés után (mp, 0 = soha)
+Save teletext subtitles next to recordings (.srt, .vtt)	Teletext feliratok mentése a felvételek mellé (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Ütemezett felvétel indulásakor az adott csatornára hangolás
+Timeshift buffer on disk	Időeltolás puffer a lemezen
+minutes	perc
 Propagation	Terjedés
 open	nyitott
 marginal	határeset
@@ -2137,6 +2190,100 @@ Forget the history	Előzmények törlése
 What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Amit ez a vevő hallott, sávonként: jeladók (NCDXF/IARU, Long Dashes, egybetűs jeladók, vivők) és a HF digitális képernyőn dekódolt FT8 / FT4 / FT2 / WSPR állomások. Egy sáv nyitott, ha az utolsó 30 percben legalább 3 állomást hallottunk. Csak a saját vevő: semmit nem töltünk le, ezért nincs napsugárzási fluxus és K-index.
 Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	Az utolsó 30 percben semmi nem hallatszott: indítsd el a HF jeladókat vagy a HF digitális képernyőt, és hagyd futni.
 Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Utolsó 24 óra (UTC), 15 perces cellák, sötétebb: kevesebb állomás
+# plugins (plugin/plugin_app.cpp, the PLUGINS group, View > Plugins)
+%s asks for these permissions:	%s ezeket az engedélyeket kéri:
+A crash or a hang of the plugin then only ends its helper process. Takes effect the next time the plugin starts.	A bővítmény összeomlása vagy lefagyása ilyenkor csak a segédfolyamatát állítja le. A bővítmény következő indításakor lép érvénybe.
+Add decoders and actions without rebuilding OnAir: install, enable and set up plugins	Dekóderek és műveletek hozzáadása az OnAir újrafordítása nélkül: bővítmények telepítése, engedélyezése és beállítása
+Add-ons	Bővítmények
+Allow	Engedélyez
+Asks for	Kéri
+Asks for no permissions.	Nem kér engedélyt.
+Community plugins	Közösségi bővítmények
+Do not allow	Nem engedélyez
+Enabled	Engedélyezve
+Files: read and write its own data folder	Fájlok: olvashatja és írhatja a saját adatmappáját
+Install from file...	Telepítés fájlból...
+Installed	Telepítve
+Kind	Fajta
+Map points	Térképpontok
+Modes (in the mode list, group PLUGINS)	Módok (a módlistában, PLUGINS csoport)
+Network: talk to other computers	Hálózat: kommunikálhat más számítógépekkel
+No plugins installed. Use Install from file, or copy a plugin folder into the plugins folder. A plugin is a .onairplugin file.	Nincs telepített bővítmény. Használja a „Telepítés fájlból” gombot, vagy másoljon egy bővítménymappát a bővítmények mappájába. A bővítmény egy .onairplugin fájl.
+Not installed	Nincs telepítve
+Open its folder	Mappájának megnyitása
+PLUGINS	BŐVÍTMÉNYEK
+Permissions are what OnAir hands the plugin. A plugin running inside OnAir can still use the system itself: install plugins you trust, or run them in a helper process.	Az engedélyek azt jelentik, mit ad át az OnAir a bővítménynek. Az OnAiren belül futó bővítmény ettől még maga is használhatja a rendszert: csak megbízható bővítményt telepítsen, vagy futtassa segédfolyamatban.
+Plugin idle	A bővítmény tétlen
+Plugin log	Bővítménynapló
+Plugin modes run on receiver 1.	A bővítménymódok az 1. vevőn futnak.
+Plugin running	A bővítmény fut
+Plugins	Bővítmények
+Plugins are not available on this receiver.	A bővítmények ezen a vevőn nem érhetők el.
+Plugins...	Bővítmények...
+Programs: start other programs	Programok: más programokat indíthat
+Recording: save audio or IQ	Felvétel: hang vagy IQ mentése
+Refresh	Frissítés
+Results the plugin sent beyond the limits	A bővítmény határon túli eredményei
+Run in a helper process	Futtatás segédfolyamatban
+Safe mode (no plugins)	Biztonságos mód (bővítmények nélkül)
+Safe mode is on: plugins are switched off. Open the Plugins mode to leave it.	A biztonságos mód be van kapcsolva: a bővítmények ki vannak kapcsolva. A kilépéshez nyissa meg a Bővítmények módot.
+Safe mode: all plugins are switched off.	Biztonságos mód: minden bővítmény ki van kapcsolva.
+Select a plugin.	Válasszon egy bővítményt.
+Sound: play audio through the program	Hang: hang lejátszása a programon keresztül
+The plugin was switched off after a failure. See its log in the Plugins mode.	A bővítményt hiba után kikapcsoltuk. A naplója a Bővítmények módban látható.
+This plugin is off.	Ez a bővítmény ki van kapcsolva.
+This plugin mode is not installed any more.	Ez a bővítménymód már nincs telepítve.
+Try plugins again	Bővítmények újrapróbálása
+Turn it on	Bekapcsolás
+blocks	blokk
+by	készítő:
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	%d csatorna megjelölve az utolsó spektrumban
+Add spectrum at the target l	Spektrum hozzáadása a cél l értékén
+Az %.1f  El %.1f   site %.3f, %.3f	Az %.1f  El %.1f   hely %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	Égitest               Az     El     átmenet (UTC)  kelte   nyugta
+Calibration / RFI	Kalibrálás / RFI
+Capture cold	Hideg rögzítése
+Capture hot	Meleg rögzítése
+Cassiopeia A	Cassiopeia A
+Clear map	Térkép törlése
+Compute	Számítás
+Custom (RA / Dec)	Egyéni (RA / Dec)
+Cygnus A	Cygnus A
+Elevation of the selected body over the UTC day (hours)	A kiválasztott égitest magassága az UTC nap során (óra)
+Fit lines	Vonalak illesztése
+Flag and interpolate RFI	RFI jelölése és interpolálása
+Galactic position	Galaktikus pozíció
+IAU standard solar motion (off: Schoenrich 2010)	IAU szabványos naptérmozgás (ki: Schoenrich 2010)
+LSR axis	LSR tengely
+Moon	Hold
+No processed spectrum yet.	Még nincs feldolgozott spektrum.
+Nothing logged yet.	Még nincs naplóbejegyzés.
+Open session	Munkamenet megnyitása
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	Irányítsa az antennát minden l galaktikus hosszúságra b = 0 mellett (a Sebesség fülön állítható), integráljon, majd adja hozzá a spektrumot.
+Pointing	Irányítás
+R0 kpc	R0 kpc
+Sagittarius A*	Sagittarius A*
+Save CSV	CSV mentése
+Save FITS	FITS mentése
+Save SigMF text	SigMF szöveg mentése
+Save session	Munkamenet mentése
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	A hely a vevő helye (Nézet > Térkép). Az idő a számítógép órája, UTC.
+Sun	Nap
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	A forgási görbéhez több hosszúságon kell spektrum 0 és 90 (vagy 270 és 360) között.
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	A cél felé: Föld forgása %+.2f, pálya %+.2f, Nap %+.2f; összesen %+.2f km/s (a topocentrikus sebességhez adandó)
+Tsys K	Tsys K
+V0 km/s	V0 km/s
+Velocity	Sebesség
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   vevő %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Y-tényező: rögzítsen egy spektrumot meleg terhelésen (szobahőmérsékletű elnyelő), majd hideg terhelésen (vagy a hideg égen), a hőmérsékleteikkel.
+cold K	hideg K
+fit rms %.3f K	illesztés rms %.3f K
+hot K	meleg K
+no positions yet	még nincs pozíció
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	csúcs K, közép km/s (LSR), FWHM km/s, terület K km/s; egy szigma
+sigma	szigma
+sky + spill K	ég + túlcsordulás K
 # identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
 , %.0f baud	, %.0f baud
 , %s wide	, %s széles
@@ -2165,3 +2312,22 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Miért?
 Identify selected	A kijelölt azonosítása
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	A rádiót a kijelölt jelre hangolja, és megmondja, mi az (a vevőnek olyan módban kell lennie, amelynek mintavételi sebessége lefedi)
+Calibrate...	Kalibrálás...
+Measure this radio's frequency error against an FM station or a carrier of known frequency	A rádió frekvenciahibájának mérése egy FM-adóhoz vagy ismert frekvenciájú vivőhöz képest
+Frequency calibration	Frekvenciakalibrálás
+Measures how far this radio's clock is off against a signal of known frequency and sets the ppm correction.	Megméri, mennyire tér el a rádió órajele egy ismert frekvenciájú jeltől, és beállítja a ppm-korrekciót.
+Not with a converter in front of the radio.	Nem a rádió előtti konverterrel.
+Start the receiver first.	Előbb indítsa el a vevőt.
+FM station (stereo pilot) at the tuned frequency	FM-adó (sztereó pilot) a beállított frekvencián
+Carrier of known frequency (MHz)	Ismert frekvenciájú vivő (MHz)
+Tune a strong FM station first. A station's pilot is not always exact: repeat on two or three stations.	Előbb hangoljon egy erős FM-adóra. Az adók pilotjele nem mindig pontos: ismételje meg két-három adón.
+Ready.	Kész.
+Looking for a reference signal.	Referenciajel keresése.
+Measuring: %+.2f ppm, uncertainty %.2f ppm.	Mérés: %+.2f ppm, bizonytalanság %.2f ppm.
+Done: %+.2f ppm (uncertainty %.2f ppm).	Kész: %+.2f ppm (bizonytalanság %.2f ppm).
+No usable reference signal was found.	Nem található használható referenciajel.
+Apply %+.2f ppm	%+.2f ppm alkalmazása
+Current setting: %.2f ppm	Jelenlegi beállítás: %.2f ppm
+No measurements of this radio yet.	Ehhez a rádióhoz még nincs mérés.
+History of this radio (ppm)	A rádió előzményei (ppm)
+Drift: %+.3f ppm per minute	Sodródás: %+.3f ppm percenként

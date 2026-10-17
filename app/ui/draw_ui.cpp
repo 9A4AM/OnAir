@@ -49,6 +49,7 @@ static void tickReceiver(App& a) {
         a.epgT = glfwGetTime();
     }
     if (!a.engine.running()) { a.epg.clear(); }
+    tvRecTick(a);
     gainControl(a);
     followBandwidth(a);
     feedDirection(a);
@@ -193,6 +194,8 @@ static void floatingWindows(App& a, ImVec2 disp) {
     a.engine.setMultiChannel(a.mtvOn && a.family == 0, a.mtvMax, a.mtvGrid);
     feedsWindow(a);
     automationWindow(a);
+    pluginFrame(a);
+    pluginManagerWindow(a);
     msgdbWindow(a);
     txTick(a);
     shareTick(a);

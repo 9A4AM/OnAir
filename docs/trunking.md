@@ -1,0 +1,41 @@
+# Trunking follower (P25, DMR Tier III)
+
+Receive only. OnAir decodes a trunked system's control channel and can follow the voice calls it announces. Open the **P25** tab, **Follow**, and turn on **Follow calls**.
+
+## What it does
+
+- **System model.** From the control channel's TSBKs (TIA-102.AABC): WACN, system, RFSS, site, NAC, the channel identifier table (IDEN_UP, IDEN_UP_VU, IDEN_UP_TDMA), adjacent sites, secondary control channels (SCCB), and the control-channel candidates to try when it is lost.
+- **Calls.** Group voice grants (new and update messages, including the explicit update), unit-to-unit grants. Each becomes a call-log entry with talkgroup, source unit, frequency, duration, and an encrypted flag.
+- **Voice following.**
+  - *Wide capture* (whole-span decoding on): when the granted channel is inside the captured span the sound moves to that carrier. Up to N calls (1 to 4, default 2) are followed at once, limited by CPU. When all are busy a higher-priority talkgroup preempts the lowest one.
+  - *Single radio*: the radio leaves the control channel for the call, and returns when the call ends (no voice for the hang time, or a terminator). It does not hop away from a call that is already followed, and never hops when "retune the radio" is off. In both cases the entry says **needs a wider capture or a second radio** and counts as not followed.
+  - If the control channel is lost the radio tries the known candidates in turn.
+- **Talkgroup list.** Name, tag, category, priority (1 highest, 0 none), lockout, listen, scan list. Lockout talkgroups are logged but not followed. With **scan list only** only listed talkgroups with Listen on (and in an enabled list, when any list is enabled) are followed. The list is saved to `trunk_talkgroups.csv` in the OnAir data folder.
+- **Call log** with CSV export, **now talking** table, per-call recording (WAV, gated) when the vocoder add-on is present.
+
+## Encrypted calls
+
+P25 service options bit `0x40`, or a talkgroup you marked with an `E` mode in the list, and DMR privacy flags: the call is logged as *encrypted* and is never followed, recorded, decoded or attacked. IDs and talkgroups are still shown.
+
+## Voice
+
+Voice sound needs the user-installed vocoder add-on (see [CODECS.md](CODECS.md)). Without it everything else works; recordings are skipped because there is no sound to save.
+
+## CSV columns
+
+Import reads the header row, case-insensitive, any column order: `Decimal` (also `DEC`, `TGID`, `Talkgroup`), `Hex`, `Alpha Tag` (`Name`), `Mode` (D, DE, T, A), `Description`, `Tag`, `Category` (`Group`), and the OnAir extras `Priority`, `Lockout`, `List`, `Listen`. The usual RadioReference-style export (Decimal, Hex, Alpha Tag, Mode, Description, Tag, Category) imports as it is; without a header that order is assumed. Quoted fields, doubled quotes, LF/CRLF and a UTF-8 BOM are accepted. A row without a valid number (1 to 65535) is skipped and counted. OnAir downloads no data: you bring the file.
+
+## Honest scope
+
+- **P25 Phase 1 control channel**: implemented and tested with synthetic signals (through the real C4FM receiver, and as message logic). Not tested on a real system.
+- **P25 Phase 2**: the control channel is the same TSBK format, and IDEN_UP_TDMA is parsed (only channel type 3, 2 slots per carrier, is placed; other types are shown as not placed). There is **no Phase 2 voice demodulator**, so Phase 2 TDMA voice grants are logged and not followed.
+- **Message layouts** are written from the field layouts as understood from TIA-102.AABC, which is not available offline here; the explicit update (0x03) and SCCB (0x39) layouts in particular need a check against the document.
+- **DMR Tier III**: the follow logic is shared, but the CSBK opcodes (`DmrOpcodes`: 0x30 / 0x31 / 0x32 for talkgroup / private / broadcast grants) and the grant field layout are **unverified against ETSI TS 102 361-4** and are kept in one table. The grants carry logical channel numbers only, so you must supply the LCN to frequency table (`DmrModel::setChannel`); there is no UI for it yet and the UI feeds only P25. Connect Plus and Capacity Plus are manufacturer protocols and are not supported.
+- **Site map**: the control channel carries no coordinates; `SystemModel::setSitePosition` takes them from a user table, but there is no map view yet.
+- **Transcription hook**: not wired. The call log entries carry the recording path for it.
+- Only the selected carrier's sound plays, so two simultaneous followed calls are decoded and logged but one is heard (the highest priority).
+- The Follow tab's text is not translated yet (like the rest of the P25 tab).
+
+## Tests
+
+`test_p25_trunk` (system model, follow state machine, priority, lockout, scan lists, rotating control channel, CSV, encrypted handling, 20000 random messages and junk CSV), `test_p25_trunk_rf` (the synthetic control channel through the receiver into the controller).

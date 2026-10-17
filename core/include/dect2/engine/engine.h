@@ -109,6 +109,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <deque>
+#include <complex>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -192,6 +193,13 @@ public:
     // Record the radio's raw samples (as they leave the ring, before any clean-up) at the radio's own rate. Not for a file source.
     bool startRecording(const std::string& path, FileFormat fmt, std::string& err);
     void stopRecording() { rec_.stop(); }
+    // A tap on the radio's raw samples (the same point the recorder takes them, at the radio's own rate): for the frequency self-calibration. Called on the
+    // analysis thread; keep it quick. An empty function removes it.
+    void setIqTap(std::function<void(const std::complex<float>*, size_t, double rateHz)> f) {
+        std::lock_guard<std::mutex> lk(iqTapMu_);
+        iqTap_ = std::move(f);
+        iqTapOn_.store((bool)iqTap_);
+    }
     void setRecordSigmf(bool on) { recSigmf_ = on; }   // SigMF metadata beside the recordings (default on)
     RecordingStats recordingStats() const { return rec_.stats(); }
     // A file name for a recording of what the radio is tuned to right now (see recordingFileName())
@@ -266,6 +274,13 @@ public:
     // Every burst of transport stream packets is also handed to this function (the network tuner); it runs on the receiver thread, so it must be quick.
     // `secs` is how long the burst represents in the stream, so a client can hand it to a player at that rate instead of in one lump.
     void setPacketTap(std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> f);
+    // The TV recorder's tap: every packet of the multiplex in stream order (EPG, recordings, timeshift). Separate from setPacketTap (the network tuner).
+    void setRecorderTap(std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> f);
+    // true: the live multiplex no longer feeds the player (a recording or the timeshift buffer is playing through player().push() instead)
+    void setPlayerExternal(bool on) { playerExternal_ = on; }
+    bool playerExternal() const { return playerExternal_; }
+    // The subtitle decoders follow the stream that plays through player().push() while setPlayerExternal(true)
+    void feedPlaybackSubtitles(const uint8_t* pkts, size_t n) { for (size_t i = 0; i < n; i++) { ttx_.feedTs(pkts + i * 188); dvbsub_.feedTs(pkts + i * 188); } }
     void setOutputs(const OutputConfig& c) { outputs_.configure(c); }
     OutputConfig outputConfig() const { return outputs_.config(); }
     OutputStats outputStats() const { return outputs_.stats(); }
@@ -360,6 +375,10 @@ public:
     MultitoneReceiver& multitone() { return rxMt_; }   // Multitone paging: clear the transmission list (telemetry through latestRx)
     CodarReceiver& codar() { return rxCd_; }   // CODAR / HF ocean radar: clear the station table and the events (telemetry through latestRx)
     DectReceiver& dect() { return rxDect_; }   // DECT: the base station table and log (telemetry through latestRx)
+    // Plugin modes (standard codes of mode_tuning.h kPluginStdBase and up): the samples of the running plugin mode go to this function on the analysis
+    // thread (interleaved float I, Q; it must not block: the plugin host queues them). Empty function removes it.
+    using PluginIqSink = std::function<void(const float* iq, size_t nComplex, double sampleRate)>;
+    void setPluginSink(PluginIqSink f);
     AntReceiver& ant() { return rxAnt_; }   // ANT+ sensors: the sensor table and frame log (telemetry through latestRx)
     SameReceiver& same() { return rxSame_; }   // NOAA weather radio SAME: the alert list, country, Listen (telemetry through latestRx)
     HalowReceiver& halow() { return rxHl_; }   // Wi-Fi HaLow / 802.11ah: clear the network table and the frame log (telemetry through latestRx)
@@ -464,6 +483,8 @@ private:
     TsSnapshot tsSnap_;
     OutputManager outputs_;
     std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> tap_;
+    std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> rtap_;
+    std::atomic<bool> playerExternal_{false};
     Player player_;
     IqCorrector iqFix_;
     // offset tuning (offset_tune.h): the radio is tuned offHz_ below the channel at offRate_, and offMix_ brings the channel back to the centre;
@@ -508,6 +529,9 @@ private:
     std::vector<std::string> log_;
     std::chrono::steady_clock::time_point t0_;
     IqRecorder rec_;
+    std::mutex iqTapMu_;
+    std::function<void(const std::complex<float>*, size_t, double)> iqTap_;
+    std::atomic<bool> iqTapOn_{false};
     bool recSigmf_ = true;
     std::unique_ptr<IqSource> src_;
     SpectrumAnalyzer analyzer_{8192};
@@ -590,6 +614,7 @@ private:
     DatawellReceiver rxDw_;
     SameReceiver rxSame_;
     AntReceiver rxAnt_;
+    std::shared_ptr<const PluginIqSink> pluginSink_;   // read with std::atomic_load
     DectReceiver rxDect_;
     TetrapolReceiver rxTetrapol_;
     MultitoneReceiver rxMt_;

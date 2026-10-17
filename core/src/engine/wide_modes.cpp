@@ -107,8 +107,15 @@ struct WideModes::Impl {
         dpmr.reset(new WideBank<DpmrReceiver, DpmrTelemetry>(p));
 
         auto q = baseOps<P25Receiver, P25Telemetry>(300000);
-        q.clearLists = [](P25Telemetry& t) { t.log.clear(); };
-        q.append = [](P25Telemetry& t, const P25Telemetry& s2, double hz) { appendNewestFirst(t.log, s2.log, hz); };
+        q.clearLists = [](P25Telemetry& t) { t.log.clear(); t.tsbks.clear(); };
+        q.append = [](P25Telemetry& t, const P25Telemetry& s2, double hz) {
+            appendNewestFirst(t.log, s2.log, hz);
+            // the control channel's messages of every carrier, oldest first by their process-wide number
+            t.tsbks.insert(t.tsbks.end(), s2.tsbks.begin(), s2.tsbks.end());
+            std::sort(t.tsbks.begin(), t.tsbks.end(), [](const P25TsbkRec& a, const P25TsbkRec& b) { return a.seq < b.seq; });
+            t.tsbks.erase(std::unique(t.tsbks.begin(), t.tsbks.end(), [](const P25TsbkRec& a, const P25TsbkRec& b) { return a.seq == b.seq; }), t.tsbks.end());
+            if (t.tsbks.size() > kP25TsbkMax) t.tsbks.erase(t.tsbks.begin(), t.tsbks.end() - (long)kP25TsbkMax);
+        };
         q.info = [](const P25Telemetry& t) { return t.nac >= 0 ? fmt("NAC %03X", t.nac) : std::string(); };
         p25.reset(new WideBank<P25Receiver, P25Telemetry>(q));
 

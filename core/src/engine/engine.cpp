@@ -68,6 +68,7 @@ bool Engine::offsetAllowed() const {
 void Engine::ingest(cf32* x, size_t n) {
     if (convSwap_.load(std::memory_order_relaxed)) swapIq(x, n);   // a converter that mirrors the spectrum: the signal reads the right way round from here on
     rec_.push(x, n);   // the raw samples, before anything touches them
+    if (iqTapOn_.load(std::memory_order_relaxed)) { std::lock_guard<std::mutex> lk(iqTapMu_); if (iqTap_) iqTap_(x, n, srcRate_); }   // selfcal
     ShareServer::get().offer(x, n);   // "Share my radio": the same samples to the rtl_tcp clients (nothing while sharing is off)
     dropNonFinite(x, n);
     cleanSamples(iqFix_, offMix_, offsetDc_.load(), x, n, activeStd_.load());
@@ -251,7 +252,7 @@ void Engine::applyReset() {
         std::lock_guard<std::mutex> lk(tsMu_);
         demux_.reset();
         unpack_ = BbUnpacker();
-        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); ttx_.feedTs(pkt); dvbsub_.feedTs(pkt); frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
+        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); if (!playerExternal_) { ttx_.feedTs(pkt); dvbsub_.feedTs(pkt); } frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
         tsSnap_ = TsSnapshot();
         lastT2Frame_ = -1;
         frameBuf_.clear();
@@ -274,14 +275,15 @@ void Engine::onTsPackets(const uint8_t* pk, size_t n, double secs) {
     for (size_t i = 0; i < n; i++) {
         const uint8_t* q = pk + i * 188;
         demux_.feed(q);
-        ttx_.feedTs(q);
-        dvbsub_.feedTs(q);
+        if (!playerExternal_) ttx_.feedTs(q);
+        if (!playerExternal_) dvbsub_.feedTs(q);
     }
     demux_.advance(secs);
     tsSnap_ = demux_.snapshot();
     outputs_.packets(pk, n, &tsSnap_);
     if (tap_) tap_(pk, n, &tsSnap_, secs);
-    if (player_.selected() >= 0) player_.push(pk, n, tsSnap_);
+    if (rtap_) rtap_(pk, n, &tsSnap_, secs);
+    if (player_.selected() >= 0 && !playerExternal_) player_.push(pk, n, tsSnap_);
     outputs_.burstDone(secs);
 }
 
@@ -289,7 +291,15 @@ void Engine::onTsPackets(const uint8_t* pk, size_t n, double secs) {
 // so idle searching costs one receiver, not two.
 void Engine::feedRx(const cf32* x, size_t n) { feedReceiver(activeStd_.load(), x, n); }
 
+void Engine::setPluginSink(PluginIqSink f) {
+    std::atomic_store(&pluginSink_, f ? std::make_shared<const PluginIqSink>(std::move(f)) : std::shared_ptr<const PluginIqSink>());
+}
+
 void Engine::feedReceiver(int a, const cf32* x, size_t n) {
+    if (a >= 1001) {   // a plugin mode (mode_tuning.h kPluginStdBase): the plugin host takes the samples
+        if (auto sink = std::atomic_load(&pluginSink_)) (*sink)(reinterpret_cast<const float*>(x), n, rate_.load());
+        return;
+    }
     if (a <= 1 && mtvActive_.load(std::memory_order_relaxed)) { if (auto m = mtvGet()) { m->feed(x, n); return; } }   // multi-channel TV: one receiver per channel of the span
     if (wideOn_.load(std::memory_order_relaxed) && WideModes::supports(a)) {
         if (a == 24) wide_.setPagerOptions(rxPager_.protocols(), rxPager_.pocsagBauds());   // the screens' POCSAG / FLEX / baud choice reaches every carrier
