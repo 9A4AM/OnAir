@@ -5,6 +5,7 @@
 #                                  (needs cmake, ninja and a compiler with ASan/UBSan; build dir: ${TMPDIR:-/tmp}/onair-rust-san)
 set -eu
 root=$(cd "$(dirname "$0")/.." && pwd)
+python3 "$root/tools/check_ffi_widths.py" "$root/rust"
 cd "$root/rust"
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$root/rust/target}"
 if ! command -v cargo >/dev/null 2>&1; then echo "rust_check: cargo not found"; exit 1; fi
