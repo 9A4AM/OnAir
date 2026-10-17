@@ -143,6 +143,29 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("loraraw", "LoRa (raw)", 73, "makeLoraRawSynth", kOpt, kUnv),
         mk("same", "NOAA Weather Radio SAME", 78, "makeSameSynth", kOpt, kUnv),
         mk("dect", "DECT cordless phones", 80, "makeDectSynth", kOpt, kUnv),
+        mk("gnss", "GNSS", 14, "makeGnssSynth", kOpt, kUnv),
+        mk("ism", "ISM sensors", 30, "makeIsmSynth", kOpt, kUnv),
+        mk("cell", "Cellular (LTE)", 34, "makeCellSynth", kOpt, kUnv),
+        mk("gsmr", "GSM-R", 41, "makeGsmrSynth", kOpt, kUnv),
+        mk("specx", "Explorer", 43, "makeSpecxSynth", kOpt, kUnv),
+        mk("specan", "Spectrum analyser", 44, "makeSpecanSynth", kOpt, kUnv),
+        mk("astro", "Radio astronomy", 50, "makeAstroSynth", kOpt, kUnv),
+        mk("ble", "Bluetooth LE", 53, "makeBleSynth", kOpt, kUnv),
+        mk("iono", "Ionospheric sounders", 54, "makeIonoSynth", kOpt, kUnv),
+        mk("wifi", "Wi-Fi", 56, "makeWifiSynth", kOpt, kUnv),
+        mk("general", "General receiver", 57, "makeGeneralSynth", kOpt, kUnv),
+        mk("rid", "Drone Remote ID", 58, "makeRidSynth", kOpt, kUnv),
+        mk("nr", "5G NR", 59, "makeNrSynth", kOpt, kUnv),
+        mk("timesig", "Time signals", 60, "makeTimeSynth", kOpt, kUnv),
+        mk("nbiot", "NB-IoT", 71, "makeNbiotSynth", kOpt, kUnv),
+        mk("halow", "Wi-Fi HaLow", 72, "makeHalowSynth", kOpt, kUnv),
+        mk("codar", "CODAR", 74, "makeCodarSynth", kOpt, kUnv),
+        mk("datawell", "Datawell", 76, "makeDatawellSynth", kOpt, kUnv),
+        mk("multitone", "Multitone paging", 77, "makeMultitoneSynth", kOpt, kUnv),
+        mk("ant", "ANT+", 79, "makeAntSynth", kOpt, kUnv),
+        mk("tetrapol", "TETRAPOL", 81, "makeTetrapolSynth", kOpt, kUnv),
+        mk("ndb", "NDB beacons", 31, "makeNdbSynth", kOpt, kUnv),
+        mk("elektro", "Elektro-L", 82, "makeElektroSynth", kOpt, kUnv),
     };
 }
 }
@@ -171,28 +194,9 @@ const TxModeSpec* txModeFor(int stdMode, int dvbVariant) {
 }
 
 std::string txRefusalReason(int stdMode) {
+    // the only reason left: there is no generator for the mode (nothing else is refused: no mode, frequency or power limit)
     if (txModeFor(stdMode, 1)) return {};
-    switch (stdMode) {
-    case 14: return "GNSS is not transmitted: its generator is a satellite-signal simulator (spoofing)";
-    case 34: case 41: case 59: case 71:
-        return "cellular signals are not transmitted: the generators model a network cell for testing the decoder";
-    case 53: return "Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser";
-    case 56: case 72:
-        return "Wi-Fi is not transmitted: the generator models access-point beacons for the decoder";
-    case 58: return "Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements";
-    case 79: return "ANT+ is not transmitted: it would impersonate a sensor network";
-    case 81: return "TETRAPOL is not transmitted: receive only, control-channel system information";
-    case 30: case 76:
-        return "this is a receive-only sensor harvester: there is nothing meaningful to transmit";
-    case 43: case 50: case 54: case 74:
-        return "this is an analysis mode: there is nothing to transmit";
-    case 44: return "this is a spectrum analyser: there is nothing to transmit";
-    case 57: return "this is a general listening mode: there is nothing specific to transmit";
-    case 60: return "time signals are not transmitted: the generator imitates broadcast clocks (spoofing)";
-    case 75: return "this is a signal workbench: it is for measurement, not a radio service";
-    case 77: return "Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test";
-    default: return "this mode has no transmit generator";
-    }
+    return "this mode has no transmit generator";
 }
 
 int txEngineStd(int family) {

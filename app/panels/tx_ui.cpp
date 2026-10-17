@@ -28,22 +28,8 @@ using namespace dect2;
 using namespace dect2;
 
 namespace {
-// The texts the core gives (refusal reasons, the radios' gain notes) come through tr() above; listed here so the translation files can be checked against the sources
+// The texts the core gives (the no-generator note, the radios' gain notes) come through tr() above; listed here so the translation files can be checked against the sources
 [[maybe_unused]] const char* const kCoreTexts[] = {
-    N_("GNSS is not transmitted: its generator is a satellite-signal simulator (spoofing)"),
-    N_("TETRAPOL is not transmitted: receive only, control-channel system information"),
-    N_("cellular signals are not transmitted: the generators model a network cell for testing the decoder"),
-    N_("this is an analysis mode: there is nothing to transmit"),
-    N_("Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser"),
-    N_("Wi-Fi is not transmitted: the generator models access-point beacons for the decoder"),
-    N_("Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements"),
-    N_("ANT+ is not transmitted: it would impersonate a sensor network"),
-    N_("this is a receive-only sensor harvester: there is nothing meaningful to transmit"),
-    N_("this is a spectrum analyser: there is nothing to transmit"),
-    N_("this is a general listening mode: there is nothing specific to transmit"),
-    N_("time signals are not transmitted: the generator imitates broadcast clocks (spoofing)"),
-    N_("this is a signal workbench: it is for measurement, not a radio service"),
-    N_("Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test"),
     N_("this mode has no transmit generator"),
     N_("TX VGA 0 to 47 dB; the +14 dB amplifier has its own switch"),
     N_("the AD9361's TX attenuation shown as a gain: -89.75 dB (least power) to 0 dB (most)"),

@@ -14,6 +14,7 @@
 #include "dect2/engine/engine_testkit.h"
 #include "dect2/engine/mode_tuning.h"
 #include "dect2/engine/modes.h"
+#include "dect2/engine/mode_synth.h"
 #include "dect2/pager/pager_gen.h"
 #include "dect2/pager/pager_rx.h"
 #include "dect2/hfdig/hfdig_ftx.h"
@@ -198,19 +199,23 @@ static void tableChecks() {
     CHECK(txModeFor(0, 1) && std::string(txModeFor(0, 1)->id) == "dvbt2" && txModeFor(0, 2) && std::string(txModeFor(0, 2)->id) == "dvbt", "DVB-T2 / DVB-T by variant");
     CHECK(txModeFor(1) && std::string(txModeFor(1)->id) == "dvbt2" && txModeFor(2) && std::string(txModeFor(2)->id) == "dvbt", "engine codes 1/2 map to T2/T");
     CHECK(txModeFor(8) && std::string(txModeFor(8)->id) == "dvbs" && txModeFor(13), "S2 and ADS-B by engine code");
-    const int deny[] = {14, 30, 34, 41, 43, 44, 50, 53, 54, 56, 57, 58, 59, 60, 71, 72, 74, 75, 76, 77, 79, 81};
-    for (int std_ : deny) {
-        CHECK(!txModeFor(std_), "engine mode %d must not be offered for transmit", std_);
-        CHECK(!txRefusalReason(std_).empty(), "mode %d: a refusal reason", std_);
+    const int formerlyRefused[] = {14, 30, 34, 41, 43, 44, 50, 53, 54, 56, 57, 58, 59, 60, 71, 72, 74, 76, 77, 79, 81};
+    for (int std_ : formerlyRefused) {
+        CHECK(txModeFor(std_), "engine mode %d is offered for transmit (no mode is refused)", std_);
+        CHECK(txRefusalReason(std_).empty(), "mode %d: no refusal", std_);
     }
-    for (int std_ = 0; std_ <= 81; std_++) {
-        if (std_ == 1 || std_ == 2) continue;   // DVB variants of 0
-        if (!modeTuning(std_) && std_ > 7) continue;
-        CHECK(txModeFor(std_) || !txRefusalReason(std_).empty(), "mode %d: listed or refused", std_);
+    CHECK(!txModeFor(75) && txRefusalReason(75) == "this mode has no transmit generator", "a mode without a generator says so");
+    // every engine mode that has a generator is accepted
+    for (int std_ = 3; std_ <= 90; std_++) {
+        const ModeTuning* mt = modeTuning(std_);
+        if (!mt) continue;
+        SynthConfig sc;
+        auto ms = makeModeSynth(std_, sc, std::max(mt->sampleRate, mt->minSampleRate));
+        if (ms) CHECK(txModeFor(std_), "mode %d has a generator and must be accepted for transmit", std_);
+        else CHECK(txModeFor(std_) || !txRefusalReason(std_).empty(), "mode %d: listed or 'no generator'", std_);
     }
-    CHECK(txRefusalReason(14).find("spoofing") != std::string::npos, "GNSS is refused as spoofing");
     CHECK(txRefusalReason(8).empty(), "DVB-S has no refusal");
-    CHECK(txRefusalReason(33).empty() && txModeFor(33), "M17 is offered (not cellular)");
+    CHECK(txRefusalReason(33).empty() && txModeFor(33), "M17 is offered");
     // radios that cannot transmit have no sink
     DeviceInfo syn; syn.kind = DeviceInfo::Synthetic;
     DeviceInfo file; file.kind = DeviceInfo::File;
@@ -273,7 +278,7 @@ static void sessionChecks() {
     {   // an unknown mode, no sink
         TxSession s;
         std::string err;
-        CHECK(!s.start(std::make_unique<RecSink>(), req("gnss"), {}, err) && err.find("cannot be transmitted") != std::string::npos, "mode not on the list: %s", err.c_str());
+        CHECK(!s.start(std::make_unique<RecSink>(), req("nosuchmode"), {}, err) && err.find("cannot be transmitted") != std::string::npos, "mode not on the list: %s", err.c_str());
         CHECK(!s.start(nullptr, req(), {}, err), "no sink");
     }
     {   // one pass ends by itself and the radio goes off
@@ -882,6 +887,9 @@ static TxPayloadKind expectedKind(const std::string& id) {
     if (id == "mesh") return TxPayloadKind::Mesh;
     if (id == "mac") return TxPayloadKind::Mac;
     if (id == "vdl4" || id == "uat" || id == "wisun") return TxPayloadKind::SatScene;
+    // modes that were once refused: a generic test scene, no custom message
+    static const char* scene[] = {"gnss", "ism", "cell", "gsmr", "specx", "specan", "astro", "ble", "iono", "wifi", "general", "rid", "nr", "timesig", "nbiot", "halow", "codar", "datawell", "multitone", "ant", "tetrapol", "ndb", "elektro"};
+    for (const char* w : scene) if (id == w) return TxPayloadKind::SatScene;
     return (TxPayloadKind)(-1);
 }
 
@@ -897,7 +905,7 @@ static void payloadUiCoverage() {
     CHECK(txModeForList(0, nullptr, 2) && std::string(txModeForList(0, nullptr, 2)->id) == "dvbt", "list DVB-T");
     CHECK(txModeForList(25, "ft8") && std::string(txModeForList(25, "ft8")->id) == "ft8", "list FT8");
     CHECK(txModeForList(59, nullptr) && std::string(txModeForList(59, nullptr)->id) == "meteor", "list Meteor");
-    CHECK(!txModeForList(12, nullptr), "GNSS is deny-listed");
+    CHECK(txModeForList(12, nullptr), "GNSS is offered");
 }
 
 static void dvbsFileTs() {

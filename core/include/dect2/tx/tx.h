@@ -24,10 +24,7 @@
 // Carrier tune (every mode): an unmodulated carrier at DC for setting drive / SWR; independent of the payload, not saved as transmitting.
 //   (see txModes() for the complete rows)
 //
-// NOT OFFERED, and why (txRefusalReason): cellular (LTE / GSM-R / 5G NR / NB-IoT: cell-model for the decoder), GNSS (spoofing),
-// Bluetooth / Wi-Fi / HaLow / ANT+ / Remote ID (would impersonate those networks), ISM sensors and Datawell (receive-only harvesters),
-// spectrum analyser / explorer, radio astronomy, ionospheric sounders, CODAR, general receiver, signal workbench, time-signal clocks
-// (spoofing), Multitone paging (the generator is not the unpublished real format).
+// NOT OFFERED: only a mode with no generator (txRefusalReason says "this mode has no transmit generator"). OnAir refuses no mode, frequency or power.
 //
 // No frequency and no power limit is applied here: see TxTune in source.h.
 #pragma once
@@ -63,11 +60,11 @@ struct TxModeSpec {
 
 const std::vector<TxModeSpec>& txModes();
 const TxModeSpec* txModeById(const std::string& id);
-// The mode of the app's current selection (engine standard code and, for DVB, 1 T2 / 2 T / 0 = T2); nullptr: this mode cannot transmit
+// The mode of the app's current selection (engine standard code and, for DVB, 1 T2 / 2 T / 0 = T2); nullptr: no generator for this mode
 const TxModeSpec* txModeFor(int stdMode, int dvbVariant = 1);
-// Same list as the receiver: engine family (App::family) plus a protocol sub-id (ft8, pocsag, navtex, …). nullptr: deny-listed.
+// Same list as the receiver: engine family (App::family) plus a protocol sub-id (ft8, pocsag, navtex, …). nullptr: no generator.
 const TxModeSpec* txModeForList(int family, const char* subId, int dvbVariant = 1);
-// A short plain-words reason a mode is not on the list ("" for a mode that is)
+// The reason a mode is not on the list: it has no generator ("" for a mode that is)
 std::string txRefusalReason(int stdMode);
 // Engine standard from the mode-list family number (same mapping as App::engineStd without DVB auto).
 int txEngineStd(int family);
