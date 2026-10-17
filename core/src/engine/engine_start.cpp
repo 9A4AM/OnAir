@@ -219,6 +219,7 @@ void Engine::placeNarrowReceivers(const DeviceInfo& dev, const TuneSettings& tun
         rxCube_.setDialHz(dev.kind != DeviceInfo::File ? tune.centerHz : 0.0);   // names frames after the satellite table
         rxLr_.setSignalOffset(o);
         rxWs_.setSignalOffset(o);
+        rxEcz_.setSignalOffset(o);
         rxWs_.setDialHz(tune.centerHz);   // a file: where its channels are when it does not say
         rxWs_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // where every Wi-SUN channel lies in the band taken in
         rxZb_.setSignalOffset(o);
@@ -419,6 +420,9 @@ void Engine::configureDataReceivers(const DeviceInfo& dev, const TuneSettings& t
     rxLr_.setLogCallback([this](const std::string& s) { log(s); });
     rxWs_.configure(rate_);
     rxWs_.setLogCallback([this](const std::string& s) { log(s); });
+    rxEcz_.configure(rate_);
+    rxEcz_.setLogCallback([this](const std::string& s) { log(s); });
+    rxEcz_.setClockMode(dev.kind == DeviceInfo::File ? 0 : 1);   // a file has no clock to compare; a radio and the test signal run on the computer's
     rxHfb_.configure(rate_);
     rxHfb_.setLogCallback([this](const std::string& s) { log(s); });
     rxHfb_.setCenterHz(radioTune(tune).centerHz);

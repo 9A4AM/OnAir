@@ -1400,3 +1400,58 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Sunday	domingo
+Monday	lunes
+Tuesday	martes
+Wednesday	miércoles
+Thursday	jueves
+Friday	viernes
+Saturday	sábado
+Your radio cannot tune 225 kHz.	Tu radio no puede sintonizar 225 kHz.
+Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.	Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.
+time decoded, two packets agree	hora decodificada, dos paquetes coinciden
+time decoded (one packet)	hora decodificada (un paquete)
+carrier found, waiting for a time packet	portadora encontrada, esperando un paquete de hora
+searching for the carrier	buscando la portadora
+start the receiver to read the time service	inicia el receptor para leer el servicio horario
+local time	hora local
+last packet	último paquete
+summer time	horario de verano
+the local time changes next Sunday at 01:00 UTC (summer / standard time)	la hora local cambia el próximo domingo a la 01:00 UTC (verano / estándar)
+no change announced	sin cambio anunciado
+leap second	segundo intercalar
+one is to be removed at the end of the quarter	se quitará una al final del trimestre
+one is to be added at the end of the quarter	se añadirá una al final del trimestre
+none announced	ninguno anunciado
+transmitter	transmisor
+computer clock	reloj del ordenador
+ahead	adelantado
+behind	atrasado
+The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.	The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.
+nothing to compare (a recording)	nada que comparar (una grabación)
+once the time is decoded	cuando se decodifique la hora
+path	trayecto
+; set your position in ADS-B (Receiver position) for the right delay	; set your position in ADS-B (Receiver position) for the right delay
+clock offset	desvío del reloj
+level	nivel
+start the receiver to see the signal	inicia el receptor para ver la señal
+carrier	portadora
+phase of the carrier	fase de la portadora
+The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.	The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.
+signal at the bit slicer	señal en el decisor de bits
+The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.	The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.
+Computer UTC	UTC del ordenador
+Frame	Trama
+Result	Resultado
+no frame yet: a time packet comes every few slots of the minute frame	aún no hay trama: un paquete de hora llega cada pocos slots de la trama del minuto
+, audio recording	, grabación de audio
+Recording of the radio's audio	Grabación del audio de la radio
+Audio, not IQ	Audio, no IQ
+The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.	The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.
+carrier tone Hz	tono de portadora Hz
+The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).	The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).
+Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).	Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).
+Carrier	Portadora
+Sync	Sinc.
+The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).	The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).
+LW time service, Poland	servicio horario LW, Polonia

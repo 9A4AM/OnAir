@@ -1400,3 +1400,58 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Sunday	日曜日
+Monday	月曜日
+Tuesday	火曜日
+Wednesday	水曜日
+Thursday	木曜日
+Friday	金曜日
+Saturday	土曜日
+Your radio cannot tune 225 kHz.	お使いの無線機は 225 kHz に同調できません。
+Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.	Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.
+time decoded, two packets agree	時刻を復号、2 パケットが一致
+time decoded (one packet)	時刻を復号（1 パケット）
+carrier found, waiting for a time packet	搬送波を検出、時刻パケット待ち
+searching for the carrier	搬送波を探索中
+start the receiver to read the time service	受信を開始すると時報サービスを読み取ります
+local time	現地時刻
+last packet	直近のパケット
+summer time	夏時間
+the local time changes next Sunday at 01:00 UTC (summer / standard time)	現地時刻は次の日曜 01:00 UTC に切り替わります（夏時間／標準時）
+no change announced	変更の予告なし
+leap second	うるう秒
+one is to be removed at the end of the quarter	四半期末に 1 秒削除されます
+one is to be added at the end of the quarter	四半期末に 1 秒挿入されます
+none announced	予告なし
+transmitter	送信所
+computer clock	コンピュータの時計
+ahead	進み
+behind	遅れ
+The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.	The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.
+nothing to compare (a recording)	比較対象なし（録音）
+once the time is decoded	時刻の復号後
+path	伝搬路
+; set your position in ADS-B (Receiver position) for the right delay	; set your position in ADS-B (Receiver position) for the right delay
+clock offset	時計のずれ
+level	レベル
+start the receiver to see the signal	受信を開始すると信号を表示します
+carrier	搬送波
+phase of the carrier	搬送波の位相
+The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.	The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.
+signal at the bit slicer	ビット判定器の信号
+The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.	The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.
+Computer UTC	コンピュータ UTC
+Frame	フレーム
+Result	結果
+no frame yet: a time packet comes every few slots of the minute frame	フレームはまだありません。時刻パケットは 1 分フレームの数スロットごとに届きます
+, audio recording	、音声の録音
+Recording of the radio's audio	ラジオ音声の録音
+Audio, not IQ	IQ ではなく音声
+The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.	The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.
+carrier tone Hz	搬送波トーン Hz
+The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).	The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).
+Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).	Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).
+Carrier	搬送波
+Sync	同期
+The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).	The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).
+LW time service, Poland	長波時報サービス（ポーランド）
