@@ -370,7 +370,14 @@ struct AcarsReceiver::Impl {
         a.reportSecPastHour = p.secPastHour; a.reportSecOfDay = p.secOfDay;
         a.route = p.route;
         if (a.track.empty() || a.track.back().lat != p.lat || a.track.back().lon != p.lon) {
-            a.track.push_back({p.lat, p.lon, p.altFt, tSec});
+            int rep = -1;
+            if (p.secOfDay >= 0) rep = p.secOfDay;
+            else if (p.secPastHour >= 0 && wall > 0) {   // ADS-C: the hour of the wall clock, one hour back when that puts the report in the future
+                int64_t at = wall - wall % 3600 + (int64_t)p.secPastHour;
+                if (at > wall + 120) at -= 3600;
+                rep = (int)(((at % 86400) + 86400) % 86400);
+            }
+            a.track.push_back({p.lat, p.lon, p.altFt, tSec, rep});
             if (a.track.size() > kMaxTrack) a.track.erase(a.track.begin());
         }
     }

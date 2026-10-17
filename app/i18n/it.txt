@@ -1961,3 +1961,9 @@ starts with	inizia con
 to	a
 when it is inside	quando è dentro
 when it is outside	quando è fuori
+# derived speed, track and vertical rate
+%s%.0f deg (average)	%s%.0f gradi (media)
+Reported by the aircraft.	Comunicato dall'aeromobile.
+Estimated by the position filter from the position reports (not broadcast by the aircraft).	Stimato dal filtro di posizione dai rapporti di posizione (non trasmesso dall'aeromobile).
+Derived from 2 positions %s apart: an average over that time; a curved path is longer than the straight line, so the real speed may be higher. The track is the average bearing.	Ricavato da 2 posizioni distanti %s: una media su quel tempo; un percorso curvo è più lungo della linea retta, quindi la velocità reale può essere maggiore. La rotta è la direzione media.
+Derived from 2 positions %s apart (distance on the WGS-84 ellipsoid divided by the time). The aircraft did not report a speed.	Ricavato da 2 posizioni distanti %s (distanza sull'ellissoide WGS-84 divisa per il tempo). L'aeromobile non ha comunicato una velocità.

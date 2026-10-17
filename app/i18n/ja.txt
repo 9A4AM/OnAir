@@ -1978,3 +1978,9 @@ starts with	で始まる
 to	～
 when it is inside	内側のとき
 when it is outside	外側のとき
+# derived speed, track and vertical rate
+%s%.0f deg (average)	%s%.0f 度 (平均)
+Reported by the aircraft.	航空機が報告した値です。
+Estimated by the position filter from the position reports (not broadcast by the aircraft).	位置報告から位置フィルターが推定した値です (航空機は送信していません)。
+Derived from 2 positions %s apart: an average over that time; a curved path is longer than the straight line, so the real speed may be higher. The track is the average bearing.	%s 間隔の2つの位置から算出: その間の平均値です。曲がった経路は直線より長いため、実際の速度はより大きい可能性があります。針路は平均方位です。
+Derived from 2 positions %s apart (distance on the WGS-84 ellipsoid divided by the time). The aircraft did not report a speed.	%s 間隔の2つの位置から算出 (WGS-84 楕円体上の距離を時間で割った値)。航空機は速度を報告していません。
