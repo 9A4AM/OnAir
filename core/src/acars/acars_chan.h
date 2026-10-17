@@ -1,7 +1,8 @@
 // One ACARS channel: from the wide input down to audio, AM detection, MSK demodulation of the 2400 bit/s data, and the bit-level
 // framing up to the check sequence. The first stage is a 4th-order CIC (integer arithmetic, so it cannot drift) down to about
 // 100 kS/s, then a channel filter down to 25 kS/s, the envelope, and 12.5 kS/s audio for the demodulator.
-// MSK demodulator and framing follow acarsdec (msk.c, acars.c: matched filter, 1800 Hz VCO, 3 pi/2 per bit, SYN SYN SOH search).
+// MSK demodulator written from ARINC 618 (2400 bit/s MSK, tones 1200 and 2400 Hz, 2400 Hz when a bit equals the one before it):
+// mix to 1800 Hz, MSK as offset QPSK: half-sine matched filter at the bit boundaries, decision-directed carrier reference, early-late bit clock, then the SYN SYN SOH search.
 #pragma once
 #include "dect2/common/ring.h"
 #include <cstdint>
@@ -39,9 +40,11 @@ private:
     // demodulators with different starting phases run side by side on the same audio; the one whose block passes the check wins.
     static constexpr int kInst = 3;
     struct Inst {
-        double phi = 0, df = 0, clk = 0;
-        unsigned s = 0;
-        std::vector<cf32> inb; int idx = 0;
+        double t = 0;                // sample position (in audio samples) of the next bit boundary
+        int n = 0;                   // boundaries so far, modulo 4
+        cf32 ref{1.f, 0.f};          // carrier reference, averaged over the decided boundaries
+        bool prevPos = true;         // sign of the previous boundary value against the reference
+        bool prevBit = false, inv = false;
         enum St { WSYN, SYN2, SOH1, TXT, CRC1, CRC2, END } st = WSYN;
         uint8_t outbits = 0;
         int nbits = 1;
@@ -51,8 +54,9 @@ private:
     };
     struct Pending { int64_t t = 0; AcarsRawBlock b; };
     void audioSample(float a);
-    void demod(Inst& in, float a);
-    void putBit(Inst& in, float v);
+    void demod(Inst& in);
+    void putBit(Inst& in, bool bit);
+    cf32 boundary(double t) const;           // matched-filter value of the signal at a bit boundary at sample position t
     void byteReady(Inst& in);
     void framerReset(Inst& in);
     void finish(Inst& in);
@@ -71,9 +75,13 @@ private:
     float carrier_ = 0;                      // leaky mean of the envelope
     std::vector<float> h2_;                  // audio filter, decimate by 2
     std::vector<float> buf2_; int pos2_ = 0, cnt2_ = 0;
-    double w0_ = 0;
-    int flen_ = 11;
-    std::vector<float> hm_;                  // matched filter, oversampled
+    double bitLen_ = 5.2;                    // audio samples per bit
+    cf32 lo_{1.f, 0.f}, loStep_{1.f, 0.f};   // 1800 Hz oscillator for the mix to baseband
+    int loCount_ = 0;
+    std::vector<float> h3_;                  // baseband low-pass (about 1 kHz)
+    std::vector<cf32> buf3_; int pos3_ = 0;
+    static constexpr int kRing = 64;
+    cf32 zRing_[kRing];                      // the baseband signal, one value per audio sample (ring)
     Inst inst_[kInst];
     int64_t audioCount_ = 0;
     std::vector<Pending> pending_;

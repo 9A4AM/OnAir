@@ -12,9 +12,11 @@ namespace dect2 {
 namespace {
 
 using dect2::math::kPi;
-constexpr int kMskOver = 12;                  // matched filter oversampling (acarsdec MFLTOVER)
-constexpr double kPllG = 38e-4, kPllC = 0.52; // acarsdec msk.c
-constexpr int kMaxParityErr = 3;              // acarsdec MAXPERR
+constexpr double kBaud = 2400.0, kCentreHz = 1800.0;   // ARINC 618: 2400 bit/s MSK, tones 1200 Hz and 2400 Hz around 1800 Hz
+constexpr double kTimingGain = 0.04;                    // bit-clock correction per bit, as a fraction of a bit at full early-late error
+constexpr int kMaxParityErr = 3;                        // parity errors a block may have and still be tried for repair
+constexpr int kN3 = 25;
+constexpr float kRefKeep = 0.9f;                        // memory of the carrier reference, per bit
 
 double besselI0(double x) { return dect2::window::besselI0(x, 40, 0.0); }
 
@@ -48,14 +50,9 @@ void AcarsChannelRx::configure(double inRate, double offsetHz) {
     step_ = std::polar(1.f, (float)(-2 * kPi * offsetHz / inRate));
     h1_ = lowpass(kN1, 7500.0 / fs1, 7.0);
     h2_ = lowpass(kN2, 3600.0 / fs2, 6.0);
-    w0_ = 2 * kPi * 1800.0 / audioRate_;
-    flen_ = (int)(audioRate_ / 1200.0) + 1;
-    const int flenO = flen_ * kMskOver + 1;
-    hm_.assign((size_t)flenO, 0.f);
-    for (int i = 0; i < flenO; i++) {
-        const double v = std::cos(2 * kPi * 600.0 / audioRate_ / kMskOver * (i - (flenO - 1) / 2));
-        hm_[(size_t)i] = v > 0 ? (float)v : 0.f;
-    }
+    bitLen_ = audioRate_ / kBaud;
+    loStep_ = std::polar(1.f, (float)(-2 * kPi * kCentreHz / audioRate_));
+    h3_ = lowpass(kN3, 1600.0 / audioRate_, 5.0);
     reset();
 }
 
@@ -75,10 +72,11 @@ void AcarsChannelRx::reset() {
     for (int k = 0; k < kInst; k++) {
         Inst& in = inst_[k];
         in = Inst();
-        in.inb.assign((size_t)flen_, cf32(0, 0));
-        in.clk = 1.5 * kPi * k / kInst;                  // the starting phases differ by a third of a bit
-        in.phi = kPi * 0.5 * k / kInst;
+        in.t = bitLen_ * (1.0 + (double)k / kInst);      // the bit clocks start a third of a bit apart
     }
+    lo_ = cf32(1.f, 0.f); loCount_ = 0;
+    buf3_.assign(2 * kN3, cf32(0, 0)); pos3_ = 0;
+    for (auto& v : zRing_) v = cf32(0, 0);
     audioCount_ = 0;
     pending_.clear();
     blocks_.clear();
@@ -133,8 +131,19 @@ void AcarsChannelRx::audioSample(float env) {
     const float* w = &buf2_[(size_t)(p2 + 1)];
     float in = 0;
     for (int k = 0; k < kN2; k++) in += h2_[(size_t)k] * w[k];
+    // mix down by 1800 Hz and low-pass: the tones become +600 Hz (2400) and -600 Hz (1200)
+    const cf32 z0 = cf32(in, 0.f) * lo_;
+    lo_ *= loStep_;
+    if (++loCount_ >= 256) { loCount_ = 0; lo_ /= std::abs(lo_); }
+    buf3_[(size_t)pos3_] = z0; buf3_[(size_t)(pos3_ + kN3)] = z0;
+    const int p3 = pos3_;
+    pos3_ = pos3_ + 1 == kN3 ? 0 : pos3_ + 1;
+    const cf32* w3 = &buf3_[(size_t)(p3 + 1)];
+    cf32 z(0, 0);
+    for (int k = 0; k < kN3; k++) z += h3_[(size_t)k] * w3[k];
     audioCount_++;
-    for (auto& d : inst_) demod(d, in);
+    zRing_[audioCount_ % kRing] = z;
+    for (auto& d : inst_) demod(d);
     // blocks that the demodulators finished are held for a moment so that the twins of one block can be compared
     const int64_t hold = (int64_t)(0.05 * audioRate_);
     size_t keep = 0;
@@ -147,46 +156,48 @@ void AcarsChannelRx::audioSample(float env) {
     pending_.resize(keep);
 }
 
-void AcarsChannelRx::demod(Inst& d, float in) {
+cf32 AcarsChannelRx::boundary(double t) const {
+    // The baseband signal of MSK is offset QPSK with half-sine pulses two bits long, so the matched filter is a half-sine window of
+    // that length centred on the boundary.
+    cf32 y(0, 0);
+    const int64_t k0 = (int64_t)std::ceil(t - bitLen_), k1 = (int64_t)std::floor(t + bitLen_);
+    for (int64_t k = k0; k <= k1; k++) {
+        const float w = (float)std::cos(kPi * ((double)k - t) / (2 * bitLen_));
+        y += w * zRing_[((k % kRing) + kRing) % kRing];
+    }
+    return y;
+}
+
+void AcarsChannelRx::demod(Inst& d) {
     if (d.st == Inst::TXT || d.st == Inst::CRC1 || d.st == Inst::CRC2) { d.lvlSum += carrier_; d.lvlN++; }
-    // MSK demodulator (acarsdec msk.c): VCO at 1800 Hz, 3 pi/2 of VCO phase per bit, matched filter over two bits
-    const double s = w0_ + d.df;
-    d.phi += s;
-    if (d.phi >= 2 * kPi) d.phi -= 2 * kPi;
-    d.inb[(size_t)d.idx] = cf32(in * (float)std::cos(d.phi), -in * (float)std::sin(d.phi));
-    d.idx = d.idx + 1 == flen_ ? 0 : d.idx + 1;
-    d.clk += s;
-    if (d.clk >= 1.5 * kPi - s / 2) {
-        d.clk -= 1.5 * kPi;
-        int o = (int)(kMskOver * (d.clk / s + 0.5));
-        o = std::max(0, std::min(kMskOver, o));
-        cf32 v(0, 0);
-        int j2 = d.idx;
-        for (int j = 0; j < flen_; j++, o += kMskOver) {
-            v += hm_[(size_t)o] * d.inb[(size_t)j2];
-            j2 = j2 + 1 == flen_ ? 0 : j2 + 1;
-        }
-        const float lvl = std::abs(v);
-        v /= lvl + 1e-8f;
-        float vo, dphi;
-        if (d.s & 1) { vo = v.imag(); dphi = vo >= 0 ? -v.real() : v.real(); }
-        else { vo = v.real(); dphi = vo >= 0 ? v.imag() : -v.imag(); }
-        putBit(d, (d.s & 2) ? -vo : vo);
-        d.s++;
-        d.df = kPllC * d.df + (1.0 - kPllC) * kPllG * dphi;
+    const double q = bitLen_ / 4;
+    while (d.t + q + bitLen_ + 1 <= (double)audioCount_) {
+        // At the boundaries the signal alternates between the real and the imaginary axis (the phase moves by a quarter turn a bit), so
+        // multiplying by (-j)^n leaves a real value whose sign flips exactly when the bit was sent as 1200 Hz.
+        static const cf32 rot[4] = {cf32(1, 0), cf32(0, -1), cf32(-1, 0), cf32(0, 1)};
+        const cf32 u = boundary(d.t) * rot[d.n & 3];
+        d.n = (d.n + 1) & 3;
+        const bool pos = (u * std::conj(d.ref)).real() >= 0;
+        d.ref = kRefKeep * d.ref + (pos ? u : -u);
+        // timing error: the matched-filter output is largest at the boundary
+        const float el = std::abs(boundary(d.t + q)), ee = std::abs(boundary(d.t - q));
+        d.t += bitLen_ * (1.0 + kTimingGain * (el - ee) / (el + ee + 1e-12f));
+        // 2400 Hz (the bit equals the one before it) when the sign stays, 1200 Hz when it flips
+        if (pos != d.prevPos) d.prevBit = !d.prevBit;
+        d.prevPos = pos;
+        putBit(d, d.prevBit != d.inv);
     }
 }
 
-void AcarsChannelRx::putBit(Inst& d, float v) {
+void AcarsChannelRx::putBit(Inst& d, bool bit) {
     d.outbits >>= 1;
-    if (v > 0) d.outbits |= 0x80;
-    if (rec_ && &d == &inst_[0]) bits_.push_back(v > 0 ? 1 : 0);
+    if (bit) d.outbits |= 0x80;
+    if (rec_ && &d == &inst_[0]) bits_.push_back(bit ? 1 : 0);
     if (--d.nbits <= 0) byteReady(d);
 }
 
 void AcarsChannelRx::framerReset(Inst& d) {
     d.st = Inst::WSYN;
-    d.df = 0;
     d.nbits = 1;
 }
 
@@ -211,12 +222,12 @@ void AcarsChannelRx::byteReady(Inst& d) {
     switch (d.st) {
     case Inst::WSYN:
         if (r == kAcarsSyn) { d.st = Inst::SYN2; d.nbits = 8; return; }
-        if (r == (uint8_t)~kAcarsSyn) { d.s ^= 2; d.st = Inst::SYN2; d.nbits = 8; return; }
+        if (r == (uint8_t)~kAcarsSyn) { d.inv = !d.inv; d.st = Inst::SYN2; d.nbits = 8; return; }
         d.nbits = 1;
         return;
     case Inst::SYN2:
         if (r == kAcarsSyn) { d.st = Inst::SOH1; d.nbits = 8; return; }
-        if (r == (uint8_t)~kAcarsSyn) { d.s ^= 2; d.nbits = 8; return; }
+        if (r == (uint8_t)~kAcarsSyn) { d.inv = !d.inv; d.nbits = 8; return; }
         framerReset(d);
         return;
     case Inst::SOH1:

@@ -53,7 +53,7 @@ std::unique_ptr<ModeSynth> makeAcarsSynthEx(const AcarsGenOptions& o, const Synt
 std::unique_ptr<ModeSynth> makeAcarsSynth(const SynthConfig& cfg, double sampleRate);
 
 // The bits on the air for a frame (least significant bit of each byte first) -> the tone of each bit: 2400 Hz when the bit equals the
-// one before it, 1200 Hz when it differs (derived from the demodulator of acarsdec msk.c; a steady 2400 Hz is the all-ones pre-key).
+// one before it, 1200 Hz when it differs (ARINC 618 MSK coding; a steady 2400 Hz is the all-ones pre-key).
 std::vector<uint8_t> acarsFrameBits(const std::vector<uint8_t>& bytes);
 
 } // namespace dect2

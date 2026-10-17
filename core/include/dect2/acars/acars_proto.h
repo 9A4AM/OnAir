@@ -1,6 +1,6 @@
 // ACARS (ARINC 618) block layer: check sequence, parity, repair, field parsing, and the same in reverse for the test signal.
-// Facts from acarsdec (acars.c, syndrom.h: CRC and repair), libacars (acars.c: field layout, block id rule) and ARINC 618 as the
-// decoders implement it. Nothing here touches a radio signal.
+// Written from the ARINC 618 block format (CRC-16 KERMIT, odd parity, field layout, block id rule) as the public descriptions of acarsdec
+// and libacars document it; no code of either is used. Nothing here touches a radio signal.
 #pragma once
 #include "acars_tel.h"
 #include <cstddef>
@@ -24,7 +24,7 @@ inline uint8_t acarsWithParity(uint8_t c7) { c7 &= 0x7f; return acarsParityOk(c7
 // Syndrome of a single flipped bit: the CRC residue it leaves. posFromEnd 0 is the last check byte, 1 the first, 2 the last text byte...
 uint16_t acarsSyndrome(int posFromEnd, int bit);
 
-// Parity and check-sequence repair as acarsdec does it. txt: the bytes after SOH up to and including the suffix (with their parity bits,
+// Parity and check-sequence repair (single bit per wrong-parity byte, found through CRC syndromes). txt: the bytes after SOH up to and including the suffix (with their parity bits,
 // as received); crc: the two check bytes. Up to maxParityErrors bytes with wrong parity are allowed: each gets one bit flipped so that
 // the check comes out (or leaves an error that only the check bytes carry). With no parity error, an error of two bits in one byte
 // is tried. Returns true when the block is good (txt is repaired in place); fixedBits counts the flips; parityErrors what was seen.

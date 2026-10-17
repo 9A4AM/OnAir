@@ -1,4 +1,4 @@
-//! Parity and check-sequence repair, as acarsdec does it: a block is repaired when the flipped bits that the parity errors point at explain the
+//! Parity and check-sequence repair: a block is repaired when the flipped bits that the parity errors point at explain the
 //! check-sequence residue.
 use crate::crc::{self, MAX_SYN};
 
@@ -17,20 +17,37 @@ fn in_check_bytes(c: u16) -> bool {
     (0..2).any(|e| (0..8).any(|b| crc::syn(e, b) == c))
 }
 
-fn with_parity(txt: &mut [u8], c: u16, pr: &[usize], idx: usize, flips: &mut i32) -> bool {
-    if idx == pr.len() {
+/// Each byte with wrong parity has one bit wrong. The choice of a bit for each of the bytes is stepped through like the digits of a counter (the
+/// first byte is the most significant digit); the first choice whose combined syndrome equals the residue wins.
+fn with_parity(txt: &mut [u8], c: u16, pr: &[usize], flips: &mut i32) -> bool {
+    let mut bit = [0usize; 8];
+    let n = pr.len();
+    loop {
+        let mut r = c;
+        for i in 0..n {
+            r ^= crc::syn(txt.len() - pr[i] + 1, bit[i]);
+        }
         // what is left may be an error in the check bytes themselves
-        return c == 0 || in_check_bytes(c);
-    }
-    let e = txt.len() - pr[idx] + 1;
-    for b in 0..8 {
-        if with_parity(txt, c ^ crc::syn(e, b), pr, idx + 1, flips) {
-            txt[pr[idx]] ^= 1 << b;
-            *flips += 1;
+        if r == 0 || in_check_bytes(r) {
+            for i in 0..n {
+                txt[pr[i]] ^= 1 << bit[i];
+            }
+            *flips += n as i32;
             return true;
         }
+        let mut i = n;
+        loop {
+            if i == 0 {
+                return false;
+            }
+            i -= 1;
+            bit[i] += 1;
+            if bit[i] < 8 {
+                break;
+            }
+            bit[i] = 0;
+        }
     }
-    false
 }
 
 /// With no parity error: an error of two bits in one byte is tried.
@@ -82,7 +99,7 @@ pub fn repair_block(txt: &mut [u8], check: [u8; 2], max_parity_errors: i32) -> R
     c = crc::update(c, check[0]);
     c = crc::update(c, check[1]);
     if pn > 0 {
-        if !with_parity(txt, c, &pr[..pn], 0, &mut r.fixed_bits) {
+        if !with_parity(txt, c, &pr[..pn], &mut r.fixed_bits) {
             return r;
         }
     } else if c != 0 && !double(txt, c, &mut r.fixed_bits) {

@@ -1,6 +1,6 @@
 # onair_acars
 
-ACARS (ARINC 618) block layer: the block check sequence (CRC-16 KERMIT) and single-bit syndromes, odd parity, acarsdec-style parity / check-sequence repair
+ACARS (ARINC 618) block layer: the block check sequence (CRC-16 KERMIT) and single-bit syndromes, odd parity, parity / check-sequence repair
 (`repair`), block field parsing with address, label, block id, downlink message number and flight id, text and the H1 sublabel / MFI (`block`), label names and
 the short reading of the Q-label OOOI texts and the SA media advisory (`label`).
 
