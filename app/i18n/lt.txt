@@ -2342,6 +2342,8 @@ grey: predicted by the downloaded elements, blue: refined, green: measured, ambe
 residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	liekana %.1f Hz -> %.1f Hz (naudota %d, atmesta %d); imtuvo poslinkis %+.0f Hz
 mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	vidutinė anomalija %+.3f laipsnio, vidutinis judėjimas %+.5f apsisukimo/d., posvyris %+.4f laipsnio, RAAN %+.4f laipsnio
 estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	numatoma prognozės laiko paklaida: %.1f s prieš, %.1f s po (1 sigma)
+Also share GPS interference cells (counts per area, no aircraft)	Taip pat dalytis GPS trikdžių langeliais (skaičiai pagal plotą, be orlaivių)
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	Kiekvienam 0,5 laipsnio kvadratui (apie 55 km) aplink jūsų ADS-B imtuvą: kiek orlaivių buvo išgirsta per paskutinę valandą ir kiek iš jų pranešė apie blogą GPS padėtį. Siunčiami tik šie du skaičiai kiekvienam kvadratui, niekada orlaivių tapatybės, trasos ar jūsų vieta. Tai maitina viešo žemėlapio GPS trikdžių sluoksnį ir yra požymis, o ne įrodymas, kad slopinama. Išjungta, kol pasirinksite.
 Calibrate...	Kalibruoti...
 Measure this radio's frequency error against an FM station or a carrier of known frequency	Išmatuoti šio radijo dažnio paklaidą pagal FM stotį arba žinomo dažnio nešlį
 Frequency calibration	Dažnio kalibravimas

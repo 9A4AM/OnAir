@@ -384,6 +384,7 @@ struct App {
     bool discordOn = false, discordFreq = true;   // View > Show in Discord (opt-in Rich Presence, discord_rpc.cpp) and its "Show the frequency"
     bool mapSend = false, mapConsent = false;     // Server > Send data to map server (opt-in; consent once)
     bool mapVoice = false;                        // Server > also share transcripts of airband radio calls (public text; own choice, off until chosen)
+    bool mapJam = false;                          // Server > also share GPS interference cells (counts per 0.5 degree cell, no aircraft ids); off until chosen
     bool mapMsgs = false;                         // Server > also share interesting ACARS messages (free text becomes public); off until chosen
     std::string mapDeclinedVersion;               // ONAIR_VERSION when "No, do not ask again" was chosen; another version asks again
     bool mapDeclined = false;                     // the start-up question was answered "No, do not ask again" (the Server menu still works)
@@ -657,6 +658,7 @@ void setUiLanguage(App& a, const std::string& code);   // empty: the system's la
 extern bool gTightTabs;   // the tabs of mainTabs() get less padding (a narrow pane)
 void toggleFullscreen();
 void handleFullscreenHotkeys();          // F11 and Alt+Enter; ignored while a text field has the keyboard
+std::string adsbJamBody(const std::string& station);   // adsb_ui.cpp: the POST /jam body of the GPS interference cells ("" when there is nothing to share)
 bool adsbFullMap(App& a, ImVec2 disp);           // adsb_ui.cpp: the ADS-B map or radar over the whole window when it is popped out
 void receiverLocation(double& lat, double& lon);  // adsb_ui.cpp: the one receiver position (the ADS-B antenna position)
 bool receiverLocationSet();                        // the user has set it (else it is a placeholder)

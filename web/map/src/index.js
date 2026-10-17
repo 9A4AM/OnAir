@@ -3,6 +3,7 @@ import { parseIngestBody } from "./lenient-json.js";
 import { TrailStore, SqlBackend } from "./trail-store.js";
 import { parseTrailRequest } from "./trail.js";
 import { TrackBook, sanitize, positionTimeMs, TTL_MS } from "./track-book.js";
+import { JamBook, sanitizeJam, CELL_DEG, JAM_TTL_MS, MIN_AIRCRAFT_PUBLISHED } from "./jam.js";
 import { computeFixes, DOA_TTL_MS, MAX_DOA_PER_INGEST } from "./doa.js";
 
 
@@ -77,6 +78,9 @@ export class MapHub {
     this.lastPrune = Date.now();
     this.lastExpire = 0;
     this.book = new TrackBook(Date.now());
+    this.jam = new JamBook();
+    this.jamDirty = false;
+    this.jamWroteAt = 0;
     this.stationMap = new Map();      // id -> { last, n, wAt, dirty }
     this.msgCache = new Map();        // aircraft id -> { list, dirty }
     this.msgBudget = new Map();       // station -> times of recent accepted messages (rate limit)
@@ -144,6 +148,10 @@ export class MapHub {
       "SELECT id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, path, est, dv FROM tracks",
     ).toArray());
     this.book.expire(now);
+    try {
+      const jr = sql.exec("SELECT json FROM meta WHERE k = 'jam'").toArray()[0];
+      if (jr) this.jam.load(JSON.parse(jr.json), now);
+    } catch { /* a bad row only empties the GPS layer */ }
     for (const r of sql.exec("SELECT id, last, n FROM stations").toArray()) this.stationMap.set(r.id, { last: r.last, n: r.n, wAt: now, dirty: false });
     if (typeof WebSocketRequestResponsePair === "function" && this.ctx.setWebSocketAutoResponse) {
       // a client "ping" is answered by the runtime without waking the object
@@ -236,9 +244,13 @@ export class MapHub {
         m.dirty = false;
       }
       this.trails.flush();
+      if (this.jamDirty && now - this.jamWroteAt >= 60_000) {   // one row, at most once a minute
+        sql.exec("INSERT INTO meta (k, json, t) VALUES ('jam', ?, ?) ON CONFLICT(k) DO UPDATE SET json=excluded.json, t=excluded.t", JSON.stringify(this.jam.toJSON()), now);
+        this.jamDirty = false; this.jamWroteAt = now;
+      }
       if (now - this.lastPrune >= PRUNE_EVERY_MS) this.prune(now);
     });
-    if (this.book.pending || this.dirtyStations() || msgs.length) this.armFlush(now);
+    if (this.book.pending || this.dirtyStations() || msgs.length || this.jamDirty) this.armFlush(now);
   }
 
   dirtyStations() {
@@ -278,6 +290,8 @@ export class MapHub {
     if ((url.pathname === "/trail" || url.pathname === "/trails") && req.method === "GET") return this.trailsReq(url);
     if (url.pathname === "/meta" && req.method === "GET") return this.meta(req);
     if (url.pathname === "/msgs" && req.method === "GET") return this.msgs(req);
+    if (url.pathname === "/jam" && req.method === "POST") return this.jamPost(req);
+    if (url.pathname === "/jam" && req.method === "GET") return this.jamGet();
     if (url.pathname === "/ws") return this.ws(req);
     return json({ error: "not found" }, 404);
   }
@@ -332,6 +346,27 @@ export class MapHub {
     this.scheduleBroadcast();
     this.maybeBroadcastLoad(now);
     return json({ ok: true, n: kept, load: this.loadMetrics(now) });
+  }
+
+  // ---------- GPS interference cells (aggregate only, see jam.js) ----------
+
+  async jamPost(req) {
+    let body;
+    try { body = JSON.parse(await req.text()); } catch { return json({ error: "bad json" }, 400); }
+    const clean = sanitizeJam(body);
+    if (!clean) return json({ error: "bad cells" }, 400);
+    const now = Date.now();
+    const r = this.jam.accept(clean.station, clean.cells, now);
+    if (r === "slow") return json({ error: "slow down" }, 429);
+    if (r === "full") return json({ error: "busy" }, 503);
+    this.jamDirty = true;
+    this.armFlush(now);
+    return json({ ok: true, n: clean.cells.length });
+  }
+
+  jamGet() {
+    const now = Date.now();
+    return json({ cell: CELL_DEG, ttl: JAM_TTL_MS / 1000, min: MIN_AIRCRAFT_PUBLISHED, now, cells: this.jam.cells(now) });
   }
 
   /** Fix markers where bearing lines from different stations on one frequency cross (derived from memory, never stored). */
@@ -654,7 +689,7 @@ export default {
     if (url.pathname === "/live" && req.method === "GET" && !url.searchParams.has("since") && url.searchParams.get("trails") !== "1") {
       return cachedLive(req, env, ctx, url);
     }
-    const api = url.pathname === "/ingest" || url.pathname === "/live" || url.pathname === "/msgs" || url.pathname === "/ws"
+    const api = url.pathname === "/ingest" || url.pathname === "/live" || url.pathname === "/msgs" || url.pathname === "/ws" || url.pathname === "/jam"
       || url.pathname === "/trail" || url.pathname === "/trails";
     if (api) {
       const id = env.MAP.idFromName("hub-v2");

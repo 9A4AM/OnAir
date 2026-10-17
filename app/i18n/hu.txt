@@ -2328,6 +2328,8 @@ grey: predicted by the downloaded elements, blue: refined, green: measured, ambe
 residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	maradék %.1f Hz -> %.1f Hz (%d felhasználva, %d elvetve); vevőeltolás %+.0f Hz
 mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	közepes anomália %+.3f fok, közepes mozgás %+.5f ford./nap, inklináció %+.4f fok, RAAN %+.4f fok
 estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	az előrejelzés becsült időhibája: %.1f s előtte, %.1f s utána (1 szigma)
+Also share GPS interference cells (counts per area, no aircraft)	GPS-zavarási cellák megosztása is (területenkénti számok, repülők nélkül)
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	Az ADS-B vevője körül minden 0,5 fokos négyzetre (kb. 55 km): hány repülőgépet hallott az elmúlt órában, és közülük hány jelentett rossz GPS-pozíciót. Négyzetenként csak ez a két szám megy el, repülőgép-azonosító, nyomvonal vagy az Ön helye soha. A nyilvános térkép GPS-zavarási rétegét táplálja, és jelzés, nem bizonyíték zavarásra. Kikapcsolva, amíg be nem kapcsolja.
 Calibrate...	Kalibrálás...
 Measure this radio's frequency error against an FM station or a carrier of known frequency	A rádió frekvenciahibájának mérése egy FM-adóhoz vagy ismert frekvenciájú vivőhöz képest
 Frequency calibration	Frekvenciakalibrálás

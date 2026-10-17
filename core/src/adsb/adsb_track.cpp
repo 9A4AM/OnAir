@@ -435,6 +435,11 @@ void AdsbTracker::applyMsg(Rec& r, const AdsbFrame& f) {
     if (m.hasBaro) { a.hasBaroSet = true; a.baroSetMb = (float)m.baroMb; }
     if (m.adsbVersion >= 0) a.adsbVersion = m.adsbVersion;
     if (m.nacp >= 0) a.nacp = m.nacp;
+    if (m.sil >= 0) a.sil = m.sil;
+    if (m.hasCpr && !m.surface) {   // containment from the type code (DO-260B table, supplement bits ignored)
+        static const int8_t nicOfTc[] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, 11, 10, 9, 7, 8, 5, 4, 3, 2, 0};   // TC 9 - 18
+        if (m.tc >= 9 && m.tc <= 18) a.nic = nicOfTc[m.tc];
+    }
     if (m.hasCpr) {
         if (m.surface) surfacePosition(r, m, now);
         else airbornePosition(r, m, now);

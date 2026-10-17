@@ -2342,6 +2342,8 @@ grey: predicted by the downloaded elements, blue: refined, green: measured, ambe
 residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	残差 %.1f Hz -> %.1f Hz (使用 %d、除外 %d)、受信機オフセット %+.0f Hz
 mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	平均近点角 %+.3f 度、平均運動 %+.5f 回転/日、軌道傾斜角 %+.4f 度、RAAN %+.4f 度
 estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	予測の推定時間誤差: 前 %.1f 秒、後 %.1f 秒 (1シグマ)
+Also share GPS interference cells (counts per area, no aircraft)	GPS妨害セルも共有する（エリアごとの件数のみ、航空機情報なし）
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	ADS-B受信機の周囲の0.5度四方（約55 km）ごとに、直近1時間に受信した航空機の数と、そのうちGPS位置が不良と報告した数を送ります。送るのは各区画のこの2つの数字だけで、航空機の識別情報、航跡、あなたの位置は送りません。公開マップのGPS妨害レイヤーに使われますが、妨害の証拠ではなく目安です。選択するまでオフです。
 Calibrate...	校正...
 Measure this radio's frequency error against an FM station or a carrier of known frequency	FM局または周波数既知のキャリアに対して、このラジオの周波数誤差を測定します
 Frequency calibration	周波数校正

@@ -2325,6 +2325,8 @@ grey: predicted by the downloaded elements, blue: refined, green: measured, ambe
 residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	остаток %.1f Гц -> %.1f Гц (использовано %d, отброшено %d); смещение приёмника %+.0f Гц
 mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	средняя аномалия %+.3f град., среднее движение %+.5f об/сут, наклонение %+.4f град., RAAN %+.4f град.
 estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	ожидаемая ошибка времени прогноза: %.1f с до, %.1f с после (1 сигма)
+Also share GPS interference cells (counts per area, no aircraft)	Также передавать ячейки помех GPS (счётчики по областям, без самолётов)
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	Для каждого квадрата 0,5 градуса (около 55 км) вокруг вашего приёмника ADS-B: сколько самолётов было услышано за последний час и сколько из них сообщили о плохой позиции GPS. Для квадрата отправляются только эти два числа, никогда идентификаторы самолётов, треки или ваше местоположение. Они питают слой помех GPS публичной карты и служат признаком, а не доказательством глушения. Выключено, пока вы не включите.
 Calibrate...	Калибровка...
 Measure this radio's frequency error against an FM station or a carrier of known frequency	Измерить ошибку частоты этого радио по FM-станции или несущей известной частоты
 Frequency calibration	Калибровка частоты
