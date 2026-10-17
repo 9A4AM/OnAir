@@ -1593,3 +1593,128 @@ testing	pruebas
 idea	idea
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Gracias a todos los que enviaron correcciones, informaron de errores, compartieron grabaciones, tradujeron o propusieron ideas. El autor es Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	¿Quieres que cambiemos o quitemos tu nombre? Dínoslo en Discord o abre un issue.
+# Automations window
+%d firings. Dropped events: %llu	%d disparos. Eventos descartados: %llu
+(the whole rule)	(toda la regla)
+Add a condition	Añadir una condición
+Add a copy	Añadir una copia
+Add an action...	Añadir una acción...
+Advanced	Avanzado
+Allow running programs	Permitir ejecutar programas
+Allow this rule to run it	Permitir que esta regla lo ejecute
+Any event	Cualquier evento
+Apply	Aplicar
+Arguments, one per line	Argumentos, uno por línea
+Arguments:	Argumentos:
+At most per hour (0: no limit)	Como máximo por hora (0: sin límite)
+Automations	Automatizaciones
+Automations...	Automatizaciones...
+Bot token	Token del bot
+Cannot write the file.	No se puede escribir el archivo.
+Chat id	ID del chat
+Choose a rule on the left, or make a new one.	Elige una regla a la izquierda o crea una nueva.
+Choose what to tell apart in "separately for each" so every thing has its own state.	Elige qué distinguir en «por separado para cada» para que cada cosa tenga su propio estado.
+Columns (optional)	Columnas (opcional)
+Confirm this rule...	Confirmar esta regla...
+Confirmed	Confirmada
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Define function on_event(e). e.type, e.mode, e.freq, e.time y los campos del evento (e.callsign, e.squawk ...).\n\nAcciones: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nAyudas: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTexto: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Sin io, os, load, require, pcall ni patrones; 1 millón de instrucciones, 250 ms y 16 MB por script.
+Delete...	Eliminar...
+Distance, km	Distancia, km
+Does not fire for the sample event:	No se dispara con el evento de ejemplo:
+Duplicate	Duplicar
+Edit	Editar
+Edit as text and apply, or copy it to share.	Edítalo como texto y aplícalo, o cópialo para compartir.
+Every event	Todos los eventos
+Expression (and'ed to the conditions above)	Expresión (unida con Y a las condiciones de arriba)
+Expression is fine.	La expresión es correcta.
+Fields, and or not, comparisons, contains startswith endswith matches in, arithmetic, distance_km() within() inside() hour() ...	Campos, and or not, comparaciones, contains startswith endswith matches in, aritmética, distance_km() within() inside() hour() ...
+File name	Nombre del archivo
+File:	Archivo:
+Fire with sample event	Disparar con evento de ejemplo
+Frequency, MHz	Frecuencia, MHz
+Generic JSON	JSON genérico
+Imported, switched off. Look it over, then switch it on.	Importada, desactivada. Revísala y luego actívala.
+Insert an example...	Insertar un ejemplo...
+Inside an area (polygon)	Dentro de un área (polígono)
+JSON body (optional)	Cuerpo JSON (opcional)
+Keep	Conservar
+Last error:	Último error:
+Limits	Límites
+Lua script	Script Lua
+Manage	Gestionar
+Memory name	Nombre de la memoria
+Mode id (optional)	ID del modo (opcional)
+New rule	Nueva regla
+New script	Nuevo script
+No location test	Sin prueba de ubicación
+No rules yet. Make one, or add a recipe.	Aún no hay reglas. Crea una o añade una receta.
+Not active:	No activa:
+Not imported:	No importada:
+Note	Nota
+Nothing has fired yet.	Todavía no se ha disparado nada.
+Notification	Notificación
+Off. A rule may start a program only when this is on and you confirmed that rule.	Desactivado. Una regla solo puede iniciar un programa si esto está activado y has confirmado esa regla.
+Only between these local hours	Solo entre estas horas locales
+Pick one event type to choose its fields from a list.	Elige un tipo de evento para elegir sus campos de una lista.
+Points as lat,lon; lat,lon; ...	Puntos como lat,lon; lat,lon; ...
+Program	Programa
+Program:	Programa:
+Quiet after firing, seconds	Silencio tras disparar, segundos
+Ready-made rules and scripts. Adding one makes a copy that you can edit; it starts switched off.	Reglas y scripts listos. Al añadir uno se crea una copia editable; empieza desactivada.
+Really delete	Eliminar de verdad
+Really does the actions, once, with a made-up event.	Ejecuta de verdad las acciones, una vez, con un evento inventado.
+Recall a memory	Recuperar una memoria
+Receives these events	Recibe estos eventos
+Recipes	Recetas
+Recipes...	Recetas...
+Rules and scripts: when something is decoded, notify, record, tune or call a webhook	Reglas y scripts: cuando se decodifica algo, notificar, grabar, sintonizar o llamar a un webhook
+Rules: when something is decoded (an aircraft squawks 7700, a pager message says fire, a vessel enters an area ...), do something (notify, record, tune, log, call a webhook). Scripts do the same in Lua.	Reglas: cuando se decodifica algo (un avión emite 7700, un mensaje de buscapersonas dice fuego, un barco entra en un área ...), hacer algo (notificar, grabar, sintonizar, registrar, llamar a un webhook). Los scripts hacen lo mismo en Lua.
+Run a program (advanced)	Ejecutar un programa (avanzado)
+Run a program?	¿Ejecutar un programa?
+Runs a program on this computer. Off until you allow it below and confirm this rule.	Ejecuta un programa en este equipo. Desactivado hasta que lo permitas abajo y confirmes esta regla.
+Save a screenshot	Guardar una captura
+Saved to	Guardado en
+Seconds	Segundos
+Server (optional)	Servidor (opcional)
+Service	Servicio
+Shows what the rule would do with a made-up event. Nothing is sent or started.	Muestra lo que haría la regla con un evento inventado. No se envía ni se inicia nada.
+Sound alert	Alerta sonora
+Test (dry run)	Probar (simulación)
+Test with a sample event	Probar con un evento de ejemplo
+Text can use:	El texto puede usar:
+The receiver position is not set (ADS-B window).	La posición del receptor no está definida (ventana ADS-B).
+The recipe file	El archivo de la receta
+The script ran and did nothing for this event.	El script se ejecutó y no hizo nada con este evento.
+Then do	Entonces hacer
+This rule will start the program below, on this computer, every time it fires, with text from the decoded signals in its arguments. Anyone who can send such a signal can influence it. Only allow it if you wrote it or trust the one who did.	Esta regla iniciará el programa de abajo en este equipo cada vez que se dispare, con texto de las señales decodificadas en sus argumentos. Cualquiera que pueda emitir una señal así puede influir en ello. Permítelo solo si la escribiste tú o confías en quien lo hizo.
+Title	Título
+Topic	Tema
+WAV file (empty: beeps)	Archivo WAV (vacío: pitidos)
+Webhook	Webhook
+Webhook address	Dirección del webhook
+What can a script do?	¿Qué puede hacer un script?
+When this happens	Cuando ocurre esto
+Within a distance of a point	A cierta distancia de un punto
+Within a distance of my receiver	A cierta distancia de mi receptor
+Write a CSV log row	Escribir una fila en el registro CSV
+all of the conditions	todas las condiciones
+and only if	y solo si
+any of the conditions	alguna de las condiciones
+contains	contiene
+ends with	termina con
+equals	es igual a
+has a value	tiene un valor
+is at least	es al menos
+is at most	es como máximo
+is less than	es menor que
+is more than	es mayor que
+is not	no es
+is one of (a, b, c)	es uno de (a, b, c)
+last fired %s, %d times	último disparo %s, %d veces
+matches (* ?)	coincide con (* ?)
+only as it comes in	solo al entrar
+separately for each	por separado para cada
+starts with	empieza por
+to	a
+when it is inside	cuando está dentro
+when it is outside	cuando está fuera

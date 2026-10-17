@@ -1,4 +1,5 @@
 #include "dect2/acars/acars_rx.h"
+#include "dect2/automation/engine.h"
 #include "dect2/net/feeds.h"
 #include "dect2/acars/acars_proto.h"
 #include "dect2/aero/aero_pos.h"
@@ -333,6 +334,13 @@ struct AcarsReceiver::Impl {
             }
         }
         if (Feeds::get().wantAcars()) Feeds::get().acars(m);   // the data feed out (feeds.h), off unless the user turned it on
+        if (automation::wants(automation::FAcars)) {   // the automations (automation/engine.h)
+            automation::Event ev("acars.message");
+            ev.at(automation::wallNow(), "ACARS", m.freqHz);
+            ev.str("tail", m.reg).str("flight", m.flightId).str("label", m.label).str("text", m.text).flag("downlink", m.downlink).str("msg_num", m.msgNum);
+            if (m.hasPos) ev.num("lat", m.lat).num("lon", m.lon);
+            automation::emit(std::move(ev));
+        }
         msgs.push_front(std::move(m));
         if (msgs.size() > 200) msgs.pop_back();
     }

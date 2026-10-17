@@ -1575,3 +1575,128 @@ testing	тестирование
 idea	идея
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Спасибо всем, кто присылал исправления, сообщал об ошибках, делился записями, переводил и предлагал идеи. Автор — Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Хотите, чтобы ваше имя изменили или убрали? Напишите нам в Discord или создайте issue.
+# Automations window
+%d firings. Dropped events: %llu	Срабатываний: %d. Отброшено событий: %llu
+(the whole rule)	(всё правило)
+Add a condition	Добавить условие
+Add a copy	Добавить копию
+Add an action...	Добавить действие...
+Advanced	Дополнительно
+Allow running programs	Разрешить запуск программ
+Allow this rule to run it	Разрешить этому правилу запуск
+Any event	Любое событие
+Apply	Применить
+Arguments, one per line	Аргументы, по одному в строке
+Arguments:	Аргументы:
+At most per hour (0: no limit)	Не более раз в час (0: без ограничения)
+Automations	Автоматизация
+Automations...	Автоматизация...
+Bot token	Токен бота
+Cannot write the file.	Не удалось записать файл.
+Chat id	ID чата
+Choose a rule on the left, or make a new one.	Выберите правило слева или создайте новое.
+Choose what to tell apart in "separately for each" so every thing has its own state.	Выберите в поле «отдельно для каждого», что различать, чтобы у каждого объекта было своё состояние.
+Columns (optional)	Столбцы (необязательно)
+Confirm this rule...	Подтвердить это правило...
+Confirmed	Подтверждено
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Определите function on_event(e). Доступны e.type, e.mode, e.freq, e.time и поля события (e.callsign, e.squawk ...).\n\nДействия: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nПомощники: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nТекст: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Нет io, os, load, require, pcall и поиска по шаблону; на скрипт 1 млн инструкций, 250 мс и 16 МБ.
+Delete...	Удалить...
+Distance, km	Расстояние, км
+Does not fire for the sample event:	Не срабатывает на примере события:
+Duplicate	Дублировать
+Edit	Правка
+Edit as text and apply, or copy it to share.	Измените как текст и примените или скопируйте, чтобы поделиться.
+Every event	Каждое событие
+Expression (and'ed to the conditions above)	Выражение (через И с условиями выше)
+Expression is fine.	Выражение корректно.
+Fields, and or not, comparisons, contains startswith endswith matches in, arithmetic, distance_km() within() inside() hour() ...	Поля, and or not, сравнения, contains startswith endswith matches in, арифметика, distance_km() within() inside() hour() ...
+File name	Имя файла
+File:	Файл:
+Fire with sample event	Запустить с примером события
+Frequency, MHz	Частота, МГц
+Generic JSON	Обычный JSON
+Imported, switched off. Look it over, then switch it on.	Импортировано, выключено. Проверьте и затем включите.
+Insert an example...	Вставить пример...
+Inside an area (polygon)	Внутри области (многоугольник)
+JSON body (optional)	Тело JSON (необязательно)
+Keep	Оставить
+Last error:	Последняя ошибка:
+Limits	Ограничения
+Lua script	Скрипт Lua
+Manage	Управление
+Memory name	Имя памяти
+Mode id (optional)	ID режима (необязательно)
+New rule	Новое правило
+New script	Новый скрипт
+No location test	Без проверки положения
+No rules yet. Make one, or add a recipe.	Правил пока нет. Создайте или добавьте рецепт.
+Not active:	Не активно:
+Not imported:	Не импортировано:
+Note	Заметка
+Nothing has fired yet.	Пока ничего не сработало.
+Notification	Уведомление
+Off. A rule may start a program only when this is on and you confirmed that rule.	Выключено. Правило может запустить программу, только если это включено и вы подтвердили это правило.
+Only between these local hours	Только между этими местными часами
+Pick one event type to choose its fields from a list.	Выберите один тип события, чтобы выбирать его поля из списка.
+Points as lat,lon; lat,lon; ...	Точки в виде широта,долгота; широта,долгота; ...
+Program	Программа
+Program:	Программа:
+Quiet after firing, seconds	Пауза после срабатывания, секунд
+Ready-made rules and scripts. Adding one makes a copy that you can edit; it starts switched off.	Готовые правила и скрипты. Добавление создаёт копию, которую можно править; она выключена.
+Really delete	Точно удалить
+Really does the actions, once, with a made-up event.	Действительно выполняет действия один раз с выдуманным событием.
+Recall a memory	Вызвать память
+Receives these events	Получает эти события
+Recipes	Рецепты
+Recipes...	Рецепты...
+Rules and scripts: when something is decoded, notify, record, tune or call a webhook	Правила и скрипты: когда что-то декодировано — уведомить, записать, настроиться или вызвать вебхук
+Rules: when something is decoded (an aircraft squawks 7700, a pager message says fire, a vessel enters an area ...), do something (notify, record, tune, log, call a webhook). Scripts do the same in Lua.	Правила: когда что-то декодировано (самолёт передаёт 7700, сообщение пейджера говорит о пожаре, судно входит в зону ...), сделать что-то (уведомить, записать, настроиться, внести в журнал, вызвать вебхук). Скрипты делают то же на Lua.
+Run a program (advanced)	Запустить программу (для опытных)
+Run a program?	Запустить программу?
+Runs a program on this computer. Off until you allow it below and confirm this rule.	Запускает программу на этом компьютере. Выключено, пока вы не разрешите это ниже и не подтвердите правило.
+Save a screenshot	Сохранить снимок экрана
+Saved to	Сохранено в
+Seconds	Секунды
+Server (optional)	Сервер (необязательно)
+Service	Сервис
+Shows what the rule would do with a made-up event. Nothing is sent or started.	Показывает, что сделало бы правило с выдуманным событием. Ничего не отправляется и не запускается.
+Sound alert	Звуковой сигнал
+Test (dry run)	Проверка (без действий)
+Test with a sample event	Проверить на примере события
+Text can use:	В тексте можно использовать:
+The receiver position is not set (ADS-B window).	Положение приёмника не задано (окно ADS-B).
+The recipe file	Файл рецепта
+The script ran and did nothing for this event.	Скрипт выполнился и ничего не сделал для этого события.
+Then do	Тогда выполнить
+This rule will start the program below, on this computer, every time it fires, with text from the decoded signals in its arguments. Anyone who can send such a signal can influence it. Only allow it if you wrote it or trust the one who did.	Это правило будет при каждом срабатывании запускать указанную ниже программу на этом компьютере, передавая в аргументы текст из декодированных сигналов. Любой, кто может передать такой сигнал, может на это повлиять. Разрешайте, только если вы сами его написали или доверяете автору.
+Title	Заголовок
+Topic	Тема
+WAV file (empty: beeps)	WAV-файл (пусто: сигналы)
+Webhook	Вебхук
+Webhook address	Адрес вебхука
+What can a script do?	Что может скрипт?
+When this happens	Когда происходит это
+Within a distance of a point	В пределах расстояния от точки
+Within a distance of my receiver	В пределах расстояния от моего приёмника
+Write a CSV log row	Записать строку в CSV-журнал
+all of the conditions	все условия
+and only if	и только если
+any of the conditions	любое из условий
+contains	содержит
+ends with	заканчивается на
+equals	равно
+has a value	имеет значение
+is at least	не меньше
+is at most	не больше
+is less than	меньше
+is more than	больше
+is not	не равно
+is one of (a, b, c)	одно из (a, b, c)
+last fired %s, %d times	последний раз %s, всего %d
+matches (* ?)	соответствует (* ?)
+only as it comes in	только при входе
+separately for each	отдельно для каждого
+starts with	начинается с
+to	до
+when it is inside	когда внутри
+when it is outside	когда снаружи

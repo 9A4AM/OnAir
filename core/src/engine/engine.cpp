@@ -1,6 +1,7 @@
 // The Engine core: sample ingest (cleaning, offset tuning), stop, recording, applyReset, and the per-receiver feed,
 // reset and auto-select switches. Other Engine members live in engine_*.cpp next to this file.
 #include "dect2/engine/engine.h"
+#include "dect2/automation/engine.h"
 #include "engine_internal.h"
 #include "dect2/source/converter.h"
 #include "dect2/net/share.h"
@@ -116,6 +117,7 @@ void Engine::stop() {
         snprintf(b, sizeof b, "source stopped (CPU load: spectrum %.0f%%, receiver %.0f%% of real time)", 100 * tSpec_ / std::max(1e-9, dur), 100 * tRx_ / std::max(1e-9, dur));
         log(b);
         log(t2rxProfile());
+        automation::receiverState("stopped", "receiver stopped");
     }
     rxA3_.stop();
     running_ = false;

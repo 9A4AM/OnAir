@@ -1,6 +1,7 @@
 // Mesh (LoRa) receiver: the channel plan of the region, one channel filter per frequency and bandwidth, one LoRa demodulator per
 // setting, the packet layer on every good frame, and the tables of MeshTelemetry.
 #include "dect2/net/feeds.h"
+#include "dect2/automation/engine.h"
 #include "dect2/mesh/mesh_rx.h"
 #include "dect2/results/results_io.h"
 #include "dect2/mesh/mesh_lora.h"
@@ -322,6 +323,13 @@ struct MeshReceiver::Impl {
                 extra += ",\"parsed\":true";
             } else extra = "\"parsed\":false";
             Feeds::get().lora(kind, meshHexString(f.payload.data(), std::min<size_t>(f.payload.size(), 255)), (float)f.snrDb, row.freqHz, di.sf, extra);
+        }
+        if (automation::wants(automation::FLora)) {   // the automations (automation/engine.h)
+            static const char* const kinds[] = {"lora", "meshtastic", "meshcore", "loraaprs", "meshcom", "lorawan"};
+            automation::Event ev("lora.packet");
+            ev.at(automation::wallNow(), "LoRa", row.freqHz);
+            ev.str("kind", kinds[proto_ >= 0 && proto_ <= 5 ? proto_ : 0]).str("hex", meshHexString(f.payload.data(), std::min<size_t>(f.payload.size(), 255))).num("snr_db", f.snrDb).num("sf", di.sf);
+            automation::emit(std::move(ev));
         }
         if (proto_ == 5) row.raw = meshHexString(f.payload.data(), std::min<size_t>(f.payload.size(), 255));
         else if (proto_ >= 3 || !r.ok) row.raw = meshPrintable(f.payload.data(), std::min<size_t>(f.payload.size(), 255));

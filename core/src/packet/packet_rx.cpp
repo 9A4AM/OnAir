@@ -5,6 +5,7 @@
 // 9600 baud: two slicers with different filters, a clock loop, the G3RUH descrambler (x^17 + x^12 + 1) and NRZI.
 // The frame layer is packet_ax25.*, the APRS layer packet_aprs.*.
 #include "dect2/packet/packet_rx.h"
+#include "dect2/automation/engine.h"
 #include "dect2/results/results_io.h"
 #include "dect2/net/feeds.h"
 #include "dect2/dmr/dmr_dsp.h"
@@ -213,6 +214,13 @@ struct PacketReceiver::Impl {
             pf.summary = "AX.25 " + f.typeName() + (f.info.empty() ? "" : ": " + f.info);
         }
         if (Feeds::get().wantAprs()) Feeds::get().aprs(dat, pf.from, pf.to, pf.path, f.info, f.isUi() && f.pid == 0xF0);   // the data feeds out (feeds.h)
+        if (automation::wants(automation::FAprs)) {   // the automations (automation/engine.h)
+            automation::Event ev("aprs.packet");
+            ev.at(automation::wallNow(), "APRS", 0);
+            ev.str("from", pf.from).str("to", pf.to).str("path", pf.path).str("info", f.info).str("type", pf.type).str("summary", pf.summary);
+            if (pf.hasPos) ev.num("lat", pf.lat).num("lon", pf.lon);
+            automation::emit(std::move(ev));
+        }
         frames.push_back(pf);
         while (frames.size() > kMaxFrames) frames.pop_front();
         touchStation(pf.from, isAprs ? &a : nullptr, false, "", tnow);

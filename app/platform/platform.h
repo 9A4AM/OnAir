@@ -49,6 +49,10 @@ std::string dataDir();
 bool fetchUrl(const std::string& url, const std::string& file, const std::string& userAgent);
 // POST of UTF-8 JSON (Content-Type: application/json), same curl program. False when it did not work (including HTTP 4xx/5xx).
 bool postJson(const std::string& url, const std::string& json, const std::string& userAgent);
+// Starts a program with arguments and does not wait for it. No shell is ever involved: every argument stays one argument. False and err when it did not start.
+bool spawnProgram(const std::string& program, const std::vector<std::string>& args, std::string& err);
+// A desktop notification (Notification Center on macOS, a toast on Windows, notify-send on Linux when installed). False when the system could not show one.
+bool notify(const std::string& title, const std::string& body);
 // The position from the system's location service (on macOS this is Wi-Fi positioning and needs the user's permission).
 // locateStart() begins a request; locateState() says how it went: 0 nothing asked, 1 working, 2 done (lat, lon, accuracy in metres), 3 failed (msg says why).
 void locateStart();

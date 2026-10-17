@@ -1578,3 +1578,128 @@ testing	tesztelés
 idea	ötlet
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Köszönet mindenkinek, aki javítást küldött, hibát jelentett, felvételt osztott meg, fordított vagy ötletet adott. A szerző Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Szeretnéd, ha módosítanánk vagy törölnénk a neved? Szólj a Discordon, vagy nyiss egy issue-t.
+# Automations window
+%d firings. Dropped events: %llu	%d végrehajtás. Eldobott események: %llu
+(the whole rule)	(az egész szabály)
+Add a condition	Feltétel hozzáadása
+Add a copy	Másolat hozzáadása
+Add an action...	Művelet hozzáadása...
+Advanced	Speciális
+Allow running programs	Programok futtatásának engedélyezése
+Allow this rule to run it	Engedélyezem ennek a szabálynak a futtatást
+Any event	Bármely esemény
+Apply	Alkalmaz
+Arguments, one per line	Argumentumok, soronként egy
+Arguments:	Argumentumok:
+At most per hour (0: no limit)	Óránként legfeljebb (0: nincs korlát)
+Automations	Automatizálások
+Automations...	Automatizálások...
+Bot token	Bot-token
+Cannot write the file.	A fájl nem írható.
+Chat id	Csevegés-azonosító
+Choose a rule on the left, or make a new one.	Válassz egy szabályt balról, vagy hozz létre újat.
+Choose what to tell apart in "separately for each" so every thing has its own state.	Válaszd ki a „külön minden…” mezőben, mi alapján különböztessen meg, hogy mindennek saját állapota legyen.
+Columns (optional)	Oszlopok (nem kötelező)
+Confirm this rule...	Szabály megerősítése...
+Confirmed	Megerősítve
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Definiáld a function on_event(e) függvényt. e.type, e.mode, e.freq, e.time és az esemény mezői (e.callsign, e.squawk ...).\n\nMűveletek: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nSegédek: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nSzöveg: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Nincs io, os, load, require, pcall és mintaillesztés; szkriptenként 1 millió utasítás, 250 ms és 16 MB.
+Delete...	Törlés...
+Distance, km	Távolság, km
+Does not fire for the sample event:	A mintaesemény nem váltja ki:
+Duplicate	Másolás
+Edit	Szerkesztés
+Edit as text and apply, or copy it to share.	Szerkeszd szövegként és alkalmazd, vagy másold a megosztáshoz.
+Every event	Minden esemény
+Expression (and'ed to the conditions above)	Kifejezés (ÉS kapcsolattal az fenti feltételekhez)
+Expression is fine.	A kifejezés rendben van.
+Fields, and or not, comparisons, contains startswith endswith matches in, arithmetic, distance_km() within() inside() hour() ...	Mezők, and or not, összehasonlítások, contains startswith endswith matches in, aritmetika, distance_km() within() inside() hour() ...
+File name	Fájlnév
+File:	Fájl:
+Fire with sample event	Kiváltás mintaeseménnyel
+Frequency, MHz	Frekvencia, MHz
+Generic JSON	Általános JSON
+Imported, switched off. Look it over, then switch it on.	Importálva, kikapcsolva. Nézd át, majd kapcsold be.
+Insert an example...	Példa beszúrása...
+Inside an area (polygon)	Egy területen belül (sokszög)
+JSON body (optional)	JSON törzs (nem kötelező)
+Keep	Megtartom
+Last error:	Utolsó hiba:
+Limits	Korlátok
+Lua script	Lua-szkript
+Manage	Kezelés
+Memory name	Memória neve
+Mode id (optional)	Mód azonosító (nem kötelező)
+New rule	Új szabály
+New script	Új szkript
+No location test	Nincs helyellenőrzés
+No rules yet. Make one, or add a recipe.	Még nincs szabály. Hozz létre egyet, vagy adj hozzá receptet.
+Not active:	Nem aktív:
+Not imported:	Nem importálva:
+Note	Megjegyzés
+Nothing has fired yet.	Még semmi sem váltódott ki.
+Notification	Értesítés
+Off. A rule may start a program only when this is on and you confirmed that rule.	Ki. Egy szabály csak akkor indíthat programot, ha ez be van kapcsolva, és megerősítetted a szabályt.
+Only between these local hours	Csak ezek között a helyi órák között
+Pick one event type to choose its fields from a list.	Válassz egy eseménytípust, hogy a mezőit listából választhasd.
+Points as lat,lon; lat,lon; ...	Pontok így: szél,hossz; szél,hossz; ...
+Program	Program
+Program:	Program:
+Quiet after firing, seconds	Szünet kiváltás után, másodperc
+Ready-made rules and scripts. Adding one makes a copy that you can edit; it starts switched off.	Kész szabályok és szkriptek. A hozzáadás szerkeszthető másolatot hoz létre; kikapcsolva indul.
+Really delete	Valóban törlöm
+Really does the actions, once, with a made-up event.	Valóban végrehajtja a műveleteket egyszer, kitalált eseménnyel.
+Recall a memory	Memória előhívása
+Receives these events	Ezeket az eseményeket kapja
+Recipes	Receptek
+Recipes...	Receptek...
+Rules and scripts: when something is decoded, notify, record, tune or call a webhook	Szabályok és szkriptek: ha valamit dekódol, értesítés, felvétel, hangolás vagy webhook hívása
+Rules: when something is decoded (an aircraft squawks 7700, a pager message says fire, a vessel enters an area ...), do something (notify, record, tune, log, call a webhook). Scripts do the same in Lua.	Szabályok: ha valamit dekódol (egy repülő 7700-at ad, egy személyhívó üzenet tűzről szól, egy hajó belép egy területre ...), tegyen valamit (értesítés, felvétel, hangolás, naplózás, webhook hívása). A szkriptek ugyanezt teszik Luában.
+Run a program (advanced)	Program futtatása (haladó)
+Run a program?	Programot futtat?
+Runs a program on this computer. Off until you allow it below and confirm this rule.	Programot indít ezen a számítógépen. Kikapcsolt, amíg lent nem engedélyezed, és meg nem erősíted a szabályt.
+Save a screenshot	Képernyőkép mentése
+Saved to	Mentve ide:
+Seconds	Másodperc
+Server (optional)	Szerver (nem kötelező)
+Service	Szolgáltatás
+Shows what the rule would do with a made-up event. Nothing is sent or started.	Megmutatja, mit tenne a szabály egy kitalált eseménnyel. Semmi sem kerül elküldésre vagy elindításra.
+Sound alert	Hangjelzés
+Test (dry run)	Teszt (szárazon)
+Test with a sample event	Teszt mintaeseménnyel
+Text can use:	A szöveg használhatja:
+The receiver position is not set (ADS-B window).	A vevő pozíciója nincs megadva (ADS-B ablak).
+The recipe file	A receptfájl
+The script ran and did nothing for this event.	A szkript lefutott, és nem tett semmit ennél az eseménynél.
+Then do	Akkor tegye
+This rule will start the program below, on this computer, every time it fires, with text from the decoded signals in its arguments. Anyone who can send such a signal can influence it. Only allow it if you wrote it or trust the one who did.	Ez a szabály minden kiváltáskor elindítja az alábbi programot ezen a számítógépen, az argumentumaiban a dekódolt jelekből származó szöveggel. Bárki, aki ilyen jelet tud küldeni, befolyásolhatja. Csak akkor engedélyezd, ha te írtad, vagy megbízol a szerzőjében.
+Title	Cím
+Topic	Téma
+WAV file (empty: beeps)	WAV-fájl (üres: sípolás)
+Webhook	Webhook
+Webhook address	Webhook címe
+What can a script do?	Mit tud egy szkript?
+When this happens	Ha ez történik
+Within a distance of a point	Egy ponttól adott távolságon belül
+Within a distance of my receiver	A vevőmtől adott távolságon belül
+Write a CSV log row	CSV-naplósor írása
+all of the conditions	az összes feltétel
+and only if	és csak ha
+any of the conditions	bármelyik feltétel
+contains	tartalmazza
+ends with	ezzel végződik
+equals	egyenlő
+has a value	van értéke
+is at least	legalább
+is at most	legfeljebb
+is less than	kisebb mint
+is more than	nagyobb mint
+is not	nem
+is one of (a, b, c)	ezek egyike (a, b, c)
+last fired %s, %d times	utoljára %s, %d alkalommal
+matches (* ?)	illeszkedik (* ?)
+only as it comes in	csak belépéskor
+separately for each	külön minden
+starts with	ezzel kezdődik
+to	–
+when it is inside	amikor belül van
+when it is outside	amikor kívül van

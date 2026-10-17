@@ -1593,3 +1593,128 @@ testing	tests
 idea	idée
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Merci à tous ceux qui ont envoyé des corrections, signalé des bugs, partagé des enregistrements, traduit ou proposé des idées. L'auteur est Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Vous voulez que votre nom soit modifié ou retiré ? Dites-le-nous sur Discord ou ouvrez une issue.
+# Automations window
+%d firings. Dropped events: %llu	%d déclenchements. Événements perdus : %llu
+(the whole rule)	(toute la règle)
+Add a condition	Ajouter une condition
+Add a copy	Ajouter une copie
+Add an action...	Ajouter une action...
+Advanced	Avancé
+Allow running programs	Autoriser l'exécution de programmes
+Allow this rule to run it	Autoriser cette règle à l'exécuter
+Any event	N'importe quel événement
+Apply	Appliquer
+Arguments, one per line	Arguments, un par ligne
+Arguments:	Arguments :
+At most per hour (0: no limit)	Au plus par heure (0 : sans limite)
+Automations	Automatisations
+Automations...	Automatisations...
+Bot token	Jeton du bot
+Cannot write the file.	Impossible d'écrire le fichier.
+Chat id	ID du chat
+Choose a rule on the left, or make a new one.	Choisissez une règle à gauche ou créez-en une.
+Choose what to tell apart in "separately for each" so every thing has its own state.	Choisissez dans « séparément pour chaque » ce qu'il faut distinguer, pour que chaque élément ait son propre état.
+Columns (optional)	Colonnes (facultatif)
+Confirm this rule...	Confirmer cette règle...
+Confirmed	Confirmée
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Définissez function on_event(e). e.type, e.mode, e.freq, e.time et les champs de l'événement (e.callsign, e.squawk ...).\n\nActions : notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nAides : distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTexte : s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Pas de io, os, load, require, pcall ni de motifs ; 1 million d'instructions, 250 ms et 16 Mo par script.
+Delete...	Supprimer...
+Distance, km	Distance, km
+Does not fire for the sample event:	Ne se déclenche pas pour l'événement d'exemple :
+Duplicate	Dupliquer
+Edit	Modifier
+Edit as text and apply, or copy it to share.	Modifiez-le en texte puis appliquez-le, ou copiez-le pour le partager.
+Every event	Chaque événement
+Expression (and'ed to the conditions above)	Expression (liée par ET aux conditions ci-dessus)
+Expression is fine.	L'expression est correcte.
+Fields, and or not, comparisons, contains startswith endswith matches in, arithmetic, distance_km() within() inside() hour() ...	Champs, and or not, comparaisons, contains startswith endswith matches in, arithmétique, distance_km() within() inside() hour() ...
+File name	Nom du fichier
+File:	Fichier :
+Fire with sample event	Déclencher avec un événement d'exemple
+Frequency, MHz	Fréquence, MHz
+Generic JSON	JSON générique
+Imported, switched off. Look it over, then switch it on.	Importée, désactivée. Relisez-la, puis activez-la.
+Insert an example...	Insérer un exemple...
+Inside an area (polygon)	Dans une zone (polygone)
+JSON body (optional)	Corps JSON (facultatif)
+Keep	Garder
+Last error:	Dernière erreur :
+Limits	Limites
+Lua script	Script Lua
+Manage	Gérer
+Memory name	Nom de la mémoire
+Mode id (optional)	ID du mode (facultatif)
+New rule	Nouvelle règle
+New script	Nouveau script
+No location test	Pas de test de position
+No rules yet. Make one, or add a recipe.	Aucune règle pour l'instant. Créez-en une ou ajoutez une recette.
+Not active:	Inactive :
+Not imported:	Non importée :
+Note	Note
+Nothing has fired yet.	Rien ne s'est encore déclenché.
+Notification	Notification
+Off. A rule may start a program only when this is on and you confirmed that rule.	Désactivé. Une règle ne peut lancer un programme que si ceci est activé et que vous avez confirmé cette règle.
+Only between these local hours	Seulement entre ces heures locales
+Pick one event type to choose its fields from a list.	Choisissez un type d'événement pour choisir ses champs dans une liste.
+Points as lat,lon; lat,lon; ...	Points sous la forme lat,lon; lat,lon; ...
+Program	Programme
+Program:	Programme :
+Quiet after firing, seconds	Pause après déclenchement, secondes
+Ready-made rules and scripts. Adding one makes a copy that you can edit; it starts switched off.	Règles et scripts prêts à l'emploi. L'ajout crée une copie modifiable ; elle démarre désactivée.
+Really delete	Supprimer vraiment
+Really does the actions, once, with a made-up event.	Exécute réellement les actions, une fois, avec un événement fictif.
+Recall a memory	Rappeler une mémoire
+Receives these events	Reçoit ces événements
+Recipes	Recettes
+Recipes...	Recettes...
+Rules and scripts: when something is decoded, notify, record, tune or call a webhook	Règles et scripts : quand quelque chose est décodé, notifier, enregistrer, syntoniser ou appeler un webhook
+Rules: when something is decoded (an aircraft squawks 7700, a pager message says fire, a vessel enters an area ...), do something (notify, record, tune, log, call a webhook). Scripts do the same in Lua.	Règles : quand quelque chose est décodé (un avion émet 7700, un message de pager dit « feu », un navire entre dans une zone ...), faire quelque chose (notifier, enregistrer, syntoniser, journaliser, appeler un webhook). Les scripts font de même en Lua.
+Run a program (advanced)	Exécuter un programme (avancé)
+Run a program?	Exécuter un programme ?
+Runs a program on this computer. Off until you allow it below and confirm this rule.	Lance un programme sur cet ordinateur. Désactivé tant que vous ne l'autorisez pas ci-dessous et ne confirmez pas cette règle.
+Save a screenshot	Enregistrer une capture d'écran
+Saved to	Enregistré dans
+Seconds	Secondes
+Server (optional)	Serveur (facultatif)
+Service	Service
+Shows what the rule would do with a made-up event. Nothing is sent or started.	Montre ce que la règle ferait avec un événement fictif. Rien n'est envoyé ni lancé.
+Sound alert	Alerte sonore
+Test (dry run)	Tester (à blanc)
+Test with a sample event	Tester avec un événement d'exemple
+Text can use:	Le texte peut utiliser :
+The receiver position is not set (ADS-B window).	La position du récepteur n'est pas définie (fenêtre ADS-B).
+The recipe file	Le fichier de la recette
+The script ran and did nothing for this event.	Le script s'est exécuté sans rien faire pour cet événement.
+Then do	Alors faire
+This rule will start the program below, on this computer, every time it fires, with text from the decoded signals in its arguments. Anyone who can send such a signal can influence it. Only allow it if you wrote it or trust the one who did.	Cette règle lancera le programme ci-dessous sur cet ordinateur à chaque déclenchement, avec du texte issu des signaux décodés dans ses arguments. Quiconque peut émettre un tel signal peut l'influencer. N'autorisez-la que si vous l'avez écrite ou si vous faites confiance à son auteur.
+Title	Titre
+Topic	Sujet
+WAV file (empty: beeps)	Fichier WAV (vide : bips)
+Webhook	Webhook
+Webhook address	Adresse du webhook
+What can a script do?	Que peut faire un script ?
+When this happens	Quand ceci se produit
+Within a distance of a point	À une certaine distance d'un point
+Within a distance of my receiver	À une certaine distance de mon récepteur
+Write a CSV log row	Écrire une ligne dans le journal CSV
+all of the conditions	toutes les conditions
+and only if	et seulement si
+any of the conditions	l'une des conditions
+contains	contient
+ends with	se termine par
+equals	est égal à
+has a value	a une valeur
+is at least	est au moins
+is at most	est au plus
+is less than	est inférieur à
+is more than	est supérieur à
+is not	n'est pas
+is one of (a, b, c)	est parmi (a, b, c)
+last fired %s, %d times	dernier déclenchement %s, %d fois
+matches (* ?)	correspond à (* ?)
+only as it comes in	seulement à l'entrée
+separately for each	séparément pour chaque
+starts with	commence par
+to	à
+when it is inside	quand c'est à l'intérieur
+when it is outside	quand c'est à l'extérieur

@@ -195,6 +195,23 @@ if(NOT MSVC)
   target_link_libraries(dect2_rnnoise PUBLIC m)
 endif()
 target_link_libraries(dect2core PUBLIC dect2_rnnoise)
+# Lua 5.4 (MIT, third_party/lua): the scripts of the Automations window, in a sandbox (no io, os, package, debug libraries are compiled in)
+file(GLOB _lua_src CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/third_party/lua/*.c)
+add_library(dect2_lua STATIC ${_lua_src})
+target_include_directories(dect2_lua PUBLIC third_party/lua)
+target_compile_options(dect2_lua PRIVATE -w)
+if(NOT WIN32)
+  target_compile_definitions(dect2_lua PRIVATE LUA_USE_POSIX)
+endif()
+target_link_libraries(dect2_lua PUBLIC m)
+target_link_libraries(dect2core PUBLIC dect2_lua)
+# the automations (rules, expressions, Lua scripts, the engine): their own small library so its test builds without the receivers
+add_library(dect2_automation STATIC core/src/automation/catalog.cpp core/src/automation/expr.cpp core/src/automation/json_mini.cpp core/src/automation/rules.cpp core/src/automation/engine.cpp core/src/automation/script.cpp core/src/automation/recipes.cpp)
+target_include_directories(dect2_automation PUBLIC core/include)
+target_link_libraries(dect2_automation PUBLIC dect2_lua)
+find_package(Threads REQUIRED)
+target_link_libraries(dect2_automation PUBLIC Threads::Threads)
+target_link_libraries(dect2core PUBLIC dect2_automation)
 # codec2 (FreeDV and M17 speech, LGPL-2.1): built from third_party/codec2 as its own shared library next to the programs and loaded at run
 # time, so the speech works without installing anything. An installed libcodec2 or one in a codecs folder is still found (docs/CODECS.md).
 option(DECT2_BUNDLE_CODEC2 "Build codec2 as a shared library next to OnAir" ON)
@@ -319,7 +336,7 @@ if(DECT2_BUILD_APP)
   set(IMGUI_SOURCES
     third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_tables.cpp third_party/imgui/imgui_widgets.cpp
     third_party/imgui/backends/imgui_impl_glfw.cpp)
-  set(APP_SOURCES app/main.cpp app/main_window.cpp app/main_start.cpp app/ui/draw_ui.cpp app/ui/touch.cpp app/ui/touch_sheets.cpp app/ui/touch_shell.cpp app/ui/main_tabs.cpp app/ui/light_theme.cpp app/state/app_state.cpp app/state/prefs.cpp app/ui/widgets.cpp app/ui/toolbar.cpp app/ui/toolbar_source.cpp app/ui/toolbar_rig.cpp app/ui/statusbar.cpp app/ui/mode_table.cpp app/ui/mode_select.cpp app/ui/ui_common.cpp app/panels/radio_ui.cpp app/gfx/plots.cpp app/panels/analysis_tabs.cpp app/panels/tv.cpp app/panels/subs_ui.cpp app/scan/scan_outputs.cpp app/panels/antenna.cpp app/fm/fm_ui.cpp app/ui/ui2.cpp app/ui/ui2_theme.cpp app/ui/ui2_widgets.cpp app/ui/ui2_shell.cpp app/ui/ui2_faces.cpp app/panels/modeui.cpp app/atsc3/atsc3_ui.cpp app/isdbt/isdbt_ui.cpp app/panels/update_ui.cpp app/scan/scan_db_ui.cpp app/panels/diag_ui.cpp app/ui/wizard.cpp app/gfx/plot.cpp app/gfx/gfx_png.cpp app/ui/popout.cpp app/panels/codec_help.cpp app/platform/discord_rpc.cpp app/panels/passes_ui.cpp app/panels/feeds_ui.cpp app/scan/scanner_ui.cpp app/memory/memory_options.cpp app/memory/memory_ui.cpp app/memory/memory_edit.cpp app/memory/memory_selftest.cpp app/map/map_ui.cpp app/map/map_send.cpp app/panels/rotator_ui.cpp app/panels/results_ui.cpp app/state/rx_prefs.cpp app/state/receivers.cpp app/panels/fixit.cpp app/panels/gallery_ui.cpp app/state/results_export.cpp app/state/results_export_ui.cpp app/panels/credits_ui.cpp app/bandplan/bandplan_ui.cpp app/sweep/sweep_ui.cpp app/freqdb/freqdb_ui.cpp)
+  set(APP_SOURCES app/main.cpp app/main_window.cpp app/main_start.cpp app/ui/draw_ui.cpp app/ui/touch.cpp app/ui/touch_sheets.cpp app/ui/touch_shell.cpp app/ui/main_tabs.cpp app/ui/light_theme.cpp app/state/app_state.cpp app/state/prefs.cpp app/ui/widgets.cpp app/ui/toolbar.cpp app/ui/toolbar_source.cpp app/ui/toolbar_rig.cpp app/ui/statusbar.cpp app/ui/mode_table.cpp app/ui/mode_select.cpp app/ui/ui_common.cpp app/panels/radio_ui.cpp app/gfx/plots.cpp app/panels/analysis_tabs.cpp app/panels/tv.cpp app/panels/subs_ui.cpp app/scan/scan_outputs.cpp app/panels/antenna.cpp app/fm/fm_ui.cpp app/ui/ui2.cpp app/ui/ui2_theme.cpp app/ui/ui2_widgets.cpp app/ui/ui2_shell.cpp app/ui/ui2_faces.cpp app/panels/modeui.cpp app/atsc3/atsc3_ui.cpp app/isdbt/isdbt_ui.cpp app/panels/update_ui.cpp app/scan/scan_db_ui.cpp app/panels/diag_ui.cpp app/ui/wizard.cpp app/gfx/plot.cpp app/gfx/gfx_png.cpp app/ui/popout.cpp app/panels/codec_help.cpp app/platform/discord_rpc.cpp app/panels/passes_ui.cpp app/panels/feeds_ui.cpp app/panels/automation_ui.cpp app/panels/automation_sink.cpp app/platform/spawn.cpp app/scan/scanner_ui.cpp app/memory/memory_options.cpp app/memory/memory_ui.cpp app/memory/memory_edit.cpp app/memory/memory_selftest.cpp app/map/map_ui.cpp app/map/map_send.cpp app/panels/rotator_ui.cpp app/panels/results_ui.cpp app/state/rx_prefs.cpp app/state/receivers.cpp app/panels/fixit.cpp app/panels/gallery_ui.cpp app/state/results_export.cpp app/state/results_export_ui.cpp app/panels/credits_ui.cpp app/bandplan/bandplan_ui.cpp app/sweep/sweep_ui.cpp app/freqdb/freqdb_ui.cpp)
   foreach(m ${DECT2_MODES})   # app/<mode>/*.cpp: the screens of a mode added after FM
     file(GLOB DECT2_MODE_UI CONFIGURE_DEPENDS app/${m}/*.cpp)
     list(APPEND APP_SOURCES ${DECT2_MODE_UI})
@@ -528,6 +545,10 @@ if(DECT2_BUILD_TESTS)
   add_executable(test_feeds tests/net/test_feeds.cpp)
   target_link_libraries(test_feeds PRIVATE dect2core)
   add_test(NAME feeds COMMAND test_feeds)
+  # automations: expression language, rules engine, Lua sandbox, templates, recipes
+  add_executable(test_automation tests/automation/test_automation.cpp)
+  target_link_libraries(test_automation PRIVATE dect2_automation)
+  add_test(NAME automation COMMAND test_automation)
   add_executable(test_audio_source tests/audio/test_audio_source.cpp)
   target_link_libraries(test_audio_source PRIVATE dect2core)
   add_test(NAME audio_source COMMAND test_audio_source)
@@ -1509,6 +1530,8 @@ if(DECT2_BUILD_APP AND NOT APPLE)
   endif()
   install(FILES third_party/rnnoise/COPYING DESTINATION ${CMAKE_INSTALL_DOCDIR}/rnnoise)   # RNNoise (BSD-3-Clause) is linked in: its licence text travels with the binaries
   install(FILES third_party/rnnoise/README-OnAir.md DESTINATION ${CMAKE_INSTALL_DOCDIR}/rnnoise RENAME NOTICE.md)
+  install(FILES third_party/lua/LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR}/lua)   # Lua (MIT) is linked in: its licence text travels with the binaries
+  install(FILES third_party/lua/README-OnAir.md DESTINATION ${CMAKE_INSTALL_DOCDIR}/lua RENAME NOTICE.md)
   if(TARGET onair_codec2)   # codec2 (LGPL-2.1): its own shared library in <prefix>/lib/onair, where the program looks (../lib/onair), with licence and notice
     install(TARGETS onair_codec2 LIBRARY DESTINATION lib/onair RUNTIME DESTINATION lib/onair)
     install(FILES third_party/codec2/COPYING DESTINATION ${CMAKE_INSTALL_DOCDIR}/codec2)

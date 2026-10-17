@@ -1,6 +1,7 @@
 // Engine::start(): opens the source, plans offset tuning, configures every receiver for the new sample rate and channel, and
 // starts the worker threads. The long body is split into small steps called in the original order.
 #include "dect2/engine/engine.h"
+#include "dect2/automation/engine.h"
 #include "engine_internal.h"
 #include "dect2/source/converter.h"
 #include "dect2/net/share.h"
@@ -100,6 +101,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         lastDev_ = dev; lastTune_ = tune; lastFile_ = file;
     }
     radioLost_ = false; lastSamples_ = std::chrono::steady_clock::now(); reconnectErr_.clear();
+    automation::receiverState("started", "receiver started");
     logP1Count_ = 0; logGi_ = -2; logState_ = -1; logFrameSyms_ = 0;
     bwMhz_ = tune.bandwidthMhz; bwActive_ = bwMhz_;
     bwDetected_ = 0; bwReset_ = true; bwReq_ = false;

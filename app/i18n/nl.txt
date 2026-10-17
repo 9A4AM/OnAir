@@ -1593,3 +1593,128 @@ testing	testen
 idea	idee
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Dank aan iedereen die fixes stuurde, bugs meldde, opnames deelde, vertaalde of ideeën aandroeg. De auteur is Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Wil je dat je naam wordt aangepast of verwijderd? Laat het ons weten op Discord of open een issue.
+# Automations window
+%d firings. Dropped events: %llu	%d keer uitgevoerd. Weggegooide gebeurtenissen: %llu
+(the whole rule)	(de hele regel)
+Add a condition	Voorwaarde toevoegen
+Add a copy	Kopie toevoegen
+Add an action...	Actie toevoegen...
+Advanced	Geavanceerd
+Allow running programs	Programma's starten toestaan
+Allow this rule to run it	Deze regel mag het starten
+Any event	Elke gebeurtenis
+Apply	Toepassen
+Arguments, one per line	Argumenten, één per regel
+Arguments:	Argumenten:
+At most per hour (0: no limit)	Maximaal per uur (0: geen limiet)
+Automations	Automatiseringen
+Automations...	Automatiseringen...
+Bot token	Bot-token
+Cannot write the file.	Het bestand kan niet worden geschreven.
+Chat id	Chat-id
+Choose a rule on the left, or make a new one.	Kies links een regel of maak een nieuwe.
+Choose what to tell apart in "separately for each" so every thing has its own state.	Kies bij "afzonderlijk voor elk" wat onderscheiden wordt, zodat alles een eigen status heeft.
+Columns (optional)	Kolommen (optioneel)
+Confirm this rule...	Deze regel bevestigen...
+Confirmed	Bevestigd
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Definieer function on_event(e). e.type, e.mode, e.freq, e.time en de velden van de gebeurtenis (e.callsign, e.squawk ...).\n\nActies: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHulpjes: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTekst: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Geen io, os, load, require, pcall of patroonherkenning; 1 miljoen instructies, 250 ms en 16 MB per script.
+Delete...	Verwijderen...
+Distance, km	Afstand, km
+Does not fire for the sample event:	Gaat niet af voor de voorbeeldgebeurtenis:
+Duplicate	Dupliceren
+Edit	Bewerken
+Edit as text and apply, or copy it to share.	Bewerk het als tekst en pas toe, of kopieer het om te delen.
+Every event	Elke gebeurtenis
+Expression (and'ed to the conditions above)	Uitdrukking (met EN aan de voorwaarden hierboven gekoppeld)
+Expression is fine.	De uitdrukking is in orde.
+Fields, and or not, comparisons, contains startswith endswith matches in, arithmetic, distance_km() within() inside() hour() ...	Velden, and or not, vergelijkingen, contains startswith endswith matches in, rekenen, distance_km() within() inside() hour() ...
+File name	Bestandsnaam
+File:	Bestand:
+Fire with sample event	Afvuren met voorbeeldgebeurtenis
+Frequency, MHz	Frequentie, MHz
+Generic JSON	Algemeen JSON
+Imported, switched off. Look it over, then switch it on.	Geïmporteerd, uitgeschakeld. Bekijk het en schakel het dan in.
+Insert an example...	Voorbeeld invoegen...
+Inside an area (polygon)	Binnen een gebied (veelhoek)
+JSON body (optional)	JSON-inhoud (optioneel)
+Keep	Behouden
+Last error:	Laatste fout:
+Limits	Limieten
+Lua script	Lua-script
+Manage	Beheren
+Memory name	Geheugennaam
+Mode id (optional)	Modus-id (optioneel)
+New rule	Nieuwe regel
+New script	Nieuw script
+No location test	Geen locatietest
+No rules yet. Make one, or add a recipe.	Nog geen regels. Maak er een of voeg een recept toe.
+Not active:	Niet actief:
+Not imported:	Niet geïmporteerd:
+Note	Notitie
+Nothing has fired yet.	Er is nog niets afgegaan.
+Notification	Melding
+Off. A rule may start a program only when this is on and you confirmed that rule.	Uit. Een regel mag alleen een programma starten als dit aan staat en je die regel hebt bevestigd.
+Only between these local hours	Alleen tussen deze lokale uren
+Pick one event type to choose its fields from a list.	Kies één gebeurtenistype om de velden uit een lijst te kiezen.
+Points as lat,lon; lat,lon; ...	Punten als breedte,lengte; breedte,lengte; ...
+Program	Programma
+Program:	Programma:
+Quiet after firing, seconds	Rust na afgaan, seconden
+Ready-made rules and scripts. Adding one makes a copy that you can edit; it starts switched off.	Kant-en-klare regels en scripts. Toevoegen maakt een bewerkbare kopie; die staat eerst uit.
+Really delete	Echt verwijderen
+Really does the actions, once, with a made-up event.	Voert de acties echt één keer uit met een verzonnen gebeurtenis.
+Recall a memory	Geheugen oproepen
+Receives these events	Ontvangt deze gebeurtenissen
+Recipes	Recepten
+Recipes...	Recepten...
+Rules and scripts: when something is decoded, notify, record, tune or call a webhook	Regels en scripts: als iets wordt gedecodeerd, melden, opnemen, afstemmen of een webhook aanroepen
+Rules: when something is decoded (an aircraft squawks 7700, a pager message says fire, a vessel enters an area ...), do something (notify, record, tune, log, call a webhook). Scripts do the same in Lua.	Regels: wanneer iets wordt gedecodeerd (een vliegtuig zendt 7700, een pagerbericht zegt brand, een schip betreedt een gebied ...), doe iets (melden, opnemen, afstemmen, loggen, een webhook aanroepen). Scripts doen hetzelfde in Lua.
+Run a program (advanced)	Een programma uitvoeren (geavanceerd)
+Run a program?	Een programma uitvoeren?
+Runs a program on this computer. Off until you allow it below and confirm this rule.	Start een programma op deze computer. Uit tot je het hieronder toestaat en deze regel bevestigt.
+Save a screenshot	Schermafbeelding opslaan
+Saved to	Opgeslagen in
+Seconds	Seconden
+Server (optional)	Server (optioneel)
+Service	Dienst
+Shows what the rule would do with a made-up event. Nothing is sent or started.	Toont wat de regel met een verzonnen gebeurtenis zou doen. Er wordt niets verzonden of gestart.
+Sound alert	Geluidssignaal
+Test (dry run)	Testen (droogloop)
+Test with a sample event	Testen met een voorbeeldgebeurtenis
+Text can use:	Tekst kan gebruiken:
+The receiver position is not set (ADS-B window).	De positie van de ontvanger is niet ingesteld (ADS-B-venster).
+The recipe file	Het receptbestand
+The script ran and did nothing for this event.	Het script liep en deed niets voor deze gebeurtenis.
+Then do	Doe dan
+This rule will start the program below, on this computer, every time it fires, with text from the decoded signals in its arguments. Anyone who can send such a signal can influence it. Only allow it if you wrote it or trust the one who did.	Deze regel start elke keer dat ze afgaat het onderstaande programma op deze computer, met tekst uit de gedecodeerde signalen in de argumenten. Iedereen die zo'n signaal kan zenden, kan dit beïnvloeden. Sta het alleen toe als je het zelf schreef of de maker vertrouwt.
+Title	Titel
+Topic	Onderwerp
+WAV file (empty: beeps)	WAV-bestand (leeg: piepjes)
+Webhook	Webhook
+Webhook address	Webhook-adres
+What can a script do?	Wat kan een script?
+When this happens	Wanneer dit gebeurt
+Within a distance of a point	Binnen een afstand van een punt
+Within a distance of my receiver	Binnen een afstand van mijn ontvanger
+Write a CSV log row	Een CSV-logregel schrijven
+all of the conditions	alle voorwaarden
+and only if	en alleen als
+any of the conditions	een van de voorwaarden
+contains	bevat
+ends with	eindigt op
+equals	is gelijk aan
+has a value	heeft een waarde
+is at least	is minstens
+is at most	is hoogstens
+is less than	is kleiner dan
+is more than	is groter dan
+is not	is niet
+is one of (a, b, c)	is een van (a, b, c)
+last fired %s, %d times	laatst %s, %d keer
+matches (* ?)	komt overeen met (* ?)
+only as it comes in	alleen bij binnenkomst
+separately for each	afzonderlijk voor elk
+starts with	begint met
+to	tot
+when it is inside	wanneer het binnen is
+when it is outside	wanneer het buiten is
