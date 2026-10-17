@@ -7,6 +7,15 @@ namespace dect2 {
 namespace {
 constexpr int kStuckUnits = 80;      // units in (about 1.7 s of sound) without a single sound frame out: the decoder is rebuilt
 constexpr int kDeviceRetry = 40;     // sub-frames between attempts to open a sound device that failed
+
+// The DRA frame at the start of `p` (0x7FFF sync, then the header's frame size in 32-bit words), its length in bytes; 0 if there is none.
+size_t draFrameBytes(const uint8_t* p, size_t n) {
+    if (n < 6 || p[0] != 0x7F || p[1] != 0xFF) return 0;
+    const uint32_t v = (uint32_t)p[2] << 24 | (uint32_t)p[3] << 16 | (uint32_t)p[4] << 8 | p[5];
+    const size_t words = (v >> 31) ? (v >> 17) & 0x1FFF : (v >> 21) & 0x3FF;
+    const size_t bytes = words * 4;
+    return words >= 2 && bytes <= n ? bytes : 0;
+}
 }
 
 CdrAudio::CdrAudio(bool headless) : headless_(headless) {}
@@ -33,7 +42,19 @@ void CdrAudio::play(int want, uint16_t id, const std::vector<cdr::AudioUnit>& un
     for (const auto& u : units) {
         if (u.data.empty()) continue;
         tel.draUnitsIn++;
-        if (DRADecSendData(dra_, const_cast<unsigned char*>(u.data.data()), (int)u.data.size()) != 0) { tel.draUnitsBad++; continue; }
+        // A unit is one DRA frame followed by extension bytes (the frame size in its header is shorter than the unit). The decoder would scan
+        // those bytes for the next sync word, and they hold 0x7FFF now and then: it then reads a made-up frame over the start of the real next
+        // one and drops it (about 1 unit in 10 on the Guangzhou and 89.3 MHz recordings: a click). Only the frames themselves go in.
+        bool sent = true;
+        {
+            const uint8_t* d = u.data.data();
+            const size_t n = u.data.size();
+            size_t at = 0, fed = 0;
+            for (size_t fb; (fb = draFrameBytes(d + at, n - at)) != 0; at += fb, fed++)
+                if (DRADecSendData(dra_, const_cast<unsigned char*>(d + at), (int)fb) != 0) { sent = false; break; }
+            if (!fed && sent) sent = DRADecSendData(dra_, const_cast<unsigned char*>(d), (int)n) == 0;      // no header found: the decoder decides
+        }
+        if (!sent) { tel.draUnitsBad++; continue; }
         if (++unitsSincePcm_ > kStuckUnits) {                // fed and fed, nothing comes out: a latched decoder (bad header, odd frame size)
             const int keep = playingId_;
             resetDecoder();
