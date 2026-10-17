@@ -57,7 +57,7 @@ std::string describe(const std::string& kind, const std::map<std::string, std::s
 int familyOf(const std::string& type) {
     const size_t d = type.find('.');
     const std::string f = type.substr(0, d);
-    static const char* const names[kFamilies] = {"adsb", "acars", "vdl2", "hfdl", "pager", "ais", "aprs", "sonde", "gnss", "lora", "ble", "rid", "dsc", "signal", "receiver", "satellite", "time"};
+    static const char* const names[kFamilies] = {"adsb", "acars", "vdl2", "hfdl", "pager", "ais", "aprs", "sonde", "gnss", "lora", "ble", "rid", "dsc", "signal", "receiver", "satellite", "time", "plugin"};
     for (int i = 0; i < kFamilies; i++) if (f == names[i]) return i;
     return -1;
 }
@@ -368,11 +368,22 @@ void Engine::setTap(std::function<void(const Event&)> f, uint32_t familyMask) {
     tapMask_.store(tap_ ? familyMask : 0);
 }
 
+void Engine::setObserver(std::function<void(const Event&)> f, uint32_t familyMask) {
+    std::lock_guard<std::mutex> lk(obsMu_);
+    obs_ = std::move(f);
+    observeMask_.store(obs_ ? familyMask : 0);
+}
+
 void Engine::submit(Event&& ev) {
     const int fam = familyOf(ev.type);
     if (fam >= 0 && (tapMask_.load(std::memory_order_relaxed) >> fam & 1)) {
         std::function<void(const Event&)> t;
         { std::lock_guard<std::mutex> lk(tapMu_); t = tap_; }
+        if (t) t(ev);
+    }
+    if (fam >= 0 && (observeMask_.load(std::memory_order_relaxed) >> fam & 1)) {
+        std::function<void(const Event&)> t;
+        { std::lock_guard<std::mutex> lk(obsMu_); t = obs_; }
         if (t) t(ev);
     }
     if (!(fam >= 0 && (mask_.load(std::memory_order_relaxed) >> fam & 1))) return;
