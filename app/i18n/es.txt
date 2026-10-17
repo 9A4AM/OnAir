@@ -2394,3 +2394,75 @@ Tracks	Trazas
 Two recordings (reference, surveillance)	Dos grabaciones (referencia, vigilancia)
 Two-channel recording (cf32)	Grabación de dos canales (cf32)
 Waiting for data.	Esperando datos.
+# interference hunter
+Unknown	Desconocido
+Switching power supply	Fuente conmutada
+LED lamp or driver	Lámpara LED o su driver
+Powerline (PLC)	Línea eléctrica (PLC)
+Local oscillator or clock leak	Fuga de oscilador o reloj
+Cannot open the GPS device or file.	No se puede abrir el dispositivo GPS o el archivo.
+Waiting for a position fix.	Esperando una posición.
+Interference gone	La interferencia ha desaparecido
+The noise floor rose by %.1f dB	El piso de ruido subió %.1f dB
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	Nuevo ruido de banda ancha %.2f - %.2f MHz, %.0f dB: %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	Nueva señal en %.4f MHz, %.0f dB sobre la línea base: %s
+Demo (simulated sweeps)	Demostración (barridos simulados)
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	Un peine de espurias necesita una separación de al menos 5 bins para distinguirse de una señal ancha: use bins más finos para ver espurias más cercanas
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	Pausa entre barridos: el monitor puede funcionar horas con pausas largas; el paseo necesita barridos seguidos
+spur threshold %.0f dB	umbral de espurias %.0f dB
+floor alert %.0f dB	alerta de piso %.0f dB
+confirm in %d sweeps	confirmar en %d barridos
+floor change dB	cambio del piso dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	Aprendiendo la línea base: %d de %d barridos. Deje la banda como está normalmente.
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	Vigilando. Piso de ruido %.1f dBFS, línea base %.1f dBFS, %zu señales conocidas.
+Press Start. The first sweeps become the baseline: what is normal in this band.	Pulse Iniciar. Los primeros barridos se convierten en la línea base: lo normal en esta banda.
+Learn the baseline again	Aprender la línea base de nuevo
+What is there now is normal	Lo que hay ahora es normal
+Adds the interference that has been reported to the baseline, so it raises no more alerts	Añade a la línea base la interferencia ya notificada, para que no genere más alertas
+Save the alerts...	Guardar las alertas...
+Save the noise floor log...	Guardar el registro del piso de ruido...
+Interference now	Interferencia actual
+Likely source	Fuente probable
+To MHz	Hasta MHz
+Spacing kHz	Separación kHz
+Alerts	Alertas
+Event	Evento
+dB above baseline	dB sobre la línea base
+new signal	señal nueva
+noise floor up	piso de ruido más alto
+new broadband noise	nuevo ruido de banda ancha
+gone	desaparecido
+no position	sin posición
+the receiver position (set for ADS-B)	la posición del receptor (fijada para ADS-B)
+type a position	escribir una posición
+GPS device or NMEA file	dispositivo GPS o archivo NMEA
+latitude	latitud
+longitude	longitud
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	Un GPS serie (por ejemplo /dev/cu.usbmodem1101 o COM3 en un PC; 9600 baudios) o un archivo de texto con sentencias NMEA
+Reconnect	Reconectar
+Readings are logged at %.5f, %.5f	Las lecturas se registran en %.5f, %.5f
+Readings are logged without a position.	Las lecturas se registran sin posición.
+%+.1f dB above the quiet level	%+.1f dB sobre el nivel tranquilo
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	Pulse Iniciar y camine. El medidor se llena cuando la interferencia está 25 dB sobre el lugar más tranquilo hasta ahora.
+Quiet	Tranquilo
+Some interference	Algo de interferencia
+Loud	Fuerte
+- getting louder	- aumenta
+- getting quieter	- disminuye
+- steady	- estable
+strongest spur %.4f MHz, %.0f dB	espuria más fuerte %.4f MHz, %.0f dB
+This is the quiet level	Este es el nivel tranquilo
+Leave out the signals seen now	Excluir las señales vistas ahora
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	Las portadoras de radiodifusión y los equipos conocidos se excluyen del medidor: hágalo en un sitio tranquilo antes de caminar
+Clear the readings	Borrar las lecturas
+Save as CSV...	Guardar como CSV...
+Save as GPX...	Guardar como GPX...
+reading	lectura
+dB above the quiet level	dB sobre el nivel tranquilo
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	Lectura más fuerte: %+.1f dB en %.5f, %.5f (%s)
+Loudest reading: %+.1f dB (%s), no position	Lectura más fuerte: %+.1f dB (%s), sin posición
+Strongest spur MHz	Espuria más fuerte MHz
+Interference hunter	Cazador de interferencias
+Monitor	Monitor
+Walk	Paseo
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Vigile una banda por nuevas interferencias, sepa de qué tipo son y encuéntrelas caminando con un medidor fuerte / tranquilo

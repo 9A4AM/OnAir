@@ -2394,3 +2394,75 @@ Tracks	航迹
 Two recordings (reference, surveillance)	两个录音（参考、监视）
 Two-channel recording (cf32)	双通道录音 (cf32)
 Waiting for data.	正在等待数据。
+# interference hunter
+Unknown	未知
+Switching power supply	开关电源
+LED lamp or driver	LED灯或驱动器
+Powerline (PLC)	电力线 (PLC)
+Local oscillator or clock leak	本振或时钟泄漏
+Cannot open the GPS device or file.	无法打开GPS设备或文件。
+Waiting for a position fix.	正在等待定位。
+Interference gone	干扰已消失
+The noise floor rose by %.1f dB	底噪上升了 %.1f dB
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	新的宽带噪声 %.2f - %.2f MHz，%.0f dB：%s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	%.4f MHz 出现新信号，高于基线 %.0f dB：%s
+Demo (simulated sweeps)	演示（模拟扫描）
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	谱线梳需要至少5个频点的间隔才能与宽带信号区分：使用更细的频点可看到间隔更小的杂散
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	扫描间的暂停：监测可用较长暂停运行数小时；步行查找需要连续扫描
+spur threshold %.0f dB	杂散阈值 %.0f dB
+floor alert %.0f dB	底噪报警 %.0f dB
+confirm in %d sweeps	%d 次扫描后确认
+floor change dB	底噪变化 dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	正在学习基线：%d / %d 次扫描。请保持频段处于通常状态。
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	监测中。底噪 %.1f dBFS，基线 %.1f dBFS，已知信号 %zu 个。
+Press Start. The first sweeps become the baseline: what is normal in this band.	按“开始”。最初几次扫描将成为基线：该频段的正常状态。
+Learn the baseline again	重新学习基线
+What is there now is normal	当前的情况视为正常
+Adds the interference that has been reported to the baseline, so it raises no more alerts	把已报告的干扰加入基线，不再产生报警
+Save the alerts...	保存报警...
+Save the noise floor log...	保存底噪记录...
+Interference now	当前干扰
+Likely source	可能的来源
+To MHz	至 MHz
+Spacing kHz	间隔 kHz
+Alerts	报警
+Event	事件
+dB above baseline	高于基线 dB
+new signal	新信号
+noise floor up	底噪上升
+new broadband noise	新宽带噪声
+gone	已消失
+no position	无位置
+the receiver position (set for ADS-B)	接收机位置（为ADS-B设置）
+type a position	输入位置
+GPS device or NMEA file	GPS设备或NMEA文件
+latitude	纬度
+longitude	经度
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	串口GPS（例如 /dev/cu.usbmodem1101，PC上为COM3；9600波特率）或包含NMEA语句的文本文件
+Reconnect	重新连接
+Readings are logged at %.5f, %.5f	读数将记录在 %.5f, %.5f
+Readings are logged without a position.	读数将不带位置记录。
+%+.1f dB above the quiet level	高于安静电平 %+.1f dB
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	按“开始”并走动。当干扰比目前最安静处高25 dB时，指示条满格。
+Quiet	安静
+Some interference	有一些干扰
+Loud	强
+- getting louder	- 正在变强
+- getting quieter	- 正在变弱
+- steady	- 稳定
+strongest spur %.4f MHz, %.0f dB	最强杂散 %.4f MHz，%.0f dB
+This is the quiet level	设为安静电平
+Leave out the signals seen now	排除当前看到的信号
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	已知的广播载波和设备将不计入指示条：请在开始走动前于安静处执行
+Clear the readings	清除读数
+Save as CSV...	另存为CSV...
+Save as GPX...	另存为GPX...
+reading	读数
+dB above the quiet level	高于安静电平 dB
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	最强读数：%+.1f dB，位置 %.5f, %.5f（%s）
+Loudest reading: %+.1f dB (%s), no position	最强读数：%+.1f dB（%s），无位置
+Strongest spur MHz	最强杂散 MHz
+Interference hunter	干扰猎手
+Monitor	监测
+Walk	步行
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	监视频段中的新干扰，判断其类型，并用强/弱指示条步行查找来源

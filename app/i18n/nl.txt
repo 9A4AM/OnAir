@@ -2394,3 +2394,75 @@ Tracks	Sporen
 Two recordings (reference, surveillance)	Twee opnames (referentie, bewaking)
 Two-channel recording (cf32)	Tweekanaalsopname (cf32)
 Waiting for data.	Wachten op gegevens.
+# interference hunter
+Unknown	Onbekend
+Switching power supply	Schakelende voeding
+LED lamp or driver	LED-lamp of driver
+Powerline (PLC)	Stroomnet (PLC)
+Local oscillator or clock leak	Lek van oscillator of klok
+Cannot open the GPS device or file.	Kan het GPS-apparaat of het bestand niet openen.
+Waiting for a position fix.	Wachten op een positiebepaling.
+Interference gone	Storing verdwenen
+The noise floor rose by %.1f dB	De ruisvloer is %.1f dB gestegen
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	Nieuwe breedbandruis %.2f - %.2f MHz, %.0f dB: %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	Nieuw signaal op %.4f MHz, %.0f dB boven de basislijn: %s
+Demo (simulated sweeps)	Demo (gesimuleerde sweeps)
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	Een kam van spurs heeft minstens 5 bins afstand nodig om van een breed signaal te worden onderscheiden: fijnere bins tonen dichter bij elkaar liggende spurs
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	Pauze tussen sweeps: de monitor kan uren draaien met lange pauzes; bij het lopen is direct achter elkaar nodig
+spur threshold %.0f dB	spur-drempel %.0f dB
+floor alert %.0f dB	ruisvloeralarm %.0f dB
+confirm in %d sweeps	bevestigen in %d sweeps
+floor change dB	ruisvloerverandering dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	Basislijn leren: %d van %d sweeps. Laat de band zoals hij normaal is.
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	Bewaking actief. Ruisvloer %.1f dBFS, basislijn %.1f dBFS, %zu bekende signalen.
+Press Start. The first sweeps become the baseline: what is normal in this band.	Druk op Start. De eerste sweeps worden de basislijn: wat normaal is in deze band.
+Learn the baseline again	Basislijn opnieuw leren
+What is there now is normal	Wat er nu is, is normaal
+Adds the interference that has been reported to the baseline, so it raises no more alerts	Voegt de gemelde storing toe aan de basislijn, zodat ze geen alarmen meer geeft
+Save the alerts...	Alarmen opslaan...
+Save the noise floor log...	Ruisvloerlogboek opslaan...
+Interference now	Huidige storingen
+Likely source	Waarschijnlijke bron
+To MHz	Tot MHz
+Spacing kHz	Afstand kHz
+Alerts	Alarmen
+Event	Gebeurtenis
+dB above baseline	dB boven basislijn
+new signal	nieuw signaal
+noise floor up	ruisvloer gestegen
+new broadband noise	nieuwe breedbandruis
+gone	verdwenen
+no position	geen positie
+the receiver position (set for ADS-B)	de ontvangerpositie (ingesteld voor ADS-B)
+type a position	positie intypen
+GPS device or NMEA file	GPS-apparaat of NMEA-bestand
+latitude	breedtegraad
+longitude	lengtegraad
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	Een seriële GPS (bijvoorbeeld /dev/cu.usbmodem1101 of COM3 op een pc; 9600 baud) of een tekstbestand met NMEA-zinnen
+Reconnect	Opnieuw verbinden
+Readings are logged at %.5f, %.5f	Metingen worden vastgelegd op %.5f, %.5f
+Readings are logged without a position.	Metingen worden zonder positie vastgelegd.
+%+.1f dB above the quiet level	%+.1f dB boven het rustige niveau
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	Druk op Start en loop. De meter is vol als de storing 25 dB boven de tot nu toe stilste plek ligt.
+Quiet	Rustig
+Some interference	Enige storing
+Loud	Luid
+- getting louder	- wordt luider
+- getting quieter	- wordt zachter
+- steady	- constant
+strongest spur %.4f MHz, %.0f dB	sterkste spur %.4f MHz, %.0f dB
+This is the quiet level	Dit is het rustige niveau
+Leave out the signals seen now	Nu geziene signalen weglaten
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	Bekende omroepdragers en apparaten worden uit de meter gelaten: doe dit op een rustige plek voordat je gaat lopen
+Clear the readings	Metingen wissen
+Save as CSV...	Opslaan als CSV...
+Save as GPX...	Opslaan als GPX...
+reading	meting
+dB above the quiet level	dB boven het rustige niveau
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	Luidste meting: %+.1f dB op %.5f, %.5f (%s)
+Loudest reading: %+.1f dB (%s), no position	Luidste meting: %+.1f dB (%s), geen positie
+Strongest spur MHz	Sterkste spur MHz
+Interference hunter	Stoorzenderjager
+Monitor	Bewaking
+Walk	Wandeling
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Bewaak een band op nieuwe storingen, bepaal het soort en spoor ze lopend op met een luid / stil meter

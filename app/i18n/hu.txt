@@ -2380,3 +2380,75 @@ Tracks	Pályák
 Two recordings (reference, surveillance)	Két felvétel (referencia, megfigyelő)
 Two-channel recording (cf32)	Kétcsatornás felvétel (cf32)
 Waiting for data.	Adatra várakozás.
+# interference hunter
+Unknown	Ismeretlen
+Switching power supply	Kapcsolóüzemű tápegység
+LED lamp or driver	LED-lámpa vagy meghajtója
+Powerline (PLC)	Hálózati adatátvitel (PLC)
+Local oscillator or clock leak	Oszillátor- vagy órajel-szivárgás
+Cannot open the GPS device or file.	A GPS-eszköz vagy a fájl nem nyitható meg.
+Waiting for a position fix.	Várakozás helymeghatározásra.
+Interference gone	A zavarás megszűnt
+The noise floor rose by %.1f dB	A zajszint %.1f dB-lel emelkedett
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	Új szélessávú zaj %.2f - %.2f MHz, %.0f dB: %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	Új jel %.4f MHz-en, %.0f dB-lel az alapszint felett: %s
+Demo (simulated sweeps)	Demó (szimulált söprések)
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	A vonalsor megkülönböztetéséhez egy széles jeltől legalább 5 bin távolság kell: finomabb binekkel sűrűbb vonalak is látszanak
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	Szünet a söprések között: a figyelő hosszú szünetekkel órákig futhat; a sétához szünet nélkül kell
+spur threshold %.0f dB	vonalküszöb %.0f dB
+floor alert %.0f dB	zajszint-riasztás %.0f dB
+confirm in %d sweeps	megerősítés %d söpréssel
+floor change dB	zajszint-változás dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	Alapszint tanulása: %d / %d söprés. A sáv legyen a szokásos állapotában.
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	Figyelés. Zajszint %.1f dBFS, alapszint %.1f dBFS, %zu ismert jel.
+Press Start. The first sweeps become the baseline: what is normal in this band.	Nyomja meg az Indítást. Az első söprések lesznek az alapszint: ami ebben a sávban normális.
+Learn the baseline again	Alapszint újratanulása
+What is there now is normal	Ami most van, az normális
+Adds the interference that has been reported to the baseline, so it raises no more alerts	A jelzett zavarást hozzáadja az alapszinthez, így nem riaszt többet
+Save the alerts...	Riasztások mentése...
+Save the noise floor log...	Zajszint-napló mentése...
+Interference now	Jelenlegi zavarások
+Likely source	Valószínű forrás
+To MHz	Eddig MHz
+Spacing kHz	Távolság kHz
+Alerts	Riasztások
+Event	Esemény
+dB above baseline	dB az alapszint felett
+new signal	új jel
+noise floor up	zajszint emelkedett
+new broadband noise	új szélessávú zaj
+gone	megszűnt
+no position	nincs helyzet
+the receiver position (set for ADS-B)	a vevő helyzete (az ADS-B-hez beállított)
+type a position	helyzet megadása
+GPS device or NMEA file	GPS-eszköz vagy NMEA-fájl
+latitude	szélesség
+longitude	hosszúság
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	Soros GPS (például /dev/cu.usbmodem1101, PC-n COM3; 9600 baud) vagy NMEA-mondatokat tartalmazó szövegfájl
+Reconnect	Újracsatlakozás
+Readings are logged at %.5f, %.5f	A mérések naplózása itt: %.5f, %.5f
+Readings are logged without a position.	A mérések helyzet nélkül kerülnek a naplóba.
+%+.1f dB above the quiet level	%+.1f dB a csendes szint felett
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	Nyomja meg az Indítást, és induljon el. A mérő akkor tele, ha a zavarás 25 dB-lel a eddigi legcsendesebb hely felett van.
+Quiet	Csendes
+Some interference	Némi zavarás
+Loud	Hangos
+- getting louder	- erősödik
+- getting quieter	- gyengül
+- steady	- állandó
+strongest spur %.4f MHz, %.0f dB	legerősebb vonal %.4f MHz, %.0f dB
+This is the quiet level	Ez a csendes szint
+Leave out the signals seen now	A most látott jelek kihagyása
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	Az ismert műsorszóró vivők és eszközök kimaradnak a mérőből: induláskor, egy csendes helyen végezze el
+Clear the readings	Mérések törlése
+Save as CSV...	Mentés CSV-ként...
+Save as GPX...	Mentés GPX-ként...
+reading	mérés
+dB above the quiet level	dB a csendes szint felett
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	Leghangosabb mérés: %+.1f dB itt: %.5f, %.5f (%s)
+Loudest reading: %+.1f dB (%s), no position	Leghangosabb mérés: %+.1f dB (%s), helyzet nélkül
+Strongest spur MHz	Legerősebb vonal MHz
+Interference hunter	Zavarvadász
+Monitor	Figyelő
+Walk	Séta
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Egy sáv figyelése új zavarásokra, a típus megállapítása, és a forrás megkeresése sétálva hangos / csendes mérővel

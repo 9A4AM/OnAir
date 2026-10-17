@@ -2394,3 +2394,75 @@ Tracks	Pistes
 Two recordings (reference, surveillance)	Deux enregistrements (référence, surveillance)
 Two-channel recording (cf32)	Enregistrement à deux voies (cf32)
 Waiting for data.	En attente de données.
+# interference hunter
+Unknown	Inconnu
+Switching power supply	Alimentation à découpage
+LED lamp or driver	Lampe LED ou son driver
+Powerline (PLC)	Courant porteur (CPL)
+Local oscillator or clock leak	Fuite d'oscillateur ou d'horloge
+Cannot open the GPS device or file.	Impossible d'ouvrir le périphérique GPS ou le fichier.
+Waiting for a position fix.	En attente d'une position.
+Interference gone	L'interférence a disparu
+The noise floor rose by %.1f dB	Le plancher de bruit a monté de %.1f dB
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	Nouveau bruit large bande %.2f - %.2f MHz, %.0f dB : %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	Nouveau signal à %.4f MHz, %.0f dB au-dessus de la référence : %s
+Demo (simulated sweeps)	Démo (balayages simulés)
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	Un peigne de raies demande un espacement d'au moins 5 cases pour être distingué d'un signal large : des cases plus fines montrent des raies plus rapprochées
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	Pause entre les balayages : la surveillance peut tourner des heures avec de longues pauses ; la marche demande des balayages enchaînés
+spur threshold %.0f dB	seuil de raies %.0f dB
+floor alert %.0f dB	alerte de plancher %.0f dB
+confirm in %d sweeps	confirmer en %d balayages
+floor change dB	variation du plancher dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	Apprentissage de la référence : %d balayages sur %d. Laissez la bande dans son état normal.
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	Surveillance en cours. Plancher de bruit %.1f dBFS, référence %.1f dBFS, %zu signaux connus.
+Press Start. The first sweeps become the baseline: what is normal in this band.	Appuyez sur Démarrer. Les premiers balayages deviennent la référence : ce qui est normal dans cette bande.
+Learn the baseline again	Réapprendre la référence
+What is there now is normal	Ce qui est là maintenant est normal
+Adds the interference that has been reported to the baseline, so it raises no more alerts	Ajoute l'interférence signalée à la référence, elle ne déclenche plus d'alerte
+Save the alerts...	Enregistrer les alertes...
+Save the noise floor log...	Enregistrer le journal du plancher de bruit...
+Interference now	Interférences actuelles
+Likely source	Source probable
+To MHz	Jusqu'à MHz
+Spacing kHz	Espacement kHz
+Alerts	Alertes
+Event	Événement
+dB above baseline	dB au-dessus de la référence
+new signal	nouveau signal
+noise floor up	plancher de bruit en hausse
+new broadband noise	nouveau bruit large bande
+gone	disparu
+no position	pas de position
+the receiver position (set for ADS-B)	la position du récepteur (réglée pour l'ADS-B)
+type a position	saisir une position
+GPS device or NMEA file	périphérique GPS ou fichier NMEA
+latitude	latitude
+longitude	longitude
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	Un GPS série (par exemple /dev/cu.usbmodem1101 ou COM3 sur PC ; 9600 bauds) ou un fichier texte de phrases NMEA
+Reconnect	Reconnecter
+Readings are logged at %.5f, %.5f	Les mesures sont enregistrées à %.5f, %.5f
+Readings are logged without a position.	Les mesures sont enregistrées sans position.
+%+.1f dB above the quiet level	%+.1f dB au-dessus du niveau calme
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	Appuyez sur Démarrer et marchez. L'indicateur est plein quand l'interférence dépasse de 25 dB l'endroit le plus calme jusqu'ici.
+Quiet	Calme
+Some interference	Un peu d'interférence
+Loud	Fort
+- getting louder	- augmente
+- getting quieter	- diminue
+- steady	- stable
+strongest spur %.4f MHz, %.0f dB	raie la plus forte %.4f MHz, %.0f dB
+This is the quiet level	C'est le niveau calme
+Leave out the signals seen now	Exclure les signaux vus maintenant
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	Les porteuses de radiodiffusion et appareils connus sont exclus de l'indicateur : faites-le dans un endroit calme avant de marcher
+Clear the readings	Effacer les mesures
+Save as CSV...	Enregistrer en CSV...
+Save as GPX...	Enregistrer en GPX...
+reading	mesure
+dB above the quiet level	dB au-dessus du niveau calme
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	Mesure la plus forte : %+.1f dB à %.5f, %.5f (%s)
+Loudest reading: %+.1f dB (%s), no position	Mesure la plus forte : %+.1f dB (%s), sans position
+Strongest spur MHz	Raie la plus forte MHz
+Interference hunter	Chasseur d'interférences
+Monitor	Surveillance
+Walk	Marche
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Surveiller une bande pour détecter de nouvelles interférences, en déterminer le type et les localiser à pied avec un indicateur fort / calme

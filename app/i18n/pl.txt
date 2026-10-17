@@ -2394,3 +2394,75 @@ Tracks	Ślady
 Two recordings (reference, surveillance)	Dwa nagrania (referencyjne, obserwacyjne)
 Two-channel recording (cf32)	Nagranie dwukanałowe (cf32)
 Waiting for data.	Oczekiwanie na dane.
+# interference hunter
+Unknown	Nieznane
+Switching power supply	Zasilacz impulsowy
+LED lamp or driver	Lampa LED lub jej zasilacz
+Powerline (PLC)	Sieć energetyczna (PLC)
+Local oscillator or clock leak	Wyciek oscylatora lub zegara
+Cannot open the GPS device or file.	Nie można otworzyć urządzenia GPS ani pliku.
+Waiting for a position fix.	Oczekiwanie na pozycję.
+Interference gone	Zakłócenie ustało
+The noise floor rose by %.1f dB	Poziom szumów wzrósł o %.1f dB
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	Nowy szum szerokopasmowy %.2f - %.2f MHz, %.0f dB: %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	Nowy sygnał na %.4f MHz, %.0f dB powyżej poziomu odniesienia: %s
+Demo (simulated sweeps)	Demo (symulowane przeglądania)
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	Grzebień prążków wymaga odstępu co najmniej 5 przedziałów, by odróżnić go od szerokiego sygnału: drobniejsze przedziały pokażą gęściej rozmieszczone prążki
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	Przerwa między przeglądaniami: monitor może działać godzinami z długimi przerwami; podczas spaceru potrzebne są przeglądania jedno po drugim
+spur threshold %.0f dB	próg prążków %.0f dB
+floor alert %.0f dB	alarm szumów %.0f dB
+confirm in %d sweeps	potwierdź w %d przeglądaniach
+floor change dB	zmiana szumów dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	Uczenie poziomu odniesienia: %d z %d przeglądań. Zostaw pasmo w zwykłym stanie.
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	Monitorowanie. Szumy %.1f dBFS, poziom odniesienia %.1f dBFS, znanych sygnałów: %zu.
+Press Start. The first sweeps become the baseline: what is normal in this band.	Naciśnij Start. Pierwsze przeglądania staną się poziomem odniesienia: tym, co jest normalne w tym paśmie.
+Learn the baseline again	Ucz poziom odniesienia od nowa
+What is there now is normal	To, co jest teraz, jest normalne
+Adds the interference that has been reported to the baseline, so it raises no more alerts	Dodaje zgłoszone zakłócenie do poziomu odniesienia, więc nie wywołuje już alarmów
+Save the alerts...	Zapisz alarmy...
+Save the noise floor log...	Zapisz dziennik szumów...
+Interference now	Bieżące zakłócenia
+Likely source	Prawdopodobne źródło
+To MHz	Do MHz
+Spacing kHz	Odstęp kHz
+Alerts	Alarmy
+Event	Zdarzenie
+dB above baseline	dB powyżej poziomu odniesienia
+new signal	nowy sygnał
+noise floor up	szumy wzrosły
+new broadband noise	nowy szum szerokopasmowy
+gone	ustało
+no position	brak pozycji
+the receiver position (set for ADS-B)	pozycja odbiornika (ustawiona dla ADS-B)
+type a position	wpisz pozycję
+GPS device or NMEA file	urządzenie GPS lub plik NMEA
+latitude	szerokość
+longitude	długość
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	Szeregowy GPS (na przykład /dev/cu.usbmodem1101 lub COM3 na PC; 9600 bodów) albo plik tekstowy ze zdaniami NMEA
+Reconnect	Połącz ponownie
+Readings are logged at %.5f, %.5f	Odczyty są zapisywane w punkcie %.5f, %.5f
+Readings are logged without a position.	Odczyty są zapisywane bez pozycji.
+%+.1f dB above the quiet level	%+.1f dB powyżej poziomu ciszy
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	Naciśnij Start i idź. Wskaźnik jest pełny, gdy zakłócenie jest o 25 dB wyższe niż w najcichszym dotąd miejscu.
+Quiet	Cicho
+Some interference	Trochę zakłóceń
+Loud	Głośno
+- getting louder	- rośnie
+- getting quieter	- maleje
+- steady	- stabilnie
+strongest spur %.4f MHz, %.0f dB	najsilniejszy prążek %.4f MHz, %.0f dB
+This is the quiet level	To jest poziom ciszy
+Leave out the signals seen now	Pomiń sygnały widoczne teraz
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	Znane nośne stacji i urządzenia są pomijane we wskaźniku: zrób to w cichym miejscu, przed rozpoczęciem spaceru
+Clear the readings	Wyczyść odczyty
+Save as CSV...	Zapisz jako CSV...
+Save as GPX...	Zapisz jako GPX...
+reading	odczyt
+dB above the quiet level	dB powyżej poziomu ciszy
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	Najsilniejszy odczyt: %+.1f dB w punkcie %.5f, %.5f (%s)
+Loudest reading: %+.1f dB (%s), no position	Najsilniejszy odczyt: %+.1f dB (%s), bez pozycji
+Strongest spur MHz	Najsilniejszy prążek MHz
+Interference hunter	Łowca zakłóceń
+Monitor	Monitor
+Walk	Spacer
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Obserwuj pasmo pod kątem nowych zakłóceń, rozpoznaj ich rodzaj i znajdź źródło spacerując ze wskaźnikiem głośno / cicho

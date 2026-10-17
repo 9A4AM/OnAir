@@ -176,6 +176,7 @@ static void floatingWindows(App& a, ImVec2 disp) {
     passesWindow(a);
     dfWindow(a);
     passiveRadarWindow(a);
+    rfiWindow(a);
     galleryWindow(a);
     scannerWindow(a);
     sweepWindow(a);

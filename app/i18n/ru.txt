@@ -2377,3 +2377,75 @@ Tracks	Треки
 Two recordings (reference, surveillance)	Две записи (опорная, обзорная)
 Two-channel recording (cf32)	Двухканальная запись (cf32)
 Waiting for data.	Ожидание данных.
+# interference hunter
+Unknown	Неизвестно
+Switching power supply	Импульсный блок питания
+LED lamp or driver	Светодиодная лампа или драйвер
+Powerline (PLC)	Силовая сеть (PLC)
+Local oscillator or clock leak	Утечка гетеродина или тактового сигнала
+Cannot open the GPS device or file.	Не удаётся открыть GPS-устройство или файл.
+Waiting for a position fix.	Ожидание определения позиции.
+Interference gone	Помеха исчезла
+The noise floor rose by %.1f dB	Шумовой порог вырос на %.1f дБ
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	Новый широкополосный шум %.2f - %.2f МГц, %.0f дБ: %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	Новый сигнал на %.4f МГц, на %.0f дБ выше базового уровня: %s
+Demo (simulated sweeps)	Демо (имитация сканирования)
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	Гребёнке линий нужен шаг не менее 5 ячеек, чтобы отличить её от широкого сигнала: более мелкие ячейки покажут более частые линии
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	Пауза между проходами: мониторинг может работать часами с длинными паузами; для обхода нужны проходы подряд
+spur threshold %.0f dB	порог линий %.0f дБ
+floor alert %.0f dB	тревога по шуму %.0f дБ
+confirm in %d sweeps	подтверждать за %d проходов
+floor change dB	изменение шума дБ
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	Обучение базового уровня: %d из %d проходов. Оставьте диапазон в обычном состоянии.
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	Идёт наблюдение. Шум %.1f дБFS, базовый уровень %.1f дБFS, известных сигналов: %zu.
+Press Start. The first sweeps become the baseline: what is normal in this band.	Нажмите «Пуск». Первые проходы станут базовым уровнем: тем, что нормально для этого диапазона.
+Learn the baseline again	Обучить базовый уровень заново
+What is there now is normal	То, что есть сейчас, — норма
+Adds the interference that has been reported to the baseline, so it raises no more alerts	Добавляет обнаруженную помеху в базовый уровень, и тревог по ней больше не будет
+Save the alerts...	Сохранить тревоги...
+Save the noise floor log...	Сохранить журнал шумового порога...
+Interference now	Текущие помехи
+Likely source	Вероятный источник
+To MHz	До МГц
+Spacing kHz	Шаг кГц
+Alerts	Тревоги
+Event	Событие
+dB above baseline	дБ выше базового
+new signal	новый сигнал
+noise floor up	шум вырос
+new broadband noise	новый широкополосный шум
+gone	исчезло
+no position	без позиции
+the receiver position (set for ADS-B)	положение приёмника (заданное для ADS-B)
+type a position	ввести позицию
+GPS device or NMEA file	GPS-устройство или файл NMEA
+latitude	широта
+longitude	долгота
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	Последовательный GPS (например, /dev/cu.usbmodem1101 или COM3 на ПК; 9600 бод) или текстовый файл с предложениями NMEA
+Reconnect	Переподключить
+Readings are logged at %.5f, %.5f	Измерения записываются в точке %.5f, %.5f
+Readings are logged without a position.	Измерения записываются без позиции.
+%+.1f dB above the quiet level	%+.1f дБ относительно тихого уровня
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	Нажмите «Пуск» и идите. Шкала заполнится, когда помеха на 25 дБ выше самого тихого места.
+Quiet	Тихо
+Some interference	Есть помехи
+Loud	Громко
+- getting louder	- растёт
+- getting quieter	- слабеет
+- steady	- стабильно
+strongest spur %.4f MHz, %.0f dB	самая сильная линия %.4f МГц, %.0f дБ
+This is the quiet level	Это тихий уровень
+Leave out the signals seen now	Исключить видимые сейчас сигналы
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	Известные несущие вещания и устройства исключаются из шкалы: сделайте это в тихом месте перед обходом
+Clear the readings	Очистить измерения
+Save as CSV...	Сохранить как CSV...
+Save as GPX...	Сохранить как GPX...
+reading	измерение
+dB above the quiet level	дБ относительно тихого уровня
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	Самое сильное измерение: %+.1f дБ в точке %.5f, %.5f (%s)
+Loudest reading: %+.1f dB (%s), no position	Самое сильное измерение: %+.1f дБ (%s), без позиции
+Strongest spur MHz	Самая сильная линия МГц
+Interference hunter	Охотник за помехами
+Monitor	Мониторинг
+Walk	Обход
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Следите за диапазоном на предмет новых помех, определяйте их тип и находите источник пешком по шкале «громко / тихо»

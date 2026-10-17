@@ -2394,3 +2394,75 @@ Tracks	トラック
 Two recordings (reference, surveillance)	2つの録音（参照、監視）
 Two-channel recording (cf32)	2チャンネルの録音 (cf32)
 Waiting for data.	データを待っています。
+# interference hunter
+Unknown	不明
+Switching power supply	スイッチング電源
+LED lamp or driver	LEDランプまたはドライバ
+Powerline (PLC)	電力線 (PLC)
+Local oscillator or clock leak	発振器またはクロックの漏れ
+Cannot open the GPS device or file.	GPSデバイスまたはファイルを開けません。
+Waiting for a position fix.	位置情報を待っています。
+Interference gone	干渉が消えました
+The noise floor rose by %.1f dB	ノイズフロアが %.1f dB 上昇しました
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	新しい広帯域ノイズ %.2f - %.2f MHz、%.0f dB: %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	%.4f MHz に新しい信号、基準より %.0f dB 上: %s
+Demo (simulated sweeps)	デモ（シミュレーションのスイープ）
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	スプリアスの櫛は、広帯域信号と区別するため5ビン以上の間隔が必要です。間隔の狭いスプリアスを見るにはビンを細かくしてください
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	スイープ間の待ち時間: 監視は長い待ち時間で何時間も動かせます。歩き回るときは連続にします
+spur threshold %.0f dB	スプリアスしきい値 %.0f dB
+floor alert %.0f dB	ノイズフロア警報 %.0f dB
+confirm in %d sweeps	%d 回のスイープで確認
+floor change dB	ノイズフロア変化 dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	基準を学習中: %d / %d 回。バンドは通常の状態のままにしてください。
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	監視中。ノイズフロア %.1f dBFS、基準 %.1f dBFS、既知の信号 %zu 件。
+Press Start. The first sweeps become the baseline: what is normal in this band.	開始を押してください。最初の数回のスイープが基準（このバンドの通常状態）になります。
+Learn the baseline again	基準を学習し直す
+What is there now is normal	今あるものは正常
+Adds the interference that has been reported to the baseline, so it raises no more alerts	報告済みの干渉を基準に加え、以後は警報を出しません
+Save the alerts...	警報を保存...
+Save the noise floor log...	ノイズフロアの記録を保存...
+Interference now	現在の干渉
+Likely source	推定される発生源
+To MHz	終了 MHz
+Spacing kHz	間隔 kHz
+Alerts	警報
+Event	イベント
+dB above baseline	基準より dB
+new signal	新しい信号
+noise floor up	ノイズフロア上昇
+new broadband noise	新しい広帯域ノイズ
+gone	消失
+no position	位置なし
+the receiver position (set for ADS-B)	受信機の位置（ADS-B用に設定）
+type a position	位置を入力
+GPS device or NMEA file	GPSデバイスまたはNMEAファイル
+latitude	緯度
+longitude	経度
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	シリアルGPS（例: /dev/cu.usbmodem1101、PCではCOM3、9600ボー）またはNMEA文のテキストファイル
+Reconnect	再接続
+Readings are logged at %.5f, %.5f	測定値は %.5f, %.5f で記録されます
+Readings are logged without a position.	測定値は位置なしで記録されます。
+%+.1f dB above the quiet level	静かなレベルより %+.1f dB
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	開始を押して歩いてください。干渉がこれまでで最も静かな場所より25 dB高いとメーターが満タンになります。
+Quiet	静か
+Some interference	やや干渉あり
+Loud	強い
+- getting louder	- 強くなっています
+- getting quieter	- 弱くなっています
+- steady	- 安定
+strongest spur %.4f MHz, %.0f dB	最強のスプリアス %.4f MHz、%.0f dB
+This is the quiet level	これを静かなレベルにする
+Leave out the signals seen now	今見えている信号を除外
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	既知の放送波や機器をメーターから除外します。歩き始める前に静かな場所で行ってください
+Clear the readings	測定値を消去
+Save as CSV...	CSVとして保存...
+Save as GPX...	GPXとして保存...
+reading	測定値
+dB above the quiet level	静かなレベルより dB
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	最も強い測定値: %+.1f dB、%.5f, %.5f（%s）
+Loudest reading: %+.1f dB (%s), no position	最も強い測定値: %+.1f dB（%s）、位置なし
+Strongest spur MHz	最強スプリアス MHz
+Interference hunter	干渉ハンター
+Monitor	監視
+Walk	歩き回り
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	バンドの新しい干渉を監視し、種類を判別し、大きい/小さいのメーターを頼りに歩いて発生源を探します

@@ -2394,3 +2394,75 @@ Tracks	Trasos
 Two recordings (reference, surveillance)	Du įrašai (atraminis, stebėjimo)
 Two-channel recording (cf32)	Dviejų kanalų įrašas (cf32)
 Waiting for data.	Laukiama duomenų.
+# interference hunter
+Unknown	Nežinoma
+Switching power supply	Impulsinis maitinimo šaltinis
+LED lamp or driver	LED lempa arba jos valdiklis
+Powerline (PLC)	Elektros tinklas (PLC)
+Local oscillator or clock leak	Generatoriaus ar taktinio signalo nuotėkis
+Cannot open the GPS device or file.	Nepavyksta atidaryti GPS įrenginio ar failo.
+Waiting for a position fix.	Laukiama padėties nustatymo.
+Interference gone	Trukdis išnyko
+The noise floor rose by %.1f dB	Triukšmo lygis pakilo %.1f dB
+New broadband noise %.2f - %.2f MHz, %.0f dB: %s	Naujas plačiajuostis triukšmas %.2f - %.2f MHz, %.0f dB: %s
+New signal at %.4f MHz, %.0f dB above the baseline: %s	Naujas signalas ties %.4f MHz, %.0f dB virš pagrindo: %s
+Demo (simulated sweeps)	Demonstracija (imituoti skenavimai)
+A comb of spurs needs a spacing of at least 5 bins to be told from a wide signal: use finer bins to see closely spaced spurs	Spurų šukoms atskirti nuo plataus signalo reikia bent 5 dažnio intervalų tarpo: smulkesni intervalai parodo tankesnes spuras
+Pause between sweeps: the monitor can run for hours with long pauses; the walk wants back to back	Pauzė tarp skenavimų: stebėjimas gali veikti valandas su ilgomis pauzėmis; ėjimui reikia be pauzių
+spur threshold %.0f dB	spurų riba %.0f dB
+floor alert %.0f dB	triukšmo aliarmas %.0f dB
+confirm in %d sweeps	patvirtinti per %d skenavimus
+floor change dB	triukšmo pokytis dB
+Learning the baseline: %d of %d sweeps. Keep the band as it normally is.	Mokomasi pagrindo: %d iš %d skenavimų. Palikite juostą įprastos būklės.
+Watching. Noise floor %.1f dBFS, baseline %.1f dBFS, %zu known signals.	Stebima. Triukšmo lygis %.1f dBFS, pagrindas %.1f dBFS, žinomų signalų: %zu.
+Press Start. The first sweeps become the baseline: what is normal in this band.	Paspauskite Pradėti. Pirmieji skenavimai taps pagrindu: kas šioje juostoje normalu.
+Learn the baseline again	Mokytis pagrindo iš naujo
+What is there now is normal	Tai, kas dabar yra, normalu
+Adds the interference that has been reported to the baseline, so it raises no more alerts	Pridės pranešta trukdį prie pagrindo, kad daugiau nebekeltų aliarmų
+Save the alerts...	Išsaugoti aliarmus...
+Save the noise floor log...	Išsaugoti triukšmo lygio žurnalą...
+Interference now	Dabartiniai trukdžiai
+Likely source	Tikėtinas šaltinis
+To MHz	Iki MHz
+Spacing kHz	Tarpas kHz
+Alerts	Aliarmai
+Event	Įvykis
+dB above baseline	dB virš pagrindo
+new signal	naujas signalas
+noise floor up	triukšmo lygis pakilo
+new broadband noise	naujas plačiajuostis triukšmas
+gone	išnyko
+no position	be padėties
+the receiver position (set for ADS-B)	imtuvo padėtis (nustatyta ADS-B)
+type a position	įvesti padėtį
+GPS device or NMEA file	GPS įrenginys arba NMEA failas
+latitude	platuma
+longitude	ilguma
+A serial GPS (for example /dev/cu.usbmodem1101 or COM3 on a PC; 9600 baud) or a text file of NMEA sentences	Nuoseklusis GPS (pavyzdžiui, /dev/cu.usbmodem1101 arba COM3 kompiuteryje; 9600 baudų) arba tekstinis NMEA sakinių failas
+Reconnect	Prisijungti iš naujo
+Readings are logged at %.5f, %.5f	Matavimai registruojami ties %.5f, %.5f
+Readings are logged without a position.	Matavimai registruojami be padėties.
+%+.1f dB above the quiet level	%+.1f dB virš ramaus lygio
+Press Start and walk. The meter is full when the interference is 25 dB above the quietest place so far.	Paspauskite Pradėti ir eikite. Matuoklis pilnas, kai trukdys 25 dB stipresnis už tylią vietą.
+Quiet	Ramu
+Some interference	Šiek tiek trukdžių
+Loud	Stiprus
+- getting louder	- stiprėja
+- getting quieter	- silpnėja
+- steady	- stabilus
+strongest spur %.4f MHz, %.0f dB	stipriausia spura %.4f MHz, %.0f dB
+This is the quiet level	Tai ramus lygis
+Leave out the signals seen now	Praleisti dabar matomus signalus
+Broadcast carriers and devices you already know are left out of the meter: do this where it is quiet, before walking	Žinomos transliacijų nešlio bangos ir įrenginiai neįtraukiami į matuoklį: atlikite tai ramioje vietoje prieš pradėdami eiti
+Clear the readings	Išvalyti matavimus
+Save as CSV...	Išsaugoti kaip CSV...
+Save as GPX...	Išsaugoti kaip GPX...
+reading	matavimas
+dB above the quiet level	dB virš ramaus lygio
+Loudest reading: %+.1f dB at %.5f, %.5f (%s)	Stipriausias matavimas: %+.1f dB ties %.5f, %.5f (%s)
+Loudest reading: %+.1f dB (%s), no position	Stipriausias matavimas: %+.1f dB (%s), be padėties
+Strongest spur MHz	Stipriausia spura MHz
+Interference hunter	Trukdžių medžiotojas
+Monitor	Stebėjimas
+Walk	Ėjimas
+Watch a band for new interference, tell what kind it is, and walk to find it with a loud / quiet meter	Stebėkite juostą dėl naujų trukdžių, nustatykite jų rūšį ir eidami suraskite šaltinį pagal stiprus / tylus matuoklį
