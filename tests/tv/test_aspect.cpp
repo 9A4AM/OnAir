@@ -1,4 +1,5 @@
 // Display aspect ratio: the pure computation, and an MPEG-2 clip with a sample aspect ratio decoded by FFmpeg the way the player does.
+#include "../common/tmp_path.h"
 #include "dect2/tv/player.h"
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -79,7 +80,7 @@ int main() {
     CHECK(near(displayAspect(1920, 1088, 1, 1), 1920.0 / 1088));  // coded height: callers pass the cropped size
     CHECK(near(displayAspect(0, 0, 4, 3), 1.0));
     int w = 0, h = 0;
-    const std::string p1 = "/tmp/dect2_aspect_a.ts", p2 = "/tmp/dect2_aspect_b.ts";
+    const std::string p1 = tmpPath("dect2_aspect_a.ts"), p2 = tmpPath("dect2_aspect_b.ts");
     if (makeClip(p1, 720, 576, AVRational{64, 45})) {
         const double a = decodedAspect(p1, w, h);
         CHECK(w == 720 && h == 576); CHECK(std::fabs(a - 16.0 / 9) < 0.02);

@@ -1,5 +1,6 @@
 // OpenCelliD lookups without the network: the request URL, the answers (found, not found, bad key, limit, error), the cache (write, read,
 // the day "not found" is kept), the rate limiter, and the background lookup through a fake fetch.
+#include "../common/tmp_path.h"
 #include "dect2/cell/cell_ocid.h"
 #include <chrono>
 #include <cmath>
@@ -31,7 +32,7 @@ int main() {
     c.put(k, r, 1000); c.put(k2, nf, 1000);
     OcidResult bad; bad.status = OcidStatus::BadKey; c.put(k3, bad, 1000);
     CHECK(c.size() == 2, "errors not stored");
-    char path[] = "/tmp/ocid_testXXXXXX"; const int fd = mkstemp(path); close(fd);
+    const TmpPath path = tmpPath("ocid_test_cache.bin");
     CHECK(c.save(path), "save");
     OcidCache d; CHECK(d.load(path) && d.size() == 2, "load");
     const OcidEntry* e = d.get(k, 1000 + 400 * 86400);

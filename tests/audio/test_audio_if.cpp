@@ -4,6 +4,7 @@
 #include "dect2/source/audio_if.h"
 #include "dect2/common/mathconst.h"
 #include <chrono>
+#include <filesystem>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -18,7 +19,7 @@ static const double kPi = dect2::math::kPi;
 
 // 16-bit mono PCM WAV of a synthesized real signal: sum of tones (hz, amp), with a start-stop keying option for the RTTY-like case
 static std::string writeWav(const std::string& name, int rate, double seconds, const std::vector<std::pair<double, double>>& tones, double dc = 0) {
-    const std::string path = (getenv("TMPDIR") ? std::string(getenv("TMPDIR")) : std::string("/tmp")) + "/" + name;
+    const std::string path = (std::filesystem::temp_directory_path() / name).string();
     const int n = (int)(rate * seconds);
     std::vector<int16_t> d((size_t)n);
     for (int i = 0; i < n; i++) {

@@ -4,6 +4,7 @@
 // rs_part2_mesh.cpp. Every result goes into a digest (tests/common/golden.h; doubles rounded to 1e-6) compared with the one recorded from the C++ mesh layer the
 // Rust code replaced.
 #include "mesh_rs_cmp.h"
+#include "../common/ordered.h"
 #include "dect2/mesh/mesh_pb.h"
 #include "dect2/mesh/mesh_crypto.h"
 
@@ -33,7 +34,7 @@ std::vector<uint8_t> randProto(int fields, const std::vector<int>& nums, int gar
         const uint32_t num = nums.empty() ? 1 + g() % 30 : (uint32_t)nums[g() % nums.size()];
         const int wire = g() % 8 < 3 ? 0 : g() % 4 == 0 ? 2 : g() % 3 == 0 ? 1 : g() % 2 ? 5 : 2;
         putVar(v, (uint64_t)num << 3 | (uint64_t)wire);
-        const uint64_t big = (g() % 6 == 0) ? (uint64_t)g() << 32 | g() : (g() % 3 == 0 ? g() : g() % 300);
+        const uint64_t big = (g() % 6 == 0) ? r64() : (g() % 3 == 0 ? g() : g() % 300);
         if (wire == 0) putVar(v, big);
         else if (wire == 1) for (int k = 0; k < 8; k++) v.push_back(rb());
         else if (wire == 5) { const uint32_t f = g() % 4 == 0 ? g() : (uint32_t)(g() % 2000000 - 1000000) * 17; for (int k = 0; k < 4; k++) v.push_back((uint8_t)(f >> (8 * k))); }
@@ -141,20 +142,20 @@ static void testMeshtastic(long iters) {
             if (g() % 8 == 0) port = (int)(1 + g() % 600);
             const std::vector<uint8_t> payload = portPayload(port);
             const bool wantResp = g() % 4 == 0;
-            std::vector<uint8_t> data = A::meshtasticData(port, payload, wantResp, g() % 5 ? 0 : r32(), g() % 5 ? 0 : r32(), g() % 3 ? 0 : r32(), g() % 4 ? 0 : r32());
+            std::vector<uint8_t> data = ORD_CALL(A::meshtasticData, port, payload, wantResp, g() % 5 ? 0 : r32(), g() % 5 ? 0 : r32(), g() % 3 ? 0 : r32(), g() % 4 ? 0 : r32());   // ORD_*: draws in a fixed order (arguments and operands are not evaluated in one)
             if (g() % 12 == 0) data = mutateBytes(data);
             const int k = (int)(g() % 6);
             const std::string chName = k == 0 ? "Friends" : k == 1 ? "Secret" : "LongFast";
             pkt = A::meshtasticRaw(from, to, id, hl, hs, g() % 2, chName, k == 1 ? keySecret : keyDefault, data);
             if (!pkt.empty() && g() % 15 == 0) pkt = mutateBytes(pkt);
         } else if (mode == 13) {
-            pkt = A::meshtasticText(node(from), to, id, hl, hs, std::string((size_t)(g() % 90), 'x'));
+            pkt = ORD_CALL(A::meshtasticText, node(from), to, id, hl, hs, std::string((size_t)(g() % 90), 'x'));
         } else if (mode == 14) {
             pkt = A::meshtasticNodeInfo(node(from), id, hl, hs);
         } else if (mode == 15) {
-            pkt = A::meshtasticPositionEx(node(from), id, hl, hs, g() % 2 ? r32() : 0, (int)(g() % 36));
+            pkt = ORD_CALL(A::meshtasticPositionEx, node(from), id, hl, hs, g() % 2 ? r32() : 0, (int)(g() % 36));
         } else if (mode == 16) {
-            pkt = A::meshtasticTelemetry(node(from), id, hl, hs, (double)(g() % 105), 2.5 + (double)(g() % 200) / 100.0, (double)(g() % 1000) / 10.0, (double)(g() % 100) / 10.0, r32());
+            pkt = ORD_CALL(A::meshtasticTelemetry, node(from), id, hl, hs, (double)(g() % 105), 2.5 + (double)(g() % 200) / 100.0, (double)(g() % 1000) / 10.0, (double)(g() % 100) / 10.0, r32());
         } else if (mode == 17) {
             std::vector<uint32_t> route(g() % 5), back(g() % 4);
             std::vector<int> s1(g() % 5), s2(g() % 4);
@@ -162,12 +163,12 @@ static void testMeshtastic(long iters) {
             for (auto& x : back) x = r32();
             for (auto& x : s1) x = (int)(g() % 80) - 40;
             for (auto& x : s2) x = (int)(g() % 80) - 40;
-            pkt = A::meshtasticTraceroute(node(from), to, id, hl, hs, g() % 2, g() % 2 ? 0 : r32(), route, s1, back, s2);
+            pkt = ORD_CALL(A::meshtasticTraceroute, node(from), to, id, hl, hs, g() % 2, g() % 2 ? 0 : r32(), route, s1, back, s2);
         } else if (mode == 18) {
             std::vector<A::MeshNeighbor> nb(g() % 7);
             for (auto& x : nb) { x.node = r32(); x.snr = (float)((int)(g() % 400) - 200) / 10.f; }
-            pkt = g() % 2 ? A::meshtasticNeighborInfo(node(from), id, hl, hs, r32() % 3600, nb)
-                          : A::meshtasticEnvTelemetry(node(from), id, hl, hs, (double)((int)(g() % 900) - 300) / 10.0, (double)(g() % 1000) / 10.0, 900.0 + (double)(g() % 1500) / 10.0);
+            pkt = g() % 2 ? ORD_CALL(A::meshtasticNeighborInfo, node(from), id, hl, hs, r32() % 3600, nb)
+                          : ORD_CALL(A::meshtasticEnvTelemetry, node(from), id, hl, hs, (double)((int)(g() % 900) - 300) / 10.0, (double)(g() % 1000) / 10.0, 900.0 + (double)(g() % 1500) / 10.0);
         } else {
             pkt.resize(g() % 40);                                           // anything: short headers, random bodies
             for (auto& b : pkt) b = rb();

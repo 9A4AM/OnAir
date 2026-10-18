@@ -75,8 +75,8 @@ int main() {
     printf("  cs8:  %s  %llu bytes in %.2f s, recorded %.2f s, dropped %llu, FM state %d\n", fs::path(pCs8).filename().string().c_str(), (unsigned long long)bCs8, wCs8, sCs8.seconds, (unsigned long long)sCs8.droppedSamples, liveCs8);
     printf("  cf32: %s  %llu bytes in %.2f s, recorded %.2f s, dropped %llu, FM state %d\n", fs::path(pCf32).filename().string().c_str(), (unsigned long long)bCf32, wCf32, sCf32.seconds, (unsigned long long)sCf32.droppedSamples, liveCf32);
 
-    CHECK(std::abs(bCs8 - wCs8 * kRate * 2) < 0.05 * wCs8 * kRate * 2, "CS8 size = seconds x rate x 2 bytes (5 %)");
-    CHECK(std::abs(bCf32 - wCf32 * kRate * 8) < 0.05 * wCf32 * kRate * 8, "CF32 size = seconds x rate x 8 bytes (5 %)");
+    CHECK(std::abs(bCs8 - sCs8.seconds * kRate * 2) < 0.05 * sCs8.seconds * kRate * 2, "CS8 size = seconds x rate x 2 bytes (5 %)");
+    CHECK(std::abs(bCf32 - sCf32.seconds * kRate * 8) < 0.05 * sCf32.seconds * kRate * 8, "CF32 size = seconds x rate x 8 bytes (5 %)");
     CHECK(bCs8 == sCs8.bytes && bCf32 == sCf32.bytes, "the reported size is the file size");
     CHECK(sCs8.droppedSamples == 0 && sCf32.droppedSamples == 0, "nothing dropped");
     CHECK(std::abs(guessSampleRate(pCs8) - kRate) < 1 && std::abs(guessSampleRate(pCf32) - kRate) < 1, "the name gives the sample rate back");

@@ -105,7 +105,7 @@ static Bytes makeCommB(int kind) {
         break;
     default: mb = randBytes(7); break;
     }
-    if (g() % 3 == 0) setb(mb, 1 + (int)(g() % 56), 1, g() & 1);
+    if (g() % 3 == 0) { const int pos = 1 + (int)(g() % 56); const uint32_t bit = g() & 1; setb(mb, pos, 1, bit); }   // draws in a fixed order (call arguments are not)
     return mb;
 }
 
@@ -130,7 +130,7 @@ static Bytes makeMessage(int& nbits) {
     if (df == 4 || df == 20) { if (g() % 2) A::setBits(m.data(), 20, 13, (A::getBits(m.data(), 20, 13) | 0x10) & ~0x40u); }
     if (df == 20 || df == 21) {
         const Bytes mb = makeCommB((int)(g() % 10));
-        for (int i = 0; i < 7; i++) m[4 + (size_t)i] = mb[(size_t)i];
+        for (int i = 0; i < 7 && 4 + (size_t)i < m.size(); i++) m[4 + (size_t)i] = mb[(size_t)i];   // m is 56 bits long when the length was made not to fit the DF
     }
     return m;
 }
@@ -148,7 +148,7 @@ int main() {
     }
     for (long i = 0; i < iters; i++) {
         const int n = g() & 1 ? 112 : 56;
-        const uint32_t r = (uint32_t)g() & (g() & 1 ? 0xFFFFFFu : 0xFFFFFFFFu);
+        const uint32_t rbits = (uint32_t)g(); const uint32_t r = rbits & (g() & 1 ? 0xFFFFFFu : 0xFFFFFFFFu);
         dig.add(A::singleBitPosition(n, r));
         Bytes m = randBytes((size_t)n / 8);
         dig.add(A::crc24(m.data(), n));

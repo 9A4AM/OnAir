@@ -5,6 +5,7 @@
 // compared with the one recorded from the C++ layer the Rust code replaced.
 #include "dect2/drm/drm_proto.h"
 #include "../common/golden.h"
+#include "../common/ordered.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -66,13 +67,13 @@ static Buf genSdc() {
     Buf f; const int n = (int)(r32() % 7);
     for (int i = 0; i < n; i++) {
         switch (r32() % 10) {
-        case 0: entity(f, 3 * (1 + r32() % 4), r32() % 3 == 0, 0, (int)(r32() % 16)); break;
-        case 1: { const int len = (int)(r32() % 30); entity(f, len, r32() % 5 == 0, 1, (int)(r32() % 16), false); if (len) f.push_back((uint8_t)(r32() % 4 ? r32() % 18 : 0x41 + r32() % 20)); for (int k = 1; k < len; k++) f.push_back((uint8_t)(0x20 + r32() % 90)); break; }
-        case 2: { const int len = (int)(1 + r32() % 20); entity(f, len, r32() % 5 == 0, 5, (int)(r32() % 16), false); f.push_back((uint8_t)(r32() & 0xFF)); for (int k = 1; k < len; k++) f.push_back((uint8_t)r32()); break; }
-        case 3: entity(f, 3 + r32() % 3, 0, 8, (int)(r32() % 16)); break;
-        case 4: entity(f, 2 + r32() % 6, r32() % 5 == 0, 9, (int)(r32() % 16)); break;
-        case 5: entity(f, 5 + (r32() % 3 == 0 ? r32() % 3 : 0), r32() % 5 == 0, 12, (int)(r32() % 16)); break;
-        default: entity(f, (int)(r32() % 10), r32() % 3 == 0, (int)(r32() % 16), (int)(r32() % 16)); break;
+        case 0: ORD_CALL(entity, std::ref(f), 3 * (1 + r32() % 4), r32() % 3 == 0, 0, (int)(r32() % 16)); break;
+        case 1: { const int len = (int)(r32() % 30); ORD_CALL(entity, std::ref(f), len, r32() % 5 == 0, 1, (int)(r32() % 16), false); if (len) f.push_back((uint8_t)(r32() % 4 ? r32() % 18 : 0x41 + r32() % 20)); for (int k = 1; k < len; k++) f.push_back((uint8_t)(0x20 + r32() % 90)); break; }
+        case 2: { const int len = (int)(1 + r32() % 20); ORD_CALL(entity, std::ref(f), len, r32() % 5 == 0, 5, (int)(r32() % 16), false); f.push_back((uint8_t)(r32() & 0xFF)); for (int k = 1; k < len; k++) f.push_back((uint8_t)r32()); break; }
+        case 3: ORD_CALL(entity, std::ref(f), 3 + r32() % 3, 0, 8, (int)(r32() % 16)); break;
+        case 4: ORD_CALL(entity, std::ref(f), 2 + r32() % 6, r32() % 5 == 0, 9, (int)(r32() % 16)); break;
+        case 5: ORD_CALL(entity, std::ref(f), 5 + (r32() % 3 == 0 ? r32() % 3 : 0), r32() % 5 == 0, 12, (int)(r32() % 16)); break;
+        default: ORD_CALL(entity, std::ref(f), (int)(r32() % 10), r32() % 3 == 0, (int)(r32() % 16), (int)(r32() % 16)); break;
         }
     }
     if (r32() % 3 == 0) f.resize(f.size() + r32() % 6, 0);
