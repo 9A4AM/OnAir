@@ -98,7 +98,8 @@ for f in "$APP"/Contents/Frameworks/*.dylib "$APP"/Contents/Frameworks/SoapySDR/
   if [ -L "$f" ] || [ ! -f "$f" ]; then continue; fi
   codesign --force -s - "$f" || echo "warning: could not sign $f"
 done
-codesign --force --deep -s - "$APP" || { echo "Signing the app failed"; codesign -dvvv "$APP" 2>&1 | head -20; exit 1; }
+# no --deep: every library and module inside is signed above, and --deep rejects the SoapySDR "modules0.8" folder as a malformed bundle
+codesign --force -s - "$APP" || { echo "Signing the app failed"; codesign -dvvv "$APP" 2>&1 | head -20; exit 1; }
 STAGE=$BUILD/dmg
 rm -rf $STAGE && mkdir -p $STAGE
 cp -R "$APP" $STAGE/
