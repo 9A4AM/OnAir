@@ -2686,3 +2686,30 @@ Watch for these	Controlla questi
 Lists	Liste
 Watchlists...	Liste di controllo...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Avvisi quando si sentono aerei, navi, nominativi, frequenze o parole in elenco: notifica, suono, ntfy, Telegram o webhook
+Coastlines	Coste
+Borders	Confini
+Mosaic	Mosaico
+Histogram	Istogramma
+Crop to view	Ritaglia sulla vista
+Clear crop	Annulla ritaglio
+Save GeoTIFF...	Salva GeoTIFF...
+Add to mosaic	Aggiungi al mosaico
+Clear mosaic	Svuota mosaico
+S-curve (contrast)	Curva a S (contrasto)
+Lift shadows	Schiarisci le ombre
+Cloud detail (flat bright end)	Dettaglio delle nubi (estremo chiaro piatto)
+Night infrared	Infrarosso notturno
+No palette	Nessuna tavolozza
+Thermal	Termica
+Rainbow	Arcobaleno
+Enhanced infrared	Infrarosso potenziato
+Sepia	Seppia
+Tone curve applied after the gamma	Curva tonale applicata dopo il gamma
+Colour palette on the brightness of the picture, for infrared and other single-channel pictures	Tavolozza di colori sulla luminosità dell'immagine, per l'infrarosso e altre immagini a un solo canale
+Simplified coastlines drawn into the map (good to about 50 - 100 km, not a survey)	Coste semplificate disegnate sulla mappa (precise a circa 50 - 100 km, non è un rilievo)
+A few of the longest country borders, simplified	Alcuni dei confini più lunghi, semplificati
+Zoom to the part you want, then crop: saving and mosaic use only the part inside the yellow frame	Ingrandisci la parte che vuoi, poi ritaglia: il salvataggio e il mosaico usano solo la parte dentro il riquadro giallo
+The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not reach) for GIS programs	La mappa come GeoTIFF (WGS 84, senza sovrapposizioni, trasparente dove il passaggio non è arrivato) per i programmi GIS
+Keep this projected pass to stitch with others in the Mosaic view	Tieni questo passaggio proiettato per unirlo ad altri nella vista Mosaico
+Stitch several projected passes into one map	Unisci più passaggi proiettati in un'unica mappa
+The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	Il mosaico è vuoto. Apri un passaggio con mappa, attiva la proiezione della mappa e premi Aggiungi al mosaico. Più passaggi vengono uniti in un'unica mappa.

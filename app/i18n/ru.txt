@@ -2686,3 +2686,30 @@ Watch for these	Следить за этими
 Lists	Списки
 Watchlists...	Списки наблюдения...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Оповещения, когда принимаются перечисленные самолёты, суда, позывные, частоты или слова: уведомление, звук, ntfy, Telegram или вебхук
+Coastlines	Береговые линии
+Borders	Границы
+Mosaic	Мозаика
+Histogram	Гистограмма
+Crop to view	Обрезать по виду
+Clear crop	Снять обрезку
+Save GeoTIFF...	Сохранить GeoTIFF...
+Add to mosaic	Добавить в мозаику
+Clear mosaic	Очистить мозаику
+S-curve (contrast)	S-кривая (контраст)
+Lift shadows	Поднять тени
+Cloud detail (flat bright end)	Детали облаков (плоский светлый конец)
+Night infrared	Ночной инфракрасный
+No palette	Без палитры
+Thermal	Тепловая
+Rainbow	Радуга
+Enhanced infrared	Усиленный инфракрасный
+Sepia	Сепия
+Tone curve applied after the gamma	Тоновая кривая, применяемая после гаммы
+Colour palette on the brightness of the picture, for infrared and other single-channel pictures	Цветовая палитра по яркости изображения, для инфракрасных и других одноканальных снимков
+Simplified coastlines drawn into the map (good to about 50 - 100 km, not a survey)	Упрощённые береговые линии на карте (точность около 50 - 100 км, это не съёмка)
+A few of the longest country borders, simplified	Несколько самых протяжённых государственных границ, упрощённо
+Zoom to the part you want, then crop: saving and mosaic use only the part inside the yellow frame	Увеличьте нужную часть и обрежьте: сохранение и мозаика используют только то, что внутри жёлтой рамки
+The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not reach) for GIS programs	Карта как GeoTIFF (WGS 84, без наложений, прозрачная там, куда пролёт не дотянулся) для ГИС-программ
+Keep this projected pass to stitch with others in the Mosaic view	Сохранить этот спроецированный пролёт, чтобы склеить его с другими в виде Мозаика
+Stitch several projected passes into one map	Склеить несколько спроецированных пролётов в одну карту
+The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	Мозаика пуста. Откройте пролёт с картой, включите проекцию карты и нажмите Добавить в мозаику. Несколько пролётов склеиваются в одну карту.

@@ -2703,3 +2703,30 @@ Watch for these	Stebėti šiuos
 Lists	Sąrašai
 Watchlists...	Stebėjimo sąrašai...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Pranešimai, kai išgirstami sąraše esantys orlaiviai, laivai, šaukiniai, dažniai ar žodžiai: pranešimas, garsas, ntfy, Telegram arba webhook
+Coastlines	Pakrantės
+Borders	Sienos
+Mosaic	Mozaika
+Histogram	Histograma
+Crop to view	Apkirpti pagal vaizdą
+Clear crop	Panaikinti apkirpimą
+Save GeoTIFF...	Įrašyti GeoTIFF...
+Add to mosaic	Pridėti prie mozaikos
+Clear mosaic	Išvalyti mozaiką
+S-curve (contrast)	S kreivė (kontrastas)
+Lift shadows	Šviesinti šešėlius
+Cloud detail (flat bright end)	Debesų detalės (plokščias šviesus galas)
+Night infrared	Naktinis infraraudonasis
+No palette	Be paletės
+Thermal	Terminė
+Rainbow	Vaivorykštė
+Enhanced infrared	Paryškintas infraraudonasis
+Sepia	Sepija
+Tone curve applied after the gamma	Tonų kreivė, taikoma po gama
+Colour palette on the brightness of the picture, for infrared and other single-channel pictures	Spalvų paletė vaizdo ryškumui, infraraudonajam ir kitiems vieno kanalo vaizdams
+Simplified coastlines drawn into the map (good to about 50 - 100 km, not a survey)	Supaprastintos pakrantės linijos žemėlapyje (tikslumas apie 50 - 100 km, ne geodezinis matavimas)
+A few of the longest country borders, simplified	Kelios ilgiausios valstybių sienos, supaprastintos
+Zoom to the part you want, then crop: saving and mosaic use only the part inside the yellow frame	Priartinkite norimą dalį ir apkirpkite: įrašant ir mozaikoje naudojama tik geltoname rėmelyje esanti dalis
+The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not reach) for GIS programs	Žemėlapis kaip GeoTIFF (WGS 84, be uždėjimų, permatomas ten, kur praskridimas nepasiekė) GIS programoms
+Keep this projected pass to stitch with others in the Mosaic view	Palikti šį suprojektuotą praskridimą, kad mozaikos rodinyje būtų sujungtas su kitais
+Stitch several projected passes into one map	Sujungti kelis suprojektuotus praskridimus į vieną žemėlapį
+The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	Mozaika tuščia. Atidarykite praskridimą su žemėlapiu, įjunkite žemėlapio projekciją ir spauskite Pridėti prie mozaikos. Keli praskridimai sujungiami į vieną žemėlapį.

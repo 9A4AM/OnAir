@@ -2703,3 +2703,30 @@ Watch for these	これらを監視する
 Lists	リスト
 Watchlists...	ウォッチリスト...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	リストにある航空機、船舶、コールサイン、周波数、単語を受信したときに通知: 通知、音、ntfy、Telegram、Webhook
+Coastlines	海岸線
+Borders	国境
+Mosaic	モザイク
+Histogram	ヒストグラム
+Crop to view	表示範囲で切り抜き
+Clear crop	切り抜きを解除
+Save GeoTIFF...	GeoTIFFを保存...
+Add to mosaic	モザイクに追加
+Clear mosaic	モザイクを空にする
+S-curve (contrast)	S字カーブ(コントラスト)
+Lift shadows	シャドウを持ち上げ
+Cloud detail (flat bright end)	雲のディテール(明るい側を平坦に)
+Night infrared	夜間赤外
+No palette	パレットなし
+Thermal	サーマル
+Rainbow	レインボー
+Enhanced infrared	強調赤外
+Sepia	セピア
+Tone curve applied after the gamma	ガンマの後に適用されるトーンカーブ
+Colour palette on the brightness of the picture, for infrared and other single-channel pictures	画像の明るさに適用するカラーパレット(赤外やその他の単一チャンネル画像向け)
+Simplified coastlines drawn into the map (good to about 50 - 100 km, not a survey)	地図に描く簡略化した海岸線(精度は約50〜100 km、測量ではありません)
+A few of the longest country borders, simplified	長い国境のいくつかを簡略化したもの
+Zoom to the part you want, then crop: saving and mosaic use only the part inside the yellow frame	必要な部分を拡大してから切り抜きます。保存とモザイクには黄色の枠の内側だけが使われます
+The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not reach) for GIS programs	地図をGeoTIFFとして(WGS 84、オーバーレイなし、パスが届かなかった所は透明)GISソフト向けに保存
+Keep this projected pass to stitch with others in the Mosaic view	この投影済みパスを保持し、モザイク表示で他のパスとつなぎ合わせます
+Stitch several projected passes into one map	投影済みの複数のパスを1枚の地図につなぎ合わせます
+The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	モザイクは空です。地図付きのパスを開き、地図投影をオンにして「モザイクに追加」を押してください。複数のパスが1枚の地図につなぎ合わされます。
