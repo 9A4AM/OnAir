@@ -2700,8 +2700,6 @@ Lists	リスト
 Watchlists...	ウォッチリスト...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	リストにある航空機、船舶、コールサイン、周波数、単語を受信したときに通知: 通知、音、ntfy、Telegram、Webhook
 TX sample rate	TX サンプルレート
-TX Fs (Msps)	TX Fs (Msps)
-Requested: %.3f Msps	要求値: %.3f Msps
 Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	要求された送信 IQ サンプルレート。RX と TX で無線機を共有する場合は、両方に同じハードウェアレートを設定してください。変更する前に送信を停止してください。
 Manual TX sample rate must be greater than zero.	手動の TX サンプルレートは 0 より大きくする必要があります。
 Data (off)	データ（オフ）

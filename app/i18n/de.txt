@@ -2700,8 +2700,6 @@ Lists	Listen
 Watchlists...	Beobachtungslisten...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Meldungen, wenn gelistete Flugzeuge, Schiffe, Rufzeichen, Frequenzen oder Wörter gehört werden: Benachrichtigung, Ton, ntfy, Telegram oder Webhook
 TX sample rate	TX-Abtastrate
-TX Fs (Msps)	TX-Fs (Msps)
-Requested: %.3f Msps	Angefordert: %.3f Msps
 Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	Angeforderte IQ-Abtastrate für das Senden. Bei einem gemeinsam für RX/TX genutzten Funkgerät auf beiden Seiten dieselbe Hardware-Rate einstellen. Vor dem Ändern das Senden stoppen.
 Manual TX sample rate must be greater than zero.	Die manuelle TX-Abtastrate muss größer als null sein.
 Data (off)	Daten (aus)

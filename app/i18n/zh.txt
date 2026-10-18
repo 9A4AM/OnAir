@@ -2700,8 +2700,6 @@ Lists	列表
 Watchlists...	监视列表...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	当收到列表中的飞机、船舶、呼号、频率或词语时提醒: 通知、声音、ntfy、Telegram 或 Webhook
 TX sample rate	发射采样率
-TX Fs (Msps)	TX Fs（Msps）
-Requested: %.3f Msps	请求速率：%.3f Msps
 Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	请求的发射 IQ 采样率。共用同一设备收发时，请将两侧的硬件采样率设为相同值。修改前请先停止发射。
 Manual TX sample rate must be greater than zero.	手动发射采样率必须大于零。
 Data (off)	数据（关）

@@ -2700,8 +2700,6 @@ Lists	Listes
 Watchlists...	Listes de surveillance...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alertes quand des avions, navires, indicatifs, fréquences ou mots listés sont entendus : notification, son, ntfy, Telegram ou webhook
 TX sample rate	Fréquence d'échantillonnage TX
-TX Fs (Msps)	TX Fs (Msps)
-Requested: %.3f Msps	Demandée : %.3f Msps
 Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	Fréquence d'échantillonnage IQ d'émission demandée. Pour une radio partagée entre RX et TX, réglez la même fréquence matérielle des deux côtés. Arrêtez l'émission avant de la modifier.
 Manual TX sample rate must be greater than zero.	La fréquence d'échantillonnage TX manuelle doit être supérieure à zéro.
 Data (off)	Données (désactivé)
