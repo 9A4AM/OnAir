@@ -431,6 +431,7 @@ void testSafeMode() {
         m.forceSafeMode(true);
         CHECK(m.safeMode() && m.start("fake", "ok", err) == nullptr, "forced safe mode");
     }
+#ifndef _WIN32   // the helper-process mode is not available on Windows yet
     {   // a failed plugin is switched off by the manager's tick
         Env e2("fail");
         installFake(e2.dir / "plugins");
@@ -449,6 +450,7 @@ void testSafeMode() {
         }
         CHECK(!fs::exists(e2.dir / "plugins" / ".running"), "a helper-process plugin leaves no crash marker");
     }
+#endif
 }
 
 void testInstall() {

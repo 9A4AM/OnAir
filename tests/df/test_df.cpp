@@ -1,5 +1,6 @@
 // Direction finding: eigen solver, bearing accuracy vs SNR and array (RMS error table), two-source resolution, calibration recovery,
 // multipath handling, beamforming, circular statistics, sources (simulator, file, Kraken header, DoA line).
+#include "../common/tmp_path.h"
 #include "dect2/df/df.h"
 #include "dect2/df/source.h"
 #include <cmath>
@@ -245,7 +246,7 @@ int main() {
     // ---- sources
     {
         // file round trip
-        const char* path = "/tmp/df_test_cf32.bin";
+        const TmpPath path = tmpPath("df_test_cf32.bin");
         SimMultiChannelSource sim(cfg(uca5, 40, 20, 51));
         Frame f; sim.read(f, 512);
         FILE* fp = fopen(path, "wb");
@@ -258,13 +259,13 @@ int main() {
         CHECK(!fs.read(g, 512), "end of file");
         remove(path);
         // sigmf meta
-        FILE* m = fopen("/tmp/df_test.sigmf-meta", "w");
+        FILE* m = fopen(tmpPath("df_test.sigmf-meta"), "w");
         fputs("{\"global\":{\"core:datatype\":\"cf32_le\",\"core:sample_rate\":250000,\"core:num_channels\":5},\"captures\":[{\"core:frequency\":433000000}]}", m);
         fclose(m);
-        FILE* d = fopen("/tmp/df_test.sigmf-data", "wb"); float z[10] = {0}; fwrite(z, 4, 10, d); fclose(d);
-        FileMultiChannelSource sm("/tmp/df_test.sigmf-meta", 0, 0, 0);
+        FILE* d = fopen(tmpPath("df_test.sigmf-data"), "wb"); float z[10] = {0}; fwrite(z, 4, 10, d); fclose(d);
+        FileMultiChannelSource sm(tmpPath("df_test.sigmf-meta"), 0, 0, 0);
         CHECK(sm.ok() && sm.channels() == 5 && sm.sampleRate() == 250000 && sm.centerFreq() == 433e6, "sigmf meta");
-        remove("/tmp/df_test.sigmf-meta"); remove("/tmp/df_test.sigmf-data");
+        remove(tmpPath("df_test.sigmf-meta")); remove(tmpPath("df_test.sigmf-data"));
         // Kraken header
         uint8_t hb[1024 + 5 * 4 * 8];
         memset(hb, 0, sizeof hb);

@@ -1,5 +1,6 @@
 // Passive radar: clutter cancellation depth, range / Doppler accuracy, detection probability and false alarms against the simulator, tracking
 // of a moving target, range ellipses, two-file source.
+#include "../common/tmp_path.h"
 #include "dect2/radar/passive.h"
 #include <cmath>
 #include <cstdio>
@@ -124,7 +125,7 @@ int main() {
     }
     // ---- two-file source round trip
     {
-        const char* ra = "/tmp/pr_test_ref.cf32"; const char* rb = "/tmp/pr_test_surv.cf32";
+        const TmpPath ra = tmpPath("pr_test_ref.cf32"); const TmpPath rb = tmpPath("pr_test_surv.cf32");
         FILE* fa = fopen(ra, "wb"); FILE* fb = fopen(rb, "wb");
         for (int i = 0; i < 100; i++) { float x[2] = {(float)i, 1}, y[2] = {(float)-i, 2}; fwrite(x, 8, 1, fa); fwrite(y, 8, 1, fb); }
         fclose(fa); fclose(fb);

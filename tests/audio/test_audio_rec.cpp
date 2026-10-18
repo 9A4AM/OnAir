@@ -111,7 +111,7 @@ int main() {
     CHECK(w.size() > 44 && rd32(w, 24) == 44100, "second file at 44.1 kHz");
 
     // a bad folder is reported
-    CHECK(!rec.start("/proc/nope/x/a.wav", o, err) && !err.empty(), "bad folder reported");
+    CHECK(!rec.start((dir / "r_2.wav" / "x" / "a.wav").string(), o, err)   /* below a plain file */ && !err.empty(), "bad folder reported");
     CHECK(AudioRecorder::fileName("fm", 93.9e6, AudioRecFormat::Flac).find("onair_audio_fm_93.900MHz_") == 0, "file name");
 
     fs::remove_all(dir);

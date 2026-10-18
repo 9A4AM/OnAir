@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <tuple>
@@ -127,7 +128,10 @@ bool OcidCache::save(const std::string& path) const {
         }
         if (!f) return false;
     }
-    return std::rename(tmp.c_str(), path.c_str()) == 0;
+    // std::rename fails on Windows when the target exists; std::filesystem::rename replaces it there too
+    std::error_code ec;
+    std::filesystem::rename(tmp, path, ec);
+    return !ec;
 }
 
 OcidLookup::OcidLookup(Fetch fetch, std::string cachePath) : fetch_(std::move(fetch)), path_(std::move(cachePath)) {

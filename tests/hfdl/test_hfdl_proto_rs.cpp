@@ -5,6 +5,7 @@
 // (tests/common/golden.h; doubles rounded to 1e-6, floats widened) compared with the one recorded from the C++ layers the Rust code replaced.
 #include "dect2/hfdl/hfdl_proto.h"
 #include "../common/golden.h"
+#include "../common/ordered.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -29,7 +30,7 @@ static std::vector<uint8_t> mutate(std::vector<uint8_t> v) {
         case 0: v[g() % v.size()] = rb(); break;
         case 1: v[g() % v.size()] ^= (uint8_t)(1u << (g() % 8)); break;
         case 2: v.erase(v.begin() + (long)(g() % v.size())); break;
-        case 3: v.insert(v.begin() + (long)(g() % (v.size() + 1)), rb()); break;
+        case 3: ORD_CALL(v.insert, v.begin() + (long)(g() % (v.size() + 1)), rb()); break;   // ORD_*: draws in a fixed order (arguments and operands are not evaluated in one)
         default: v.resize(g() % (v.size() + 1)); break;
         }
     }
@@ -91,7 +92,13 @@ static void testBitLayer(long iters) {
             const int N = D::hfdlCodedBits(m);
             std::vector<float> chan((size_t)N);
             const int mode = (int)(g() % 3);
-            for (auto& c : chan) c = mode == 0 ? (float)((int)(g() % 2001) - 1000) / 250.f : (g() % 2 ? 1.f : -1.f) * (1.f + (float)(g() % 100) / 50.f) * (mode == 2 && g() % 20 == 0 ? 0.f : 1.f);
+            for (auto& c : chan) {
+                if (mode == 0) { c = (float)((int)(g() % 2001) - 1000) / 250.f; continue; }
+                const float sign = g() % 2 ? 1.f : -1.f;
+                const float mag = 1.f + (float)(g() % 100) / 50.f;
+                const float gate = mode == 2 && g() % 20 == 0 ? 0.f : 1.f;
+                c = sign * mag * gate;
+            }
             dig.add(D::hfdlDecodeSoft(m, chan));
         }
     }
@@ -127,9 +134,9 @@ static std::vector<uint8_t> rndHfnpdu() {
     const std::string fl = RS(g() % 8, "ABCDEFGHJKLMNPRSTUVWXYZ0123456789 ");
     const std::vector<D::HfdlSquitterGs> heard = {{(int)(g() % 20), true, g() & 0xFFFFF}, {(int)(g() % 20), true, g() & 0xFFFFF}, {(int)(g() % 130), false, g() & 0xFFFFF}};
     switch (kind) {
-    case 0: h = D::hfdlPerfData(fl, rndCoord(90), rndCoord(180), (int)(g() % 90000), (int)(g() % 130), (int)(g() % 9)); break;
-    case 1: h = D::hfdlFreqData(fl, rndCoord(90), rndCoord(180), (int)(g() % 90000), heard); break;
-    case 2: h = D::hfdlAcarsHfnpdu(RS(7, "-.ABCDEFGHJ0123456789"), RS(2, "ABCH1789_d"), (char)('0' + g() % 10),
+    case 0: h = ORD_CALL(D::hfdlPerfData, fl, rndCoord(90), rndCoord(180), (int)(g() % 90000), (int)(g() % 130), (int)(g() % 9)); break;
+    case 1: h = ORD_CALL(D::hfdlFreqData, fl, rndCoord(90), rndCoord(180), (int)(g() % 90000), heard); break;
+    case 2: h = ORD_CALL(D::hfdlAcarsHfnpdu, RS(7, "-.ABCDEFGHJ0123456789"), RS(2, "ABCH1789_d"), (char)('0' + g() % 10),
                                          g() % 2 ? RS(g() % 60, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 /.\r\n-") : std::string("POS N52123E004567,1234,FL350"), false); break;
     case 3: h = {0xFF, 0xD0, (uint8_t)g(), rb(), rb(), rb(), rb()}; break;
     case 4: h = {0xFF, (uint8_t)(g() % 2 ? 0xD2 : 0xDE)}; break;
@@ -142,11 +149,11 @@ static std::vector<uint8_t> rndHfnpdu() {
 static std::vector<uint8_t> rndLpdu() {
     switch (g() % 9) {
     case 0: return D::hfdlLogonRequest(g() & 0xFFFFFF);
-    case 1: return D::hfdlLogonConfirm(g() & 0xFFFFFF, (int)(g() % 256));
+    case 1: return ORD_CALL(D::hfdlLogonConfirm, g() & 0xFFFFFF, (int)(g() % 256));
     case 2: case 3: case 4: return D::hfdlUnnumbered(rndHfnpdu());
     case 5: { auto b = rndBytes(g() % 8); const uint8_t t[] = {0x1D, 0x4F, 0x5F, 0x2F, 0x3F, 0xBF, 0x8F, 0x9F}; return D::hfdlLpdu(t[g() % 8], b); }
     case 6: { auto h = rndHfnpdu(); return D::hfdlLpdu(0x1D, h); }
-    case 7: return D::hfdlLpdu(rb(), rndBytes(g() % 12));
+    case 7: return ORD_CALL(D::hfdlLpdu, rb(), rndBytes(g() % 12));
     default: return mutate(D::hfdlUnnumbered(rndHfnpdu()));
     }
 }
@@ -161,8 +168,8 @@ static std::vector<uint8_t> rndPdu() {
         if (g() % 3 == 0) b.resize(66 + g() % 10, 0);
         return b;
     }
-    case 1: case 2: { std::vector<std::vector<uint8_t>> l; for (size_t i = g() % 5; i > 0; i--) l.push_back(rndLpdu()); return D::hfdlMpduDown((int)(g() % 130), (int)(g() % 256), l); }
-    case 3: case 4: { std::vector<std::vector<uint8_t>> l; for (size_t i = g() % 5; i > 0; i--) l.push_back(rndLpdu()); return D::hfdlMpduUp((int)(g() % 130), (int)(g() % 256), l); }
+    case 1: case 2: { std::vector<std::vector<uint8_t>> l; for (size_t i = g() % 5; i > 0; i--) l.push_back(rndLpdu()); return ORD_CALL(D::hfdlMpduDown, (int)(g() % 130), (int)(g() % 256), l); }
+    case 3: case 4: { std::vector<std::vector<uint8_t>> l; for (size_t i = g() % 5; i > 0; i--) l.push_back(rndLpdu()); return ORD_CALL(D::hfdlMpduUp, (int)(g() % 130), (int)(g() % 256), l); }
     default: return rndBytes(g() % 90);
     }
 }
