@@ -3189,3 +3189,16 @@ Ping	Ping
 with interference bursts	mit Störimpulsen
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Das Testsignal ist eine Bake 420 Hz neben der Mitte mit simulierten Meteorechos: kurze unterdichte und einige lange überdichte.
 Beacon echoes, 143.050 MHz	Bakenechos, 143,050 MHz
+Speed	Geschwindigkeit
+Your callsign: lines addressed to it, to allcall or to cqcqcq are marked	Ihr Rufzeichen: Zeilen an dieses Rufzeichen, an allcall oder an cqcqcq werden markiert
+The 73 tone positions watched: how often each was the strongest tone. The 33 tones of the band are the ones that light up.	Die 73 beobachteten Tonpositionen: wie oft jede der stärkste Ton war. Die 33 Töne des Bandes leuchten auf.
+Cmd	Befehl
+The command character after the addressee: ? asks for the signal report, * for an acknowledgement, $ for the heard list, @ for the location, & for the message of the day, ^ for the software version, ; relays the message, ! and ~ repeat it, # stores it, + asks for a file, | is an alert, > and < change the speed	Das Befehlszeichen nach dem Adressaten: ? fragt nach dem Signalbericht, * nach einer Bestätigung, $ nach der Hörliste, @ nach dem Standort, & nach der Nachricht des Tages, ^ nach der Softwareversion; ; leitet die Nachricht weiter, ! und ~ wiederholen sie, # speichert sie, + fragt nach einer Datei, | ist ein Alarm, > und < ändern die Geschwindigkeit
+speed	Geschwindigkeit
+tone spacing	Tonabstand
+tones heard	gehörte Töne
+tone quality	Tonqualität
+FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is 290 Hz wide at every speed.	FSQ-Geschwindigkeiten: 1,5, 2, 3, 4,5 und 6 Baud. Automatisch sucht nach allen fünf; das Band ist bei jeder Geschwindigkeit 290 Hz breit.
+IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	IFKP-Geschwindigkeiten: 0,5, 1,0 und 2,0 (1,95, 3,9 und 7,8 Baud). Automatisch sucht nach allen drei; das Band ist bei jeder Geschwindigkeit 387 Hz breit.
+Directed chat, 14.105 MHz	Gerichteter Chat, 14,105 MHz
+Keyboard chat, 14.083 MHz	Tastatur-Chat, 14,083 MHz

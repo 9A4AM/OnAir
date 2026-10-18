@@ -3172,3 +3172,16 @@ Ping	Ping
 with interference bursts	com rajadas de interferência
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	O sinal de teste é um farol a 420 Hz do centro com ecos de meteoros simulados: curtos subdensos e alguns longos sobredensos.
 Beacon echoes, 143.050 MHz	Ecos do farol, 143,050 MHz
+Speed	Velocidade
+Your callsign: lines addressed to it, to allcall or to cqcqcq are marked	O seu indicativo: as linhas dirigidas a ele, a allcall ou a cqcqcq são marcadas
+The 73 tone positions watched: how often each was the strongest tone. The 33 tones of the band are the ones that light up.	As 73 posições de tom observadas: quantas vezes cada uma foi o tom mais forte. Os 33 tons da banda são os que acendem.
+Cmd	Cmd
+The command character after the addressee: ? asks for the signal report, * for an acknowledgement, $ for the heard list, @ for the location, & for the message of the day, ^ for the software version, ; relays the message, ! and ~ repeat it, # stores it, + asks for a file, | is an alert, > and < change the speed	O caractere de comando depois do destinatário: ? pede o relatório de sinal, * uma confirmação, $ a lista de ouvidos, @ a localização, & a mensagem do dia, ^ a versão do software; ; reencaminha a mensagem, ! e ~ repetem-na, # guarda-a, + pede um ficheiro, | é um alerta, > e < mudam a velocidade
+speed	velocidade
+tone spacing	espaçamento dos tons
+tones heard	tons ouvidos
+tone quality	qualidade dos tons
+FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is 290 Hz wide at every speed.	Velocidades do FSQ: 1,5, 2, 3, 4,5 e 6 bauds. Automático procura as cinco; a banda tem 290 Hz de largura a qualquer velocidade.
+IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	Velocidades do IFKP: 0,5, 1,0 e 2,0 (1,95, 3,9 e 7,8 bauds). Automático procura as três; a banda tem 387 Hz de largura a qualquer velocidade.
+Directed chat, 14.105 MHz	Conversa dirigida, 14,105 MHz
+Keyboard chat, 14.083 MHz	Conversa por teclado, 14,083 MHz

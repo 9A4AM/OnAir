@@ -3172,3 +3172,16 @@ Ping	Пинг
 with interference bursts	с импульсными помехами
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Тестовый сигнал - маяк на 420 Гц от центра с имитацией метеорного эха: короткие недоплотные и несколько долгих сверхплотных.
 Beacon echoes, 143.050 MHz	Эхо маяка, 143,050 МГц
+Speed	Скорость
+Your callsign: lines addressed to it, to allcall or to cqcqcq are marked	Ваш позывной: строки, адресованные ему, allcall или cqcqcq, выделяются
+The 73 tone positions watched: how often each was the strongest tone. The 33 tones of the band are the ones that light up.	73 отслеживаемые позиции тонов: как часто каждая была самым сильным тоном. 33 тона полосы - те, что загораются.
+Cmd	Команда
+The command character after the addressee: ? asks for the signal report, * for an acknowledgement, $ for the heard list, @ for the location, & for the message of the day, ^ for the software version, ; relays the message, ! and ~ repeat it, # stores it, + asks for a file, | is an alert, > and < change the speed	Символ команды после адресата: ? запрашивает отчёт о сигнале, * подтверждение, $ список услышанных, @ местоположение, & сообщение дня, ^ версию программы; ; пересылает сообщение, ! и ~ повторяют его, # сохраняет, + запрашивает файл, | означает тревогу, > и < меняют скорость
+speed	скорость
+tone spacing	интервал тонов
+tones heard	услышанные тоны
+tone quality	качество тонов
+FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is 290 Hz wide at every speed.	Скорости FSQ: 1,5, 2, 3, 4,5 и 6 бод. Авто ищет все пять; полоса при любой скорости шириной 290 Гц.
+IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	Скорости IFKP: 0,5, 1,0 и 2,0 (1,95, 3,9 и 7,8 бод). Авто ищет все три; полоса при любой скорости шириной 387 Гц.
+Directed chat, 14.105 MHz	Адресный чат, 14,105 МГц
+Keyboard chat, 14.083 MHz	Клавиатурный чат, 14,083 МГц

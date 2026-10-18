@@ -3189,3 +3189,16 @@ Ping	Ping
 with interference bursts	avec rafales de parasites
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Le signal de test est une balise à 420 Hz du centre avec des échos de météores simulés : des sous-denses courts et quelques surdenses longs.
 Beacon echoes, 143.050 MHz	Échos de balise, 143,050 MHz
+Speed	Vitesse
+Your callsign: lines addressed to it, to allcall or to cqcqcq are marked	Votre indicatif : les lignes qui lui sont adressées, à allcall ou à cqcqcq sont marquées
+The 73 tone positions watched: how often each was the strongest tone. The 33 tones of the band are the ones that light up.	Les 73 positions de tons surveillées : combien de fois chacune a été le ton le plus fort. Les 33 tons de la bande sont ceux qui s'allument.
+Cmd	Cmd
+The command character after the addressee: ? asks for the signal report, * for an acknowledgement, $ for the heard list, @ for the location, & for the message of the day, ^ for the software version, ; relays the message, ! and ~ repeat it, # stores it, + asks for a file, | is an alert, > and < change the speed	Le caractère de commande après le destinataire : ? demande le rapport de signal, * un accusé de réception, $ la liste des stations entendues, @ la position, & le message du jour, ^ la version du logiciel ; ; relaie le message, ! et ~ le répètent, # l'enregistre, + demande un fichier, | est une alerte, > et < changent la vitesse
+speed	vitesse
+tone spacing	espacement des tons
+tones heard	tons entendus
+tone quality	qualité des tons
+FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is 290 Hz wide at every speed.	Vitesses FSQ : 1,5, 2, 3, 4,5 et 6 bauds. Auto cherche les cinq ; la bande fait 290 Hz de large à toutes les vitesses.
+IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	Vitesses IFKP : 0,5, 1,0 et 2,0 (1,95, 3,9 et 7,8 bauds). Auto cherche les trois ; la bande fait 387 Hz de large à toutes les vitesses.
+Directed chat, 14.105 MHz	Chat dirigé, 14,105 MHz
+Keyboard chat, 14.083 MHz	Chat clavier, 14,083 MHz

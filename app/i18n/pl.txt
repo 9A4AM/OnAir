@@ -3189,3 +3189,16 @@ Ping	Ping
 with interference bursts	z impulsami zakłóceń
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Sygnał testowy to nadajnik 420 Hz od środka z symulowanymi echami meteorów: krótkimi podgęstymi i kilkoma długimi nadgęstymi.
 Beacon echoes, 143.050 MHz	Echa nadajnika, 143,050 MHz
+Speed	Prędkość
+Your callsign: lines addressed to it, to allcall or to cqcqcq are marked	Twój znak wywoławczy: wiersze adresowane do niego, do allcall lub do cqcqcq są zaznaczane
+The 73 tone positions watched: how often each was the strongest tone. The 33 tones of the band are the ones that light up.	73 obserwowane pozycje tonów: jak często każda była najsilniejszym tonem. 33 tony pasma to te, które się zapalają.
+Cmd	Polecenie
+The command character after the addressee: ? asks for the signal report, * for an acknowledgement, $ for the heard list, @ for the location, & for the message of the day, ^ for the software version, ; relays the message, ! and ~ repeat it, # stores it, + asks for a file, | is an alert, > and < change the speed	Znak polecenia po adresacie: ? prosi o raport sygnału, * o potwierdzenie, $ o listę usłyszanych, @ o lokalizację, & o wiadomość dnia, ^ o wersję oprogramowania; ; przekazuje wiadomość dalej, ! i ~ powtarzają ją, # zapisuje, + prosi o plik, | to alarm, > i < zmieniają prędkość
+speed	prędkość
+tone spacing	odstęp tonów
+tones heard	usłyszane tony
+tone quality	jakość tonów
+FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is 290 Hz wide at every speed.	Prędkości FSQ: 1,5, 2, 3, 4,5 i 6 bodów. Automatyczny szuka wszystkich pięciu; pasmo ma 290 Hz szerokości przy każdej prędkości.
+IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	Prędkości IFKP: 0,5, 1,0 i 2,0 (1,95, 3,9 i 7,8 boda). Automatyczny szuka wszystkich trzech; pasmo ma 387 Hz szerokości przy każdej prędkości.
+Directed chat, 14.105 MHz	Czat adresowany, 14,105 MHz
+Keyboard chat, 14.083 MHz	Czat klawiaturowy, 14,083 MHz
