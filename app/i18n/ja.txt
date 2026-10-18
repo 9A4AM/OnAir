@@ -2939,3 +2939,30 @@ The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not re
 Keep this projected pass to stitch with others in the Mosaic view	この投影済みパスを保持し、モザイク表示で他のパスとつなぎ合わせます
 Stitch several projected passes into one map	投影済みの複数のパスを1枚の地図につなぎ合わせます
 The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	モザイクは空です。地図付きのパスを開き、地図投影をオンにして「モザイクに追加」を押してください。複数のパスが1枚の地図につなぎ合わされます。
+Data packs	データパック
+Data packs...	データパック...
+Download map tiles, satellite elements and airports once, to work without internet	地図タイル、衛星の軌道要素、空港を一度ダウンロードして、インターネットなしで使えます
+Map tiles	地図タイル
+Transmitters	送信所
+Downloaded: 	ダウンロード済み: 
+Stopped: 	停止: 
+ (start it again to continue)	 (続けるにはもう一度開始)
+%ld tiles, zoom %d to %d	%ld タイル、ズーム %d～%d
+Pack	パック
+Size	サイズ
+Last updated	最終更新
+Action	操作
+not downloaded	未ダウンロード
+Update	更新
+Starts the download now. Files that are already there and correct are kept.	今すぐダウンロードを開始します。すでにある正しいファイルはそのまま使われます。
+Check	確認
+Checks every file against the checksum recorded at the download	各ファイルをダウンロード時に記録したチェックサムと照合します
+Deleted: 	削除しました: 
+Credit: 	クレジット: 
+Download data once and use it without internet. Nothing is downloaded until you click Download on a pack.	データを一度ダウンロードすれば、インターネットなしで使えます。パックの「ダウンロード」をクリックするまで何もダウンロードされません。
+Free disk space: %s	ディスクの空き容量: %s
+Map tiles around a position	位置の周辺の地図タイル
+Radius (km)	半径 (km)
+Deepest zoom	最大ズーム
+The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	範囲が4000タイル以内に収まるよう、ズームは自動的に下げられます（OpenStreetMapのタイル利用ポリシーは大量ダウンロードを認めていません）。
+Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	地図データ (c) OpenStreetMap contributors。衛星の軌道要素: CelesTrak。空港: OurAirports（パブリックドメイン）。詳細: ヘルプ > クレジット。

@@ -2922,3 +2922,30 @@ The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not re
 Keep this projected pass to stitch with others in the Mosaic view	Сохранить этот спроецированный пролёт, чтобы склеить его с другими в виде Мозаика
 Stitch several projected passes into one map	Склеить несколько спроецированных пролётов в одну карту
 The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	Мозаика пуста. Откройте пролёт с картой, включите проекцию карты и нажмите Добавить в мозаику. Несколько пролётов склеиваются в одну карту.
+Data packs	Пакеты данных
+Data packs...	Пакеты данных...
+Download map tiles, satellite elements and airports once, to work without internet	Скачайте один раз тайлы карты, элементы спутников и аэропорты, чтобы работать без интернета
+Map tiles	Тайлы карты
+Transmitters	Передатчики
+Downloaded: 	Скачано: 
+Stopped: 	Остановлено: 
+ (start it again to continue)	 (запустите снова, чтобы продолжить)
+%ld tiles, zoom %d to %d	%ld тайлов, масштаб %d–%d
+Pack	Пакет
+Size	Размер
+Last updated	Обновлено
+Action	Действие
+not downloaded	не скачано
+Update	Обновить
+Starts the download now. Files that are already there and correct are kept.	Начинает загрузку сейчас. Уже имеющиеся корректные файлы сохраняются.
+Check	Проверить
+Checks every file against the checksum recorded at the download	Проверяет каждый файл по контрольной сумме, записанной при загрузке
+Deleted: 	Удалено: 
+Credit: 	Авторство: 
+Download data once and use it without internet. Nothing is downloaded until you click Download on a pack.	Скачайте данные один раз и пользуйтесь без интернета. Ничего не скачивается, пока вы не нажмёте «Скачать» у пакета.
+Free disk space: %s	Свободно на диске: %s
+Map tiles around a position	Тайлы карты вокруг позиции
+Radius (km)	Радиус (км)
+Deepest zoom	Макс. масштаб
+The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	Масштаб снижается автоматически, чтобы область не превышала 4000 тайлов (политика тайлов OpenStreetMap не допускает массовых загрузок).
+Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Данные карты (c) участники OpenStreetMap. Элементы спутников: CelesTrak. Аэропорты: OurAirports (общественное достояние). Подробности: Справка > Благодарности.

@@ -2925,3 +2925,30 @@ The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not re
 Keep this projected pass to stitch with others in the Mosaic view	Tartsd meg ezt a vetített átvonulást, hogy a Mozaik nézetben másokkal összefűzd
 Stitch several projected passes into one map	Több vetített átvonulás összefűzése egy térképpé
 The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	A mozaik üres. Nyiss meg egy térképes átvonulást, kapcsold be a térképvetítést, és nyomd meg a Hozzáadás a mozaikhoz gombot. Több átvonulás egy térképpé fűződik össze.
+Data packs	Adatcsomagok
+Data packs...	Adatcsomagok...
+Download map tiles, satellite elements and airports once, to work without internet	Térképcsempék, műholdpályaadatok és repterek egyszeri letöltése az internet nélküli használathoz
+Map tiles	Térképcsempék
+Transmitters	Adók
+Downloaded: 	Letöltve: 
+Stopped: 	Leállítva: 
+ (start it again to continue)	 (indítsd újra a folytatáshoz)
+%ld tiles, zoom %d to %d	%ld csempe, nagyítás %d–%d
+Pack	Csomag
+Size	Méret
+Last updated	Utolsó frissítés
+Action	Művelet
+not downloaded	nincs letöltve
+Update	Frissítés
+Starts the download now. Files that are already there and correct are kept.	Most indítja a letöltést. A már meglévő, helyes fájlok megmaradnak.
+Check	Ellenőrzés
+Checks every file against the checksum recorded at the download	Minden fájlt ellenőriz a letöltéskor rögzített ellenőrző összeggel
+Deleted: 	Törölve: 
+Credit: 	Forrásmegjelölés: 
+Download data once and use it without internet. Nothing is downloaded until you click Download on a pack.	Töltsd le az adatokat egyszer, és használd internet nélkül. Semmi sem töltődik le, amíg egy csomagnál a Letöltésre nem kattintasz.
+Free disk space: %s	Szabad lemezterület: %s
+Map tiles around a position	Térképcsempék egy pozíció körül
+Radius (km)	Sugár (km)
+Deepest zoom	Legnagyobb nagyítás
+The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	A nagyítás magától csökken, hogy a terület legfeljebb 4000 csempe legyen (az OpenStreetMap csempeszabályzata tiltja a tömeges letöltést).
+Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Térképadatok (c) az OpenStreetMap közreműködői. Műholdpályaadatok: CelesTrak. Repterek: OurAirports (közkincs). Részletek: Súgó > Köszönetnyilvánítás.

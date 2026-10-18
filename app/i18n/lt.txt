@@ -2939,3 +2939,30 @@ The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not re
 Keep this projected pass to stitch with others in the Mosaic view	Palikti šį suprojektuotą praskridimą, kad mozaikos rodinyje būtų sujungtas su kitais
 Stitch several projected passes into one map	Sujungti kelis suprojektuotus praskridimus į vieną žemėlapį
 The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	Mozaika tuščia. Atidarykite praskridimą su žemėlapiu, įjunkite žemėlapio projekciją ir spauskite Pridėti prie mozaikos. Keli praskridimai sujungiami į vieną žemėlapį.
+Data packs	Duomenų paketai
+Data packs...	Duomenų paketai...
+Download map tiles, satellite elements and airports once, to work without internet	Vieną kartą atsisiųskite žemėlapio plyteles, palydovų elementus ir oro uostus, kad galėtumėte dirbti be interneto
+Map tiles	Žemėlapio plytelės
+Transmitters	Siųstuvai
+Downloaded: 	Atsisiųsta: 
+Stopped: 	Sustabdyta: 
+ (start it again to continue)	 (paleiskite dar kartą, kad tęstumėte)
+%ld tiles, zoom %d to %d	%ld plytelių, mastelis %d–%d
+Pack	Paketas
+Size	Dydis
+Last updated	Paskutinį kartą atnaujinta
+Action	Veiksmas
+not downloaded	neatsisiųsta
+Update	Atnaujinti
+Starts the download now. Files that are already there and correct are kept.	Atsisiuntimas prasideda dabar. Jau esami ir teisingi failai paliekami.
+Check	Tikrinti
+Checks every file against the checksum recorded at the download	Tikrina kiekvieną failą pagal atsisiuntimo metu išsaugotą kontrolinę sumą
+Deleted: 	Ištrinta: 
+Credit: 	Autorystė: 
+Download data once and use it without internet. Nothing is downloaded until you click Download on a pack.	Atsisiųskite duomenis vieną kartą ir naudokite be interneto. Niekas neatsisiunčiama, kol paspaudžiate Atsisiųsti prie paketo.
+Free disk space: %s	Laisvos vietos diske: %s
+Map tiles around a position	Žemėlapio plytelės aplink vietą
+Radius (km)	Spindulys (km)
+Deepest zoom	Didžiausias mastelis
+The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	Mastelis sumažinamas pats, kad sritis neviršytų 4000 plytelių (OpenStreetMap plytelių politika neleidžia masinių atsisiuntimų).
+Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Žemėlapio duomenys (c) OpenStreetMap contributors. Palydovų elementai: CelesTrak. Oro uostai: OurAirports (viešasis turtas). Daugiau: Pagalba > Kreditai.

@@ -2939,3 +2939,30 @@ The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not re
 Keep this projected pass to stitch with others in the Mosaic view	Diesen projizierten Überflug behalten, um ihn in der Mosaik-Ansicht mit anderen zusammenzufügen
 Stitch several projected passes into one map	Mehrere projizierte Überflüge zu einer Karte zusammenfügen
 The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	Das Mosaik ist leer. Öffne einen Überflug mit Karte, schalte Kartenprojektion ein und drücke Zum Mosaik hinzufügen. Mehrere Überflüge werden zu einer Karte zusammengefügt.
+Data packs	Datenpakete
+Data packs...	Datenpakete...
+Download map tiles, satellite elements and airports once, to work without internet	Kartenkacheln, Satellitenbahndaten und Flughäfen einmal laden, um ohne Internet zu arbeiten
+Map tiles	Kartenkacheln
+Transmitters	Sender
+Downloaded: 	Geladen: 
+Stopped: 	Gestoppt: 
+ (start it again to continue)	 (erneut starten, um fortzufahren)
+%ld tiles, zoom %d to %d	%ld Kacheln, Zoom %d bis %d
+Pack	Paket
+Size	Größe
+Last updated	Zuletzt aktualisiert
+Action	Aktion
+not downloaded	nicht geladen
+Update	Aktualisieren
+Starts the download now. Files that are already there and correct are kept.	Startet den Download jetzt. Vorhandene, korrekte Dateien bleiben erhalten.
+Check	Prüfen
+Checks every file against the checksum recorded at the download	Prüft jede Datei gegen die beim Download gespeicherte Prüfsumme
+Deleted: 	Gelöscht: 
+Credit: 	Quellenangabe: 
+Download data once and use it without internet. Nothing is downloaded until you click Download on a pack.	Daten einmal laden und ohne Internet nutzen. Es wird nichts geladen, bis Sie bei einem Paket auf Laden klicken.
+Free disk space: %s	Freier Speicherplatz: %s
+Map tiles around a position	Kartenkacheln um eine Position
+Radius (km)	Radius (km)
+Deepest zoom	Tiefster Zoom
+The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	Der Zoom wird automatisch verringert, damit das Gebiet höchstens 4000 Kacheln umfasst (die OpenStreetMap-Kachelrichtlinie erlaubt keine Massendownloads).
+Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Kartendaten (c) OpenStreetMap-Mitwirkende. Satellitenbahndaten: CelesTrak. Flughäfen: OurAirports (gemeinfrei). Details: Hilfe > Danksagungen.

@@ -2939,3 +2939,30 @@ The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not re
 Keep this projected pass to stitch with others in the Mosaic view	Conserva este paso proyectado para unirlo con otros en la vista Mosaico
 Stitch several projected passes into one map	Unir varios pasos proyectados en un solo mapa
 The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	El mosaico está vacío. Abre un paso con mapa, activa la proyección del mapa y pulsa Añadir al mosaico. Varios pasos se unen en un solo mapa.
+Data packs	Paquetes de datos
+Data packs...	Paquetes de datos...
+Download map tiles, satellite elements and airports once, to work without internet	Descarga una vez teselas de mapa, elementos de satélites y aeropuertos para trabajar sin internet
+Map tiles	Teselas de mapa
+Transmitters	Transmisores
+Downloaded: 	Descargado: 
+Stopped: 	Detenido: 
+ (start it again to continue)	 (inícialo de nuevo para continuar)
+%ld tiles, zoom %d to %d	%ld teselas, zoom %d a %d
+Pack	Paquete
+Size	Tamaño
+Last updated	Última actualización
+Action	Acción
+not downloaded	no descargado
+Update	Actualizar
+Starts the download now. Files that are already there and correct are kept.	Inicia la descarga ahora. Los archivos que ya están y son correctos se conservan.
+Check	Comprobar
+Checks every file against the checksum recorded at the download	Comprueba cada archivo con la suma de verificación guardada en la descarga
+Deleted: 	Eliminado: 
+Credit: 	Crédito: 
+Download data once and use it without internet. Nothing is downloaded until you click Download on a pack.	Descarga los datos una vez y úsalos sin internet. No se descarga nada hasta que pulses Descargar en un paquete.
+Free disk space: %s	Espacio libre en disco: %s
+Map tiles around a position	Teselas de mapa alrededor de una posición
+Radius (km)	Radio (km)
+Deepest zoom	Zoom máximo
+The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	El zoom se reduce solo para que el área no pase de 4000 teselas (la política de teselas de OpenStreetMap no permite descargas masivas).
+Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Datos de mapa (c) colaboradores de OpenStreetMap. Elementos de satélites: CelesTrak. Aeropuertos: OurAirports (dominio público). Detalles: Ayuda > Créditos.

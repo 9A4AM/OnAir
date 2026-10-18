@@ -2939,3 +2939,30 @@ The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not re
 Keep this projected pass to stitch with others in the Mosaic view	Bewaar deze geprojecteerde overpass om hem in de mozaïekweergave met andere samen te voegen
 Stitch several projected passes into one map	Meerdere geprojecteerde overpasses samenvoegen tot één kaart
 The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	Het mozaïek is leeg. Open een overpass met kaart, zet kaartprojectie aan en druk op Aan mozaïek toevoegen. Meerdere overpasses worden samengevoegd tot één kaart.
+Data packs	Datapakketten
+Data packs...	Datapakketten...
+Download map tiles, satellite elements and airports once, to work without internet	Download kaarttegels, satellietelementen en luchthavens eenmalig om zonder internet te werken
+Map tiles	Kaarttegels
+Transmitters	Zenders
+Downloaded: 	Gedownload: 
+Stopped: 	Gestopt: 
+ (start it again to continue)	 (start opnieuw om door te gaan)
+%ld tiles, zoom %d to %d	%ld tegels, zoom %d tot %d
+Pack	Pakket
+Size	Grootte
+Last updated	Laatst bijgewerkt
+Action	Actie
+not downloaded	niet gedownload
+Update	Bijwerken
+Starts the download now. Files that are already there and correct are kept.	Start de download nu. Bestanden die er al zijn en kloppen blijven behouden.
+Check	Controleren
+Checks every file against the checksum recorded at the download	Controleert elk bestand met de bij het downloaden bewaarde controlesom
+Deleted: 	Verwijderd: 
+Credit: 	Bronvermelding: 
+Download data once and use it without internet. Nothing is downloaded until you click Download on a pack.	Download gegevens één keer en gebruik ze zonder internet. Er wordt niets gedownload tot je bij een pakket op Downloaden klikt.
+Free disk space: %s	Vrije schijfruimte: %s
+Map tiles around a position	Kaarttegels rond een positie
+Radius (km)	Straal (km)
+Deepest zoom	Diepste zoom
+The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	De zoom wordt vanzelf verlaagd zodat het gebied binnen 4000 tegels blijft (het tegelbeleid van OpenStreetMap staat bulkdownloads niet toe).
+Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Kaartgegevens (c) OpenStreetMap-bijdragers. Satellietelementen: CelesTrak. Luchthavens: OurAirports (publiek domein). Details: Help > Credits.

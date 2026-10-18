@@ -2939,3 +2939,30 @@ The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not re
 Keep this projected pass to stitch with others in the Mosaic view	Zachowaj ten zrzutowany przelot, aby połączyć go z innymi w widoku Mozaika
 Stitch several projected passes into one map	Połącz kilka zrzutowanych przelotów w jedną mapę
 The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	Mozaika jest pusta. Otwórz przelot z mapą, włącz projekcję mapy i naciśnij Dodaj do mozaiki. Kilka przelotów łączy się w jedną mapę.
+Data packs	Pakiety danych
+Data packs...	Pakiety danych...
+Download map tiles, satellite elements and airports once, to work without internet	Pobierz raz kafelki map, elementy satelitów i lotniska, aby pracować bez internetu
+Map tiles	Kafelki map
+Transmitters	Nadajniki
+Downloaded: 	Pobrano: 
+Stopped: 	Zatrzymano: 
+ (start it again to continue)	 (uruchom ponownie, aby kontynuować)
+%ld tiles, zoom %d to %d	%ld kafelków, zoom %d do %d
+Pack	Pakiet
+Size	Rozmiar
+Last updated	Ostatnia aktualizacja
+Action	Akcja
+not downloaded	nie pobrano
+Update	Aktualizuj
+Starts the download now. Files that are already there and correct are kept.	Rozpoczyna pobieranie teraz. Pliki, które już są i są poprawne, zostają.
+Check	Sprawdź
+Checks every file against the checksum recorded at the download	Sprawdza każdy plik z sumą kontrolną zapisaną przy pobieraniu
+Deleted: 	Usunięto: 
+Credit: 	Uznanie autorstwa: 
+Download data once and use it without internet. Nothing is downloaded until you click Download on a pack.	Pobierz dane raz i używaj bez internetu. Nic nie jest pobierane, dopóki nie klikniesz Pobierz przy pakiecie.
+Free disk space: %s	Wolne miejsce na dysku: %s
+Map tiles around a position	Kafelki map wokół pozycji
+Radius (km)	Promień (km)
+Deepest zoom	Największy zoom
+The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	Zoom jest obniżany automatycznie, aby obszar nie przekraczał 4000 kafelków (zasady kafelków OpenStreetMap nie pozwalają na masowe pobieranie).
+Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Dane map (c) współtwórcy OpenStreetMap. Elementy satelitów: CelesTrak. Lotniska: OurAirports (domena publiczna). Szczegóły: Pomoc > Podziękowania.

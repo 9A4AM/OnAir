@@ -2939,3 +2939,30 @@ The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not re
 Keep this projected pass to stitch with others in the Mosaic view	Garder ce passage projeté pour l'assembler avec d'autres dans la vue Mosaïque
 Stitch several projected passes into one map	Assembler plusieurs passages projetés en une seule carte
 The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	La mosaïque est vide. Ouvrez un passage avec carte, activez la projection de la carte et appuyez sur Ajouter à la mosaïque. Plusieurs passages sont assemblés en une seule carte.
+Data packs	Packs de données
+Data packs...	Packs de données...
+Download map tiles, satellite elements and airports once, to work without internet	Télécharger une fois les tuiles de carte, les éléments de satellites et les aéroports pour travailler sans internet
+Map tiles	Tuiles de carte
+Transmitters	Émetteurs
+Downloaded: 	Téléchargé : 
+Stopped: 	Arrêté : 
+ (start it again to continue)	 (relancez pour continuer)
+%ld tiles, zoom %d to %d	%ld tuiles, zoom %d à %d
+Pack	Pack
+Size	Taille
+Last updated	Dernière mise à jour
+Action	Action
+not downloaded	non téléchargé
+Update	Mettre à jour
+Starts the download now. Files that are already there and correct are kept.	Lance le téléchargement maintenant. Les fichiers déjà présents et corrects sont conservés.
+Check	Vérifier
+Checks every file against the checksum recorded at the download	Vérifie chaque fichier avec la somme de contrôle enregistrée au téléchargement
+Deleted: 	Supprimé : 
+Credit: 	Crédit : 
+Download data once and use it without internet. Nothing is downloaded until you click Download on a pack.	Téléchargez les données une fois et utilisez-les sans internet. Rien n'est téléchargé tant que vous ne cliquez pas sur Télécharger pour un pack.
+Free disk space: %s	Espace disque libre : %s
+Map tiles around a position	Tuiles de carte autour d'une position
+Radius (km)	Rayon (km)
+Deepest zoom	Zoom maximal
+The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	Le zoom est réduit automatiquement pour que la zone reste sous 4000 tuiles (la politique des tuiles OpenStreetMap interdit les téléchargements en masse).
+Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Données cartographiques (c) contributeurs d'OpenStreetMap. Éléments de satellites : CelesTrak. Aéroports : OurAirports (domaine public). Détails : Aide > Crédits.

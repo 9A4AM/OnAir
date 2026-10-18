@@ -2922,3 +2922,30 @@ The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not re
 Keep this projected pass to stitch with others in the Mosaic view	Manter esta passagem projetada para a juntar a outras na vista Mosaico
 Stitch several projected passes into one map	Juntar várias passagens projetadas num só mapa
 The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	O mosaico está vazio. Abra uma passagem com mapa, ative a projeção do mapa e prima Adicionar ao mosaico. Várias passagens são juntas num só mapa.
+Data packs	Pacotes de dados
+Data packs...	Pacotes de dados...
+Download map tiles, satellite elements and airports once, to work without internet	Baixe uma vez blocos de mapa, elementos de satélites e aeroportos para trabalhar sem internet
+Map tiles	Blocos de mapa
+Transmitters	Transmissores
+Downloaded: 	Baixado: 
+Stopped: 	Parado: 
+ (start it again to continue)	 (inicie de novo para continuar)
+%ld tiles, zoom %d to %d	%ld blocos, zoom %d a %d
+Pack	Pacote
+Size	Tamanho
+Last updated	Última atualização
+Action	Ação
+not downloaded	não baixado
+Update	Atualizar
+Starts the download now. Files that are already there and correct are kept.	Inicia o download agora. Os ficheiros que já existem e estão corretos são mantidos.
+Check	Verificar
+Checks every file against the checksum recorded at the download	Verifica cada ficheiro com a soma de verificação guardada no download
+Deleted: 	Eliminado: 
+Credit: 	Crédito: 
+Download data once and use it without internet. Nothing is downloaded until you click Download on a pack.	Baixe os dados uma vez e use-os sem internet. Nada é baixado até clicar em Baixar num pacote.
+Free disk space: %s	Espaço livre em disco: %s
+Map tiles around a position	Blocos de mapa em torno de uma posição
+Radius (km)	Raio (km)
+Deepest zoom	Zoom máximo
+The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	O zoom é reduzido sozinho para a área ficar em 4000 blocos no máximo (a política de blocos do OpenStreetMap não permite downloads em massa).
+Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Dados de mapa (c) colaboradores do OpenStreetMap. Elementos de satélites: CelesTrak. Aeroportos: OurAirports (domínio público). Detalhes: Ajuda > Créditos.

@@ -132,6 +132,19 @@ void startDownload() {
     });
 }
 
+}
+
+// The offline-packs window downloaded the two OurAirports CSV files: convert them like a download of this section does (called on the pack's thread)
+bool airportImportPackFiles(const std::string& apFile, const std::string& frFile, std::string& msg) {
+    if (S.job.load() == 1) { msg = "the airport section is downloading too"; return false; }
+    std::unique_ptr<dect2::AirportDb> db;
+    const bool ok = installCsv(apFile, frFile, msg, db);
+    { std::lock_guard<std::mutex> lk(S.mu); S.jobMsg = msg; S.fresh = std::move(db); }
+    S.job = ok ? 2 : 3;
+    return ok;
+}
+
+namespace {
 void pollDownload() {
     const int j = S.job.load();
     if (j != 2 && j != 3) return;

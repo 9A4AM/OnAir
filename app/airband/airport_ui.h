@@ -21,3 +21,6 @@ void airportTuneCentre(App& a, double centreHz);
 
 // "EGLL Tower" for a channel frequency that belongs to an airport near the station (or any airport when the position is not set and only one has it); "" when none is known
 std::string airportLabelFor(double freqHz);
+
+// Offline packs: the OurAirports airports.csv and airport-frequencies.csv are in place; converts them to the user's airport table (any thread).
+bool airportImportPackFiles(const std::string& apFile, const std::string& frFile, std::string& msg);
