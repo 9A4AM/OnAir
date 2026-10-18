@@ -12,6 +12,11 @@ RequestExecutionLevel admin
 !define UNINST "Software\Microsoft\Windows\CurrentVersion\Uninstall\OnAir"
 !define MUI_ICON "${ICON}"
 !define MUI_UNICON "${ICON}"
+!define MUI_WELCOMEFINISHPAGE_BITMAP "${__FILEDIR__}${SEP}welcome.bmp"
+!define MUI_UNWELCOMEFINISHPAGE_BITMAP "${__FILEDIR__}${SEP}welcome.bmp"
+!define MUI_HEADERIMAGE
+!define MUI_HEADERIMAGE_BITMAP "${__FILEDIR__}${SEP}header.bmp"
+!define MUI_HEADERIMAGE_RIGHT
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "${SRC}${SEP}LICENSE.txt"
 !define MUI_PAGE_CUSTOMFUNCTION_LEAVE DirLeave
