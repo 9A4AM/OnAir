@@ -2715,3 +2715,50 @@ TX Fs (Msps)	TX Fs (Msps)
 Requested: %.3f Msps	Prašoma: %.3f Msps
 Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	Prašomas siuntimo IQ diskretizavimo dažnis. Jei radijas bendras RX ir TX, abiejose pusėse nustatykite tą patį aparatinį dažnį. Prieš keisdami sustabdykite siuntimą.
 Manual TX sample rate must be greater than zero.	Rankiniu būdu nustatytas TX diskretizavimo dažnis turi būti didesnis už nulį.
+Data (off)	Duomenys (išjungta)
+Generic	Bendras
+AM / airband	AM / aviacija
+NFM / VHF / UHF	NFM / VHF / UHF
+WFM broadcast	WFM transliacija
+SSB / HF	SSB / HF
+CW	CW
+Audio cleanup: noise reduction, notch, leveller ...	Garso valymas: triukšmo mažinimas, notch filtras, lygintuvas ...
+Audio cleanup	Garso valymas
+Basic	Paprastas
+Settings for	Nustatymai
+Automatic (%s)	Automatinis (%s)
+A data mode: its sound is left as it is. Pick another kind above to clean it up anyway.	Duomenų režimas: jo garsas paliekamas toks, koks yra. Viršuje pasirinkite kitą tipą, jei vis tiek norite jį valyti.
+Clean the sound you hear. The decoders always get the untouched sound.	Išvalo girdimą garsą. Dekoderiai visada gauna nepakeistą garsą.
+Strength	Stiprumas
+noise reduction	triukšmo mažinimas
+auto notch	automatinis notch
+leveller	lygintuvas
+silence gate	tylos vartai
+voice emphasis	balso paryškinimas
+Nothing is on for this kind of mode. See Advanced.	Šio tipo režimui nieko neįjungta. Žr. Išplėstinis.
+Noise reduction	Triukšmo mažinimas
+Takes down the steady hiss and rumble between and under the speech. More strength cleans more and costs some naturalness.	Sumažina pastovų šnypštimą ir ūžesį tarp kalbos ir po ja. Didesnis stiprumas išvalo daugiau, bet šiek tiek sumažina natūralumą.
+Auto notch	Automatinis notch
+Finds a steady whistle, carrier or heterodyne in the sound and cuts it out narrowly, following it as it drifts. Lets go again when it stops.	Randa pastovų švilpimą, nešlį ar heterodiną garse, siaurai jį iškerpa ir seka, kai jis dreifuoja. Paleidžia, kai jis liaujasi.
+cutting %.0f Hz	kerpa %.0f Hz
+Manual notch	Rankinis notch
+Cuts one frequency out of the sound, for a tone you can see in the audio spectrum.	Iškerpa vieną dažnį iš garso, tonui, kurį matote garso spektre.
+width %.0f %%	plotis %.0f %%
+Leveller	Lygintuvas
+Brings quiet and loud stations to the same loudness, with a soft limiter against peaks.	Tylias ir garsias stotis suvienodina iki to paties garsumo, su švelniu ribotuvu nuo pikų.
+balance %.0f %%	balansas %.0f %%
+target %.0f dB	tikslas %.0f dB
+Do not boost the noise between transmissions	Nekelti triukšmo tarp perdavimų
+Silence gate	Tylos vartai
+Mutes the sound when only noise is left, like a squelch that follows the noise level by itself.	Nutildo garsą, kai lieka tik triukšmas, kaip squelch, kuris pats seka triukšmo lygį.
+opens %.0f dB above noise	atsidaro %.0f dB virš triukšmo
+muted	nutildyta
+Voice emphasis	Balso paryškinimas
+Cuts the rumble below the voice and lifts the presence, so a weak voice is easier to understand.	Nukerpa ūžesį po balsu ir pakelia ryškumą, kad silpną balsą būtų lengviau suprasti.
+De-esser	De-esser
+Softens sharp S sounds.	Sušvelnina aštrius S garsus.
+Record the cleaned sound	Įrašyti išvalytą garsą
+Record audio saves the sound as you hear it now, cleaned, instead of the raw sound.	Garso įrašymas išsaugo garsą taip, kaip dabar jį girdite, išvalytą, vietoj neapdoroto garso.
+Skip silence in the recording	Praleisti tylą įraše
+Nothing is recorded while the silence gate holds the sound off.	Nieko neįrašoma, kol tylos vartai sulaiko garsą.
+Reset to the preset	Atstatyti iš anksto nustatytus

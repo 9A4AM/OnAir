@@ -2715,3 +2715,50 @@ TX Fs (Msps)	TX Fs (Msps)
 Requested: %.3f Msps	Demandée : %.3f Msps
 Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	Fréquence d'échantillonnage IQ d'émission demandée. Pour une radio partagée entre RX et TX, réglez la même fréquence matérielle des deux côtés. Arrêtez l'émission avant de la modifier.
 Manual TX sample rate must be greater than zero.	La fréquence d'échantillonnage TX manuelle doit être supérieure à zéro.
+Data (off)	Données (désactivé)
+Generic	Général
+AM / airband	AM / aéronautique
+NFM / VHF / UHF	NFM / VHF / UHF
+WFM broadcast	Radio WFM
+SSB / HF	BLU / HF
+CW	CW
+Audio cleanup: noise reduction, notch, leveller ...	Nettoyage audio : réduction du bruit, filtre réjecteur, nivellement ...
+Audio cleanup	Nettoyage audio
+Basic	Simple
+Settings for	Réglages pour
+Automatic (%s)	Automatique (%s)
+A data mode: its sound is left as it is. Pick another kind above to clean it up anyway.	Un mode de données : son son est laissé tel quel. Choisissez un autre type ci-dessus pour le nettoyer quand même.
+Clean the sound you hear. The decoders always get the untouched sound.	Nettoie le son que vous entendez. Les décodeurs reçoivent toujours le son intact.
+Strength	Intensité
+noise reduction	réduction du bruit
+auto notch	réjecteur auto
+leveller	nivellement
+silence gate	porte de silence
+voice emphasis	mise en avant de la voix
+Nothing is on for this kind of mode. See Advanced.	Rien n'est activé pour ce type de mode. Voir Avancé.
+Noise reduction	Réduction du bruit
+Takes down the steady hiss and rumble between and under the speech. More strength cleans more and costs some naturalness.	Abaisse le souffle et le grondement constants entre et sous la parole. Plus d'intensité nettoie plus et coûte un peu de naturel.
+Auto notch	Réjecteur auto
+Finds a steady whistle, carrier or heterodyne in the sound and cuts it out narrowly, following it as it drifts. Lets go again when it stops.	Repère un sifflement, une porteuse ou un hétérodyne constant dans le son et le coupe étroitement, en le suivant quand il dérive. Le relâche quand il s'arrête.
+cutting %.0f Hz	coupe %.0f Hz
+Manual notch	Réjecteur manuel
+Cuts one frequency out of the sound, for a tone you can see in the audio spectrum.	Coupe une fréquence du son, pour une tonalité visible dans le spectre audio.
+width %.0f %%	largeur %.0f %%
+Leveller	Nivellement
+Brings quiet and loud stations to the same loudness, with a soft limiter against peaks.	Amène les stations faibles et fortes au même volume, avec un limiteur doux contre les pics.
+balance %.0f %%	équilibre %.0f %%
+target %.0f dB	cible %.0f dB
+Do not boost the noise between transmissions	Ne pas amplifier le bruit entre les émissions
+Silence gate	Porte de silence
+Mutes the sound when only noise is left, like a squelch that follows the noise level by itself.	Coupe le son quand il ne reste que du bruit, comme un squelch qui suit tout seul le niveau de bruit.
+opens %.0f dB above noise	s'ouvre %.0f dB au-dessus du bruit
+muted	coupé
+Voice emphasis	Mise en avant de la voix
+Cuts the rumble below the voice and lifts the presence, so a weak voice is easier to understand.	Coupe le grondement sous la voix et relève la présence, pour mieux comprendre une voix faible.
+De-esser	De-esser
+Softens sharp S sounds.	Adoucit les sons S aigus.
+Record the cleaned sound	Enregistrer le son nettoyé
+Record audio saves the sound as you hear it now, cleaned, instead of the raw sound.	Enregistrer l'audio sauvegarde le son tel que vous l'entendez maintenant, nettoyé, au lieu du son brut.
+Skip silence in the recording	Sauter le silence dans l'enregistrement
+Nothing is recorded while the silence gate holds the sound off.	Rien n'est enregistré tant que la porte de silence retient le son.
+Reset to the preset	Revenir au préréglage

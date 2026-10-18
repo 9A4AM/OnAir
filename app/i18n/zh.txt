@@ -2715,3 +2715,50 @@ TX Fs (Msps)	TX Fs（Msps）
 Requested: %.3f Msps	请求速率：%.3f Msps
 Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	请求的发射 IQ 采样率。共用同一设备收发时，请将两侧的硬件采样率设为相同值。修改前请先停止发射。
 Manual TX sample rate must be greater than zero.	手动发射采样率必须大于零。
+Data (off)	数据（关）
+Generic	通用
+AM / airband	AM / 航空
+NFM / VHF / UHF	NFM / VHF / UHF
+WFM broadcast	WFM 广播
+SSB / HF	SSB / HF
+CW	CW
+Audio cleanup: noise reduction, notch, leveller ...	音频清理：降噪、陷波、电平均衡 ...
+Audio cleanup	音频清理
+Basic	基本
+Settings for	设置对象
+Automatic (%s)	自动 (%s)
+A data mode: its sound is left as it is. Pick another kind above to clean it up anyway.	这是数据模式：其声音保持原样。如仍要清理，请在上方选择其他类型。
+Clean the sound you hear. The decoders always get the untouched sound.	清理你听到的声音。解码器始终收到未处理的声音。
+Strength	强度
+noise reduction	降噪
+auto notch	自动陷波
+leveller	电平均衡
+silence gate	静音门
+voice emphasis	人声增强
+Nothing is on for this kind of mode. See Advanced.	此类模式未开启任何功能。请参见“高级”。
+Noise reduction	降噪
+Takes down the steady hiss and rumble between and under the speech. More strength cleans more and costs some naturalness.	降低语音之间和语音之下持续的嘶声和低频噪声。强度越高越干净，但自然度会略有下降。
+Auto notch	自动陷波
+Finds a steady whistle, carrier or heterodyne in the sound and cuts it out narrowly, following it as it drifts. Lets go again when it stops.	在声音中找出稳定的啸叫、载波或外差音，窄带切除，并在其漂移时跟随。停止后即释放。
+cutting %.0f Hz	正在切除 %.0f Hz
+Manual notch	手动陷波
+Cuts one frequency out of the sound, for a tone you can see in the audio spectrum.	从声音中切除一个频率，适用于在音频频谱中看到的单音。
+width %.0f %%	宽度 %.0f %%
+Leveller	电平均衡
+Brings quiet and loud stations to the same loudness, with a soft limiter against peaks.	把弱台和强台调到相同响度，并用柔和限幅器抑制峰值。
+balance %.0f %%	平衡 %.0f %%
+target %.0f dB	目标 %.0f dB
+Do not boost the noise between transmissions	不要放大发射间隙的噪声
+Silence gate	静音门
+Mutes the sound when only noise is left, like a squelch that follows the noise level by itself.	只剩噪声时将声音静音，类似能自动跟随噪声电平的静噪。
+opens %.0f dB above noise	高于噪声 %.0f dB 时打开
+muted	已静音
+Voice emphasis	人声增强
+Cuts the rumble below the voice and lifts the presence, so a weak voice is easier to understand.	切除人声下方的低频噪声并提升清晰度，让微弱的声音更容易听懂。
+De-esser	去齿音
+Softens sharp S sounds.	柔化尖锐的 S 音。
+Record the cleaned sound	录制清理后的声音
+Record audio saves the sound as you hear it now, cleaned, instead of the raw sound.	录制音频会保存你现在听到的、清理后的声音，而不是原始声音。
+Skip silence in the recording	录音时跳过静音
+Nothing is recorded while the silence gate holds the sound off.	静音门挡住声音时不会录制任何内容。
+Reset to the preset	恢复为预设

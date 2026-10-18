@@ -3,6 +3,7 @@
 #pragma once
 #include "dect2/audio/audioout.h"
 #include "dect2/audio/audiolevel.h"
+#include "dect2/audio/audio_cleanup.h"
 #include <atomic>
 #include <string>
 #include <vector>
@@ -20,6 +21,8 @@ struct AudioOut::Impl {
     std::atomic<uint64_t> written{0}, played{0};
     std::atomic<float> volume{1.f};   // the slider position 0..1; volumeTaper() makes the gain
     AudioLeveler leveler;             // render thread only
+    AudioCleanup cleanup;             // the writer's thread (write()), prepared in start(); follows AudioCleanupConfig::global()
+    float cleanBuf[AudioCleanup::kMaxChunk * 2];
     std::atomic<bool> muted{false};
     std::atomic<int> underruns{0};
     std::atomic<int> startThreshold{14400};

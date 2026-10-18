@@ -2701,3 +2701,50 @@ TX Fs (Msps)	TX Fs (Msps)
 Requested: %.3f Msps	Kért érték: %.3f Msps
 Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	A kért adási IQ mintavételi frekvencia. Közös RX/TX rádiónál mindkét oldalon ugyanazt a hardveres értéket állítsa be. Módosítás előtt állítsa le az adást.
 Manual TX sample rate must be greater than zero.	A kézi TX mintavételi frekvenciának nullánál nagyobbnak kell lennie.
+Data (off)	Adat (ki)
+Generic	Általános
+AM / airband	AM / légiforgalmi
+NFM / VHF / UHF	NFM / VHF / UHF
+WFM broadcast	WFM műsorszórás
+SSB / HF	SSB / HF
+CW	CW
+Audio cleanup: noise reduction, notch, leveller ...	Hangtisztítás: zajcsökkentés, rovátkaszűrő, szintkiegyenlítő ...
+Audio cleanup	Hangtisztítás
+Basic	Alap
+Settings for	Beállítások ehhez:
+Automatic (%s)	Automatikus (%s)
+A data mode: its sound is left as it is. Pick another kind above to clean it up anyway.	Adatüzemmód: a hangját változatlanul hagyja. Válassz fent másik típust, ha mégis tisztítani szeretnéd.
+Clean the sound you hear. The decoders always get the untouched sound.	Megtisztítja a hallott hangot. A dekóderek mindig az érintetlen hangot kapják.
+Strength	Erősség
+noise reduction	zajcsökkentés
+auto notch	automatikus rovátka
+leveller	szintkiegyenlítő
+silence gate	csendkapu
+voice emphasis	hangkiemelés
+Nothing is on for this kind of mode. See Advanced.	Ennél az üzemmódtípusnál semmi sincs bekapcsolva. Lásd: Haladó.
+Noise reduction	Zajcsökkentés
+Takes down the steady hiss and rumble between and under the speech. More strength cleans more and costs some naturalness.	Csökkenti az állandó sistergést és dübörgést a beszéd között és alatt. Nagyobb erősség jobban tisztít, de kicsit természetellenesebb.
+Auto notch	Automatikus rovátka
+Finds a steady whistle, carrier or heterodyne in the sound and cuts it out narrowly, following it as it drifts. Lets go again when it stops.	Megtalálja az állandó sípolást, vivőt vagy lebegést a hangban, keskenyen kivágja, és követi, ha elcsúszik. Elengedi, ha megszűnik.
+cutting %.0f Hz	vág: %.0f Hz
+Manual notch	Kézi rovátka
+Cuts one frequency out of the sound, for a tone you can see in the audio spectrum.	Egy frekvenciát vág ki a hangból, egy hangszínképen látható hanghoz.
+width %.0f %%	szélesség %.0f %%
+Leveller	Szintkiegyenlítő
+Brings quiet and loud stations to the same loudness, with a soft limiter against peaks.	A halk és hangos állomásokat azonos hangerőre hozza, lágy hangkorlátozóval a csúcsok ellen.
+balance %.0f %%	egyensúly %.0f %%
+target %.0f dB	cél %.0f dB
+Do not boost the noise between transmissions	Ne erősítse a zajt az adások között
+Silence gate	Csendkapu
+Mutes the sound when only noise is left, like a squelch that follows the noise level by itself.	Elnémítja a hangot, ha csak zaj marad, mint egy zajzár, amely magától követi a zajszintet.
+opens %.0f dB above noise	nyit: %.0f dB-lel a zaj fölött
+muted	némítva
+Voice emphasis	Hangkiemelés
+Cuts the rumble below the voice and lifts the presence, so a weak voice is easier to understand.	Levágja a dübörgést a hang alatt, és emeli a jelenlétet, hogy a gyenge hang könnyebben érthető legyen.
+De-esser	De-esser
+Softens sharp S sounds.	Lágyítja az éles S hangokat.
+Record the cleaned sound	A megtisztított hang rögzítése
+Record audio saves the sound as you hear it now, cleaned, instead of the raw sound.	A Hang rögzítése úgy menti a hangot, ahogy most hallod, megtisztítva, a nyers hang helyett.
+Skip silence in the recording	Csend kihagyása a felvételből
+Nothing is recorded while the silence gate holds the sound off.	Semmi sem kerül rögzítésre, amíg a csendkapu visszatartja a hangot.
+Reset to the preset	Visszaállítás az előbeállításra

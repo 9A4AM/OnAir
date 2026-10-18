@@ -2698,3 +2698,50 @@ TX Fs (Msps)	TX Fs (Msps)
 Requested: %.3f Msps	Запрошено: %.3f Msps
 Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	Запрошенная частота дискретизации IQ для передачи. Если радио используется совместно для RX и TX, задайте одинаковую аппаратную частоту с обеих сторон. Перед изменением остановите передачу.
 Manual TX sample rate must be greater than zero.	Частота дискретизации TX, заданная вручную, должна быть больше нуля.
+Data (off)	Данные (выкл.)
+Generic	Общий
+AM / airband	AM / авиасвязь
+NFM / VHF / UHF	NFM / УКВ / ДМВ
+WFM broadcast	WFM вещание
+SSB / HF	SSB / КВ
+CW	CW
+Audio cleanup: noise reduction, notch, leveller ...	Очистка звука: шумоподавление, режекторный фильтр, выравнивание ...
+Audio cleanup	Очистка звука
+Basic	Простой
+Settings for	Настройки для
+Automatic (%s)	Автоматически (%s)
+A data mode: its sound is left as it is. Pick another kind above to clean it up anyway.	Режим данных: его звук остаётся как есть. Выберите выше другой тип, чтобы всё равно очистить его.
+Clean the sound you hear. The decoders always get the untouched sound.	Очищает звук, который вы слышите. Декодеры всегда получают нетронутый звук.
+Strength	Сила
+noise reduction	шумоподавление
+auto notch	авто-режектор
+leveller	выравнивание
+silence gate	шумовой порог тишины
+voice emphasis	усиление голоса
+Nothing is on for this kind of mode. See Advanced.	Для этого типа режима ничего не включено. См. «Расширенный».
+Noise reduction	Шумоподавление
+Takes down the steady hiss and rumble between and under the speech. More strength cleans more and costs some naturalness.	Уменьшает постоянное шипение и гул между речью и под ней. Большая сила чистит сильнее, но немного снижает естественность.
+Auto notch	Авто-режектор
+Finds a steady whistle, carrier or heterodyne in the sound and cuts it out narrowly, following it as it drifts. Lets go again when it stops.	Находит в звуке постоянный свист, несущую или гетеродин, узко вырезает его и следует за ним, когда он дрейфует. Отпускает, когда он прекращается.
+cutting %.0f Hz	вырезает %.0f Гц
+Manual notch	Ручной режектор
+Cuts one frequency out of the sound, for a tone you can see in the audio spectrum.	Вырезает одну частоту из звука, для тона, который виден в спектре звука.
+width %.0f %%	ширина %.0f %%
+Leveller	Выравнивание
+Brings quiet and loud stations to the same loudness, with a soft limiter against peaks.	Приводит тихие и громкие станции к одной громкости, с мягким ограничителем пиков.
+balance %.0f %%	баланс %.0f %%
+target %.0f dB	цель %.0f дБ
+Do not boost the noise between transmissions	Не усиливать шум между передачами
+Silence gate	Шумовой порог тишины
+Mutes the sound when only noise is left, like a squelch that follows the noise level by itself.	Отключает звук, когда остаётся только шум, как шумоподавитель (сквелч), сам следящий за уровнем шума.
+opens %.0f dB above noise	открывается на %.0f дБ выше шума
+muted	отключено
+Voice emphasis	Усиление голоса
+Cuts the rumble below the voice and lifts the presence, so a weak voice is easier to understand.	Срезает гул ниже голоса и поднимает разборчивость, чтобы слабый голос было легче понять.
+De-esser	Де-эссер
+Softens sharp S sounds.	Смягчает резкие звуки С.
+Record the cleaned sound	Записывать очищенный звук
+Record audio saves the sound as you hear it now, cleaned, instead of the raw sound.	Запись звука сохраняет звук таким, как вы слышите его сейчас, очищенным, вместо исходного.
+Skip silence in the recording	Пропускать тишину в записи
+Nothing is recorded while the silence gate holds the sound off.	Ничего не записывается, пока порог тишины удерживает звук.
+Reset to the preset	Вернуть предустановку

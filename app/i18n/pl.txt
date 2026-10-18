@@ -2715,3 +2715,50 @@ TX Fs (Msps)	TX Fs (Msps)
 Requested: %.3f Msps	Żądana: %.3f Msps
 Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	Żądana częstotliwość próbkowania IQ nadawania. Przy radiu współdzielonym przez RX i TX ustaw tę samą częstotliwość sprzętową po obu stronach. Przed zmianą zatrzymaj nadawanie.
 Manual TX sample rate must be greater than zero.	Ręcznie ustawiona częstotliwość próbkowania TX musi być większa od zera.
+Data (off)	Dane (wył.)
+Generic	Ogólny
+AM / airband	AM / lotnicze
+NFM / VHF / UHF	NFM / VHF / UHF
+WFM broadcast	WFM radiofonia
+SSB / HF	SSB / HF
+CW	CW
+Audio cleanup: noise reduction, notch, leveller ...	Czyszczenie dźwięku: redukcja szumu, filtr notch, wyrównywanie ...
+Audio cleanup	Czyszczenie dźwięku
+Basic	Podstawowy
+Settings for	Ustawienia dla
+Automatic (%s)	Automatycznie (%s)
+A data mode: its sound is left as it is. Pick another kind above to clean it up anyway.	Tryb danych: jego dźwięk zostaje bez zmian. Wybierz wyżej inny rodzaj, aby mimo to go oczyścić.
+Clean the sound you hear. The decoders always get the untouched sound.	Oczyszcza dźwięk, który słyszysz. Dekodery zawsze dostają dźwięk nietknięty.
+Strength	Siła
+noise reduction	redukcja szumu
+auto notch	automatyczny notch
+leveller	wyrównywanie
+silence gate	bramka ciszy
+voice emphasis	uwydatnienie głosu
+Nothing is on for this kind of mode. See Advanced.	Dla tego rodzaju trybu nic nie jest włączone. Zobacz Zaawansowane.
+Noise reduction	Redukcja szumu
+Takes down the steady hiss and rumble between and under the speech. More strength cleans more and costs some naturalness.	Zmniejsza stały szum i dudnienie między mową i pod nią. Większa siła czyści bardziej, ale kosztuje trochę naturalności.
+Auto notch	Automatyczny notch
+Finds a steady whistle, carrier or heterodyne in the sound and cuts it out narrowly, following it as it drifts. Lets go again when it stops.	Znajduje w dźwięku stały gwizd, nośną lub heterodynę, wycina ją wąsko i podąża za nią, gdy dryfuje. Puszcza, gdy ustanie.
+cutting %.0f Hz	wycina %.0f Hz
+Manual notch	Ręczny notch
+Cuts one frequency out of the sound, for a tone you can see in the audio spectrum.	Wycina jedną częstotliwość z dźwięku, dla tonu widocznego w widmie audio.
+width %.0f %%	szerokość %.0f %%
+Leveller	Wyrównywanie
+Brings quiet and loud stations to the same loudness, with a soft limiter against peaks.	Sprowadza ciche i głośne stacje do tej samej głośności, z miękkim limiterem przeciw szczytom.
+balance %.0f %%	balans %.0f %%
+target %.0f dB	cel %.0f dB
+Do not boost the noise between transmissions	Nie podbijaj szumu między transmisjami
+Silence gate	Bramka ciszy
+Mutes the sound when only noise is left, like a squelch that follows the noise level by itself.	Wycisza dźwięk, gdy zostaje sam szum, jak squelch, który sam podąża za poziomem szumu.
+opens %.0f dB above noise	otwiera %.0f dB nad szumem
+muted	wyciszono
+Voice emphasis	Uwydatnienie głosu
+Cuts the rumble below the voice and lifts the presence, so a weak voice is easier to understand.	Wycina dudnienie pod głosem i podnosi przejrzystość, aby słaby głos był łatwiej zrozumiały.
+De-esser	De-esser
+Softens sharp S sounds.	Łagodzi ostre głoski S.
+Record the cleaned sound	Nagrywaj oczyszczony dźwięk
+Record audio saves the sound as you hear it now, cleaned, instead of the raw sound.	Nagrywanie dźwięku zapisuje dźwięk tak, jak go teraz słyszysz, oczyszczony, zamiast surowego.
+Skip silence in the recording	Pomijaj ciszę w nagraniu
+Nothing is recorded while the silence gate holds the sound off.	Nic nie jest nagrywane, dopóki bramka ciszy wstrzymuje dźwięk.
+Reset to the preset	Przywróć ustawienie wstępne
