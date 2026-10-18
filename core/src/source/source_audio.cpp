@@ -1,5 +1,6 @@
 // Sound-card IQ source: WebSDR, VAC, or a radio's speaker/line into the computer (not a replacement for an SDR when you need MHz of bandwidth).
 // Reuses AudioIn (CoreAudio / miniaudio). The microphone is never opened until start().
+#include "dect2/common/thread_name.h"
 #include "dect2/audio/audioin.h"
 #include "dect2/source/audio_if.h"
 #include "dect2/dsp/resampler.h"
@@ -76,7 +77,7 @@ public:
         rate_ = baseRate_ * factor_;
         ring_ = &ring;
         run_ = true;
-        th_ = std::thread([this] { loop(); });
+        th_ = dect2::namedThread("onair-srcaud", [this] { loop(); });
         return true;
     }
 

@@ -1,4 +1,5 @@
 // Live transcripts in the app. See transcribe_app.h and docs/TRANSCRIBE.md.
+#include "dect2/common/thread_name.h"
 #include "transcribe_app.h"
 #include "app.h"
 #include "adsb/adsb_acars.h"
@@ -179,7 +180,7 @@ void startLoad(const std::string& file) {
     gLoadingFile = file;
     const std::string path = modelsDir() + "/" + file;
     const int workers = 1;
-    gLoadTh = std::thread([path, workers] {
+    gLoadTh = dect2::namedThread("onair-asrload", [path, workers] {
         std::string err;
         auto b = dect2::makeWhisperBackend(path, workers, &err);
         std::lock_guard<std::mutex> lk(gMu);

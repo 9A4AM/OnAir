@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/tv/demo_ts.h"
 #include "dect2/audio/videoin.h"
 extern "C" {
@@ -309,7 +310,7 @@ struct LiveMux {
             if (!cams[i]->start(cam ? VideoIn::Camera : VideoIn::File, cam ? progs[i].camera : progs[i].file, err))
                 cams[i].reset();
         }
-        th = std::thread([this, id, progs] {
+        th = dect2::namedThread("onair-demots", [this, id, progs] {
             AVFormatContext* oc = nullptr;
             if (avformat_alloc_output_context2(&oc, nullptr, "mpegts", nullptr) < 0) return;
             unsigned char* iob = (unsigned char*)av_malloc(4096);

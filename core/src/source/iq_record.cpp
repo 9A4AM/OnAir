@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/common/u8file.h"
 #include "dect2/source/iq_record.h"
 #include "dect2/files/files_proto.h"
@@ -106,7 +107,7 @@ bool IqRecorder::start(const std::string& path, FileFormat fmt, double rateHz, s
         writeSigmf(false);
     }
     active_ = true;
-    th_ = std::thread([this] { writerLoop(); });
+    th_ = dect2::namedThread("onair-iqrec", [this] { writerLoop(); });
     return true;
 }
 

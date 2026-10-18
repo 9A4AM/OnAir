@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/transcribe/transcriber.h"
 #include <algorithm>
 #include <cctype>
@@ -181,7 +182,7 @@ void Transcriber::startWorkers() {
     std::lock_guard<std::mutex> lk(mu_);
     if (sync_ || !th_.empty()) return;
     stop_ = false;
-    for (int i = 0; i < cfg_.workers; i++) th_.emplace_back([this] { workerLoop(); });
+    for (int i = 0; i < cfg_.workers; i++) th_.emplace_back(dect2::namedThread("onair-asr", [this] { workerLoop(); }));
 }
 
 void Transcriber::stopWorkers() {

@@ -1,4 +1,5 @@
 // The actions of the Automations inside OnAir: notification, sound (respects Mute), recording, tuning, memories, screenshot, webhook, run.
+#include "dect2/common/thread_name.h"
 #include "../app.h"
 #include "../memory/memory_options.h"
 #include "automation_internal.h"
@@ -223,7 +224,7 @@ public:
             if (u == p.end() || b == p.end()) { detail = "no address"; return false; }
             {
                 std::lock_guard<std::mutex> lk(gHookMu);
-                if (!gHookTh.joinable()) gHookTh = std::thread(hookWorker);
+                if (!gHookTh.joinable()) gHookTh = dect2::namedThread("onair-hook", hookWorker);
                 if (gHookQ.size() >= 50) { detail = "too many webhooks waiting"; return false; }
                 gHookQ.push_back({u->second, b->second});
             }

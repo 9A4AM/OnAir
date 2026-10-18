@@ -13,6 +13,7 @@
 //   VHF (the R828D tuner, from half the clock up to 1.75 GHz): the tuner puts the channel on an IF of 4.57 MHz, spectrum inverted
 //   (SDDC's "sideband"), so the DDC is centred on the IF and its output conjugated.
 // - The firmware starts the sample stream with STARTFX3 after the host has queued its bulk transfers, and stops it with STOPFX3.
+#include "dect2/common/thread_name.h"
 #include "native_common.h"
 #include "native_realddc.h"
 #include "rx888_usb.h"
@@ -589,6 +590,7 @@ protected:
         bool done = false;
         size_t dropped = 0;
         std::thread worker([&] {
+            dect2::setThreadName("onair-rx888");
             for (;;) {
                 std::vector<int16_t> b;
                 {

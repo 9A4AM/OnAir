@@ -1,6 +1,7 @@
 // Server > Go live: opt-in "Live rooms". Creates a room on the rooms server, then POSTs a small batch every 2 s:
 // one waterfall line a second (512 bins, one byte each), and decoded ACARS text only when the room was started with that box ticked.
 // Audio is not sent: the repo has no Opus encoder. The host token goes in the JSON body, never in a URL. The room page shows the viewers.
+#include "dect2/common/thread_name.h"
 #include "rooms.h"
 #include "../app.h"
 #include "../map/pos_predict.h"
@@ -147,7 +148,7 @@ void startLive() {
     gStop = false;
     gErr = 0;
     gPhase = kStarting;
-    gTh = std::thread(worker);
+    gTh = dect2::namedThread("onair-rooms", worker);
 }
 
 void curMode(App& a, std::string& mode, double& freq) {

@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/tv/ts_record.h"
 #include "dect2/common/u8file.h"
 #include <chrono>
@@ -10,7 +11,7 @@ bool TsWriter::open(const std::string& path, size_t maxQueueBytes) {
     FILE* f = u8fopen(path, "wb");
     if (!f) return false;
     { std::lock_guard<std::mutex> lk(mu_); f_ = f; q_.clear(); queued_ = 0; max_ = maxQueueBytes; stop_ = false; failed_ = false; open_ = true; written_ = 0; dropped_ = 0; path_ = path; }
-    th_ = std::thread([this] { run(); });
+    th_ = dect2::namedThread("onair-tsrec", [this] { run(); });
     return true;
 }
 void TsWriter::close() {

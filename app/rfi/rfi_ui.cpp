@@ -2,6 +2,7 @@
 // Monitor: repeated sweeps against a learned baseline, alerts for new spurs and a rising noise floor, with a guess of the kind of source.
 // Walk: a loud / quiet meter while you carry the radio around, with a log of readings by time and position (docs/rfi-hunter.md).
 // The sweeps come from the radio through the same sweep engine as the Sweep scanner, or from a built-in simulator (demo). The analysis is in core/src/rfi.
+#include "dect2/common/thread_name.h"
 #include "../app.h"
 #include "../ui/scale.h"
 #include "dect2/rfi/rfi.h"
@@ -103,7 +104,7 @@ void startGps() {
     stopGps();
     if (S.gpsMode != GpsNmea || !S.nmeaPath[0]) return;
     S.gcancel = false; S.grun = true; S.gpsMsg = tr("Waiting for a position fix.");
-    S.gth = std::thread(gpsWorker, std::string(S.nmeaPath));
+    S.gth = dect2::namedThread("onair-rfigps", gpsWorker, std::string(S.nmeaPath));
 }
 bool position(double& lat, double& lon) {
     if (S.gpsMode == GpsReceiver) {
@@ -170,7 +171,7 @@ void startSweep(App& a) {
     c.startHz = S.fromMHz * 1e6; c.stopHz = std::max(S.toMHz, S.fromMHz + 0.01f) * 1e6; c.binHz = S.binKHz * 1e3; c.dwellSec = S.dwellMs / 1e3;
     c.thresholdDb = S.thrDb; c.minIntervalSec = S.everySec;
     S.cancel = false; S.running = true;
-    S.th = std::thread(worker, dev, t, c);
+    S.th = dect2::namedThread("onair-rfi", worker, dev, t, c);
 }
 
 // the demo: three broadcast carriers, then a switching supply, an LED lamp and an oscillator leak come and go (simulated time runs 10 s per sweep)

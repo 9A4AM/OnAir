@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/isdbt/isdbt_demod.h"
 #include "dect2/dvbt/dvbt_fec.h"
 #include "dect2/t2/t2ofdm.h"
@@ -297,7 +298,7 @@ struct Demod::Impl {
         if (!threaded) { runJob(j); produced++; consumed++; return; }
         {
             std::lock_guard<std::mutex> g(qm);
-            if (!worker.joinable()) worker = std::thread([this] { workerLoop(); });
+            if (!worker.joinable()) worker = dect2::namedThread("onair-isdbt", [this] { workerLoop(); });
             produced++;
         }
         cvWork.notify_one();

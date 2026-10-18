@@ -2,6 +2,7 @@
 // the issue filled in) and the "Shared data" view (a country's channels by city, which of them the last scan found). Nothing is sent by the
 // app; downloads happen only after a yes. The files live in github.com/adswill/OnAir-channels; DECT2_CHANNELDB_URL replaces the address
 // (a folder or file:// address works too, for tests). Core part: core/src/channels/channel_db.cpp.
+#include "dect2/common/thread_name.h"
 #include "../app.h"
 #include "dect2/channels/channel_db.h"
 #include "dect2/engine/updater.h"
@@ -108,7 +109,7 @@ JobP fetchText(const std::string& rel, bool refresh) {
             cache = dir + "/" + flat;
         }
     }
-    std::thread([j, rel, base, cache, local, refresh]() {
+    dect2::namedThread("onair-scandb", [j, rel, base, cache, local, refresh]() {
         auto readAll = [](const std::string& p, std::string& out) {
             std::ifstream f(u8(p), std::ios::binary); if (!f) return false;
             std::stringstream ss; ss << f.rdbuf(); out = ss.str(); return true;

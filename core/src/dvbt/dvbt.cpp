@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/fec/fec_proto.h"
 #include "dect2/dvbt/dvbt.h"
 #include <algorithm>
@@ -673,7 +674,7 @@ void Viterbi::decode(const std::vector<int8_t>& soft, std::vector<uint8_t>& out,
     else {
         std::atomic<size_t> next{0};
         std::vector<std::thread> ts;
-        for (int t = 0; t < std::min<size_t>(threads, chunks); t++) ts.emplace_back([&] { for (size_t c; (c = next++) < chunks;) work(c); });
+        for (int t = 0; t < std::min<size_t>(threads, chunks); t++) ts.emplace_back(dect2::namedThread("onair-dvbt-w", [&] { for (size_t c; (c = next++) < chunks;) work(c); }));
         for (auto& t : ts) t.join();
     }
     if (metric) { long s = 0; for (long m : metrics) s += m; *metric = s; }

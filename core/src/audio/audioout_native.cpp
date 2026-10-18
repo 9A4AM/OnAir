@@ -4,6 +4,7 @@
 //
 // Both backends run one thread that asks AudioOut::Impl::render() for a short block of audio and hands it to the device. The thread has a
 // high priority: if it is late, the sound breaks up.
+#include "dect2/common/thread_name.h"
 #include "audioout_impl.h"
 #include "dect2/common/platform.h"
 #include <atomic>
@@ -181,7 +182,7 @@ bool audioBackendStart(AudioOut::Impl* I, int rate) {
     const char* want = getenv("DECT2_AUDIO");
     if (!(want && !strcmp(want, "miniaudio")) && I->device.empty()) {   // a named device goes through miniaudio
         auto* b = new NativeBackend;
-        b->th = std::thread(threadMain, b, I, rate);
+        b->th = dect2::namedThread("onair-aud", threadMain, b, I, rate);
         for (int i = 0; i < 300 && !b->opened; i++) std::this_thread::sleep_for(std::chrono::milliseconds(10));   // the device opens within moments
         if (b->opened && b->ok) { I->backend = b; I->backendKind = 1; return true; }
         b->stop = true;

@@ -1,4 +1,5 @@
 // GSM-R receiver (gsmr_rx.h): blocks of input, 200 kHz carriers found in the spectrum, base stations synchronised and their BCCH decoded.
+#include "dect2/common/thread_name.h"
 #include "dect2/gsmr/gsmr_rx.h"
 #include "dect2/results/results_io.h"
 #include "dect2/cell/cell_dsp.h"
@@ -113,7 +114,7 @@ struct GsmrReceiver::Impl {
     // results (under mu)
     GsmrTelemetry tel, pub;
 
-    Impl() { th = std::thread([this] { run(); }); }
+    Impl() { th = dect2::namedThread("onair-gsmr", [this] { run(); }); }
     ~Impl() {
         { std::lock_guard<std::mutex> lk(mu); stop = true; }
         cv.notify_all();

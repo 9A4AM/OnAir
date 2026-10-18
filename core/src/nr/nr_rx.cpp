@@ -1,4 +1,5 @@
 // 5G NR cells receiver (nr_rx.h): blocks of input, the sync raster points inside them searched and the PBCH of every SSB decoded.
+#include "dect2/common/thread_name.h"
 #include "dect2/nr/nr_rx.h"
 #include "dect2/results/results_io.h"
 #include "dect2/nr/nr_phy.h"
@@ -60,7 +61,7 @@ struct NrReceiver::Impl {
     // results (under mu)
     NrTelemetry tel, pub;
 
-    Impl() { th = std::thread([this] { run(); }); }
+    Impl() { th = dect2::namedThread("onair-nr", [this] { run(); }); }
     ~Impl() {
         { std::lock_guard<std::mutex> lk(mu); stop = true; }
         cv.notify_all();

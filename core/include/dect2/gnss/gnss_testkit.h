@@ -1,5 +1,6 @@
 // Helpers for the GNSS tests: run the simulated sky through the receiver in chunks, with the impairments of a radio, and compare what comes out with the truth.
 #pragma once
+#include "dect2/common/thread_name.h"
 #include "gnss_rx.h"
 #include "gnss_sim.h"
 #include <chrono>
@@ -88,6 +89,7 @@ inline Run run(GnssSim& sim, const Options& o) {
     std::mutex mu;
     std::condition_variable cv;
     std::thread maker([&] {
+        dect2::setThreadName("onair-gnssmk");
         for (size_t done = 0; done < total; done += o.chunk) {
             Chunk c;
             c.n = std::min(o.chunk, total - done);

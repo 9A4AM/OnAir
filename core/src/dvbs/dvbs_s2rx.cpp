@@ -1,4 +1,5 @@
 // DVB-S2 frame receiver, see dvbs_s2rx.h.
+#include "dect2/common/thread_name.h"
 #include "dvbs_s2rx.h"
 #include "dvbs_vlsnr.h"
 #include "dvbs_s2refine.h"
@@ -985,7 +986,7 @@ struct S2Rx::Impl {
         stopFlag = false;
         const unsigned hw = std::max(1u, std::thread::hardware_concurrency());
         const unsigned n = std::max(1u, std::min(6u, hw > 2 ? hw - 2 : 1u));
-        for (unsigned i = 0; i < n; i++) workers.emplace_back([this] { workerLoop(); });
+        for (unsigned i = 0; i < n; i++) workers.emplace_back(dect2::namedThread("onair-dvbs-w", [this] { workerLoop(); }));
         maxQueue = 2 * n + 2;
     }
     void stopWorkers() {

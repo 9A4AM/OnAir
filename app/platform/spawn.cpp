@@ -1,5 +1,6 @@
 // Starting programs and desktop notifications, for the Automations. No shell is used anywhere: a value from a decoded message can be any text,
 // so every argument is passed to the program as one argument.
+#include "dect2/common/thread_name.h"
 #include "platform.h"
 #include <string>
 #include <vector>
@@ -82,7 +83,7 @@ bool spawnProgram(const std::string& program, const std::vector<std::string>& ar
     pid_t pid;
     const int rc = posix_spawnp(&pid, program.c_str(), nullptr, nullptr, argv.data(), environ);
     if (rc != 0) { err = "cannot start " + program; return false; }
-    std::thread([pid] { int st = 0; waitpid(pid, &st, 0); }).detach();   // reaped when it ends, nobody waits for it
+    dect2::namedThread("onair-reap", [pid] { int st = 0; waitpid(pid, &st, 0); }).detach();   // reaped when it ends, nobody waits for it
     return true;
 }
 

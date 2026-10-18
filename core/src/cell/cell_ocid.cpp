@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/cell/cell_ocid.h"
 #include <algorithm>
 #include <chrono>
@@ -136,7 +137,7 @@ bool OcidCache::save(const std::string& path) const {
 
 OcidLookup::OcidLookup(Fetch fetch, std::string cachePath) : fetch_(std::move(fetch)), path_(std::move(cachePath)) {
     if (!path_.empty()) cache_.load(path_);
-    th_ = std::thread([this] { run(); });
+    th_ = dect2::namedThread("onair-ocid", [this] { run(); });
 }
 
 OcidLookup::~OcidLookup() {

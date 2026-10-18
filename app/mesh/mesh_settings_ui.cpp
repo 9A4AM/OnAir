@@ -1,6 +1,7 @@
 // Mesh (LoRa) settings: band plan and region, protocols and presets, channel keys, the custom LoRa setting of each entry,
 // and the MeshCore preset list (with its optional refresh from the internet).
 // Split from mesh_ui.cpp; the shared state is declared in mesh_internal.h.
+#include "dect2/common/thread_name.h"
 #include "mesh_internal.h"
 #include <algorithm>
 #include <cmath>
@@ -101,7 +102,7 @@ void mcRefresh() {
     if (S.mcFetch == 1) return;
     if (S.mcThread.joinable()) S.mcThread.join();
     S.mcFetch = 1;
-    S.mcThread = std::thread([] {
+    S.mcThread = dect2::namedThread("onair-mesh", [] {
         const std::string tmp = mcFile() + ".part";
         std::vector<dect2::MeshCorePresetEntry> v;
         bool ok = plat::fetchUrl("https://api.meshcore.nz/api/v1/config", tmp, std::string("OnAir/") + ONAIR_VERSION) && dect2::loadMeshCorePresetFile(tmp, v);

@@ -1,4 +1,5 @@
 // Clock discipline, the one-click clock sync and the hobby NTP server (see time_ntp.h).
+#include "dect2/common/thread_name.h"
 #include "dect2/time/time_ntp.h"
 #include "../net/netcompat.h"
 #include <algorithm>
@@ -310,7 +311,7 @@ bool Server::start(int fallbackPort, std::string& message, bool loopbackOnly, in
     m.sock = s; m.port = usedPort;
     { std::lock_guard<std::mutex> lk(m.mu); m.st = ServerStats(); }
     m.run = true;
-    m.th = std::thread([&m] { m.loop(); });
+    m.th = dect2::namedThread("onair-ntp", [&m] { m.loop(); });
     char b[320];
     if (usedPort == firstPort) snprintf(b, sizeof b, "NTP server on UDP %d", usedPort);
     else snprintf(b, sizeof b, "%s, so the NTP server listens on UDP %d instead: clients must be told that port (or forward 123 to it)", why.c_str(), usedPort);

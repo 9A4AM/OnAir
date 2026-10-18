@@ -1,4 +1,5 @@
 // Wi-SUN FAN monitor (see wisun_rx.h).
+#include "dect2/common/thread_name.h"
 #include "dect2/wisun/wisun_rx.h"
 #include "dect2/dsp/dsp_compat.h"
 #include "dect2/results/results_io.h"
@@ -149,7 +150,7 @@ struct WisunReceiver::Impl {
 
     void startWorker() {
         quit = false;
-        worker = std::thread([this] {
+        worker = dect2::namedThread("onair-wisun", [this] {
             for (;;) {
                 Job j;
                 {

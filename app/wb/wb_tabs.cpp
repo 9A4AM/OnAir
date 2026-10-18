@@ -1,4 +1,5 @@
 // Signal workbench: the Measure, Demodulate, Bits and Export tabs, the background jobs behind them and the listening.
+#include "dect2/common/thread_name.h"
 #include "wb_state.h"
 #include "ui/scale.h"
 #include <algorithm>
@@ -30,7 +31,7 @@ void startMeasure() {
     auto src = s.src;
     Job* job = &s.mJob;
     s.mJob.cancel = false; s.mJob.finished = false; s.mJob.running = true; s.mJob.prog = 0;
-    s.mJob.th = std::thread([=]() {
+    s.mJob.th = dect2::namedThread("onair-wbm", [=]() {
         measure(*src, t0, t1, f0, f1, o, *res, [job](double p) { job->prog = p; return !job->cancel.load(); });
         job->finished = true;
     });
@@ -50,7 +51,7 @@ void startDemod() {
     Job* job = &s.dJob;
     s.dJob.cancel = false; s.dJob.finished = false; s.dJob.running = true; s.dJob.prog = 0;
     stopAudio();
-    s.dJob.th = std::thread([=]() {
+    s.dJob.th = dect2::namedThread("onair-wbd", [=]() {
         *res = demodulate(*src, t0, t1, p);
         job->finished = true;
     });

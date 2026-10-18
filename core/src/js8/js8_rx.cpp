@@ -1,4 +1,5 @@
 // JS8Call receiver (see js8_rx.h).
+#include "dect2/common/thread_name.h"
 #include "dect2/js8/js8_rx.h"
 #include "dect2/net/pskreporter.h"
 #include "dect2/results/results_io.h"
@@ -322,7 +323,7 @@ struct Js8Receiver::Impl {
         rotStep = std::polar(1.0, -2 * kPi * kCentreHz / kBase);
         win.resize(kSpecN);
         for (int i = 0; i < kSpecN; i++) win[(size_t)i] = (float)(0.5 - 0.5 * std::cos(2 * kPi * i / kSpecN));
-        th = std::thread([this] { worker(); });
+        th = dect2::namedThread("onair-js8", [this] { worker(); });
     }
     ~Impl() {
         { std::lock_guard<std::mutex> lk(qmu); quit = true; }

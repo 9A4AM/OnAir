@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/transcribe/models.h"
 #include "dect2/common/u8file.h"
 #include "dect2/engine/updater.h"
@@ -71,7 +72,7 @@ bool ModelDownloader::start(const SpeechModel& m, const std::string& dir) {
     total_ = m.bytes;
     { std::lock_guard<std::mutex> lk(mu_); err_.clear(); id_ = m.id; }
     state_ = State::Downloading;
-    th_ = std::thread([this, m, dir] { run(m, dir); });
+    th_ = dect2::namedThread("onair-models", [this, m, dir] { run(m, dir); });
     return true;
 }
 

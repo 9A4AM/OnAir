@@ -1,6 +1,7 @@
 // The data feeds' thread: TCP servers (SBS, Beast, KISS), UDP senders (AIS, ACARS, VDL2) and the APRS-IS client.
 // The decoders only append to a bounded queue; everything here is non-blocking (the APRS-IS connect excepted, which only
 // holds up this thread). A slow client gets its data dropped once it has 512 kB waiting.
+#include "dect2/common/thread_name.h"
 #include "dect2/net/feeds.h"
 #include "dect2/common/timecompat.h"
 #include "dect2/ais/ais_proto.h"
@@ -355,7 +356,7 @@ void Feeds::configure(const FeedConfig& c) {
         I.cfgDirty = true;
         I.quit = false;
     }
-    if (any && !I.th.joinable()) I.th = std::thread([&I] { I.loop(); });
+    if (any && !I.th.joinable()) I.th = dect2::namedThread("onair-feeds", [&I] { I.loop(); });
     I.cv.notify_one();
 }
 

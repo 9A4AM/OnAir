@@ -1,6 +1,7 @@
 // The out-of-process runner. A helper executable (onair-plugin-host) loads the library; the app sends it IQ, events, settings and ticks over a pipe and
 // reads results back. Messages are [u32 length][u8 type][body] (results.h, Wire). The helper acknowledges every call; a call that is not acknowledged
 // within the watchdog limit gets the helper killed (SIGKILL), and a crash of the plugin only ends the helper. Nothing but plain data crosses the pipe.
+#include "dect2/common/thread_name.h"
 #include "loader.h"
 #include <algorithm>
 #include <chrono>
@@ -257,9 +258,9 @@ std::unique_ptr<Runner> startProcess(const StartOptions& o, std::string& err) {
     r->o.manifest = &r->man;
     if (!r->o.settings) r->o.settings = std::make_shared<SettingValues>(r->man);
     r->pid = pid; r->toChild = inP[1]; r->fromChild = outP[0];
-    r->writer = std::thread([p = r.get()] { p->writerMain(); });
-    r->reader = std::thread([p = r.get()] { p->readerMain(); });
-    r->dog = std::thread([p = r.get()] { p->dogMain(); });
+    r->writer = dect2::namedThread("onair-plg-wr", [p = r.get()] { p->writerMain(); });
+    r->reader = dect2::namedThread("onair-plg-rd", [p = r.get()] { p->readerMain(); });
+    r->dog = dect2::namedThread("onair-plg-dog", [p = r.get()] { p->dogMain(); });
     // Init: plugin id, kind, mode id, permissions, data folder, then every setting
     {
         WireWriter w;

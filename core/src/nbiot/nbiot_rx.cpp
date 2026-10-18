@@ -1,4 +1,5 @@
 // NB-IoT cells receiver (nbiot_rx.h): blocks of input, raster points searched, cells found and their broadcast decoded.
+#include "dect2/common/thread_name.h"
 #include "dect2/nbiot/nbiot_rx.h"
 #include "dect2/results/results_io.h"
 #include "dect2/cell/cell_rx.h"
@@ -67,7 +68,7 @@ struct NbiotReceiver::Impl {
     // results (under mu)
     NbiotTelemetry tel, pub;
 
-    Impl() { th = std::thread([this] { run(); }); }
+    Impl() { th = dect2::namedThread("onair-nbiot", [this] { run(); }); }
     ~Impl() {
         { std::lock_guard<std::mutex> lk(mu); stop = true; }
         cv.notify_all();

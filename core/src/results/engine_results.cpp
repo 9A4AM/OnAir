@@ -1,6 +1,7 @@
 // Decoded results that outlive mode switches, retunes, restarts and the program itself (engine.h: clearResults ... refreshIdle).
 // Every receiver keeps its lists through reset() and configure(); here they are cleared on the user's Clear, and saved to and loaded
 // from one file per receiver (results_io.h format: a file of another build fails its signature check and is discarded).
+#include "dect2/common/thread_name.h"
 #include "dect2/engine/engine.h"
 #include "dect2/results/results_io.h"
 #include <chrono>
@@ -187,7 +188,7 @@ void Engine::setResultsDir(const std::string& dir) {
     }
     if (dir.empty()) return;
     loadResults(dir);
-    resTh_ = std::thread([this, dir] {
+    resTh_ = dect2::namedThread("onair-results", [this, dir] {
         std::unique_lock<std::mutex> lk(resMu_);
         while (!resStop_) {
             resCv_.wait_for(lk, std::chrono::seconds(30), [this] { return resStop_; });

@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/engine/mode_synth.h"
 #include "dect2/common/stable_random.h"
 #include "dect2/source/hamlib_rig.h"
@@ -280,7 +281,7 @@ public:
         rate_ = effectiveRate(s);
         if (!prepare(s, err)) return false;
         run_ = true;
-        th_ = std::thread([this] { loop(); });
+        th_ = dect2::namedThread("onair-src", [this] { loop(); });
         return true;
     }
     void stop() override {

@@ -1,5 +1,6 @@
 // Server > Send data to map server: opted-in POST of decoded positions to map.on-air.dev /ingest.
 // Only positions the signal itself sent (no TLE catalogue, receiver GNSS, RID operator, FLARM stealth, cell towers, synthetic test signal).
+#include "dect2/common/thread_name.h"
 #include "derived_kin.h"
 #include "../app.h"
 #include "../state/receivers.h"
@@ -615,7 +616,7 @@ void startPost(const std::string& url, const std::string& body, int n) {
     std::lock_guard<std::mutex> lk(gThMu);
     if (gTh.joinable()) gTh.join();
     const std::string ua = std::string("OnAir/") + ONAIR_VERSION + " (map ingest)";
-    gTh = std::thread([url, body, ua, n] {
+    gTh = dect2::namedThread("onair-mapsend", [url, body, ua, n] {
         const bool ok = plat::postJson(url, body, ua);
         const int64_t t = nowMs();
         gLastTryMs.store(t, std::memory_order_relaxed);
@@ -713,7 +714,7 @@ void jamTick(App& s) {
     if (body.empty()) return;
     busy = true;
     const std::string url = originOf(s) + "/jam", ua = std::string("OnAir/") + ONAIR_VERSION + " (map jam)";
-    std::thread([url, body, ua] {
+    dect2::namedThread("onair-mapsend2", [url, body, ua] {
         const bool ok = plat::postJson(url, body, ua);
         mapLog("jam %s body=%zu B", ok ? "ok" : "failed", body.size());
         busy = false;

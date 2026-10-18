@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/atsc3/atsc3_remux.h"
 #include "dect2/audio/ac4_dec.h"
 #include <algorithm>
@@ -417,12 +418,12 @@ void Atsc3Remux::push(int id, const std::vector<uint8_t>& data) {
             }
         }
         c->chunks.push_back(data);
-        if (!c->th.joinable()) c->th = std::thread([this, c] { p_->demuxLoop(c); });
+        if (!c->th.joinable()) c->th = dect2::namedThread("onair-a3dmx", [this, c] { p_->demuxLoop(c); });
     }
     c->cv.notify_all();
     {
         std::lock_guard<std::mutex> lk(p_->mu);
-        if (!p_->muxStarted) { p_->muxStarted = true; p_->muxThread = std::thread([this] { p_->muxLoop(); }); }
+        if (!p_->muxStarted) { p_->muxStarted = true; p_->muxThread = dect2::namedThread("onair-a3mux", [this] { p_->muxLoop(); }); }
     }
 }
 

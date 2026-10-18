@@ -1,4 +1,5 @@
 // "Share my radio": see dect2/net/share.h. One thread accepts, sends and reads commands with select(); the engine only converts and queues.
+#include "dect2/common/thread_name.h"
 #include "dect2/net/share.h"
 #include "netcompat.h"
 #include <cerrno>
@@ -186,7 +187,7 @@ void ShareServer::configure(const ShareConfig& cIn) {
     if (!c.on) return;
     { std::lock_guard<std::mutex> lk(p.mu); p.live = c; p.st.lastError.clear(); p.st.sentBytes = 0; p.st.droppedBytes = 0; }
     active_ = true;
-    p.th = std::thread([this, c] { p_->run(c); });
+    p.th = dect2::namedThread("onair-share", [this, c] { p_->run(c); });
     // wait until it listens (or failed), so that port 0 can be read back
     for (int i = 0; i < 400; i++) {
         { std::lock_guard<std::mutex> lk(p.mu); if (p.st.listening || !p.st.lastError.empty()) break; }

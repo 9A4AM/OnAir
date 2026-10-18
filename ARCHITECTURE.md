@@ -19,6 +19,8 @@ radio ──► ring buffer ──► Engine ──► standard receiver ──�
 
 Threads: the analysis thread runs the receiver (it must never wait for the interface), the error-correction work runs on helper threads or the GPU, the player has its own reader thread and audio callback, and the interface runs on the main thread.
 
+Every thread has a name (profilers, htop, Activity Monitor and crash reports show it): create threads with `dect2::namedThread("onair-xxx", fn, args...)` or call `dect2::setThreadName("onair-xxx")` first thing in the thread function (`core/include/dect2/common/thread_name.h`). Names are short and stable, `onair-<what>`, 15 characters at most (the Linux limit; longer ones are cut), with the receiver number appended where several run (`onair-rx2`).
+
 ## Folders
 
 | Folder | What is in it |

@@ -1,6 +1,7 @@
 // Shared parts of the native radio drivers (source_rtlsdr.cpp, source_airspy.cpp, source_sdrplay.cpp, ...): loading a radio's own library at run time and the
 // base class every native source builds on.
 #pragma once
+#include "dect2/common/thread_name.h"
 #include "dect2/source/source.h"
 #include "dect2/common/ring.h"
 #include <algorithm>
@@ -490,7 +491,7 @@ protected:
 
     void startStream() {
         run_ = true;
-        th_ = std::thread([this] { streamThread(); });
+        th_ = dect2::namedThread("onair-sdr-rx", [this] { streamThread(); });
     }
     void stopStream() {
         if (!th_.joinable()) return;

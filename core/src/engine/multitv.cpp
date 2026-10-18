@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/engine/multitv.h"
 #include <algorithm>
 #include <chrono>
@@ -176,7 +177,7 @@ void MultiTv::startSlot(const SlotPower& p) {
         s->t2->configure(outRate, o_.widthMhz);
         s->t2->setPlpCallback([raw](const PlpResult& r) { raw->onPlp(r); });
     }
-    s->th = std::thread([raw] { raw->run(); });
+    s->th = dect2::namedThread("onair-mtv", [raw] { raw->run(); });
     std::lock_guard<std::mutex> lk(mu_);
     live_.push_back(std::move(s));
     if (sel_.load() == kNone) sel_ = p.pos.index;

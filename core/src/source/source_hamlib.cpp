@@ -3,6 +3,7 @@
 // Receiving never keys the transmitter: only HamlibTx (the transmit subsystem, an operator action) calls PTT.
 #ifdef DECT2_HAVE_HAMLIB
 
+#include "dect2/common/thread_name.h"
 #include "dect2/source/hamlib_link.h"
 #include "dect2/source/hamlib_rig.h"
 #include "dect2/source/rig_setup.h"
@@ -264,7 +265,7 @@ public:
         rate_ = iq_->sampleRate();
         stopFlag_ = false;
         publishLocked(true, "", false);
-        poll_ = std::thread([this] { pollLoop(); });
+        poll_ = dect2::namedThread("onair-hamlib", [this] { pollLoop(); });
         return true;
     }
 

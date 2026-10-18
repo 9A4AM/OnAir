@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/msgdb/msgdb.h"
 #include <sqlite3.h>
 #include <algorithm>
@@ -367,7 +368,7 @@ void Db::enqueue(const Event& ev) {
 void Db::start() {
     if (p_->th.joinable()) return;
     p_->stopReq = false;
-    p_->th = std::thread([this] { p_->writer(); });
+    p_->th = dect2::namedThread("onair-msgdb", [this] { p_->writer(); });
 }
 
 void Db::stop() {

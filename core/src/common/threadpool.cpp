@@ -10,18 +10,6 @@
 
 namespace dect2 {
 
-void setThreadName(const char* name) {
-#if defined(__APPLE__)
-    pthread_setname_np(name);
-#elif defined(__linux__)
-    char b[16];
-    std::snprintf(b, sizeof b, "%s", name);
-    pthread_setname_np(pthread_self(), b);
-#else
-    (void)name;
-#endif
-}
-
 int configuredThreads() {
     static const int v = [] {
         const char* e = std::getenv("DECT2_THREADS");

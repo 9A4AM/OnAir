@@ -2,6 +2,7 @@
 // lab tries demodulators, finds the baud rate, slices bits, tries the line codings, looks for a preamble / sync word and a CRC, and shows
 // which bytes are constant, counters, checksums or data. The result exports as a protocol description. The stages are in
 // core/src/protolab; this file is the window only. Nothing here decrypts anything.
+#include "dect2/common/thread_name.h"
 #include "../app.h"
 #include "dect2/common/u8file.h"
 #include "dect2/protolab/protolab.h"
@@ -87,7 +88,7 @@ void startWork(std::function<void()> job) {
     if (S.worker.joinable()) S.worker.join();
     S.run = 1;
     S.err.clear();
-    S.worker = std::thread([job] {
+    S.worker = dect2::namedThread("onair-protolab", [job] {
         try { job(); } catch (const std::exception& e) { std::lock_guard<std::mutex> lk(S.mu); S.err = e.what(); }
         S.run = 2;
     });

@@ -1,4 +1,5 @@
 // Cell towers receiver (cell_rx.h): blocks of input, carriers found in the spectrum, cells searched and their broadcast decoded.
+#include "dect2/common/thread_name.h"
 #include "dect2/cell/cell_rx.h"
 #include "dect2/results/results_io.h"
 #include "dect2/cell/cell_asn.h"
@@ -201,7 +202,7 @@ struct CellReceiver::Impl {
     // results (under mu)
     CellTelemetry tel, pub;
 
-    Impl() { th = std::thread([this] { run(); }); }
+    Impl() { th = dect2::namedThread("onair-cell", [this] { run(); }); }
     ~Impl() {
         { std::lock_guard<std::mutex> lk(mu); stop = true; }
         cv.notify_all();

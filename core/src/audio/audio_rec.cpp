@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/audio/audio_rec.h"
 #include "dect2/audio/flac_enc.h"
 #include "dect2/audio/mp3_enc.h"
@@ -242,7 +243,7 @@ bool AudioRecorder::start(const std::string& path, const AudioRecOptions& o, std
     { std::lock_guard<std::mutex> lk(s.statMu); s.path = path; s.error.clear(); }
     s.stopReq = false;
     active_.store(true, std::memory_order_release);
-    s.th = std::thread([&s] { s.run(); });
+    s.th = dect2::namedThread("onair-rec", [&s] { s.run(); });
     return true;
 }
 

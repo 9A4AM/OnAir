@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "videoin_impl.h"
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -55,7 +56,7 @@ bool openFileLoop(VideoIn::Impl* I, const std::string& path, std::string& err) {
     AVFrame* fr = av_frame_alloc();
     AVPacket* pk = av_packet_alloc();
     std::vector<uint8_t> rgb;
-    I->fileTh = std::thread([=]() mutable {
+    I->fileTh = dect2::namedThread("onair-vidin", [=]() mutable {
         auto closeAll = [&] {
             if (sws) sws_freeContext(sws);
             av_frame_free(&fr); av_packet_free(&pk);

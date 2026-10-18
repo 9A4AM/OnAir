@@ -1,5 +1,6 @@
 // The "Sync computer clock" section and the optional NTP server (clocksync_ui.h). Nothing here sets the clock by itself: only a click on
 // "Sync now" runs the operating system's administrator prompt, and only for a locked, plausible measurement (core/src/time_ntp.cpp).
+#include "dect2/common/thread_name.h"
 #include "panels/clocksync_ui.h"
 #include "dect2/time/time_ntp.h"
 #include "dect2/time/time_proto.h"
@@ -164,7 +165,7 @@ void clockSyncPanel(App& a) {
         auto job = S.job;
         { std::lock_guard<std::mutex> lk(job->mu); job->message.clear(); }
         job->running = true;
-        std::thread([job, off] {
+        dect2::namedThread("onair-clksync", [job, off] {
             std::string msg;
             const bool ok = clockSyncRun(off, msg);
             { std::lock_guard<std::mutex> lk(job->mu); job->message = msg; job->ok = ok; }

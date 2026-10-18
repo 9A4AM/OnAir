@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/watchlist/watchlist.h"
 #include "dect2/automation/json_mini.h"
 #include <algorithm>
@@ -532,7 +533,7 @@ void Watcher::submit(const au::Event& ev) {
 void Watcher::start() {
     if (p_->th.joinable()) return;
     p_->stopReq = false;
-    p_->th = std::thread([this] {
+    p_->th = dect2::namedThread("onair-wlcore", [this] {
         for (;;) {
             std::deque<au::Event> batch;
             {

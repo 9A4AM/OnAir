@@ -1,4 +1,5 @@
 // Radiosonde receiver (see sonde_rx.h).
+#include "dect2/common/thread_name.h"
 #include "dect2/sonde/sonde_rx.h"
 #include "dect2/automation/engine.h"
 #include "dect2/results/results_io.h"
@@ -720,7 +721,7 @@ void SondeReceiver::feed(const cf32* x, size_t n) {
                 s.ring = std::make_unique<IqRing>(cap);
             }
             s.run = true;
-            s.th = std::thread([&s] { s.workerLoop(); });
+            s.th = dect2::namedThread("onair-sonde", [&s] { s.workerLoop(); });
         }
     }
     const size_t w = s.ring->write(x, n);

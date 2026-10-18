@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/automation/engine.h"
 #include "dect2/automation/expr.h"
 #include "dect2/automation/script.h"
@@ -409,7 +410,7 @@ void Engine::submit(Event&& ev) {
 void Engine::start() {
     if (p_->th.joinable()) return;
     p_->stopReq = false;
-    p_->th = std::thread([this] {
+    p_->th = dect2::namedThread("onair-auto", [this] {
         for (;;) {
             std::deque<Event> batch;
             {
