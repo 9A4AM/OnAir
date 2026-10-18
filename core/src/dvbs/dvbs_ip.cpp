@@ -542,6 +542,209 @@ std::vector<uint8_t> GseEncapsulator::packets(size_t len) {
     return out;
 }
 
+
+// ---------------------------------------------------------------- sections, MPE, ULE
+
+static const size_t kMaxSection = 4096 + 3;
+static size_t sectionLength(const uint8_t* s) { return (size_t)((s[1] & 0x0F) << 8 | s[2]); }
+
+void SectionAssembler::feed(uint16_t pid, bool pusi, const uint8_t* payload, size_t n, std::vector<std::vector<uint8_t>>& out) {
+    auto whole = [](const std::vector<uint8_t>& s) { return s.size() >= 3 && 3 + sectionLength(s.data()) <= kMaxSection && s.size() >= 3 + sectionLength(s.data()); };
+    if (pusi) {
+        if (n == 0) return;
+        const size_t ptr = payload[0];
+        if (1 + ptr > n) { partial_.erase(pid); return; }
+        auto it = partial_.find(pid);
+        if (it != partial_.end()) {
+            std::vector<uint8_t> s = std::move(it->second);
+            partial_.erase(it);
+            s.insert(s.end(), payload + 1, payload + 1 + ptr);
+            if (whole(s)) out.emplace_back(s.begin(), s.begin() + (long)(3 + sectionLength(s.data())));
+        }
+        const uint8_t* rest = payload + 1 + ptr;
+        size_t rn = n - 1 - ptr;
+        while (rn > 0 && rest[0] != 0xFF) {
+            if (rn < 3) { partial_[pid].assign(rest, rest + rn); return; }
+            const size_t len = 3 + sectionLength(rest);
+            if (rn >= len) { out.emplace_back(rest, rest + len); rest += len; rn -= len; }
+            else { partial_[pid].assign(rest, rest + rn); return; }
+        }
+    } else {
+        auto it = partial_.find(pid);
+        if (it == partial_.end()) return;
+        std::vector<uint8_t> s = std::move(it->second);
+        partial_.erase(it);
+        s.insert(s.end(), payload, payload + n);
+        if (whole(s)) out.emplace_back(s.begin(), s.begin() + (long)(3 + sectionLength(s.data())));
+        else if (s.size() < kMaxSection) partial_[pid] = std::move(s);
+    }
+}
+
+void MpeExtractor::packet(const uint8_t* p, std::vector<std::vector<uint8_t>>& out) {
+    const uint16_t pid = (uint16_t)((p[1] & 0x1F) << 8 | p[2]);
+    if ((p[1] & 0x80) || pid < 0x20 || pid == 0x1FFF || notMpe_.count(pid)) return;   // errored, SI or null
+    const bool pusi = (p[1] & 0x40) != 0;
+    const int afc = (p[3] >> 4) & 3;
+    if ((p[3] >> 6) != 0 || !(afc & 1)) return;                                         // scrambled, or no payload: never decoded
+    size_t at = 4 + ((afc & 2) ? 1 + (size_t)p[4] : 0);
+    if (at >= 188) return;
+    const uint8_t* payload = p + at;
+    const size_t n = 188 - at;
+    if (!stats.pids.count(pid)) {
+        if (!pusi) return;
+        if (n >= 3 && payload[0] == 0 && payload[1] == 0 && payload[2] == 1) { notMpe_[pid] = true; return; }   // a PES start rules a PID out
+        const size_t ptr = payload[0];
+        if (1 + ptr >= n || payload[1 + ptr] != 0x3E) return;
+        stats.pids[pid] = 0;
+    }
+    std::vector<std::vector<uint8_t>> done;
+    sections_.feed(pid, pusi, payload, n, done);
+    for (const auto& s : done) section(pid, s, out);
+}
+
+void MpeExtractor::section(uint16_t pid, const std::vector<uint8_t>& s, std::vector<std::vector<uint8_t>>& out) {
+    if (s.size() < 16 || s[0] != 0x3E) return;
+    const bool syntax = (s[1] & 0x80) != 0;
+    if (syntax && crc32Mpeg2(s.data(), s.size()) != 0) { stats.badSections++; return; }
+    const bool payloadScrambled = ((s[5] >> 4) & 3) != 0, llcSnap = (s[5] & 0x02) != 0;
+    if (payloadScrambled || s[6] != 0 || s[7] != 0) { stats.skipped++; return; }
+    const uint8_t* d = s.data() + 12;
+    size_t dn = s.size() - 16;
+    if (llcSnap) {   // AA AA 03, OUI, then the EtherType
+        if (dn < 8 || d[0] != 0xAA || d[1] != 0xAA || d[2] != 3) return;
+        const unsigned et = (unsigned)(d[6] << 8 | d[7]);
+        if (et != 0x0800 && et != 0x86DD) return;
+        d += 8; dn -= 8;
+    }
+    IpInfo info;
+    if (parseIp(d, dn, info)) { stats.datagrams++; stats.pids[pid]++; out.emplace_back(d, d + info.len); }
+}
+
+std::vector<uint8_t> buildMpeSection(const uint8_t mac[6], const std::vector<uint8_t>& dg) {
+    const size_t len = 9 + dg.size() + 4;
+    std::vector<uint8_t> s = {0x3E, (uint8_t)(0xB0 | ((len >> 8) & 0x0F)), (uint8_t)len, mac[5], mac[4], 0xC1, 0, 0, mac[3], mac[2], mac[1], mac[0]};
+    s.insert(s.end(), dg.begin(), dg.end());
+    const uint32_t c = crc32Mpeg2(s.data(), s.size());
+    for (int sh = 24; sh >= 0; sh -= 8) s.push_back((uint8_t)(c >> sh));
+    return s;
+}
+
+std::vector<std::vector<uint8_t>> packetizeSection(uint16_t pid, uint8_t& cc, const std::vector<uint8_t>& sec) {
+    std::vector<std::vector<uint8_t>> out;
+    std::vector<uint8_t> data{0};
+    data.insert(data.end(), sec.begin(), sec.end());
+    for (size_t k = 0, off = 0; off < data.size(); k++, off += 184) {
+        std::vector<uint8_t> p(188, 0xFF);
+        const size_t take = std::min<size_t>(184, data.size() - off);
+        p[0] = 0x47; p[1] = (uint8_t)((k == 0 ? 0x40 : 0) | ((pid >> 8) & 0x1F)); p[2] = (uint8_t)pid; p[3] = (uint8_t)(0x10 | (cc & 0x0F));
+        cc = (uint8_t)((cc + 1) & 0x0F);
+        memcpy(&p[4], &data[off], take);
+        out.push_back(std::move(p));
+    }
+    return out;
+}
+
+// ULE: SNDU = D(1) length(15) type(16) [NPA 6] PDU CRC-32; length counts everything after the first two bytes (type, NPA, PDU, CRC)
+void UleExtractor::parse(uint16_t pid, Pid& st, bool pusi, const uint8_t* payload, size_t n, std::vector<std::vector<uint8_t>>& out) {
+    // take whole SNDUs off the front of the buffer
+    auto extract = [&]() {
+        size_t at = 0;
+        while (st.buf.size() - at >= 2) {
+            const uint8_t* b = st.buf.data() + at;
+            if (b[0] == 0xFF && b[1] == 0xFF) { st.buf.clear(); return; }   // end indicator: the rest of the payload is padding
+            const bool d = (b[0] & 0x80) != 0;
+            const size_t len = (size_t)((b[0] & 0x7F) << 8 | b[1]);
+            if (len < 6 || len > 32767) { st.buf.clear(); st.synced = false; st.miss++; return; }
+            if (st.buf.size() - at < 2 + len) break;   // not complete yet
+            if (!st.accepted) st.tries++;
+            const uint16_t type = (uint16_t)(b[2] << 8 | b[3]);
+            const size_t hdr = 4 + (d ? 0 : 6);
+            stats.sndus++;
+            if (crc32Mpeg2(b, 2 + len) != 0) { stats.badCrc++; st.buf.clear(); st.synced = false; return; }
+            if (2 + len >= hdr + 4) {
+                const uint8_t* pdu = b + hdr;
+                const size_t pn = 2 + len - hdr - 4;
+                IpInfo info;
+                bool isIp = false;
+                if (type == 0x0800 || type == 0x86DD) isIp = parseIp(pdu, pn, info);
+                else if (type == 0x0001 && pn > 14) { const unsigned et = (unsigned)(pdu[12] << 8 | pdu[13]); if ((et == 0x0800 || et == 0x86DD) && parseIp(pdu + 14, pn - 14, info)) { isIp = true; pdu += 14; } }
+                if (isIp) {
+                    st.good++;
+                    if (!st.accepted && st.good >= 3) { st.accepted = true; stats.pids[pid] = 0; }
+                    if (st.accepted) { stats.pids[pid]++; stats.ipDatagrams++; out.emplace_back(pdu, pdu + info.len); }
+                } else stats.other++;
+            }
+            at += 2 + len;
+        }
+        st.buf.erase(st.buf.begin(), st.buf.begin() + (long)at);
+        if (st.buf.size() > 40000) { st.buf.clear(); st.synced = false; }
+    };
+    if (pusi) {
+        if (n == 0) return;
+        const size_t pp = payload[0];
+        if (1 + pp > n) { st.buf.clear(); st.synced = false; return; }
+        if (st.synced && pp > 0) { st.buf.insert(st.buf.end(), payload + 1, payload + 1 + pp); extract(); }   // the end of the SNDU in progress
+        st.buf.assign(payload + 1 + pp, payload + n);
+        st.synced = true;
+        extract();
+    } else {
+        if (!st.synced) return;
+        st.buf.insert(st.buf.end(), payload, payload + n);
+        extract();
+    }
+}
+
+void UleExtractor::packet(const uint8_t* p, std::vector<std::vector<uint8_t>>& out) {
+    const uint16_t pid = (uint16_t)((p[1] & 0x1F) << 8 | p[2]);
+    if ((p[1] & 0x80) || pid < 0x20 || pid == 0x1FFF) return;
+    const int afc = (p[3] >> 4) & 3;
+    if ((p[3] >> 6) != 0 || !(afc & 1)) return;
+    size_t at = 4 + ((afc & 2) ? 1 + (size_t)p[4] : 0);
+    if (at >= 188) return;
+    if (pids_.size() > 64 && !pids_.count(pid)) return;
+    Pid& st = pids_[pid];
+    if (st.blocked) return;
+    const bool pusi = (p[1] & 0x40) != 0;
+    if (!st.accepted && pusi && 188 - at >= 4 && p[at + 1] == 0 && p[at + 2] == 0 && p[at + 3] == 1) { st.blocked = true; return; }   // a PES start: video or audio, not ULE
+    if (!st.accepted && st.miss + (int)st.tries > 40) { st.blocked = true; return; }
+    if (st.cc != 255 && ((p[3] & 0x0F) != ((st.cc + 1) & 0x0F)) && (p[3] & 0x0F) != st.cc) { st.buf.clear(); st.synced = false; }   // a lost packet: wait for the next payload start
+    st.cc = p[3] & 0x0F;
+    parse(pid, st, pusi, p + at, 188 - at, out);
+}
+
+std::vector<uint8_t> buildUleSndu(uint16_t type, const std::vector<uint8_t>& pdu, const uint8_t* npa) {
+    const bool d = npa == nullptr;
+    const size_t len = 2 + (d ? 0 : 6) + pdu.size() + 4;
+    std::vector<uint8_t> s = {(uint8_t)((d ? 0x80 : 0) | ((len >> 8) & 0x7F)), (uint8_t)len, (uint8_t)(type >> 8), (uint8_t)type};
+    if (!d) s.insert(s.end(), npa, npa + 6);
+    s.insert(s.end(), pdu.begin(), pdu.end());
+    const uint32_t c = crc32Mpeg2(s.data(), s.size());
+    for (int sh = 24; sh >= 0; sh -= 8) s.push_back((uint8_t)(c >> sh));
+    return s;
+}
+
+std::vector<std::vector<uint8_t>> packetizeUle(uint16_t pid, uint8_t& cc, const std::vector<std::vector<uint8_t>>& sndus) {
+    std::vector<uint8_t> stream;
+    std::vector<size_t> starts;
+    for (const auto& s : sndus) { starts.push_back(stream.size()); stream.insert(stream.end(), s.begin(), s.end()); }
+    std::vector<std::vector<uint8_t>> out;
+    size_t si = 0, off = 0;
+    while (off < stream.size()) {
+        std::vector<uint8_t> p(188, 0xFF);
+        while (si < starts.size() && starts[si] < off) si++;
+        // a payload unit start needs the pointer byte: 183 bytes of data, else 184
+        const bool start = si < starts.size() && starts[si] < off + 183;
+        const size_t cap = start ? 183 : 184, take = std::min(cap, stream.size() - off);
+        p[0] = 0x47; p[1] = (uint8_t)((start ? 0x40 : 0) | ((pid >> 8) & 0x1F)); p[2] = (uint8_t)pid; p[3] = (uint8_t)(0x10 | (cc & 0x0F));
+        cc = (uint8_t)((cc + 1) & 0x0F);
+        if (start) { p[4] = (uint8_t)(starts[si] - off); memcpy(&p[5], &stream[off], take); }
+        else memcpy(&p[4], &stream[off], take);
+        off += take;
+        out.push_back(std::move(p));
+    }
+    return out;
+}
+
 // ---------------------------------------------------------------- statistics, PCAP, sink
 
 bool FlowKey::operator<(const FlowKey& o) const {

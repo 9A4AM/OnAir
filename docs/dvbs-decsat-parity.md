@@ -62,8 +62,8 @@ Chunks: 1 GSE, IP, PCAP and the IP view; 2 MPE and ULE; 3 ACM, VCM, multistream,
 | Flows whose UDP checksum fails marked as encrypted in transit; non-IP PDUs that read as random bytes marked as ciphertext | added; the data is never shown or decoded | 1 |
 | ACM terminal table (GSE label, its IP addresses, the MODCODs it is sent in) | added | 1 |
 | GSE-HEM, GSE-Lite (S2X) | missing | 3 |
-| MPE (table 0x3E) to IP | missing | 2 |
-| ULE (RFC 4326) to IP | missing | 2 |
+| MPE (table 0x3E) to IP | added (also behind LLC/SNAP; scrambled sections skipped, never decoded) | 2 |
+| ULE (RFC 4326) to IP | added (not in DecSAT: written from the RFC; a PID is taken up after three valid SNDUs) | 2 |
 | Multicast MPEG-TS in UDP/RTP found, analysed and played | missing | 5 |
 | Multicast audio: SAP/SDP names, RTP AAC/Opus, now-playing | missing | 5 |
 | DVB-RCS signalling (EN 301 790 / 545-2: NCR, TIM, SCT/FCT/TBTP) | missing | 3 or 5: public specs, the tables can be read from the sections of a stream |

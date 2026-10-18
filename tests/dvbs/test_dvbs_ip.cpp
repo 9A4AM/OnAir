@@ -170,6 +170,59 @@ int main() {
         for (const auto& p : got) if (p.data != sent[0]) all = false;
         CHECK(all, "blind packets are the sent one");
     }
+    // MPE and ULE in the transport stream
+    {
+        auto all = traffic(16);
+        std::vector<std::vector<uint8_t>> sent;
+        for (const auto& d : all) if (d.size() < 3000) sent.push_back(d);   // a section holds at most 4096 bytes
+        // MPE: a PES PID alongside must be left alone; scrambled sections are skipped
+        std::vector<std::vector<uint8_t>> ts;
+        uint8_t cc = 0;
+        const uint8_t mac[6] = {1, 0, 0x5E, 1, 1, 1};
+        for (const auto& d : sent) for (auto& p : packetizeSection(0x0FA0, cc, buildMpeSection(mac, d))) ts.push_back(p);
+        std::vector<uint8_t> pes(188, 0);
+        pes[0] = 0x47; pes[1] = 0x41; pes[2] = 0x00; pes[3] = 0x10; pes[6] = 1;
+        MpeExtractor mpe;
+        std::vector<std::vector<uint8_t>> got;
+        mpe.packet(pes.data(), got);
+        for (const auto& p : ts) mpe.packet(p.data(), got);
+        CHECK(got == sent, "MPE: the datagrams come back (%zu of %zu)", got.size(), sent.size());
+        CHECK(mpe.stats.pids.count(0x0FA0) && !mpe.stats.pids.count(0x0100), "MPE: PID found, the PES PID is not");
+        // a scrambled section is skipped, a damaged one counted
+        {
+            MpeExtractor m2;
+            auto sec = buildMpeSection(mac, sent[0]);
+            sec[5] = (uint8_t)(sec[5] | 0x10);   // payload scrambling control
+            const uint32_t c = crc32Mpeg2(sec.data(), sec.size() - 4);
+            for (int i = 0; i < 4; i++) sec[sec.size() - 4 + (size_t)i] = (uint8_t)(c >> (24 - 8 * i));
+            std::vector<std::vector<uint8_t>> o2;
+            uint8_t c2 = 0;
+            for (auto& p : packetizeSection(0x100, c2, sec)) m2.packet(p.data(), o2);
+            CHECK(o2.empty() && m2.stats.skipped == 1, "MPE: a scrambled payload is skipped");
+            auto bad = buildMpeSection(mac, sent[0]);
+            bad[20] ^= 0xFF;
+            for (auto& p : packetizeSection(0x100, c2, bad)) m2.packet(p.data(), o2);
+            CHECK(o2.empty() && m2.stats.badSections == 1, "MPE: a bad CRC is counted");
+        }
+        // ULE: IPv4 with and without a destination address, IPv6-less, bridged Ethernet, mixed with an unknown type; spans TS packets
+        std::vector<std::vector<uint8_t>> sndus;
+        const uint8_t npa[6] = {0, 1, 2, 3, 4, 5};
+        for (size_t k = 0; k < sent.size(); k++) sndus.push_back(buildUleSndu(0x0800, sent[k], k % 2 ? npa : nullptr));
+        uint8_t cu = 3;
+        UleExtractor ule;
+        std::vector<std::vector<uint8_t>> ug;
+        for (const auto& p : packetizeUle(0x0123, cu, sndus)) ule.packet(p.data(), ug);
+        // the first two SNDUs are used to accept the PID: the rest arrive
+        CHECK(ug.size() == sent.size() - 2, "ULE: %zu of %zu datagrams (two go to learning the PID)", ug.size(), sent.size());
+        bool same = true;
+        for (size_t k = 0; k < ug.size(); k++) if (ug[k] != sent[k + 2]) same = false;
+        CHECK(same && ule.stats.badCrc == 0 && ule.stats.pids.count(0x0123), "ULE: the datagrams are the ones sent, no CRC errors");
+        // video is not taken for ULE
+        UleExtractor u2;
+        std::vector<std::vector<uint8_t>> o3;
+        for (int i = 0; i < 100; i++) { std::vector<uint8_t> v(188, (uint8_t)(i * 13)); v[0] = 0x47; v[1] = (uint8_t)(i % 7 ? 0x01 : 0x41); v[2] = 0x00; v[3] = (uint8_t)(0x10 | (i & 15)); if (!(i % 7)) { v[4] = 0; v[5] = 0; v[6] = 1; } u2.packet(v.data(), o3); }
+        CHECK(o3.empty() && u2.stats.ipDatagrams == 0, "ULE: payload of a PES PID is not parsed");
+    }
     // IP fragments in any order, statistics, PCAP
     {
         std::vector<uint8_t> payload(2300);

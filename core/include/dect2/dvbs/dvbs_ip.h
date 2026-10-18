@@ -202,6 +202,50 @@ private:
     uint8_t nextId_ = 0;
 };
 
+
+// ---------------------------------------------------------------- IP in the transport stream: MPE and ULE
+
+// PSI/private sections back together from TS payloads, per PID
+class SectionAssembler {
+public:
+    void feed(uint16_t pid, bool pusi, const uint8_t* payload, size_t n, std::vector<std::vector<uint8_t>>& out);
+private:
+    std::map<uint16_t, std::vector<uint8_t>> partial_;
+};
+
+struct MpeStats { std::map<uint16_t, uint64_t> pids; uint64_t datagrams = 0, badSections = 0, skipped = 0; };
+
+// Multiprotocol Encapsulation (EN 301 192): sections with table_id 0x3E, found on any PID that carries one (a PES start rules a PID out), the datagram of each
+// (also behind LLC/SNAP) to `out`. Sections whose payload is scrambled are skipped, never decoded.
+class MpeExtractor {
+public:
+    void packet(const uint8_t* p188, std::vector<std::vector<uint8_t>>& out);
+    MpeStats stats;
+private:
+    void section(uint16_t pid, const std::vector<uint8_t>& s, std::vector<std::vector<uint8_t>>& out);
+    SectionAssembler sections_;
+    std::map<uint16_t, bool> notMpe_;
+};
+
+struct UleStats { std::map<uint16_t, uint64_t> pids; uint64_t sndus = 0, badCrc = 0, other = 0, ipDatagrams = 0; };
+
+// Unidirectional Lightweight Encapsulation (RFC 4326, RFC 5163): SNDUs in the payload of TS packets (payload unit pointer), CRC-32 checked. A PID is taken up after
+// three SNDUs with a good CRC that carry IP (or a bridged Ethernet frame holding IP); extension headers that are mandatory are skipped over, never interpreted.
+class UleExtractor {
+public:
+    void packet(const uint8_t* p188, std::vector<std::vector<uint8_t>>& out);
+    UleStats stats;
+private:
+    struct Pid { std::vector<uint8_t> buf; bool synced = false; int good = 0; bool accepted = false; int miss = 0; uint8_t cc = 255; bool blocked = false; int tries = 0; };
+    void parse(uint16_t pid, Pid& st, bool pusi, const uint8_t* payload, size_t n, std::vector<std::vector<uint8_t>>& out);
+    std::map<uint16_t, Pid> pids_;
+};
+
+std::vector<uint8_t> buildMpeSection(const uint8_t mac[6], const std::vector<uint8_t>& datagram);
+std::vector<std::vector<uint8_t>> packetizeSection(uint16_t pid, uint8_t& cc, const std::vector<uint8_t>& section);   // 188-byte TS packets
+std::vector<uint8_t> buildUleSndu(uint16_t type, const std::vector<uint8_t>& pdu, const uint8_t* npa6 = nullptr);   // npa6 null: D = 1, no destination address
+std::vector<std::vector<uint8_t>> packetizeUle(uint16_t pid, uint8_t& cc, const std::vector<std::vector<uint8_t>>& sndus);   // SNDUs packed back to back, the payload pointer at the first start
+
 // ---------------------------------------------------------------- statistics and export
 
 struct FlowKey {

@@ -85,5 +85,29 @@ int main() {
         CHECK(count > 100 && match == count, "pcap: %zu packets, %zu of them exactly as sent", count, match);
         std::remove(path.c_str());
     }
+    // MPE and ULE handed over as transport stream packets (what the engine does with the receiver's output)
+    {
+        DvbsReceiver rx;
+        rx.setBlocking(true);
+        rx.configure(4e6);
+        uint8_t cc = 0, cu = 0;
+        const uint8_t mac[6] = {1, 0, 0x5E, 1, 1, 1}, src[4] = {10, 1, 1, 1}, dst[4] = {239, 1, 1, 1};
+        std::vector<std::vector<uint8_t>> sndus;
+        for (int k = 0; k < 20; k++) {
+            auto ip = dvbsip::buildUdpV4(src, dst, 5000, 6000, std::vector<uint8_t>(200, (uint8_t)k), true);
+            for (auto& p : dvbsip::packetizeSection(0x0FA0, cc, dvbsip::buildMpeSection(mac, ip))) rx.feedTs(p.data(), 188);
+            sndus.push_back(dvbsip::buildUleSndu(0x0800, ip));
+        }
+        for (auto& p : dvbsip::packetizeUle(0x0123, cu, sndus)) rx.feedTs(p.data(), 188);
+        std::vector<cf32> z(65536);
+        rx.feed(z.data(), z.size());
+        rx.flush();
+        DvbsTelemetry t;
+        CHECK(rx.telemetry(t, 0), "telemetry");
+        printf("  TS: %s, %llu packets (MPE %llu, ULE %llu)\n", t.ip.source.c_str(), (unsigned long long)t.ip.packets, (unsigned long long)t.ip.mpePackets, (unsigned long long)t.ip.ulePackets);
+        CHECK(t.ip.mpePackets == 20 && t.ip.ulePackets == 18 && t.ip.packets == 38, "MPE 20 and ULE 18 (two go to learning the PID): %llu %llu", (unsigned long long)t.ip.mpePackets, (unsigned long long)t.ip.ulePackets);
+        CHECK(t.ip.source.find("MPE") != std::string::npos && t.ip.source.find("ULE") != std::string::npos, "source: %s", t.ip.source.c_str());
+        CHECK(!t.ip.flows.empty() && t.ip.flows[0].dst == "239.1.1.1" && t.ip.flows[0].dport == 6000, "multicast flow");
+    }
     return testSummary("dvbs gse");
 }

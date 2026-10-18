@@ -21,9 +21,16 @@ encrypted or scrambled is decoded, and payloads are never shown: the view holds 
 fail was changed after the sender made them (an inline encryptor) and is marked encrypted; GSE PDUs that are not IP and read as random bytes (8 bits per byte over 32 KiB) are
 called ciphertext. The PCAP file holds the packets as received (what is encrypted stays encrypted).
 
+## IP in the transport stream (MPE and ULE)
+
+The packets of the transport stream that the receiver delivers are also searched for IP: **MPE** (EN 301 192: sections with table_id 0x3E on any PID that carries one; a PES start
+rules a PID out; the datagram is taken also from behind LLC/SNAP; sections whose payload is scrambled are skipped, never decoded) and **ULE** (RFC 4326: SNDUs in the TS payload, CRC-32
+checked, bridged Ethernet frames and IPv6 as well; a PID is accepted after three valid SNDUs that carry IP, so video and audio PIDs are never taken for it). Their packets go to the same
+statistics and PCAP file as GSE; the IP DATA source line says GSE, MPE, ULE or a mix. MPE is ported from DecSAT (`decsat-ts/mpe.rs`); ULE is written from the RFC.
+
 ## Credits
 
-The GSE and IP code is adapted from DecSAT by Arclamp (CasualArclamp, GPL-3.0-or-later; https://github.com/CasualArclamp/DecSAT), crates `decsat-gse` and `decsat-ip`, rewritten in
+The GSE, IP and MPE code is adapted from DecSAT by Arclamp (CasualArclamp, GPL-3.0-or-later; https://github.com/CasualArclamp/DecSAT), crates `decsat-gse` and `decsat-ip`, rewritten in
 C++; its notes on what was seen on real links are kept in the comments. DecSAT credits dontlookup (MIT) for the two GSE variants. See THIRD_PARTY.md.
 
 ## Tests

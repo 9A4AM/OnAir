@@ -117,6 +117,8 @@ struct DvbsReceiver::Impl {
     dvbsip::GseIp gse;
     dvbsip::IpSink ipSink;
     uint64_t gseFields = 0, gseIpPackets = 0;
+    dvbsip::MpeExtractor mpe;
+    dvbsip::UleExtractor ule;
     std::string pcapPath;
 
     // ---- state of the receiver thread
@@ -446,11 +448,14 @@ struct DvbsReceiver::Impl {
         o.gseFields = gseFields;
         o.packets = ipSink.stats.packets; o.bytes = ipSink.stats.bytes; o.ipv4 = ipSink.stats.ipv4; o.ipv6 = ipSink.stats.ipv6;
         o.fragments = ipSink.frag.fragments; o.reassembled = ipSink.frag.reassembled;
+        o.mpePackets = mpe.stats.datagrams; o.ulePackets = ule.stats.ipDatagrams;
         o.active = o.packets > 0;
         const int src = gse.source();
         if (src == 1) o.source = std::string("GSE (") + gse.reports()[(size_t)gse.chosen()].variant.label() + ")";
         else if (src == 2) o.source = "GSE (blind search for IPv4)";
         else if (gseFields > 0) o.source = std::string("GSE, no IP found (") + kVariants[0].label() + " reading)";
+        if (mpe.stats.datagrams) o.source += std::string(o.source.empty() ? "" : ", ") + "MPE";
+        if (ule.stats.ipDatagrams) o.source += std::string(o.source.empty() ? "" : ", ") + "ULE";
         auto top = [](const std::map<uint16_t, uint64_t>& m, std::vector<std::pair<std::string, uint64_t>>& out, size_t n) {
             std::vector<std::pair<uint16_t, uint64_t>> v(m.begin(), m.end());
             std::sort(v.begin(), v.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
@@ -559,19 +564,19 @@ struct DvbsReceiver::Impl {
             t.framesSeen = s.framesSeen; t.framesDummy = s.framesDummy; t.crcErrors = s.crcErrors; t.gseFrames = s.gseFrames;
             t.framesUnsupported = s.framesUnsupported;
             if (s.roSignalled >= 0 && s.roSignalled < 6) { static const float kRo[6] = {0.35f, 0.25f, 0.20f, 0.15f, 0.10f, 0.05f}; t.rollOff = kRo[s.roSignalled]; t.rollOffSource = 2; }
-            if (s.gseFrames > 0 && s.tsGs != 3) t.signalNote = "generic stream (GSE) seen: not converted to a transport stream";
+            if (s.gseFrames > 0 && s.tsGs != 3) t.signalNote = "generic stream (GSE) seen: IP packets are listed under IP DATA";
             if (s.framesUnsupported > 0) {
                 const int c = s.unsupportedCode;
                 t.signalNote = c == 129 || c == 131 ? std::string("S2X VL-SNR frames seen (set ") + (c == 129 ? "1" : "2") + "): header not recognised"
                                                      : "S2X frames with the reserved PLS code " + std::to_string(c) + " seen: not decoded";
             }
             { std::lock_guard<std::mutex> lk(cellMu); s2.cells(cells); }
-            fillIp(t.ip);
         } else if (mode == kHunt) {
             t.snrDb = specRes.valid ? specRes.snrDb : 0;
         } else {
             t.snrDb = 0;
         }
+        fillIp(t.ip);   // GSE, MPE and ULE
         { const S2Stats s = mode == kS2 ? s2.stats() : S2Stats(); t.packetsBad = mode == kS2 ? s.packetsBad : packetsBad.load(); }
         t.packets = packets.load();
         t.tsLock = tsLockFlag.load() && t.lockFec;
@@ -639,7 +644,21 @@ void DvbsReceiver::setIpPcap(const std::string& path) {
     p_->ipSink.pcap.close();
     if (!path.empty()) p_->ipSink.pcap.open(path);
 }
-void DvbsReceiver::feedTs(const uint8_t*, size_t) {}   // MPE and ULE: see the next chunk
+void DvbsReceiver::feedTs(const uint8_t* pk, size_t n) {
+    Impl& I = *p_;
+    std::vector<std::vector<uint8_t>> out;
+    const double now = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
+    std::lock_guard<std::mutex> lk(I.ipMu);
+    for (size_t i = 0; i < n; i++, pk += 188) {
+        if (pk[0] != 0x47) continue;
+        out.clear();
+        I.mpe.packet(pk, out);
+        for (const auto& d : out) I.ipSink.push(d.data(), d.size(), now);
+        out.clear();
+        I.ule.packet(pk, out);
+        for (const auto& d : out) I.ipSink.push(d.data(), d.size(), now);
+    }
+}
 void DvbsReceiver::clearIp() {
     std::lock_guard<std::mutex> lk(p_->ipMu);
     const bool pc = p_->ipSink.pcap.isOpen();
@@ -648,6 +667,7 @@ void DvbsReceiver::clearIp() {
     p_->ipSink.stats.clear();
     p_->ipSink.frag = dvbsip::Reassembler();
     p_->gseFields = p_->gseIpPackets = 0;
+    p_->mpe = dvbsip::MpeExtractor(); p_->ule = dvbsip::UleExtractor();
     if (pc) p_->ipSink.pcap.open(path);
 }
 void DvbsReceiver::setPlScrambling(int n) { p_->plCode = n; }
