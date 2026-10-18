@@ -934,6 +934,7 @@ if(DECT2_BUILD_TESTS)
   if(SOAPY_FOUND AND NOT WIN32)   # the test loads a plug-in module the POSIX way; Windows is not covered yet
     # a fake SoapySDR radio (plugin module) and a test that drives the generic-radio source through it
     set_target_properties(dect2core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    set_target_properties(dect2_automation PROPERTIES POSITION_INDEPENDENT_CODE ON)
     add_library(SoapyOnAirTest MODULE tests/source/soapy_testdriver.cpp)
     target_include_directories(SoapyOnAirTest PRIVATE ${SOAPY_INCLUDE_DIRS})
     target_link_libraries(SoapyOnAirTest PRIVATE dect2core)
