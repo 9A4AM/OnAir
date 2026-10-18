@@ -93,5 +93,23 @@ int main() {
         a.fill(t, 0);
         CHECK(t.fields.empty(), "no fields from three frames");
     }
+    // CCSDS codeblocks: the layout is found, the transfer frames decoded (also with symbol errors), the spacecraft and counters read
+    {
+        sb::Analyzer a;
+        for (uint32_t n = 0; n < 30; n++) {
+            auto fr = satbeaconCcsdsFrame(1, n);
+            if (n % 3 == 0) for (int k = 0; k < 10; k++) fr[(size_t)(10 + k * 17)] ^= 0xA5;   // ten symbol errors: within the correction of the code
+            a.add(fr, 4, 0, 1.0);
+        }
+        SbTelemetry t;
+        a.fill(t, 0);
+        const SbInfo* l = info(t, "CCSDS layout");
+        CHECK(l && l->value.find("RS(255,223) I = 1") == 0 && l->value.find("randomised") != std::string::npos, "CCSDS layout: %s", l ? l->value.c_str() : "missing");
+        const SbInfo* tf = info(t, "Transfer frame");
+        CHECK(tf && tf->value.find("spacecraft 0x2DF") != std::string::npos && tf->value.find("virtual channel 1") != std::string::npos, "transfer frame: %s", tf ? tf->value.c_str() : "missing");
+        const SbInfo* h = info(t, "Frame health");
+        CHECK(h && h->value.find("30 decoded, 0 failed") == 0 && h->value.find("100 symbols corrected") != std::string::npos, "frame health: %s", h ? h->value.c_str() : "missing");
+        CHECK(t.checksumOk == 30 && t.checksumBad == 0, "frame CRC");
+    }
     return testSummary("satbeacon decode");
 }

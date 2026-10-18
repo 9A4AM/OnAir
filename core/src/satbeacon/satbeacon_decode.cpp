@@ -26,8 +26,44 @@ std::string fmt(const char* f, ...) {
 
 void Analyzer::reset() { *this = Analyzer(); }
 
+void Analyzer::addCcsds(const std::vector<uint8_t>& f, double frameSec) {
+    Cc& c = cc_;
+    c.blocksSeen++;
+    std::vector<uint8_t> block(f.begin() + 4, f.end());
+    auto process = [&](const std::vector<uint8_t>& blk) {
+        std::vector<uint8_t> fr;
+        int corrected = 0;
+        const bool ok = c.format.decode(blk.data(), blk.size(), fr, corrected);
+        if (!ok) { c.failed++; return; }
+        c.decoded++; c.corrected += (uint64_t)corrected;
+        if (fr.size() > 8) { if (ccsds::crcCcitt(fr.data(), fr.size() - 2) == (uint16_t)(fr[fr.size() - 2] << 8 | fr[fr.size() - 1])) c.crcOk++; else c.crcBad++; }
+        ccsds::Header h;
+        if (ccsds::parseHeader(fr.data(), fr.size(), h)) {
+            c.last = h;
+            auto& vc = c.channels[{h.scid, h.vcid}];
+            vc.frames++;
+            if (vc.lastCount >= 0 && !h.idle()) { const int d = (int)((h.vcCount - (uint32_t)vc.lastCount) & 0xFF); if (d > 1 && d < 128) c.lost += (uint64_t)(d - 1); }
+            vc.lastCount = (int)h.vcCount;
+        }
+        c.lastFrame = fr;
+        if (c.inner) c.inner->add(fr, 3, 1, frameSec);
+    };
+    if (!c.haveFormat) {
+        if (c.blocks.size() < 6) c.blocks.push_back(block);
+        if (c.blocks.size() >= 4 && ccsds::findFormat(c.blocks, c.format)) {
+            c.haveFormat = true;
+            c.inner = std::make_shared<Analyzer>();
+            for (const auto& blk : c.blocks) process(blk);   // the blocks the layout was found from count as well
+        }
+        return;
+    }
+    process(block);
+}
+
 void Analyzer::add(const std::vector<uint8_t>& f, int counterByte, int counterMod, double frameSec) {
     if (f.empty()) return;
+    if (f.size() > 12 && f[0] == 0x1A && f[1] == 0xCF && f[2] == 0xFC && f[3] == 0x1D) { ccsds_ = true; len_ = (int)f.size(); frameSec_ = frameSec; addCcsds(f, frameSec); n_++; return; }
+    ccsds_ = false;
     if ((int)f.size() != len_ || counterByte != ctrByte_) {   // a different frame layout: start again
         reset();
         len_ = (int)f.size(); ctrByte_ = counterByte;
@@ -84,6 +120,25 @@ void Analyzer::fill(SbTelemetry& t, double rfHz) const {
             info("Satellite", "not identified", rfHz > 0 ? "no published Ku beacon within 600 kHz of the measured frequency (table of 87 beacons, 110 to 180 E); the frames carry no name that could be read" : "the radio's frequency is not known", 0);
         }
         if (rfHz > 0) info("Beacon frequency", fmt("%.4f MHz", rfHz / 1e6), "measured: the radio's centre plus the carrier's offset", 2);
+    }
+    if (ccsds_ && cc_.haveFormat && cc_.inner) {
+        char b[256];
+        info("Frames", fmt("%llu CCSDS codeblocks of %d bytes, %.4f s each", (unsigned long long)cc_.blocksSeen, (int)len_, frameSec_), "the attached sync marker 1ACFFC1D starts every one", 2);
+        info("CCSDS layout", cc_.format.describe() + fmt(", transfer frames of %zu bytes", cc_.format.frameBytes()), "found from the first blocks: every Reed-Solomon word decodes and the frames carry a transfer frame header", 2);
+        info("Frame health", fmt("%llu decoded, %llu failed, %llu symbols corrected; frame CRC %llu good, %llu bad", (unsigned long long)cc_.decoded, (unsigned long long)cc_.failed, (unsigned long long)cc_.corrected, (unsigned long long)cc_.crcOk, (unsigned long long)cc_.crcBad), "Reed-Solomon decoding and the frame error control field", 2);
+        if (cc_.last.version >= 0) {
+            snprintf(b, sizeof b, "%s, spacecraft 0x%03X, virtual channel %d, master channel count %d, virtual channel count %u%s", cc_.last.kind(), cc_.last.scid, cc_.last.vcid, cc_.last.mcCount, (unsigned)cc_.last.vcCount, cc_.last.idle() ? ", idle data" : "");
+            info("Transfer frame", b, "the header of the last decoded transfer frame (CCSDS 132.0-B / 732.0-B)", 2);
+            info("Spacecraft identifier", fmt("0x%03X (%d)", cc_.last.scid, cc_.last.scid), "decoded from the transfer frame header; the assignment of identifiers to spacecraft is published by the SANA registry, not looked up here", 2);
+        }
+        if (cc_.lost) info("Lost frames", fmt("%llu by the virtual channel counters", (unsigned long long)cc_.lost), "gaps in the virtual channel frame count", 2);
+        SbTelemetry inner;
+        cc_.inner->fill(inner, 0);
+        t.fields = inner.fields;
+        for (auto& f : t.fields) f.name = "TM " + f.name;
+        for (const auto& i : inner.info) if (i.label == "Date and time of day" || i.label == "Orbit, position, ephemeris" || i.label == "Transponders and channels" || i.label == "Text" || i.label == "On-board clock") t.info.push_back(i);
+        t.checksumOk = cc_.crcOk; t.checksumBad = cc_.crcBad;
+        return;
     }
     if (n_ < 8) { info("Frames", fmt("%llu analysed", (unsigned long long)n_), "more frames are needed", 0); return; }
     const int L = len_;

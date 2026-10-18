@@ -447,6 +447,8 @@ public:
     void setWideSelected(int carrierId) { wide_.setSelected(carrierId); }   // the carrier whose sound plays and whose detail shows (0: the best locked)
     static bool wideSupported(int analysisMode) { return WideModes::supports(analysisMode); }
     void clearAllResults();                              // the lists of every mode at once (the top bar's Clear all)
+    // the files of the DSM-CC carousels of the stream received, saved to dir/pid_XXXX/path (clear broadcast data); returns the number of files written
+    size_t saveCarouselFiles(const std::string& dir) { std::lock_guard<std::mutex> lk(tsMu_); return demux_.saveCarouselFiles(dir); }
     void clearResults(int stdMode);                      // the Clear of a mode's screen: every list of its receiver
     int loadResults(const std::string& dir);             // the lists of the last run (a file of another build is discarded); the receivers restored
     int saveResults(const std::string& dir);             // the receivers whose lists changed since the last save (or load); the files written

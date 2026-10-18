@@ -8,6 +8,8 @@
 #include "dvbs_compute.h"
 #include "dvbs_s2hunt.h"
 #include "dvbs_s2rx.h"
+#include "dvbs_sf.h"
+#include "dect2/tv/ts.h"
 #include "dvbs_spec.h"
 #include "dvbs_symthread.h"
 #include "dvbs_vlsnr.h"
@@ -114,9 +116,28 @@ struct DvbsReceiver::Impl {
     std::function<void(const uint8_t*, size_t, double)> pktCb;
     // IP data: GSE from the BBFRAMEs (here), MPE and ULE from the transport stream (feedTs); one sink for the statistics and the PCAP file
     std::mutex ipMu;
-    dvbsip::GseIp gse;
+    struct IsiIp { dvbsip::GseIp gse; dvbsip::HemDeframer hem; uint64_t fields = 0; };
+    std::map<int, IsiIp> isiIp;   // every input stream of the carrier has its own GSE reading (a multistream hub: user IP on one ISI, signalling on another)
     dvbsip::IpSink ipSink;
     uint64_t gseFields = 0, gseIpPackets = 0;
+    dvbsip::IpMedia media;
+    struct McastTs { TsDemux demux; uint64_t packets = 0, scrambled = 0; };
+    std::map<std::string, std::unique_ptr<McastTs>> mcastTs;   // MPEG-TS found in UDP: at most four flows are analysed
+    void initIp() {
+        ipSink.onUdp = [this](const dvbsip::IpInfo& info, const uint8_t*, const uint8_t* payload, size_t n, double now) {
+            size_t off = 0;
+            if (!media.udp(info, payload, n, now, off)) return;
+            char key[96];
+            snprintf(key, sizeof key, "%s:%d", dvbsip::addrString(info.dst, false).c_str(), info.dport);
+            auto it = mcastTs.find(key);
+            if (it == mcastTs.end()) { if (mcastTs.size() >= 4) return; it = mcastTs.emplace(key, std::make_unique<McastTs>()).first; }
+            for (size_t k = off; k + 188 <= n; k += 188) {
+                it->second->demux.feed(payload + k);
+                it->second->packets++;
+                if ((payload[k + 3] >> 6) != 0) it->second->scrambled++;
+            }
+        };
+    }
     dvbsip::MpeExtractor mpe;
     dvbsip::UleExtractor ule;
     std::string pcapPath;
@@ -246,15 +267,29 @@ struct DvbsReceiver::Impl {
         rsUsed = rs; rollUsed = roll;
         symTotal = 0; timingNarrow = false; recentred = false;
         huntBuf.clear(); huntSinceTry = 0;
+        sfStrip.reset(); sfWasLocked = sfWasPilots = false;
         rsNominal = rs; huntFails = 0; ditherIdx = 0; huntCycles = 0;
         mode = kHunt;
         logf("carrier found: %.3f Msym/s, %+.0f kHz from the centre", rs / 1e6, r.centerHz / 1e3);
     }
 
     // ------------------------------------------------------------------------ the symbol path
+    // DVB-S2X super-frames (Annex E): their own symbols are taken out here so that the hunt and the receiver see plain PLFRAMEs
+    SfStripper sfStrip;
+    bool sfWasLocked = false, sfWasPilots = false;
+    std::vector<cf32> sfOut;
+    bool sfPilotsNow() const { const SfView v = sfStrip.view(); return v.carriesPlframes() && v.pilots; }
+
     void runFront(const cf32* x, size_t n) {
         sym.clear();
         front.process(x, n, sym);
+        if (!sym.empty() && (mode == kHunt || mode == kS2 || mode == kS1) && stdHint.load() != 1) {   // DVB-S (kS1) keeps passing through it: the stream the hunt saw continues without a gap
+            sfOut.clear(); sfStrip.push(sym.data(), sym.size(), sfOut); sym.swap(sfOut);
+            // the super-frame grid was found (or its pilots) while the frames were being followed: their symbols were not taken out until now, so the receiver starts again
+            const bool lk = sfStrip.view().carriesPlframes(), pl = sfPilotsNow();
+            if (mode == kS2 && ((lk && !sfWasLocked) || (pl && !sfWasPilots))) { s2.stop(); tsLockFlag = false; mode = kHunt; huntBuf.clear(); huntSinceTry = 0; }
+            sfWasLocked = lk; sfWasPilots = pl;
+        }
         if (sym.empty()) return;
         symTotal += sym.size();
         rateNow = front.symbolRateNow();
@@ -306,19 +341,28 @@ struct DvbsReceiver::Impl {
         if (stdHint.load() == 1 || huntBuf.size() < 100000) return false;
         const size_t n = std::min(huntBuf.size(), kS2Window);
         const cf32* w = huntBuf.data() + huntBuf.size() - n;
-        const S2HuntResult h = s2Hunt(w, n);
+        const S2HuntResult h = s2Hunt(w, n, sfPilotsNow());
         if (!h.ok) return false;
         s2.setSymbolRate(front.symbolRateNow());
         s2.setPlCode(plCode.load());
         s2.setIsi(isiSel.load());
+        s2.setSuperframePilots(sfPilotsNow());
         s2.setBlocking(blocking.load());
-        s2.setDataFieldCallback([this](const uint8_t* bb, size_t n, int mod, int rate, bool sh, int) {
+        s2.setDataFieldCallback([this](const uint8_t* bb, size_t n, int mod, int rate, bool sh, int tsGs) {
             std::vector<dvbsip::IpPacket> pk;
             const double now = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
+            if (n < 10) return;
+            const bool sis = (bb[0] >> 5) & 1;
+            const int isi = sis ? 0 : bb[1];
             std::lock_guard<std::mutex> lk(ipMu);
-            gse.setModcod(mod * 1000 + rate * 2 + (sh ? 1 : 0));
-            gseFields++;
-            gse.bbframe(bb, n, pk);
+            IsiIp& st = isiIp[isi];
+            st.gse.setModcod(mod * 1000 + rate * 2 + (sh ? 1 : 0));
+            st.fields++; gseFields++;
+            if (tsGs == 2) {   // GSE-HEM: the packets are sliced across BBFRAMEs, SYNCD says where the first one starts
+                std::vector<uint8_t> whole;
+                st.hem.dataField(bb + 10, n - 10, (uint16_t)(bb[7] << 8 | bb[8]), whole);
+                if (!whole.empty()) st.gse.dataField(whole.data(), whole.size(), pk);
+            } else st.gse.bbframe(bb, n, pk);
             for (const auto& q : pk) { gseIpPackets++; ipSink.push(q.data.data(), q.data.size(), now); }
         });
         s2.setPacketCallback([this](const uint8_t* p, size_t np, double secs) {
@@ -450,12 +494,29 @@ struct DvbsReceiver::Impl {
         o.fragments = ipSink.frag.fragments; o.reassembled = ipSink.frag.reassembled;
         o.mpePackets = mpe.stats.datagrams; o.ulePackets = ule.stats.ipDatagrams;
         o.active = o.packets > 0;
-        const int src = gse.source();
-        if (src == 1) o.source = std::string("GSE (") + gse.reports()[(size_t)gse.chosen()].variant.label() + ")";
-        else if (src == 2) o.source = "GSE (blind search for IPv4)";
-        else if (gseFields > 0) o.source = std::string("GSE, no IP found (") + kVariants[0].label() + " reading)";
-        if (mpe.stats.datagrams) o.source += std::string(o.source.empty() ? "" : ", ") + "MPE";
-        if (ule.stats.ipDatagrams) o.source += std::string(o.source.empty() ? "" : ", ") + "ULE";
+        std::string src;
+        std::map<uint16_t, uint64_t> others;
+        uint64_t otherBytesJudged = 0;
+        bool encrypted = false;
+        double entropy = -1;
+        std::vector<std::pair<std::pair<int, Label>, const LabelStats*>> lv;
+        for (const auto& kv : isiIp) {
+            const GseIp& g = kv.second.gse;
+            const std::string tag = isiIp.size() > 1 ? " ISI " + std::to_string(kv.first) : std::string();
+            const int sc = g.source();
+            std::string one;
+            if (sc == 1) one = std::string("GSE") + tag + " (" + g.reports()[(size_t)g.chosen()].variant.label() + ")";
+            else if (sc == 2) one = "GSE" + tag + " (blind search for IPv4)";
+            else if (kv.second.fields > 0 && !g.otherProtocols().empty()) one = "GSE" + tag + ", no IP";
+            if (!one.empty()) src += std::string(src.empty() ? "" : ", ") + one + (kv.second.hem.stats.fields ? " HEM" : "");
+            for (const auto& q : g.otherProtocols()) others[q.first] += q.second;
+            if (g.otherEntropy() >= 0) { entropy = std::max(entropy, g.otherEntropy()); otherBytesJudged++; }
+            encrypted = encrypted || g.otherEncrypted();
+            for (const auto& l : g.labels()) lv.push_back({{kv.first, l.first}, &l.second});
+        }
+        if (mpe.stats.datagrams) src += std::string(src.empty() ? "" : ", ") + "MPE";
+        if (ule.stats.ipDatagrams) src += std::string(src.empty() ? "" : ", ") + "ULE";
+        o.source = src;
         auto top = [](const std::map<uint16_t, uint64_t>& m, std::vector<std::pair<std::string, uint64_t>>& out, size_t n) {
             std::vector<std::pair<uint16_t, uint64_t>> v(m.begin(), m.end());
             std::sort(v.begin(), v.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
@@ -473,16 +534,15 @@ struct DvbsReceiver::Impl {
             o.flows.push_back(d);
         }
         o.flowCount = ipSink.stats.flowCount(); o.encryptedFlows = ipSink.stats.encryptedFlows();
-        for (const auto& q : gse.otherProtocols()) { char b[16]; snprintf(b, sizeof b, "%04X", q.first); o.otherPdus.push_back({b, q.second}); }
+        for (const auto& q : others) { char b[16]; snprintf(b, sizeof b, "%04X", q.first); o.otherPdus.push_back({b, q.second}); }
         std::sort(o.otherPdus.begin(), o.otherPdus.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
-        o.otherEntropy = gse.otherEntropy(); o.otherEncrypted = gse.otherEncrypted();
-        std::vector<std::pair<Label, const LabelStats*>> lv;
-        for (const auto& l : gse.labels()) lv.push_back({l.first, &l.second});
+        o.otherEntropy = entropy; o.otherEncrypted = encrypted;
         o.labelCount = lv.size();
         std::sort(lv.begin(), lv.end(), [](const auto& a, const auto& b) { return a.second->bytes > b.second->bytes; });
         for (size_t i = 0; i < lv.size() && i < 40; i++) {
             DvbsIpLabel d;
-            d.label = lv[i].first.text(); d.pdus = lv[i].second->pdus; d.bytes = lv[i].second->bytes; d.ip = lv[i].second->ip;
+            d.label = (isiIp.size() > 1 ? "ISI " + std::to_string(lv[i].first.first) + " " : std::string()) + lv[i].first.second.text();
+            d.pdus = lv[i].second->pdus; d.bytes = lv[i].second->bytes; d.ip = lv[i].second->ip;
             for (size_t k = 0; k < lv[i].second->addrs.size(); k++) d.addrs.push_back(addrString(lv[i].second->addrs[k], lv[i].second->addrV6[k]));
             uint64_t tot = 0;
             for (const auto& m : lv[i].second->modcods) tot += m.second;
@@ -491,8 +551,33 @@ struct DvbsReceiver::Impl {
             for (size_t k = 0; k < mv.size() && k < 4; k++) { char b[64]; snprintf(b, sizeof b, "%s%.0f %%", k ? ", " : "", 100.0 * (double)mv[k].second / (double)std::max<uint64_t>(1, tot)); d.modcods += modcodText(mv[k].first) + " " + b; }
             o.labels.push_back(std::move(d));
         }
+        for (const auto& m : media.flows()) {
+            DvbsMediaFlow d;
+            d.dst = m.dst; d.src = m.src; d.port = m.port; d.kind = m.kind; d.codec = m.codec;
+            d.packets = m.packets; d.bytes = m.bytes; d.lost = m.lost; d.kbps = m.kbps;
+            char key[96];
+            snprintf(key, sizeof key, "%s:%d", m.dst.c_str(), m.port);
+            auto it = mcastTs.find(key);
+            if (it != mcastTs.end()) {
+                const TsSnapshot sn = it->second->demux.snapshot();
+                for (const auto& sv : sn.services) d.services.push_back((sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name) + " (" + sv.typeName() + ")" + (sv.scrambled ? " scrambled" : ""));
+                d.scrambled = it->second->scrambled > 0 && it->second->scrambled * 2 > it->second->packets;
+            }
+            if (o.media.size() < 40) o.media.push_back(std::move(d));
+        }
+        for (const auto& sdp : media.sessions()) {
+            DvbsSdp d;
+            d.name = sdp.name; d.info = sdp.info; d.address = sdp.address; d.source = sdp.source; d.seen = sdp.seen;
+            for (const auto& md : sdp.media) {
+                std::string c;
+                for (int pt : md.payloadTypes) { auto r = md.rtpmap.find(pt); c += (c.empty() ? "" : "/") + (r != md.rtpmap.end() ? r->second : std::string(rtpPayloadName(pt))); }
+                d.media += (d.media.empty() ? "" : ", ") + md.type + " " + std::to_string(md.port) + (c.empty() ? "" : " (" + c + ")");
+            }
+            if (o.sdp.size() < 40) o.sdp.push_back(std::move(d));
+        }
         o.pcapPath = ipSink.pcap.isOpen() ? ipSink.pcap.path : std::string();
         o.pcapPackets = ipSink.pcap.packets; o.pcapBytes = ipSink.pcap.bytes;
+        (void)otherBytesJudged;
     }
 
     // ------------------------------------------------------------------------ telemetry
@@ -564,6 +649,7 @@ struct DvbsReceiver::Impl {
             t.framesSeen = s.framesSeen; t.framesDummy = s.framesDummy; t.crcErrors = s.crcErrors; t.gseFrames = s.gseFrames;
             t.framesUnsupported = s.framesUnsupported;
             if (s.roSignalled >= 0 && s.roSignalled < 6) { static const float kRo[6] = {0.35f, 0.25f, 0.20f, 0.15f, 0.10f, 0.05f}; t.rollOff = kRo[s.roSignalled]; t.rollOffSource = 2; }
+            { const SfView sv = sfStrip.view(); if (sv.superframes > 0 && sv.format >= 0) { char b[200]; snprintf(b, sizeof b, "super-frames (EN 302 307-2 annex E): format %d (%s), SF-pilots %s, %llu read%s%s", sv.format, sfFormatName(sv.format), sv.pilots ? "on" : "off", (unsigned long long)sv.superframes, sv.losses ? (", " + std::to_string(sv.losses) + " losses").c_str() : "", sv.format > 1 ? "; not decoded (only formats 0 and 1 are)" : ""); t.superframe = b; } }
             if (s.gseFrames > 0 && s.tsGs != 3) t.signalNote = "generic stream (GSE) seen: IP packets are listed under IP DATA";
             if (s.framesUnsupported > 0) {
                 const int c = s.unsupportedCode;
@@ -571,6 +657,24 @@ struct DvbsReceiver::Impl {
                                                      : "S2X frames with the reserved PLS code " + std::to_string(c) + " seen: not decoded";
             }
             { std::lock_guard<std::mutex> lk(cellMu); s2.cells(cells); }
+            for (const auto& kv : s.streams) {
+                const S2StreamStat& q = kv.second;
+                DvbsStream d;
+                d.isi = q.isi; d.single = q.single; d.decoded = (q.tsGs == 3 || (q.upl == 1504 && q.tsGs != 2)) && (q.single || q.isi == s.isi);
+                char b[64];
+                if (q.tsGs == 3) d.content = "transport stream";
+                else if (q.tsGs == 2) d.content = q.npd ? "GSE-HEM, GSE-Lite" : "GSE-HEM";
+                else if (q.upl == 0) d.content = q.npd ? "GSE-Lite" : "GSE";
+                else if (q.upl == 1504) { snprintf(b, sizeof b, "transport packets in a generic stream (sync %02Xh)", q.sync); d.content = b; }
+                else { snprintf(b, sizeof b, "%d-byte packets (sync %02Xh)", q.upl / 8, q.sync); d.content = b; }
+                d.ccm = q.ccm; d.issyi = q.issyi; d.npd = q.npd; d.hem = q.hem; d.frames = q.frames; d.bps = q.bps;
+                uint64_t tot = 0;
+                for (const auto& m : q.modcods) tot += m.second;
+                std::vector<std::pair<int, uint64_t>> mv(q.modcods.begin(), q.modcods.end());
+                std::sort(mv.begin(), mv.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
+                for (size_t k = 0; k < mv.size() && k < 3; k++) { snprintf(b, sizeof b, "%s%.0f %%", k ? ", " : "", 100.0 * (double)mv[k].second / (double)std::max<uint64_t>(1, tot)); d.modcods += modcodText(mv[k].first) + " " + b; }
+                t.streams.push_back(std::move(d));
+            }
         } else if (mode == kHunt) {
             t.snrDb = specRes.valid ? specRes.snrDb : 0;
         } else {
@@ -611,7 +715,7 @@ struct DvbsReceiver::Impl {
 };
 
 // ============================================================================ the class
-DvbsReceiver::DvbsReceiver() : p_(std::make_unique<Impl>()) {}
+DvbsReceiver::DvbsReceiver() : p_(std::make_unique<Impl>()) { p_->initIp(); }
 DvbsReceiver::~DvbsReceiver() {
     // the threads use the members of Impl: stop them while those are all alive
     p_->s1th.stop();
@@ -663,11 +767,11 @@ void DvbsReceiver::clearIp() {
     std::lock_guard<std::mutex> lk(p_->ipMu);
     const bool pc = p_->ipSink.pcap.isOpen();
     const std::string path = p_->ipSink.pcap.path;
-    p_->gse = dvbsip::GseIp();
+    p_->isiIp.clear();
     p_->ipSink.stats.clear();
     p_->ipSink.frag = dvbsip::Reassembler();
     p_->gseFields = p_->gseIpPackets = 0;
-    p_->mpe = dvbsip::MpeExtractor(); p_->ule = dvbsip::UleExtractor();
+    p_->mpe = dvbsip::MpeExtractor(); p_->ule = dvbsip::UleExtractor(); p_->media.clear(); p_->mcastTs.clear();
     if (pc) p_->ipSink.pcap.open(path);
 }
 void DvbsReceiver::setPlScrambling(int n) { p_->plCode = n; }

@@ -21,6 +21,18 @@ struct DvbsIpLabel {                 // a GSE label: a terminal's address on an 
     std::vector<std::string> addrs;
     std::string modcods;             // "QPSK 5/6 41 %, 16APSK 3/4 59 %": where the bytes went (the terminal's link as the hub sees it)
 };
+struct DvbsMediaFlow {               // a multicast stream found in the IP traffic
+    std::string dst, src, kind, codec;
+    int port = 0;
+    uint64_t packets = 0, bytes = 0, lost = 0;
+    double kbps = 0;
+    std::vector<std::string> services;   // MPEG-TS flows: the programmes found in them (names from their SDT), with their stream kinds
+    bool scrambled = false;              // transport packets of the flow are scrambled: only labelled
+};
+struct DvbsSdp {                     // an announcement (SAP/SDP)
+    std::string name, info, address, source, media;   // media: "audio 5004 (MPEG audio), video 5006 (H.264)"
+    uint64_t seen = 0;
+};
 struct DvbsIpTel {
     bool active = false;             // IP packets are being decoded
     std::string source;              // "GSE (standard)", "GSE (length incl. header)", "GSE blind search", "MPE", "ULE", ... (several joined)
@@ -32,9 +44,23 @@ struct DvbsIpTel {
     double otherEntropy = -1;        // bits per byte of those (negative: not judged yet)
     bool otherEncrypted = false;     // they read as random bytes: ciphertext, not decoded
     std::vector<DvbsIpLabel> labels; // the busiest GSE labels
+    std::vector<DvbsMediaFlow> media;   // multicast RTP and MPEG-TS streams
+    std::vector<DvbsSdp> sdp;           // SAP/SDP announcements (session names)
     size_t labelCount = 0;
     std::string pcapPath;            // the PCAP file being written ("" none)
     uint64_t pcapPackets = 0, pcapBytes = 0;
+};
+
+// One input stream of a DVB-S2 carrier (a multistream carrier interleaves several, told apart by the ISI)
+struct DvbsStream {
+    int isi = 0;                     // 0 for a single stream
+    bool single = true;
+    bool decoded = false;            // the transport stream that is being decoded (the ISI choice)
+    std::string content;             // "transport stream", "GSE", "GSE-HEM", "GSE-Lite", "transport packets in a generic stream (sync BBh)", "12-byte packets (sync 00h)"
+    bool ccm = true, issyi = false, npd = false, hem = false;
+    uint64_t frames = 0;
+    std::string modcods;             // "QPSK 1/3 100 %"
+    double bps = 0;                  // useful bit rate (DFL)
 };
 
 struct DvbsTelemetry {
@@ -103,6 +129,8 @@ struct DvbsTelemetry {
     double carrierLoHz = 0, carrierHiHz = 0; // the -3 dB edges of the carrier in the spectrum, relative to the centre (0, 0 when not found)
     std::vector<float> merHistory;           // MER of the last frames or blocks of symbols, oldest first
     DvbsIpTel ip;                            // IP data in the stream
+    std::string superframe;                  // the super-frames found (Annex E): format, pilots, count; empty when none
+    std::vector<DvbsStream> streams;         // the input streams of a DVB-S2 carrier
 };
 
 // One line for the command line and the log

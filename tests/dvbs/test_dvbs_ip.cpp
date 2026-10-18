@@ -223,6 +223,42 @@ int main() {
         for (int i = 0; i < 100; i++) { std::vector<uint8_t> v(188, (uint8_t)(i * 13)); v[0] = 0x47; v[1] = (uint8_t)(i % 7 ? 0x01 : 0x41); v[2] = 0x00; v[3] = (uint8_t)(0x10 | (i & 15)); if (!(i % 7)) { v[4] = 0; v[5] = 0; v[6] = 1; } u2.packet(v.data(), o3); }
         CHECK(o3.empty() && u2.stats.ipDatagrams == 0, "ULE: payload of a PES PID is not parsed");
     }
+    // multicast media: an SAP announcement with its SDP, an RTP audio stream named by it, MPEG-TS in UDP and in RTP
+    {
+        IpMedia m;
+        const uint8_t src[4] = {10, 1, 1, 1};
+        auto info = [&](const uint8_t dst[4], uint16_t port) { IpInfo i; memcpy(i.src.data(), src, 4); memcpy(i.dst.data(), dst, 4); i.protocol = kProtoUdp; i.hasPorts = true; i.sport = 1000; i.dport = port; return i; };
+        const std::string sdp = "v=0\r\no=- 1 1 IN IP4 10.1.1.1\r\ns=Radio One\r\ni=Test station\r\nc=IN IP4 239.1.1.5/32\r\nt=0 0\r\nm=audio 5004 RTP/AVP 96\r\na=rtpmap:96 MPEG4-GENERIC/48000/2\r\n";
+        std::vector<uint8_t> sap{0x20, 0x00, 0x12, 0x34, 10, 1, 1, 1};
+        sap.insert(sap.end(), {'a', 'p', 'p', 'l', 'i', 'c', 'a', 't', 'i', 'o', 'n', '/', 's', 'd', 'p', 0});
+        sap.insert(sap.end(), sdp.begin(), sdp.end());
+        const uint8_t sapDst[4] = {224, 2, 127, 254}, aud[4] = {239, 1, 1, 5}, ts1[4] = {239, 1, 1, 9}, ts2[4] = {239, 1, 1, 10};
+        size_t off;
+        m.udp(info(sapDst, 9875), sap.data(), sap.size(), 1.0, off);
+        for (int k = 0; k < 20; k++) {
+            std::vector<uint8_t> rtp{0x80, 96, (uint8_t)(k >> 8), (uint8_t)k, 0, 0, (uint8_t)k, 0, 0xDE, 0xAD, 0xBE, 0xEF};
+            rtp.resize(300, 0x11);
+            m.udp(info(aud, 5004), rtp.data(), rtp.size(), 1.0 + k * 0.02, off);
+        }
+        std::vector<uint8_t> tsb(188 * 7, 0xFF);
+        for (int k = 0; k < 7; k++) { tsb[(size_t)k * 188] = 0x47; tsb[(size_t)k * 188 + 1] = 0x1F; tsb[(size_t)k * 188 + 2] = 0xFF; }
+        bool isTs = m.udp(info(ts1, 5000), tsb.data(), tsb.size(), 2.0, off);
+        CHECK(isTs && off == 0, "bare MPEG-TS in UDP");
+        std::vector<uint8_t> rtpTs{0x80, 33, 0, 1, 0, 0, 0, 1, 1, 2, 3, 4};
+        rtpTs.insert(rtpTs.end(), tsb.begin(), tsb.end());
+        for (int k = 0; k < 6; k++) { rtpTs[2] = 0; rtpTs[3] = (uint8_t)(k + 1); isTs = m.udp(info(ts2, 5002), rtpTs.data(), rtpTs.size(), 3.0 + k * 0.1, off); }
+        CHECK(isTs && off == 12, "MPEG-TS behind an RTP header (offset %zu)", off);
+        const auto sess = m.sessions();
+        CHECK(sess.size() == 1 && sess[0].name == "Radio One" && sess[0].info == "Test station" && sess[0].address == "239.1.1.5" && sess[0].media.size() == 1 && sess[0].media[0].port == 5004, "the SDP announcement");
+        bool audioOk = false, tsOk = false, rtpTsOk = false;
+        for (const auto& f : m.flows()) {
+            if (f.dst == "239.1.1.5" && f.port == 5004 && f.kind == "RTP" && f.payloadType == 96 && f.codec == "MPEG4-GENERIC/48000/2" && f.lost == 0) audioOk = true;
+            if (f.dst == "239.1.1.9" && f.kind == "MPEG-TS") tsOk = true;
+            if (f.dst == "239.1.1.10" && f.kind == "RTP MPEG-TS") rtpTsOk = true;
+        }
+        CHECK(audioOk, "the RTP audio stream, its codec named by the announcement");
+        CHECK(tsOk && rtpTsOk, "both MPEG-TS flows");
+    }
     // IP fragments in any order, statistics, PCAP
     {
         std::vector<uint8_t> payload(2300);

@@ -21,12 +21,40 @@ encrypted or scrambled is decoded, and payloads are never shown: the view holds 
 fail was changed after the sender made them (an inline encryptor) and is marked encrypted; GSE PDUs that are not IP and read as random bytes (8 bits per byte over 32 KiB) are
 called ciphertext. The PCAP file holds the packets as received (what is encrypted stays encrypted).
 
+## Input streams, GSE-HEM and super-frames
+
+A DVB-S2 carrier can interleave several input streams (multistream, told apart by the ISI of the BBHEADER). The receiver page lists every stream under INPUT STREAMS: what it
+carries (transport stream, GSE, GSE-HEM, GSE-Lite, transport packets in a generic stream such as a hub's signalling, other fixed-length packets), CCM or ACM/VCM, frames, the MODCODs
+used and the useful bit rate. The chosen ISI is decoded as a transport stream as before; every other stream that carries GSE is de-encapsulated at the same time, each with its own reader
+(a VSAT hub often sends the user IP as GSE on one ISI and its signalling on another). **GSE-HEM** (EN 302 307-2 clause 5.1.7, TS/GS = 10, the BBHEADER's CRC-8 XOR 1): the GSE packets are
+sliced across BBFRAMEs and SYNCD points at the first one that starts in a data field; the slices are joined and the packets handled as GSE.
+
+**S2X super-frames** (EN 302 307-2 Annex E, formats 0 and 1): the stream of symbols is searched for the 270-symbol start sequence (a differential correlation, blind to the carrier offset);
+a super-frame has 612 540 symbols with a 720-symbol SOSF and SFFI head and, when switched on, a 36-symbol pilot field after every 16 capacity units. The format is read from the SFFI (a
+simplex code), the pilots tell whether they are on, and the stage takes those symbols out (turning the symbols after each gap back by the carrier phase the gap carried away) so that the
+receiver sees plain PLFRAMEs; with super-frame pilots the PLHEADER's pilot bit then means that the pilots are the super-frame's own and the frames have none. The receiver page notes the format,
+the pilots and the number of super-frames read; formats 2 to 7 are named, not decoded. A carrier without super-frames is passed through unchanged after three super-frames' worth of symbols.
+The code is adapted from DecSAT (`decsat-frame/superframe.rs`, `decsat-engine/superframe.rs`).
+
 ## IP in the transport stream (MPE and ULE)
 
 The packets of the transport stream that the receiver delivers are also searched for IP: **MPE** (EN 301 192: sections with table_id 0x3E on any PID that carries one; a PES start
 rules a PID out; the datagram is taken also from behind LLC/SNAP; sections whose payload is scrambled are skipped, never decoded) and **ULE** (RFC 4326: SNDUs in the TS payload, CRC-32
 checked, bridged Ethernet frames and IPv6 as well; a PID is accepted after three valid SNDUs that carry IP, so video and audio PIDs are never taken for it). Their packets go to the same
 statistics and PCAP file as GSE; the IP DATA source line says GSE, MPE, ULE or a mix. MPE is ported from DecSAT (`decsat-ts/mpe.rs`); ULE is written from the RFC.
+
+## Tables, carousels and data broadcast (the TS tab)
+
+The TS tab has views for the service information of the stream: **Networks** (the NIT: network names and every transponder with delivery system, frequency, polarisation, symbol rate,
+modulation, FEC, orbital position and service count; other networks too), **Other services** (the SDT other: names and providers of services in other transport streams, and the
+event counts and running events of the EIT other), **Bouquets** (the BAT), **Time** (the TDT, the TOT with local time offsets), **Conditional access** (the CAT: the CA systems and their
+EMM PIDs by name, and which services arrive scrambled; signalling only, nothing is descrambled), **Carousels** (DSM-CC data and object carousels: modules, completeness, the file tree of
+an object carousel; **Save files** writes them to `carousels/pid_XXXX/...` in the data folder with cleaned paths) and **Data** (the AIT: HbbTV and MHP applications with name, control
+code, transport (object carousel or HTTP URL base) and initial path; SCTE-35 cues; EBU data and every private PID labelled by what it carries). The sources are `core/src/tv/si_tables.cpp`,
+`dsmcc.cpp` and `ts_data.cpp`.
+
+**Multicast media** in the IP view: SAP announcements with their SDP (session names, media, codecs), RTP streams (payload type, codec, loss, rate) and MPEG-TS in UDP or RTP, each
+analysed by a TS demultiplexer (services found, scrambling noted). Audio and video are not decoded here.
 
 ## Credits
 
@@ -38,3 +66,7 @@ C++; its notes on what was seen on real links are kept in the comments. DecSAT c
 `tests/dvbs/test_dvbs_ip.cpp`: GSE round trips for every variant with fragmentation, the variant picked from the data, a link without IP, ciphertext recognised, a vendor CRC trailer,
 a lost fragment, bridged Ethernet, the blind search, IP fragments in any order, flow statistics, encrypted flows and the PCAP file. `tests/dvbs/test_dvbs_gse.cpp`: the whole chain
 (DVB-S2 QPSK 3/5 with 8-bit samples and noise, UDP in GSE with fragmented PDUs and three terminals), for two GSE variants, ending in a PCAP file that holds exactly the packets that were sent.
+
+`tests/dvbs/test_dvbs_streams.cpp`: the HEM deframer on its own, GSE-HEM and a multistream carrier (ISI 0 transport stream, ISI 1 GSE) through the whole chain. `tests/dvbs/test_dvbs_sf.cpp`: the sequences, the stripper (formats 0 and 1, with and without super-frame pilots, noise and a carrier offset, a carrier without super-frames, and the exact symbols it passes on) and the whole receiver on a super-framed carrier.
+
+`tests/dvbs/test_dvbs_si.cpp`: the NIT with satellite, cable and terrestrial transponders, another network, a bouquet, SDT other, EIT other, the TOT and the CAT. `tests/dvbs/test_dvbs_dsmcc.cpp`: an object carousel with directories and files, plain and zlib modules, blocks before the DII, saving to a folder. `tests/dvbs/test_dvbs_tsdata.cpp`: the AIT, SCTE-35, EBU data and labelled PIDs.

@@ -29,10 +29,13 @@ struct SatbeaconGenConfig {
     bool biphase = true;                // bi-phase (Manchester) data; false: NRZ
     double clockPpm = 7;                // the data clock's error against the radio's
     double pmIndex = 1.2;               // rad peak
+    bool ccsds = false;                 // frames are CCSDS codeblocks instead: the attached sync marker 1ACFFC1D, then a randomised Reed-Solomon (255,223) block of a TM transfer frame
     uint32_t seed = 1;
 };
 
 constexpr int kSbGenFrameBytes = 256;
+constexpr int kSbGenCcsdsBytes = 4 + 255;
+std::vector<uint8_t> satbeaconCcsdsFrame(uint32_t seed, uint32_t n);   // ASM + codeblock of transfer frame number n (spacecraft 0x2DF, virtual channel 1, counters from n)
 // the bytes of frame number n of a generator with this seed (what the receiver should find)
 std::vector<uint8_t> satbeaconFrameBytes(uint32_t seed, uint32_t n);
 

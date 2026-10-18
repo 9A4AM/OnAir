@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <deque>
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -203,6 +204,21 @@ private:
 };
 
 
+
+// GSE in high-efficiency mode (EN 302 307-2 clause 5.1.7): GSE packets sliced across BBFRAMEs, SYNCD pointing at the first packet that starts in the data field.
+// The deframer joins the slices and hands whole GSE packets (as a byte string, ready for GseDecoder / GseIp::dataField) on.
+struct HemStats { uint64_t fields = 0, packets = 0, joined = 0, resyncs = 0, unsynced = 0, mismatches = 0; };
+class HemDeframer {
+public:
+    void discontinuity() { partial_.clear(); synced_ = false; }
+    void dataField(const uint8_t* field, size_t n, uint16_t syncdBits, std::vector<uint8_t>& out);
+    HemStats stats;
+private:
+    void resyncAt(long start, size_t& p);
+    std::vector<uint8_t> partial_;
+    bool synced_ = false;
+};
+
 // ---------------------------------------------------------------- IP in the transport stream: MPE and ULE
 
 // PSI/private sections back together from TS payloads, per PID
@@ -245,6 +261,38 @@ std::vector<uint8_t> buildMpeSection(const uint8_t mac[6], const std::vector<uin
 std::vector<std::vector<uint8_t>> packetizeSection(uint16_t pid, uint8_t& cc, const std::vector<uint8_t>& section);   // 188-byte TS packets
 std::vector<uint8_t> buildUleSndu(uint16_t type, const std::vector<uint8_t>& pdu, const uint8_t* npa6 = nullptr);   // npa6 null: D = 1, no destination address
 std::vector<std::vector<uint8_t>> packetizeUle(uint16_t pid, uint8_t& cc, const std::vector<std::vector<uint8_t>>& sndus);   // SNDUs packed back to back, the payload pointer at the first start
+
+
+// ---------------------------------------------------------------- multicast media: SAP/SDP announcements, RTP streams, MPEG-TS in UDP
+
+struct SdpMedia { std::string type, proto; int port = 0; std::vector<int> payloadTypes; std::map<int, std::string> rtpmap; std::string address, control; };
+struct SdpSession { std::string name, info, origin, address; std::vector<SdpMedia> media; uint64_t seen = 0; std::string source; };
+bool parseSdp(const std::string& text, SdpSession& out);
+const char* rtpPayloadName(int pt);                   // static payload types: "PCMU", "MPA", "MP2T" ...
+
+struct MediaFlow {
+    std::string dst, src;
+    int port = 0;
+    std::string kind;            // "RTP", "MPEG-TS", "RTP MPEG-TS", "SAP"
+    int payloadType = -1;
+    std::string codec;           // from the payload type or the SDP rtpmap
+    uint32_t ssrc = 0;
+    uint64_t packets = 0, bytes = 0, lost = 0;
+    double kbps = 0;
+};
+
+class IpMedia {
+public:
+    // one UDP datagram (payload only); returns true when it is an MPEG-TS flow and fills tsOffset (0 or 12 plus extensions): the transport packets start there
+    bool udp(const IpInfo& info, const uint8_t* payload, size_t n, double now, size_t& tsOffset);
+    std::vector<MediaFlow> flows() const;
+    std::vector<SdpSession> sessions() const;
+    void clear() { *this = IpMedia(); }
+private:
+    struct F { MediaFlow f; uint16_t lastSeq = 0; bool haveSeq = false; int goodSeq = 0; double t0 = 0, tLast = 0; uint64_t bytesWin = 0; double winT = 0; };
+    std::map<std::string, F> flows_;
+    std::map<std::string, SdpSession> sdp_;
+};
 
 // ---------------------------------------------------------------- statistics and export
 
@@ -293,6 +341,7 @@ private:
 class IpSink {
 public:
     void push(const uint8_t* ip, size_t n, double now);   // an IP packet found by GSE, MPE or ULE
+    std::function<void(const IpInfo&, const uint8_t* ip, const uint8_t* payload, size_t n, double now)> onUdp;   // every whole UDP datagram, for the media analysis
     IpStats stats;
     Reassembler frag;
     PcapWriter pcap;

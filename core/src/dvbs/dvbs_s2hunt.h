@@ -30,7 +30,8 @@ struct S2HuntResult {
 };
 
 // Window of n symbols (three frames of the longest kind find a header and two more). About 60 complex multiply-adds per symbol plus a fit per candidate.
-S2HuntResult s2Hunt(const cf32* z, size_t n);
+// sfPilots: the frames come out of a super-framed carrier with the super-frame pilots on, so the PLHEADER's pilot bit does not add pilot blocks to the length
+S2HuntResult s2Hunt(const cf32* z, size_t n, bool sfPilots = false);
 // The search for DVB-S2X VL-SNR frames (PLHEADER + VL-SNR header, 990 known symbols; dvbs_vlhunt.cpp): s2Hunt falls back to it when it finds no ordinary header.
 // The result has modcod 64 (set 1) or 65 (set 2), pilots on, and the frequency and phase of the coherent fit.
 bool vlHunt(const cf32* z, size_t n, S2HuntResult& out);

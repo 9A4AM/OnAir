@@ -271,6 +271,30 @@ void panels(App& a) {
 
 // ---------------------------------------------------------------------------------------------- Receiver tab
 
+// the input streams of the carrier: what each ISI carries, at which MODCODs and how fast (a multistream carrier interleaves several)
+void streamsSection(App& a, const DvbsTelemetry& t) {
+    if (t.streams.empty() || (t.streams.size() == 1 && t.streams[0].content == "transport stream")) return;
+    ImGui::Spacing();
+    ImGui::TextColored(pal::accent(), t.streams.size() > 1 ? "INPUT STREAMS (MULTISTREAM)" : "INPUT STREAM");
+    if (ImGui::BeginTable("##dvbsstreams", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX)) {
+        ImGui::TableSetupColumn("ISI"); ImGui::TableSetupColumn("carries"); ImGui::TableSetupColumn("mode"); ImGui::TableSetupColumn("frames"); ImGui::TableSetupColumn("MODCODs"); ImGui::TableSetupColumn("rate"); ImGui::TableSetupColumn("");
+        ImGui::TableHeadersRow();
+        ImGui::PushFont(a.mono, 0);
+        for (const auto& d : t.streams) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); if (d.single) ImGui::TextUnformatted("-"); else ImGui::Text("%d", d.isi);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(d.content.c_str());
+            ImGui::TableNextColumn(); ImGui::Text("%s%s%s", d.ccm ? "CCM" : "ACM/VCM", d.issyi ? ", ISSY" : "", d.hem ? ", HEM" : "");
+            ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)d.frames);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(d.modcods.c_str());
+            ImGui::TableNextColumn(); ImGui::Text("%.1f kbit/s", d.bps / 1e3);
+            ImGui::TableNextColumn(); if (d.decoded) ImGui::TextColored(pal::accent(), "decoded as TS");
+        }
+        ImGui::PopFont();
+        ImGui::EndTable();
+    }
+}
+
 // ---------------------------------------------------------------------------------------------- IP data (GSE, MPE, ULE)
 // What the IP traffic of the signal looks like: hosts, ports, protocols, volume, the terminals of an ACM outbound. Payloads are never shown or decoded; a flow whose
 // UDP checksums fail and PDUs that read as random bytes are marked as encrypted. Optionally every IP packet is written to a PCAP file (link type RAW).
@@ -339,6 +363,30 @@ void ipSection(App& a, const DvbsTelemetry& t) {
         ImGui::PopFont();
         ImGui::EndTable();
     }
+    if (!ip.media.empty()) {
+        ImGui::TextDisabled("multicast streams in the traffic: %zu", ip.media.size());
+        if (ImGui::BeginTable("##dvbsipmedia", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX)) {
+            ImGui::TableSetupColumn("address"); ImGui::TableSetupColumn("kind"); ImGui::TableSetupColumn("codec"); ImGui::TableSetupColumn("packets"); ImGui::TableSetupColumn("rate"); ImGui::TableSetupColumn("what it carries");
+            ImGui::TableHeadersRow();
+            ImGui::PushFont(a.mono, 0);
+            for (const auto& m : ip.media) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::Text("%s:%d", m.dst.c_str(), m.port);
+                ImGui::TableNextColumn(); ImGui::TextUnformatted(m.kind.c_str());
+                ImGui::TableNextColumn(); ImGui::TextUnformatted(m.codec.c_str());
+                ImGui::TableNextColumn(); ImGui::Text("%llu%s", (unsigned long long)m.packets, m.lost ? (" (" + std::to_string(m.lost) + " lost)").c_str() : "");
+                ImGui::TableNextColumn(); ImGui::Text("%.0f kbit/s", m.kbps);
+                ImGui::TableNextColumn();
+                std::string w;
+                for (size_t i = 0; i < m.services.size() && i < 6; i++) w += (i ? ", " : "") + m.services[i];
+                if (m.scrambled) w += (w.empty() ? "" : "; ") + std::string("scrambled: only labelled");
+                ImGui::TextUnformatted(w.c_str());
+            }
+            ImGui::PopFont();
+            ImGui::EndTable();
+        }
+    }
+    for (const auto& d : ip.sdp) ImGui::TextDisabled("announcement: \"%s\"%s%s  %s  %s  (%llu times, from %s)", d.name.c_str(), d.info.empty() ? "" : " - ", d.info.c_str(), d.address.c_str(), d.media.c_str(), (unsigned long long)d.seen, d.source.c_str());
     if (!ip.labels.empty()) {
         ImGui::TextDisabled("GSE labels (terminals of an outbound): %zu, with the MODCODs each is sent in", ip.labelCount);
         if (ImGui::BeginTable("##dvbsiplabels", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX, ImVec2(0, 140 * gUi))) {
@@ -455,6 +503,7 @@ void receiver(App& a) {
         for (size_t i = 0; i < rows; i++) { ImGui::TableNextRow(); cell(L, i); cell(R, i); }
         ImGui::EndTable();
     }
+    streamsSection(a, t);
     ipSection(a, t);
     ImGui::Spacing();
     ImGui::TextColored(pal::accent(), "NOTES");
@@ -463,6 +512,7 @@ void receiver(App& a) {
     if (S.searchSince >= 0 && ImGui::GetTime() - S.searchSince > 10)
         ImGui::TextColored(pal::warnAmber(), "No carrier found. Most often the LNB is on the other polarisation (13 V vertical, 18 V horizontal) or the other band (22 kHz tone), or the dish is off target.");
     if (!t.signalNote.empty()) ImGui::TextUnformatted(t.signalNote.c_str());
+    if (!t.superframe.empty()) ImGui::TextUnformatted(t.superframe.c_str());
     ImGui::TextDisabled("DVB-S2X: the MODCODs of EN 302 307-2 table 17a and the VL-SNR frames of table 18a (set 1 and 2, PLS codes 129 and 131) are decoded; the low roll-offs 0.15, 0.10 and 0.05 are signalled and followed. Superframes (Annex E) and bundled channels are not decoded.");
     if (t.standard == 3) ImGui::TextUnformatted("A DVB-S2X signal was recognised.");
     ImGui::TextDisabled("Margin is measured against the ideal-demodulator Es/N0 of EN 302 307-1 table 13 (DVB-S2X: EN 302 307-2 tables 20a and 20c, 50 LDPC iterations): a real receiver needs a little more.");

@@ -24,8 +24,8 @@ Chunks: 1 GSE, IP, PCAP and the IP view; 2 MPE and ULE; 3 ACM, VCM, multistream,
 | Blind symbol rate, roll-off, constellation, DVB-S2/S2X detection ("Identify") | done in the receiver's own hunt (spectrum, roll-off, pilots) | |
 | Narrow carriers (down to about 10 kBd) | partial (the DVB-S/S2 receiver starts at about 1 Msym/s) | skipped: needs DecSAT's VFO front end (see below) |
 | ACM/VCM: MODCOD per frame, VCM flag | done (telemetry), ACM terminal table added with GSE | 1, 3 |
-| Multistream (ISI): one stream chosen; each ISI to its own stage | partial: a chosen ISI | 3: list the ISIs and decode them side by side |
-| S2X superframing (Annex E): start sequence, format, formats 0 and 1 | missing | 3 |
+| Multistream (ISI): one stream chosen; each ISI to its own stage | added: every ISI is listed (content, CCM/ACM, MODCODs, rate); the chosen one is decoded as a transport stream and every GSE, GSE-HEM or packet stream is read at the same time, each with its own reader | 3 |
+| S2X superframing (Annex E): start sequence, format, formats 0 and 1 | added (ported; formats 2 to 7 are named only), with a phase correction over the removed symbols that DecSAT's stage does not have | 3 |
 | Modulator (DVB-S/S2/S2X, HackRF TX / IQ file) | done (`dvbs_tx.cpp`, TX framework) | 3: GSE and IP test signals |
 | Waterfall, zoom, pan; carrier detection over a whole span | done (the app's spectrum views; the DVB-S/S2 mode takes one carrier) | |
 | VFOs: many carriers decoded at once from one wide capture, survey of every carrier | skipped (partly done): DVB-T has multi-channel (`multitv`); a general VFO bank would be a new architecture for one mode | 5: reconsider after the rest |
@@ -40,14 +40,14 @@ Chunks: 1 GSE, IP, PCAP and the IP view; 2 MPE and ULE; 3 ACM, VCM, multistream,
 | MPEG-TS out: file, UDP, TCP/HTTP | done (file, UDP, HLS, player) | |
 | TS analyser: PIDs, services, now/next, network, tables, errors, bitrate per PID | done (`TsDemux`) | |
 | PAT, PMT, SDT actual, NIT actual (name, LCN), EIT, TDT | done | |
-| NIT transponder lists (frequency, polarisation, symbol rate, FEC, orbital position), other networks, BAT, SDT other, EIT other, TOT, CAT | missing | 4 |
+| NIT transponder lists (frequency, polarisation, symbol rate, FEC, orbital position), other networks, BAT, SDT other, EIT other, TOT, CAT | added (`tv/si_tables`): satellite, cable, terrestrial and T2 delivery descriptors, other networks, bouquets, services and event counts of other transport streams, local time offsets, the CAT with CA system names (signalling only); shown in the TS tab | 4 |
 | EPG for every service, schedule | done for present/following and the schedule of the actual TS | 4: other TS |
 | Teletext, DVB subtitles | done | |
 | In-app player (H.264, MPEG-2, HEVC; MP2/AAC/AC-3) | done | |
 | BISS descrambling (DVB-CSA, user key) | skipped: this project never descrambles; payloads scrambled with CSA or any CA are reported as scrambled, nothing more | owner's rule |
-| DSM-CC data and object carousels, file extraction | missing | 4 |
-| Data broadcast signalling (AIT, MHEG-5, HbbTV) | missing | 4 |
-| SCTE-35, EBU data, other TS payloads named | partial (PID labels) | 4 |
+| DSM-CC data and object carousels, file extraction | added (`tv/dsmcc`): DSI, DII, DDB, zlib modules, BIOP service gateway, directories and files, saved to a folder with cleaned paths; carousel list and file list in the TS tab | 4 |
+| Data broadcast signalling (AIT, MHEG-5, HbbTV) | added: the AIT with application names, control codes, transport protocols, base URLs and initial paths; MHEG-5 applications travel in the object carousel and are saved with it | 4 |
+| SCTE-35, EBU data, other TS payloads named | added (`tv/ts_data`): SCTE-35 splice insert and time signal cues, EBU teletext/subtitles/VPS/WSS/closed captions in PES, DVB subtitles, DSM-CC, MPE, DIT, SIT, RST labelled; scrambled packets only labelled | 4 |
 | Stuffing and null statistics | done | |
 
 ## IP data
@@ -61,11 +61,11 @@ Chunks: 1 GSE, IP, PCAP and the IP view; 2 MPE and ULE; 3 ACM, VCM, multistream,
 | PCAP export (link type RAW) | added | 1 |
 | Flows whose UDP checksum fails marked as encrypted in transit; non-IP PDUs that read as random bytes marked as ciphertext | added; the data is never shown or decoded | 1 |
 | ACM terminal table (GSE label, its IP addresses, the MODCODs it is sent in) | added | 1 |
-| GSE-HEM, GSE-Lite (S2X) | missing | 3 |
+| GSE-HEM, GSE-Lite (S2X) | added: HEM headers (CRC-8 XOR 1) read, the sliced packets joined by SYNCD; GSE-Lite is named (its packets are plain GSE) | 3 |
 | MPE (table 0x3E) to IP | added (also behind LLC/SNAP; scrambled sections skipped, never decoded) | 2 |
 | ULE (RFC 4326) to IP | added (not in DecSAT: written from the RFC; a PID is taken up after three valid SNDUs) | 2 |
-| Multicast MPEG-TS in UDP/RTP found, analysed and played | missing | 5 |
-| Multicast audio: SAP/SDP names, RTP AAC/Opus, now-playing | missing | 5 |
+| Multicast MPEG-TS in UDP/RTP found, analysed and played | added: found by the sync bytes, in UDP or behind an RTP header, analysed by a TS demultiplexer per flow (services, scrambling flag); playing in the app's player is not wired (the stream can be saved as a PCAP and replayed) | 5 |
+| Multicast audio: SAP/SDP names, RTP AAC/Opus, now-playing | added: SAP announcements with their SDP (names, media, codecs), RTP streams found from their sequence numbers (payload type, codec from the announcement, loss, rate); audio is not decoded (codecs are user-installed add-ons here) | 5 |
 | DVB-RCS signalling (EN 301 790 / 545-2: NCR, TIM, SCT/FCT/TBTP) | missing | 3 or 5: public specs, the tables can be read from the sections of a stream |
 | A hub's private burst plan / inroute signalling (Newtec D1h, worked out from a capture) | skipped: no public specification, DecSAT derived it from one recording; we have none to check against |
 | Return pools and TDMA/MF-TDMA burst demodulation | skipped: needs the VFO front end and burst demodulators found from live recordings |
@@ -74,7 +74,7 @@ Chunks: 1 GSE, IP, PCAP and the IP view; 2 MPE and ULE; 3 ACM, VCM, multistream,
 
 | DecSAT capability | OnAir | Chunk / reason |
 |---|---|---|
-| Satellite beacons: carrier, drift, C/N0, PCM/PSK/PM telemetry, IRIG 106 and CCSDS frames, counter, major frame map, word plot, pointing tone | added earlier in this branch (TV sat beacon decoder: carrier, subcarrier, bi-phase, frames, counter, checksum, decoded view, export); CCSDS Reed-Solomon, K=7 and word plot missing | 5 |
+| Satellite beacons: carrier, drift, C/N0, PCM/PSK/PM telemetry, IRIG 106 and CCSDS frames, counter, major frame map, word plot, pointing tone | added earlier in this branch (TV sat beacon decoder: carrier, subcarrier, bi-phase, frames, counter, checksum, decoded view, export); CCSDS Reed-Solomon, randomiser, layout search and TM/AOS headers added; K=7 under the symbols, the word plot and the pointing tone still planned | 5 |
 | Carrier ID (DVB-CID, TS 103 129) | missing | 5 (public spec; DecSAT has no recording of one) |
 | TPC 2964 (IESS-315), Comtech TPC 7/8, Q-Flex FastLink, K=7 Viterbi SCPC, IBS/IESS-309 with apt-X, E1 and G.728 voice, Comtech CDM modem types, radar feeds (ASTERIX, RCMS), IS-19 DAMA | skipped: professional VSAT and SCPC links with vendor framings, mostly worked out from live captures; they need DecSAT's blind carrier front end and recordings we do not have. Voice codecs would also be user-installed add-ons here |
 | Generic PSK/APSK/QAM to symbols | skipped: a generic symbol dump, not part of the receivers here; the protocol lab (`core/src/protolab`) covers analysis of unknown signals |

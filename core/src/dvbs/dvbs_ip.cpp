@@ -543,6 +543,56 @@ std::vector<uint8_t> GseEncapsulator::packets(size_t len) {
 }
 
 
+
+// ---------------------------------------------------------------- GSE-HEM
+
+static size_t hemPacketLen(const uint8_t* h) { return 2 + (size_t)(((h[0] << 8) | h[1]) & 0x0FFF); }
+static bool hemPadding(const uint8_t* h) { return (((h[0] << 8) | h[1]) & 0xF000) == 0 && hemPacketLen(h) == 2; }
+
+void HemDeframer::resyncAt(long start, size_t& p) {
+    stats.mismatches++;
+    partial_.clear();
+    if (start >= 0) { p = (size_t)start; stats.resyncs++; } else synced_ = false;
+}
+
+void HemDeframer::dataField(const uint8_t* field, size_t n, uint16_t syncd, std::vector<uint8_t>& out) {
+    stats.fields++;
+    long start = -1;
+    if (syncd != 0xFFFF && syncd % 8 == 0 && (size_t)(syncd / 8) <= n) start = syncd / 8;
+    size_t p = 0;
+    if (!synced_) {
+        if (start >= 0) { p = (size_t)start; synced_ = true; stats.resyncs++; }
+        else { stats.unsynced++; return; }
+    } else if (!partial_.empty()) {
+        // finish the packet left over: its header first, then the body the header announces
+        while (partial_.size() < 2 && p < n) partial_.push_back(field[p++]);
+        if (partial_.size() >= 2) {
+            const size_t need = hemPacketLen(partial_.data());
+            const size_t take = std::min(need - partial_.size(), n - p);
+            partial_.insert(partial_.end(), field + p, field + p + take);
+            p += take;
+            if (partial_.size() == need) {
+                if (start >= 0 && (size_t)start != p) resyncAt(start, p);   // the next packet does not start where SYNCD says
+                else { out.insert(out.end(), partial_.begin(), partial_.end()); stats.packets++; stats.joined++; partial_.clear(); }
+            }
+        }
+        if (!partial_.empty()) {
+            // the whole field went into the leftover packet: none can have started in it
+            if (start >= 0) resyncAt(start, p); else return;
+        }
+    } else if (start > 0) {
+        resyncAt(start, p);   // a packet should start right at the field's beginning
+    }
+    // whole packets from p; one running past the end is kept
+    while (p < n) {
+        if (n - p < 2) { partial_.assign(field + p, field + n); break; }
+        if (hemPadding(field + p)) break;
+        const size_t len = hemPacketLen(field + p);
+        if (p + len <= n) { out.insert(out.end(), field + p, field + p + len); stats.packets++; p += len; }
+        else { partial_.assign(field + p, field + n); break; }
+    }
+}
+
 // ---------------------------------------------------------------- sections, MPE, ULE
 
 static const size_t kMaxSection = 4096 + 3;
@@ -745,6 +795,153 @@ std::vector<std::vector<uint8_t>> packetizeUle(uint16_t pid, uint8_t& cc, const 
     return out;
 }
 
+
+// ---------------------------------------------------------------- multicast media
+
+const char* rtpPayloadName(int pt) {
+    switch (pt) {
+    case 0: return "PCMU"; case 3: return "GSM"; case 8: return "PCMA"; case 9: return "G722"; case 10: return "L16 stereo"; case 11: return "L16 mono"; case 14: return "MPEG audio (MPA)";
+    case 26: return "JPEG"; case 31: return "H.261"; case 32: return "MPEG video (MPV)"; case 33: return "MPEG-TS (MP2T)"; case 34: return "H.263"; default: return pt >= 96 ? "dynamic" : "";
+    }
+}
+
+bool parseSdp(const std::string& text, SdpSession& o) {
+    o = SdpSession();
+    size_t pos = 0;
+    bool any = false;
+    SdpMedia* cur = nullptr;
+    while (pos < text.size()) {
+        size_t e = text.find('\n', pos);
+        if (e == std::string::npos) e = text.size();
+        std::string line = text.substr(pos, e - pos);
+        pos = e + 1;
+        while (!line.empty() && (line.back() == '\r' || line.back() == ' ')) line.pop_back();
+        if (line.size() < 2 || line[1] != '=') continue;
+        const char k = line[0];
+        const std::string v = line.substr(2);
+        if (k == 'v') any = true;
+        else if (k == 's') o.name = v;
+        else if (k == 'i' && !cur) o.info = v;
+        else if (k == 'o') o.origin = v;
+        else if (k == 'c') {
+            const size_t a = v.find("IN IP");
+            if (a != std::string::npos) {
+                size_t b = v.find(' ', a + 3);
+                std::string addr = b == std::string::npos ? "" : v.substr(b + 1);
+                const size_t sl = addr.find('/');
+                if (sl != std::string::npos) addr.resize(sl);
+                if (cur) cur->address = addr; else o.address = addr;
+            }
+        } else if (k == 'm') {
+            SdpMedia m;
+            char type[32] = {}, proto[32] = {};
+            int port = 0, used = 0;
+            if (sscanf(v.c_str(), "%31s %d%n", type, &port, &used) >= 2) {
+                m.type = type; m.port = port;
+                size_t p2 = (size_t)used;
+                while (p2 < v.size() && v[p2] == ' ') p2++;
+                size_t q = v.find(' ', p2);
+                m.proto = v.substr(p2, q == std::string::npos ? std::string::npos : q - p2);
+                while (q != std::string::npos && q < v.size()) { while (q < v.size() && v[q] == ' ') q++; if (q >= v.size()) break; m.payloadTypes.push_back(atoi(v.c_str() + q)); q = v.find(' ', q); }
+                o.media.push_back(m);
+                cur = &o.media.back();
+            }
+        } else if (k == 'a' && cur) {
+            if (v.rfind("rtpmap:", 0) == 0) { const int pt = atoi(v.c_str() + 7); const size_t sp = v.find(' '); if (sp != std::string::npos) cur->rtpmap[pt] = v.substr(sp + 1); }
+            else if (v.rfind("control:", 0) == 0) cur->control = v.substr(8);
+        }
+    }
+    return any && !o.name.empty();
+}
+
+bool IpMedia::udp(const IpInfo& info, const uint8_t* p, size_t n, double now, size_t& tsOffset) {
+    tsOffset = 0;
+    if (n == 0) return false;
+    char key[96];
+    snprintf(key, sizeof key, "%s:%d", addrString(info.dst, false).c_str(), info.dport);
+    // SAP announcements: 224.2.127.254:9875 (and ff0e::2:7ffe)
+    if (info.dport == 9875 && n > 8) {
+        const uint8_t b0 = p[0];
+        const bool v6 = (b0 & 0x10) != 0, del = (b0 & 0x04) != 0, enc = (b0 & 0x02) != 0, comp = (b0 & 0x01) != 0;
+        size_t i = 4 + (v6 ? 16 : 4) + (size_t)p[1] * 4;
+        if (!del && !enc && !comp && i < n) {
+            std::string text((const char*)p + i, n - i);
+            if (text.rfind("v=", 0) != 0) { const size_t z = text.find('\0'); if (z != std::string::npos) text = text.substr(z + 1); }   // the payload type string
+            SdpSession s;
+            if (parseSdp(text, s)) {
+                const std::string id = s.origin + "|" + s.name;
+                SdpSession& e = sdp_[id];
+                const uint64_t seen = e.seen + 1;
+                e = s; e.seen = seen; e.source = addrString(info.src, false);
+                if (sdp_.size() > 512) sdp_.erase(sdp_.begin());
+            }
+        }
+        F& f = flows_[key];
+        f.f.dst = addrString(info.dst, false); f.f.src = addrString(info.src, false); f.f.port = info.dport; f.f.kind = "SAP";
+        f.f.packets++; f.f.bytes += n;
+        return false;
+    }
+    if (flows_.size() > 512 && !flows_.count(key)) return false;
+    F& f = flows_[key];
+    f.f.dst = addrString(info.dst, false); f.f.src = addrString(info.src, false); f.f.port = info.dport;
+    f.f.packets++; f.f.bytes += n;
+    if (f.t0 == 0) { f.t0 = now; f.winT = now; }
+    f.tLast = now;
+    f.bytesWin += n;
+    if (now - f.winT >= 2.0) { f.f.kbps = (double)f.bytesWin * 8 / 1000 / (now - f.winT); f.bytesWin = 0; f.winT = now; }
+    // MPEG-TS: whole transport packets, sync byte every 188 bytes
+    auto tsAt = [&](size_t off) {
+        if (n < off + 188 || (n - off) % 188 != 0) return false;
+        for (size_t k = off; k < n; k += 188) if (p[k] != 0x47) return false;
+        return true;
+    };
+    if (tsAt(0)) { f.f.kind = "MPEG-TS"; f.f.codec = "MPEG-TS"; tsOffset = 0; return true; }
+    if (n >= 12 && (p[0] >> 6) == 2) {   // RTP
+        const size_t cc = p[0] & 15;
+        size_t off = 12 + cc * 4;
+        if ((p[0] & 0x10) && n >= off + 4) off += 4 + (size_t)(p[off + 2] << 8 | p[off + 3]) * 4;   // header extension
+        const int pt = p[1] & 0x7F;
+        const uint16_t seq = (uint16_t)(p[2] << 8 | p[3]);
+        const uint32_t ssrc = (uint32_t)p[8] << 24 | (uint32_t)p[9] << 16 | (uint32_t)p[10] << 8 | p[11];
+        if (f.haveSeq) {
+            const uint16_t d = (uint16_t)(seq - f.lastSeq);
+            if (d == 1) f.goodSeq++;
+            else if (d > 1 && d < 1000) { f.f.lost += (uint64_t)d - 1; f.goodSeq++; }
+            else if (d != 0) f.goodSeq = 0;
+        }
+        f.lastSeq = seq; f.haveSeq = true;
+        if (f.goodSeq >= 4 && off <= n) {
+            f.f.kind = pt == 33 ? "RTP MPEG-TS" : "RTP";
+            f.f.payloadType = pt; f.f.ssrc = ssrc;
+            f.f.codec = rtpPayloadName(pt);
+            if (pt == 33 && tsAt(off)) { tsOffset = off; return true; }
+        }
+    }
+    return false;
+}
+
+std::vector<MediaFlow> IpMedia::flows() const {
+    std::vector<MediaFlow> v;
+    for (const auto& kv : flows_) {
+        MediaFlow m = kv.second.f;
+        if (m.kind.empty()) continue;
+        // a dynamic payload type named by an announcement
+        if (m.payloadType >= 96) for (const auto& s : sdp_) for (const auto& md : s.second.media) {
+            auto it = md.rtpmap.find(m.payloadType);
+            if ((md.address.empty() ? s.second.address : md.address) == m.dst && md.port == m.port && it != md.rtpmap.end()) m.codec = it->second;
+        }
+        v.push_back(m);
+    }
+    std::sort(v.begin(), v.end(), [](const MediaFlow& a, const MediaFlow& b) { return a.bytes > b.bytes; });
+    return v;
+}
+
+std::vector<SdpSession> IpMedia::sessions() const {
+    std::vector<SdpSession> v;
+    for (const auto& kv : sdp_) v.push_back(kv.second);
+    return v;
+}
+
 // ---------------------------------------------------------------- statistics, PCAP, sink
 
 bool FlowKey::operator<(const FlowKey& o) const {
@@ -824,6 +1021,14 @@ void IpSink::push(const uint8_t* ip, size_t n, double now) {
     IpInfo wi = info;
     if (whole.size() != info.len || memcmp(whole.data(), ip, info.len) != 0) { if (!parseIp(whole.data(), whole.size(), wi)) return; }
     stats.add(wi, udpChecksumOk(whole.data(), wi));
+    if (onUdp && wi.protocol == kProtoUdp && !wi.v6) {
+        const size_t ihl = (size_t)(whole[0] & 0x0F) * 4;
+        if (((whole[6] << 8 | whole[7]) & 0x3FFF) == 0 && wi.len >= ihl + 8) {
+            const size_t ulen = (size_t)(whole[ihl + 4] << 8 | whole[ihl + 5]);
+            const size_t avail = wi.len - ihl - 8;
+            onUdp(wi, whole.data(), whole.data() + ihl + 8, std::min(avail, ulen >= 8 ? ulen - 8 : avail), now);
+        }
+    }
     if (pcap.isOpen()) pcap.write(now, whole.data(), wi.len);
 }
 

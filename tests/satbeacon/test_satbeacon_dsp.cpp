@@ -151,5 +151,19 @@ int main() {
         CHECK(t.frameBits == 2048 && t.syncName == "FAF320 (IRIG 106)", "%s: frame length %d sync '%s'", k.name, t.frameBits, t.syncName.c_str());
         CHECK(framesMatching(t, 1) >= 5 && t.blocksBad == 0, "%s: frames equal to the generator's: %d of %zu, %llu bad", k.name, framesMatching(t, 1), t.frames.size(), (unsigned long long)t.blocksBad);
     }
+    // CCSDS codeblocks on the same subcarrier: the sync marker is found, the layout and the transfer frames are read from the receiver's own frames
+    {
+        SatbeaconGenConfig c; c.rate = 1e6; c.snrDb = 30; c.reference = false; c.ccsds = true;
+        SatbeaconGenerator g(c);
+        sb::Beacon b; b.configure(1e6);
+        run(b, g, 1e6, 45);
+        SbTelemetry t; b.fill(t);
+        b.analyzer().fill(t, 0);
+        printf("  CCSDS: state %d L %d sync '%s' frames %llu/%llu\n", t.state, t.frameBits, t.syncName.c_str(), (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad);
+        CHECK(t.state == 3 && t.frameBits == kSbGenCcsdsBytes * 8 && t.syncName == "1ACFFC1D (CCSDS)", "CCSDS frames found: state %d L %d sync '%s'", t.state, t.frameBits, t.syncName.c_str());
+        bool layout = false, sc = false;
+        for (const auto& i : t.info) { if (i.label == "CCSDS layout" && i.value.find("RS(255,223) I = 1") == 0) layout = true; if (i.label == "Transfer frame" && i.value.find("spacecraft 0x2DF") != std::string::npos) sc = true; }
+        CHECK(layout && sc, "layout and spacecraft read");
+    }
     return testSummary("satbeacon dsp");
 }

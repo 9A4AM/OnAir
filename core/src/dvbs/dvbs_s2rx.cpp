@@ -164,6 +164,7 @@ struct S2Rx::Impl {
     double phaseSnap = 0; bool lockSnap = false;
     mutable std::mutex statMu;
     S2Stats st;
+    uint64_t statSyms = 0;
     uint64_t seqNext = 0;
     int plN = 0;
 
@@ -536,9 +537,9 @@ struct S2Rx::Impl {
         PlsResult use = pr;
         if (!good && haveParams && sofScore > 0.25f) {
             // a noisy header: the code word of the frame before is by far the most likely one (constant coding and modulation is the usual case)
-            const float sp = s2PlsScore(&hdr[26], modcod, sh, pil);
+            const float sp = s2PlsScore(&hdr[26], modcod, sh, pilHdr);
             if (sp > 0.30f && sp >= pr.score - 0.10f) {
-                use.modcod = modcod; use.shortFrame = sh; use.pilots = pil; use.score = sp; use.code = s2PlsValue(modcod, sh, pil); good = true;
+                use.modcod = modcod; use.shortFrame = sh; use.pilots = pilHdr; use.score = sp; use.code = s2PlsValue(modcod, sh, pilHdr); good = true;
             }
         }
         int mc = use.modcod, md = 0, rt = 0;
@@ -589,8 +590,11 @@ struct S2Rx::Impl {
         // the rest of the frame
         if (lastModcod >= 0 && mc != lastModcod) vcm = true;
         lastModcod = mc;
+        pilHdr = bp;
+        const bool sfp = o.sfPil_.load();   // super-frame pilots: the PLHEADER's pilot bit says they are on, the frame has none of its own
         setupFrame(mc, md, rt, bs, bp, false);
-        L = frameLen(mc, md, rt, bs, bp);
+        if (sfp) pil = false;
+        L = frameLen(mc, md, rt, bs, sfp ? false : bp);
         lastHeaderL = L;
         haveParams = true;
     }
@@ -600,6 +604,7 @@ struct S2Rx::Impl {
     // decisions slip the loop (16APSK 7/15 short at 9 dB lost a frame in a thousand without it)
     bool softWanted() const { return (mod <= k8psk || s2IsS2x(rate)) && sg2 > (dmin * 0.125f) * (dmin * 0.125f); }
 
+    bool pilHdr = false;     // the pilot bit of the last PLHEADER (the frame's own pilots may be none when the super-frame's stand in for them)
     int frameLen(int mc, int md, int rt, bool bs, bool bp) {
         (void)md; (void)rt;
         return s2PlsFrameSymbols(s2PlsValue(mc, bs, bp));
@@ -614,6 +619,7 @@ struct S2Rx::Impl {
         skip = s2PlsKind(s2PlsValue(mc, bs, bp)) == 2;
         hdrS2x = s2PlsValue(mc, bs, bp) >= 128;
         modcod = mc; sh = bs; pil = bp;
+        if (!flywheel) pilHdr = bp;
         if (!skip) { mod = md; rate = rt; }      // a frame that is not decoded keeps the loop settings of the one before
         dummy = mc == 0;
         if (!dummy && !skip) setLoops();
@@ -723,7 +729,7 @@ struct S2Rx::Impl {
         if (h.modcod < 1 || !s2ModcodSplit(h.modcod, md, rt)) return false;
         const S2Dims dm = s2Dims(md, rt, h.shortFrame);
         if (!dm.ok) return false;
-        const int L = s2FrameSymbols(dm, h.pilots);
+        const int L = s2FrameSymbols(dm, h.pilots && !o.sfPil_.load());
         const bool inv = h.inverted;
         auto zAt = [&](size_t i) { return inv ? std::conj(win[i]) : win[i]; };
         if (h.firstPos + (size_t)L + 95 > n) return false;
@@ -767,7 +773,7 @@ struct S2Rx::Impl {
             const cf32 s = headerSum(pq[0], w);
             const double th = std::arg(s);
             const float gain = std::max(0.2f, std::min(3.f, std::abs(s) / 90.f));
-            const double f = frameSyndrome(frame, L, th, w, gain, md, rt, h.shortFrame, h.pilots);
+            const double f = frameSyndrome(frame, L, th, w, gain, md, rt, h.shortFrame, h.pilots && !o.sfPil_.load());
             all.push_back(f);
             if (f < best) { second = best; best = f; bestW = w; bestTh = th; }
             else if (f < second) second = f;
@@ -1166,6 +1172,12 @@ struct S2Rx::Impl {
 
     void processResult(const Result& r) {
         pendingSyms += r.frameSyms;
+        statSyms += r.frameSyms;
+        if (statSyms >= 2.0 * std::max(1.0, o.symbolRate_)) {   // the useful bit rate of every stream over the last two seconds
+            std::lock_guard<std::mutex> lk(statMu);
+            for (auto& kv : st.streams) { kv.second.bps = kv.second.winBits / ((double)statSyms / std::max(1.0, o.symbolRate_)); kv.second.winBits = 0; }
+            statSyms = 0;
+        }
         if (r.dummy) return;
         {
             std::lock_guard<std::mutex> lk(statMu);
@@ -1191,17 +1203,16 @@ struct S2Rx::Impl {
             if (h.ro == 3) roLow = true;
             if (h.ro != 3) st.roSignalled = roLow ? 3 + h.ro : h.ro;
             st.sis = h.sis; st.tsGs = h.tsGs;
+            S2StreamStat& ss = st.streams[h.sis ? 0 : h.isi];
+            ss.isi = h.sis ? 0 : h.isi; ss.single = h.sis; ss.ccm = h.ccm; ss.issyi = h.issyi; ss.npd = h.npd; ss.hem = h.hem;
+            ss.tsGs = h.tsGs; ss.upl = h.upl; ss.sync = h.sync;
+            ss.frames++; ss.modcods[r.mod * 1000 + r.rate * 2 + (r.sh ? 1 : 0)]++; ss.winBits += h.dfl;
         }
-        if (!h.sis) {
-            const int want = o.isiSel_.load() >= 0 ? o.isiSel_.load() : isiFirst;
-            if (isiFirst < 0 && o.isiSel_.load() < 0) isiFirst = h.isi;
-            const int sel = o.isiSel_.load() >= 0 ? o.isiSel_.load() : isiFirst;
-            (void)want;
-            { std::lock_guard<std::mutex> lk(statMu); st.isi = sel; }
-            if (h.isi != sel) { std::lock_guard<std::mutex> lk(statMu); st.otherIsi++; return; }
-        } else { std::lock_guard<std::mutex> lk(statMu); st.isi = -1; }
-        if (h.tsGs != 3) {
-            { std::lock_guard<std::mutex> lk(statMu); st.gseFrames++; haveCarry = false; carry.clear(); }
+        // a generic stream (GSE, GSE-HEM, other packets): every stream of the carrier is handed on, whichever ISI is being decoded as the transport stream.
+        // A generic stream of 188-byte packets is read as transport packets (a hub's signalling), like any other.
+        if (h.tsGs != 3 && !(h.upl == 1504 && h.tsGs != 2)) {
+            { std::lock_guard<std::mutex> lk(statMu); st.gseFrames++; }
+            haveCarry = false; carry.clear();
             std::function<void(const uint8_t*, size_t, int, int, bool, int)> dcb;
             { std::lock_guard<std::mutex> lk(cbMu); dcb = dataCb; }
             const int dd = r.kbch ? r.kbch : s2Dims(r.mod, r.rate, r.sh).kbch;
@@ -1213,6 +1224,14 @@ struct S2Rx::Impl {
             }
             return;
         }
+        if (!h.sis) {
+            const int want = o.isiSel_.load() >= 0 ? o.isiSel_.load() : isiFirst;
+            if (isiFirst < 0 && o.isiSel_.load() < 0) isiFirst = h.isi;
+            const int sel = o.isiSel_.load() >= 0 ? o.isiSel_.load() : isiFirst;
+            (void)want;
+            { std::lock_guard<std::mutex> lk(statMu); st.isi = sel; }
+            if (h.isi != sel) { std::lock_guard<std::mutex> lk(statMu); st.otherIsi++; return; }
+        } else { std::lock_guard<std::mutex> lk(statMu); st.isi = -1; }
         const int d = r.kbch ? r.kbch : s2Dims(r.mod, r.rate, r.sh).kbch;
         if (h.dfl > d - 80 || h.dfl < 0) { std::lock_guard<std::mutex> lk(statMu); st.bbHeaderBad++; return; }
         // the data field as bytes

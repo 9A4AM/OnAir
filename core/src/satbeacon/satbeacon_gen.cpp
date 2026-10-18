@@ -1,5 +1,6 @@
 // Satellite beacon test signal (see satbeacon_gen.h).
 #include "dect2/satbeacon/satbeacon_gen.h"
+#include "dect2/ccsds/ccsds_tm.h"
 #include "dect2/dsp/gen_util.h"
 #include "dect2/common/mathconst.h"
 #include <algorithm>
@@ -41,6 +42,18 @@ std::vector<uint8_t> satbeaconFrameBytes(uint32_t seed, uint32_t n) {
     return b;
 }
 
+std::vector<uint8_t> satbeaconCcsdsFrame(uint32_t seed, uint32_t n) {
+    std::vector<uint8_t> data(200);
+    for (size_t i = 0; i < data.size(); i++) data[i] = (uint8_t)(mix64(((uint64_t)seed << 40) ^ ((uint64_t)n << 8) ^ i) & 0xFF);
+    ccsds::Format f;
+    f.rs = true; f.randomised = true; f.blockBytes = 255; f.layout.e = 16; f.layout.n = 255; f.layout.interleave = 1; f.layout.dual = true;
+    const auto frame = ccsds::buildTmFrame(f.frameBytes(), 0x2DF, 1, (int)(n & 0xFF), (int)(n & 0xFF), data);
+    std::vector<uint8_t> out{0x1A, 0xCF, 0xFC, 0x1D};
+    const auto block = ccsds::encodeBlock(f, frame);
+    out.insert(out.end(), block.begin(), block.end());
+    return out;
+}
+
 struct SatbeaconGenerator::Impl {
     SatbeaconGenConfig c;
     genutil::NoiseSource noise;
@@ -59,9 +72,9 @@ struct SatbeaconGenerator::Impl {
     }
     int bitAt(int64_t k) {
         if (k < 0) k = 0;
-        const int64_t perFrame = (int64_t)kSbGenFrameBytes * 8;
+        const int64_t perFrame = (int64_t)(c.ccsds ? kSbGenCcsdsBytes : kSbGenFrameBytes) * 8;
         const uint32_t f = (uint32_t)(k / perFrame);
-        if (f != frameNo) { frameNo = f; frame = satbeaconFrameBytes(c.seed, f); }
+        if (f != frameNo) { frameNo = f; frame = c.ccsds ? satbeaconCcsdsFrame(c.seed, f) : satbeaconFrameBytes(c.seed, f); }
         const int64_t j = k % perFrame;
         return (frame[(size_t)(j >> 3)] >> (7 - (j & 7))) & 1;
     }

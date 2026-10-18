@@ -70,11 +70,12 @@ void TsDemux::feed(const uint8_t* p) {
         st.lastCc = cc;
         st.resync = false;
     } else if (afc == 2) st.resync = false;
+    if (afc & 1) { dsmcc_.packet(p); data_.packet(p); }   // carousels, AIT, SCTE-35, EBU data: clear payloads only (scrambled ones are skipped inside)
     if (!(afc & 1) || scr) return;
     const int off = hd.payloadOff;
     if (off < 0) return;
     // only PSI/SI PIDs and PMT PIDs carry sections we care about
-    const bool psi = pid == 0 || pid == 0x10 || pid == 0x11 || pid == 0x12 || pid == 0x14 || pid == 0x1FFB || pmtToService_.count(pid);
+    const bool psi = pid == 0 || pid == 1 || pid == 0x10 || pid == 0x11 || pid == 0x12 || pid == 0x14 || pid == 0x1FFB || pmtToService_.count(pid);
     if (!psi) return;
     SectionBuf& sb = sec_[pid];
     const uint8_t* d = p + off;
@@ -118,6 +119,7 @@ void TsDemux::section(int pid, const uint8_t* s, int len) {
     // table id, not by the syntax bit: a corrupted section whose syntax bit reads 0 would otherwise skip the check and fill the
     // service list with phantom programs from a damaged PAT.
     if (tid != 0x70 && mpegCrc32(s, len) != 0) return;
+    si_.section(pid, s, len);   // transponder lists, bouquets, other transport streams, time offsets, CAT (signalling only)
     if (tid == 0x00) parsePat(s, len);
     else if (tid == 0x02) parsePmt(pid, s, len);
     else if (tid == 0x42) parseSdt(s, len);
@@ -276,6 +278,8 @@ TsSnapshot TsDemux::snapshot() const {
     sn.totalPackets = total_; sn.nullPackets = nulls_; sn.teiPackets = tei_; sn.ccErrors = ccErr_;
     sn.muxKbps = muxKbps_; sn.nullKbps = nullKbps_;
     sn.utcNow = tdtUnix_ ? tdtUnix_ + (int64_t)(streamClock_ - tdtAt_) : 0;
+    { auto ci = dsmcc_.info(); if (!ci.empty()) sn.carousels = std::make_shared<const std::vector<DsmccCarouselInfo>>(std::move(ci)); TsDataSnapshot ds = data_.snapshot(); if (!ds.empty()) sn.data = std::make_shared<const TsDataSnapshot>(std::move(ds)); }
+    { SiSnapshot si = si_.snapshot(); if (!si.empty()) sn.si = std::make_shared<const SiSnapshot>(std::move(si)); }
     std::map<int, std::string> label;
     for (auto& kv : services_) {
         TsService sv = kv.second;

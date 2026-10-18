@@ -7,8 +7,11 @@
 //   - text (printable runs that stay the same).
 // What is inferred is labelled "estimated" with the reason; things that are not in the frames are listed as not found.
 #pragma once
+#include "dect2/ccsds/ccsds_tm.h"
 #include "dect2/satbeacon/satbeacon_tel.h"
 #include <cstdint>
+#include <map>
+#include <memory>
 #include <vector>
 
 namespace dect2 {
@@ -43,6 +46,21 @@ private:
         int distinct = 0;
     };
     std::vector<Col> col_;
+    // frames that start with the CCSDS attached sync marker: the codeblock layout (randomiser, Reed-Solomon) is found from the first blocks, the transfer frames are decoded and
+    // analysed as frames of their own
+    struct Cc {
+        std::vector<std::vector<uint8_t>> blocks;
+        bool haveFormat = false;
+        ccsds::Format format;
+        uint64_t blocksSeen = 0, decoded = 0, failed = 0, corrected = 0, crcOk = 0, crcBad = 0, lost = 0;
+        struct Vc { uint64_t frames = 0; int lastCount = -1; };
+        std::map<std::pair<int, int>, Vc> channels;
+        ccsds::Header last;
+        std::vector<uint8_t> lastFrame;
+        std::shared_ptr<Analyzer> inner;
+    } cc_;
+    bool ccsds_ = false;
+    void addCcsds(const std::vector<uint8_t>& frame, double frameSec);
     int sumKind_ = 0;                  // 0 none, 1 last byte = sum of the others
 };
 

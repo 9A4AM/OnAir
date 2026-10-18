@@ -79,10 +79,18 @@ maker's, and is never guessed). All frames seen are analysed, word by word and b
 The CSV and JSON exports (Save CSV, Save JSON, Copy in the Decoded view; `tv_sat_beacon_decoded.csv` and `.json` in the data folder) hold the summary lines, every field with its raw hex, byte
 position, confidence and the reason, and the frames.
 
+## CCSDS frames
+
+When the frames start with the attached sync marker 1ACFFC1D (found by the sync search like FAF320), the codeblock layout is worked out from the first blocks (the pseudo-randomiser
+on or off, Reed-Solomon (255,223) or (255,239) in the dual or the conventional basis, interleave depth 1 to 8, or no Reed-Solomon with the frame CRC) and every block is decoded: the
+transfer frame header (TM or AOS: spacecraft, virtual channel, master and virtual channel counts, idle data), the frame CRC, symbols corrected, lost frames by the counters; the
+decoded frames are analysed like any frames (constants, clock, counters, samples) and the Decoded view shows them. The Reed-Solomon, randomiser and header code is adapted from DecSAT
+(`core/src/ccsds/ccsds_tm.cpp`, from `decsat-modem/ccsds.rs`). Not done: the CCSDS convolutional code (K = 7) under the symbols, and the identification of the spacecraft from its identifier.
+
 ## What is not done
 
-Only the formats above are looked for: a beacon whose telemetry is on the carrier's phase without a subcarrier (PCM/PM), a suppressed carrier, other sync words, CCSDS Reed-Solomon
-and the Viterbi code of CCSDS frames are not handled, and a frame layout is not interpreted. DecSAT does more of this (see Credits).
+Only the formats above are looked for: a beacon whose telemetry is on the carrier's phase without a subcarrier (PCM/PM) or a suppressed carrier, other sync words, and a frame layout is
+not interpreted (a spacecraft maker's words stay raw).
 
 ## Credits
 

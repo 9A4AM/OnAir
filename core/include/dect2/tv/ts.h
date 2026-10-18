@@ -1,7 +1,11 @@
 // MPEG transport-stream analysis: PSI/SI parsing (PAT, PMT, SDT, NIT, EIT now/next, TDT), per-PID statistics.
 #pragma once
+#include "dect2/tv/dsmcc.h"
+#include "dect2/tv/si_tables.h"
+#include "dect2/tv/ts_data.h"
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -67,6 +71,9 @@ struct TsSnapshot {
     uint64_t totalPackets = 0, nullPackets = 0, teiPackets = 0, ccErrors = 0;
     double muxKbps = 0, nullKbps = 0;
     int64_t utcNow = 0;      // current UTC from the TDT (advanced with the stream), 0 until one has been received
+    std::shared_ptr<const std::vector<DsmccCarouselInfo>> carousels;   // DSM-CC data and object carousels found on private PIDs (clear data only)
+    std::shared_ptr<const TsDataSnapshot> data;   // AIT applications, SCTE-35 cues, EBU data, labelled private PIDs
+    std::shared_ptr<const SiSnapshot> si;   // the other service information of the stream: transponder lists, bouquets, other transport streams, time offsets, CAT
 };
 
 class TsDemux {
@@ -75,6 +82,8 @@ public:
     void markLoss();                 // data was lost before the next packet (do not count continuity errors)
     void advance(double dtSeconds);  // stream time passed; updates bit rates
     TsSnapshot snapshot() const;
+    // the files of the DSM-CC carousels found so far, saved to dir/pid_XXXX/path; returns the number of files written
+    size_t saveCarouselFiles(const std::string& dir) const { return dsmcc_.extractTo(dir); }
     // Programme guide per service id, sorted by start time (now/next plus the schedule when the broadcaster sends it).
     std::map<int, std::vector<EpgEvent>> epg() const;
     void reset();
@@ -92,6 +101,9 @@ private:
     void parseTvct(const uint8_t* s, int len);   // ATSC PSIP terrestrial/cable virtual channel table: names and channel numbers
     void parseEit(const uint8_t* s, int len);
     void parseTdt(const uint8_t* s, int len);
+    SiCollector si_;
+    DsmccDemux dsmcc_;
+    TsDataScan data_;
     std::map<int, PidState> pids_;
     std::map<int, SectionBuf> sec_;
     std::map<int, TsService> services_;   // by service id

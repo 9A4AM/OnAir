@@ -412,14 +412,16 @@ void s2BuildBbHeader(const S2BbHeader& h, uint8_t* bits) {
     by[4] = (uint8_t)(h.dfl >> 8); by[5] = (uint8_t)h.dfl;
     by[6] = (uint8_t)h.sync;
     by[7] = (uint8_t)(h.syncd >> 8); by[8] = (uint8_t)h.syncd;
-    by[9] = s2Crc8(by, 9);
+    by[9] = (uint8_t)(s2Crc8(by, 9) ^ (h.hem ? 1 : 0));
     for (int i = 0; i < 80; i++) bits[i] = (by[i >> 3] >> (7 - (i & 7))) & 1;
 }
 
 bool s2ParseBbHeader(const uint8_t* bits, S2BbHeader& h) {
     uint8_t by[10] = {};
     for (int i = 0; i < 80; i++) by[i >> 3] |= (uint8_t)((bits[i] & 1) << (7 - (i & 7)));
-    h.crcOk = s2Crc8(by, 9) == by[9];
+    const uint8_t crc = s2Crc8(by, 9);
+    h.crcOk = crc == by[9] || (uint8_t)(crc ^ 1) == by[9];
+    h.hem = crc != by[9] && h.crcOk;
     h.tsGs = by[0] >> 6; h.sis = (by[0] >> 5) & 1; h.ccm = (by[0] >> 4) & 1; h.issyi = (by[0] >> 3) & 1; h.npd = (by[0] >> 2) & 1; h.ro = by[0] & 3;
     h.isi = by[1];
     h.upl = by[2] << 8 | by[3]; h.dfl = by[4] << 8 | by[5]; h.sync = by[6]; h.syncd = by[7] << 8 | by[8];
