@@ -103,6 +103,7 @@ zigbee	--mode zigbee	Overview|Zigbee|Receiver|History
 wisun	--mode wisun	Overview|Wi-SUN|Receiver|History
 eczas	--mode eczas	Overview|e-Czas|Receiver|History
 wmbus	--mode wmbus	Overview|Meters|Receiver|History
+tones	--mode tones	Overview|Tones|Receiver|History
 nbiot	--mode nbiot	Overview|NB-IoT|Receiver|History
 codar	--mode codar	Overview|Radar|Receiver|History
 wb	--mode wb	Overview|Workbench|Receiver|History

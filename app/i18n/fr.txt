@@ -2987,3 +2987,39 @@ meters	compteurs
 868 MHz: S1 868.3, T1 and C1 868.95, R2 868.03 - 868.15 MHz; 169 MHz: N1 169.40625 - 169.46875 MHz. Encrypted payloads are never decoded.	868 MHz : S1 868,3, T1 et C1 868,95, R2 868,03 - 868,15 MHz ; 169 MHz : N1 169,40625 - 169,46875 MHz. Les données chiffrées ne sont jamais décodées.
 The test signal sends six simulated meters (S1, T1, C1 in both formats, R2) on the 868 MHz channels, one with an encrypted payload.	Le signal de test émet six compteurs simulés (S1, T1, C1 dans les deux formats, R2) sur les canaux 868 MHz, dont un avec des données chiffrées.
 Meters, 868 / 169 MHz	Compteurs, 868 / 169 MHz
+#  tone decoders
+5-tone	5 tons
+2-tone	2 tons
+sub-audible	infra-audible
+extended tone	tonalité étendue
+standard tone	tonalité standard
+code of the usual list	code de la liste habituelle
+code not in the usual list	code hors de la liste habituelle
+same waveform	même forme d'onde
+no CTCSS tone or DCS code	aucune tonalité CTCSS ni code DCS
+start the receiver on an FM channel or a sound card to decode tones	démarrez le récepteur sur un canal FM ou une carte son pour décoder les tonalités
+voice-band tone	tonalité en bande vocale
+keys	touches
+, sound card	, carte son
+, FM	, FM
+gate	porte
+open (no gate)	ouverte (sans porte)
+audio spectrum, 0 - 3.5 kHz	spectre audio, 0 - 3.5 kHz
+the 50 CTCSS tones, 67 - 254 Hz	les 50 tonalités CTCSS, 67 - 254 Hz
+The level of each of the 50 tones in the last second of the sub-audible band, left to right from 67.0 to 254.1 Hz. A tone that stands clear of the others for about half a second is taken as the CTCSS tone.	Le niveau de chacune des 50 tonalités pendant la dernière seconde de la bande infra-audible, de gauche à droite de 67,0 à 254,1 Hz. Une tonalité qui se détache nettement des autres pendant une demi-seconde est prise pour la tonalité CTCSS.
+start the receiver to see what is heard	démarrez le récepteur pour voir ce qui est entendu
+Length	Durée
+Hear the channel (the sub-audible tones are taken out); with a gate set under Receiver the sound opens only for the chosen tone or code	Écouter le canal (les tonalités infra-audibles sont retirées) ; avec une porte réglée sous Récepteur, le son ne s'ouvre que pour la tonalité ou le code choisi
+sound card audio	audio de carte son
+FM channel	canal FM
+Gate	Porte
+Open the sound	Ouvrir le son
+always	toujours
+on any tone or code	sur toute tonalité ou code
+only on the chosen tone or code	seulement sur la tonalité ou le code choisi
+Like the squelch of a radio with CTCSS or DCS: while the gate is closed the Listen sound is muted. The decoders keep running either way.	Comme le silencieux d'une radio avec CTCSS ou DCS : tant que la porte est fermée, le son d'écoute est coupé. Les décodeurs continuent de fonctionner dans les deux cas.
+inverted	inversé
+DCS polarity (N or I) follows the deviation sign of the receiver; the same waveform can read as two codes, the second is shown as the alias. Five-tone tone lengths are vendor specific: when several standards fit, the one whose usual tone length is closest is listed first.	La polarité DCS (N ou I) suit le signe de l'excursion du récepteur ; la même forme d'onde peut se lire comme deux codes, le second est affiché comme alias. La durée des tonalités des appels à cinq tons dépend du constructeur : quand plusieurs normes conviennent, celle dont la durée habituelle est la plus proche est listée en premier.
+Tone decoders	Décodeurs de tonalités
+The test signal repeats every 40 s: CTCSS 123.0 Hz under speech-like noise, DCS D023N, DTMF 159#, a ZVEI1 call 12345, SELCAL AM-CP and a two-tone page.	Le signal d'essai se répète toutes les 40 s : CTCSS 123,0 Hz sous un bruit semblable à la voix, DCS D023N, DTMF 159#, un appel ZVEI1 12345, SELCAL AM-CP et un appel à deux tons.
+CTCSS, DCS, DTMF, selcall	CTCSS, DCS, DTMF, appel sélectif

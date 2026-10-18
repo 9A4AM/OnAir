@@ -82,6 +82,7 @@
 #include "dect2/wisun/wisun_tel.h"
 #include "dect2/eczas/eczas_tel.h"
 #include "dect2/wmbus/wmbus_tel.h"
+#include "dect2/tones/tones_tel.h"
 #include "dect2/rid/rid_tel.h"
 #include "dect2/meteor/meteor_tel.h"
 #include "dect2/nr/nr_tel.h"
@@ -177,6 +178,7 @@ struct RxTelemetry {
     LoraRawTelemetry loraraw; // valid when standard == 72 (LoRa raw)
     WisunTelemetry wisun;     // valid when standard == 85 (Wi-SUN FAN)
     WmbusTelemetry wmbus;     // valid when standard == 87 (Wireless M-Bus)
+    TonesTelemetry tones;     // valid when standard == 90 (tone decoders: CTCSS, DCS, DTMF, selcall, SELCAL)
     EczasTelemetry eczas;     // valid when standard == 86 (e-Czas, 225 kHz Poland)
     HfbTelemetry hfb;         // valid when standard == 68 (HF beacons)
     WbTelemetry wb;           // valid when standard == 74 (Signal workbench)
