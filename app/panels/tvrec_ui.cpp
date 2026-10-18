@@ -1,6 +1,7 @@
 // The TV recorder in the interface: the programme guide grid (Guide tab), scheduled recordings and the recordings list (Recordings tab), and the
 // timeshift / playback bar of the Player tab. The work is in core/src/tv (epg, recorder, timeshift, playback); this file keeps the state, feeds it from
 // the engine's packet tap and draws it.
+#include "dect2/common/thread_name.h"
 #include "../app.h"
 #include "i18n/i18n.h"
 #include "dect2/tv/epg.h"
@@ -285,7 +286,7 @@ void startFile(App& a, const RecordingEntry& e) {
     if (s.loader.joinable()) s.loader.join();
     const std::string path = e.tsPath;
     const std::string title = e.title.empty() ? path : e.title;
-    s.loader = std::thread([path, title, &a] {
+    s.loader = dect2::namedThread("onair-tvload", [path, title, &a] {
         TvRec& t = S();
         if (t.file.open(path)) {
             t.playCues.clear();

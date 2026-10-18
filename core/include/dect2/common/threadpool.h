@@ -8,6 +8,7 @@
 // on the calling thread in index order (debugging, determinism checks). Every user of the pool must give the same output for any N:
 // jobs write only their own slot, results are merged in index order by the caller.
 #pragma once
+#include "dect2/common/thread_name.h"
 #include <atomic>
 #include <condition_variable>
 #include <cstddef>
@@ -22,9 +23,6 @@
 #include <vector>
 
 namespace dect2 {
-
-// Names the calling thread (shows in debuggers, Activity Monitor, perf, TSAN reports). Max 15 characters are kept on Linux.
-void setThreadName(const char* name);
 
 // DECT2_THREADS: -1 when unset, else the number (0 = single thread mode). Read once.
 int configuredThreads();

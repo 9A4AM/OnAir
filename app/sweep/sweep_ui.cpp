@@ -1,6 +1,7 @@
 // The sweep scanner (View > Sweep scanner): a fast wideband sweep of a frequency range with a noise-floor measurement, a trace with the floor
 // and the detection threshold, a waterfall of the sweeps, and a log of the signals found. Click a signal to tune it. The sweep itself is in
 // core/src/sweep (docs/scanner.md); this file is the window and the worker thread.
+#include "dect2/common/thread_name.h"
 #include "../app.h"
 #include "dect2/sweep/sweep.h"
 #include "dect2/sweep/survey.h"
@@ -98,7 +99,7 @@ void startSweep(App& a) {
     c.settleSec = S.settleMs / 1e3; c.floorPercentile = S.floorPct; c.thresholdDb = S.thrDb; c.minIntervalSec = S.everySec;
     S.cancel = false; S.running = true; S.msg.clear(); S.history.clear(); S.log.clear();
     if (!S.survey.rows() || std::fabs(S.survey.startHz() - c.startHz) > 1e3) S.survey.clear();   // a new range starts a new survey; the same range goes on
-    S.th = std::thread(worker, dev, t, c, S.autoSettle);
+    S.th = dect2::namedThread("onair-sweep", worker, dev, t, c, S.autoSettle);
 }
 
 void tuneTo(App& a, double hz) {

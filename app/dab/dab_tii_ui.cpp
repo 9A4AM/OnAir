@@ -5,6 +5,7 @@
 //   eid,main,sub,lat,lon,site,power_kw,channel_mhz[,reports,first_seen,last_seen]      (eid in hex; a line starting with # is a comment)
 // TII codes are unique within an ensemble, not worldwide: a transmitter is found by (ensemble id, MainId, SubId). A transmitter that is heard but
 // not in the list can be submitted from here: the app fills in the ids, the user adds where it stands (the issue form of the repository).
+#include "dect2/common/thread_name.h"
 #include "app.h"
 #include "../adsb/adsb_map.h"
 #include "dect2/channels/channel_db.h"
@@ -119,7 +120,7 @@ void startDownload() {
     job->country = S.country;
     S.dl = job;
     S.dlMsg = "downloading the shared list...";
-    std::thread([job] {
+    dect2::namedThread("onair-tii", [job] {
         const std::string tmp = sharedFile(job->country) + ".part";
         const bool ok = plat::fetchUrl(repoUrl() + "/dab-tii/" + job->country + ".csv", tmp, "OnAir/" ONAIR_VERSION);
         std::error_code ec;

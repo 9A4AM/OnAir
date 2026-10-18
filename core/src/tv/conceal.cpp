@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/tv/conceal.h"
 #include "conceal_internal.h"
 #include "dect2/dsp/fftutil.h"
@@ -269,7 +270,7 @@ static void synthesizeCpu(const VideoFrame& A, const VideoFrame& B, int count, c
     };
     const int nThreads = std::max(1, std::min(count, (int)std::min(4u, std::max(1u, std::thread::hardware_concurrency() / 4))));
     std::vector<std::thread> pool;
-    for (int i = 1; i < nThreads; i++) pool.emplace_back(worker, true);
+    for (int i = 1; i < nThreads; i++) pool.emplace_back(dect2::namedThread("onair-conceal", worker, true));
     worker(false);
     for (auto& t : pool) t.join();
     for (auto& f : res) out.push_back(std::move(f));
@@ -294,7 +295,7 @@ bool interpolateGapApple(const VideoFrame&, const VideoFrame&, int, std::vector<
 
 void prepareInterpolation(int w, int h) {
     if (!appleInterpolationAvailable() || getenv("DECT2_SWINTERP") || w < 64 || h < 64) return;
-    std::thread([w, h] {
+    dect2::namedThread("onair-conceal", [w, h] {
         VideoFrame a, b;
         a.w = b.w = w; a.h = b.h = h;
         a.y.assign((size_t)w * h, 100); b.y.assign((size_t)w * h, 110);

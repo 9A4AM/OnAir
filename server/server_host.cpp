@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "server_host.h"
 #include "web_ui.h"
 #include "dect2/audio/audio_monitor.h"
@@ -136,7 +137,7 @@ void ServerHost::init() {
     const int dm = demodFromName(cfg_.get("audio_demod", "auto"));
     demod_ = dm < 0 ? 4 : dm;
     wantRun_ = cfg_.flag("autostart", false);
-    snapTh_ = std::thread([this] { snapLoop(); });
+    snapTh_ = dect2::namedThread("onair-snap", [this] { snapLoop(); });
 }
 
 // ---------------------------------------------------------------- tuning and start

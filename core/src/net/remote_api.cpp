@@ -1,5 +1,6 @@
 // Remote-control API server: see dect2/net/remote_api.h. One thread accepts; every connection has a thread of its own (at most 16), so a slow or
 // silent client never holds up another one. Blocking sockets with select() for the waits, on top of the helpers of tcp_client.h.
+#include "dect2/common/thread_name.h"
 #include "dect2/net/remote_api.h"
 #include "dect2/common/str.h"
 #include "dect2/net/net_proto.h"
@@ -505,7 +506,7 @@ struct RemoteApiServer::Impl {
                         cn->s = k;
                         cn->loopback = (ntohl(pa.sin_addr.s_addr) >> 24) == 127;
                         Conn* raw = cn.get();
-                        cn->th = std::thread([this, raw] { serve(raw); });
+                        cn->th = dect2::namedThread("onair-api-c", [this, raw] { serve(raw); });
                         conns.push_back(std::move(cn));
                     }
                 }
@@ -543,7 +544,7 @@ bool RemoteApiServer::configure(const RemoteApiConfig& cIn) {
         return false;
     }
     { std::lock_guard<std::mutex> lk(p.mu); p.live = c; p.st.lastError.clear(); p.st.listening = false; }
-    p.th = std::thread([&p, c] { p.run(c); });
+    p.th = dect2::namedThread("onair-api", [&p, c] { p.run(c); });
     for (int i = 0; i < 400; i++) {   // until it listens (or failed), so that port 0 can be read back
         { std::lock_guard<std::mutex> lk(p.mu); if (p.st.listening || !p.st.lastError.empty()) break; }
         std::this_thread::sleep_for(std::chrono::milliseconds(5));

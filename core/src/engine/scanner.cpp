@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/engine/rate_choice.h"
 #include "dect2/engine/scanner.h"
 #include "dect2/isdbt/isdbt.h"
@@ -71,7 +72,7 @@ bool Scanner::start(const DeviceInfo& dev, const ScanConfig& cfg, std::string& e
     }
     eng_ = std::make_unique<Engine>();
     // an exception that leaves a thread ends the whole program: the scan fails instead, with the reason in the progress line
-    th_ = std::thread([this] {
+    th_ = dect2::namedThread("onair-scan", [this] {
         std::string why;
         try { run(); return; }
         catch (const std::exception& ex) { why = ex.what(); }

@@ -1,6 +1,7 @@
 // Radios added by address: the Network radios window (PlutoSDR by IP, rtl_tcp, SoapyRemote, SpyServer, Hermes Lite 2,
 // Red Pitaya) and the Hamlib rigs window (model search, serial port, baud rate), plus following a rig's dial.
 // Split from toolbar.cpp.
+#include "dect2/common/thread_name.h"
 #include "../app.h"
 #include "dect2/engine/rate_choice.h"
 #include "dect2/source/antenna_ports.h"
@@ -37,7 +38,7 @@ static void startNetDiscovery(App& a) {
     a.netFound.clear();
     a.netSearched = false;
     const bool rp = a.netAddType == NetRadio::RedPitaya;
-    std::thread([d, rp] { d->found = rp ? discoverRedPitaya(1500) : discoverHermesLite2(1500); d->done = true; }).detach();
+    dect2::namedThread("onair-rigdisc", [d, rp] { d->found = rp ? discoverRedPitaya(1500) : discoverHermesLite2(1500); d->done = true; }).detach();
 }
 
 // a finished connection test or discovery: add the radio and pick it, or say why not
@@ -196,7 +197,7 @@ void netRadioWindow(App& a) {
         pr->radio = r;
         a.netAddProbe = pr;
         a.netAddErr.clear();
-        std::thread([pr] { std::string e; pr->ok = probeNetRadio(pr->radio, 3000, e); pr->err = e; pr->done = true; }).detach();   // never blocks the UI
+        dect2::namedThread("onair-rigprobe", [pr] { std::string e; pr->ok = probeNetRadio(pr->radio, 3000, e); pr->err = e; pr->done = true; }).detach();   // never blocks the UI
     }
     ImGui::EndDisabled();
     if (busy) { ImGui::SameLine(); ImGui::TextDisabled("%s", tr("connecting…")); }
@@ -451,7 +452,7 @@ static void kiwiStartFetch(App& a) {
     a.kiwiFetch = f;
     const std::string url = a.kiwiListUrl[0] ? a.kiwiListUrl : kKiwiListUrl;
     const std::string tmp = plat::cacheDir() + "/kiwisdr_list.part";
-    std::thread([f, url, tmp] {
+    dect2::namedThread("onair-rigdl", [f, url, tmp] {
         if (!plat::fetchUrl(url, tmp, std::string("OnAir/") + ONAIR_VERSION + " (KiwiSDR list)")) { f->err = "download"; f->done = true; return; }
         std::ifstream in(tmp, std::ios::binary);
         std::stringstream ss;

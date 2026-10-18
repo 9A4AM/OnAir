@@ -1,6 +1,7 @@
 // RF camera: the spatial spectrum of the direction finder laid over a picture as a heat map (rfcam.h does the maths). The picture is a built-in
 // demo skyline, a picture or panorama file (reloaded when it changes, so a grabber that rewrites a still gives a live view) or a camera's
 // snapshot URL (JPEG, fetched with curl about once a second). Nothing here talks to a camera or radio: azimuth only, see docs/rf-camera.md.
+#include "dect2/common/thread_name.h"
 #include "rfcam_ui.h"
 #include "../app.h"
 #include "../gfx/gfx.h"
@@ -141,7 +142,7 @@ void updatePicture(double now) {
         if (S.th.joinable()) S.th.join();
         S.fetch = 1;
         const std::string u = S.url;
-        S.th = std::thread([u, file] { S.fetch = plat::fetchUrl(u, file, "OnAir RF camera") ? 2 : 3; });
+        S.th = dect2::namedThread("onair-rfcam", [u, file] { S.fetch = plat::fetchUrl(u, file, "OnAir RF camera") ? 2 : 3; });
     }
 }
 

@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "adsb_map.h"
 #include "app.h"
 #include "dect2/geo/mbtiles.h"
@@ -186,7 +187,7 @@ void run() {
 void start() {
     if (started) return;
     started = true;
-    worker = std::thread(run);
+    worker = dect2::namedThread("onair-admap", run);
 }
 
 // a long session at street level would fill the graphics memory: past this many, the pictures not on the screen go, the oldest first
@@ -457,7 +458,7 @@ void dlStart(std::vector<dect2::TileKey> list) {
     dlJoin();
     dlStop = false; dlDone = 0; dlFailed = 0; dlTotal = (int)list.size(); dlRunning = true;
     const std::string root = kept;
-    dlThread = std::thread([list = std::move(list), root] {
+    dlThread = dect2::namedThread("onair-adsbdl", [list = std::move(list), root] {
         int consecutive = 0, fetched = 0;
         for (const dect2::TileKey& t : list) {
             if (dlStop) break;

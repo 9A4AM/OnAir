@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/t2/t2rx.h"
 #include "dect2/t2/t2ofdm.h"
 #include "dect2/dsp/resampler.h"
@@ -115,7 +116,7 @@ struct T2Receiver::Impl {
     void gapReset(size_t skippedIn);   // `skippedIn` input samples were thrown away: forget the frames in flight and look for the next P1 where the frame cadence puts it
     void stageStart() {
         { std::lock_guard<std::mutex> lk(stage.mu); stage.stop = false; }
-        stage.th = std::thread([this] { stageLoop(); });
+        stage.th = dect2::namedThread("onair-t2stage", [this] { stageLoop(); });
     }
     void stageStop() {
         if (!stage.th.joinable()) return;

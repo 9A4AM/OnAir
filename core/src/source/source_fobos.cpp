@@ -8,6 +8,7 @@
 // - the HF1 and HF2 inputs, sampled directly by the two converters (HF1 arrives as the I samples, HF2 as the Q samples). Each is a real
 //   signal from 0 to half the converter's rate, so this driver shifts the wanted frequency to zero, filters and decimates (RealDdc, native_realddc.h).
 // Below 50 MHz the HF input chosen in the radio settings is used (HF1 unless set otherwise).
+#include "dect2/common/thread_name.h"
 #include "native_common.h"
 #include "native_realddc.h"
 #include "dect2/dsp/dsp_compat.h"
@@ -240,6 +241,7 @@ protected:
         // stream that delivers nothing (no callback to notice the stop in).
         std::atomic<bool> reading{true};
         std::thread guard([&] {
+            dect2::setThreadName("onair-fobos-g");
             while (reading) {
                 if (!run_) fobos().cancel_async(dev);
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));

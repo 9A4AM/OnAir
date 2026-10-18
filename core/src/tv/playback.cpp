@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/tv/playback.h"
 #include "dect2/tv/ts_record.h"
 #include "dect2/common/u8file.h"
@@ -68,7 +69,7 @@ void PlaybackFeeder::start(PacketSource* src, uint64_t startIdx, Sink sink) {
     pos_ = std::max(startIdx, src->first()); sent_ = 0;
     paused_ = false; atEnd_ = false; seek_ = false;
     run_ = true;
-    th_ = std::thread([this] { loop(); });
+    th_ = dect2::namedThread("onair-tvplay", [this] { loop(); });
 }
 void PlaybackFeeder::stop() {
     run_ = false;

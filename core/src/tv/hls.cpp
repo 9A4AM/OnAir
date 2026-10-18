@@ -4,6 +4,7 @@
 // in memory through the muxer's io_open / io_close2 hooks. The picture is copied (H.264 and HEVC only), audio that Apple devices do not
 // play in a transport stream (MPEG audio layer II, AAC in LATM, ...) is decoded and encoded again as AAC; AC-3, E-AC-3, MP3 and ADTS AAC
 // are copied.
+#include "dect2/common/thread_name.h"
 #include "dect2/tv/hls.h"
 #include <algorithm>
 #include <atomic>
@@ -292,7 +293,7 @@ HlsPipeline::~HlsPipeline() { stop(); }
 
 void HlsPipeline::start() {
     if (p_->th.joinable()) return;
-    p_->th = std::thread([this] { p_->run(); });
+    p_->th = dect2::namedThread("onair-hls", [this] { p_->run(); });
 }
 
 void HlsPipeline::stop() {

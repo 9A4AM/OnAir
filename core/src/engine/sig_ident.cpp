@@ -1,4 +1,5 @@
 // Signal identifier (sig_ident.h): measures a carrier from its samples and ranks the modes it could be.
+#include "dect2/common/thread_name.h"
 #include "dect2/engine/sig_ident.h"
 #include "sig_known.h"
 #include "dect2/dmr/dmr_proto.h"
@@ -1292,7 +1293,7 @@ struct Capture::Impl {
 };
 
 Capture::Capture() : p_(new Impl) {
-    p_->th = std::thread([this] {
+    p_->th = dect2::namedThread("onair-sigid", [this] {
         Impl& m = *p_;
         (void)builtinFrequencies(); (void)bandplan::builtinPlans();   // parsed once, on first use: not while someone waits for an answer
         (void)signatureCount();

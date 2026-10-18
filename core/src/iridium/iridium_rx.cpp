@@ -1,6 +1,7 @@
 // Iridium receiver: the detector runs in feed(), the bursts are demodulated and decoded on a worker thread that reads them from a
 // ring of input samples (no copy per burst on the feed side; a burst whose samples were overwritten before the worker got to it is
 // dropped and counted).
+#include "dect2/common/thread_name.h"
 #include "dect2/iridium/iridium_rx.h"
 #include "dect2/results/results_io.h"
 #include "dect2/iridium/iridium_bits.h"
@@ -89,7 +90,7 @@ struct IridiumReceiver::Impl {
     bool loggedTime = false;
 
     void startWorker() {
-        worker = std::thread([this] { run(); });
+        worker = dect2::namedThread("onair-iridium", [this] { run(); });
     }
     void run() {
         for (;;) {

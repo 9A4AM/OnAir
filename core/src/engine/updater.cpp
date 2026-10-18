@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/engine/updater.h"
 #include "dect2/common/str.h"
 #include "dect2/common/timecompat.h"
@@ -718,7 +719,7 @@ void Updater::check(bool pre) {
     if (th_.joinable()) th_.join();
     cancel_ = false;
     setPhase(Phase::Checking);
-    th_ = std::thread([this, pre] { runCheck(pre); });
+    th_ = dect2::namedThread("onair-upd", [this, pre] { runCheck(pre); });
 }
 
 // ---------------------------------------------------------------- the mirror (opt-in) and the checks around it
@@ -901,7 +902,7 @@ void Updater::download(bool confirmMirrorOnly) {
     if (th_.joinable()) th_.join();
     cancel_ = false;
     setPhase(Phase::Downloading);
-    th_ = std::thread([this] { runDownload(); });
+    th_ = dect2::namedThread("onair-updl", [this] { runDownload(); });
 }
 
 void Updater::runDownload() {

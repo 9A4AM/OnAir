@@ -2,6 +2,7 @@
 // engine's analysis thread and hands its symbols to one of these, so that the carrier loop and the frame logic (DVB-S2) or the Viterbi decoder (DVB-S)
 // do not have to fit into the same core as the front end. Internal.
 #pragma once
+#include "dect2/common/thread_name.h"
 #include "dect2/common/ring.h"
 #include <atomic>
 #include <condition_variable>
@@ -28,7 +29,7 @@ public:
         blocking_ = blocking;
         stopFlag_ = false;
         dropped_ = 0;
-        th_ = std::thread([this] { loop(); });
+        th_ = dect2::namedThread("onair-dvbs-sym", [this] { loop(); });
     }
 
     // Queues a block of symbols (copied). Returns false when it was dropped because the thread is too far behind.

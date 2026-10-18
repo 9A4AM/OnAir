@@ -1,4 +1,5 @@
 // Radio clips dialog: choose a range on the history bar (or a preset), choose what goes in, save a folder + zip, copy the Discord text.
+#include "dect2/common/thread_name.h"
 #include "clips_ui.h"
 #include "clips.h"
 #include "../app.h"
@@ -182,7 +183,7 @@ void draw(App& a) {
     if (ImGui::Button(tr("Save clip"))) {
         const Content c = collect(a, D.sel, now);
         if (c.spectro.w == 0 && c.audio.empty() && c.table.rows.empty()) D.status = tr("Nothing to save: no waterfall, audio or decoded rows in this range");
-        else { const std::string dir = plat::dataDir() + "/clips"; D.busy = true; D.status = tr("Saving..."); D.job = std::async(std::launch::async, [c, dir] { return writeClip(c, dir); }); }
+        else { const std::string dir = plat::dataDir() + "/clips"; D.busy = true; D.status = tr("Saving..."); D.job = std::async(std::launch::async, [c, dir] { dect2::setThreadName("onair-clip"); return writeClip(c, dir); }); }
     }
     ImGui::EndDisabled();
     ImGui::SameLine();

@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/t2/t2plp.h"
 #include "dect2/dsp/gpu_ldpc.h"
 
@@ -217,7 +218,7 @@ PlpDecoder::PlpDecoder(int threads) {
     gpuOk_ = GpuLdpc::instance().available();
     autoGpu_ = autoStartsOnGpu();   // Auto starts on the GPU
     threads_ = threads > 0 ? threads : std::max(1u, std::thread::hardware_concurrency());
-    th_ = std::thread([this] { loop(); });
+    th_ = dect2::namedThread("onair-t2plp", [this] { loop(); });
 }
 
 PlpDecoder::~PlpDecoder() {

@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/packs/packs.h"
 #include <algorithm>
 #include <chrono>
@@ -243,7 +244,7 @@ bool PackManager::start(const std::string& id, std::string* why) {
     { std::lock_guard<std::mutex> lk(mu_); err_.clear(); active_ = id; }
     state_ = State::Downloading;
     Pack copy = *p;
-    th_ = std::thread([this, copy] { run(copy); });
+    th_ = dect2::namedThread("onair-packs", [this, copy] { run(copy); });
     return true;
 }
 

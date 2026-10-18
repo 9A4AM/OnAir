@@ -1,6 +1,7 @@
 // DVB-C receiver: spectrum -> carrier offset and symbol rate, interpolating matched filter + Gardner timing loop (2 samples a symbol),
 // fractionally spaced equaliser (CMA, then decision directed LMS inside a carrier loop), QAM order and spectral inversion tried until the transport
 // stream sync bytes appear, differential decoding of the quadrant, then the DVB-T outer decoder (de-interleaver, Reed-Solomon, energy dispersal).
+#include "dect2/common/thread_name.h"
 #include "dect2/dvbc/dvbc_rx.h"
 #include "dect2/dvbc/dvbc.h"
 #include "dect2/dvbt/dvbt.h"
@@ -793,7 +794,7 @@ struct DvbcReceiver::Impl {
     }
 };
 
-DvbcReceiver::DvbcReceiver() : p_(new Impl) { p_->bth = std::thread([this] { p_->backRun(); }); p_->th = std::thread([this] { p_->run(); }); }
+DvbcReceiver::DvbcReceiver() : p_(new Impl) { p_->bth = dect2::namedThread("onair-dvbc", [this] { p_->backRun(); }); p_->th = std::thread([this] { p_->run(); }); }
 DvbcReceiver::~DvbcReceiver() {
     { std::lock_guard<std::mutex> lk(p_->qmu); p_->stop = true; }
     p_->qcv.notify_all();

@@ -1,4 +1,5 @@
 // The airport search of the airband panel (see airport_ui.h).
+#include "dect2/common/thread_name.h"
 #include "airband/airport_ui.h"
 #include "app.h"
 #include "memory/memory_options.h"
@@ -115,7 +116,7 @@ void startDownload() {
     if (S.job.load() == 1) return;
     if (S.th.joinable()) S.th.join();
     S.job = 1;
-    S.th = std::thread([] {
+    S.th = dect2::namedThread("onair-airport", [] {
         const std::string d = dirPath() + "/download";
         std::error_code ec;
         fs::create_directories(fs::u8path(d), ec);

@@ -1,6 +1,7 @@
 // Station health (View > Station health): one button measures the noise floor, ADC level and reference stations on a few fixed bands, adds the ADS-B range
 // plot and a frequency error from a known carrier when there is one, and lists plain advice. The analysis is in core/src/sweep/station_health.cpp
 // (docs/STATION_HEALTH.md); this file is the window, the worker thread and the report text.
+#include "dect2/common/thread_name.h"
 #include "../app.h"
 #include "dect2/sweep/station_health.h"
 #include <atomic>
@@ -93,7 +94,7 @@ void startRun(App& a) {
     t.centerHz = c.bands.front().startHz;
     S.cancel = false; S.running = true; S.msg.clear();
     gainOf(a, S.gainDb, S.gainMaxDb);
-    S.th = std::thread(worker, dev, t, c, (double)S.carrierMhz * 1e6);
+    S.th = dect2::namedThread("onair-health", worker, dev, t, c, (double)S.carrierMhz * 1e6);
 }
 
 std::string findingText(const Finding& f) {

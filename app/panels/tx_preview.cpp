@@ -1,6 +1,7 @@
 // The preview of what step 3 shows before anything is sent: a short piece of the planned signal, made on a worker thread (some generators take a second
 // to start) a moment after the last change of a setting, at the sample rate the radio would run. While a transmission or a test runs, the session's own
 // tap (the IQ really handed to the radio) is shown instead. The preview never opens a microphone, a camera or a radio.
+#include "dect2/common/thread_name.h"
 #include "tx_state.h"
 #include <algorithm>
 #include <chrono>
@@ -80,7 +81,7 @@ const PreviewData& previewFor(TxUi& s, const TxModeSpec& mode, const DeviceInfo*
     }
     if (!gJob.fut.valid() && gShownKey != gWantKey && now - gWantSince > 0.35) {
         gJob.key = gWantKey;
-        gJob.fut = std::async(std::launch::async, make, r, &mode, rate);
+        gJob.fut = std::async(std::launch::async, [r, &mode, rate] { dect2::setThreadName("onair-txprev"); return make(r, &mode, rate); });
     }
     gData.busy = gJob.fut.valid() || gShownKey != gWantKey;
     return gData;

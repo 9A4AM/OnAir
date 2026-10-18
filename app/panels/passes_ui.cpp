@@ -2,6 +2,7 @@
 // on 137 MHz, the ISS, Orbcomm, a short editable list of amateur satellites) over the receiver's position, a polar sky plot of the
 // current or chosen pass, and optional tracking: Doppler-corrected retuning about once a second, the right mode started at AOS and
 // an IQ recording (the same as Record IQ) until LOS. TLEs are downloaded from Celestrak or Keplerpass on request, or pasted.
+#include "dect2/common/thread_name.h"
 #include "../app.h"
 #include "gallery.h"
 #include "../adsb/adsb_map.h"
@@ -250,7 +251,7 @@ void startDownload(bool keplerpass = false, std::string customFile = {}, std::st
     plat::prefs().setD("passTleTry", nowSec());
     { std::lock_guard<std::mutex> lk(gDlMu); gDlMsg = tr("downloading..."); }
     const std::string dir = tleDir();
-    std::thread([dir, keplerpass, customFile, customUrl] {
+    dect2::namedThread("onair-passes", [dir, keplerpass, customFile, customUrl] {
         std::error_code ec;
         fs::create_directories(fsPath(dir), ec);
         int ok = 0, n = 0;

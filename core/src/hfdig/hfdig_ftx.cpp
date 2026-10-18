@@ -5,6 +5,7 @@
 // complex baseband (WSJT-X's way) -> a fine fit of time and frequency on the sync symbols -> per-symbol tone amplitudes -> soft bits
 // (non-coherent likelihoods) -> LDPC / CRC (FT) or deinterleaving and Fano (WSPR) -> the message; each decoded signal is rebuilt and
 // subtracted from the slot, and the search runs again on what is left.
+#include "dect2/common/thread_name.h"
 #include "dect2/hfdig/hfdig_ftx.h"
 #include "dect2/net/pskreporter.h"
 #include "dect2/net/wsprnet.h"
@@ -808,7 +809,7 @@ struct HfdigFtx::Impl {
         for (auto& e : per) e = 0.0;
         for (int s = 0; s < kStreams; s++) rs[s] = std::make_unique<Resampler>(kStreamL[s], kStreamM[s], kStreamCut[s]);
         for (double& v : nextSlot) v = std::numeric_limits<double>::quiet_NaN();
-        th = std::thread([this] { worker(); });
+        th = dect2::namedThread("onair-ftx", [this] { worker(); });
     }
     ~Impl() {
         { std::lock_guard<std::mutex> lk(mu); quit = true; }

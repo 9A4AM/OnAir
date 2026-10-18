@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/source/rotator.h"
 #include "dect2/net/remote_api.h"
 #include "../net/netcompat.h"
@@ -537,7 +538,7 @@ bool Rotator::configure(const RotatorConfig& cfg) {
     connected_.store(cfg.link != RotatorLink::None, std::memory_order_relaxed);
     if (cfg.link == RotatorLink::None) return true;
     p_->quit = false;
-    p_->th = std::thread([this] { p_->run(); });
+    p_->th = dect2::namedThread("onair-rotator", [this] { p_->run(); });
     return true;
 }
 

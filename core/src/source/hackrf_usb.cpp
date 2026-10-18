@@ -6,6 +6,7 @@
 //
 // Why our own: the sample stream is the part of the receiver where lost data is most expensive, and this lets the reader run at the highest
 // priority, use large transfers, and write converted samples straight into the receiver's ring buffer, with one conversion and no other copy.
+#include "dect2/common/thread_name.h"
 #include "dect2/source/source.h"
 #include "dect2/common/platform.h"
 #include "native_common.h"   // the plain-words USB error texts
@@ -208,7 +209,7 @@ public:
             }
             inflight_++;
         }
-        events_ = std::thread([this] { eventLoop(); });
+        events_ = dect2::namedThread("onair-hrf-evt", [this] { eventLoop(); });
         return true;
     }
 

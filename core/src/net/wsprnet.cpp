@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/net/wsprnet.h"
 #include "dect2/net/pskreporter.h"
 #include "tcp_client.h"
@@ -196,7 +197,7 @@ void WsprNet::configure(const WsprNetConfig& c) {
         start = cc.on && !p.th.joinable();
         if (start) p.quit = false;
     }
-    if (start) p.th = std::thread([&p] { p.run(); });
+    if (start) p.th = dect2::namedThread("onair-wspr", [&p] { p.run(); });
     p.cv.notify_all();
 }
 

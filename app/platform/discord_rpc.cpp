@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "discord_rpc.h"
 #include <algorithm>
 #include <chrono>
@@ -169,7 +170,7 @@ Rpc::Rpc() : id_(appId()) {
 #ifndef _WIN32
     signal(SIGPIPE, SIG_IGN);
 #endif
-    th_ = std::thread([this] { loop(); });
+    th_ = dect2::namedThread("onair-discord", [this] { loop(); });
 }
 
 Rpc::~Rpc() {

@@ -1,4 +1,5 @@
 // Transmit: the list of modes OnAir can send (see tx.h for the reasoning), their generators, and the TxSession that feeds a radio.
+#include "dect2/common/thread_name.h"
 #include "dect2/tx/tx.h"
 #include "dect2/common/timecompat.h"
 #include "dect2/atsc/atsc_gen.h"
@@ -955,8 +956,8 @@ bool TxSession::start(std::unique_ptr<TxSink> sink, const TxRequest& r, const Tx
              r.loop ? "until stopped" : (std::to_string(r.onceSeconds).substr(0, std::to_string(r.onceSeconds).find('.') + 2) + " s, one pass").c_str());
     note(b);
     if (req_.carrierTune) note("CARRIER TUNE (unmodulated, for adjusting the transmission — not a message)");
-    gen_t_ = std::thread([this] { generatorLoop(); });
-    send_t_ = std::thread([this] { senderLoop(); });
+    gen_t_ = dect2::namedThread("onair-txgen", [this] { generatorLoop(); });
+    send_t_ = dect2::namedThread("onair-txsend", [this] { senderLoop(); });
     return true;
 }
 

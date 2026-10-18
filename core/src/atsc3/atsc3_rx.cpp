@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include <deque>
 #include "dect2/atsc3/atsc3_rx.h"
 #include <algorithm>
@@ -34,8 +35,8 @@ void Atsc3Rx::start() {
     q_.clear();
     busySec_ = 0; signalSec_ = 0; lastFrameWall_ = 0; lastFrames_ = 0; tsBytes_ = 0;
     { std::lock_guard<std::mutex> lk(tmu_); tel_ = Atsc3Telemetry(); }
-    worker_ = std::thread([this] { worker(); });
-    pump_ = std::thread([this] { pump(); });
+    worker_ = dect2::namedThread("onair-a3wk", [this] { worker(); });
+    pump_ = dect2::namedThread("onair-a3pump", [this] { pump(); });
 }
 
 void Atsc3Rx::stop() {

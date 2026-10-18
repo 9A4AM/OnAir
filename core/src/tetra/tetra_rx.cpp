@@ -1,5 +1,6 @@
 // TETRA network information receiver (tetra_rx.h): blocks of input, 25 kHz carriers found in the spectrum, slot synchronised on the
 // training sequences, the broadcast channels decoded.
+#include "dect2/common/thread_name.h"
 #include "dect2/tetra/tetra_rx.h"
 #include "dect2/results/results_io.h"
 #include "dect2/cell/cell_dsp.h"
@@ -333,7 +334,7 @@ struct TetraReceiver::Impl {
     // results (under mu)
     TetraTelemetry tel, pub;
 
-    Impl() { th = std::thread([this] { run(); }); }
+    Impl() { th = dect2::namedThread("onair-tetra", [this] { run(); }); }
     ~Impl() {
         { std::lock_guard<std::mutex> lk(mu); stop = true; }
         cv.notify_all();

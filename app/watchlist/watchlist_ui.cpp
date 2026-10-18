@@ -1,6 +1,7 @@
 // The Watchlists window (View > Watchlists): lists of aircraft, ships, APRS call signs, frequencies and words, and how to be told when one is heard
 // (desktop notification, sound, ntfy, Telegram bot, webhook), with a rate limit and quiet hours. The matching is in core/src/watchlist; this file is
 // the window, the saved file and the sink that shows the alerts and sends the web requests. Tokens are written to the file only, never to a log.
+#include "dect2/common/thread_name.h"
 #include "../app.h"
 #include "../panels/automation_internal.h"
 #include "dect2/automation/engine.h"
@@ -75,7 +76,7 @@ public:
     void post(const wl::Request& r) override {
         {
             std::lock_guard<std::mutex> lk(gMu);
-            if (!gTh.joinable()) gTh = std::thread(worker);
+            if (!gTh.joinable()) gTh = dect2::namedThread("onair-watch", worker);
             if (gQ.size() >= 50) return;
             gQ.push_back(r);
         }
@@ -319,7 +320,7 @@ void alertsTab() {
     }
     if (ch) S.dirty = true;
     ImGui::Separator();
-    if (ImGui::Button(tr("Send a test alert"))) std::thread([] { wl::global().sendTest(); }).detach();   // a thread: the sound and the banner are made on this window's thread
+    if (ImGui::Button(tr("Send a test alert"))) dect2::namedThread("onair-wltest", [] { wl::global().sendTest(); }).detach();   // a thread: the sound and the banner are made on this window's thread
     std::string st;
     {
         std::lock_guard<std::mutex> lk(gMu);

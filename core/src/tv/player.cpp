@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/tv/player.h"
 #include "dect2/tv/conceal.h"
 
@@ -128,7 +129,7 @@ Player::Player() : p_(new Impl) {
     recFilter_.setStrict(true);
     ring_.setCapacityPackets((size_t)bufMb_ * 1024 * 1024 / 188);
     p_->owner = this;
-    th_ = std::thread([this] { threadMain(); });
+    th_ = dect2::namedThread("onair-tvdec", [this] { threadMain(); });
 }
 
 Player::~Player() {

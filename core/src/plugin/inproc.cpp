@@ -1,6 +1,7 @@
 // The in-process runner: the plugin's code runs on a worker thread of its own, fed through a bounded queue, with a watchdog thread.
 // A plugin call that runs too long marks the plugin Hung: the host stops feeding it and stops waiting for it (a thread inside foreign code cannot
 // be killed safely; it is abandoned and its library stays loaded). Use the helper-process runner for plugins that must be killable.
+#include "dect2/common/thread_name.h"
 #include "loader.h"
 #include <algorithm>
 #include <chrono>
@@ -265,8 +266,8 @@ std::unique_ptr<Runner> startInProcess(const StartOptions& o, std::string& err) 
     fillHostApi(c->api, c.get());
     auto r = std::make_unique<InProc>();
     r->c = c;
-    r->worker = std::thread(workerMain, c);
-    r->dog = std::thread(watchdogMain, c);
+    r->worker = dect2::namedThread("onair-plg-wk", workerMain, c);
+    r->dog = dect2::namedThread("onair-plg-dog", watchdogMain, c);
     // wait for create() to return (it is under the watchdog too)
     {
         std::unique_lock<std::mutex> lk(c->mu);

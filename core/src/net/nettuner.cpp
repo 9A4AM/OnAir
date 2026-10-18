@@ -1,3 +1,4 @@
+#include "dect2/common/thread_name.h"
 #include "dect2/net/nettuner.h"
 #include "dect2/tv/hls.h"
 #include "dect2/common/platform.h"
@@ -328,7 +329,7 @@ struct NetTuner::Impl {
             sock_t fd = accept(lsock, (sockaddr*)&ca, &cl);
             if (fd == kBadSock) { if (!running) break; continue; }
             live++;
-            std::thread([this, fd] { serve(fd); live--; }).detach();
+            dect2::namedThread("onair-nettune-c", [this, fd] { serve(fd); live--; }).detach();
         }
     }
 };
@@ -353,7 +354,7 @@ bool NetTuner::start(const NetTunerConfig& c) {
     a.sin_addr.s_addr = htonl(c.localOnly ? INADDR_LOOPBACK : INADDR_ANY);
     if (bind(s, (sockaddr*)&a, sizeof a) < 0 || listen(s, 16) < 0) { p_->error = "port " + std::to_string(c.port) + " is not available"; sockClose(s); return false; }
     p_->lsock = s; p_->running = true;
-    p_->acceptor = std::thread([this] { p_->acceptLoop(); });
+    p_->acceptor = dect2::namedThread("onair-nettune", [this] { p_->acceptLoop(); });
     p_->eng.setPacketTap([this](const uint8_t* pk, size_t n, const TsSnapshot* sn, double secs) { p_->tap(pk, n, sn, secs); });
     return true;
 }

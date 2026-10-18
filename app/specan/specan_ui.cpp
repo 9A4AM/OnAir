@@ -1,6 +1,7 @@
 // Spectrum analyser screens: the sweep controls (range and presets, resolution, gains, averaging), one wide chart with live, peak-hold
 // and averaged traces or a persistence display, the band allocations in a strip above the chart (height from the font), a hover read-out, a marker and a delta marker,
 // the waterfall of the sweeps below, and CSV export of the current sweep.
+#include "dect2/common/thread_name.h"
 #include "app.h"
 #include "dect2/specan/specan_dsp.h"
 #include "dect2/specan/specan_rx.h"
@@ -98,7 +99,7 @@ void autoSave(const App& a) {
     char when[32];
     std::strftime(when, sizeof when, "%H:%M:%S", std::localtime(&now));
     S.autoBusy = true;
-    S.autoTh = std::thread([g, live = t.live, peak = t.peak, avg = t.avg, path, w = std::string(when)] {
+    S.autoTh = dect2::namedThread("onair-specan", [g, live = t.live, peak = t.peak, avg = t.avg, path, w = std::string(when)] {
         const bool ok = dect2::saCsvWriteFile(path, g, live, peak, avg);
         std::lock_guard<std::mutex> lk(autoMu());
         if (ok) { S.autoCount++; S.autoLast = w; S.autoFiles.push_back(path); S.note = "auto-saved " + path; }
