@@ -167,6 +167,7 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("tetrapol", "TETRAPOL", 81, "makeTetrapolSynth", kOpt, kUnv),
         mk("ndb", "NDB beacons", 31, "makeNdbSynth", kOpt, kUnv),
         mk("elektro", "Elektro-L", 82, "makeElektroSynth", kOpt, kUnv),
+        mk("lbj", "LBJ", 83, "makeLbjSynth", kOpt, kUnv),
     };
 }
 }

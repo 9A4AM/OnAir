@@ -28,7 +28,13 @@ public:
         }
     }
     // Output m is taken at input position start + m * inRate / outRate (input samples; may be fractional). Positions outside the input read as zero.
+#if defined(__GNUC__) && !defined(__clang__)
+    __attribute__((optimize("fp-contract=off")))   // no fused multiply-add in one path only: the four-output and single paths must round the same
+#endif
     std::vector<cf32> run(const cf32* in, size_t nIn, double start, size_t nOut) const {
+#if defined(__clang__)
+#pragma clang fp contract(off)
+#endif
         std::vector<cf32> out(nOut);
         const double step = inRate_ / outRate_;
         // Four outputs per pass: each keeps its own sequential sum (so every result is bit-identical to computing it alone), but the four chains

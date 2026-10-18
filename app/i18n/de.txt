@@ -678,7 +678,7 @@ Aircraft	Flugzeuge
 All set. OnAir will start here:	Alles bereit. OnAir startet hier:
 Allow remote control (frequency and gain)	Fernsteuerung erlauben (Frequenz und Verstärkung)
 Amateur radio	Amateurfunk
-An SDRplay RSP is plugged in, but its driver, the SDRplay API, is not installed. It is SDRplay's own software and its licence does not let OnAir include it, so it is a one-time download.	Ein SDRplay RSP ist angeschlossen, aber sein Treiber, die SDRplay API, ist nicht installiert. Es ist SDRplays eigene Software, und ihre Lizenz erlaubt OnAir nicht, sie mitzuliefern; sie muss einmalig heruntergeladen werden.
+An SDRplay RSP is plugged in, but the SDRplay Hardware API is not installed. Install it separately even if SDRconnect already works with the radio.	Ein SDRplay RSP ist angeschlossen, aber die SDRplay Hardware API ist nicht installiert. Installiere sie separat, auch wenn SDRconnect bereits mit dem Radio funktioniert.
 Another program is using the HackRF	Ein anderes Programm verwendet den HackRF
 Australia and New Zealand	Australien und Neuseeland
 Average	Mittelwert
@@ -712,7 +712,7 @@ Details	Details
 Don't show again	Nicht mehr anzeigen
 Down, LO above: radio = LO - RF (mirrored)	Abwärts, LO darüber: Radio = LO - HF (gespiegelt)
 Down, LO below: radio = RF - LO	Abwärts, LO darunter: Radio = HF - LO
-Download the SDRplay API for this computer from sdrplay.com/api and run the installer.	Lade die SDRplay API für diesen Computer von sdrplay.com/api herunter und starte das Installationsprogramm.
+Download the Hardware API for this computer from sdrplay.com/hardware-api and run the installer.	Lade die Hardware API für diesen Computer von sdrplay.com/hardware-api herunter und starte das Installationsprogramm.
 Download the current SDRplay API from sdrplay.com and install it.	Lade die aktuelle SDRplay API von sdrplay.com herunter und installiere sie.
 Drag to resize, double click for the automatic size	Ziehen zum Ändern der Größe, Doppelklick für die automatische Größe
 Drones, 2.4 / 5.8 GHz	Drohnen, 2,4 / 5,8 GHz

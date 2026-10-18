@@ -678,7 +678,7 @@ Aircraft	Aeronaves
 All set. OnAir will start here:	Todo listo. OnAir empezará aquí:
 Allow remote control (frequency and gain)	Permitir control remoto (frecuencia y ganancia)
 Amateur radio	Radioafición
-An SDRplay RSP is plugged in, but its driver, the SDRplay API, is not installed. It is SDRplay's own software and its licence does not let OnAir include it, so it is a one-time download.	Hay un SDRplay RSP conectado, pero su controlador, la API de SDRplay, no está instalado. Es software propio de SDRplay y su licencia no permite que OnAir lo incluya, así que hay que descargarlo una vez.
+An SDRplay RSP is plugged in, but the SDRplay Hardware API is not installed. Install it separately even if SDRconnect already works with the radio.	Hay un SDRplay RSP conectado, pero la Hardware API de SDRplay no está instalada. Instálala por separado, aunque SDRconnect ya funcione con la radio.
 Another program is using the HackRF	Otro programa está usando el HackRF
 Australia and New Zealand	Australia y Nueva Zelanda
 Average	Promedio
@@ -712,7 +712,7 @@ Details	Detalles
 Don't show again	No volver a mostrar
 Down, LO above: radio = LO - RF (mirrored)	Descendente, LO por encima: radio = LO - RF (en espejo)
 Down, LO below: radio = RF - LO	Descendente, LO por debajo: radio = RF - LO
-Download the SDRplay API for this computer from sdrplay.com/api and run the installer.	Descarga la API de SDRplay para este ordenador desde sdrplay.com/api y ejecuta el instalador.
+Download the Hardware API for this computer from sdrplay.com/hardware-api and run the installer.	Descarga la Hardware API para este ordenador desde sdrplay.com/hardware-api y ejecuta el instalador.
 Download the current SDRplay API from sdrplay.com and install it.	Descarga la API de SDRplay actual desde sdrplay.com e instálala.
 Drag to resize, double click for the automatic size	Arrastra para cambiar el tamaño, doble clic para el tamaño automático
 Drones, 2.4 / 5.8 GHz	Drones, 2,4 / 5,8 GHz

@@ -678,7 +678,7 @@ Aircraft	Orlaiviai
 All set. OnAir will start here:	Viskas paruošta. OnAir prasidės čia:
 Allow remote control (frequency and gain)	Leisti nuotolinį valdymą (dažnis ir stiprinimas)
 Amateur radio	Radijo mėgėjai
-An SDRplay RSP is plugged in, but its driver, the SDRplay API, is not installed. It is SDRplay's own software and its licence does not let OnAir include it, so it is a one-time download.	Prijungtas SDRplay RSP, bet jo tvarkyklė, SDRplay API, neįdiegta. Tai pačios SDRplay programinė įranga, o jos licencija neleidžia OnAir jos įtraukti, todėl ją reikia atsisiųsti vieną kartą.
+An SDRplay RSP is plugged in, but the SDRplay Hardware API is not installed. Install it separately even if SDRconnect already works with the radio.	Prijungtas SDRplay RSP, bet SDRplay Hardware API neįdiegta. Įdiekite ją atskirai, net jei SDRconnect jau veikia su radiju.
 Another program is using the HackRF	Kita programa naudoja HackRF
 Australia and New Zealand	Australija ir Naujoji Zelandija
 Average	Vidurkis
@@ -712,7 +712,7 @@ Details	Išsami informacija
 Don't show again	Daugiau nerodyti
 Down, LO above: radio = LO - RF (mirrored)	Žemyn, LO aukščiau: radijas = LO - RF (atspindėta)
 Down, LO below: radio = RF - LO	Žemyn, LO žemiau: radijas = RF - LO
-Download the SDRplay API for this computer from sdrplay.com/api and run the installer.	Atsisiųskite šiam kompiuteriui skirtą SDRplay API iš sdrplay.com/api ir paleiskite diegimo programą.
+Download the Hardware API for this computer from sdrplay.com/hardware-api and run the installer.	Atsisiųskite šiam kompiuteriui skirtą Hardware API iš sdrplay.com/hardware-api ir paleiskite diegimo programą.
 Download the current SDRplay API from sdrplay.com and install it.	Atsisiųskite naujausią SDRplay API iš sdrplay.com ir įdiekite.
 Drag to resize, double click for the automatic size	Tempkite, kad pakeistumėte dydį, dukart spustelėkite automatiniam dydžiui
 Drones, 2.4 / 5.8 GHz	Dronai, 2,4 / 5,8 GHz

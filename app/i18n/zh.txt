@@ -678,7 +678,7 @@ Aircraft	飞机
 All set. OnAir will start here:	设置完成。OnAir 将从这里开始：
 Allow remote control (frequency and gain)	允许远程控制（频率和增益）
 Amateur radio	业余无线电
-An SDRplay RSP is plugged in, but its driver, the SDRplay API, is not installed. It is SDRplay's own software and its licence does not let OnAir include it, so it is a one-time download.	已插入 SDRplay RSP，但未安装其驱动 SDRplay API。这是 SDRplay 自己的软件，其许可不允许 OnAir 附带，因此需要一次性下载。
+An SDRplay RSP is plugged in, but the SDRplay Hardware API is not installed. Install it separately even if SDRconnect already works with the radio.	已连接 SDRplay RSP，但未安装 SDRplay Hardware API。即使 SDRconnect 已能使用该电台，也请单独安装它。
 Another program is using the HackRF	另一个程序正在使用 HackRF
 Australia and New Zealand	澳大利亚和新西兰
 Average	平均
@@ -712,7 +712,7 @@ Details	详情
 Don't show again	不再显示
 Down, LO above: radio = LO - RF (mirrored)	下变频，LO 在上：电台 = LO - RF（镜像）
 Down, LO below: radio = RF - LO	下变频，LO 在下：电台 = RF - LO
-Download the SDRplay API for this computer from sdrplay.com/api and run the installer.	请从 sdrplay.com/api 下载适用于此电脑的 SDRplay API 并运行安装程序。
+Download the Hardware API for this computer from sdrplay.com/hardware-api and run the installer.	从 sdrplay.com/hardware-api 下载适用于此电脑的 Hardware API 并运行安装程序。
 Download the current SDRplay API from sdrplay.com and install it.	请从 sdrplay.com 下载最新的 SDRplay API 并安装。
 Drag to resize, double click for the automatic size	拖动调整大小，双击恢复自动大小
 Drones, 2.4 / 5.8 GHz	无人机，2.4 / 5.8 GHz

@@ -664,7 +664,7 @@ Aircraft	Repülők
 All set. OnAir will start here:	Minden kész. Az OnAir itt indul:
 Allow remote control (frequency and gain)	Távvezérlés engedélyezése (frekvencia és erősítés)
 Amateur radio	Rádióamatőr
-An SDRplay RSP is plugged in, but its driver, the SDRplay API, is not installed. It is SDRplay's own software and its licence does not let OnAir include it, so it is a one-time download.	SDRplay RSP csatlakoztatva van, de az illesztőprogramja, az SDRplay API nincs telepítve. Ez az SDRplay saját szoftvere, amelyet a licenc miatt az OnAir nem tartalmazhat, ezért egyszer le kell tölteni.
+An SDRplay RSP is plugged in, but the SDRplay Hardware API is not installed. Install it separately even if SDRconnect already works with the radio.	Egy SDRplay RSP csatlakoztatva van, de az SDRplay Hardware API nincs telepítve. Telepítsd külön, még akkor is, ha az SDRconnect már működik a rádióval.
 Another program is using the HackRF	Egy másik program használja a HackRF-et
 Australia and New Zealand	Ausztrália és Új-Zéland
 Average	Átlag
@@ -698,7 +698,7 @@ Details	Részletek
 Don't show again	Ne mutassa többé
 Down, LO above: radio = LO - RF (mirrored)	Lefelé, LO felül: rádió = LO - RF (tükrözve)
 Down, LO below: radio = RF - LO	Lefelé, LO alul: rádió = RF - LO
-Download the SDRplay API for this computer from sdrplay.com/api and run the installer.	Töltse le a számítógépéhez való SDRplay API-t a sdrplay.com/api oldalról, és futtassa a telepítőt.
+Download the Hardware API for this computer from sdrplay.com/hardware-api and run the installer.	Töltsd le a Hardware API-t ehhez a számítógéphez a sdrplay.com/hardware-api oldalról, és futtasd a telepítőt.
 Download the current SDRplay API from sdrplay.com and install it.	Töltse le az aktuális SDRplay API-t a sdrplay.com oldalról, és telepítse.
 Drag to resize, double click for the automatic size	Húzással átméretezhető, dupla kattintás az automatikus méretért
 Drones, 2.4 / 5.8 GHz	Drónok, 2,4 / 5,8 GHz
