@@ -2,7 +2,7 @@
 
 <h1 align="center">OnAir</h1>
 
-<p align="center"><b>Receive TV, radio, aircraft, ships, satellites, two-way radio, pagers, time signals and more: 112 modes with one software-defined radio.</b><br>
+<p align="center"><b>Receive TV, radio, aircraft, ships, satellites, two-way radio, pagers, time signals and more: 120 modes with one software-defined radio.</b><br>
 Free and open source, for macOS, Windows, Linux and Android.</p>
 
 <p align="center">
@@ -63,7 +63,7 @@ OnAir is a receiver first. It can also send test signals through a transmit-capa
 ## Contents
 
 - [What it does](#what-it-does)
-- [What is new in 0.2.6](#what-is-new-in-026)
+- [What is new in 0.2.7](#what-is-new-in-027) · [0.2.6](#what-is-new-in-026)
 - [Install](#install) · [Android app](#android-app) · [Development version](#development-version-nightly)
 - [Quick start](#quick-start)
 - [Modes](#modes) · [Tools and notes](#tools-and-notes)
@@ -81,20 +81,37 @@ OnAir is a receiver first. It can also send test signals through a transmit-capa
 | Family | Modes | What you get |
 |---|:---:|---|
 | **TV** | 10 | DVB-T/T2, DVB-S/S2/S2X, DVB-C, ATSC 1.0 and 3.0, ISDB-T, DTMB, analogue TV and MAC, analog FPV video (5.8 / 1.2 GHz), with a live player (picture, sound, subtitles, teletext, programme guide), recording, pause and live buffer, and 2-3 adjacent channels from one wide capture |
-| **Broadcast radio** | 5 | DAB+, DRM (with its data services), HD Radio, CDR, and FM with RDS, a Mono switch for weak stations and a saved-station library |
+| **Broadcast radio** | 6 | DAB+ (with a programme guide), DRM (with its data services), HD Radio, CDR, AM broadcast (medium wave and shortwave), and FM with RDS, a Mono switch for weak stations and a saved-station library |
 | **Aviation** | 14 | ADS-B with a live map, UAT, ACARS, VDL2 and VDL4, HFDL, airband, VOR / ILS / NDB, FLARM, drones |
 | **Maritime** | 5 | AIS, VDES, NAVTEX, DSC, weather fax |
 | **Satellite and navigation** | 12 | Weather pictures from Meteor, GOES, Elektro-L and MetOp, Iridium, Inmarsat, Orbcomm, QO-100, CubeSat telemetry, GNSS, COSPAS-SARSAT 406 MHz distress beacons |
-| **Two-way radio** | 6 | DMR, P25, NXDN, dPMR, D-STAR, M17, TETRA, TETRAPOL |
+| **Two-way radio** | 7 | DMR, P25 (with a trunking follower), NXDN, dPMR, TETRA, TETRAPOL, tone decoders (CTCSS, DCS, DTMF, selcall) |
 | **Cellular and rail** | 5 | LTE, 5G NR and NB-IoT cells, GSM-R, LBJ |
 | **Pagers** | 3 | POCSAG, FLEX, Multitone |
 | **IoT and sensors** | 14 | ISM sensors, LoRaWAN, Meshtastic, MeshCore, Bluetooth LE, Zigbee, Wi-Fi, Wi-SUN, Wireless M-Bus, Z-Wave, DECT, ANT+ |
 | **Amateur** | 28 | FT8, FT4, WSPR, JS8Call, RTTY, PSK, MT63, SSTV, FreeDV, APRS, LoRa APRS, MeshCom and more |
-| **Weather and science** | 7 | Radiosondes, SAME alerts, time signals, ionospheric sounders, radio astronomy, meteor scatter |
+| **Weather and science** | 8 | Radiosondes, HRPT, SAME alerts, time signals, e-Czas, ionospheric sounders, radio astronomy, meteor scatter |
 | **HF utility** | 4 | ALE, beacons, Datawell buoys, CODAR |
 | **Tools** | 4 | General receiver, spectrum analyser, spectrum explorer, signal workbench; also a gain optimiser, a direction finder, a pass planner and a remote-control API |
 
 **Many radios:** HackRF, RTL-SDR, Airspy, SDRplay, BladeRF, LimeSDR, USRP, Pluto, Fobos, RX888, RFNM, network radios, sound cards and Hamlib rigs. The mode counts are the rows of the mode list in the app. Details per mode are under [Modes](#modes).
+
+## What is new in 0.2.7
+
+<details open>
+<summary><b>Show the 0.2.7 changes</b></summary>
+
+- **About twenty new modes** (120 in all): Wireless M-Bus, tone decoders, COSPAS-SARSAT 406 MHz, MT63, Z-Wave, meteor scatter, analog FPV video, Wi-Fi HaLow, a P25 trunking follower, e-Czas, a working LBJ decoder, and KiwiSDR as a network radio.
+- **New tools:** [band survey](docs/band-survey.md), a [message database](docs/messages.md) with full-text search, [watchlists](docs/watchlists.md) with ntfy / Telegram / webhook alerts, a [time machine](docs/time-machine.md) (a rolling memory of raw IQ), a pass scheduler, a [Doppler orbit fit](docs/doppler-orbit.md), [self-calibration](docs/self-calibration.md), [station health](docs/STATION_HEALTH.md), an [interference hunter](docs/rfi-hunter.md), HF propagation and GNSS navigation views, a [hydrogen line toolkit](docs/hydrogen-line.md), [passive radar](docs/passive-radar.md), an [RF camera](docs/rf-camera.md) and a [protocol lab](docs/protocol-lab.md).
+- **TV and DAB:** a [TV recorder](docs/tv-recorder.md) (programme guide grid, scheduled recording, timeshift, subtitle export) and a DAB programme guide with XMLTV export.
+- **Plugin SDK** ([docs/plugins.md](docs/plugins.md)): add a mode or action as a plugin file without rebuilding. **Headless server** ([docs/headless-server.md](docs/headless-server.md)): `onair-server` runs OnAir without a window, controlled from a browser.
+- **Audio and signals:** an [audio cleanup chain](docs/audio-cleanup.md), [auto gain](docs/auto-gain.md) with per-device tables, live translation to English ([docs/TRANSCRIBE.md](docs/TRANSCRIBE.md)), [live rooms](docs/live-rooms.md), auto-labelled spectrum, a calibrated signal identifier, a weather picture studio, [offline data packs](docs/PACKS.md) and [sound card input](docs/SOUND-CARD.md) for narrowband modes.
+- **Interface:** a [touch interface](#features), full-screen maps, an airband airport search with an On the air tab, a redesigned Transmit panel, a new logo.
+- **Android:** direct USB for RTL-SDR radios. The APK is signed with a new permanent key, so **uninstall 0.2.6 first**; later updates install normally.
+- **Fixes:** DVB-T2 16K extended pilot table (the 642 MHz capture decodes), TETRA no longer calls clear cells encrypted, HFDL strong bursts, DRA+ bit rate, mode switch while running, rtl_tcp greeting wait, Airspy HF+ late callbacks, accented paths on Windows.
+- **Under the hood:** the C++ protocol layers were replaced by Rust; **Rust is now required to build** (see [Build from source](#build-from-source)).
+- Most new modes and tools have been tested on synthetic signals only; the full list is in the release notes.
+</details>
 
 ## What is new in 0.2.6
 
@@ -113,7 +130,7 @@ OnAir is a receiver first. It can also send test signals through a transmit-capa
 - **Share my radio:** an rtl_tcp server for the radio OnAir is running.
 - **More radios:** Fobos SDR, RX888 MkII (native USB 3 driver), RFNM, Red Pitaya, Pluto+ Ethernet, SpyServer, SDR++ server, Hermes Lite 2.
 - **Transmit** of test signals into a dummy load, with the modes offered listed in [docs/TRANSMIT.md](docs/TRANSMIT.md).
-- **New modes** since 0.2.5: Tone decoders (CTCSS, DCS, DTMF, selcall), Wi-SUN FAN, e-Czas (Polish time service on 225 kHz), UAT 978 MHz, VDL Mode 4, TETRAPOL, Elektro-L, LBJ (Chinese railway warnings), COSPAS-SARSAT 406 MHz beacons, Wireless M-Bus, Z-Wave, MT63, meteor scatter, DECT, ANT+ sensors, NB-IoT and 5G NR cells, MAC, DVB-C, MeshCom, Q65 and the other WSJT modes, and more (118 modes in all).
+- **New modes** since 0.2.5: Tone decoders (CTCSS, DCS, DTMF, selcall), Wi-SUN FAN, e-Czas (Polish time service on 225 kHz), UAT 978 MHz, VDL Mode 4, TETRAPOL, Elektro-L, LBJ (Chinese railway warnings), COSPAS-SARSAT 406 MHz beacons, Wireless M-Bus, Z-Wave, MT63, meteor scatter, DECT, ANT+ sensors, NB-IoT and 5G NR cells, MAC, DVB-C, MeshCom, Q65 and the other WSJT modes, and more (120 modes in all).
 - **Interface:** Light and High contrast themes, an accent colour, colour maps and scroll-back for the spectrum, a General receiver with up to 4 channels and MP3 / FLAC recording, a one-button **Record audio** in the Source panel (next to Record IQ) that saves the sound you hear in any mode to WAV, FLAC or MP3 (optionally only while there is sound, one file per transmission), **Monitor audio** (Source panel): hear the tuned channel of any mode, also the decoders that have no sound of their own, as USB / LSB / narrow FM / AM, on a chosen output device, a second device (a virtual audio cable for fldigi, WSJT-X, multimon-ng) or a local TCP stream (off by default, 127.0.0.1 only unless you allow other computers; see docs/AUDIO.md), a "Save bug report" zip, translations (German, French, Spanish, Chinese, Lithuanian, Hungarian, Japanese, Polish, Dutch, Portuguese, Italian, Russian).
 - **Docker image** that shows the OnAir GUI in a browser, published with each release.
 - **mbelib is no longer included** (patented AMBE/IMBE vocoders): see [Good to know](#good-to-know).
@@ -145,11 +162,11 @@ Download the file for your system from the **[latest release](https://github.com
  is the desktop decoder core (the same C++ code, built as `libonair.so`) with a phone interface in Kotlin Compose: spectrum and waterfall, the mode list with search and groups, a results tab with the decoded data of the selected mode, and a log.
 
 - **Receive only.** The app never transmits. Its only permission is INTERNET (for rtl_tcp and SpyServer, and for map tiles).
-- **Sources:** `rtl_tcp` (an RTL-SDR served over the network, or on the phone itself), SpyServer, an IQ file (cs8, cu8, cf32, ci16, cu16, with its sample rate) and a built-in test signal for the selected mode that needs no radio.
+- **Sources:** an RTL-SDR on the USB port (0.2.7), `rtl_tcp` (an RTL-SDR served over the network, or on the phone itself), SpyServer, an IQ file (cs8, cu8, cf32, ci16, cu16, with its sample rate) and a built-in test signal for the selected mode that needs no radio.
 - **Results:** per-mode results (cards and tables), an OpenStreetMap map (tiles are only fetched after you agree), and FM with RDS.
 - **Use it:** pick a source on the Receiver tab, a mode on the Mode tab, press play. Tap the spectrum to tune, drag to move, pinch to zoom (double tap resets).
 - **Install:** download `OnAir-…-android.apk` from the [release](https://github.com/adswill/OnAir/releases/latest), copy it to the phone, open it and allow installs from unknown sources for the app you opened it with. The APK is signed with the project's own key, not a Play Store key; updating later needs the same key.
-- **Limits:** arm64-v8a only, Android 9 (API 28) or newer. No direct USB radio support yet: use rtl_tcp (for example through a USB driver app) or SpyServer. No vocoder voice (DMR, P25, NXDN, D-STAR, TETRA), no TV video or sound, and no images yet (the satellite pictures and the SSTV / fax pictures). Wide modes (DVB, ATSC) need a fast phone.
+- **Limits:** arm64-v8a only, Android 9 (API 28) or newer. Direct USB works for RTL-SDR radios (new in 0.2.7); HackRF and Airspy USB are not supported yet, so use rtl_tcp or SpyServer for those. No vocoder voice (DMR, P25, NXDN, D-STAR, TETRA), no TV video or sound, and no images yet (the satellite pictures and the SSTV / fax pictures). Wide modes (DVB, ATSC) need a fast phone.
 </details>
 
 ### Development version ("nightly")
@@ -174,10 +191,10 @@ No radio? Open an IQ recording through the *IQ recording file* source (cs8, cu8,
 
 ## Modes
 
-118 modes, grouped as in the app. Every receiver is built from the published specifications and tested on generated signals (carrier offsets, noise, echoes, clock errors) and, where recordings exist, on real captures. Reports and recordings from your own antenna help most: send them on [Discord](https://discord.gg/Kky9c6atm) or upload them to the [signal sample library](https://files.on-air.dev). Where a mode has a specific caveat it is said below. **Receive only** means nothing is transmitted, decrypted or joined.
+120 modes, grouped as in the app (the list in the app also has a Plugins entry for managing add-ons). Every receiver is built from the published specifications and tested on generated signals (carrier offsets, noise, echoes, clock errors) and, where recordings exist, on real captures. Reports and recordings from your own antenna help most: send them on [Discord](https://discord.gg/Kky9c6atm) or upload them to the [signal sample library](https://files.on-air.dev). Where a mode has a specific caveat it is said below. **Receive only** means nothing is transmitted, decrypted or joined.
 
 <details>
-<summary><b>All 118 modes, by family</b></summary>
+<summary><b>All 120 modes, by family</b></summary>
 
 ### TV
 
@@ -196,6 +213,7 @@ No radio? Open an IQ recording through the *IQ recording file* source (cs8, cu8,
 - **DAB / DAB+** with a transmitter map from the TII, Journaline and MOT slide show.
 - **FM** (87.5 - 108 MHz): stereo and RDS (station name, radio text, programme type, traffic flags), band scan, saved stations, Mono switch.
 - **DRM** (DRM30 and DRM+) on long, medium and short wave: audio, station information and the data services (slide show, website, EPG, TPEG, Journaline).
+- **AM broadcast** (medium wave 531 - 1602 kHz and the shortwave broadcast bands, in the general receiver with MW and SW presets).
 - **HD Radio** (NRSC-5, FM and AM) and **CDR** (China Digital Radio). HDC and DRA audio are patented or of unclear status: see [Good to know](#good-to-know). HD Radio and CDR sound play only with a codec add-on you build yourself ([docs/CODECS.md](docs/CODECS.md)); the stations, services and data work without it.
 
 ### Aviation
@@ -219,6 +237,7 @@ No radio? Open an IQ recording through the *IQ recording file* source (cs8, cu8,
 
 ### Two-way radio
 
+- **Tone decoders** (CTCSS, DCS, DTMF, five-tone, SELCAL and two-tone pages; [details](docs/tones.md)).
 - **DMR**, **NXDN** (NXDN48 / 96), **P25** (Phase 1, conventional and trunked), **dPMR / PMR446** (all 16 channels scanned), **D-STAR** (also in the amateur group) and **M17**: call logs with IDs and talkgroups, data and short messages. P25 encrypted calls are only reported as encrypted. Voice for the AMBE / IMBE modes needs mbelib you install yourself, see [Good to know](#good-to-know).
 - **TETRA** (base station broadcast: network and colour code, location area, carriers, services, neighbours, whether encryption is used; scan over a span) and **TETRAPOL** (D_SYSTEM_INFO). Receive only, no voice, nothing decrypted.
 
@@ -498,13 +517,13 @@ Off by default. **View > Show in Discord** shows on your Discord profile that yo
 <details>
 <summary>Build instructions</summary>
 
-You need a C++20 compiler, CMake 3.20 or newer, pkg-config, FFmpeg, libhackrf, and GLFW for the app. SoapySDR is optional.
+You need a C++20 compiler, CMake 3.20 or newer, **Rust (cargo and rustc 1.70 or newer; required since 0.2.7, the protocol layers are Rust)**, pkg-config, FFmpeg, libhackrf, and GLFW for the app. SoapySDR is optional. For a cross build install the Rust target first (`rustup target add <triple>`); CMake names it when it is missing.
 
 ```sh
 # macOS
-brew install cmake pkg-config hackrf soapysdr libusb ffmpeg glfw
+brew install cmake rust pkg-config hackrf soapysdr libusb ffmpeg glfw
 # Debian / Ubuntu
-sudo apt install build-essential cmake pkg-config libhackrf-dev libsoapysdr-dev libusb-1.0-0-dev \
+sudo apt install build-essential cmake cargo pkg-config libhackrf-dev libsoapysdr-dev libusb-1.0-0-dev \
   libglfw3-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev
 
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON
