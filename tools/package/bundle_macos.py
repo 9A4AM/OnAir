@@ -93,10 +93,10 @@ if missing and not allow_missing: sys.exit(1)
 for name, target in links:
     if name != target and not os.path.exists(os.path.join(fw, name)): os.symlink(target, os.path.join(fw, name))
 # The SoapyRemote client module (issue #84, SoapySDR over LAN): SoapySDR finds it only in its module folders, and a Mac without Homebrew has none, so it is
-# bundled in Frameworks/SoapySDR/modules0.8 (the program points SoapySDR there: soapyLocateModules in core/src/source/source_soapy.cpp). Its libSoapySDR
+# bundled in Frameworks/SoapySDR/modules (the program points SoapySDR there: soapyLocateModules in core/src/source/source_soapy.cpp). Its libSoapySDR
 # is rewritten to the bundled copy by the loop below like any other dependency. Required (brew install soapyremote) unless ONAIR_ALLOW_MISSING_RADIO_LIBS=1.
 modules = []
-sm_dir = os.path.join(fw, "SoapySDR", "modules0.8")
+sm_dir = os.path.join(fw, "SoapySDR", "modules")   # not "modules0.8": codesign reads a folder name with an extension as a bundle
 sm_src = [m for d in HOMEBREW_LIB for m in glob.glob(os.path.join(d, "SoapySDR", "modules*", "libremoteSupport.*")) if not m.endswith(".a")]
 if sm_src:
     os.makedirs(sm_dir, exist_ok=True)
