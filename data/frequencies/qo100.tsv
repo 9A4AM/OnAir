@@ -1,0 +1,30 @@
+# QO-100 (Es'hail-2) narrowband transponder presets: one per OnAir mode that is used there, and the wideband DATV transponder
+# freq_mhz|name|bandwidth_khz|notes[|mode|region|category]   frequency is the RF downlink dial (USB); the receiver tunes the first IF behind the LNB (LO 9750 MHz by default)
+@region GLOBAL
+@category amateur
+@source AMSAT-DL QO-100 NB transponder bandplan (amsat-dl.org, Feb 2022 plan); per-mode slots are suggestions inside the plan's digimode segments, not official allocations
+10489.520|QO-100 NB CW|0.5|CW segment 10489.505-10489.540; USB dial, uplink 2400.020 MHz USB (transponder does not invert)|cw||
+10489.540|QO-100 NB FT8|3|narrow digimode segment (500 Hz max); USB dial, uplink 2400.040 MHz USB (transponder does not invert)|ft8||
+10489.548|QO-100 NB JS8Call|3|narrow digimode segment (500 Hz max); JS8Call trial spot; USB dial, uplink 2400.048 MHz USB (transponder does not invert)|js8||
+10489.556|QO-100 NB FT4|3|narrow digimode segment (500 Hz max); USB dial, uplink 2400.056 MHz USB (transponder does not invert)|ft4||
+10489.562|QO-100 NB PSK31|0.5|narrow digimode segment (500 Hz max); USB dial, uplink 2400.062 MHz USB (transponder does not invert)|psk||
+10489.568|QO-100 NB RTTY|0.5|narrow digimode segment (500 Hz max); USB dial, uplink 2400.068 MHz USB (transponder does not invert)|rtty||
+10489.574|QO-100 NB WSPR|3|narrow digimode segment (500 Hz max); USB dial, uplink 2400.074 MHz USB (transponder does not invert)|wspr||
+10489.590|QO-100 NB SSTV|3|wide digimode segment (2.7 kHz max); USB dial, uplink 2400.090 MHz USB (transponder does not invert)|sstv||
+10489.600|QO-100 NB FreeDV / Codec2|3|wide digimode segment (2.7 kHz max); 700D / 1600 voice; USB dial, uplink 2400.100 MHz USB (transponder does not invert)|freedv||
+10489.606|QO-100 NB HamDRM|3|wide digimode segment (2.7 kHz max); USB dial, uplink 2400.106 MHz USB (transponder does not invert)|hamdrm||
+10489.612|QO-100 NB packet / APRS|3|wide digimode segment (2.7 kHz max); AFSK 1200; USB dial, uplink 2400.112 MHz USB (transponder does not invert)|packet||
+10489.618|QO-100 NB Olivia|3|wide digimode segment (2.7 kHz max); USB dial, uplink 2400.118 MHz USB (transponder does not invert)|olivia||
+10489.622|QO-100 NB Contestia|3|wide digimode segment (2.7 kHz max); USB dial, uplink 2400.122 MHz USB (transponder does not invert)|contestia||
+10489.626|QO-100 NB MFSK|3|wide digimode segment (2.7 kHz max); USB dial, uplink 2400.126 MHz USB (transponder does not invert)|mfsk||
+10489.630|QO-100 NB THOR|3|wide digimode segment (2.7 kHz max); USB dial, uplink 2400.130 MHz USB (transponder does not invert)|thor||
+10489.634|QO-100 NB DominoEX|3|wide digimode segment (2.7 kHz max); USB dial, uplink 2400.134 MHz USB (transponder does not invert)|dominoex||
+10489.638|QO-100 NB Hellschreiber|3|wide digimode segment (2.7 kHz max); USB dial, uplink 2400.138 MHz USB (transponder does not invert)|hell||
+10489.642|QO-100 NB MT63|3|wide digimode segment (2.7 kHz max); USB dial, uplink 2400.142 MHz USB (transponder does not invert)|mt63||
+10489.700|QO-100 NB SSB (lower segment)|2.7|SSB only segment 10489.650-10489.745; USB dial, uplink 2400.200 MHz USB (transponder does not invert)|general||
+10489.800|QO-100 NB SSB (upper segment)|2.7|SSB only segment 10489.755-10489.850; USB dial, uplink 2400.300 MHz USB (transponder does not invert)|general||
+10489.855|QO-100 NB broadcast frequency|2.7|bulletins and net announcements; USB dial, uplink 2400.355 MHz USB (transponder does not invert)|general||
+10489.860|QO-100 NB emergency frequency|2.7|kept clear for emergency traffic; USB dial, uplink 2400.360 MHz USB (transponder does not invert)|general||
+@source AMSAT-DL / BATC QO-100 wideband (DATV) transponder 10491.0-10499.0 MHz, beacon 10491.5 MHz DVB-S2 QPSK 1.5 Msym/s; uplink 2401.0-2409.0 MHz
+10491.500|QO-100 WB DATV beacon|2000|DVB-S2 QPSK 1.5 Msym/s beacon; uplink 2401.500 MHz|dvbs||
+10495.000|QO-100 WB DATV transponder centre|8000|The whole 8 MHz wideband transponder (10491-10499 MHz): DVB-S/S2 carriers of 0.333 to 4 Msym/s; uplink 2405.000 MHz|dvbs||

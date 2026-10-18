@@ -3205,3 +3205,45 @@ Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	N
 No sound reached the descrambler: tune a voice signal first.	Ningún sonido llegó al descodificador: sintoniza antes una señal de voz.
 Baseband filter	Filtro de banda base
 Custom filter	Filtro personalizado
+#  QO-100: the auto decoder and the SSB conversation manager
+ ended	 terminada
+%d channels at most	como máximo %d canales
+%zu SSTV pictures	%zu imágenes SSTV
+%zu channels, %d dropped	%zu canales, %d descartados
+Auto decoder	Decodificador automático
+Auto listen	Escucha automática
+CPU %.0f %%	CPU %.0f %%
+CPU limit %.1f cores	Límite de CPU %.1f núcleos
+Conversations	Conversaciones
+Decode automatically	Decodificar automáticamente
+Decoding	Decodificando
+Dial MHz	Dial MHz
+Downlink MHz	Downlink MHz
+FT4 on every signal that keys in 7.5 s slots	FT4 en cada señal que manipula en ranuras de 7,5 s
+FT8 on every signal that keys in 15 s slots	FT8 en cada señal que manipula en ranuras de 15 s
+How many decoder channels may run at once; each channel decodes every signal inside 3.4 kHz of audio	Cuántos canales de decodificación pueden funcionar a la vez; cada canal decodifica todas las señales dentro de 3,4 kHz de audio
+JS8Call on every signal that keys in 15 s slots	JS8Call en cada señal que manipula en ranuras de 15 s
+List the SSB conversations (the Conversations view); no decoder runs	Lista las conversaciones SSB (vista Conversaciones); no se ejecuta ningún decodificador
+Listen follows the loudest or the newest active conversation by itself, switching when it goes quiet or another one is clearly louder	La escucha sigue sola a la conversación activa más fuerte o más reciente, y cambia cuando se calla o otra es claramente más fuerte
+Listen is off	La escucha está apagada
+Listen is on	La escucha está activada
+Listening	Escuchando
+Morse on every keyed carrier	Morse en cada portadora manipulada
+Mute the audio while only noise is there	Silencia el audio mientras solo hay ruido
+Open the gallery	Abrir la galería
+PSK31 / PSK63 on every narrow continuous signal	PSK31 / PSK63 en cada señal estrecha continua
+RTTY on every wide continuous pair of tones	RTTY en cada par de tonos continuo ancho
+Record this conversation to a WAV file in the QO-100 folder of the data folder	Graba esta conversación en un archivo WAV en la carpeta QO-100 de la carpeta de datos
+SSB conversations	Conversaciones SSB
+SSTV on every steady signal about 1.3 kHz wide; pictures go to the gallery	SSTV en cada señal estable de unos 1,3 kHz de ancho; las imágenes van a la galería
+Squelch	Silenciador
+Start (UTC)	Inicio (UTC)
+Stop following	Dejar de seguir
+Tick SSB conversations in the Auto decoder view to list the voice conversations.	Marca Conversaciones SSB en la vista Decodificador automático para listar las conversaciones de voz.
+Time the decoders use per second of signal, against the limit	Tiempo que usan los decodificadores por segundo de señal, frente al límite
+Tune the listening channel to this conversation (upper sideband, 300 - 3000 Hz) and play it; the dial follows its drift	Sintoniza el canal de escucha en esta conversación (banda lateral superior, 300 - 3000 Hz) y la reproduce; el dial sigue su deriva
+When the decoders need more than this, the weakest channel is dropped	Cuando los decodificadores necesitan más que esto, se descarta el canal más débil
+no SSB conversation heard yet	aún no se oye ninguna conversación SSB
+talking	hablando
+the loudest conversation	la conversación más fuerte
+the newest conversation	la conversación más reciente

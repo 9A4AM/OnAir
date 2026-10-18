@@ -3205,3 +3205,45 @@ Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	�
 No sound reached the descrambler: tune a voice signal first.	没有声音到达解扰器：请先调谐到语音信号。
 Baseband filter	基带滤波器
 Custom filter	自定义滤波器
+#  QO-100: the auto decoder and the SSB conversation manager
+ ended	 已结束
+%d channels at most	最多 %d 个通道
+%zu SSTV pictures	%zu 幅 SSTV 图像
+%zu channels, %d dropped	%zu 个通道,已放弃 %d 个
+Auto decoder	自动解码器
+Auto listen	自动收听
+CPU %.0f %%	CPU %.0f %%
+CPU limit %.1f cores	CPU 上限 %.1f 核
+Conversations	通话
+Decode automatically	自动解码
+Decoding	解码中
+Dial MHz	拨盘 MHz
+Downlink MHz	下行 MHz
+FT4 on every signal that keys in 7.5 s slots	对每个以 7.5 秒时隙键控的信号运行 FT4
+FT8 on every signal that keys in 15 s slots	对每个以 15 秒时隙键控的信号运行 FT8
+How many decoder channels may run at once; each channel decodes every signal inside 3.4 kHz of audio	允许同时运行多少个解码通道;每个通道解码 3.4 kHz 音频内的所有信号
+JS8Call on every signal that keys in 15 s slots	对每个以 15 秒时隙键控的信号运行 JS8Call
+List the SSB conversations (the Conversations view); no decoder runs	列出 SSB 通话(通话视图);不运行解码器
+Listen follows the loudest or the newest active conversation by itself, switching when it goes quiet or another one is clearly louder	收听会自动跟随最响或最新的活动通话,在其静默或另一个明显更响时切换
+Listen is off	收听已关闭
+Listen is on	收听已开启
+Listening	收听中
+Morse on every keyed carrier	对每个键控载波运行摩尔斯
+Mute the audio while only noise is there	只有噪声时静音
+Open the gallery	打开图库
+PSK31 / PSK63 on every narrow continuous signal	对每个窄带连续信号运行 PSK31 / PSK63
+RTTY on every wide continuous pair of tones	对每个宽带连续双音信号运行 RTTY
+Record this conversation to a WAV file in the QO-100 folder of the data folder	把此通话录成 WAV 文件,保存在数据文件夹的 QO-100 文件夹中
+SSB conversations	SSB 通话
+SSTV on every steady signal about 1.3 kHz wide; pictures go to the gallery	对每个宽约 1.3 kHz 的稳定信号运行 SSTV;图像会进入图库
+Squelch	静噪
+Start (UTC)	开始 (UTC)
+Stop following	停止跟随
+Tick SSB conversations in the Auto decoder view to list the voice conversations.	在“自动解码器”视图中勾选“SSB 通话”,即可列出语音通话。
+Time the decoders use per second of signal, against the limit	解码器每秒信号所用的时间,与上限相比
+Tune the listening channel to this conversation (upper sideband, 300 - 3000 Hz) and play it; the dial follows its drift	把收听通道调到此通话(上边带,300 - 3000 Hz)并播放;拨盘会跟随其漂移
+When the decoders need more than this, the weakest channel is dropped	解码器所需超过此值时,最弱的通道会被放弃
+no SSB conversation heard yet	尚未听到 SSB 通话
+talking	正在讲话
+the loudest conversation	最响的通话
+the newest conversation	最新的通话

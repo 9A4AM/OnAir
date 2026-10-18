@@ -104,7 +104,7 @@ static std::string cell(const Table& t, size_t r, int c) { return c >= 0 && c < 
 std::string bandOf(double f) {
     static const struct { double lo, hi; const char* n; } b[] = {
         {1.8, 2, "160m"}, {3.5, 4, "80m"}, {5.3, 5.5, "60m"}, {7, 7.3, "40m"}, {10.1, 10.15, "30m"}, {14, 14.35, "20m"}, {18.068, 18.168, "17m"},
-        {21, 21.45, "15m"}, {24.89, 24.99, "12m"}, {28, 29.7, "10m"}, {50, 54, "6m"}, {70, 71, "4m"}, {144, 148, "2m"}, {430, 440, "70cm"}, {1240, 1300, "23cm"}};
+        {21, 21.45, "15m"}, {24.89, 24.99, "12m"}, {28, 29.7, "10m"}, {50, 54, "6m"}, {70, 71, "4m"}, {144, 148, "2m"}, {430, 440, "70cm"}, {1240, 1300, "23cm"}, {2300, 2450, "13cm"}, {10000, 10500, "3cm"}};
     for (const auto& x : b) if (f >= x.lo && f <= x.hi) return x.n;
     return "";
 }
@@ -148,7 +148,8 @@ std::string toAdif(const Table& t) {
     adifField(o, "PROGRAMID", "OnAir");
     o += "<EOH>\n";
     const int cCall = colOf(t, {"call", "callsign", "call_sign"}), cGrid = colOf(t, {"grid", "locator", "gridsquare"}), cBand = colOf(t, {"band"}),
-              cMode = colOf(t, {"mode"}), cRst = colOf(t, {"rst", "rst_rcvd", "rst_sent", "snr", "snr_db"});
+              cMode = colOf(t, {"mode"}), cRst = colOf(t, {"rst", "rst_rcvd", "rst_sent", "snr", "snr_db"}),
+              cProp = colOf(t, {"prop_mode"}), cSat = colOf(t, {"sat_name"});
     if (cCall < 0) return o;
     for (size_t r = 0; r < t.rows.size(); r++) {
         const std::string call = cell(t, r, cCall);
@@ -170,6 +171,8 @@ std::string toAdif(const Table& t) {
         adifField(rec, "MODE", adifMode(cell(t, r, cMode)));
         adifField(rec, "GRIDSQUARE", cell(t, r, cGrid));
         adifField(rec, "RST_RCVD", cell(t, r, cRst));
+        adifField(rec, "PROP_MODE", cell(t, r, cProp));   // SAT for a satellite contact
+        adifField(rec, "SAT_NAME", cell(t, r, cSat));
         o += rec + "<EOR>\n";
     }
     return o;

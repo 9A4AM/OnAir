@@ -3205,3 +3205,45 @@ Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	T
 No sound reached the descrambler: tune a voice signal first.	Garsas nepasiekė atkūrėjo: pirmiausia suderinkite balso signalą.
 Baseband filter	Bazinės juostos filtras
 Custom filter	Pasirinktinis filtras
+#  QO-100: the auto decoder and the SSB conversation manager
+ ended	 pasibaigė
+%d channels at most	daugiausia %d kanalų
+%zu SSTV pictures	%zu SSTV vaizdų
+%zu channels, %d dropped	%zu kanalų, %d atmesta
+Auto decoder	Automatinis dekoderis
+Auto listen	Automatinis klausymas
+CPU %.0f %%	CPU %.0f %%
+CPU limit %.1f cores	CPU riba %.1f branduolių
+Conversations	Pokalbiai
+Decode automatically	Dekoduoti automatiškai
+Decoding	Dekoduojama
+Dial MHz	Derinimas MHz
+Downlink MHz	Downlink MHz
+FT4 on every signal that keys in 7.5 s slots	FT4 kiekvienam signalui, perduodamam 7,5 s intervalais
+FT8 on every signal that keys in 15 s slots	FT8 kiekvienam signalui, perduodamam 15 s intervalais
+How many decoder channels may run at once; each channel decodes every signal inside 3.4 kHz of audio	Kiek dekoderio kanalų gali veikti vienu metu; kiekvienas kanalas dekoduoja visus signalus 3,4 kHz garso ruože
+JS8Call on every signal that keys in 15 s slots	JS8Call kiekvienam signalui, perduodamam 15 s intervalais
+List the SSB conversations (the Conversations view); no decoder runs	Surašo SSB pokalbius (rodinys Pokalbiai); joks dekoderis neveikia
+Listen follows the loudest or the newest active conversation by itself, switching when it goes quiet or another one is clearly louder	Klausymas pats seka garsiausią arba naujausią aktyvų pokalbį ir persijungia, kai šis nutyla arba kitas aiškiai garsesnis
+Listen is off	Klausymas išjungtas
+Listen is on	Klausymas įjungtas
+Listening	Klausoma
+Morse on every keyed carrier	Morzė kiekvienai manipuliuojamai nešlio bangai
+Mute the audio while only noise is there	Nutildo garsą, kol girdimas tik triukšmas
+Open the gallery	Atidaryti galeriją
+PSK31 / PSK63 on every narrow continuous signal	PSK31 / PSK63 kiekvienam siauram nuolatiniam signalui
+RTTY on every wide continuous pair of tones	RTTY kiekvienai plačiai nuolatinei tonų porai
+Record this conversation to a WAV file in the QO-100 folder of the data folder	Įrašyti šį pokalbį į WAV failą duomenų aplanko QO-100 aplanke
+SSB conversations	SSB pokalbiai
+SSTV on every steady signal about 1.3 kHz wide; pictures go to the gallery	SSTV kiekvienam pastoviam maždaug 1,3 kHz pločio signalui; vaizdai keliauja į galeriją
+Squelch	Triukšmo slopintuvas
+Start (UTC)	Pradžia (UTC)
+Stop following	Nebesekti
+Tick SSB conversations in the Auto decoder view to list the voice conversations.	Pažymėkite SSB pokalbius rodinyje Automatinis dekoderis, kad būtų surašyti balso pokalbiai.
+Time the decoders use per second of signal, against the limit	Dekoderių sunaudotas laikas vienai signalo sekundei, palyginti su riba
+Tune the listening channel to this conversation (upper sideband, 300 - 3000 Hz) and play it; the dial follows its drift	Suderina klausymo kanalą su šiuo pokalbiu (viršutinė šoninė juosta, 300 - 3000 Hz) ir jį groja; derinimas seka jo dreifą
+When the decoders need more than this, the weakest channel is dropped	Kai dekoderiams reikia daugiau nei tiek, silpniausias kanalas atmetamas
+no SSB conversation heard yet	SSB pokalbių dar negirdėti
+talking	kalba
+the loudest conversation	garsiausias pokalbis
+the newest conversation	naujausias pokalbis
