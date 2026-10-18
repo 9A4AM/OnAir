@@ -94,11 +94,13 @@ for root in /opt/homebrew/opt /usr/local/opt; do
 done
 # the app is signed ad hoc (no developer certificate): macOS shows a one-time "unidentified developer" prompt on first launch
 python3 tools/package/scrub_paths.py "$APP"   # no build-machine paths in the shipped files (before signing)
-for f in "$APP"/Contents/Frameworks/*.dylib "$APP"/Contents/Frameworks/SoapySDR/modules0.8/*; do
+# data files next to the program (the RX888 firmware in MacOS/codecs) must carry a signature too, or signing the app stops with "code object is not signed at all"
+for f in "$APP"/Contents/Frameworks/*.dylib "$APP"/Contents/Frameworks/SoapySDR/modules0.8/* "$APP"/Contents/MacOS/codecs/*; do
   if [ -L "$f" ] || [ ! -f "$f" ]; then continue; fi
   codesign --force -s - "$f" || echo "warning: could not sign $f"
 done
-codesign --force --deep -s - "$APP" || { echo "Signing the app failed"; codesign -dvvv "$APP" 2>&1 | head -20; exit 1; }
+# no --deep: every library and module inside is signed above, and --deep rejects the SoapySDR "modules0.8" folder as a malformed bundle
+codesign --force -s - "$APP" || { echo "Signing the app failed"; codesign -dvvv "$APP" 2>&1 | head -20; exit 1; }
 STAGE=$BUILD/dmg
 rm -rf $STAGE && mkdir -p $STAGE
 cp -R "$APP" $STAGE/
