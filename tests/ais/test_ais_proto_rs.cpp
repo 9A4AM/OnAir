@@ -3,9 +3,6 @@
 // (tests/common/golden.h; doubles rounded to 1e-6) compared with the one recorded from the C++ AIS frame layer the Rust code replaced.
 #include "dect2/ais/ais_proto.h"
 #include "../common/golden.h"
-#ifdef GOLDEN_REF   // transient, used once to record the digest from the C++ reference copy
-#include "ais_proto_ref.h"
-#endif
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -13,11 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <random>
-#ifdef GOLDEN_REF
-namespace A = dect2::ais_ref;
-#else
 namespace A = dect2::ais;
-#endif
 
 static golden::Digest dig;
 static long abiFails = 0;
@@ -196,5 +189,5 @@ int main() {
         }
     }
     if (abiFails) return 1;
-    return golden::check("ais_proto_rs", dig, 0x0ull, !e);
+    return golden::check("ais_proto_rs", dig, 0x839cf1fb96bac6f8ull, !e);
 }
