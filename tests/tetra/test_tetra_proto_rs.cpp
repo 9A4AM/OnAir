@@ -4,6 +4,7 @@
 // into a digest (tests/common/golden.h; doubles rounded to 1e-6) compared with the one recorded from the C++ layer the Rust code replaced.
 #include "dect2/tetra/tetra_pdu.h"
 #include "../common/golden.h"
+#include "../common/ordered.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -46,7 +47,7 @@ static void mutate(Bits& b) {
         case 0: b[g() % b.size()] ^= 1; break;
         case 1: b.resize(g() % (b.size() + 1)); break;
         case 2: b.erase(b.begin() + (long)(g() % b.size())); break;
-        case 3: b.insert(b.begin() + (long)(g() % (b.size() + 1)), (uint8_t)(g() & 1)); break;
+        case 3: ORD_CALL(b.insert, b.begin() + (long)(g() % (b.size() + 1)), (uint8_t)(g() & 1)); break;   // ORD_*: draws in a fixed order (arguments and operands are not evaluated in one)
         default: { const size_t at = g() % b.size(); for (size_t j = at; j < b.size() && j < at + 8; j++) b[j] = g() & 1; }
         }
     }
@@ -55,8 +56,11 @@ static void mutate(Bits& b) {
 template <class N> static N rndNwrk() {
     N n;
     n.reselect = (int)(g() & 0xFFFF); n.cellLoad = (int)(g() & 3);
-    n.hasTime = g() & 1; n.time48 = ((uint64_t)g() << 16 ^ g()) & 0xFFFFFFFFFFFFull;
-    if (g() % 4 == 0) n.time48 = (uint64_t)(g() % 40000000) << 24 | (uint64_t)(g() & 1) << 23 | (uint64_t)(g() % 64) << 17 | (uint64_t)(g() % 64) << 11;
+    n.hasTime = g() & 1; const uint64_t tHi = (uint64_t)g() << 16; n.time48 = (tHi ^ g()) & 0xFFFFFFFFFFFFull;
+    if (g() % 4 == 0) {
+        const uint64_t f1 = (uint64_t)(g() % 40000000) << 24, f2 = (uint64_t)(g() & 1) << 23, f3 = (uint64_t)(g() % 64) << 17, f4 = (uint64_t)(g() % 64) << 11;
+        n.time48 = f1 | f2 | f3 | f4;
+    }
     const int cnt = (int)(g() % 8);
     for (int i = 0; i < cnt; i++) {
         typename std::remove_reference<decltype(n.nbrs[0])>::type nb;
@@ -77,7 +81,8 @@ static Bits mkBlock(int kind) {
     case 0: { A::Sysinfo s; s.mainCarrier = (int)(g() & 4095); s.band = (int)(g() & 15); s.optFlag = (int)(g() & 3); s.optValue = g() & 0xFFFFF; s.la = (int)(g() & 16383); s.bsService = (int)(g() & 4095); Bits b = A::encodeSysinfo(s); b.resize((size_t)len, 0); return b; }
     case 1: case 2: case 3: {
         const auto n = rndNwrk<A::NwrkBroadcast>();
-        Bits b = A::macBroadcastResource(A::mleNwrkBroadcast(n), len, kind == 3 ? (int)(g() % 4) : 0, g());
+        const int cellsel = kind == 3 ? (int)(g() % 4) : 0; const uint32_t mseed = g();
+        Bits b = A::macBroadcastResource(A::mleNwrkBroadcast(n), len, cellsel, mseed);
         if (kind == 2) { const Bits more = A::macBroadcastResource(A::mleNwrkBroadcast(rndNwrk<A::NwrkBroadcast>()), len, 0, g()); b.insert(b.begin() + 16, more.begin(), more.begin() + 40); }
         return b;
     }
@@ -118,7 +123,7 @@ int main() {
             okSys += a;
             const auto sa = A::parseSecurity(as);
             dig.add(sa.valid, sa.authRequired, sa.class1, sa.class2, sa.class3);
-            const int bs = (int)(g() & 0xFFF) | (g() % 8 == 0 ? (int)g() : 0);
+            const int bsLow = (int)(g() & 0xFFF); const int bs = bsLow | (g() % 8 == 0 ? (int)g() : 0);
             dig.add(A::serviceText(bs));
             const int band = (int)(g() % 40) - 8, car = (int)(g() % 9000) - 2000, off = (int)(g() % 12) - 4, dup = (int)(g() % 20) - 6;
             const bool rev = g() & 1;
@@ -128,7 +133,7 @@ int main() {
         }
         // network time and AACH
         {
-            uint64_t t = ((uint64_t)g() << 24 ^ g()) & 0xFFFFFFFFFFFFull;
+            const uint64_t tHi = (uint64_t)g() << 24; uint64_t t = (tHi ^ g()) & 0xFFFFFFFFFFFFull;
             if (g() % 3) t = (uint64_t)(g() % 17000000) << 24 | (t & 0xFFFFFF);
             if (g() % 50 == 0) t |= 0xFFFFFFull << 24;
             dig.add(A::networkTimeText(t));

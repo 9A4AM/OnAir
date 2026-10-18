@@ -1,4 +1,5 @@
 // Signal workbench: the bit-stream transforms, the text views, the pattern search and the exports.
+#include "../common/tmp_path.h"
 #include "wb_test.h"
 #include <cstring>
 using namespace dect2::wb;
@@ -63,7 +64,7 @@ int main() {
     {   // export
         const Bits b = fromStr("010000010100001000001");
         std::string err;
-        const std::string pt = "/tmp/wb_bits_test.txt", pb = "/tmp/wb_bits_test.bin";
+        const std::string pt = tmpPath("wb_bits_test.txt"), pb = tmpPath("wb_bits_test.bin");
         CHECK(writeBitsText(pt, b, err), "text %s", err.c_str());
         CHECK(writeBitsBin(pb, b, false, err), "bin %s", err.c_str());
         FILE* f = fopen(pb.c_str(), "rb");

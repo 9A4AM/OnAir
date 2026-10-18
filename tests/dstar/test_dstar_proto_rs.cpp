@@ -4,6 +4,7 @@
 // floats widened) compared with the one recorded from the C++ layer the Rust code replaced.
 #include "dect2/dstar/dstar_proto.h"
 #include "../common/golden.h"
+#include "../common/ordered.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -31,8 +32,8 @@ static std::string mutate(std::string s) {
         switch (g() % 6) {
         case 0: s[g() % s.size()] = (char)g(); break;
         case 1: s[g() % s.size()] = "0123456789.,*$:!>/=@ANSEWRC-"[g() % 28]; break;
-        case 2: s.erase(g() % s.size(), 1 + g() % 3); break;
-        case 3: s.insert(g() % (s.size() + 1), RS(1 + g() % 3, "0123456789,.*/A=")); break;
+        case 2: ORD_CALL(s.erase, g() % s.size(), 1 + g() % 3); break;
+        case 3: ORD_CALL(s.insert, g() % (s.size() + 1), RS(1 + g() % 3, "0123456789,.*/A=")); break;
         case 4: s.resize(g() % (s.size() + 1)); break;
         default: s += RS(g() % 10, "0123456789 \r\n/A="); break;
         }
@@ -45,12 +46,15 @@ static std::string nmeaLine(bool fixChecksum) {
     std::string body;
     const char* talker[] = {"GP", "GN", "GL", "XX"};
     const char hemiLat = g() % 2 ? 'N' : 'S', hemiLon = g() % 2 ? 'E' : 'W';
-    const std::string lat = num((double)(g() % 90) * 100 + (double)(g() % 6000) / 100.0, "%07.2f"), lon = num((double)(g() % 180) * 100 + (double)(g() % 6000) / 100.0, "%08.2f");
+    const double latDeg = (double)(g() % 90) * 100, latMin = (double)(g() % 6000) / 100.0;   // draws in separate statements: operands are not evaluated in a fixed order
+    const std::string lat = num(latDeg + latMin, "%07.2f");
+    const double lonDeg = (double)(g() % 180) * 100, lonMin = (double)(g() % 6000) / 100.0;
+    const std::string lon = num(lonDeg + lonMin, "%08.2f");
     if (g() % 2) {
-        body = std::string(talker[g() % 4]) + "RMC,123519," + (g() % 8 ? "A" : "V") + "," + lat + "," + hemiLat + "," + lon + "," + hemiLon + "," + (g() % 6 ? num((double)(g() % 1000) / 10.0, "%.1f") : "") + "," +
-               num((double)(g() % 3600) / 10.0, "%.1f") + ",230394,003.1,W";
+        body = ORD_CAT(talker[g() % 4], "RMC,123519,", (g() % 8 ? "A" : "V"), ",", lat, ",", hemiLat, ",", lon, ",", hemiLon, ",", (g() % 6 ? num((double)(g() % 1000) / 10.0, "%.1f") : ""), ",",
+                       num((double)(g() % 3600) / 10.0, "%.1f"), ",230394,003.1,W");
     } else {
-        body = std::string(talker[g() % 4]) + "GGA,123519," + lat + "," + hemiLat + "," + lon + "," + hemiLon + "," + (g() % 8 ? "1" : (g() % 2 ? "0" : "")) + ",08,0.9," + (g() % 5 ? num((double)(g() % 20000) / 10.0 - 100, "%.1f") : "") + ",M,46.9,M,,";
+        body = ORD_CAT(talker[g() % 4], "GGA,123519,", lat, ",", hemiLat, ",", lon, ",", hemiLon, ",", (g() % 8 ? "1" : (g() % 2 ? "0" : "")), ",08,0.9,", (g() % 5 ? num((double)(g() % 20000) / 10.0 - 100, "%.1f") : ""), ",M,46.9,M,,");
     }
     std::string l = "$" + body + "*" + (fixChecksum ? A::nmeaChecksum(body) : RS(2, "0123456789ABCDEF"));
     return l;
@@ -62,10 +66,14 @@ static std::string dprsLine(bool fixCrc) {
     pos += l;
     if (l[0] == '/' || l[0] == '@') pos += "092345z";
     char b[64];
-    snprintf(b, sizeof b, "%02u%05.2f%c%c%03u%05.2f%c%c", g() % 90, (double)(g() % 6000) / 100.0, g() % 2 ? 'N' : 'S', '/', g() % 180, (double)(g() % 6000) / 100.0, g() % 2 ? 'E' : 'W', '>');
+    {
+        const unsigned latD = g() % 90; const double latM = (double)(g() % 6000) / 100.0; const char ns = g() % 2 ? 'N' : 'S';
+        const unsigned lonD = g() % 180; const double lonM = (double)(g() % 6000) / 100.0; const char ew = g() % 2 ? 'E' : 'W';
+        snprintf(b, sizeof b, "%02u%05.2f%c%c%03u%05.2f%c%c", latD, latM, ns, '/', lonD, lonM, ew, '>');
+    }
     pos += b;
     std::string c;
-    if (g() % 2) { snprintf(b, sizeof b, "%03u/%03u", g() % 360, g() % 120); c += b; }
+    if (g() % 2) { const unsigned crs = g() % 360, spd = g() % 120; snprintf(b, sizeof b, "%03u/%03u", crs, spd); c += b; }
     if (g() % 2) c += RS(g() % 12, "hello world mobile");
     if (g() % 2) { snprintf(b, sizeof b, "/A=%06u", g() % 100000); c += b; }
     if (g() % 3 == 0) c += RS(g() % 6, "xyz /A=12");

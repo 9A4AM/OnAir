@@ -3,6 +3,7 @@
 // (tests/common/golden.h) compared with the one recorded from the C++ SAME layer the Rust code replaced.
 #include "dect2/same/same_proto.h"
 #include "../common/golden.h"
+#include "../common/ordered.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -33,15 +34,17 @@ static std::string rnd(const char* alphabet, size_t n) { std::string s; for (siz
 static std::string validMessage() {
     static const char* orgs[] = {"WXR", "EAS", "PEP", "CIV", "ABC"};
     static const char* events[] = {"TOR", "SVR", "RWT", "EAN", "FFW", "ZZW", "QQA", "BLU", "HLS", "XYZ"};
-    std::string s = std::string("ZCZC-") + orgs[g() % 5] + "-" + events[g() % 10];
+    std::string s = ORD_CAT("ZCZC-", orgs[g() % 5], "-", events[g() % 10]);   // ORD_*: draws in a fixed order (operands and arguments are not evaluated in one)
     const int n = 1 + (int)(g() % 5);
     for (int i = 0; i < n; i++) {
         char b[8];
-        snprintf(b, sizeof b, "%d%02d%03d", (int)(g() % 10), (int)(g() % 100), (int)(g() % 1000));
+        const int d1 = (int)(g() % 10), d2 = (int)(g() % 100), d3 = (int)(g() % 1000);
+        snprintf(b, sizeof b, "%d%02d%03d", d1, d2, d3);
         s += std::string("-") + b;
     }
     char t[48];
-    snprintf(t, sizeof t, "+%02d%02d-%03d%02d%02d-", (int)(g() % 12), (int)(g() % 60), 1 + (int)(g() % 366), (int)(g() % 24), (int)(g() % 60));
+    const int t1 = (int)(g() % 12), t2 = (int)(g() % 60), t3 = 1 + (int)(g() % 366), t4 = (int)(g() % 24), t5 = (int)(g() % 60);
+    snprintf(t, sizeof t, "+%02d%02d-%03d%02d%02d-", t1, t2, t3, t4, t5);
     s += t;
     s += rnd("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/ ", 1 + g() % 8) + "-";
     return s;
@@ -53,13 +56,13 @@ static std::string mutate(std::string s) {
         switch (g() % 6) {
         case 0: s[g() % s.size()] = (char)(g() & 0xFF); break;
         case 1: s[g() % s.size()] = "0123456789+-/ ZCNAW"[g() % 19]; break;
-        case 2: s.erase(g() % s.size(), 1 + g() % 3); break;
-        case 3: s.insert(g() % (s.size() + 1), rnd("0123456789-+ ZN", 1 + g() % 3)); break;
+        case 2: ORD_CALL(s.erase, g() % s.size(), 1 + g() % 3); break;
+        case 3: ORD_CALL(s.insert, g() % (s.size() + 1), rnd("0123456789-+ ZN", 1 + g() % 3)); break;
         case 4: s.resize(g() % (s.size() + 1)); break;
         default: s = rnd("-+0123456789ZCNAWXYR/ ", g() % 80); break;
         }
     }
-    if (g() % 4 == 0) s = rnd("\x01\x7f\xff-ab", g() % 5) + s + rnd("\x01\xff-ab+", g() % 5);
+    if (g() % 4 == 0) s = ORD_CAT(rnd("\x01\x7f\xff-ab", g() % 5), s, rnd("\x01\xff-ab+", g() % 5));
     return s;
 }
 
@@ -114,10 +117,10 @@ int main() {
         const int lines = (int)(g() % 12);
         for (int k = 0; k < lines; k++) {
             switch (g() % 7) {
-            case 0: csv += rnd("0123456789", 5) + "," + rnd("abcXYZ \"", g() % 12); break;
-            case 1: csv += rnd("0123456789", 2) + "," + rnd("0123456789", 3) + "," + rnd("abc ", g() % 8); break;
-            case 2: csv += rnd("ABab", 2) + "," + rnd("0123456789", 2) + "," + rnd("0123456789", 3) + ",\"" + rnd("ab, ", g() % 9) + "\",H1"; break;
-            case 3: csv += rnd("0123456789", 6) + "," + rnd("xyz", g() % 5); break;
+            case 0: csv += ORD_CAT(rnd("0123456789", 5), ",", rnd("abcXYZ \"", g() % 12)); break;
+            case 1: csv += ORD_CAT(rnd("0123456789", 2), ",", rnd("0123456789", 3), ",", rnd("abc ", g() % 8)); break;
+            case 2: csv += ORD_CAT(rnd("ABab", 2), ",", rnd("0123456789", 2), ",", rnd("0123456789", 3), ",\"", rnd("ab, ", g() % 9), "\",H1"); break;
+            case 3: csv += ORD_CAT(rnd("0123456789", 6), ",", rnd("xyz", g() % 5)); break;
             case 4: csv += rnd("0123456789,\" \t\r", g() % 20); break;
             case 5: csv += mutate(rnd("0123456789,", 8)); break;
             default: csv += "State,County"; break;
@@ -133,8 +136,8 @@ int main() {
         std::string code;
         switch (g() % 5) {
         case 0: code = rnd("0123456789", 6); break;
-        case 1: { char b[8]; snprintf(b, sizeof b, "%d%02d%03d", (int)(g() % 10), (int)(g() % 100), (int)(g() % 3) ? 201 : (int)(g() % 1000)); code = b; } break;
-        case 2: { char b[8]; snprintf(b, sizeof b, "%d%02d%03d", (int)(g() % 10), g() % 2 ? 48 : 1, g() % 2 ? 201 : 1); code = b; } break;
+        case 1: { char b[8]; const int d1 = (int)(g() % 10), d2 = (int)(g() % 100), d3 = (int)(g() % 3) ? 201 : (int)(g() % 1000); snprintf(b, sizeof b, "%d%02d%03d", d1, d2, d3); code = b; } break;
+        case 2: { char b[8]; const int d1 = (int)(g() % 10), d2 = g() % 2 ? 48 : 1, d3 = g() % 2 ? 201 : 1; snprintf(b, sizeof b, "%d%02d%03d", d1, d2, d3); code = b; } break;
         case 3: code = rnd("0123456789", g() % 9); break;
         default: code = mutate(rnd("0123456789", 6)); break;
         }
@@ -153,7 +156,7 @@ int main() {
         case 4: s = validMessage(); s.resize(g() % (s.size() + 1)); break;
         case 5: s = rnd("ZCNW-+0123456789/ ABCXYZ", g() % 90); break;
         case 6: s = rnd("\x01\x02\x7f\x80\xff-+ZCNA09", g() % 90); break;
-        default: { std::string v = validMessage(); s = rnd("xx\xff -", g() % 4) + v + rnd("-zZ\x01", g() % 4); } break;
+        default: { std::string v = validMessage(); s = ORD_CAT(rnd("xx\xff -", g() % 4), v, rnd("-zZ\x01", g() % 4)); } break;
         }
         compareMessage(s);
     }

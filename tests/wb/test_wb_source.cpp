@@ -1,5 +1,6 @@
 // Signal workbench: opening recordings (raw IQ in every format, SigMF, WAV mono / stereo-as-IQ, MP3), exporting selections, the band
 // extractor's frequency placement, the overview and the spectrogram tiles.
+#include "../common/tmp_path.h"
 #include "dect2/wb/wb_export.h"
 #include "dect2/wb/wb_gen.h"
 #include "dect2/wb/wb_view.h"
@@ -35,7 +36,7 @@ static double goertzel(const std::vector<cf32>& a, double f, double rate) {
 }
 
 int main() {
-    const std::string dir = "/tmp/wb_source_test_";
+    const std::string dir = tmpPath("wb_source_test_");
     const std::vector<cf32> x = ramp(5000);
     std::string err;
     {   // raw files

@@ -16,7 +16,7 @@ static void B(const void* p, size_t n) { dig.bytes(p, n); }
 
 static std::mt19937 g(1357);
 static uint32_t r32() { return g(); }
-static uint64_t r64() { return ((uint64_t)g() << 32) | g(); }
+static uint64_t r64() { const uint64_t hi = (uint64_t)g() << 32; return hi | g(); }   // (two draws in one expression would be evaluated in an unspecified order)
 
 int main() {
     const char* it = getenv("ONAIR_DIFF_ITERS");
@@ -39,7 +39,8 @@ int main() {
         uint8_t w[64];
         if (g() % 4 == 0) { for (auto& x : w) x = (uint8_t)(g() & 1); }
         else {
-            A::nidEncode((int)r32(), (int)r32(), w);
+            const int nac = (int)r32(), did = (int)r32();
+            A::nidEncode(nac, did, w);
             const int nf = (int)(g() % 16);
             for (int e = 0; e < nf; e++) w[g() % 64] ^= 1;
         }
@@ -86,7 +87,7 @@ int main() {
         dig.add(e1, ea);
         dig.add(A::golay24Decode(g24), A::hamming10Decode((uint16_t)w), A::golay18Decode(g18));
         uint8_t bits[100]; for (auto& x : bits) x = (uint8_t)(g() % 5 ? (g() & 1) : g());
-        const int n = (int)(g() % 101) - (g() % 20 == 0 ? 3 : 0);
+        const int nFull = (int)(g() % 101); const int n = nFull - (g() % 20 == 0 ? 3 : 0);
         dig.add(A::crcCcitt(bits, n));
     }
 

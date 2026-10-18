@@ -35,7 +35,7 @@ int main() {
     const std::string k = sigmfMetaJson(e);
     CHECK(!has(k, "core:frequency") && !has(k, "core:datetime") && has(k, "ci8_le"), "optional fields left out");
 
-    const fs::path dir = fs::temp_directory_path() / "onair_sigmf_test";
+    const fs::path dir = fs::temp_directory_path() / "onair_sigmf_rec_test";
     fs::remove_all(dir);
     IqRecorder r;
     r.setSigmf(true, 433.92e6);
@@ -47,7 +47,8 @@ int main() {
     r.stop();
     CHECK(fs::exists(dir / "cap.sigmf-meta"), "meta file");
     CHECK(fs::exists(dir / "cap.sigmf-data") && fs::file_size(dir / "cap.sigmf-data") == 10000, "data file under the SigMF name");
-    std::ifstream f(dir / "cap.sigmf-meta"); std::stringstream ss; ss << f.rdbuf();
+    std::stringstream ss;
+    { std::ifstream f(dir / "cap.sigmf-meta"); ss << f.rdbuf(); }   // closed before the folder is removed (Windows)
     CHECK(has(ss.str().c_str(), "\"core:frequency\": 433920000.0") && has(ss.str(), "\"core:sample_count\": 5000") && has(ss.str(), "\"core:dataset\": \"cap.cs8\""), "recorded meta");
     IqRecorder r2;   // off: no metadata
     CHECK(r2.start((dir / "plain.cs8").string(), FileFormat::CS8, 2e6, err), "start plain");

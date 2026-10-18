@@ -2,6 +2,7 @@
 // The bytes in the audio units are a small test codec (4-bit ADPCM at 8 kHz), not DRA+.
 // A real CDR station still will not play. Pass a 16-bit WAV to use that recording; otherwise a tone is used.
 // With a WAV argument the recovered sound is written to /tmp/cdr_voice_out.wav.
+#include "../common/tmp_path.h"
 #include "dect2/cdr/cdr_gen.h"
 #include "dect2/cdr/cdr_rx.h"
 #include <algorithm>
@@ -220,7 +221,7 @@ int main(int argc, char** argv) {
     CHECK(tx.ok(), "transmitter");
     dect2::CdrReceiver rx;
     rx.configure(dect2::cdr::kFs);
-    const char* path = "/tmp/cdr_voice_es.dra";
+    const TmpPath path = tmpPath("cdr_voice_es.dra");
     CHECK(rx.saveAudioStream(cfg.serviceA, path), "save stream");
     std::vector<dect2::cf32> sf;
     const int subframes = 28;                       // 4.5 s: lock, then several copies of the phrase
@@ -249,7 +250,7 @@ int main(int argc, char** argv) {
         std::vector<int16_t> one = back;
         if (lag >= 0 && (size_t)lag + pcm.size() <= back.size())
             one.assign(back.begin() + lag, back.begin() + lag + (std::ptrdiff_t)pcm.size());
-        writeWav("/tmp/cdr_voice_out.wav", one);
+        writeWav(tmpPath("cdr_voice_out.wav"), one);
         printf("wrote /tmp/cdr_voice_out.wav (%.2f s)\n", one.size() / 8000.0);
     }
     printf("%s\n", fails ? "FAILED" : "ok");
