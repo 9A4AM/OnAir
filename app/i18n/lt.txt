@@ -3189,3 +3189,17 @@ Ping	Pingas
 with interference bursts	su trukdžių impulsais
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Bandomasis signalas yra švyturys 420 Hz nuo centro su imituotais meteorų aidais: trumpais retais ir keliais ilgais tankiais.
 Beacon echoes, 143.050 MHz	Švyturio aidai, 143,050 MHz
+Voice inversion: undo a simple voice scrambler	Balso inversija: paprasto balso maišiklio atšaukimas
+Voice inversion	Balso inversija
+Frequency inversion only mirrors the sound of a voice; it is not encryption. In many countries it may be illegal to listen to private communications. You are responsible for what you listen to and for following the law where you are. Encrypted traffic is never touched.	Dažnio inversija tik atspindi balso garsą; tai nėra šifravimas. Daugelyje šalių klausytis privačių pokalbių gali būti neteisėta. Jūs atsakote už tai, ką klausote, ir už įstatymų laikymąsi savo vietovėje. Šifruotas srautas niekada neliečiamas.
+I understand and accept	Suprantu ir sutinku
+Descramble the sound you hear. The decoders always get the untouched sound.	Atkuria girdimą garsą. Dekoderiai visada gauna nepakeistą garsą.
+Simple	Paprasta
+Split-band	Padalinta juosta
+Split at	Dalyti ties
+Band from	Juosta nuo
+Listens for 5 seconds, then tries the carrier (or split) frequencies and picks the one that sounds most like speech. Works best while someone is talking.	Klauso 5 sekundes, tada išbando nešlio (ar dalijimo) dažnius ir parenka tą, kuris skamba labiausiai panašiai į kalbą. Geriausiai veikia, kai kažkas kalba.
+Found %.0f Hz (match %.0f %%)	Rasta %.0f Hz (atitikimas %.0f %%)
+Nothing speech-like found. Try again while someone is talking.	Nerasta nieko, kas primintų kalbą. Bandykite dar kartą, kai kažkas kalbės.
+Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	Tai ne šifravimas: garsas tik atspindimas. Šifruotas srautas niekada neliečiamas.
+No sound reached the descrambler: tune a voice signal first.	Garsas nepasiekė atkūrėjo: pirmiausia suderinkite balso signalą.

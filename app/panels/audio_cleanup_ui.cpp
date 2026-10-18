@@ -103,6 +103,8 @@ bool gDevOpen = false;
 
 }  // namespace
 
+int audioCleanupProfileOf(const App& a) { load(); return profileFor(a); }
+
 void audioCleanupDevOpen(bool advanced) { gDevOpen = true; load(); S.advanced = advanced; }
 
 void audioCleanupTick(App& a) {

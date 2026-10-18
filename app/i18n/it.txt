@@ -3172,3 +3172,17 @@ Ping	Ping
 with interference bursts	con raffiche di disturbo
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Il segnale di prova è un faro a 420 Hz dal centro con echi meteorici simulati: brevi sottodensi e alcuni lunghi sovradensi.
 Beacon echoes, 143.050 MHz	Echi del faro, 143,050 MHz
+Voice inversion: undo a simple voice scrambler	Inversione vocale: annulla un semplice scrambler vocale
+Voice inversion	Inversione vocale
+Frequency inversion only mirrors the sound of a voice; it is not encryption. In many countries it may be illegal to listen to private communications. You are responsible for what you listen to and for following the law where you are. Encrypted traffic is never touched.	L'inversione di frequenza si limita a specchiare il suono di una voce; non è cifratura. In molti paesi può essere illegale ascoltare comunicazioni private. Sei responsabile di ciò che ascolti e del rispetto della legge dove ti trovi. Il traffico cifrato non viene mai toccato.
+I understand and accept	Capisco e accetto
+Descramble the sound you hear. The decoders always get the untouched sound.	Decodifica il suono che ascolti. I decodificatori ricevono sempre il suono intatto.
+Simple	Semplice
+Split-band	Banda divisa
+Split at	Dividi a
+Band from	Banda da
+Listens for 5 seconds, then tries the carrier (or split) frequencies and picks the one that sounds most like speech. Works best while someone is talking.	Ascolta per 5 secondi, poi prova le frequenze di portante (o di divisione) e sceglie quella che somiglia di più al parlato. Funziona meglio mentre qualcuno parla.
+Found %.0f Hz (match %.0f %%)	Trovato %.0f Hz (corrispondenza %.0f %%)
+Nothing speech-like found. Try again while someone is talking.	Nulla di simile al parlato. Riprova mentre qualcuno parla.
+Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	Non è cifratura: il suono viene solo specchiato. Il traffico cifrato non viene mai toccato.
+No sound reached the descrambler: tune a voice signal first.	Nessun suono è arrivato al decodificatore: sintonizza prima un segnale vocale.

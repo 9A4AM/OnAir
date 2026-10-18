@@ -525,6 +525,8 @@ bool listenControls(App& a, bool& on, const char* prefKey, const char* id, const
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Volume (shared with the other modes)"));
     ImGui::SameLine(0, 4 * gUi);
     audioCleanupButton(a);
+    ImGui::SameLine(0, 4 * gUi);
+    voiceInversionButton(a);
     ImGui::PopID();
     return changed;
 }

@@ -255,6 +255,8 @@ void volumeControl(App& a, float w) {
     if (ImGui::IsItemHovered() && a.family == 9) ImGui::SetTooltip("%s", tr("DMR voice audio is not decoded: AMBE+2 is proprietary, so there is no sound."));
     ImGui::SameLine(0, 4 * gUi);
     audioCleanupButton(a);
+    ImGui::SameLine(0, 4 * gUi);
+    voiceInversionButton(a);
 }
 
 // ---- draggable splitters between the fixed panels: sizes are kept in unscaled points (0 = automatic), a double click puts the automatic size back

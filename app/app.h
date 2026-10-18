@@ -766,7 +766,12 @@ void codecHelpButton(CodecHelp c, const char* label = "?");   // label: the butt
 // hand-over of the settings of the mode's kind to the cleanup chain
 bool audioCleanupButton(App& a);
 void audioCleanupTick(App& a);
-void audioCleanupDevOpen(bool advanced);   // dev flag --audioclean [adv]: the pop-up opens at the start
+void audioCleanupDevOpen(bool advanced);
+int audioCleanupProfileOf(const App& a);   // the kind of audio of the mode (AudioProfile): 0 data / off, 1 generic, 2 AM, 3 NFM, 4 WFM, 5 SSB, 6 CW, 7 digital voice
+// Voice inversion (voice_inversion_ui.cpp): the button next to the audio cleanup button (analog voice only), the per-frame hand-over of its settings
+bool voiceInversionButton(App& a);
+void voiceInversionTick(App& a);
+void voiceInversionDevOpen();   // dev flag --voiceinv: the pop-up opens at the start   // dev flag --audioclean [adv]: the pop-up opens at the start
 // A new file path in the "audio-streams" folder of the user data folder, without extension: "<stem>_<date>_<time>" (the stem cleaned for a file name)
 std::string streamSavePath(const std::string& stem);
 // "voice: needs mbelib (libmbe.dll, ...)": the exact file names tried, for the status line of the mbelib modes

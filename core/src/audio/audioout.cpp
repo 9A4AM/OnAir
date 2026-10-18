@@ -76,6 +76,7 @@ bool AudioOut::start(int rate) {
     }
 #endif
     p_->cleanup.prepare(rate);
+    p_->vinv.prepare(rate);
     if (!audioBackendStart(p_.get(), rate)) return false;
     running_ = true;
     return true;
@@ -98,8 +99,14 @@ int AudioOut::write(const float* s, int frames) {
         const int m = std::min(n - off, (int)AudioCleanup::kMaxChunk);
         const float* raw = s + 2 * (size_t)off;
         const float* src = raw;
-        bool active = false;
-        if (clean) src = p_->cleanup.process(raw, m, p_->cleanBuf, &active);
+        bool active = false, invActive = false;
+        if (clean) {
+            // voice inversion first (analog voice only, off by default), then the cleanup; decoders / clips / transcripts keep `raw`
+            if (m <= VoiceInversion::kMaxChunk) src = p_->vinv.process(raw, m, p_->invBuf, &invActive);
+            const float* cleaned = p_->cleanup.process(src, m, p_->cleanBuf, &active);
+            src = cleaned;
+            active = active || invActive;
+        }
         for (int i = 0; i < m; i++) {
             const size_t k = (size_t)((w + off + i) & mask) * 2;
             p_->ring[k] = src[2 * i]; p_->ring[k + 1] = src[2 * i + 1];

@@ -3189,3 +3189,17 @@ Ping	Ping
 with interference bursts	含干扰脉冲
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	测试信号是偏离中心 420 Hz 的信标,带有模拟流星回波:短的欠密回波和少量长的过密回波。
 Beacon echoes, 143.050 MHz	信标回波,143.050 MHz
+Voice inversion: undo a simple voice scrambler	语音倒频：还原简单的语音扰频
+Voice inversion	语音倒频
+Frequency inversion only mirrors the sound of a voice; it is not encryption. In many countries it may be illegal to listen to private communications. You are responsible for what you listen to and for following the law where you are. Encrypted traffic is never touched.	频率倒置只是把声音的频谱镜像翻转，并不是加密。在许多国家，收听私人通信可能是违法的。你需要对自己收听的内容以及遵守当地法律负责。加密的通信绝不会被处理。
+I understand and accept	我已了解并接受
+Descramble the sound you hear. The decoders always get the untouched sound.	对你听到的声音进行解扰。解码器始终得到未经处理的声音。
+Simple	简单
+Split-band	分段倒频
+Split at	分割于
+Band from	频段从
+Listens for 5 seconds, then tries the carrier (or split) frequencies and picks the one that sounds most like speech. Works best while someone is talking.	先监听 5 秒，然后尝试各个载波（或分割）频率，选出最像语音的一个。有人说话时效果最好。
+Found %.0f Hz (match %.0f %%)	找到 %.0f Hz（匹配度 %.0f %%）
+Nothing speech-like found. Try again while someone is talking.	没有找到类似语音的结果。请在有人说话时重试。
+Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	这不是加密：声音只是被镜像翻转。加密的通信绝不会被处理。
+No sound reached the descrambler: tune a voice signal first.	没有声音到达解扰器：请先调谐到语音信号。

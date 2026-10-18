@@ -3189,3 +3189,17 @@ Ping	ピング
 with interference bursts	干渉バースト付き
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	テスト信号は中心から420 Hz離れたビーコンと模擬流星エコーです。短い低密のものと、いくつかの長い過密のものを含みます。
 Beacon echoes, 143.050 MHz	ビーコンエコー、143.050 MHz
+Voice inversion: undo a simple voice scrambler	音声反転：簡易音声スクランブルを元に戻す
+Voice inversion	音声反転
+Frequency inversion only mirrors the sound of a voice; it is not encryption. In many countries it may be illegal to listen to private communications. You are responsible for what you listen to and for following the law where you are. Encrypted traffic is never touched.	周波数反転は声のスペクトルを反転させるだけで、暗号化ではありません。多くの国では、私的な通信を傍受することは違法となる場合があります。何を聞くか、また所在地の法律を守ることは、あなた自身の責任です。暗号化された通信には一切手を加えません。
+I understand and accept	理解して同意する
+Descramble the sound you hear. The decoders always get the untouched sound.	聞こえている音をデスクランブルします。デコーダーには常に元の音が渡されます。
+Simple	シンプル
+Split-band	分割帯域
+Split at	分割周波数
+Band from	帯域:
+Listens for 5 seconds, then tries the carrier (or split) frequencies and picks the one that sounds most like speech. Works best while someone is talking.	5秒間聞き取り、キャリア（または分割）周波数を試して、最も音声らしく聞こえるものを選びます。誰かが話している間が最適です。
+Found %.0f Hz (match %.0f %%)	%.0f Hz を検出（一致度 %.0f %%）
+Nothing speech-like found. Try again while someone is talking.	音声らしいものは見つかりませんでした。誰かが話している間にもう一度試してください。
+Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	暗号化ではありません。音を反転させるだけです。暗号化された通信には一切手を加えません。
+No sound reached the descrambler: tune a voice signal first.	デスクランブラーに音が届きませんでした。先に音声信号に同調してください。

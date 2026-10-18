@@ -3189,3 +3189,17 @@ Ping	Ping
 with interference bursts	z impulsami zakłóceń
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Sygnał testowy to nadajnik 420 Hz od środka z symulowanymi echami meteorów: krótkimi podgęstymi i kilkoma długimi nadgęstymi.
 Beacon echoes, 143.050 MHz	Echa nadajnika, 143,050 MHz
+Voice inversion: undo a simple voice scrambler	Inwersja głosu: cofnięcie prostego zniekształcenia mowy
+Voice inversion	Inwersja głosu
+Frequency inversion only mirrors the sound of a voice; it is not encryption. In many countries it may be illegal to listen to private communications. You are responsible for what you listen to and for following the law where you are. Encrypted traffic is never touched.	Inwersja częstotliwości tylko odbija dźwięk głosu; to nie jest szyfrowanie. W wielu krajach podsłuchiwanie prywatnych rozmów może być nielegalne. Odpowiadasz za to, czego słuchasz, i za przestrzeganie prawa w miejscu, w którym jesteś. Ruch szyfrowany nigdy nie jest dotykany.
+I understand and accept	Rozumiem i akceptuję
+Descramble the sound you hear. The decoders always get the untouched sound.	Odkręca dźwięk, który słyszysz. Dekodery zawsze dostają dźwięk nietknięty.
+Simple	Prosta
+Split-band	Podzielone pasmo
+Split at	Podziel przy
+Band from	Pasmo od
+Listens for 5 seconds, then tries the carrier (or split) frequencies and picks the one that sounds most like speech. Works best while someone is talking.	Słucha przez 5 sekund, potem próbuje częstotliwości nośnej (lub podziału) i wybiera tę, która brzmi najbardziej jak mowa. Działa najlepiej, gdy ktoś mówi.
+Found %.0f Hz (match %.0f %%)	Znaleziono %.0f Hz (zgodność %.0f %%)
+Nothing speech-like found. Try again while someone is talking.	Nie znaleziono nic podobnego do mowy. Spróbuj ponownie, gdy ktoś mówi.
+Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	To nie jest szyfrowanie: dźwięk jest tylko odbity. Ruch szyfrowany nigdy nie jest dotykany.
+No sound reached the descrambler: tune a voice signal first.	Do dekodera nie dotarł żaden dźwięk: najpierw dostrój sygnał głosowy.
