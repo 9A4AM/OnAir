@@ -7,7 +7,7 @@
 using namespace dect2;
 namespace fs = std::filesystem;
 static int failures = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL: "); printf(__VA_ARGS__); printf("\n"); ++failures; } } while (0)
+#define CHECK(c, fmt, ...) do { if (!(c)) { printf("FAIL: " fmt "\n" __VA_OPT__(,) __VA_ARGS__); ++failures; } } while (0)
 static double (*state)(const char*) = nullptr;
 static void (*set)(const char*, double) = nullptr;
 static double st(const char* key) { return std::max(0.0, state(key)); }
@@ -51,6 +51,16 @@ int main(int argc, char** argv) {
     if (!fake.open({lib.string()}) || !fake.get(state, "fake_state") || !fake.get(set, "fake_set")) return 2;
     for (const char* key : {"pluto.contextOpens", "pluto.contextCloses", "pluto.rateWrites", "pluto.rxBufferOpens",
                            "pluto.txBufferOpens", "pluto.xoWrites", "pluto.firWrites"}) set(key, 0);
+    // Attribute reads must respect even empty and truncated caller buffers.
+    long long (*readAttr)(const void*, const char*, char*, size_t) = nullptr;
+    if (!fake.get(readAttr, "iio_channel_attr_read")) return 2;
+    set("pluto.sharedRate", 4000000);
+    char small[3] = {'x', 'x', '!'};
+    CHECK(readAttr(nullptr, "sampling_frequency", nullptr, 0) < 0, "empty attribute buffer refused");
+    CHECK(readAttr(nullptr, "sampling_frequency", nullptr, 2) < 0, "null attribute buffer refused");
+    CHECK(readAttr(nullptr, "sampling_frequency", small, 0) < 0 && small[0] == 'x', "zero capacity leaves buffer untouched");
+    CHECK(readAttr(nullptr, "sampling_frequency", small, 1) == 0 && small[0] == '\0' && small[1] == 'x', "one-byte buffer only receives NUL");
+    CHECK(readAttr(nullptr, "sampling_frequency", small, 2) == 1 && small[0] == '4' && small[1] == '\0' && small[2] == '!', "truncated attribute stays within capacity");
     set("pluto.singleContext", 1);   // a second independent USB context must fail
     const auto d = native::plutoDevice("ip:10.0.0.7");
     CHECK(d.canTransmit && d.txFullDuplex, "native Pluto advertises simultaneous RX/TX");

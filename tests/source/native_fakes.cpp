@@ -633,27 +633,29 @@ EXPORT int bladerf_get_frequency_range(bl_dev*, int, const bladerf_range_t** r) 
 EXPORT int bladerf_expansion_attach(bl_dev*, int xb) { rec("blade.xb", xb); return 0; }   // ---- radio settings
 EXPORT const char* LMS_GetLastErrorMessage(void) { return getenv("FAKE_LIME_INIT_FAIL") ? "Gateware version mismatch" : "fake LimeSuite error"; }
 EXPORT int LMS_GetLOFrequencyRange(void*, bool, lms_range_t* r) { const char* m = getenv("FAKE_LIME_MODEL"); const bool mini = m && strstr(m, "mini"); r->min = mini ? 10e6 : 30e6; r->max = mini ? 3.5e9 : 3.8e9; r->step = 1; return 0; }
+// libiio attribute reads return the bytes copied, excluding the trailing NUL.
+static long long iioReadText(char* dst, size_t len, const std::string& text) {
+    if (!dst || len == 0) return -22;
+    const size_t n = text.copy(dst, len - 1);
+    dst[n] = '\0';
+    return (long long)n;
+}
 EXPORT long long iio_channel_attr_read(const void* c, const char* a, char* dst, size_t len) {
-    if (strcmp(a, "sampling_frequency") == 0) {
-        snprintf(dst, len, "%.0f", fake_state("pluto.sharedRate"));
-        return (long long)strlen(dst);
-    }
+    if (strcmp(a, "sampling_frequency") == 0)
+        return iioReadText(dst, len, std::to_string(std::llround(fake_state("pluto.sharedRate"))));
     if (strcmp(a, "frequency_available") != 0 || ((iio_chan*)c)->name != "phy:altvoltage0") return -22;
-    snprintf(dst, len, "[325000000 1 3800000000]");   // a stock Pluto (AD9363)
-    return (long long)strlen(dst) + 1;
+    return iioReadText(dst, len, "[325000000 1 3800000000]");   // a stock Pluto (AD9363)
 }
 // ---- radio settings: the AD9361 reference clock (a device attribute of ad9361-phy)
 EXPORT long long iio_device_attr_read(const void* dev, const char* a, char* dst, size_t len) {
     if (strcmp((const char*)dev, "phy") != 0) return -22;
     if (strcmp(a, "ensm_mode") == 0) {
         if (fake_state("pluto.ensmUnreadable") == 1) return -22;
-        snprintf(dst, len, "%s", fake_state("pluto.tdd") == 1 ? "alert" : "fdd");
-        return (long long)strlen(dst);
+        return iioReadText(dst, len, fake_state("pluto.tdd") == 1 ? "alert" : "fdd");
     }
     if (strcmp(a, "xo_correction") != 0) return -22;
     const double hz = fake_state("pluto.phy.xo_correction");
-    snprintf(dst, len, "%.0f", hz > 0 ? hz : 40000000.0);
-    return (long long)strlen(dst) + 1;
+    return iioReadText(dst, len, std::to_string(std::llround(hz > 0 ? hz : 40000000.0)));
 }
 EXPORT long long iio_device_attr_write(const void* dev, const char* a, const char* v) {   // the AD9361's FIR filter, loaded as text
     if (strcmp(a, "filter_fir_config") != 0) return -22;

@@ -10,7 +10,7 @@
 #include <thread>
 using namespace dect2;
 static int failures = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL: "); printf(__VA_ARGS__); printf("\n"); ++failures; } } while (0)
+#define CHECK(c, fmt, ...) do { if (!(c)) { printf("FAIL: " fmt "\n" __VA_OPT__(,) __VA_ARGS__); ++failures; } } while (0)
 struct State {
     std::atomic<int> opens{0}, closes{0};
     std::atomic<uint64_t> samples{0};
@@ -21,7 +21,7 @@ class MemorySink final : public TxSink {
     std::shared_ptr<State> s_;
     double actual_;
 public:
-    MemorySink(std::shared_ptr<State> s, double actual = 0) : s_(std::move(s)), actual_(actual) {}
+    explicit MemorySink(std::shared_ptr<State> s, double actual = 0) : s_(std::move(s)), actual_(actual) {}
     bool open(const TxTune& t, std::string&) override {
         ++s_->opens; s_->requested = t.sampleRate;
         s_->actual = actual_ > 0 ? actual_ : t.sampleRate; s_->opened = true; return true;
