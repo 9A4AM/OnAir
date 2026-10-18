@@ -1,6 +1,7 @@
 // The AX.25 frame parser, text forms, FCS and HDLC receiver step on top of the Rust crate rust/onair_ax25: the functions of packet_ax25.h;
 // packet_ax25.cpp keeps frame building and the transmit-side bit helpers.
 #include "dect2/packet/packet_ax25.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/ax25.h"
 #include <cstdio>
 #include <cstdlib>
@@ -15,10 +16,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t f = 0, a = 0, i = 0, h = 0;
         onair_ax25_struct_sizes(&f, &a, &i, &h);
-        if (f != sizeof(OnairAx25Frame) || a != sizeof(OnairAx25AddrIn) || i != sizeof(OnairAprsInfo) || h != sizeof(OnairAx25Hdlc)) {
-            fprintf(stderr, "onair_ax25: struct layout mismatch between C++ and Rust\n");
-            abort();
-        }
+        dect2::rsAbiCheck("onair_ax25", {f, a, i, h}, {sizeof(OnairAx25Frame), sizeof(OnairAx25AddrIn), sizeof(OnairAprsInfo), sizeof(OnairAx25Hdlc)});
     }
 } abiCheck;
 

@@ -1,6 +1,7 @@
 // UAT message decoding on top of the Rust crate rust/onair_uat: uat_decode_adsb_mdb and uat_decode_uplink_mdb of dump978's uat_decode.c (which
 // keeps the display functions; the decoding half of the C code was replaced by this Rust implementation). The Rust side fills flat records; this file copies them into the C structs with
 // their bit fields and the pointers into the application data.
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/uat.h"
 #include "dect2/uat/uat_decode_c.h"
 #include <cstdio>
@@ -12,7 +13,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[2];
         onair_uat_struct_sizes(s);
-        if (s[0] != sizeof(OnairUatAdsb) || s[1] != sizeof(OnairUatUplink)) { fprintf(stderr, "onair_uat: struct layout mismatch between C++ and Rust\n"); abort(); }
+        dect2::rsAbiCheck("onair_uat", s, {sizeof(OnairUatAdsb), sizeof(OnairUatUplink)});
     }
 } abiCheck;
 } // namespace

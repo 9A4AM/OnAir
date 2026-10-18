@@ -1,6 +1,7 @@
 // P25 Phase 1 protocol pieces on top of the Rust crate rust/onair_p25: the functions of p25_proto.h
 // (p25_proto.cpp keeps the frame sync table `kSync`).
 #include "dect2/p25/p25_proto.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/p25.h"
 #include <cstdio>
 #include <cstdlib>
@@ -14,10 +15,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[3];
         onair_p25_struct_sizes(s);
-        if (s[0] != sizeof(OnairP25Tsbk) || s[1] != sizeof(OnairP25Lc) || s[2] != sizeof(OnairP25Crypto)) {
-            fprintf(stderr, "onair_p25: struct layout mismatch between C++ and Rust\n");
-            abort();
-        }
+        dect2::rsAbiCheck("onair_p25", s, {sizeof(OnairP25Tsbk), sizeof(OnairP25Lc), sizeof(OnairP25Crypto)});
     }
 } abiCheck;
 inline const char* cs(const uint8_t* p) { return reinterpret_cast<const char*>(p); }

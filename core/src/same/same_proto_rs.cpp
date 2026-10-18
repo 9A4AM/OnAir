@@ -1,6 +1,7 @@
 // SAME / EAS protocol layer on top of the Rust crate rust/onair_same: the functions of same_proto.h; same_proto.cpp keeps the
 // county table (state) and the file loader.
 #include "dect2/same/same_proto.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/same.h"
 #include <cctype>
 #include <cstdio>
@@ -18,7 +19,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t m = 0, l = 0;
         onair_same_struct_sizes(&m, &l);
-        if (m != sizeof(OnairSameMsg) || l != sizeof(OnairSameLoc)) { fprintf(stderr, "onair_same: struct layout mismatch between C++ and Rust\n"); abort(); }
+        dect2::rsAbiCheck("onair_same", {m, l}, {sizeof(OnairSameMsg), sizeof(OnairSameLoc)});
     }
 } abiCheck;
 

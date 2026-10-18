@@ -1,6 +1,7 @@
 // TETRA network information parsing on top of the Rust crate rust/onair_tetra: the parse side of tetra_pdu.h;
 // tetra_pdu.cpp keeps the encoders and the generator PDUs. Only broadcasts are read (see tetra_pdu.h).
 #include "dect2/tetra/tetra_pdu.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/tetra.h"
 #include <cstdio>
 #include <cstdlib>
@@ -13,11 +14,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[5];
         onair_tetra_struct_sizes(s);
-        if (s[0] != sizeof(OnairTetraSync) || s[1] != sizeof(OnairTetraSysinfo) || s[2] != sizeof(OnairTetraNeighbour) || s[3] != sizeof(OnairTetraNwrk) ||
-            s[4] != sizeof(OnairTetraMacBlock)) {
-            fprintf(stderr, "onair_tetra: struct layout mismatch between C++ and Rust\n");
-            abort();
-        }
+        dect2::rsAbiCheck("onair_tetra", s, {sizeof(OnairTetraSync), sizeof(OnairTetraSysinfo), sizeof(OnairTetraNeighbour), sizeof(OnairTetraNwrk), sizeof(OnairTetraMacBlock)});
     }
 } abiCheck;
 

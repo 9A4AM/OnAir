@@ -1,6 +1,7 @@
 // The ACARS block layer on top of the Rust crate rust/onair_acars: the functions of acars_proto.h; acars_proto.cpp keeps
 // acarsBuildFrame (the transmitter of the test signal).
 #include "dect2/acars/acars_proto.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/acars.h"
 #include <cstdio>
 #include <cstdlib>
@@ -10,9 +11,7 @@ namespace dect2 {
 
 namespace {
 struct AbiCheck {
-    AbiCheck() {
-        if (onair_acars_block_size() != sizeof(OnairAcarsBlock)) { fprintf(stderr, "onair_acars: struct layout mismatch between C++ and Rust\n"); abort(); }
-    }
+    AbiCheck() { dect2::rsAbiCheck("onair_acars", {onair_acars_block_size()}, {sizeof(OnairAcarsBlock)}); }
 } abiCheck;
 }
 

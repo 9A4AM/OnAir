@@ -2,6 +2,7 @@
 // tables, the run-length pixel decoder, region blending and the PTS arithmetic. The decoder class with its page, region, CLUT and object state stays in
 // dvbsub.cpp.
 #include "dect2/tv/dvbsub.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/dvbsi.h"
 #include <cstdio>
 #include <cstdlib>
@@ -14,9 +15,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[10];
         onair_dvbsi_struct_sizes(s);
-        const size_t want[10] = {sizeof(OnairDvbsiTtxUnit), sizeof(OnairDvbsiTtxCell), sizeof(OnairDvbsiSubPesInfo), sizeof(OnairDvbsiSubSegment), sizeof(OnairDvbsiSubPageInfo),
-                                 sizeof(OnairDvbsiSubPageRegion), sizeof(OnairDvbsiSubRegionInfo), sizeof(OnairDvbsiSubRegionObject), sizeof(OnairDvbsiSubClutEntry), sizeof(OnairDvbsiSubObjectInfo)};
-        for (int i = 0; i < 10; i++) if (s[i] != want[i]) { fprintf(stderr, "onair_dvbsi: struct layout mismatch (record %d) between C++ and Rust\n", i); abort(); }
+        dect2::rsAbiCheck("onair_dvbsi", s, {sizeof(OnairDvbsiTtxUnit), sizeof(OnairDvbsiTtxCell), sizeof(OnairDvbsiSubPesInfo), sizeof(OnairDvbsiSubSegment), sizeof(OnairDvbsiSubPageInfo), sizeof(OnairDvbsiSubPageRegion), sizeof(OnairDvbsiSubRegionInfo), sizeof(OnairDvbsiSubRegionObject), sizeof(OnairDvbsiSubClutEntry), sizeof(OnairDvbsiSubObjectInfo)});
     }
 } abiCheck;
 inline size_t L(int n) { return n < 0 ? 0 : (size_t)n; }   // negative lengths are 0 bytes

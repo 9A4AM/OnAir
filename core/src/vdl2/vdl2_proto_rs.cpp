@@ -2,6 +2,7 @@
 // vdl2_proto.cpp keeps the burst / HDLC / frame builders for the test signal and the ACARS reader.
 #include "dect2/vdl2/vdl2_proto.h"
 #include <memory>
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/vdl2.h"
 #include "vdl2_internal.h"
 #include <cstdio>
@@ -15,10 +16,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[3];
         onair_vdl2_struct_sizes(s);
-        if (s[0] != sizeof(OnairVdl2Parsed) || s[1] != sizeof(OnairVdl2Layout) || s[2] != sizeof(OnairVdl2Addr)) {
-            fprintf(stderr, "onair_vdl2: struct layout mismatch between C++ and Rust\n");
-            abort();
-        }
+        dect2::rsAbiCheck("onair_vdl2", s, {sizeof(OnairVdl2Parsed), sizeof(OnairVdl2Layout), sizeof(OnairVdl2Addr)});
     }
 } abiCheck;
 template <class S> std::string str(const S& s) { return std::string((const char*)s.b, s.len); }

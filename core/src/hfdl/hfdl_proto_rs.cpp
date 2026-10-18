@@ -1,6 +1,7 @@
 // HFDL bit layers, FCS, station table and PDU parser on top of the Rust crate rust/onair_hfdl: the functions of hfdl_proto.h;
 // hfdl_proto.cpp keeps the PSK maps, the builders for the test signal and the ACARS reader.
 #include "dect2/hfdl/hfdl_proto.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/hfdl.h"
 #include "hfdl_internal.h"
 #include <algorithm>
@@ -16,10 +17,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[3];
         onair_hfdl_struct_sizes(s);
-        if (s[0] != sizeof(OnairHfdlRate) || s[1] != sizeof(OnairHfdlMsg) || s[2] != sizeof(OnairHfdlStation)) {
-            fprintf(stderr, "onair_hfdl: struct layout mismatch between C++ and Rust\n");
-            abort();
-        }
+        dect2::rsAbiCheck("onair_hfdl", s, {sizeof(OnairHfdlRate), sizeof(OnairHfdlMsg), sizeof(OnairHfdlStation)});
     }
 } abiCheck;
 template <class S> std::string str(const S& s) { return std::string((const char*)s.b, s.len); }

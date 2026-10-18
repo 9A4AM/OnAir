@@ -1,6 +1,7 @@
 // ts_proto.h on top of the Rust crate rust/onair_ts: record arrays sized from the section length (every record needs at least 4 bytes of
 // section; the two lists that corrupt overlapping descriptors can lengthen are parsed again with the counted size), turned into the std::string / vector forms of the header.
 #include "dect2/tv/ts_proto.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/ts.h"
 #include <cstdio>
 #include <cstdlib>
@@ -12,9 +13,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[12];
         onair_ts_struct_sizes(s);
-        const size_t want[12] = {sizeof(OnairTsPacketHeader), sizeof(OnairTsPatEntry), sizeof(OnairTsPmtStream), sizeof(OnairTsPmtSub), sizeof(OnairTsPmtInfo), sizeof(OnairTsSdtService),
-                                 sizeof(OnairTsNitLcn), sizeof(OnairTsNitInfo), sizeof(OnairTsTvct), sizeof(OnairTsTdt), sizeof(OnairTsEitEvent), sizeof(OnairTsEitInfo)};
-        for (int i = 0; i < 12; i++) if (s[i] != want[i]) { fprintf(stderr, "onair_ts: struct layout mismatch (record %d) between C++ and Rust\n", i); abort(); }
+        dect2::rsAbiCheck("onair_ts", s, {sizeof(OnairTsPacketHeader), sizeof(OnairTsPatEntry), sizeof(OnairTsPmtStream), sizeof(OnairTsPmtSub), sizeof(OnairTsPmtInfo), sizeof(OnairTsSdtService), sizeof(OnairTsNitLcn), sizeof(OnairTsNitInfo), sizeof(OnairTsTvct), sizeof(OnairTsTdt), sizeof(OnairTsEitEvent), sizeof(OnairTsEitInfo)});
     }
 } abiCheck;
 inline size_t L(int len) { return len < 0 ? 0 : (size_t)len; }   // negative lengths are 0 bytes

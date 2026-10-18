@@ -1,6 +1,7 @@
 // drm_proto.h on top of the Rust crate rust/onair_drm: the FAC / SDC / super frame records of drm_msg.h are copied to and from the plain C
 // records of the crate (the SDC parser works in place on them).
 #include "dect2/drm/drm_proto.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/drm.h"
 #include <algorithm>
 #include <cstdio>
@@ -15,10 +16,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[4];
         onair_drm_struct_sizes(s);
-        if (s[0] != sizeof(OnairDrmFacInfo) || s[1] != sizeof(OnairDrmSdcInfo) || s[2] != sizeof(OnairDrmAacInfo) || s[3] != sizeof(OnairDrmTextSeg)) {
-            fprintf(stderr, "onair_drm: struct layout mismatch between C++ and Rust\n");
-            abort();
-        }
+        dect2::rsAbiCheck("onair_drm", s, {sizeof(OnairDrmFacInfo), sizeof(OnairDrmSdcInfo), sizeof(OnairDrmAacInfo), sizeof(OnairDrmTextSeg)});
     }
 } abiCheck;
 

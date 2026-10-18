@@ -3,6 +3,7 @@
 // channel tables, AES-CTR, AES-ECB / HMAC and Ed25519 stay here because they need keys.
 #include "mesh_proto_internal.h"
 #include "mesh_rs_util.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/mesh/mesh_crypto.h"
 #include <cstdio>
 #include <cstdlib>
@@ -18,10 +19,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[10];
         onair_mesh_struct_sizes(s);
-        const size_t want[10] = {sizeof(OnairMeshNode), sizeof(OnairMeshMessage), sizeof(OnairMeshMtDecoded), sizeof(OnairMeshMcParsed), sizeof(OnairMeshMcOut),
-                                 sizeof(OnairMeshMcGroup), sizeof(OnairMeshLorawan), sizeof(OnairMeshLoraAprs), sizeof(OnairMeshMeshCom), sizeof(OnairMeshPbField)};
-        for (int i = 0; i < 10; i++)
-            if (s[i] != want[i]) { fprintf(stderr, "onair_mesh: struct layout mismatch (record %d) between C++ and Rust\n", i); abort(); }
+        dect2::rsAbiCheck("onair_mesh", s, {sizeof(OnairMeshNode), sizeof(OnairMeshMessage), sizeof(OnairMeshMtDecoded), sizeof(OnairMeshMcParsed), sizeof(OnairMeshMcOut), sizeof(OnairMeshMcGroup), sizeof(OnairMeshLorawan), sizeof(OnairMeshLoraAprs), sizeof(OnairMeshMeshCom), sizeof(OnairMeshPbField)});
     }
 } abiCheck;
 } // namespace

@@ -2,6 +2,7 @@
 // wisun_proto.cpp keeps the channel plan tables, the MPDU builder and the text helpers that call the 2.4 GHz mode.
 #include "dect2/wisun/wisun_proto.h"
 #include <memory>
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/wisun.h"
 #include <cstdio>
 #include <cstdlib>
@@ -15,10 +16,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[3];
         onair_wisun_struct_sizes(s);
-        if (s[0] != sizeof(OnairWisunFrame) || s[1] != sizeof(OnairWisunSchedule) || s[2] != sizeof(OnairWisunPhr)) {
-            fprintf(stderr, "onair_wisun: struct layout mismatch between C++ and Rust\n");
-            abort();
-        }
+        dect2::rsAbiCheck("onair_wisun", s, {sizeof(OnairWisunFrame), sizeof(OnairWisunSchedule), sizeof(OnairWisunPhr)});
     }
 } abiCheck;
 

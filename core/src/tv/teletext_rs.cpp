@@ -1,6 +1,7 @@
 // The teletext layer of teletext.h on top of the Rust crate rust/onair_dvbsi: Hamming codes, the G0 national option subsets, the renderer,
 // the PES data unit walk and the data unit decoder. The decoder class with its page store stays in teletext.cpp.
 #include "dect2/tv/teletext.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/dvbsi.h"
 #include <cstdio>
 #include <cstdlib>
@@ -13,7 +14,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[10];
         onair_dvbsi_struct_sizes(s);
-        if (s[0] != sizeof(OnairDvbsiTtxUnit) || s[1] != sizeof(OnairDvbsiTtxCell)) { fprintf(stderr, "onair_dvbsi: struct layout mismatch between C++ and Rust\n"); abort(); }
+        dect2::rsAbiCheck("onair_dvbsi", s, {sizeof(OnairDvbsiTtxUnit), sizeof(OnairDvbsiTtxCell)});
     }
 } abiCheck;
 }

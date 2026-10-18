@@ -15,7 +15,6 @@ namespace dect2 {
 
 using namespace meshcrypto;
 
-std::string meshHex(const uint8_t* p, size_t n) { return hexEncode(p, n); }
 
 std::string meshFmt(const char* fmt, ...) {
     char buf[256];

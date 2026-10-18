@@ -1,6 +1,7 @@
 // The ADS-B / Mode S message layer on top of the Rust crate rust/onair_adsb: the same functions as adsb_msg.cpp, which keeps getBits,
 // setBits and toHex (helpers that take no length).
 #include "dect2/adsb/adsb_msg.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/adsb.h"
 #include <cstdio>
 #include <cstdlib>
@@ -12,7 +13,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t m = 0, c = 0;
         onair_adsb_struct_sizes(&m, &c);
-        if (m != sizeof(OnairAdsbMsg) || c != sizeof(OnairAdsbCommB)) { fprintf(stderr, "onair_adsb: struct layout mismatch between C++ and Rust\n"); abort(); }
+        dect2::rsAbiCheck("onair_adsb", {m, c}, {sizeof(OnairAdsbMsg), sizeof(OnairAdsbCommB)});
     }
 } abiCheck;
 

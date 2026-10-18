@@ -2,6 +2,7 @@
 // generator side (putU, appendFcs, burstLineBits, toNmea).
 #include "dect2/ais/ais_proto.h"
 #include "dect2/ais/ais_tel.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/proto.h"
 #include <cstdio>
 #include <cstdlib>
@@ -14,9 +15,7 @@ static_assert(AIS_CLASS_A == 0 && AIS_CLASS_B == 1 && AIS_CLASS_BASE == 2 && AIS
 
 namespace {
 struct AbiCheck {
-    AbiCheck() {
-        if (onair_ais_msg_size() != sizeof(OnairAisMsg)) { fprintf(stderr, "onair_proto: struct layout mismatch between C++ and Rust\n"); abort(); }
-    }
+    AbiCheck() { dect2::rsAbiCheck("onair_proto", {onair_ais_msg_size()}, {sizeof(OnairAisMsg)}); }
 } abiCheck;
 }
 

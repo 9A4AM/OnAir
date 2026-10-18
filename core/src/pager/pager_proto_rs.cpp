@@ -1,6 +1,7 @@
 // The POCSAG / FLEX code word, text and phase layer on top of the Rust crate rust/onair_pager: the functions of pager_proto.h;
 // pager_proto.cpp keeps the generators and the POCSAG message assembler.
 #include "dect2/pager/pager_proto.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/pager.h"
 #include <cstdio>
 #include <cstdlib>
@@ -11,9 +12,7 @@ namespace pager {
 
 namespace {
 struct AbiCheck {
-    AbiCheck() {
-        if (onair_pager_page_size() != sizeof(OnairPagerPage)) { fprintf(stderr, "onair_pager: struct layout mismatch between C++ and Rust\n"); abort(); }
-    }
+    AbiCheck() { dect2::rsAbiCheck("onair_pager", {onair_pager_page_size()}, {sizeof(OnairPagerPage)}); }
 } abiCheck;
 
 // the speed table lives in Rust; this is its C++ view, read once

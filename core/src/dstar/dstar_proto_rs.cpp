@@ -1,6 +1,7 @@
 // D-STAR protocol pieces on top of the Rust crate rust/onair_dstar: the functions of dstar_proto.h
 // (dstar_proto.cpp keeps the sync pattern tables).
 #include "dect2/dstar/dstar_proto.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/dstar.h"
 #include <cstdio>
 #include <cstdlib>
@@ -14,7 +15,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[2];
         onair_dstar_struct_sizes(s);
-        if (s[0] != sizeof(OnairDstarFix) || s[1] != sizeof(OnairDstarHeader)) { fprintf(stderr, "onair_dstar: struct layout mismatch between C++ and Rust\n"); abort(); }
+        dect2::rsAbiCheck("onair_dstar", s, {sizeof(OnairDstarFix), sizeof(OnairDstarHeader)});
     }
 } abiCheck;
 inline const uint8_t* u8(const std::string& s) { return reinterpret_cast<const uint8_t*>(s.data()); }

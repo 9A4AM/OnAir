@@ -7,6 +7,7 @@
 //  * a double that does not fit a 64 bit unsigned (SigMF sample_start, header_bytes) saturates, it was undefined;
 //  * the b-tree code refuses a usable page size under 36 bytes and checks the page is long enough for its header.
 #include "dect2/files/files_proto.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/files.h"
 #include <cstdio>
 #include <cstdlib>
@@ -19,8 +20,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[6];
         onair_files_struct_sizes(s);
-        const size_t want[6] = {sizeof(OnairFilesSigmf), sizeof(OnairFilesWavFmt), sizeof(OnairFilesTle), sizeof(OnairFilesDbHeader), sizeof(OnairFilesCol), sizeof(OnairFilesCell)};
-        for (int i = 0; i < 6; i++) if (s[i] != want[i]) { fprintf(stderr, "onair_files: struct layout mismatch (record %d) between C++ and Rust\n", i); abort(); }
+        dect2::rsAbiCheck("onair_files", s, {sizeof(OnairFilesSigmf), sizeof(OnairFilesWavFmt), sizeof(OnairFilesTle), sizeof(OnairFilesDbHeader), sizeof(OnairFilesCol), sizeof(OnairFilesCell)});
     }
 } abiCheck;
 inline const uint8_t* U(const std::string& s) { return (const uint8_t*)s.data(); }

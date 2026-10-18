@@ -2,6 +2,7 @@
 // dmr_proto.cpp keeps the sync word table, the three burst slicers (vector copies), be24 / putBe24 and the talker alias PDU builder of the test signal.
 // Bit vectors that are shorter than the format needs are zero padded.
 #include "dect2/dmr/dmr_proto.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/dmr.h"
 #include <algorithm>
 #include <cstdio>
@@ -16,11 +17,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[5];
         onair_dmr_struct_sizes(s);
-        if (s[0] != sizeof(OnairDmrFullLc) || s[1] != sizeof(OnairDmrCsbk) || s[2] != sizeof(OnairDmrDataHeader) || s[3] != sizeof(OnairDmrDataBlock) ||
-            s[4] != sizeof(OnairDmrTa)) {
-            fprintf(stderr, "onair_dmr: struct layout mismatch between C++ and Rust\n");
-            abort();
-        }
+        dect2::rsAbiCheck("onair_dmr", s, {sizeof(OnairDmrFullLc), sizeof(OnairDmrCsbk), sizeof(OnairDmrDataHeader), sizeof(OnairDmrDataBlock), sizeof(OnairDmrTa)});
     }
 } abiCheck;
 

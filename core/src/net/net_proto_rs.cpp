@@ -1,5 +1,6 @@
 // net_proto.h on top of the Rust crate rust/onair_net: thin wrappers over the C ABI of core/include/dect2/rs/net.h.
 #include "dect2/net/net_proto.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/net.h"
 #include <algorithm>
 #include <cstdio>
@@ -13,9 +14,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[8];
         onair_net_struct_sizes(s);
-        const size_t want[8] = {sizeof(OnairNetHead), sizeof(OnairNetField), sizeof(OnairNetGreeting), sizeof(OnairNetWidget), sizeof(OnairNetUiCounts), sizeof(OnairNetRadio),
-                                sizeof(OnairNetJsonEntry), sizeof(OnairNetWsClient)};
-        for (int i = 0; i < 8; i++) if (s[i] != want[i]) { fprintf(stderr, "onair_net: struct layout mismatch (record %d) between C++ and Rust\n", i); abort(); }
+        dect2::rsAbiCheck("onair_net", s, {sizeof(OnairNetHead), sizeof(OnairNetField), sizeof(OnairNetGreeting), sizeof(OnairNetWidget), sizeof(OnairNetUiCounts), sizeof(OnairNetRadio), sizeof(OnairNetJsonEntry), sizeof(OnairNetWsClient)});
     }
 } abiCheck;
 inline const uint8_t* U(const std::string& s) { return (const uint8_t*)s.data(); }

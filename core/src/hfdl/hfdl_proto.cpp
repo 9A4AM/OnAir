@@ -118,7 +118,6 @@ std::vector<uint8_t> hfdlDecodeSoft(int m1, const std::vector<float>& chan) {
 
 namespace {
 int32_t coordRaw(double deg) { int32_t v = (int32_t)std::lround(deg * 524288.0 / 180.0); v = std::max(-524288, std::min(524287, v)); return v & 0xFFFFF; }
-double coordDeg(uint32_t raw) { int32_t v = (int32_t)(raw & 0xFFFFF); if (v & 0x80000) v -= 0x100000; return v * 180.0 / 524288.0; }
 void putPosTime(std::vector<uint8_t>& o, const std::string& flight, double lat, double lon, int utcSec) {
     for (int i = 0; i < 6; i++) o.push_back(i < (int)flight.size() ? (uint8_t)flight[(size_t)i] : (uint8_t)' ');
     const uint32_t la = (uint32_t)coordRaw(lat), lo = (uint32_t)coordRaw(lon);

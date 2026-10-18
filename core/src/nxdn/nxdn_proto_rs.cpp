@@ -1,6 +1,7 @@
 // NXDN common air interface on top of the Rust crate rust/onair_nxdn: the functions of nxdn_proto.h
 // (nxdn_proto.cpp keeps the frame sync word table).
 #include "dect2/nxdn/nxdn_proto.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/nxdn.h"
 #include <cstdio>
 #include <cstdlib>
@@ -11,9 +12,7 @@ namespace nxdn {
 
 namespace {
 struct AbiCheck {
-    AbiCheck() {
-        if (onair_nxdn_struct_size() != sizeof(OnairNxdnMsg)) { fprintf(stderr, "onair_nxdn: struct layout mismatch between C++ and Rust\n"); abort(); }
-    }
+    AbiCheck() { dect2::rsAbiCheck("onair_nxdn", {onair_nxdn_struct_size()}, {sizeof(OnairNxdnMsg)}); }
 } abiCheck;
 inline size_t sz(int n) { return n < 0 ? 0 : (size_t)n; }
 } // namespace

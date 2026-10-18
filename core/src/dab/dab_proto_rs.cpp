@@ -2,6 +2,7 @@
 // the lists that overlapping descriptors of corrupt data could lengthen are not among them), turned into the vector / string forms of the header.
 // Negative or zero lengths are 0 bytes.
 #include "dect2/dab/dab_proto.h"
+#include "dect2/common/rs_abi.h"
 #include "dect2/rs/dab.h"
 #include <algorithm>
 #include <cstdio>
@@ -14,12 +15,7 @@ struct AbiCheck {
     AbiCheck() {
         size_t s[28];
         onair_dab_struct_sizes(s);
-        const size_t want[28] = {sizeof(OnairDabFigRef), sizeof(OnairDabFigHead), sizeof(OnairDabFig01Sub), sizeof(OnairDabFig03Packet), sizeof(OnairDabFig02Service),
-            sizeof(OnairDabFig02Comp), sizeof(OnairDabFig013App), sizeof(OnairDabFig017Pty), sizeof(OnairDabFig018Support), sizeof(OnairDabFig019Switch),
-            sizeof(OnairDabFig010Time), sizeof(OnairDabFig1Label), sizeof(OnairDabFig2Seg), sizeof(OnairDabMotTime), sizeof(OnairDabMotHeader), sizeof(OnairDabMotParam),
-            sizeof(OnairDabMotGroup), sizeof(OnairDabDirEntry), sizeof(OnairDabPadBytes), sizeof(OnairDabPadSub), sizeof(OnairDabDlsStep), sizeof(OnairDabDlSegment),
-            sizeof(OnairDabDlpTag), sizeof(OnairDabJlGroup), sizeof(OnairDabTocEntry), sizeof(OnairDabTocInfo), sizeof(OnairDabPacket), sizeof(OnairDabDrmPacket)};
-        for (int i = 0; i < 28; i++) if (s[i] != want[i]) { fprintf(stderr, "onair_dab: struct layout mismatch (record %d) between C++ and Rust\n", i); abort(); }
+        dect2::rsAbiCheck("onair_dab", s, {sizeof(OnairDabFigRef), sizeof(OnairDabFigHead), sizeof(OnairDabFig01Sub), sizeof(OnairDabFig03Packet), sizeof(OnairDabFig02Service), sizeof(OnairDabFig02Comp), sizeof(OnairDabFig013App), sizeof(OnairDabFig017Pty), sizeof(OnairDabFig018Support), sizeof(OnairDabFig019Switch), sizeof(OnairDabFig010Time), sizeof(OnairDabFig1Label), sizeof(OnairDabFig2Seg), sizeof(OnairDabMotTime), sizeof(OnairDabMotHeader), sizeof(OnairDabMotParam), sizeof(OnairDabMotGroup), sizeof(OnairDabDirEntry), sizeof(OnairDabPadBytes), sizeof(OnairDabPadSub), sizeof(OnairDabDlsStep), sizeof(OnairDabDlSegment), sizeof(OnairDabDlpTag), sizeof(OnairDabJlGroup), sizeof(OnairDabTocEntry), sizeof(OnairDabTocInfo), sizeof(OnairDabPacket), sizeof(OnairDabDrmPacket)});
     }
 } abiCheck;
 inline Range rg(const OnairDabRange& r) { return Range{r.off, r.len}; }
