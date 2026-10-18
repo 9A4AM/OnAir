@@ -2703,3 +2703,39 @@ Watch for these	监视这些
 Lists	列表
 Watchlists...	监视列表...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	当收到列表中的飞机、船舶、呼号、频率或词语时提醒: 通知、声音、ntfy、Telegram 或 Webhook
+#  tone decoders
+5-tone	五音
+2-tone	双音
+sub-audible	亚音频
+extended tone	扩展音
+standard tone	标准音
+code of the usual list	常用列表中的代码
+code not in the usual list	不在常用列表中的代码
+same waveform	相同波形
+no CTCSS tone or DCS code	无CTCSS音或DCS码
+start the receiver on an FM channel or a sound card to decode tones	在FM信道或声卡上启动接收机以解码音调
+voice-band tone	话音频段音调
+keys	按键
+, sound card	，声卡
+, FM	，FM
+gate	门限
+open (no gate)	开（无门限）
+audio spectrum, 0 - 3.5 kHz	音频频谱，0 - 3.5 kHz
+the 50 CTCSS tones, 67 - 254 Hz	50个CTCSS音，67 - 254 Hz
+The level of each of the 50 tones in the last second of the sub-audible band, left to right from 67.0 to 254.1 Hz. A tone that stands clear of the others for about half a second is taken as the CTCSS tone.	亚音频段最近一秒内50个音调各自的电平，从左到右为67.0至254.1 Hz。明显高于其他音调并持续约半秒的音调即被认定为CTCSS音。
+start the receiver to see what is heard	启动接收机以查看收到的内容
+Length	时长
+Hear the channel (the sub-audible tones are taken out); with a gate set under Receiver the sound opens only for the chosen tone or code	收听该信道（亚音频音调会被滤除）；在“接收机”中设置门限后，只有选定的音调或代码出现时才有声音
+sound card audio	声卡音频
+FM channel	FM信道
+Gate	门限
+Open the sound	开启声音
+always	始终
+on any tone or code	出现任意音调或代码时
+only on the chosen tone or code	仅在选定音调或代码时
+Like the squelch of a radio with CTCSS or DCS: while the gate is closed the Listen sound is muted. The decoders keep running either way.	就像带CTCSS或DCS的电台的静噪：门限关闭时监听声音静音。解码器在两种情况下都会继续运行。
+inverted	反相
+DCS polarity (N or I) follows the deviation sign of the receiver; the same waveform can read as two codes, the second is shown as the alias. Five-tone tone lengths are vendor specific: when several standards fit, the one whose usual tone length is closest is listed first.	DCS极性（N或I）取决于接收机频偏的符号；同一波形可能被读成两个代码，第二个显示为别名。五音呼叫的音长因厂商而异：多个标准都符合时，通常音长最接近的排在最前。
+Tone decoders	音调解码器
+The test signal repeats every 40 s: CTCSS 123.0 Hz under speech-like noise, DCS D023N, DTMF 159#, a ZVEI1 call 12345, SELCAL AM-CP and a two-tone page.	测试信号每40秒重复一次：类语音噪声下的CTCSS 123.0 Hz、DCS D023N、DTMF 159#、ZVEI1呼叫12345、SELCAL AM-CP和一次双音呼叫。
+CTCSS, DCS, DTMF, selcall	CTCSS、DCS、DTMF、选呼
