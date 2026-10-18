@@ -383,10 +383,10 @@ Amp	Wzm.
 LNA	LNA
 VGA	VGA
 AGC	AGC
-Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	Utrzymuje poziom ADC w zdrowym zakresie (około -16 dBFS rms, bez przesterowania) przez regulację LNA, VGA i wzmacniacza.\nDotknięcie regulatora wzmocnienia wyłącza ją.
+Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off.	Utrzymuje tor wejściowy w najlepszym punkcie pracy dla danego trybu: dobry poziom przetwornika, szum powyżej własnego szumu przetwornika, silni sąsiedzi odcięci. Zmienia LNA i VGA (wzmacniacz tylko, jeśli pozwolisz kołem zębatym) i nie rusza wzmocnienia, dopóki dekoder jest zsynchronizowany.\nDotknięcie regulatora wzmocnienia wyłącza ją.
 Auto-tune	Autodopasowanie
 Stop tune	Zatrzymaj dopasowanie
-Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Pomocnik wzmocnienia: przez około 40 s próbuje kombinacji LNA/VGA/wzmacniacza i zachowuje tę z najlepszym SNR bez przesterowania.\nWymaga sygnału, z którym odbiornik może się zsynchronizować.
+Gain helper: tries LNA/VGA combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to. The amp stays as you set it.	Pomocnik wzmocnienia: przez około 40 s próbuje kombinacji LNA/VGA i zostawia tę z najlepszym SNR bez przesterowania.\nPotrzebuje sygnału, z którym odbiornik może się zsynchronizować. Wzmacniacz zostaje tak, jak go ustawisz.
 gain helper %d/%d ...	pomocnik wzmocnienia %d/%d ...
 ADC OVERLOAD - %s	PRZECIĄŻENIE ADC - %s
 AGC is lowering the gain	AGC obniża wzmocnienie
@@ -2703,3 +2703,23 @@ Watch for these	Obserwuj te
 Lists	Listy
 Watchlists...	Listy obserwowanych...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alerty, gdy odebrane zostaną wymienione samoloty, statki, znaki wywoławcze, częstotliwości lub słowa: powiadomienie, dźwięk, ntfy, Telegram lub webhook
+# auto gain (AGC): the gear button, the amp switch, what the AGC is doing
+Auto gain	Automatyczne wzmocnienie
+AGC settings	Ustawienia AGC
+Let AGC turn the amp on/off by itself	Pozwól AGC samodzielnie włączać i wyłączać wzmacniacz
+Off by default. With this off the AGC only moves the LNA and VGA and never touches the amp: it stays as you set it. The amp is the first stage and can be damaged by strong signals.	Domyślnie wyłączone. Gdy jest wyłączone, AGC zmienia tylko LNA i VGA i nigdy nie dotyka wzmacniacza: zostaje tak, jak go ustawisz. Wzmacniacz to pierwszy stopień i silne sygnały mogą go uszkodzić.
+This radio has no amp for the AGC to switch.	To radio nie ma wzmacniacza, który AGC mogłoby przełączać.
+The amp can fry itself on strong signals while on	Wzmacniacz może się spalić przy silnych sygnałach, dopóki jest włączony
+Aims for: %s	Cel: %s
+wide channel: ADC headroom	szeroki kanał: zapas przetwornika
+narrow channel: lowest noise, neighbours kept out	wąski kanał: najmniejszy szum, sąsiedzi odcięci
+pulsed signals: peaks decide	sygnały impulsowe: decydują szczyty
+strong stations: front end protected	silne stacje: wejście chronione
+Now: %s	Teraz: %s
+cut after an overload	obniżone po przesterowaniu
+lowering the gain	obniżanie wzmocnienia
+raising the gain	podnoszenie wzmocnienia
+strong neighbour: front gain limited	silny sąsiad: wzmocnienie wejścia ograniczone
+decoder locked: gain frozen	dekoder zsynchronizowany: wzmocnienie zamrożone
+at the end of the gain range	na końcu zakresu wzmocnienia
+holding the level	poziom utrzymany

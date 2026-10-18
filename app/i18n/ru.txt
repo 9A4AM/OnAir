@@ -377,10 +377,10 @@ Amp	Amp
 LNA	LNA
 VGA	VGA
 AGC	AGC
-Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	Держит уровень АЦП в нормальном окне (около -16 dBFS rms, без ограничения), подстраивая LNA, VGA и amp.\nПрикосновение к регулятору усиления отключает его.
+Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off.	Держит входной тракт в лучшей рабочей точке для режима: нормальный уровень АЦП, шум выше собственного шума АЦП, сильные соседи отсечены. Меняет LNA и VGA (усилитель только если вы разрешите кнопкой с шестерёнкой) и не трогает усиление, пока декодер захватил сигнал.\nПрикосновение к регулятору усиления выключает её.
 Auto-tune	Автонастройка
 Stop tune	Остановить настройку
-Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Помощник по усилению: пробует сочетания LNA/VGA/amp около 40 с и оставляет то, которое даёт лучший SNR без ограничения.\nНужен сигнал, на который приёмник может захватиться.
+Gain helper: tries LNA/VGA combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to. The amp stays as you set it.	Помощник усиления: около 40 с перебирает сочетания LNA/VGA и оставляет то, у которого лучший SNR без перегрузки.\nНужен сигнал, на который приёмник может захватиться. Усилитель остаётся таким, как вы его поставили.
 gain helper %d/%d ...	помощник по усилению %d/%d ...
 ADC OVERLOAD - %s	ПЕРЕГРУЗКА АЦП - %s
 AGC is lowering the gain	AGC снижает усиление
@@ -2686,3 +2686,23 @@ Watch for these	Следить за этими
 Lists	Списки
 Watchlists...	Списки наблюдения...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Оповещения, когда принимаются перечисленные самолёты, суда, позывные, частоты или слова: уведомление, звук, ntfy, Telegram или вебхук
+# auto gain (AGC): the gear button, the amp switch, what the AGC is doing
+Auto gain	Автоматическое усиление
+AGC settings	Настройки АРУ
+Let AGC turn the amp on/off by itself	Разрешить АРУ самой включать и выключать усилитель
+Off by default. With this off the AGC only moves the LNA and VGA and never touches the amp: it stays as you set it. The amp is the first stage and can be damaged by strong signals.	По умолчанию выключено. Пока это выключено, АРУ меняет только LNA и VGA и никогда не трогает усилитель: он остаётся таким, как вы его поставили. Усилитель — первый каскад, и сильные сигналы могут его повредить.
+This radio has no amp for the AGC to switch.	В этом радио нет усилителя, который АРУ могла бы переключать.
+The amp can fry itself on strong signals while on	Включённый усилитель может сгореть от сильных сигналов
+Aims for: %s	Цель: %s
+wide channel: ADC headroom	широкий канал: запас АЦП
+narrow channel: lowest noise, neighbours kept out	узкий канал: минимум шума, соседи отсечены
+pulsed signals: peaks decide	импульсные сигналы: решают пики
+strong stations: front end protected	сильные станции: вход защищён
+Now: %s	Сейчас: %s
+cut after an overload	снижено после перегрузки
+lowering the gain	усиление снижается
+raising the gain	усиление повышается
+strong neighbour: front gain limited	сильный сосед: усиление входа ограничено
+decoder locked: gain frozen	декодер захватил сигнал: усиление зафиксировано
+at the end of the gain range	край диапазона усиления
+holding the level	уровень удерживается

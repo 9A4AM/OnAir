@@ -60,7 +60,9 @@ public:
     struct Sample { double snrDb = 0; bool locked = false; float clip = 0, rms = -120, peak = 0; };
     struct Entry { GainSetting g; int rf = -1; double snrDb = -100; float rms = -120, clip = 0; int n = 0; bool done = false; bool overload = false; };
     // rfMaxState > 0: the radio also has an RF stage (state 0 = most gain .. rfMaxState): the states are swept too, see rf()
-    void start(double nowSec, int genericMaxDb = 0, int rfMaxState = 0);   // genericMaxDb > 0: sweep one overall gain over 0..genericMaxDb
+    // ampMode: 0 the combinations may switch the HackRF amp (the old behaviour), 1 the amp stays off, 2 it stays on (the user's own switch; every
+    // combination is shifted by the amp's 14 dB so the totals are the same)
+    void start(double nowSec, int genericMaxDb = 0, int rfMaxState = 0, int ampMode = 0);   // genericMaxDb > 0: sweep one overall gain over 0..genericMaxDb
     bool active() const { return active_; }
     // Returns true when `g` changed (apply it). When the sweep ends, `g` is the winner and active() is false.
     bool update(double nowSec, const Sample& s, GainSetting& g);

@@ -261,7 +261,7 @@ void loadModeAndGains(plat::Prefs& d, App& a) {
     for (int f = 0; f < kNumSlots; f++) {   // as many as savePrefs writes
         const std::string k = slotKey(f);
         if (!d.has(("gLna" + k).c_str())) continue;
-        a.famGain[f] = {(int)d.getI(("gLna" + k).c_str(), 32), (int)d.getI(("gVga" + k).c_str(), 20), d.getB(("gAmp" + k).c_str(), true), true};
+        a.famGain[f] = {(int)d.getI(("gLna" + k).c_str(), 32), (int)d.getI(("gVga" + k).c_str(), 20), d.getB(("gAmp" + k).c_str(), false), true};
     }
     {   // a protocol entry never used yet starts with the gains its family had as one entry
         int n = 0;

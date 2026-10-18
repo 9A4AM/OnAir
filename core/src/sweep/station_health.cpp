@@ -27,6 +27,14 @@ std::vector<HealthBand> healthBands(double minHz, double maxHz) {
     return out;
 }
 
+double adcQuantFloorDbfs(int adcBits) { return -(6.02 * adcBits + 1.76); }
+
+double adcMarginDb(double floorDbPerBin, double binHz, double rateHz, int adcBits) {
+    // white noise of power P over the rate shows in one Hann-windowed bin as P * 1.5 / N, a bin being rate / N wide: P = bin power + 10 log10(rate / bin) - 1.76 dB
+    const double noiseTotal = floorDbPerBin + db10(std::max(rateHz, binHz) / binHz) - 1.76;
+    return noiseTotal - adcQuantFloorDbfs(adcBits);
+}
+
 AdcStats measureAdc(const cf32* x, size_t n, float clipLevel) {
     AdcStats s;
     s.n = n;
@@ -78,10 +86,8 @@ BandResult summariseBand(const HealthBand& b, const Sweep& s, const AdcStats& ad
     r.floorDb = s.floorOverallDb;
     const double bin = s.binHz > 0 ? s.binHz : b.binHz;
     r.densityDbfsHz = r.floorDb - db10(bin);
-    // white noise of power P over the rate shows in one Hann-windowed bin as P * 1.5 / N, a bin being rate / N wide: P = bin power + 10 log10(rate / bin) - 1.76 dB
     r.noiseTotalDbfs = r.floorDb + db10(std::max(s.rateHz, bin) / bin) - 1.76;
-    const double adcFloor = -(6.02 * adcBits + 1.76);   // quantisation noise of a full-scale-limited ADC, complex
-    r.adcMarginDb = r.noiseTotalDbfs - adcFloor;
+    r.adcMarginDb = adcMarginDb(r.floorDb, bin, s.rateHz, adcBits);
     size_t occ = 0;
     for (size_t i = 0; i < s.bins(); i++) {
         r.peakDb = std::max<double>(r.peakDb, s.db[i]);

@@ -377,10 +377,10 @@ Amp	Amp
 LNA	LNA
 VGA	VGA
 AGC	AGC
-Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	Mantém o nível do ADC em uma faixa saudável (cerca de -16 dBFS rms, sem clipping) ajustando LNA, VGA e amp.\nMexer em um controle de ganho o desativa.
+Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off.	Mantém a entrada no melhor ponto de funcionamento para o modo: um bom nível do ADC, o ruído acima do próprio ADC e os vizinhos fortes de fora. Mexe no LNA e no VGA (o amplificador só se o permitir com a roda dentada) e fica quieto enquanto um descodificador estiver sincronizado.\nTocar num controlo de ganho desliga-o.
 Auto-tune	Ajuste automático
 Stop tune	Parar ajuste
-Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Assistente de ganho: testa combinações de LNA/VGA/amp por cerca de 40 s e fica com a de melhor SNR que não sofra clipping.\nPrecisa de um sinal no qual o receptor consiga travar.
+Gain helper: tries LNA/VGA combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to. The amp stays as you set it.	Assistente de ganho: experimenta combinações de LNA/VGA durante cerca de 40 s e guarda a de melhor SNR sem saturar.\nPrecisa de um sinal a que o recetor se consiga sincronizar. O amplificador fica como o definiu.
 gain helper %d/%d ...	assistente de ganho %d/%d ...
 ADC OVERLOAD - %s	SOBRECARGA DO ADC - %s
 AGC is lowering the gain	o AGC está reduzindo o ganho
@@ -2686,3 +2686,23 @@ Watch for these	Vigiar estes
 Lists	Listas
 Watchlists...	Listas de vigilância...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alertas quando aeronaves, navios, indicativos, frequências ou palavras da lista são ouvidos: notificação, som, ntfy, Telegram ou webhook
+# auto gain (AGC): the gear button, the amp switch, what the AGC is doing
+Auto gain	Ganho automático
+AGC settings	Definições do AGC
+Let AGC turn the amp on/off by itself	Deixar o AGC ligar e desligar o amplificador sozinho
+Off by default. With this off the AGC only moves the LNA and VGA and never touches the amp: it stays as you set it. The amp is the first stage and can be damaged by strong signals.	Desativado por predefinição. Com isto desativado, o AGC só mexe no LNA e no VGA e nunca toca no amplificador: fica como o definiu. O amplificador é o primeiro andar e sinais fortes podem danificá-lo.
+This radio has no amp for the AGC to switch.	Este rádio não tem um amplificador que o AGC possa comutar.
+The amp can fry itself on strong signals while on	O amplificador pode queimar com sinais fortes enquanto estiver ligado
+Aims for: %s	Objetivo: %s
+wide channel: ADC headroom	canal largo: margem do ADC
+narrow channel: lowest noise, neighbours kept out	canal estreito: menos ruído, vizinhos afastados
+pulsed signals: peaks decide	sinais pulsados: os picos decidem
+strong stations: front end protected	estações fortes: entrada protegida
+Now: %s	Agora: %s
+cut after an overload	reduzido após uma sobrecarga
+lowering the gain	a baixar o ganho
+raising the gain	a subir o ganho
+strong neighbour: front gain limited	vizinho forte: ganho de entrada limitado
+decoder locked: gain frozen	descodificador sincronizado: ganho fixo
+at the end of the gain range	no fim da gama de ganho
+holding the level	a manter o nível

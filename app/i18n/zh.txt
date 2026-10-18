@@ -390,10 +390,10 @@ Amp	放大器
 LNA	LNA
 VGA	VGA
 AGC	自动增益
-Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	通过调整 LNA、VGA 和放大器，使 ADC 电平保持在合适范围（约 -16 dBFS rms，无削波）。\n手动调节任何增益控件都会关闭它。
+Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off.	让前端保持在该模式的最佳工作点:合适的 ADC 电平、高于 ADC 自身的噪声、把邻近强信号挡在外面。它调整 LNA 和 VGA(只有在你用齿轮按钮允许时才会动放大器),解码器锁定期间保持不动。\n碰一下增益控件就会将其关闭。
 Auto-tune	自动调节
 Stop tune	停止调节
-Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	增益助手：用约 40 秒尝试各种 LNA/VGA/放大器组合，保留信噪比最好且不削波的一组。\n需要一个接收机能锁定的信号。
+Gain helper: tries LNA/VGA combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to. The amp stays as you set it.	增益助手:用约 40 秒尝试 LNA/VGA 组合,保留信噪比最好且不削波的一组。\n需要接收机能锁定的信号。放大器保持你设置的状态。
 gain helper %d/%d ...	增益助手 %d/%d ...
 ADC OVERLOAD - %s	ADC 过载 - %s
 AGC is lowering the gain	自动增益正在降低增益
@@ -2703,3 +2703,23 @@ Watch for these	监视这些
 Lists	列表
 Watchlists...	监视列表...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	当收到列表中的飞机、船舶、呼号、频率或词语时提醒: 通知、声音、ntfy、Telegram 或 Webhook
+# auto gain (AGC): the gear button, the amp switch, what the AGC is doing
+Auto gain	自动增益
+AGC settings	AGC 设置
+Let AGC turn the amp on/off by itself	允许 AGC 自行开关放大器
+Off by default. With this off the AGC only moves the LNA and VGA and never touches the amp: it stays as you set it. The amp is the first stage and can be damaged by strong signals.	默认关闭。关闭时,AGC 只调整 LNA 和 VGA,绝不触碰放大器:它保持你设置的状态。放大器是第一级,强信号可能将其损坏。
+This radio has no amp for the AGC to switch.	这台收音设备没有可供 AGC 切换的放大器。
+The amp can fry itself on strong signals while on	放大器开启时,强信号可能将其烧毁
+Aims for: %s	目标:%s
+wide channel: ADC headroom	宽信道:保留 ADC 余量
+narrow channel: lowest noise, neighbours kept out	窄信道:最低噪声,排除邻近强信号
+pulsed signals: peaks decide	脉冲信号:以峰值为准
+strong stations: front end protected	强电台:保护前端
+Now: %s	当前:%s
+cut after an overload	过载后已降低
+lowering the gain	正在降低增益
+raising the gain	正在提高增益
+strong neighbour: front gain limited	邻近强信号:限制前端增益
+decoder locked: gain frozen	解码器已锁定:增益冻结
+at the end of the gain range	已到增益范围的尽头
+holding the level	保持当前电平

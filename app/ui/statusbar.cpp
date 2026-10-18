@@ -221,7 +221,6 @@ void gainControl(App& a) {
     const DeviceInfo& cd = a.devices[a.devIdx];
     const bool generic = cd.isGeneric();
     const int gmax = generic ? std::max(1, (int)cd.gainMaxDb) : 0;
-    a.agc.setGenericMax(gmax);
     GainSetting g = generic ? genericGain((int)std::lround(a.tune.gainDb), gmax) : GainSetting{a.tune.lnaDb, a.tune.vgaDb, a.tune.ampOn};
     bool changed = false;
     const double now = ImGui::GetTime();
@@ -233,7 +232,7 @@ void gainControl(App& a) {
         if (changed && a.sweep.rf() >= 0) a.tune.radio["rfgr"] = std::to_string(a.sweep.rf());
         if (!a.sweep.active()) a.engine.log("gain helper: " + a.sweep.summary() + (a.sweep.rf() >= 0 ? ", RF state " + std::to_string(a.sweep.rf()) : std::string()));
     } else if (a.agcOn && a.dir.state() != DirectionFinder::State::Measuring) {   // the gain must stay put while a direction is measured
-        changed = a.agc.update(now, a.spec.stats, g);
+        changed = agcStep(a, g);
     }
     if (changed) {
         if (generic) a.tune.gainDb = g.vga; else { a.tune.lnaDb = g.lna; a.tune.vgaDb = g.vga; a.tune.ampOn = g.amp; }
