@@ -2703,3 +2703,49 @@ Watch for these	Hierop letten
 Lists	Lijsten
 Watchlists...	Kijklijsten...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Meldingen als aangewezen vliegtuigen, schepen, roepnamen, frequenties of woorden worden gehoord: melding, geluid, ntfy, Telegram of webhook
+# Meteor scatter
+Copies the pings as CSV: id, UTC time, duration, peak level, Doppler, drift, type, beacon frequency.	Kopieert de pings als CSV: id, UTC-tijd, duur, piekniveau, Doppler, drift, type, bakenfrequentie.
+Log to file	Naar bestand loggen
+Appends every ping to meteor_scatter.csv in the data folder, also when nobody watches the screen.	Voegt elke ping toe aan meteor_scatter.csv in de gegevensmap, ook als niemand naar het scherm kijkt.
+threshold %d dB	drempel %d dB
+How far above its long-term level a spectrum bin must rise to count as an echo. Lower finds weaker pings and more false ones.	Hoeveel een spectrumbin boven zijn langetermijnniveau moet uitkomen om als echo te tellen. Lager vindt zwakkere pings en meer valse.
+start the receiver to see the pings	start de ontvanger om de pings te zien
+No beacon line found. Tune to the beacon (GRAVES: 143.050 MHz) so that it lies within 4 kHz of the centre, with 1 Msps or more.	Geen bakenlijn gevonden. Stem af op het baken (GRAVES: 143,050 MHz) zodat het binnen 4 kHz van het midden ligt, met 1 Msps of meer.
+Doppler	Doppler
+Drift	Drift
+overdense	overdicht
+underdense	onderdicht
+no ping yet: on GRAVES a quiet hour brings a few, a shower peak hundreds	nog geen ping: op GRAVES levert een rustig uur er enkele, een zwermpiek honderden
+shape	vorm
+overdense: long, flat top	overdicht: lang, vlakke top
+underdense: sharp rise, exponential decay	onderdicht: scherpe stijging, exponentiële daling
+start the receiver to see the rates	start de ontvanger om de snelheden te zien
+pings per hour (UTC), the last 24 hours	pings per uur (UTC), de laatste 24 uur
+pings per day (UTC), the last 30 days; showers marked at their peak	pings per dag (UTC), de laatste 30 dagen; zwermen gemarkeerd op hun piek
+meteor showers now and near (peak date, typical hourly rate for an eye observer)	meteorenzwermen nu en dichtbij (pieckdatum, typische uursnelheid voor een waarnemer met het blote oog)
+Shower	Zwerm
+Rate	Snelheid
+today	vandaag
+in %d days	over %d dagen
+%d days ago	%d dagen geleden
+active	actief
+, daytime: best for radio	, overdag: het best voor radio
+not active	niet actief
+start the receiver to see the echoes	start de ontvanger om de echo's te zien
+echoes: +-500 Hz around the beacon line, the last 30 seconds (brighter = stronger over the background)	echo's: +-500 Hz rond de bakenlijn, de laatste 30 seconden (helderder = sterker dan de achtergrond)
+beacon	baken
+ping	ping
+long-term spectrum around the beacon (dB over the noise)	langetermijnspectrum rond het baken (dB boven de ruis)
+Pings	Pings
+Rates	Snelheden
+Echoes	Echo's
+pings	pings
+not found	niet gevonden
+noise	ruis
+detector	detector
+log	log
+The beacon is a fixed transmitter far beyond the horizon: it is heard only when a meteor trail reflects it, as a short echo a few Hz to a few hundred Hz away from the line. Echoes closer than 18 Hz to the line are masked.	Het baken is een vaste zender ver voorbij de horizon: het is alleen te horen als een meteorenspoor het weerkaatst, als een korte echo enkele Hz tot enkele honderden Hz van de lijn. Echo's dichter dan 18 Hz bij de lijn worden gemaskeerd.
+Ping	Ping
+with interference bursts	met stoorpulsen
+The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Het testsignaal is een baken 420 Hz naast het midden met gesimuleerde meteorenechoën: korte onderdichte en enkele lange overdichte.
+Beacon echoes, 143.050 MHz	Bakenechoën, 143,050 MHz

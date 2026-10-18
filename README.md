@@ -87,7 +87,7 @@ OnAir is a receiver first. It can also send test signals through a transmit-capa
 | **Cellular and rail** | 5 | LTE, 5G NR and NB-IoT cells, GSM-R, LBJ |
 | **Pagers** | 3 | POCSAG, FLEX, Multitone |
 | **IoT and sensors** | 12 | ISM sensors, LoRaWAN, Meshtastic, MeshCore, Bluetooth LE, Zigbee, Wi-Fi, Wi-SUN, DECT, ANT+ |
-| **Weather and science** | 6 | Radiosondes, SAME alerts, time signals, ionospheric sounders, radio astronomy |
+| **Weather and science** | 7 | Radiosondes, SAME alerts, time signals, ionospheric sounders, radio astronomy, meteor scatter |
 | **Amateur** | 27 | FT8, FT4, WSPR, JS8Call, RTTY, PSK, SSTV, FreeDV, APRS, LoRa APRS, MeshCom and more |
 | **HF utility** | 4 | ALE, beacons, Datawell buoys, CODAR |
 | **Tools** | 4 | General receiver, spectrum analyser, spectrum explorer, signal workbench; also a gain optimiser, a direction finder, a pass planner and a remote-control API |
@@ -239,6 +239,7 @@ No radio? Open an IQ recording through the *IQ recording file* source (cs8, cu8,
 - **Radiosondes** (400 - 406 MHz and LMS6-1680; tracks and landing prediction), **NOAA Weather Radio SAME** (EAS alert decoder).
 - **Time signals** (DCF77, MSF, WWVB, JJY, WWV / WWVH, BPM, BPC and more; the computer clock can be synced), **e-Czas** (Poland's official time on 225 kHz long wave, from a long-wave capable radio or an upconverter; [how to receive it](docs/eczas.md)) and **Ionospheric sounders** (ionograms from chirp sounders).
 - **Radio astronomy** (21 cm hydrogen line and OH lines).
+- **Meteor scatter** (pings of meteor trails reflecting a distant beacon such as GRAVES on 143.050 MHz: start, duration, peak level, Doppler, rates per hour and day with the showers marked, CSV logging; [details](docs/mscatter.md)).
 
 ### Amateur: digital
 

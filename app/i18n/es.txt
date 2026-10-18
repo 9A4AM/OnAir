@@ -2703,3 +2703,49 @@ Watch for these	Vigilar estos
 Lists	Listas
 Watchlists...	Listas de vigilancia...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alertas cuando se oyen aeronaves, barcos, indicativos, frecuencias o palabras de las listas: notificación, sonido, ntfy, Telegram o webhook
+# Meteor scatter
+Copies the pings as CSV: id, UTC time, duration, peak level, Doppler, drift, type, beacon frequency.	Copia los pings como CSV: id, hora UTC, duración, nivel máximo, Doppler, deriva, tipo, frecuencia de la baliza.
+Log to file	Registrar en archivo
+Appends every ping to meteor_scatter.csv in the data folder, also when nobody watches the screen.	Añade cada ping a meteor_scatter.csv en la carpeta de datos, también cuando nadie mira la pantalla.
+threshold %d dB	umbral %d dB
+How far above its long-term level a spectrum bin must rise to count as an echo. Lower finds weaker pings and more false ones.	Cuánto debe subir un bin del espectro sobre su nivel a largo plazo para contar como eco. Más bajo encuentra pings más débiles y más falsos.
+start the receiver to see the pings	inicie el receptor para ver los pings
+No beacon line found. Tune to the beacon (GRAVES: 143.050 MHz) so that it lies within 4 kHz of the centre, with 1 Msps or more.	No se encontró la línea de la baliza. Sintonice la baliza (GRAVES: 143,050 MHz) para que quede a menos de 4 kHz del centro, con 1 Msps o más.
+Doppler	Doppler
+Drift	Deriva
+overdense	sobredensa
+underdense	subdensa
+no ping yet: on GRAVES a quiet hour brings a few, a shower peak hundreds	aún sin ping: en GRAVES una hora tranquila trae unos pocos, el máximo de una lluvia cientos
+shape	forma
+overdense: long, flat top	sobredensa: larga, cima plana
+underdense: sharp rise, exponential decay	subdensa: subida brusca, caída exponencial
+start the receiver to see the rates	inicie el receptor para ver las tasas
+pings per hour (UTC), the last 24 hours	pings por hora (UTC), las últimas 24 horas
+pings per day (UTC), the last 30 days; showers marked at their peak	pings por día (UTC), los últimos 30 días; lluvias marcadas en su máximo
+meteor showers now and near (peak date, typical hourly rate for an eye observer)	lluvias de meteoros ahora y cercanas (fecha del máximo, tasa horaria típica para un observador visual)
+Shower	Lluvia
+Rate	Tasa
+today	hoy
+in %d days	en %d días
+%d days ago	hace %d días
+active	activa
+, daytime: best for radio	, diurna: la mejor para radio
+not active	no activa
+start the receiver to see the echoes	inicie el receptor para ver los ecos
+echoes: +-500 Hz around the beacon line, the last 30 seconds (brighter = stronger over the background)	ecos: +-500 Hz alrededor de la línea de la baliza, los últimos 30 segundos (más brillante = más fuerte sobre el fondo)
+beacon	baliza
+ping	ping
+long-term spectrum around the beacon (dB over the noise)	espectro a largo plazo alrededor de la baliza (dB sobre el ruido)
+Pings	Pings
+Rates	Tasas
+Echoes	Ecos
+pings	pings
+not found	no encontrada
+noise	ruido
+detector	detector
+log	registro
+The beacon is a fixed transmitter far beyond the horizon: it is heard only when a meteor trail reflects it, as a short echo a few Hz to a few hundred Hz away from the line. Echoes closer than 18 Hz to the line are masked.	La baliza es un transmisor fijo mucho más allá del horizonte: solo se oye cuando una estela de meteoro la refleja, como un eco corto a pocos Hz o unos cientos de Hz de la línea. Los ecos a menos de 18 Hz de la línea se enmascaran.
+Ping	Ping
+with interference bursts	con ráfagas de interferencia
+The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	La señal de prueba es una baliza a 420 Hz del centro con ecos de meteoros simulados: cortos subdensos y algunos largos sobredensos.
+Beacon echoes, 143.050 MHz	Ecos de baliza, 143,050 MHz

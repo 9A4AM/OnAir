@@ -2689,3 +2689,49 @@ Watch for these	Ezek figyelése
 Lists	Listák
 Watchlists...	Figyelőlisták...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Riasztás, ha a listán szereplő repülőt, hajót, hívójelet, frekvenciát vagy szót hallja: értesítés, hang, ntfy, Telegram vagy webhook
+# Meteor scatter
+Copies the pings as CSV: id, UTC time, duration, peak level, Doppler, drift, type, beacon frequency.	A pingeket CSV-ként másolja: azonosító, UTC idő, időtartam, csúcsszint, Doppler, sodródás, típus, jeladó frekvenciája.
+Log to file	Naplózás fájlba
+Appends every ping to meteor_scatter.csv in the data folder, also when nobody watches the screen.	Minden pinget hozzáfűz a meteor_scatter.csv fájlhoz az adatmappában, akkor is, ha senki sem nézi a képernyőt.
+threshold %d dB	küszöb %d dB
+How far above its long-term level a spectrum bin must rise to count as an echo. Lower finds weaker pings and more false ones.	Mennyivel kell egy spektrumsávnak a hosszú távú szintje fölé emelkednie, hogy visszhangnak számítson. Alacsonyabban gyengébb és több téves ping jön.
+start the receiver to see the pings	indítsa el a vevőt a pingek megjelenítéséhez
+No beacon line found. Tune to the beacon (GRAVES: 143.050 MHz) so that it lies within 4 kHz of the centre, with 1 Msps or more.	Nem található jeladóvonal. Hangoljon a jeladóra (GRAVES: 143,050 MHz) úgy, hogy 4 kHz-en belül legyen a középtől, legalább 1 Msps-sel.
+Doppler	Doppler
+Drift	Sodródás
+overdense	túlsűrű
+underdense	alulsűrű
+no ping yet: on GRAVES a quiet hour brings a few, a shower peak hundreds	még nincs ping: a GRAVES-en egy csendes óra párat hoz, egy rajcsúcs százakat
+shape	alak
+overdense: long, flat top	túlsűrű: hosszú, lapos tetejű
+underdense: sharp rise, exponential decay	alulsűrű: meredek felfutás, exponenciális lecsengés
+start the receiver to see the rates	indítsa el a vevőt a gyakoriságok megjelenítéséhez
+pings per hour (UTC), the last 24 hours	ping óránként (UTC), az utolsó 24 óra
+pings per day (UTC), the last 30 days; showers marked at their peak	ping naponta (UTC), az utolsó 30 nap; a rajok a csúcsuknál jelölve
+meteor showers now and near (peak date, typical hourly rate for an eye observer)	hullócsillag-rajok most és a közelben (csúcs dátuma, tipikus óránkénti ráta szemmel figyelőnek)
+Shower	Raj
+Rate	Ráta
+today	ma
+in %d days	%d nap múlva
+%d days ago	%d napja
+active	aktív
+, daytime: best for radio	, nappali: rádióhoz a legjobb
+not active	nem aktív
+start the receiver to see the echoes	indítsa el a vevőt a visszhangok megjelenítéséhez
+echoes: +-500 Hz around the beacon line, the last 30 seconds (brighter = stronger over the background)	visszhangok: +-500 Hz a jeladóvonal körül, az utolsó 30 másodperc (világosabb = erősebb a háttérnél)
+beacon	jeladó
+ping	ping
+long-term spectrum around the beacon (dB over the noise)	hosszú távú spektrum a jeladó körül (dB a zaj fölött)
+Pings	Pingek
+Rates	Ráta
+Echoes	Visszhangok
+pings	ping
+not found	nem található
+noise	zaj
+detector	detektor
+log	napló
+The beacon is a fixed transmitter far beyond the horizon: it is heard only when a meteor trail reflects it, as a short echo a few Hz to a few hundred Hz away from the line. Echoes closer than 18 Hz to the line are masked.	A jeladó a horizonton túli fix adó: csak akkor hallható, ha egy meteornyom visszaveri, rövid visszhangként a vonaltól néhány Hz-re vagy néhány száz Hz-re. A vonaltól 18 Hz-nél közelebbi visszhangokat elfedjük.
+Ping	Ping
+with interference bursts	zavarimpulzusokkal
+The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	A tesztjel egy 420 Hz-re a középtől lévő jeladó szimulált meteorvisszhangokkal: rövid alulsűrűek és néhány hosszú túlsűrű.
+Beacon echoes, 143.050 MHz	Jeladó-visszhangok, 143,050 MHz

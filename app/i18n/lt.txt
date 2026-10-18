@@ -2703,3 +2703,49 @@ Watch for these	Stebėti šiuos
 Lists	Sąrašai
 Watchlists...	Stebėjimo sąrašai...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Pranešimai, kai išgirstami sąraše esantys orlaiviai, laivai, šaukiniai, dažniai ar žodžiai: pranešimas, garsas, ntfy, Telegram arba webhook
+# Meteor scatter
+Copies the pings as CSV: id, UTC time, duration, peak level, Doppler, drift, type, beacon frequency.	Nukopijuoja pingus kaip CSV: ID, UTC laikas, trukmė, piko lygis, Doplerio poslinkis, dreifas, tipas, švyturio dažnis.
+Log to file	Registruoti į failą
+Appends every ping to meteor_scatter.csv in the data folder, also when nobody watches the screen.	Prideda kiekvieną pingą prie meteor_scatter.csv duomenų aplanke, net kai niekas nežiūri į ekraną.
+threshold %d dB	slenkstis %d dB
+How far above its long-term level a spectrum bin must rise to count as an echo. Lower finds weaker pings and more false ones.	Kiek spektro rodiklis turi pakilti virš savo ilgalaikio lygio, kad būtų laikomas aidu. Žemesnis randa silpnesnius pingus ir daugiau klaidingų.
+start the receiver to see the pings	paleiskite imtuvą, kad matytumėte pingus
+No beacon line found. Tune to the beacon (GRAVES: 143.050 MHz) so that it lies within 4 kHz of the centre, with 1 Msps or more.	Švyturio linija nerasta. Sureguliuokite į švyturį (GRAVES: 143,050 MHz), kad jis būtų per 4 kHz nuo centro, su 1 Msps ar daugiau.
+Doppler	Doplerio poslinkis
+Drift	Dreifas
+overdense	tankus
+underdense	retas
+no ping yet: on GRAVES a quiet hour brings a few, a shower peak hundreds	pingų dar nėra: GRAVES tylią valandą duoda kelis, meteorų lietaus pikas šimtus
+shape	forma
+overdense: long, flat top	tankus: ilgas, plokščia viršūne
+underdense: sharp rise, exponential decay	retas: staigus kilimas, eksponentinis slopimas
+start the receiver to see the rates	paleiskite imtuvą, kad matytumėte dažnius
+pings per hour (UTC), the last 24 hours	pingai per valandą (UTC), paskutinės 24 valandos
+pings per day (UTC), the last 30 days; showers marked at their peak	pingai per dieną (UTC), paskutinės 30 dienų; lietūs pažymėti piko dieną
+meteor showers now and near (peak date, typical hourly rate for an eye observer)	meteorų lietūs dabar ir netoli (piko data, tipinis valandinis dažnis stebėtojui plika akimi)
+Shower	Lietus
+Rate	Dažnis
+today	šiandien
+in %d days	po %d d.
+%d days ago	prieš %d d.
+active	aktyvus
+, daytime: best for radio	, dieną: geriausias radijui
+not active	neaktyvus
+start the receiver to see the echoes	paleiskite imtuvą, kad matytumėte aidus
+echoes: +-500 Hz around the beacon line, the last 30 seconds (brighter = stronger over the background)	aidai: +-500 Hz aplink švyturio liniją, paskutinės 30 sekundžių (šviesiau = stipriau už foną)
+beacon	švyturys
+ping	pingas
+long-term spectrum around the beacon (dB over the noise)	ilgalaikis spektras aplink švyturį (dB virš triukšmo)
+Pings	Pingai
+Rates	Dažniai
+Echoes	Aidai
+pings	pingai
+not found	nerastas
+noise	triukšmas
+detector	detektorius
+log	žurnalas
+The beacon is a fixed transmitter far beyond the horizon: it is heard only when a meteor trail reflects it, as a short echo a few Hz to a few hundred Hz away from the line. Echoes closer than 18 Hz to the line are masked.	Švyturys yra nejudantis siųstuvas toli už horizonto: jis girdimas tik tada, kai jį atspindi meteoro pėdsakas, kaip trumpas aidas keli Hz ar keli šimtai Hz nuo linijos. Aidai arčiau nei 18 Hz nuo linijos užmaskuojami.
+Ping	Pingas
+with interference bursts	su trukdžių impulsais
+The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Bandomasis signalas yra švyturys 420 Hz nuo centro su imituotais meteorų aidais: trumpais retais ir keliais ilgais tankiais.
+Beacon echoes, 143.050 MHz	Švyturio aidai, 143,050 MHz

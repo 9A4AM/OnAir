@@ -2686,3 +2686,49 @@ Watch for these	Следить за этими
 Lists	Списки
 Watchlists...	Списки наблюдения...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Оповещения, когда принимаются перечисленные самолёты, суда, позывные, частоты или слова: уведомление, звук, ntfy, Telegram или вебхук
+# Meteor scatter
+Copies the pings as CSV: id, UTC time, duration, peak level, Doppler, drift, type, beacon frequency.	Копирует пинги в формате CSV: id, время UTC, длительность, пиковый уровень, Доплер, дрейф, тип, частота маяка.
+Log to file	Писать в файл
+Appends every ping to meteor_scatter.csv in the data folder, also when nobody watches the screen.	Дописывает каждый пинг в meteor_scatter.csv в папке данных, даже когда никто не смотрит на экран.
+threshold %d dB	порог %d дБ
+How far above its long-term level a spectrum bin must rise to count as an echo. Lower finds weaker pings and more false ones.	На сколько бин спектра должен превысить свой долгосрочный уровень, чтобы считаться эхом. Ниже находит более слабые пинги и больше ложных.
+start the receiver to see the pings	запустите приёмник, чтобы увидеть пинги
+No beacon line found. Tune to the beacon (GRAVES: 143.050 MHz) so that it lies within 4 kHz of the centre, with 1 Msps or more.	Линия маяка не найдена. Настройтесь на маяк (GRAVES: 143,050 МГц) так, чтобы он был в пределах 4 кГц от центра, при 1 Msps и более.
+Doppler	Доплер
+Drift	Дрейф
+overdense	сверхплотный
+underdense	недоплотный
+no ping yet: on GRAVES a quiet hour brings a few, a shower peak hundreds	пингов пока нет: на GRAVES тихий час даёт несколько, пик потока сотни
+shape	форма
+overdense: long, flat top	сверхплотный: долгий, плоская вершина
+underdense: sharp rise, exponential decay	недоплотный: резкий рост, экспоненциальный спад
+start the receiver to see the rates	запустите приёмник, чтобы увидеть частоту
+pings per hour (UTC), the last 24 hours	пингов в час (UTC), последние 24 часа
+pings per day (UTC), the last 30 days; showers marked at their peak	пингов в сутки (UTC), последние 30 суток; потоки отмечены в максимуме
+meteor showers now and near (peak date, typical hourly rate for an eye observer)	метеорные потоки сейчас и рядом (дата максимума, типичная часовая частота для наблюдателя невооружённым глазом)
+Shower	Поток
+Rate	Частота
+today	сегодня
+in %d days	через %d дн.
+%d days ago	%d дн. назад
+active	активен
+, daytime: best for radio	, дневной: лучший для радио
+not active	неактивен
+start the receiver to see the echoes	запустите приёмник, чтобы увидеть эхо
+echoes: +-500 Hz around the beacon line, the last 30 seconds (brighter = stronger over the background)	эхо: +-500 Гц вокруг линии маяка, последние 30 секунд (ярче = сильнее фона)
+beacon	маяк
+ping	пинг
+long-term spectrum around the beacon (dB over the noise)	долгосрочный спектр вокруг маяка (дБ над шумом)
+Pings	Пинги
+Rates	Частота
+Echoes	Эхо
+pings	пинги
+not found	не найден
+noise	шум
+detector	детектор
+log	журнал
+The beacon is a fixed transmitter far beyond the horizon: it is heard only when a meteor trail reflects it, as a short echo a few Hz to a few hundred Hz away from the line. Echoes closer than 18 Hz to the line are masked.	Маяк - неподвижный передатчик далеко за горизонтом: его слышно, только когда его отражает метеорный след, как короткое эхо в нескольких Гц или сотнях Гц от линии. Эхо ближе 18 Гц к линии маскируется.
+Ping	Пинг
+with interference bursts	с импульсными помехами
+The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Тестовый сигнал - маяк на 420 Гц от центра с имитацией метеорного эха: короткие недоплотные и несколько долгих сверхплотных.
+Beacon echoes, 143.050 MHz	Эхо маяка, 143,050 МГц

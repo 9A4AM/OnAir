@@ -2703,3 +2703,49 @@ Watch for these	Obserwuj te
 Lists	Listy
 Watchlists...	Listy obserwowanych...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alerty, gdy odebrane zostaną wymienione samoloty, statki, znaki wywoławcze, częstotliwości lub słowa: powiadomienie, dźwięk, ntfy, Telegram lub webhook
+# Meteor scatter
+Copies the pings as CSV: id, UTC time, duration, peak level, Doppler, drift, type, beacon frequency.	Kopiuje pingi jako CSV: id, czas UTC, czas trwania, poziom szczytowy, Doppler, dryf, typ, częstotliwość nadajnika.
+Log to file	Zapisuj do pliku
+Appends every ping to meteor_scatter.csv in the data folder, also when nobody watches the screen.	Dopisuje każdy ping do meteor_scatter.csv w folderze danych, także gdy nikt nie patrzy na ekran.
+threshold %d dB	próg %d dB
+How far above its long-term level a spectrum bin must rise to count as an echo. Lower finds weaker pings and more false ones.	O ile prążek widma musi przekroczyć swój poziom długoterminowy, by liczyć się jako echo. Niżej wykrywa słabsze pingi i więcej fałszywych.
+start the receiver to see the pings	uruchom odbiornik, aby zobaczyć pingi
+No beacon line found. Tune to the beacon (GRAVES: 143.050 MHz) so that it lies within 4 kHz of the centre, with 1 Msps or more.	Nie znaleziono linii nadajnika. Dostrój do nadajnika (GRAVES: 143,050 MHz), aby leżał w granicach 4 kHz od środka, przy 1 Msps lub więcej.
+Doppler	Doppler
+Drift	Dryf
+overdense	nadgęsty
+underdense	podgęsty
+no ping yet: on GRAVES a quiet hour brings a few, a shower peak hundreds	jeszcze brak pingów: na GRAVES spokojna godzina daje kilka, szczyt roju setki
+shape	kształt
+overdense: long, flat top	nadgęsty: długi, płaski szczyt
+underdense: sharp rise, exponential decay	podgęsty: ostry wzrost, wykładniczy zanik
+start the receiver to see the rates	uruchom odbiornik, aby zobaczyć częstość
+pings per hour (UTC), the last 24 hours	pingi na godzinę (UTC), ostatnie 24 godziny
+pings per day (UTC), the last 30 days; showers marked at their peak	pingi na dobę (UTC), ostatnie 30 dni; roje oznaczone w szczycie
+meteor showers now and near (peak date, typical hourly rate for an eye observer)	roje meteorów teraz i w pobliżu (data szczytu, typowa liczba na godzinę dla obserwatora gołym okiem)
+Shower	Rój
+Rate	Częstość
+today	dziś
+in %d days	za %d dni
+%d days ago	%d dni temu
+active	aktywny
+, daytime: best for radio	, dzienny: najlepszy dla radia
+not active	nieaktywny
+start the receiver to see the echoes	uruchom odbiornik, aby zobaczyć echa
+echoes: +-500 Hz around the beacon line, the last 30 seconds (brighter = stronger over the background)	echa: +-500 Hz wokół linii nadajnika, ostatnie 30 sekund (jaśniej = silniej niż tło)
+beacon	nadajnik
+ping	ping
+long-term spectrum around the beacon (dB over the noise)	widmo długoterminowe wokół nadajnika (dB nad szumem)
+Pings	Pingi
+Rates	Częstość
+Echoes	Echa
+pings	pingi
+not found	nie znaleziono
+noise	szum
+detector	detektor
+log	dziennik
+The beacon is a fixed transmitter far beyond the horizon: it is heard only when a meteor trail reflects it, as a short echo a few Hz to a few hundred Hz away from the line. Echoes closer than 18 Hz to the line are masked.	Nadajnik jest stały i leży daleko za horyzontem: słychać go tylko wtedy, gdy odbije go ślad meteoru, jako krótkie echo kilka Hz do kilkuset Hz od linii. Echa bliżej niż 18 Hz od linii są maskowane.
+Ping	Ping
+with interference bursts	z impulsami zakłóceń
+The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Sygnał testowy to nadajnik 420 Hz od środka z symulowanymi echami meteorów: krótkimi podgęstymi i kilkoma długimi nadgęstymi.
+Beacon echoes, 143.050 MHz	Echa nadajnika, 143,050 MHz
