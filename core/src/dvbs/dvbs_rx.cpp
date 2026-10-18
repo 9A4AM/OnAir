@@ -1,6 +1,7 @@
 // DVB-S/S2 receiver, see dvbs_rx.h.
 #include "dect2/dvbs/dvbs_rx.h"
 #include "dect2/dvbs/dvbs_s2.h"
+#include "dect2/dvbs/dvbs_ip.h"
 #include "dvbs_carrier.h"
 #include "dvbs_front.h"
 #include "dvbs_s1.h"
@@ -111,6 +112,12 @@ struct DvbsReceiver::Impl {
     std::mutex cbMu;
     std::function<void(const std::string&)> logCb;
     std::function<void(const uint8_t*, size_t, double)> pktCb;
+    // IP data: GSE from the BBFRAMEs (here), MPE and ULE from the transport stream (feedTs); one sink for the statistics and the PCAP file
+    std::mutex ipMu;
+    dvbsip::GseIp gse;
+    dvbsip::IpSink ipSink;
+    uint64_t gseFields = 0, gseIpPackets = 0;
+    std::string pcapPath;
 
     // ---- state of the receiver thread
     double fs = 0;
@@ -303,6 +310,15 @@ struct DvbsReceiver::Impl {
         s2.setPlCode(plCode.load());
         s2.setIsi(isiSel.load());
         s2.setBlocking(blocking.load());
+        s2.setDataFieldCallback([this](const uint8_t* bb, size_t n, int mod, int rate, bool sh, int) {
+            std::vector<dvbsip::IpPacket> pk;
+            const double now = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
+            std::lock_guard<std::mutex> lk(ipMu);
+            gse.setModcod(mod * 1000 + rate * 2 + (sh ? 1 : 0));
+            gseFields++;
+            gse.bbframe(bb, n, pk);
+            for (const auto& q : pk) { gseIpPackets++; ipSink.push(q.data.data(), q.data.size(), now); }
+        });
         s2.setPacketCallback([this](const uint8_t* p, size_t np, double secs) {
             std::function<void(const uint8_t*, size_t, double)> cb;
             { std::lock_guard<std::mutex> lk(cbMu); cb = pktCb; }
@@ -419,6 +435,61 @@ struct DvbsReceiver::Impl {
         if (np > bad && !tsLockFlag.exchange(true)) { lockSinceInput = inputCount.load(); log("transport stream lock"); }
     }
 
+    // ------------------------------------------------------------------------ IP data
+    static std::string modcodText(int code) {
+        const int mod = code / 1000, rest = code % 1000, rate = rest / 2;
+        return std::string(s2ModNameFor(mod, rate)) + " " + s2RateName(rate) + ((rest & 1) ? " short" : "");
+    }
+    void fillIp(DvbsIpTel& o) {
+        using namespace dvbsip;
+        std::lock_guard<std::mutex> lk(ipMu);
+        o.gseFields = gseFields;
+        o.packets = ipSink.stats.packets; o.bytes = ipSink.stats.bytes; o.ipv4 = ipSink.stats.ipv4; o.ipv6 = ipSink.stats.ipv6;
+        o.fragments = ipSink.frag.fragments; o.reassembled = ipSink.frag.reassembled;
+        o.active = o.packets > 0;
+        const int src = gse.source();
+        if (src == 1) o.source = std::string("GSE (") + gse.reports()[(size_t)gse.chosen()].variant.label() + ")";
+        else if (src == 2) o.source = "GSE (blind search for IPv4)";
+        else if (gseFields > 0) o.source = std::string("GSE, no IP found (") + kVariants[0].label() + " reading)";
+        auto top = [](const std::map<uint16_t, uint64_t>& m, std::vector<std::pair<std::string, uint64_t>>& out, size_t n) {
+            std::vector<std::pair<uint16_t, uint64_t>> v(m.begin(), m.end());
+            std::sort(v.begin(), v.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
+            for (size_t i = 0; i < v.size() && i < n; i++) out.push_back({std::to_string(v[i].first), v[i].second});
+        };
+        top(ipSink.stats.udpPorts, o.udpPorts, 12); top(ipSink.stats.tcpPorts, o.tcpPorts, 12);
+        std::vector<std::pair<uint8_t, uint64_t>> pr(ipSink.stats.protocols.begin(), ipSink.stats.protocols.end());
+        std::sort(pr.begin(), pr.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
+        for (const auto& q : pr) o.protocols.push_back({std::string(protocolName(q.first)) + (std::string(protocolName(q.first)) == "other" ? " " + std::to_string(q.first) : std::string()), q.second});
+        for (const Flow& f : ipSink.stats.topFlows(40)) {
+            DvbsIpFlow d;
+            d.src = addrString(f.key.src, f.key.v6); d.dst = addrString(f.key.dst, f.key.v6); d.protocol = protocolName(f.key.protocol);
+            if (f.key.sport || f.key.dport) { d.sport = f.key.sport; d.dport = f.key.dport; }
+            d.packets = f.packets; d.bytes = f.bytes; d.encrypted = f.encrypted();
+            o.flows.push_back(d);
+        }
+        o.flowCount = ipSink.stats.flowCount(); o.encryptedFlows = ipSink.stats.encryptedFlows();
+        for (const auto& q : gse.otherProtocols()) { char b[16]; snprintf(b, sizeof b, "%04X", q.first); o.otherPdus.push_back({b, q.second}); }
+        std::sort(o.otherPdus.begin(), o.otherPdus.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
+        o.otherEntropy = gse.otherEntropy(); o.otherEncrypted = gse.otherEncrypted();
+        std::vector<std::pair<Label, const LabelStats*>> lv;
+        for (const auto& l : gse.labels()) lv.push_back({l.first, &l.second});
+        o.labelCount = lv.size();
+        std::sort(lv.begin(), lv.end(), [](const auto& a, const auto& b) { return a.second->bytes > b.second->bytes; });
+        for (size_t i = 0; i < lv.size() && i < 40; i++) {
+            DvbsIpLabel d;
+            d.label = lv[i].first.text(); d.pdus = lv[i].second->pdus; d.bytes = lv[i].second->bytes; d.ip = lv[i].second->ip;
+            for (size_t k = 0; k < lv[i].second->addrs.size(); k++) d.addrs.push_back(addrString(lv[i].second->addrs[k], lv[i].second->addrV6[k]));
+            uint64_t tot = 0;
+            for (const auto& m : lv[i].second->modcods) tot += m.second;
+            std::vector<std::pair<int, uint64_t>> mv(lv[i].second->modcods.begin(), lv[i].second->modcods.end());
+            std::sort(mv.begin(), mv.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
+            for (size_t k = 0; k < mv.size() && k < 4; k++) { char b[64]; snprintf(b, sizeof b, "%s%.0f %%", k ? ", " : "", 100.0 * (double)mv[k].second / (double)std::max<uint64_t>(1, tot)); d.modcods += modcodText(mv[k].first) + " " + b; }
+            o.labels.push_back(std::move(d));
+        }
+        o.pcapPath = ipSink.pcap.isOpen() ? ipSink.pcap.path : std::string();
+        o.pcapPackets = ipSink.pcap.packets; o.pcapBytes = ipSink.pcap.bytes;
+    }
+
     // ------------------------------------------------------------------------ telemetry
     void publish() {
         DvbsTelemetry t;
@@ -495,6 +566,7 @@ struct DvbsReceiver::Impl {
                                                      : "S2X frames with the reserved PLS code " + std::to_string(c) + " seen: not decoded";
             }
             { std::lock_guard<std::mutex> lk(cellMu); s2.cells(cells); }
+            fillIp(t.ip);
         } else if (mode == kHunt) {
             t.snrDb = specRes.valid ? specRes.snrDb : 0;
         } else {
@@ -562,6 +634,22 @@ void DvbsReceiver::setSymbolRate(double hz) { if (hz != p_->manualRs.load()) { p
 void DvbsReceiver::setStandardHint(int s) { if (s != p_->stdHint.load()) { p_->stdHint = s; p_->restartReq = true; } }
 void DvbsReceiver::setRollOff(double r) { if (r != p_->rollHint.load()) { p_->rollHint = r; p_->restartReq = true; } }
 void DvbsReceiver::setIsi(int isi) { p_->isiSel = isi; }
+void DvbsReceiver::setIpPcap(const std::string& path) {
+    std::lock_guard<std::mutex> lk(p_->ipMu);
+    p_->ipSink.pcap.close();
+    if (!path.empty()) p_->ipSink.pcap.open(path);
+}
+void DvbsReceiver::feedTs(const uint8_t*, size_t) {}   // MPE and ULE: see the next chunk
+void DvbsReceiver::clearIp() {
+    std::lock_guard<std::mutex> lk(p_->ipMu);
+    const bool pc = p_->ipSink.pcap.isOpen();
+    const std::string path = p_->ipSink.pcap.path;
+    p_->gse = dvbsip::GseIp();
+    p_->ipSink.stats.clear();
+    p_->ipSink.frag = dvbsip::Reassembler();
+    p_->gseFields = p_->gseIpPackets = 0;
+    if (pc) p_->ipSink.pcap.open(path);
+}
 void DvbsReceiver::setPlScrambling(int n) { p_->plCode = n; }
 void DvbsReceiver::setComputeMode(int m) { p_->computeMode = m; p_->s2.setComputeMode(m); p_->s1Compute.mode = m; }
 void DvbsReceiver::setBlocking(bool b) { p_->blocking = b; }

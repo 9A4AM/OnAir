@@ -8,6 +8,35 @@
 
 namespace dect2 {
 
+// IP data carried by the signal (GSE, and MPE or ULE in the transport stream): see dvbs_ip.h. Only headers, counts and addresses: never payload.
+struct DvbsIpFlow {
+    std::string src, dst, protocol;
+    int sport = -1, dport = -1;
+    uint64_t packets = 0, bytes = 0;
+    bool encrypted = false;          // the headers are good but the UDP checksums fail: the payload was changed in transit (link encryption); not decoded
+};
+struct DvbsIpLabel {                 // a GSE label: a terminal's address on an outbound
+    std::string label;
+    uint64_t pdus = 0, bytes = 0, ip = 0;
+    std::vector<std::string> addrs;
+    std::string modcods;             // "QPSK 5/6 41 %, 16APSK 3/4 59 %": where the bytes went (the terminal's link as the hub sees it)
+};
+struct DvbsIpTel {
+    bool active = false;             // IP packets are being decoded
+    std::string source;              // "GSE (standard)", "GSE (length incl. header)", "GSE blind search", "MPE", "ULE", ... (several joined)
+    uint64_t gseFields = 0, packets = 0, bytes = 0, ipv4 = 0, ipv6 = 0, fragments = 0, reassembled = 0, mpePackets = 0, ulePackets = 0;
+    std::vector<std::pair<std::string, uint64_t>> protocols, udpPorts, tcpPorts;   // by name or port, most packets first
+    std::vector<DvbsIpFlow> flows;   // the biggest, by bytes
+    size_t flowCount = 0, encryptedFlows = 0;
+    std::vector<std::pair<std::string, uint64_t>> otherPdus;   // non-IP GSE PDUs by protocol type
+    double otherEntropy = -1;        // bits per byte of those (negative: not judged yet)
+    bool otherEncrypted = false;     // they read as random bytes: ciphertext, not decoded
+    std::vector<DvbsIpLabel> labels; // the busiest GSE labels
+    size_t labelCount = 0;
+    std::string pcapPath;            // the PCAP file being written ("" none)
+    uint64_t pcapPackets = 0, pcapBytes = 0;
+};
+
 struct DvbsTelemetry {
     // ---- the part every mode has: the engine copies it into RxTelemetry; keep these members and what they mean
     uint64_t seq = 0;            // grows with every report and never restarts (not even after reset())
@@ -73,6 +102,7 @@ struct DvbsTelemetry {
     double psdSpanHz = 0;                    // the width psdDb covers
     double carrierLoHz = 0, carrierHiHz = 0; // the -3 dB edges of the carrier in the spectrum, relative to the centre (0, 0 when not found)
     std::vector<float> merHistory;           // MER of the last frames or blocks of symbols, oldest first
+    DvbsIpTel ip;                            // IP data in the stream
 };
 
 // One line for the command line and the log

@@ -113,6 +113,7 @@ struct S2Rx::Impl {
 
     std::mutex cbMu;
     std::function<void(const uint8_t*, size_t, double)> pktCb;
+    std::function<void(const uint8_t*, size_t, int, int, bool, int)> dataCb;
     std::function<void(const std::string&)> logCb;
     void log(const std::string& s) { std::function<void(const std::string&)> cb; { std::lock_guard<std::mutex> lk(cbMu); cb = logCb; } if (cb) cb(s); }
 
@@ -1199,7 +1200,19 @@ struct S2Rx::Impl {
             { std::lock_guard<std::mutex> lk(statMu); st.isi = sel; }
             if (h.isi != sel) { std::lock_guard<std::mutex> lk(statMu); st.otherIsi++; return; }
         } else { std::lock_guard<std::mutex> lk(statMu); st.isi = -1; }
-        if (h.tsGs != 3) { std::lock_guard<std::mutex> lk(statMu); st.gseFrames++; haveCarry = false; carry.clear(); return; }
+        if (h.tsGs != 3) {
+            { std::lock_guard<std::mutex> lk(statMu); st.gseFrames++; haveCarry = false; carry.clear(); }
+            std::function<void(const uint8_t*, size_t, int, int, bool, int)> dcb;
+            { std::lock_guard<std::mutex> lk(cbMu); dcb = dataCb; }
+            const int dd = r.kbch ? r.kbch : s2Dims(r.mod, r.rate, r.sh).kbch;
+            if (dcb && h.dfl >= 0 && h.dfl <= dd - 80) {
+                const size_t nb = (size_t)h.dfl / 8;
+                std::vector<uint8_t> bf(10 + nb);
+                for (size_t i = 0; i < 10 + nb; i++) { unsigned c = 0; for (int b = 0; b < 8; b++) c = (c << 1) | r.bb[i * 8 + (size_t)b]; bf[i] = (uint8_t)c; }
+                dcb(bf.data(), bf.size(), r.mod, r.rate, r.sh, h.tsGs);
+            }
+            return;
+        }
         const int d = r.kbch ? r.kbch : s2Dims(r.mod, r.rate, r.sh).kbch;
         if (h.dfl > d - 80 || h.dfl < 0) { std::lock_guard<std::mutex> lk(statMu); st.bbHeaderBad++; return; }
         // the data field as bytes
@@ -1252,6 +1265,7 @@ struct S2Rx::Impl {
 S2Rx::S2Rx() : p_(std::make_unique<Impl>(*this)) {}
 S2Rx::~S2Rx() { p_->th.stop(); p_->stopWorkers(); }
 
+void S2Rx::setDataFieldCallback(std::function<void(const uint8_t*, size_t, int, int, bool, int)> cb) { std::lock_guard<std::mutex> lk(p_->cbMu); p_->dataCb = std::move(cb); }
 void S2Rx::setPacketCallback(std::function<void(const uint8_t*, size_t, double)> cb) { std::lock_guard<std::mutex> lk(p_->cbMu); p_->pktCb = std::move(cb); }
 void S2Rx::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->cbMu); p_->logCb = std::move(cb); }
 

@@ -118,3 +118,4 @@ Chercheur	-	bug report	SoapyRemote on Windows	area:Network radios	discord
 Shadowman	-	bug report	Found the squawk JSON bug	ADS-B	discord
 Jamiar	-	bug report	Squelch recording bug, with a test clip	area:Interface	discord
 Mikki / YRPÄ	-	bug report	LTE band 31	Cell towers	discord
+Arclamp (CasualArclamp)	https://github.com/CasualArclamp	idea	DecSAT, a satellite receiver: its published description of PCM/PSK/PM satellite beacons (bi-phase data on a subcarrier, IRIG 106 and CCSDS sync words, the minor frame counter) identified the format of the recorded beacon, and its table of published Ku-band beacons is used to estimate the satellite; reference for the DVB-S work	TV sat beacon decoder	commit:cc7a56e1, commit:e235347b

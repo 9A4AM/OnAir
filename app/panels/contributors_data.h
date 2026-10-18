@@ -15,6 +15,7 @@ inline constexpr ContribEntry kContribs[] = {
     {"andriux26", "https://github.com/andriux26", "pull request", "Editable TLE source list, Keplerpass download", "area:Satellite passes", "commit:fb4a52aa, commit:4b277a93"},
     {"andriux26", "https://github.com/andriux26", "translation", "Lithuanian network radio dialog", "area:Languages", "commit:992e89fc"},
     {"ar8001", "https://github.com/ar8001", "bug report", "DVB-T/T2 not locked on Airspy Mini", "DVB", "#163"},
+    {"Arclamp (CasualArclamp)", "https://github.com/CasualArclamp", "idea", "DecSAT, a satellite receiver: its published description of PCM/PSK/PM satellite beacons (bi-phase data on a subcarrier, IRIG 106 and CCSDS sync words, the minor frame counter) identified the format of the recorded beacon, and its table of published Ku-band beacons is used to estimate the satellite; reference for the DVB-S work", "TV sat beacon decoder", "commit:cc7a56e1, commit:e235347b"},
     {"Axpelle", "https://github.com/Axpelle", "bug report", "NAVTEX, airband range and weak WEFAX reports", "NAVTEX; Airband; Weather fax", "#25, #42, #52, #103"},
     {"bithunter-99", "https://github.com/bithunter-99", "idea", "DECT receiver", "DECT cordless phones", "#94"},
     {"BSDnux", "https://github.com/BSDnux", "idea", "List of analogue and MAC TV systems", "MAC; Analog TV", "#15, #73"},

@@ -271,6 +271,95 @@ void panels(App& a) {
 
 // ---------------------------------------------------------------------------------------------- Receiver tab
 
+// ---------------------------------------------------------------------------------------------- IP data (GSE, MPE, ULE)
+// What the IP traffic of the signal looks like: hosts, ports, protocols, volume, the terminals of an ACM outbound. Payloads are never shown or decoded; a flow whose
+// UDP checksums fail and PDUs that read as random bytes are marked as encrypted. Optionally every IP packet is written to a PCAP file (link type RAW).
+bool g_ipPcapOn = false;
+std::string g_ipSaved;
+
+void ipSection(App& a, const DvbsTelemetry& t) {
+    const DvbsIpTel& ip = t.ip;
+    if (!ip.active && ip.gseFields == 0 && t.gseFrames == 0) return;
+    ImGui::Spacing();
+    ImGui::TextColored(pal::accent(), "IP DATA");
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextColored(pal::warnAmber(), "Satellite IP links can carry other people's private traffic. You are responsible for what the law where you live allows you to receive and keep. "
+                                        "Nothing encrypted or scrambled is decoded here, and payloads are never shown: only addresses, ports, protocols and counts.");
+    ImGui::PopTextWrapPos();
+    char b[200];
+    snprintf(b, sizeof b, "%s  |  %llu packets, %.1f MB  (IPv4 %llu, IPv6 %llu)  |  %llu GSE data fields%s", ip.source.empty() ? "no IP found yet" : ip.source.c_str(), (unsigned long long)ip.packets, (double)ip.bytes / 1e6,
+             (unsigned long long)ip.ipv4, (unsigned long long)ip.ipv6, (unsigned long long)ip.gseFields, ip.reassembled ? ("  |  " + std::to_string(ip.reassembled) + " IPv4 datagrams reassembled").c_str() : "");
+    ImGui::TextUnformatted(b);
+    bool on = g_ipPcapOn;
+    if (ImGui::Checkbox("Write a PCAP file", &on)) {
+        g_ipPcapOn = on;
+        a.engine.dvbs().setIpPcap(on ? plat::dataDir() + "/dvbs_ip.pcap" : std::string());
+        g_ipSaved = on ? plat::dataDir() + "/dvbs_ip.pcap" : std::string();
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Every IP packet found is appended to dvbs_ip.pcap in the data folder (libpcap, link type RAW), also with this window hidden. Open it in Wireshark.");
+    ImGui::SameLine();
+    if (ImGui::Button("Clear")) a.engine.dvbs().clearIp();
+    if (!ip.pcapPath.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s  %llu packets, %.1f MB", ip.pcapPath.c_str(), (unsigned long long)ip.pcapPackets, (double)ip.pcapBytes / 1e6); }
+    if (!ip.protocols.empty()) {
+        std::string l = "protocols: ";
+        for (size_t i = 0; i < ip.protocols.size() && i < 8; i++) l += (i ? ", " : "") + ip.protocols[i].first + " " + std::to_string(ip.protocols[i].second);
+        ImGui::TextDisabled("%s", l.c_str());
+    }
+    auto ports = [&](const char* nm, const std::vector<std::pair<std::string, uint64_t>>& v) {
+        if (v.empty()) return;
+        std::string l = std::string(nm) + " destination ports: ";
+        for (size_t i = 0; i < v.size() && i < 8; i++) l += (i ? ", " : "") + v[i].first + " (" + std::to_string(v[i].second) + ")";
+        ImGui::TextDisabled("%s", l.c_str());
+    };
+    ports("UDP", ip.udpPorts); ports("TCP", ip.tcpPorts);
+    if (ip.encryptedFlows) ImGui::TextColored(pal::warnAmber(), "%zu of %zu flows have good headers but failing UDP checksums: encrypted in transit, not decoded.", ip.encryptedFlows, ip.flowCount);
+    if (!ip.otherPdus.empty()) {
+        std::string l = "other GSE PDUs by protocol type: ";
+        for (size_t i = 0; i < ip.otherPdus.size() && i < 6; i++) l += (i ? ", " : "") + ip.otherPdus[i].first + "h x" + std::to_string(ip.otherPdus[i].second);
+        ImGui::TextDisabled("%s", l.c_str());
+        if (ip.otherEntropy >= 0) {
+            if (ip.otherEncrypted) ImGui::TextColored(pal::warnAmber(), "They read as random bytes (%.2f bits per byte): link encryption, not decoded.", ip.otherEntropy);
+            else ImGui::TextDisabled("%.2f bits per byte: a format, not ciphertext.", ip.otherEntropy);
+        }
+    }
+    if (!ip.flows.empty() && ImGui::BeginTable("##dvbsipflows", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX, ImVec2(0, 160 * gUi))) {
+        ImGui::TableSetupScrollFreeze(0, 1);
+        ImGui::TableSetupColumn("source"); ImGui::TableSetupColumn("destination"); ImGui::TableSetupColumn("proto"); ImGui::TableSetupColumn("packets"); ImGui::TableSetupColumn("bytes"); ImGui::TableSetupColumn("");
+        ImGui::TableHeadersRow();
+        ImGui::PushFont(a.mono, 0);
+        for (const auto& f : ip.flows) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); if (f.sport >= 0) ImGui::Text("%s:%d", f.src.c_str(), f.sport); else ImGui::TextUnformatted(f.src.c_str());
+            ImGui::TableNextColumn(); if (f.dport >= 0) ImGui::Text("%s:%d", f.dst.c_str(), f.dport); else ImGui::TextUnformatted(f.dst.c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(f.protocol.c_str());
+            ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)f.packets);
+            ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)f.bytes);
+            ImGui::TableNextColumn(); if (f.encrypted) ImGui::TextColored(pal::warnAmber(), "encrypted");
+        }
+        ImGui::PopFont();
+        ImGui::EndTable();
+    }
+    if (!ip.labels.empty()) {
+        ImGui::TextDisabled("GSE labels (terminals of an outbound): %zu, with the MODCODs each is sent in", ip.labelCount);
+        if (ImGui::BeginTable("##dvbsiplabels", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX, ImVec2(0, 140 * gUi))) {
+            ImGui::TableSetupScrollFreeze(0, 1);
+            ImGui::TableSetupColumn("label"); ImGui::TableSetupColumn("PDUs"); ImGui::TableSetupColumn("bytes"); ImGui::TableSetupColumn("addresses"); ImGui::TableSetupColumn("MODCODs");
+            ImGui::TableHeadersRow();
+            ImGui::PushFont(a.mono, 0);
+            for (const auto& l : ip.labels) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::TextUnformatted(l.label.c_str());
+                ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)l.pdus);
+                ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)l.bytes);
+                ImGui::TableNextColumn(); { std::string s; for (size_t i = 0; i < l.addrs.size(); i++) s += (i ? ", " : "") + l.addrs[i]; ImGui::TextUnformatted(s.c_str()); }
+                ImGui::TableNextColumn(); ImGui::TextUnformatted(l.modcods.c_str());
+            }
+            ImGui::PopFont();
+            ImGui::EndTable();
+        }
+    }
+}
+
 void receiver(App& a) {
     const DvbsTelemetry& t = a.rx.dvbs;
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
@@ -366,6 +455,7 @@ void receiver(App& a) {
         for (size_t i = 0; i < rows; i++) { ImGui::TableNextRow(); cell(L, i); cell(R, i); }
         ImGui::EndTable();
     }
+    ipSection(a, t);
     ImGui::Spacing();
     ImGui::TextColored(pal::accent(), "NOTES");
     ImGui::PushTextWrapPos(0);

@@ -54,6 +54,8 @@ public:
     void setBlocking(bool b) { blocking_ = b; }
     void setComputeMode(int m);                    // 0 CPU, 1 GPU, 2 auto: where the LDPC decoder runs
     void setPacketCallback(std::function<void(const uint8_t*, size_t, double)> cb);
+    // BBFRAMEs that carry a generic stream (GSE): the BBHEADER (10 bytes) and the data field as bytes, the frame's MODCOD parts (modulation, code rate, short frame) and TS/GS
+    void setDataFieldCallback(std::function<void(const uint8_t* bbframe, size_t n, int mod, int rate, bool shortFrame, int tsGs)> cb);
     void setLogCallback(std::function<void(const std::string&)> cb);
     // Starts at the header the hunt found in `win` (n symbols; copied). The frame work runs on a thread of its own: start() and push() only queue symbols
     // (push() drops a block when the thread is far behind, unless setBlocking(true)). The first thing the thread does is the frequency search over the

@@ -114,6 +114,15 @@ private:
         h.ccm = !c_.vcm; h.npd = c_.npd; h.upl = upBits; h.dfl = dfl;
         h.syncd = upBitPos_ == 0 ? 0 : upBits - upBitPos_;
         if (h.syncd >= dfl) h.syncd = 65535;
+        if (c_.gseField) {
+            h.tsGs = 1; h.upl = 0; h.syncd = 0; h.npd = false;
+            std::vector<uint8_t> f = c_.gseField((size_t)dfl / 8);
+            f.resize((size_t)dfl / 8, 0);
+            s2BuildBbHeader(h, bb.data());
+            for (int i = 0; i < dfl; i++) bb[80 + (size_t)i] = (f[(size_t)i >> 3] >> (7 - (i & 7))) & 1;
+            s2BbScramble(bb.data(), kbch);
+            return;
+        }
         s2BuildBbHeader(h, bb.data());
         for (int i = 0; i < dfl; i++) {
             if (cur_.empty()) { nextUp(cur_); upBitPos_ = 0; }

@@ -36,6 +36,11 @@ public:
     void setPlScrambling(int n);                         // DVB-S2 physical layer scrambling code, -1 = 0 (the default for broadcast)
     void setComputeMode(int mode);                       // 0 CPU, 1 GPU, 2 auto: where LDPC (DVB-S2) and Viterbi (DVB-S) run; the output is the same
     void setBlocking(bool blocking);                     // recordings: wait for the decoder threads instead of dropping frames when behind
+    // IP data (GSE here; MPE and ULE through feedTs): the PCAP file to write every IP packet to ("" off), and a restart of the statistics
+    void setIpPcap(const std::string& path);
+    void clearIp();
+    // transport stream packets of the stream being received, for MPE and ULE (the engine hands them over where it hands them to the TS analysis)
+    void feedTs(const uint8_t* packets, size_t nPackets);
     void flush();                                        // waits until everything fed so far is decoded and delivered (recordings, tests; not for the engine)
 
 private:

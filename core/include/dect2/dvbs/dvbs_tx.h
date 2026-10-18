@@ -27,6 +27,9 @@ struct DvbsTxConfig {
                                     // and 11/45 spreading 2, 6..8 BPSK 1/5 4/15 1/3 short; see dvbs_vlsnr.h); mod, rate and pilots are not used then
     int vlDummyEvery = 0;           // VL-SNR: a dummy PLFRAME after this many data frames (0 = never)
     int vlScrShift = 0;             // VL-SNR: where the scrambling sequence starts, 0 = it counts from the end of the PLS header, -900 = from the end of the VL-SNR header
+    // S2: the BBFRAMEs carry a generic continuous stream (GSE) instead of a transport stream: the data field comes from `gseField(bytes)` (zero padded, which
+    // reads as GSE padding), TS/GS = 01, no user packets
+    std::function<std::vector<uint8_t>(size_t bytes)> gseField;
     bool npd = false;               // S2: delete null packets from the transport stream and send the count in the DNP byte (clause 5.1.3, annex D.3)
 };
 

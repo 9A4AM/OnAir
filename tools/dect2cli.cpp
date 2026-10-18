@@ -46,7 +46,7 @@ static const auto gT0 = std::chrono::steady_clock::now();
 static double secsSinceStart() { return std::chrono::duration<double>(std::chrono::steady_clock::now() - gT0).count(); }
 
 int main(int argc, char** argv) {
-    std::string msLog, sbLog;
+    std::string msLog, sbLog, ipPcap;
     dect2::crash::install("crash-cli");   // a crash leaves crash-cli.txt next to the log
     if (!dect2::cpuSupportsBuild()) { fprintf(stderr, "this build needs a processor with AVX2 and FMA\n"); return 1; }
     Engine e;
@@ -97,6 +97,7 @@ int main(int argc, char** argv) {
         else if (a == "--bw") tune.bandwidthMhz = atof(next());
         else if (a == "--autobw") autoBw = true;
         else if (a == "--secs") secs = atof(next());
+        else if (a == "--ip-pcap") ipPcap = next();   // DVB-S2 with IP data (GSE): write every IP packet to this PCAP file (link type RAW)
         else if (a == "--sb-log") sbLog = next();   // with --standard satbeacon: append the carrier measurements and the frames to this CSV file
         else if (a == "--ms-log") msLog = next();   // with --standard mscatter: append every ping to this CSV file
         else if (a == "--play") playSid = atoi(next());
@@ -222,6 +223,7 @@ int main(int argc, char** argv) {
     e.general().setSilent(true);  // general receiver: no sound from the command line
     e.wifi().clearNetworks();     // Wi-Fi networks: no sound; the network table is printed with each line
     e.flarm().clearResults();
+    if (!ipPcap.empty()) e.dvbs().setIpPcap(ipPcap);
     if (!sbLog.empty()) e.satbeacon().setLogFile(sbLog);   // satellite beacon: carrier measurements and frames as CSV
     if (!msLog.empty()) e.mscatter().setLogFile(msLog);   // meteor scatter: the pings are appended to a CSV file
     e.hfbeacon().setSilent(true);   // HF beacons: no sound in the command line
@@ -362,6 +364,8 @@ int main(int argc, char** argv) {
                 for (const DjiTrack& k : t.dji.tracks)
                     printf("  dji: %-24s %6.2f MHz wide at %+7.2f MHz  %d bursts  period %.2f ms  duty %.0f%%  OFDM %.2f  confidence %.0f%%\n", djiClassName(k.cls).c_str(), k.bwMhz, k.offsetHz / 1e6, k.bursts, k.periodMs, k.duty * 100, k.ofdm, k.conf * 100);
             }
+            if (t.standard == 7 && t.dvbs.ip.active)   // DVB-S/S2 with IP data: the traffic
+                printf("  ip: %s, %llu packets, %.1f MB, %zu flows, %zu labels%s\n", t.dvbs.ip.source.c_str(), (unsigned long long)t.dvbs.ip.packets, (double)t.dvbs.ip.bytes / 1e6, t.dvbs.ip.flowCount, t.dvbs.ip.labelCount, t.dvbs.ip.otherEncrypted ? ", non-IP PDUs encrypted" : "");
             if (t.standard == 73)   // CODAR / HF ocean radar: the radars heard
                 for (const auto& s : t.codar.stations)
                     printf("  codar: #%d %9.4f MHz %6.1f kHz %s %7.1f kHz/s period %.2f s %5.1f dB %llu sweeps %s%s\n", s.id, s.centreMhz, s.bwKhz, s.dir > 0 ? "up  " : "down", s.rateKhzS, s.periodSec, s.snrDb,
