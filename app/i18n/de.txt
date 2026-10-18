@@ -2912,3 +2912,30 @@ Names that do not fit are left out. Zoom in to see more of them.	Namen, die nich
 Names of the stations and channels on the spectrum: choose which sources are shown	Namen der Sender und Kanäle im Spektrum: Wähle, welche Quellen angezeigt werden
 Click to tune here	Klicken, um hier abzustimmen
 Click to tune here and open its mode	Klicken, um hier abzustimmen und den Modus zu öffnen
+Coastlines	Küstenlinien
+Borders	Grenzen
+Mosaic	Mosaik
+Histogram	Histogramm
+Crop to view	Auf Ansicht zuschneiden
+Clear crop	Zuschnitt löschen
+Save GeoTIFF...	GeoTIFF speichern...
+Add to mosaic	Zum Mosaik hinzufügen
+Clear mosaic	Mosaik leeren
+S-curve (contrast)	S-Kurve (Kontrast)
+Lift shadows	Schatten aufhellen
+Cloud detail (flat bright end)	Wolkendetails (flaches helles Ende)
+Night infrared	Nachtinfrarot
+No palette	Keine Palette
+Thermal	Thermisch
+Rainbow	Regenbogen
+Enhanced infrared	Verstärktes Infrarot
+Sepia	Sepia
+Tone curve applied after the gamma	Tonwertkurve, die nach dem Gamma angewendet wird
+Colour palette on the brightness of the picture, for infrared and other single-channel pictures	Farbpalette auf der Helligkeit des Bildes, für Infrarot und andere Einkanalbilder
+Simplified coastlines drawn into the map (good to about 50 - 100 km, not a survey)	Vereinfachte Küstenlinien in der Karte (auf etwa 50 - 100 km genau, keine Vermessung)
+A few of the longest country borders, simplified	Einige der längsten Ländergrenzen, vereinfacht
+Zoom to the part you want, then crop: saving and mosaic use only the part inside the yellow frame	Auf den gewünschten Ausschnitt zoomen, dann zuschneiden: Speichern und Mosaik verwenden nur den Teil im gelben Rahmen
+The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not reach) for GIS programs	Die Karte als GeoTIFF (WGS 84, ohne Überlagerungen, transparent wo der Überflug nicht reichte) für GIS-Programme
+Keep this projected pass to stitch with others in the Mosaic view	Diesen projizierten Überflug behalten, um ihn in der Mosaik-Ansicht mit anderen zusammenzufügen
+Stitch several projected passes into one map	Mehrere projizierte Überflüge zu einer Karte zusammenfügen
+The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	Das Mosaik ist leer. Öffne einen Überflug mit Karte, schalte Kartenprojektion ein und drücke Zum Mosaik hinzufügen. Mehrere Überflüge werden zu einer Karte zusammengefügt.

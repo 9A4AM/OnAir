@@ -2912,3 +2912,30 @@ Names that do not fit are left out. Zoom in to see more of them.	放不下的名
 Names of the stations and channels on the spectrum: choose which sources are shown	频谱上的电台和频道名称：选择显示哪些来源
 Click to tune here	点击以调谐到此处
 Click to tune here and open its mode	点击以调谐到此处并打开其模式
+Coastlines	海岸线
+Borders	国界
+Mosaic	拼接图
+Histogram	直方图
+Crop to view	裁剪到当前视图
+Clear crop	清除裁剪
+Save GeoTIFF...	保存 GeoTIFF...
+Add to mosaic	添加到拼接图
+Clear mosaic	清空拼接图
+S-curve (contrast)	S 曲线(对比度)
+Lift shadows	提亮阴影
+Cloud detail (flat bright end)	云层细节(平坦的亮端)
+Night infrared	夜间红外
+No palette	无色板
+Thermal	热力
+Rainbow	彩虹
+Enhanced infrared	增强红外
+Sepia	棕褐色
+Tone curve applied after the gamma	在伽马之后应用的色调曲线
+Colour palette on the brightness of the picture, for infrared and other single-channel pictures	按图像亮度应用的色板,适用于红外和其他单通道图像
+Simplified coastlines drawn into the map (good to about 50 - 100 km, not a survey)	绘制在地图上的简化海岸线(精度约 50 - 100 公里,不是测绘)
+A few of the longest country borders, simplified	若干最长国界,已简化
+Zoom to the part you want, then crop: saving and mosaic use only the part inside the yellow frame	放大到想要的部分后再裁剪:保存和拼接图只使用黄色框内的部分
+The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not reach) for GIS programs	地图保存为 GeoTIFF(WGS 84,无叠加层,过境未覆盖处透明),供 GIS 程序使用
+Keep this projected pass to stitch with others in the Mosaic view	保留这次已投影的过境,以便在拼接图视图中与其他过境拼接
+Stitch several projected passes into one map	把多次已投影的过境拼接成一张地图
+The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	拼接图为空。打开带地图的过境,开启地图投影并点击“添加到拼接图”。多次过境会被拼接成一张地图。

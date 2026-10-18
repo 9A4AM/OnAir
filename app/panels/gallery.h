@@ -33,6 +33,7 @@ void setPassContext(const std::string& sat, double aos, double maxElDeg, double 
 
 }  // namespace gallery
 
+void galleryDev(int mode);    // dev: --images-dev 1 | 2 (see gallery_ui.cpp)
 void galleryWindow(App& a);   // gallery_ui.cpp: the window (a.galleryOpen), every frame
 // passes_ui.cpp: the listed satellite whose name contains nameContains that is highest above the receiver at unixSec (null: none, no TLEs)
 const dect2::Sgp4* passesFindSat(const std::string& nameContains, double unixSec, std::string* name = nullptr);

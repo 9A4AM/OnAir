@@ -2912,3 +2912,30 @@ Names that do not fit are left out. Zoom in to see more of them.	Les noms qui ne
 Names of the stations and channels on the spectrum: choose which sources are shown	Noms des stations et des canaux sur le spectre : choisissez les sources affichées
 Click to tune here	Cliquer pour s'accorder ici
 Click to tune here and open its mode	Cliquer pour s'accorder ici et ouvrir son mode
+Coastlines	Côtes
+Borders	Frontières
+Mosaic	Mosaïque
+Histogram	Histogramme
+Crop to view	Recadrer sur la vue
+Clear crop	Annuler le recadrage
+Save GeoTIFF...	Enregistrer en GeoTIFF...
+Add to mosaic	Ajouter à la mosaïque
+Clear mosaic	Vider la mosaïque
+S-curve (contrast)	Courbe en S (contraste)
+Lift shadows	Éclaircir les ombres
+Cloud detail (flat bright end)	Détail des nuages (fin claire aplatie)
+Night infrared	Infrarouge de nuit
+No palette	Sans palette
+Thermal	Thermique
+Rainbow	Arc-en-ciel
+Enhanced infrared	Infrarouge rehaussé
+Sepia	Sépia
+Tone curve applied after the gamma	Courbe des tons appliquée après le gamma
+Colour palette on the brightness of the picture, for infrared and other single-channel pictures	Palette de couleurs sur la luminosité de l'image, pour l'infrarouge et les autres images à un seul canal
+Simplified coastlines drawn into the map (good to about 50 - 100 km, not a survey)	Côtes simplifiées tracées sur la carte (précises à 50 - 100 km environ, ce n'est pas un relevé)
+A few of the longest country borders, simplified	Quelques-unes des plus longues frontières, simplifiées
+Zoom to the part you want, then crop: saving and mosaic use only the part inside the yellow frame	Zoomez sur la partie voulue, puis recadrez : l'enregistrement et la mosaïque n'utilisent que ce qui est dans le cadre jaune
+The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not reach) for GIS programs	La carte en GeoTIFF (WGS 84, sans surcouches, transparente là où le passage n'a pas couvert) pour les logiciels SIG
+Keep this projected pass to stitch with others in the Mosaic view	Garder ce passage projeté pour l'assembler avec d'autres dans la vue Mosaïque
+Stitch several projected passes into one map	Assembler plusieurs passages projetés en une seule carte
+The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	La mosaïque est vide. Ouvrez un passage avec carte, activez la projection de la carte et appuyez sur Ajouter à la mosaïque. Plusieurs passages sont assemblés en une seule carte.

@@ -2912,3 +2912,30 @@ Names that do not fit are left out. Zoom in to see more of them.	Namen die niet 
 Names of the stations and channels on the spectrum: choose which sources are shown	Namen van zenders en kanalen op het spectrum: kies welke bronnen worden getoond
 Click to tune here	Klik om hier af te stemmen
 Click to tune here and open its mode	Klik om hier af te stemmen en de modus te openen
+Coastlines	Kustlijnen
+Borders	Grenzen
+Mosaic	Mozaïek
+Histogram	Histogram
+Crop to view	Bijsnijden tot weergave
+Clear crop	Bijsnijden wissen
+Save GeoTIFF...	GeoTIFF opslaan...
+Add to mosaic	Aan mozaïek toevoegen
+Clear mosaic	Mozaïek leegmaken
+S-curve (contrast)	S-curve (contrast)
+Lift shadows	Schaduwen opheffen
+Cloud detail (flat bright end)	Wolkendetail (vlak helder einde)
+Night infrared	Nacht-infrarood
+No palette	Geen palet
+Thermal	Thermisch
+Rainbow	Regenboog
+Enhanced infrared	Versterkt infrarood
+Sepia	Sepia
+Tone curve applied after the gamma	Tooncurve die na de gamma wordt toegepast
+Colour palette on the brightness of the picture, for infrared and other single-channel pictures	Kleurenpalet op de helderheid van het beeld, voor infrarood en andere eenkanaalsbeelden
+Simplified coastlines drawn into the map (good to about 50 - 100 km, not a survey)	Vereenvoudigde kustlijnen in de kaart getekend (nauwkeurig tot ongeveer 50 - 100 km, geen landmeting)
+A few of the longest country borders, simplified	Enkele van de langste landsgrenzen, vereenvoudigd
+Zoom to the part you want, then crop: saving and mosaic use only the part inside the yellow frame	Zoom in op het gewenste deel en snijd dan bij: opslaan en mozaïek gebruiken alleen het deel binnen het gele kader
+The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not reach) for GIS programs	De kaart als GeoTIFF (WGS 84, zonder overlays, doorzichtig waar de overpass niet kwam) voor GIS-programma's
+Keep this projected pass to stitch with others in the Mosaic view	Bewaar deze geprojecteerde overpass om hem in de mozaïekweergave met andere samen te voegen
+Stitch several projected passes into one map	Meerdere geprojecteerde overpasses samenvoegen tot één kaart
+The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	Het mozaïek is leeg. Open een overpass met kaart, zet kaartprojectie aan en druk op Aan mozaïek toevoegen. Meerdere overpasses worden samengevoegd tot één kaart.

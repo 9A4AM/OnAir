@@ -88,6 +88,7 @@ void parseDevFlags(App& app, int argc, char** argv, DevOpts& o) {
         if (std::string(argv[i]) == "--passive-radar") app.passiveRadarOpen = true;
         if (std::string(argv[i]) == "--rfi") app.rfiOpen = true;
         if (std::string(argv[i]) == "--images") app.galleryOpen = true;   // dev: open View > Images
+        if (std::string(argv[i]) == "--images-dev" && i + 1 < argc) { app.galleryOpen = true; galleryDev(atoi(argv[++i])); }   // dev: Images with a studio view (1 map + histogram, 2 mosaic)
         if (std::string(argv[i]) == "--hamlib") app.hamlibAddOpen = true;   // dev: open the Add Hamlib rig window
         if (std::string(argv[i]) == "--map") app.mapOpen = true;   // dev: open View > Map
         if (std::string(argv[i]) == "--memory-selftest") o.memSelfTest = true;

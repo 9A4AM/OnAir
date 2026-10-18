@@ -2912,3 +2912,30 @@ Names that do not fit are left out. Zoom in to see more of them.	Los nombres que
 Names of the stations and channels on the spectrum: choose which sources are shown	Nombres de emisoras y canales en el espectro: elige qué fuentes se muestran
 Click to tune here	Clic para sintonizar aquí
 Click to tune here and open its mode	Clic para sintonizar aquí y abrir su modo
+Coastlines	Costas
+Borders	Fronteras
+Mosaic	Mosaico
+Histogram	Histograma
+Crop to view	Recortar a la vista
+Clear crop	Quitar recorte
+Save GeoTIFF...	Guardar GeoTIFF...
+Add to mosaic	Añadir al mosaico
+Clear mosaic	Vaciar mosaico
+S-curve (contrast)	Curva en S (contraste)
+Lift shadows	Aclarar sombras
+Cloud detail (flat bright end)	Detalle de nubes (extremo claro plano)
+Night infrared	Infrarrojo nocturno
+No palette	Sin paleta
+Thermal	Térmica
+Rainbow	Arcoíris
+Enhanced infrared	Infrarrojo realzado
+Sepia	Sepia
+Tone curve applied after the gamma	Curva tonal aplicada después del gamma
+Colour palette on the brightness of the picture, for infrared and other single-channel pictures	Paleta de color sobre el brillo de la imagen, para infrarrojo y otras imágenes de un solo canal
+Simplified coastlines drawn into the map (good to about 50 - 100 km, not a survey)	Costas simplificadas dibujadas en el mapa (precisión de unos 50 - 100 km, no es un levantamiento)
+A few of the longest country borders, simplified	Algunas de las fronteras más largas, simplificadas
+Zoom to the part you want, then crop: saving and mosaic use only the part inside the yellow frame	Haz zoom en la parte que quieres y recorta: guardar y el mosaico usan solo lo que queda dentro del marco amarillo
+The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not reach) for GIS programs	El mapa como GeoTIFF (WGS 84, sin superposiciones, transparente donde el paso no llegó) para programas SIG
+Keep this projected pass to stitch with others in the Mosaic view	Conserva este paso proyectado para unirlo con otros en la vista Mosaico
+Stitch several projected passes into one map	Unir varios pasos proyectados en un solo mapa
+The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	El mosaico está vacío. Abre un paso con mapa, activa la proyección del mapa y pulsa Añadir al mosaico. Varios pasos se unen en un solo mapa.

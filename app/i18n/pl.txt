@@ -2912,3 +2912,30 @@ Names that do not fit are left out. Zoom in to see more of them.	Nazwy, które s
 Names of the stations and channels on the spectrum: choose which sources are shown	Nazwy stacji i kanałów na widmie: wybierz, które źródła są pokazywane
 Click to tune here	Kliknij, aby tu nastroić
 Click to tune here and open its mode	Kliknij, aby tu nastroić i otworzyć tryb
+Coastlines	Linie brzegowe
+Borders	Granice
+Mosaic	Mozaika
+Histogram	Histogram
+Crop to view	Przytnij do widoku
+Clear crop	Usuń przycięcie
+Save GeoTIFF...	Zapisz GeoTIFF...
+Add to mosaic	Dodaj do mozaiki
+Clear mosaic	Wyczyść mozaikę
+S-curve (contrast)	Krzywa S (kontrast)
+Lift shadows	Rozjaśnij cienie
+Cloud detail (flat bright end)	Szczegóły chmur (płaski jasny koniec)
+Night infrared	Nocna podczerwień
+No palette	Bez palety
+Thermal	Termiczna
+Rainbow	Tęcza
+Enhanced infrared	Wzmocniona podczerwień
+Sepia	Sepia
+Tone curve applied after the gamma	Krzywa tonalna stosowana po gamma
+Colour palette on the brightness of the picture, for infrared and other single-channel pictures	Paleta kolorów na jasności obrazu, dla podczerwieni i innych obrazów jednokanałowych
+Simplified coastlines drawn into the map (good to about 50 - 100 km, not a survey)	Uproszczone linie brzegowe narysowane na mapie (dokładność ok. 50 - 100 km, to nie pomiar)
+A few of the longest country borders, simplified	Kilka najdłuższych granic państw, uproszczone
+Zoom to the part you want, then crop: saving and mosaic use only the part inside the yellow frame	Powiększ potrzebną część i przytnij: zapis i mozaika używają tylko tego, co jest w żółtej ramce
+The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not reach) for GIS programs	Mapa jako GeoTIFF (WGS 84, bez nakładek, przezroczysta tam, gdzie przelot nie sięgał) dla programów GIS
+Keep this projected pass to stitch with others in the Mosaic view	Zachowaj ten zrzutowany przelot, aby połączyć go z innymi w widoku Mozaika
+Stitch several projected passes into one map	Połącz kilka zrzutowanych przelotów w jedną mapę
+The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	Mozaika jest pusta. Otwórz przelot z mapą, włącz projekcję mapy i naciśnij Dodaj do mozaiki. Kilka przelotów łączy się w jedną mapę.

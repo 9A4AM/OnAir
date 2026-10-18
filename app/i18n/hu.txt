@@ -2898,3 +2898,30 @@ Names that do not fit are left out. Zoom in to see more of them.	A nem elférő 
 Names of the stations and channels on the spectrum: choose which sources are shown	Adók és csatornák nevei a spektrumon: válaszd ki, mely források jelenjenek meg
 Click to tune here	Kattints a ráhangoláshoz
 Click to tune here and open its mode	Kattints a ráhangoláshoz és a mód megnyitásához
+Coastlines	Partvonalak
+Borders	Határok
+Mosaic	Mozaik
+Histogram	Hisztogram
+Crop to view	Vágás a nézetre
+Clear crop	Vágás törlése
+Save GeoTIFF...	GeoTIFF mentése...
+Add to mosaic	Hozzáadás a mozaikhoz
+Clear mosaic	Mozaik törlése
+S-curve (contrast)	S-görbe (kontraszt)
+Lift shadows	Árnyékok világosítása
+Cloud detail (flat bright end)	Felhőrészletek (lapos világos vég)
+Night infrared	Éjszakai infravörös
+No palette	Nincs paletta
+Thermal	Hő
+Rainbow	Szivárvány
+Enhanced infrared	Kiemelt infravörös
+Sepia	Szépia
+Tone curve applied after the gamma	A gamma után alkalmazott tónusgörbe
+Colour palette on the brightness of the picture, for infrared and other single-channel pictures	Színpaletta a kép fényességén, infravörösre és más egycsatornás képekre
+Simplified coastlines drawn into the map (good to about 50 - 100 km, not a survey)	Egyszerűsített partvonalak a térképen (kb. 50 - 100 km pontos, nem felmérés)
+A few of the longest country borders, simplified	Néhány leghosszabb országhatár, egyszerűsítve
+Zoom to the part you want, then crop: saving and mosaic use only the part inside the yellow frame	Nagyíts a kívánt részre, majd vágd: a mentés és a mozaik csak a sárga kereten belüli részt használja
+The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not reach) for GIS programs	A térkép GeoTIFF-ként (WGS 84, rárajzolások nélkül, átlátszó ahol az átvonulás nem ért el) GIS programokhoz
+Keep this projected pass to stitch with others in the Mosaic view	Tartsd meg ezt a vetített átvonulást, hogy a Mozaik nézetben másokkal összefűzd
+Stitch several projected passes into one map	Több vetített átvonulás összefűzése egy térképpé
+The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	A mozaik üres. Nyiss meg egy térképes átvonulást, kapcsold be a térképvetítést, és nyomd meg a Hozzáadás a mozaikhoz gombot. Több átvonulás egy térképpé fűződik össze.
