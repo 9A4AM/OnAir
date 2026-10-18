@@ -3189,3 +3189,8 @@ Ping	Ping
 with interference bursts	含干扰脉冲
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	测试信号是偏离中心 420 Hz 的信标,带有模拟流星回波:短的欠密回波和少量长的过密回波。
 Beacon echoes, 143.050 MHz	信标回波,143.050 MHz
+# Mode A/C
+Codes	代码
+start the receiver to see the codes	启动接收机以查看代码
+Squawk and altitude, 1090 MHz	应答机编码与高度，1090 MHz
+Mode A is the squawk, Mode C the altitude in 100 ft steps. A reply does not say which of the two it is: a code shows as A/C until it can only be a squawk or is matched to a Mode S aircraft by its squawk or its altitude.	A 模式是应答机编码（squawk），C 模式是以 100 英尺为步进的高度。应答本身不会说明是哪一种：代码显示为 A/C，直到它只可能是应答机编码，或按编码或高度与某架 Mode S 飞机匹配。

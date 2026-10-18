@@ -3189,3 +3189,8 @@ Ping	Ping
 with interference bursts	met stoorpulsen
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Het testsignaal is een baken 420 Hz naast het midden met gesimuleerde meteorenechoën: korte onderdichte en enkele lange overdichte.
 Beacon echoes, 143.050 MHz	Bakenechoën, 143,050 MHz
+# Mode A/C
+Codes	Codes
+start the receiver to see the codes	start de ontvanger om de codes te zien
+Squawk and altitude, 1090 MHz	Squawk en hoogte, 1090 MHz
+Mode A is the squawk, Mode C the altitude in 100 ft steps. A reply does not say which of the two it is: a code shows as A/C until it can only be a squawk or is matched to a Mode S aircraft by its squawk or its altitude.	Mode A is de squawk, mode C de hoogte in stappen van 100 ft. Een antwoord zegt niet welke van de twee het is: een code verschijnt als A/C totdat het alleen een squawk kan zijn of via squawk of hoogte aan een Mode S-vliegtuig is gekoppeld.

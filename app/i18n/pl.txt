@@ -3189,3 +3189,8 @@ Ping	Ping
 with interference bursts	z impulsami zakłóceń
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Sygnał testowy to nadajnik 420 Hz od środka z symulowanymi echami meteorów: krótkimi podgęstymi i kilkoma długimi nadgęstymi.
 Beacon echoes, 143.050 MHz	Echa nadajnika, 143,050 MHz
+# Mode A/C
+Codes	Kody
+start the receiver to see the codes	uruchom odbiornik, aby zobaczyć kody
+Squawk and altitude, 1090 MHz	Squawk i wysokość, 1090 MHz
+Mode A is the squawk, Mode C the altitude in 100 ft steps. A reply does not say which of the two it is: a code shows as A/C until it can only be a squawk or is matched to a Mode S aircraft by its squawk or its altitude.	Tryb A to squawk, tryb C to wysokość w krokach co 100 ft. Odpowiedź nie mówi, którym z nich jest: kod widnieje jako A/C, dopóki może być tylko squawkiem lub dopóki nie zostanie powiązany z samolotem Mode S po squawku albo wysokości.

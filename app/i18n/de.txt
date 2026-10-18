@@ -3189,3 +3189,8 @@ Ping	Ping
 with interference bursts	mit Störimpulsen
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Das Testsignal ist eine Bake 420 Hz neben der Mitte mit simulierten Meteorechos: kurze unterdichte und einige lange überdichte.
 Beacon echoes, 143.050 MHz	Bakenechos, 143,050 MHz
+# Mode A/C
+Codes	Codes
+start the receiver to see the codes	Empfänger starten, um die Codes zu sehen
+Squawk and altitude, 1090 MHz	Squawk und Höhe, 1090 MHz
+Mode A is the squawk, Mode C the altitude in 100 ft steps. A reply does not say which of the two it is: a code shows as A/C until it can only be a squawk or is matched to a Mode S aircraft by its squawk or its altitude.	Mode A ist der Squawk, Mode C die Höhe in 100-ft-Schritten. Eine Antwort verrät nicht, welches von beiden sie ist: ein Code erscheint als A/C, bis er nur ein Squawk sein kann oder über Squawk oder Höhe einem Mode-S-Flugzeug zugeordnet wird.

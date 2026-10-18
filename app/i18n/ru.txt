@@ -3172,3 +3172,8 @@ Ping	Пинг
 with interference bursts	с импульсными помехами
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Тестовый сигнал - маяк на 420 Гц от центра с имитацией метеорного эха: короткие недоплотные и несколько долгих сверхплотных.
 Beacon echoes, 143.050 MHz	Эхо маяка, 143,050 МГц
+# Mode A/C
+Codes	Коды
+start the receiver to see the codes	запустите приёмник, чтобы увидеть коды
+Squawk and altitude, 1090 MHz	Сквок и высота, 1090 МГц
+Mode A is the squawk, Mode C the altitude in 100 ft steps. A reply does not say which of the two it is: a code shows as A/C until it can only be a squawk or is matched to a Mode S aircraft by its squawk or its altitude.	Режим A — это сквок, режим C — высота с шагом 100 футов. Ответ не говорит, какой из двух это: код показывается как A/C, пока он не может быть только сквоком или не сопоставлен с самолётом Mode S по сквоку или высоте.

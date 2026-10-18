@@ -109,6 +109,7 @@ tones	--mode tones	Overview|Tones|Receiver|History
 sarsat	--mode sarsat	Overview|Beacons|Receiver|History
 mt63	--mode mt63	Overview|MT63|Receiver|History
 mscatter	--mode mscatter	Overview|Meteors|Receiver|History
+modeac	--mode modeac	Overview|Replies|Receiver|History
 nbiot	--mode nbiot	Overview|NB-IoT|Receiver|History
 codar	--mode codar	Overview|Radar|Receiver|History
 wb	--mode wb	Overview|Workbench|Receiver|History

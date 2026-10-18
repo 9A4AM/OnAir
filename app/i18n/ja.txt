@@ -3189,3 +3189,8 @@ Ping	ピング
 with interference bursts	干渉バースト付き
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	テスト信号は中心から420 Hz離れたビーコンと模擬流星エコーです。短い低密のものと、いくつかの長い過密のものを含みます。
 Beacon echoes, 143.050 MHz	ビーコンエコー、143.050 MHz
+# Mode A/C
+Codes	コード
+start the receiver to see the codes	受信機を起動するとコードが表示されます
+Squawk and altitude, 1090 MHz	スコーク（スクォーク）と高度、1090 MHz
+Mode A is the squawk, Mode C the altitude in 100 ft steps. A reply does not say which of the two it is: a code shows as A/C until it can only be a squawk or is matched to a Mode S aircraft by its squawk or its altitude.	モードAはスコーク、モードCは100フィート刻みの高度です。応答だけではどちらか分かりません。スコークにしかなり得ない場合や、スコークまたは高度でモードS機に対応付けられるまでは、コードはA/Cと表示されます。

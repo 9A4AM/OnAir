@@ -3172,3 +3172,8 @@ Ping	Ping
 with interference bursts	con raffiche di disturbo
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Il segnale di prova è un faro a 420 Hz dal centro con echi meteorici simulati: brevi sottodensi e alcuni lunghi sovradensi.
 Beacon echoes, 143.050 MHz	Echi del faro, 143,050 MHz
+# Mode A/C
+Codes	Codici
+start the receiver to see the codes	avvia il ricevitore per vedere i codici
+Squawk and altitude, 1090 MHz	Squawk e quota, 1090 MHz
+Mode A is the squawk, Mode C the altitude in 100 ft steps. A reply does not say which of the two it is: a code shows as A/C until it can only be a squawk or is matched to a Mode S aircraft by its squawk or its altitude.	Il modo A è lo squawk, il modo C la quota a passi di 100 ft. Una risposta non dice quale dei due sia: un codice appare come A/C finché può essere solo uno squawk o finché non viene associato a un aeromobile Mode S tramite squawk o quota.

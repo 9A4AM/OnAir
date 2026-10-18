@@ -3189,3 +3189,8 @@ Ping	Ping
 with interference bursts	avec rafales de parasites
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Le signal de test est une balise à 420 Hz du centre avec des échos de météores simulés : des sous-denses courts et quelques surdenses longs.
 Beacon echoes, 143.050 MHz	Échos de balise, 143,050 MHz
+# Mode A/C
+Codes	Codes
+start the receiver to see the codes	démarrez le récepteur pour voir les codes
+Squawk and altitude, 1090 MHz	Squawk et altitude, 1090 MHz
+Mode A is the squawk, Mode C the altitude in 100 ft steps. A reply does not say which of the two it is: a code shows as A/C until it can only be a squawk or is matched to a Mode S aircraft by its squawk or its altitude.	Le mode A est le squawk, le mode C l'altitude par pas de 100 ft. Une réponse ne dit pas lequel des deux elle est : un code s'affiche comme A/C tant qu'il ne peut être qu'un squawk ou qu'il n'est pas associé à un aéronef Mode S par son squawk ou son altitude.
