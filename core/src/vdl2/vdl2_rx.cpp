@@ -1,5 +1,6 @@
 // VDL Mode 2 receiver: see vdl2_rx.h.
 #include "dect2/vdl2/vdl2_rx.h"
+#include "dect2/dsp/baseband_filter.h"
 #include "dect2/automation/engine.h"
 #include "dect2/results/results_io.h"
 #include "dect2/net/feeds.h"
@@ -149,7 +150,7 @@ struct Vdl2Receiver::Impl {
         h1 = n1 > 1 ? lowpass(n1, (pass1 + stop1) * 0.5 / fsa * 0.8) : std::vector<float>{1.f};
         h2 = lowpass((int)std::ceil(6.6 * fs1 / 6e3), 15e3 / fs1);     // burst search: pass ~12 kHz, stop ~18 kHz
         gd2 = (int)h2.size() / 2;
-        h3 = lowpass((int)std::ceil(6.6 * fs1 / 4e3), 7.5e3 / fs1);    // channel filter for decoding: pass ~5.8 kHz, stop ~9.2 kHz (cuts some of the
+        h3 = bbf::overrideTaps("vdl2", lowpass((int)std::ceil(6.6 * fs1 / 4e3), 7.5e3 / fs1), fs1, 15e3);    // channel filter for decoding: pass ~5.8 kHz, stop ~9.2 kHz (cuts some of the
                                                                         // roll-off: less noise, a little ISI; best decoding near the threshold)
         const double c = effCenter();
         const double half = rate * 0.5 - 14e3;

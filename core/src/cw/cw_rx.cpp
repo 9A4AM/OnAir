@@ -1,5 +1,6 @@
 // CW (Morse) skimmer (see cw_rx.h).
 #include "dect2/cw/cw_rx.h"
+#include "dect2/dsp/baseband_filter.h"
 #include "dect2/results/results_io.h"
 #include "dect2/cw/cw_tel.h"
 #include "dect2/cw/cw_morse.h"
@@ -97,7 +98,7 @@ struct CwReceiver::Impl {
     std::vector<float> win, held, acc;
     int accN = 0, frames = 0;
     float floorLin = 0;
-    std::vector<float> lp = lowpass1k();
+    std::vector<float> lp = bbf::overrideTaps("cw", lowpass1k(), 1000.0, 100.0, kFir, kFir);   // 65 taps always: the delay lines are that long
     float triW[kTri] = {};
     std::vector<Chan> chans;
     int nextId = 1, focusId = -1;

@@ -1,6 +1,7 @@
 // General receiver (see general_rx.h): one channel of the band mixed down, filtered, demodulated (NFM, WFM, AM, USB, LSB, CW),
 // squelched and played; optionally recorded to WAV, one file per transmission.
 #include "dect2/general/general_rx.h"
+#include "dect2/dsp/baseband_filter.h"
 #include "dect2/audio/flac_enc.h"
 #include "dect2/audio/mp3_enc.h"
 #include "dect2/general/general_tel.h"
@@ -323,8 +324,9 @@ struct GeneralReceiver::Impl {
     void design() {
         generalFilterEdges(cfg.demod, cfg.width, fLo, fHi);
         const double w = fHi - fLo;
-        const int T = wide ? 63 : w < 1500 ? 511 : 255;
-        const auto lp = hfdig::lowpass(T, 0.5 * w / demodRate, 7.0);
+        const int T0 = wide ? 63 : w < 1500 ? 511 : 255;
+        const auto lp = bbf::overrideTaps("general", hfdig::lowpass(T0, 0.5 * w / demodRate, 7.0), demodRate, w);   // the user's baseband filter, if switched on
+        const int T = (int)lp.size();
         const double w0 = 2 * kPi * 0.5 * (fLo + fHi) / demodRate, c = (T - 1) * 0.5;
         taps.assign((size_t)T, cf32(0, 0));
         for (int k = 0; k < T; k++) {

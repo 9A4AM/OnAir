@@ -10,6 +10,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <map>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -169,6 +171,42 @@ inline const std::vector<Preset>& presets() {
         {"", "Sharp (Kaiser)", {true, 0, BbShape::Kaiser, 0, 0}},
     };
     return p;
+}
+
+// ---- the per-mode settings (key = the mode's short name: "airband", "acars", "vdl2", "ais", "pager", "packet", "hfdig", "cw", "general") ----
+// The app fills the registry from the preferences and when the user changes a filter; a mode reads it where it designs its channel filter
+// (at start / configure), so a change applies the next time the mode starts. Nothing set: the mode's own filter.
+struct Registry { std::mutex mu; std::map<std::string, BasebandFilterCfg> m; };
+inline Registry& registry() { static Registry r; return r; }
+inline BasebandFilterCfg get(const std::string& key) { Registry& r = registry(); std::lock_guard<std::mutex> lk(r.mu); auto it = r.m.find(key); return it == r.m.end() ? BasebandFilterCfg() : it->second; }
+inline void set(const std::string& key, const BasebandFilterCfg& c) { Registry& r = registry(); std::lock_guard<std::mutex> lk(r.mu); r.m[key] = c; }
+
+// The mode's own low-pass taps `def` (n taps at sample rate fs, cut-off about defBwHz / 2) or, when the user switched the key's filter on,
+// taps of the chosen bandwidth / shape / transition (the mode's own values where the user left them at 0). The transition of the mode's own
+// filter is estimated from its length. Works on real taps; the centre offset is for I/Q stages and is not used here.
+template <class T> inline std::vector<T> overrideTaps(const std::string& key, std::vector<T> def, double fs, double defBwHz, int minTaps = 5, int maxTaps = 4001) {
+    const BasebandFilterCfg c = get(key);
+    if (!c.enabled || def.size() < 3 || fs <= 0) return def;
+    const double defTrans = tapFactor(BbShape::Kaiser) * fs / (double)def.size();
+    const std::vector<float> h = lowpass(c.shape, c.bwHz > 0 ? c.bwHz : defBwHz, c.transHz > 0 ? c.transHz : defTrans, fs, minTaps, maxTaps);
+    return std::vector<T>(h.begin(), h.end());
+}
+
+// the preference key of a receiver family (app.h family numbers); empty: the family has no baseband filter setting
+inline const char* keyForFamily(int family) {
+    switch (family) {
+        case 35: return "hfdl";
+        case 16: return "acars";
+        case 27: return "vdl2";
+        case 26: return "airband";
+        case 14: return "ais";
+        case 23: return "pager";
+        case 24: return "packet";
+        case 25: case 36: return "hfdig";
+        case 34: return "cw";
+        case 55: return "general";
+        default: return "";
+    }
 }
 
 } // namespace bbf

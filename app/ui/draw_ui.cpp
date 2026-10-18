@@ -24,6 +24,7 @@ bool gIdentifyDev = false;   // --identify
 
 // the per-frame work of a receiver: ingest, the mode's tick, scans, EPG, gain control, the video and subtitles (drawn or not)
 static void tickReceiver(App& a) {
+    bbfSyncPrefs();
     ingestSpectrum(a);
     ingestRx(a);
     dabHistory(a);

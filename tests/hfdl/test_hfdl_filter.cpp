@@ -85,6 +85,19 @@ int main() {
         CHECK(bbf::fromString(bbf::toString(c)) == c, "round trip");
         CHECK(!bbf::fromString("junk").enabled, "junk is the default");
     }
+    {   // the per-mode registry: nothing set returns the mode's own taps untouched; switched on, the chosen width
+        const std::vector<float> own = bbf::lowpass(BbShape::Kaiser, 3000, 500, 48000);
+        CHECK(bbf::overrideTaps("airband", own, 48000, 3000.0) == own, "default taps are the mode's own");
+        bbf::set("airband", BasebandFilterCfg{true, 1200, BbShape::Hann, 400, 0});
+        const std::vector<float> mine = bbf::overrideTaps("airband", own, 48000, 3000.0);
+        BbDesign d; d.h = mine;
+        CHECK(mine != own && bbf::responseDb(d, 48000, 300) > -1 && bbf::responseDb(d, 48000, 1500) < -20, "custom width");
+        CHECK(bbf::overrideTaps("vdl2", own, 48000, 3000.0) == own, "other keys unaffected");
+        bbf::set("airband", BasebandFilterCfg{});
+        CHECK(bbf::overrideTaps("airband", own, 48000, 3000.0) == own, "switched off again");
+        for (int f : {14, 16, 23, 24, 25, 26, 27, 34, 35, 36, 55}) CHECK(*bbf::keyForFamily(f), "family %d has a key", f);
+        CHECK(!*bbf::keyForFamily(0), "DVB has none");
+    }
     // HFDL decode through every preset, off-tune and next to a strong channel
     int total = 0, ok = 0;
     for (const auto& p : bbf::presets()) {

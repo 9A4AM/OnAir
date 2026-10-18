@@ -1,4 +1,5 @@
 #include "acars_chan.h"
+#include "dect2/dsp/baseband_filter.h"
 #include "dect2/acars/acars_proto.h"
 #include <algorithm>
 #include <cmath>
@@ -49,7 +50,7 @@ void AcarsChannelRx::configure(double inRate, double offsetHz) {
     cicScale_ = (float)(1.0 / (std::pow((double)d1_, 4) * 32768.0));
     step_ = std::polar(1.f, (float)(-2 * kPi * offsetHz / inRate));
     h1_ = lowpass(kN1, 7500.0 / fs1, 7.0);
-    h2_ = lowpass(kN2, 3600.0 / fs2, 6.0);
+    h2_ = bbf::overrideTaps("acars", lowpass(kN2, 3600.0 / fs2, 6.0), fs2, 7200.0);
     bitLen_ = audioRate_ / kBaud;
     loStep_ = std::polar(1.f, (float)(-2 * kPi * kCentreHz / audioRate_));
     h3_ = lowpass(kN3, 1600.0 / audioRate_, 5.0);
@@ -67,7 +68,7 @@ void AcarsChannelRx::reset() {
     memset(integ_, 0, sizeof integ_); memset(comb_, 0, sizeof comb_);
     cicCount_ = 0;
     buf1_.assign(2 * kN1, cf32(0, 0)); pos1_ = 0; cnt1_ = 0;
-    buf2_.assign(2 * kN2, 0.f); pos2_ = 0; cnt2_ = 0;
+    buf2_.assign(2 * h2_.size(), 0.f); pos2_ = 0; cnt2_ = 0;
     carrier_ = 0;
     for (int k = 0; k < kInst; k++) {
         Inst& in = inst_[k];
@@ -123,14 +124,14 @@ void AcarsChannelRx::process(const cf32* x, size_t n) {
 void AcarsChannelRx::audioSample(float env) {
     carrier_ += (env - carrier_) * 0.01f;       // 4 ms at 25 kS/s: a high-pass of about 40 Hz on the audio
     const float a = env - carrier_;
-    buf2_[(size_t)pos2_] = a; buf2_[(size_t)(pos2_ + kN2)] = a;
+    buf2_[(size_t)pos2_] = a; buf2_[(size_t)pos2_ + h2_.size()] = a;
     const int p2 = pos2_;
-    pos2_ = pos2_ + 1 == kN2 ? 0 : pos2_ + 1;
+    pos2_ = pos2_ + 1 == (int)h2_.size() ? 0 : pos2_ + 1;
     if (++cnt2_ < 2) return;
     cnt2_ = 0;
     const float* w = &buf2_[(size_t)(p2 + 1)];
     float in = 0;
-    for (int k = 0; k < kN2; k++) in += h2_[(size_t)k] * w[k];
+    for (size_t k = 0; k < h2_.size(); k++) in += h2_[(size_t)k] * w[k];
     // mix down by 1800 Hz and low-pass: the tones become +600 Hz (2400) and -600 Hz (1200)
     const cf32 z0 = cf32(in, 0.f) * lo_;
     lo_ *= loStep_;

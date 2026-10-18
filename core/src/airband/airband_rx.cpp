@@ -1,6 +1,7 @@
 // Airband receiver (see airband_rx.h): every listed channel of the sample band mixed down, filtered, AM-demodulated and squelched on its
 // own; the tuning error measured from all of them together; the open channels mixed (or scanned) to the sound card.
 #include "dect2/airband/airband_rx.h"
+#include "dect2/dsp/baseband_filter.h"
 #include "dect2/results/results_io.h"
 #include "dect2/airband/airband_tel.h"
 #include "dect2/airband/airband_gen.h"
@@ -249,8 +250,8 @@ struct AirbandReceiver::Impl {
         const double growth = kCicOrder * std::log2((double)R);
         cicBits = std::max(8, std::min(24, (int)std::floor(61 - growth)));
         cicNorm = 1.0 / (std::pow((double)R, kCicOrder) * std::ldexp(1.0, cicBits - 2));
-        taps833 = lowpassTaps((k833.pass + k833.stop) / 2, k833.stop - k833.pass, fi);
-        taps25 = lowpassTaps((k25k.pass + k25k.stop) / 2, k25k.stop - k25k.pass, fi);
+        taps833 = bbf::overrideTaps("airband", lowpassTaps((k833.pass + k833.stop) / 2, k833.stop - k833.pass, fi), fi, k833.pass + k833.stop);
+        taps25 = bbf::overrideTaps("airband", lowpassTaps((k25k.pass + k25k.stop) / 2, k25k.stop - k25k.pass, fi), fi, k25k.pass + k25k.stop);
         win.resize(kBlock); winW.resize(kWide);
         winPow = winPowW = 0;
         for (int i = 0; i < kBlock; i++) { win[(size_t)i] = (float)(0.5 - 0.5 * std::cos(2 * kPi * i / kBlock)); winPow += win[(size_t)i] * win[(size_t)i]; }

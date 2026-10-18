@@ -1,5 +1,6 @@
 // The FM front end of the packet receivers: see packet_demod.h.
 #include "dect2/packet/packet_demod.h"
+#include "dect2/dsp/baseband_filter.h"
 #include <algorithm>
 #include <cmath>
 #include "dect2/common/mathconst.h"
@@ -63,7 +64,7 @@ bool FmFront::configure(double rate, double minRate) {
     }
     rsPass = std::fabs(r - kMidRate) < 0.01;
     if (!rsPass && !rs.configure(r, kMidRate)) return false;
-    chan.design(dmr::lowpassTaps(chanPass, chanStop, kMidRate, 60, 9), 1);
+    chan.design(bbf::overrideTaps("packet", dmr::lowpassTaps(chanPass, chanStop, kMidRate, 60, 9), kMidRate, chanPass + chanStop), 1);
     ready = true;
     reset();
     return true;
