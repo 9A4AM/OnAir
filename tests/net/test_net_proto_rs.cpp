@@ -8,6 +8,7 @@
 // C++ layer the Rust code replaced.
 #include "dect2/net/net_proto.h"
 #include "../common/golden.h"
+#include "../common/ordered.h"
 #include "dect2/rs/net.h"
 #include <cmath>
 #include <cstdio>
@@ -81,7 +82,7 @@ static void wsFamily(long iters) {
         if (cls < 6) {
             const int lc = (int)(r32() % 10);
             const size_t len = lc < 5 ? r32() % 126 : lc < 8 ? 100 + r32() % 4100 : r32() % 6000;
-            in = clientFrame(r32() % 8 != 0, (int)(r32() % 16), r32() % 8 != 0, len, len < 126 && lc < 9 ? 0 : (lc == 9 ? 2 : 1));
+            in = ORD_CALL(clientFrame, r32() % 8 != 0, (int)(r32() % 16), r32() % 8 != 0, len, len < 126 && lc < 9 ? 0 : (lc == 9 ? 2 : 1));   // ORD_*: draws in a fixed order (arguments and operands are not evaluated in one)
             if (r32() % 4 == 0) in = mutate(in);
             if (r32() % 4 == 0) in += rbytes(r32() % 20);
         } else in = rbytes(r32() % 12);
@@ -132,7 +133,7 @@ static std::string jsonObject() {
     for (int i = 0; i < n; i++) {
         if (i) o += r32() % 30 ? "," : "";
         std::string k = n > 20 ? "k" + std::to_string(r32() % 40) : pick(keys, 10);
-        o += (r32() % 10 ? " " : "") + std::string("\"") + k + "\"" + (r32() % 30 ? ":" : " ") + (r32() % 5 ? "" : " ");
+        o += ORD_CAT((r32() % 10 ? " " : ""), "\"", k, "\"", (r32() % 30 ? ":" : " "), (r32() % 5 ? "" : " "));
         switch (r32() % 5) {
         case 0: o += jsonNumber(); break;
         case 1: o += jsonString(); break;
@@ -142,7 +143,7 @@ static std::string jsonObject() {
         }
     }
     o += r32() % 40 ? "}" : "";
-    return (r32() % 10 ? "" : " \t\r\n") + o + (r32() % 10 ? "" : " ");
+    return ORD_CAT((r32() % 10 ? "" : " \t\r\n"), o, (r32() % 10 ? "" : " "));
 }
 static void addJson(const std::map<std::string, dect2::JsonVal>& a) {
     dig.add((uint64_t)a.size());
@@ -168,11 +169,11 @@ static std::string httpRequest() {
     static const char* versions[] = {"HTTP/1.1", "HTTP/1.0", "HTTP/", "HTTP", "http/1.1", "HTTP/2"};
     static const char* names[] = {"Host", "host", "HOST", "Content-Length", "content-length", "Content-Type", "Transfer-Encoding", "Origin", "Authorization", "X-Odd", " Spaced ", "Upgrade", "Connection"};
     static const char* values[] = {"localhost:8765", "12", "0", "4096", "4097", "123456789", "1234567890", "", " 5 ", "abc", "-1", "chunked", "application/json", "Bearer tok", "1e3", "+5"};
-    std::string r = pick(methods, 7) + (r32() % 20 ? " " : "  ") + pick(targets, 11) + (r32() % 20 ? " " : "  ") + pick(versions, 6);
+    std::string r = ORD_CAT(pick(methods, 7), (r32() % 20 ? " " : "  "), pick(targets, 11), (r32() % 20 ? " " : "  "), pick(versions, 6));
     const int n = r32() % 30 == 0 ? 40 + (int)(r32() % 20) : (int)(r32() % 7);
     for (int i = 0; i < n; i++) {
         r += r32() % 40 ? "\r\n" : (r32() % 2 ? "\n" : "\r\n\r\n");
-        r += pick(names, 13) + std::string(r32() % 15 ? ":" : "") + (r32() % 3 ? " " : "") + pick(values, 16) + (r32() % 10 ? "" : " \r");
+        r += ORD_CAT(pick(names, 13), (r32() % 15 ? ":" : ""), (r32() % 3 ? " " : ""), pick(values, 16), (r32() % 10 ? "" : " \r"));
     }
     if (r32() % 15 == 0) r += "\r\n";
     return r;
@@ -191,8 +192,8 @@ static void httpFamily(long iters) {
             for (const auto& kv : ha.h) dig.add(kv.first, kv.second);
         }
         // the scan of what has arrived
-        std::string buf = head + (r32() % 3 ? "\r\n\r\n" : r32() % 2 ? "\r\n\r" : "") + (r32() % 4 ? "" : rbytes(r32() % 30));
-        if (r32() % 200 == 0) buf = std::string(8180 + r32() % 40, 'a') + (r32() % 2 ? "\r\n\r\n" : "");
+        std::string buf = ORD_CAT(head, (r32() % 3 ? "\r\n\r\n" : r32() % 2 ? "\r\n\r" : ""), (r32() % 4 ? "" : rbytes(r32() % 30)));
+        if (r32() % 200 == 0) buf = ORD_CAT(std::string(8180 + r32() % 40, 'a'), (r32() % 2 ? "\r\n\r\n" : ""));
         if (r32() % 200 == 0) buf = std::string(8187 + r32() % 12, 'a') + "\r\n\r\n";
         size_t ea1 = 7;
         const int sa = A::httpScan(buf, ea1);
@@ -275,14 +276,14 @@ static std::string uiList() {
         el(s, 0, "", st);
         const bool wrong = r32() % 12 == 0;
         switch (st) {
-        case 0x80: el(s, 4, uiId()); el(s, 2, "", (int)(r32() % 5) - 1); el(s, 4, std::string("2.4MHz\0 10 MSPS\0 250KHz\0", r32() % 3 ? 24 : 12) + (r32() % 2 ? "" : rtext("ab\0", 5))); if (wrong) el(s, 1); break;
+        case 0x80: el(s, 4, uiId()); el(s, 2, "", (int)(r32() % 5) - 1); el(s, 4, ORD_CAT(std::string("2.4MHz\0 10 MSPS\0 250KHz\0", r32() % 3 ? 24 : 12), (r32() % 2 ? "" : rtext("ab\0", 5)))); if (wrong) el(s, 1); break;
         case 0x8b: case 0x84: el(s, 4, uiId()); el(s, 1, "", 0, 0, r32() & 1); if (wrong) el(s, 4, "x"); break;
         case 0x88: el(s, 4, uiId()); el(s, 2, "", (int)r32() % 100); el(s, 2, "", (int)(r32() % 20) - 10); el(s, 2, "", (int)(r32() % 100)); if (wrong) el(s, 3); break;
         case 0x89: case 0x8c: { el(s, 4, uiId()); const float v[] = {1.5f, -3.25f, 0.f, NAN, INFINITY}; for (int j = 0; j < 3 + (st == 0x89); j++) el(s, 3, "", 0, r32() % 7 ? (float)(int)(r32() % 100) / 4 : v[r32() % 5]); break; }
         case 0x8a: el(s, 4, uiId()); el(s, 2, "", (int)(r32() % 50) - 20); el(s, 2, "", (int)(r32() % 9) - 3); break;
         case 0x87: el(s, 4, r32() % 4 ? "Left label" : ""); break;
         case 0x8e: case 0x8f: { const int na = (int)(r32() % 4); for (int j = 0; j < na; j++) el(s, 4, pick(texts, 4)); break; }
-        default: { const int na = (int)(r32() % 3); for (int j = 0; j < na; j++) { const int ty = (int)(r32() % 5); el(s, ty == 0 ? 1 : ty, uiId(), (int)r32(), 1.f, r32() & 1); } break; }
+        default: { const int na = (int)(r32() % 3); for (int j = 0; j < na; j++) { const int ty = (int)(r32() % 5); ORD_CALL(el, std::ref(s), ty == 0 ? 1 : ty, uiId(), (int)r32(), 1.f, r32() & 1); } break; }
         }
     }
     return s;

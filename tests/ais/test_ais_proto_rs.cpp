@@ -99,7 +99,7 @@ static void mutate(A::Bits& v) {
         case 0: if (!v.empty()) v[gen() % v.size()] ^= 1; break;
         case 1: if (!v.empty()) v[gen() % v.size()] = (uint8_t)gen(); break;           // values other than 0 and 1
         case 2: if (!v.empty()) v.erase(v.begin() + (long)(gen() % v.size())); break;
-        case 3: v.insert(v.begin() + (long)(gen() % (v.size() + 1)), (uint8_t)(gen() & 1)); break;
+        case 3: { const size_t at = gen() % (v.size() + 1); const uint8_t bit = (uint8_t)(gen() & 1); v.insert(v.begin() + (long)at, bit); } break;   // draws in a fixed order: call arguments are evaluated in an unspecified one
         case 4: if (v.size() > 2) v.resize(gen() % v.size()); break;
         case 5: { const size_t a = gen() % (v.size() + 1); for (int q = 0; q < 6; q++) v.insert(v.begin() + (long)a, 1); break; }   // a run of ones: flags, aborts
         default: if (!v.empty()) { const size_t a = gen() % v.size(); const size_t l = gen() % 20; for (size_t q = a; q < v.size() && q < a + l; q++) v[q] = gen() & 1; } break;
@@ -113,7 +113,7 @@ static void mutateText(std::string& s) {
         switch (gen() % 5) {
         case 0: s[gen() % s.size()] = (char)gen(); break;
         case 1: s.erase(gen() % s.size(), 1); break;
-        case 2: s.insert(gen() % (s.size() + 1), 1, ",*!$ 0123456789ABCDEFabcdef-+\t\n"[gen() % 31]); break;
+        case 2: { const size_t at = gen() % (s.size() + 1); const char ch = ",*!$ 0123456789ABCDEFabcdef-+\t\n"[gen() % 31]; s.insert(at, 1, ch); } break;
         case 3: s.resize(gen() % s.size()); break;
         default: s[gen() % s.size()] = ",*"[gen() & 1]; break;
         }

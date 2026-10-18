@@ -4,6 +4,7 @@
 // (tests/common/golden.h) compared with the one recorded from the C++ layer the Rust code replaced.
 #include "dect2/pager/pager_proto.h"
 #include "../common/golden.h"
+#include "../common/ordered.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -125,7 +126,7 @@ static void testPocsag(long iters) {
         const std::vector<A::PocsagPage> pages = randPages(1 + (int)(g() % 6));
         const std::vector<uint8_t> bits = A::pocsagBits(pages, 64);
         dig.add(bits);
-        feedPocsag(bits, (int)(g() % 4), (int)(g() % 2));
+        ORD_CALL(feedPocsag, bits, (int)(g() % 4), (int)(g() % 2));
     }
 }
 

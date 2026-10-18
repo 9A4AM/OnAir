@@ -3,6 +3,7 @@
 // family. Every result goes into a digest (tests/common/golden.h) that is compared with the one recorded from the C++ block layer the Rust code replaced.
 #include "dect2/acars/acars_proto.h"
 #include "../common/golden.h"
+#include "../common/ordered.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -36,9 +37,9 @@ static Block randomBlock() {
     s.hasText = g() % 8 != 0;
     switch (g() % 8) {
     case 0: s.text = "OMDB1030" "1045" "1100" "1115" "1130" "VHHH"; s.label[0] = 'Q'; s.label[1] = "1ABCDEFGHKLMNPQRST"[g() % 18]; break;
-    case 1: s.text = std::string("0") + "EL"[g() % 2] + "VSHGC2XI"[g() % 8] + rnd("0123456789", 6) + rnd("VSHGC2XI", g() % 6) + (g() % 2 ? "/text" : ""); s.label[0] = 'S'; s.label[1] = 'A'; break;
+    case 1: s.text = ORD_CAT("0", "EL"[g() % 2], "VSHGC2XI"[g() % 8], rnd("0123456789", 6), rnd("VSHGC2XI", g() % 6), (g() % 2 ? "/text" : "")); s.label[0] = 'S'; s.label[1] = 'A'; break;
     case 2: s.text = "M01AEK0201" + rnd("ABC \r\n#- /xyz0123456789", g() % 60); break;
-    case 3: s.text = std::string(g() % 2 ? "#M1B" : "- #M1") + (g() % 2 ? "/AT " : "/FN ") + rnd("ABC \r\n", g() % 30); s.label[0] = 'H'; s.label[1] = '1'; break;
+    case 3: s.text = ORD_CAT((g() % 2 ? "#M1B" : "- #M1"), (g() % 2 ? "/AT " : "/FN "), rnd("ABC \r\n", g() % 30)); s.label[0] = 'H'; s.label[1] = '1'; break;
     case 4: s.text = rnd("ABCDEFGHIJ\r\n\t\x01 0123456789", g() % 221); break;
     default: s.text = rnd("ABCDEF 0123456789\r\n/#-", g() % 100); break;
     }
@@ -60,7 +61,7 @@ static void damage(Block& b) {
         if (g() % 6 == 0 && p < b.txt.size()) b.txt[p] ^= (uint8_t)(1u << (g() % 8));   // two bits in one byte
     }
     if (g() % 10 == 0) b.txt.resize(g() % (b.txt.size() + 1));
-    if (g() % 12 == 0) b.txt.insert(b.txt.begin() + (long)(g() % (b.txt.size() + 1)), (uint8_t)g());
+    if (g() % 12 == 0) ORD_CALL(b.txt.insert, b.txt.begin() + (long)(g() % (b.txt.size() + 1)), (uint8_t)g());
 }
 
 static void checkRepair(const Block& b, int maxPar) {
@@ -141,7 +142,7 @@ int main() {
         Block b = randomBlock();
         std::vector<uint8_t> t = b.txt;
         stripParity(t);
-        t.insert(t.end() - 1, (size_t)(g() % 300), (uint8_t)('A' + g() % 26));
+        ORD_CALL(t.insert, t.end() - 1, (size_t)(g() % 300), (uint8_t)('A' + g() % 26));
         checkParse(t);
     }
 
@@ -153,10 +154,10 @@ int main() {
         if (g() % 12 == 0) label = rnd("QSAH1", 2);
         if (g() % 12 == 0) label = rnd("QS", g() % 4);
         if (label == "SA" || g() % 8 == 0) {
-            text = "0" + std::string(1, "ELX"[g() % 3]) + "VSHGC2XIZ"[g() % 9] + rnd("0123456789", g() % 3 ? 6 : 5) + rnd("VSHGC2XIZ", g() % 8) + (g() % 2 ? "/" + rnd("abc", 3) : "");
+            text = ORD_CAT("0", "ELX"[g() % 3], "VSHGC2XIZ"[g() % 9], rnd("0123456789", g() % 3 ? 6 : 5), rnd("VSHGC2XIZ", g() % 8), (g() % 2 ? "/" + rnd("abc", 3) : ""));
             if (g() % 3 == 0) text[g() % text.size()] = (char)(g() & 0x7f);
         } else {
-            for (int k = 0; k < 6; k++) text += g() % 2 ? rnd("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 4) : (std::string)(rnd("012", 1) + rnd("0123456789", 1) + rnd("0123456", 1) + rnd("0123456789", 1));
+            for (int k = 0; k < 6; k++) text += g() % 2 ? rnd("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 4) : ORD_CAT(rnd("012", 1), rnd("0123456789", 1), rnd("0123456", 1), rnd("0123456789", 1));
             if (g() % 3 == 0) text.resize(g() % (text.size() + 1));
             if (g() % 3 == 0 && !text.empty()) text[g() % text.size()] = (char)(g() & 0x7f);
         }

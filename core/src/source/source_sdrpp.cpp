@@ -279,6 +279,15 @@ public:
         sock_ = kBadSock;
     }
     void shutdown() { if (sock_ != kBadSock) sockShutdown(sock_); }
+    // only our sending side: the peer reads what is queued (a STOP just sent) and then sees the end of the stream
+    void shutdownSend() {
+        if (sock_ == kBadSock) return;
+#ifdef _WIN32
+        ::shutdown(sock_, SD_SEND);
+#else
+        ::shutdown(sock_, SHUT_WR);
+#endif
+    }
 
     bool command(uint32_t cmd, const unsigned char* arg = nullptr, size_t n = 0) {
         const std::string b = netp::sdrppCommand(cmd, arg, n);
@@ -759,8 +768,21 @@ protected:
         }
     }
     void interrupt() override {   // stop(): STOP before the socket goes, or the server's radio keeps running for nobody
+#ifdef _WIN32
+        // Windows: closing a socket that still has unread stream data in its receive queue resets the connection, and the reset throws away the
+        // STOP the server has received but not read yet. So end our sending side only; the stream thread then ends on the server's close or
+        // on this short receive timeout (stop() closes the socket after the thread is gone).
+        if (streaming_.exchange(false)) {
+            link_.command(kCmdStop);
+            link_.shutdownSend();
+            link_.setRecvTimeout(200);
+        } else {
+            link_.shutdown();
+        }
+#else
         if (streaming_.exchange(false)) link_.command(kCmdStop);
         link_.shutdown();
+#endif
     }
 
 private:

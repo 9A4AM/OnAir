@@ -2,6 +2,7 @@
 // end-to-end headers, ACK, TRACE, CONTROL, random headers and bodies), LoRaWAN (every MType, FOpts MAC commands, join / rejoin requests, random and mutated
 // frames, the name helpers), LoRa APRS and MeshCom frames. Same method as test_mesh_proto_rs.cpp: every result goes into its digest.
 #include "mesh_rs_cmp.h"
+#include "../common/ordered.h"
 #include "dect2/mesh/mesh_crypto.h"
 
 static std::string rndText(size_t n, const char* alphabet, size_t alen) { std::string s; for (size_t i = 0; i < n; i++) s += alphabet[g() % alen]; return s; }
@@ -43,7 +44,7 @@ static void testMeshCore(long iters) {
             adverts++;
         } else if (mode <= 5) {
             const uint8_t* s = g() % 3 == 0 ? pubSecret : g() % 2 ? clubSecret : hashSecret;
-            pkt = A::meshcoreGroupText(s, mcNode(), r32(), RT(g() % 90, "hello world: ABC xyz\x01"), path);
+            pkt = ORD_CALL(A::meshcoreGroupText, s, mcNode(), r32(), RT(g() % 90, "hello world: ABC xyz\x01"), path);   // ORD_*: draws in a fixed order (arguments and operands are not evaluated in one)
             if (mode == 4 && !pkt.empty()) pkt = mutateBytes(pkt);
             groups++;
         } else if (mode == 6) {
@@ -88,7 +89,7 @@ static void testLorawan(long iters) {
             A::LorawanTx t;
             t.mtype = (int)(g() % 8);
             t.devAddr = g() % 3 ? r32() : (0xFC014C00u | (g() & 0x3FF));
-            if (g() % 4 == 0) t.devAddr = (g() % 3 ? 0x26000000u : 0xE0000000u) | (g() & 0xFFFFFF);
+            if (g() % 4 == 0) { const uint32_t net = g() % 3 ? 0x26000000u : 0xE0000000u; t.devAddr = net | (g() & 0xFFFFFF); }
             t.adr = g() % 2; t.adrAckReq = g() % 2; t.ack = g() % 2; t.fpending = g() % 2; t.fcnt = (uint16_t)g();
             t.fopts = fopts();
             t.fport = g() % 4 == 0 ? -1 : (int)(g() % 256);
@@ -97,7 +98,12 @@ static void testLorawan(long iters) {
             t.mic = r32();
             f = A::lorawanBuild(t);
         } else if (mode == 4) {
-            f = A::lorawanJoinRequest((uint64_t)r32() << 32 | r32(), g() % 3 ? (0x70B3D57EDull << 28 | (r32() & 0xFFFFFFF)) : ((uint64_t)r32() << 32 | r32()), (uint16_t)g(), r32());
+            {
+                const uint64_t joinEui = r64();
+                const uint64_t devEui = g() % 3 ? (0x70B3D57EDull << 28 | (r32() & 0xFFFFFFF)) : r64();
+                const uint16_t devNonce = (uint16_t)g();
+                f = A::lorawanJoinRequest(joinEui, devEui, devNonce, r32());
+            }
         } else if (mode == 5) {
             f.push_back(0x60);                                           // rejoin request
             f.push_back((uint8_t)(g() % 4));
@@ -110,7 +116,7 @@ static void testLorawan(long iters) {
         } else {
             f.resize(g() % 40);
             for (auto& b : f) b = rb();
-            if (!f.empty() && g() % 2) f[0] = (uint8_t)((g() % 8) << 5 | (g() % 8 == 0 ? rb() & 0x1F : 0));
+            if (!f.empty() && g() % 2) { const uint32_t hi3 = (g() % 8) << 5; f[0] = (uint8_t)(hi3 | (g() % 8 == 0 ? rb() & 0x1F : 0)); }
         }
         if (g() % 8 == 0) f = mutateBytes(f);
         const auto ra = A::meshDecodeLorawan(f.empty() ? nullptr : f.data(), f.size());
@@ -135,14 +141,14 @@ static void testLorawan(long iters) {
 }
 
 // ---- LoRa APRS and MeshCom ----
-static std::string call() { return RT(1 + g() % 6, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") + (g() % 2 ? "-" + std::to_string(g() % 16) : std::string()); }
+static std::string call() { return ORD_CAT(RT(1 + g() % 6, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"), (g() % 2 ? "-" + std::to_string(g() % 16) : std::string())); }
 static std::string tnc2() {
-    std::string s = call() + ">" + (g() % 4 ? "APLRT1" : call());
-    for (int k = (int)(g() % 4); k > 0; k--) s += "," + call() + (g() % 3 == 0 ? "*" : "");
+    std::string s = ORD_CAT(call(), ">", (g() % 4 ? "APLRT1" : call()));
+    for (int k = (int)(g() % 4); k > 0; k--) s += ORD_CAT(",", call(), (g() % 3 == 0 ? "*" : ""));
     s += ":";
     switch (g() % 5) {
-    case 0: s += "!" + std::to_string(10 + g() % 79) + "27.31N/0" + std::to_string(10 + g() % 79) + "15.50E>" + RT(g() % 20, "test /A=000100"); break;
-    case 1: s += ":" + (call() + "         ").substr(0, 9) + ":" + RT(g() % 30, "hello world ") + "{" + std::to_string(g() % 999); break;
+    case 0: s += ORD_CAT("!", std::to_string(10 + g() % 79), "27.31N/0", std::to_string(10 + g() % 79), "15.50E>", RT(g() % 20, "test /A=000100")); break;
+    case 1: s += ORD_CAT(":", (call() + "         ").substr(0, 9), ":", RT(g() % 30, "hello world "), "{", std::to_string(g() % 999)); break;
     case 2: s += ">" + RT(g() % 30, "status text "); break;
     case 3: s += "=" + RT(8, "0123456789") + "N/" + RT(9, "0123456789") + "E-" + RT(g() % 15, "caf\xC3\xA9 \xFF\x01"); break;
     default: s += RT(g() % 40, "abc XYZ!:>,*\r\n\xC3\xB6\x80"); break;
@@ -189,8 +195,8 @@ static void testMeshCom(long iters) {
             m.msgId = r32(); m.maxHop = (int)(g() % 16); m.server = g() % 2; m.track = g() % 2; m.appOffline = g() % 2; m.mesh = g() % 2;
             m.sourcePath = call();
             for (int k = (int)(g() % 3); k > 0; k--) m.sourcePath += "," + call();
-            m.dest = g() % 2 ? "*" : (g() % 2 ? call() : std::to_string(g() % 99999) + "," + call());
-            if (m.type == '!') m.payload = std::to_string(10 + g() % 79) + "27.31N/0" + std::to_string(10 + g() % 79) + "15.50E>" + (g() % 2 ? "/B=" + std::to_string(g() % 150) : std::string()) + " /A=000100";
+            m.dest = g() % 2 ? "*" : (g() % 2 ? call() : ORD_CAT(std::to_string(g() % 99999), ",", call()));
+            if (m.type == '!') m.payload = ORD_CAT(std::to_string(10 + g() % 79), "27.31N/0", std::to_string(10 + g() % 79), "15.50E>", (g() % 2 ? "/B=" + std::to_string(g() % 150) : std::string()), " /A=000100");
             else m.payload = RT(g() % 90, "Hello World 123 \xC3\xA4\xC3\xB6 \xC3 ,*:!");
             m.hw = rb(); m.mod = rb(); m.fw = rb(); m.lastHw = rb(); m.subVersion = g() % 3 ? 'a' : (char)rb();
             f = A::meshcomBuild(m);
