@@ -118,6 +118,8 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("fpv", "FPV video (analog)", 103, "makeFpvSynth", kOpt, kUnv),
         mk("wmbus", "Wireless M-Bus", 88, "makeWmbusSynth", kOpt, kUnv),
         mk("mt63", "MT63", 97, "makeMt63Synth", kOpt, kUnv),
+        mk("fsq", "FSQ", 115, "makeFsqSynth", kOpt, kUnv),
+        mk("ifkp", "IFKP", 118, "makeIfkpSynth", kOpt, kUnv),
         mk("zwave", "Z-Wave", 100, "makeZwaveSynth", kOpt, kUnv),
         mk("mscatter", "Meteor scatter", 106, "makeMscatterSynth", kOpt, kUnv),
         mk("vorils", "VOR / ILS", 32, "makeVorSynth", kOpt, kUnv),

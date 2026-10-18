@@ -97,6 +97,8 @@
 #include "dect2/tones/tones_rx.h"
 #include "dect2/sarsat/sarsat_rx.h"
 #include "dect2/mt63/mt63_rx.h"
+#include "dect2/fsq/fsq_rx.h"
+#include "dect2/ifkp/ifkp_rx.h"
 #include "dect2/mscatter/mscatter_live.h"
 #include "dect2/rid/rid_rx.h"
 #include "dect2/meteor/meteor_rx.h"
@@ -386,6 +388,8 @@ public:
     WmbusLiveReceiver& wmbus() { return rxWmb_; }   // Wireless M-Bus meters: clear the device table (telemetry through latestRx)
     TonesReceiver& tones() { return rxTones_; }   // tone decoders: audio input, the gate, listen (telemetry through latestRx)
     SarsatReceiver& sarsat() { return rxSar_; }   // COSPAS-SARSAT 406 MHz beacons: clear the log (telemetry through latestRx)
+    FsqReceiver& fsq() { return rxFsq_; }   // FSQ: speed, own callsign, clear the text (telemetry through latestRx)
+    IfkpReceiver& ifkp() { return rxIfkp_; }   // IFKP: speed, clear the text (telemetry through latestRx)
     Mt63Receiver& mt63() { return rxMt63_; }   // MT63: bandwidth and interleave (automatic by default), clear the text (telemetry through latestRx)
     EczasLiveReceiver& eczas() { return rxEcz_; }   // e-Czas (225 kHz, Poland): audio input, receiver position, clear the log (telemetry through latestRx)
     FpvReceiver& fpv() { return rxFpv_; }   // FPV video: picture controls, sound, clear the channel levels (telemetry through latestRx)
@@ -655,6 +659,8 @@ private:
     TonesReceiver rxTones_;
     SarsatReceiver rxSar_;
     Mt63Receiver rxMt63_;
+    FsqReceiver rxFsq_;
+    IfkpReceiver rxIfkp_;
     MscatterLiveReceiver rxMs_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;

@@ -3247,3 +3247,16 @@ no SSB conversation heard yet	nog geen SSB-gesprek gehoord
 talking	praat
 the loudest conversation	het luidste gesprek
 the newest conversation	het nieuwste gesprek
+Speed	Snelheid
+Your callsign: lines addressed to it, to allcall or to cqcqcq are marked	Uw roepletters: regels die eraan, aan allcall of aan cqcqcq zijn gericht, worden gemarkeerd
+The 73 tone positions watched: how often each was the strongest tone. The 33 tones of the band are the ones that light up.	De 73 bewaakte toonposities: hoe vaak elk de sterkste toon was. De 33 tonen van de band lichten op.
+Cmd	Cmd
+The command character after the addressee: ? asks for the signal report, * for an acknowledgement, $ for the heard list, @ for the location, & for the message of the day, ^ for the software version, ; relays the message, ! and ~ repeat it, # stores it, + asks for a file, | is an alert, > and < change the speed	Het opdrachtteken na de geadresseerde: ? vraagt om het signaalrapport, * om een bevestiging, $ om de gehoorde lijst, @ om de locatie, & om het bericht van de dag, ^ om de softwareversie; ; stuurt het bericht door, ! en ~ herhalen het, # slaat het op, + vraagt om een bestand, | is een alarm, > en < wijzigen de snelheid
+speed	snelheid
+tone spacing	toonafstand
+tones heard	gehoorde tonen
+tone quality	toonkwaliteit
+FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is 290 Hz wide at every speed.	FSQ-snelheden: 1,5, 2, 3, 4,5 en 6 baud. Automatisch zoekt naar alle vijf; de band is bij elke snelheid 290 Hz breed.
+IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	IFKP-snelheden: 0,5, 1,0 en 2,0 (1,95, 3,9 en 7,8 baud). Automatisch zoekt naar alle drie; de band is bij elke snelheid 387 Hz breed.
+Directed chat, 14.105 MHz	Gerichte chat, 14,105 MHz
+Keyboard chat, 14.083 MHz	Toetsenbordchat, 14,083 MHz

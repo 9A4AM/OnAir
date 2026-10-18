@@ -3247,3 +3247,16 @@ no SSB conversation heard yet	SSB の会話はまだ聞こえていません
 talking	送信中
 the loudest conversation	最も大きい会話
 the newest conversation	最新の会話
+Speed	速度
+Your callsign: lines addressed to it, to allcall or to cqcqcq are marked	あなたのコールサイン: これ宛て、allcall 宛て、cqcqcq 宛ての行が強調されます
+The 73 tone positions watched: how often each was the strongest tone. The 33 tones of the band are the ones that light up.	監視している73個のトーン位置: それぞれが最も強いトーンだった頻度。バンドの33トーンが点灯します。
+Cmd	コマンド
+The command character after the addressee: ? asks for the signal report, * for an acknowledgement, $ for the heard list, @ for the location, & for the message of the day, ^ for the software version, ; relays the message, ! and ~ repeat it, # stores it, + asks for a file, | is an alert, > and < change the speed	宛先の後のコマンド文字: ? は信号レポート、* は受信確認、$ は聴取リスト、@ は場所、& は今日のメッセージ、^ はソフトウェアのバージョンを要求します。; はメッセージを中継、! と ~ は繰り返し、# は保存、+ はファイルを要求、| は警報、> と < は速度を変更します
+speed	速度
+tone spacing	トーン間隔
+tones heard	聴取したトーン
+tone quality	トーン品質
+FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is 290 Hz wide at every speed.	FSQの速度: 1.5、2、3、4.5、6ボー。自動は5つすべてを探します。バンド幅はどの速度でも290 Hzです。
+IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	IFKPの速度: 0.5、1.0、2.0 (1.95、3.9、7.8ボー)。自動は3つすべてを探します。バンド幅はどの速度でも387 Hzです。
+Directed chat, 14.105 MHz	宛先指定チャット、14.105 MHz
+Keyboard chat, 14.083 MHz	キーボードチャット、14.083 MHz

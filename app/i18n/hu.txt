@@ -3233,3 +3233,16 @@ no SSB conversation heard yet	még nem hallatszik SSB-beszélgetés
 talking	beszél
 the loudest conversation	a leghangosabb beszélgetés
 the newest conversation	a legújabb beszélgetés
+Speed	Sebesség
+Your callsign: lines addressed to it, to allcall or to cqcqcq are marked	A hívójeled: az ennek, az allcallnak vagy a cqcqcq-nek címzett sorok ki lesznek emelve
+The 73 tone positions watched: how often each was the strongest tone. The 33 tones of the band are the ones that light up.	A figyelt 73 hangpozíció: hányszor volt az adott pozíció a legerősebb hang. A sáv 33 hangja az, amelyik kivilágosodik.
+Cmd	Parancs
+The command character after the addressee: ? asks for the signal report, * for an acknowledgement, $ for the heard list, @ for the location, & for the message of the day, ^ for the software version, ; relays the message, ! and ~ repeat it, # stores it, + asks for a file, | is an alert, > and < change the speed	A címzett utáni parancskarakter: a ? jelentést kér a jelről, a * visszaigazolást, a $ a hallott állomások listáját, a @ a helyet, a & a nap üzenetét, a ^ a szoftver verzióját; a ; továbbítja az üzenetet, a ! és a ~ megismétli, a # elmenti, a + fájlt kér, a | riasztás, a > és a < változtatja a sebességet
+speed	sebesség
+tone spacing	hangköz
+tones heard	hallott hangok
+tone quality	hangminőség
+FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is 290 Hz wide at every speed.	FSQ sebességek: 1,5, 2, 3, 4,5 és 6 baud. Az automatikus mind az ötöt keresi; a sáv minden sebességnél 290 Hz széles.
+IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	IFKP sebességek: 0,5, 1,0 és 2,0 (1,95, 3,9 és 7,8 baud). Az automatikus mind a hármat keresi; a sáv minden sebességnél 387 Hz széles.
+Directed chat, 14.105 MHz	Címzett csevegés, 14,105 MHz
+Keyboard chat, 14.083 MHz	Billentyűzetes csevegés, 14,083 MHz

@@ -3247,3 +3247,16 @@ no SSB conversation heard yet	aún no se oye ninguna conversación SSB
 talking	hablando
 the loudest conversation	la conversación más fuerte
 the newest conversation	la conversación más reciente
+Speed	Velocidad
+Your callsign: lines addressed to it, to allcall or to cqcqcq are marked	Su indicativo: se marcan las líneas dirigidas a él, a allcall o a cqcqcq
+The 73 tone positions watched: how often each was the strongest tone. The 33 tones of the band are the ones that light up.	Las 73 posiciones de tono vigiladas: con qué frecuencia cada una fue el tono más fuerte. Los 33 tonos de la banda son los que se iluminan.
+Cmd	Cmd
+The command character after the addressee: ? asks for the signal report, * for an acknowledgement, $ for the heard list, @ for the location, & for the message of the day, ^ for the software version, ; relays the message, ! and ~ repeat it, # stores it, + asks for a file, | is an alert, > and < change the speed	El carácter de comando tras el destinatario: ? pide el informe de señal, * una confirmación, $ la lista de escuchados, @ la ubicación, & el mensaje del día, ^ la versión del software; ; retransmite el mensaje, ! y ~ lo repiten, # lo guarda, + pide un archivo, | es una alerta, > y < cambian la velocidad
+speed	velocidad
+tone spacing	separación de tonos
+tones heard	tonos oídos
+tone quality	calidad de los tonos
+FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is 290 Hz wide at every speed.	Velocidades de FSQ: 1,5, 2, 3, 4,5 y 6 baudios. Automático busca las cinco; la banda mide 290 Hz de ancho a cualquier velocidad.
+IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	Velocidades de IFKP: 0,5, 1,0 y 2,0 (1,95, 3,9 y 7,8 baudios). Automático busca las tres; la banda mide 387 Hz de ancho a cualquier velocidad.
+Directed chat, 14.105 MHz	Chat dirigido, 14,105 MHz
+Keyboard chat, 14.083 MHz	Chat de teclado, 14,083 MHz

@@ -3247,3 +3247,16 @@ no SSB conversation heard yet	尚未听到 SSB 通话
 talking	正在讲话
 the loudest conversation	最响的通话
 the newest conversation	最新的通话
+Speed	速度
+Your callsign: lines addressed to it, to allcall or to cqcqcq are marked	你的呼号:发给它、allcall 或 cqcqcq 的行会被标记
+The 73 tone positions watched: how often each was the strongest tone. The 33 tones of the band are the ones that light up.	被监视的 73 个音调位置:每个位置成为最强音调的频率。频段的 33 个音调会亮起。
+Cmd	命令
+The command character after the addressee: ? asks for the signal report, * for an acknowledgement, $ for the heard list, @ for the location, & for the message of the day, ^ for the software version, ; relays the message, ! and ~ repeat it, # stores it, + asks for a file, | is an alert, > and < change the speed	收件人之后的命令字符:? 请求信号报告,* 请求确认,$ 请求听到的列表,@ 请求位置,& 请求当日消息,^ 请求软件版本;; 转发消息,! 和 ~ 重复消息,# 保存,+ 请求文件,| 是警报,> 和 < 改变速度
+speed	速度
+tone spacing	音调间隔
+tones heard	听到的音调
+tone quality	音调质量
+FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is 290 Hz wide at every speed.	FSQ 速度:1.5、2、3、4.5 和 6 波特。自动会寻找全部五种;任何速度下频带宽度都是 290 Hz。
+IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	IFKP 速度:0.5、1.0 和 2.0(1.95、3.9 和 7.8 波特)。自动会寻找全部三种;任何速度下频带宽度都是 387 Hz。
+Directed chat, 14.105 MHz	定向聊天,14.105 MHz
+Keyboard chat, 14.083 MHz	键盘聊天,14.083 MHz

@@ -3247,3 +3247,16 @@ no SSB conversation heard yet	SSB pokalbių dar negirdėti
 talking	kalba
 the loudest conversation	garsiausias pokalbis
 the newest conversation	naujausias pokalbis
+Speed	Greitis
+Your callsign: lines addressed to it, to allcall or to cqcqcq are marked	Jūsų šaukinys: eilutės, adresuotos jam, allcall arba cqcqcq, paryškinamos
+The 73 tone positions watched: how often each was the strongest tone. The 33 tones of the band are the ones that light up.	Stebimos 73 tonų pozicijos: kaip dažnai kiekviena buvo stipriausias tonas. Juostos 33 tonai yra tie, kurie užsidega.
+Cmd	Komanda
+The command character after the addressee: ? asks for the signal report, * for an acknowledgement, $ for the heard list, @ for the location, & for the message of the day, ^ for the software version, ; relays the message, ! and ~ repeat it, # stores it, + asks for a file, | is an alert, > and < change the speed	Komandos simbolis po adresato: ? prašo signalo ataskaitos, * patvirtinimo, $ girdėtųjų sąrašo, @ vietos, & dienos žinutės, ^ programos versijos; ; persiunčia žinutę, ! ir ~ ją kartoja, # išsaugo, + prašo failo, | yra perspėjimas, > ir < keičia greitį
+speed	greitis
+tone spacing	tonų atstumas
+tones heard	girdėti tonai
+tone quality	tonų kokybė
+FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is 290 Hz wide at every speed.	FSQ greičiai: 1,5, 2, 3, 4,5 ir 6 bodai. Automatinis ieško visų penkių; juosta bet kuriuo greičiu yra 290 Hz pločio.
+IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	IFKP greičiai: 0,5, 1,0 ir 2,0 (1,95, 3,9 ir 7,8 bodo). Automatinis ieško visų trijų; juosta bet kuriuo greičiu yra 387 Hz pločio.
+Directed chat, 14.105 MHz	Adresuotas pokalbis, 14,105 MHz
+Keyboard chat, 14.083 MHz	Klaviatūros pokalbis, 14,083 MHz
