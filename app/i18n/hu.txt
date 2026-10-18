@@ -386,10 +386,10 @@ Amp	Erősítő
 LNA	LNA
 VGA	VGA
 AGC	AGC
-Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	Az ADC-szintet egészséges tartományban tartja (kb. -16 dBFS rms, nincs túlvezérlés) az LNA, a VGA és az erősítő állításával.\nHa hozzányúlsz egy erősítésvezérlőhöz, kikapcsol.
+Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off.	A bemenetet az üzemmódnak legjobb munkapontján tartja: jó ADC-szint, az ADC saját zaja fölötti zaj, az erős szomszédok kint tartva. Az LNA-t és a VGA-t mozgatja (az előerősítőt csak akkor, ha a fogaskerékkel engedélyezed), és nem nyúl az erősítéshez, amíg egy dekóder rá van kapcsolódva.\nHa hozzányúlsz egy erősítésszabályzóhoz, kikapcsol.
 Auto-tune	Automatikus hangolás
 Stop tune	Hangolás leállítása
-Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Erősítéssegéd: kb. 40 mp-ig próbál LNA/VGA/erősítő kombinációkat, és a legjobb SNR-t adó, nem túlvezérelt beállítást tartja meg.\nOlyan jel kell hozzá, amelyre a vevő be tud kapcsolódni.
+Gain helper: tries LNA/VGA combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to. The amp stays as you set it.	Erősítéssegéd: körülbelül 40 másodpercig LNA/VGA kombinációkat próbál, és megtartja a legjobb SNR-ű, nem túlvezérelt beállítást.\nOlyan jel kell hozzá, amelyre a vevő rá tud kapcsolódni. Az előerősítő úgy marad, ahogy beállítottad.
 gain helper %d/%d ...	erősítéssegéd %d/%d ...
 ADC OVERLOAD - %s	ADC TÚLVEZÉRLÉS - %s
 AGC is lowering the gain	Az AGC csökkenti az erősítést
@@ -2748,3 +2748,23 @@ Record audio saves the sound as you hear it now, cleaned, instead of the raw sou
 Skip silence in the recording	Csend kihagyása a felvételből
 Nothing is recorded while the silence gate holds the sound off.	Semmi sem kerül rögzítésre, amíg a csendkapu visszatartja a hangot.
 Reset to the preset	Visszaállítás az előbeállításra
+# auto gain (AGC): the gear button, the amp switch, what the AGC is doing
+Auto gain	Automatikus erősítés
+AGC settings	AGC beállítások
+Let AGC turn the amp on/off by itself	Az AGC maga kapcsolhassa be és ki az előerősítőt
+Off by default. With this off the AGC only moves the LNA and VGA and never touches the amp: it stays as you set it. The amp is the first stage and can be damaged by strong signals.	Alapból ki van kapcsolva. Kikapcsolva az AGC csak az LNA-t és a VGA-t mozgatja, az előerősítőhöz soha nem nyúl: úgy marad, ahogy beállítottad. Az előerősítő az első fokozat, és az erős jelek tönkretehetik.
+This radio has no amp for the AGC to switch.	Ennek a rádiónak nincs olyan előerősítője, amit az AGC kapcsolhatna.
+The amp can fry itself on strong signals while on	Az előerősítő erős jeleken tönkremehet, amíg be van kapcsolva
+Aims for: %s	Cél: %s
+wide channel: ADC headroom	széles csatorna: ADC-tartalék
+narrow channel: lowest noise, neighbours kept out	keskeny csatorna: legkisebb zaj, a szomszédok távol
+pulsed signals: peaks decide	impulzusos jelek: a csúcsok döntenek
+strong stations: front end protected	erős adók: a bemenet védve
+Now: %s	Most: %s
+cut after an overload	túlvezérlés után csökkentve
+lowering the gain	az erősítés csökken
+raising the gain	az erősítés nő
+strong neighbour: front gain limited	erős szomszéd: a bemeneti erősítés korlátozva
+decoder locked: gain frozen	dekóder bekapcsolódott: az erősítés rögzítve
+at the end of the gain range	az erősítési tartomány végén
+holding the level	a szint tartása

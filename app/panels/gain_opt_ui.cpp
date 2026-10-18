@@ -11,8 +11,9 @@ namespace {
 bool gainRange(const App& a, int& lo, int& hi) {
     const DeviceInfo& d = a.devices[(size_t)a.devIdx];
     if (!d.isRadio()) return false;
-    if (d.isGeneric()) { lo = (int)std::ceil(d.gainMinDb); hi = (int)std::floor(d.gainMaxDb); return hi > lo; }
-    lo = 0; hi = 104;
+    // the amp is not the sweep's to switch: it stays as the user set it (its 14 dB are then part of every total), and joins only above the range when allowed
+    if (d.isGeneric()) { lo = (int)std::ceil(d.gainMinDb); hi = std::min((int)std::floor(d.gainMaxDb), agcMaxTotal(const_cast<App&>(a))); return hi > lo; }
+    lo = a.tune.ampOn ? 14 : 0; hi = agcMaxTotal(const_cast<App&>(a));
     return true;
 }
 int currentGain(const App& a) {
@@ -21,7 +22,7 @@ int currentGain(const App& a) {
 void setGain(App& a, int g, const GainSetting* stages = nullptr) {
     if (a.devices[(size_t)a.devIdx].isGeneric()) a.tune.gainDb = g;
     else {
-        const GainSetting s = stages ? *stages : gainForTotal(g);
+        const GainSetting s = stages ? *stages : stagesFor(a, g);
         a.tune.lnaDb = s.lna; a.tune.vgaDb = s.vga; a.tune.ampOn = s.amp;
     }
 }
@@ -50,7 +51,7 @@ void gainOptButtons(App& a, bool running) {
     if (s.opt.active()) {
         if (ImGui::Button(tr("Stop optimising"))) {
             int g = 0;
-            if (s.opt.cancel(g)) { setGain(a, s.undoDb, &s.undoStages); apply(a); a.agcOn = s.undoAgc; a.agc.reset(); s.finished = false; s.undoable = false; a.engine.log("gain optimiser: stopped, gain back to " + std::to_string(s.undoDb) + " dB"); }
+            if (s.opt.cancel(g)) { setGain(a, s.undoDb, &s.undoStages); apply(a); a.agcOn = s.undoAgc; agcReset(a); s.finished = false; s.undoable = false; a.engine.log("gain optimiser: stopped, gain back to " + std::to_string(s.undoDb) + " dB"); }
         }
     } else {
         ImGui::BeginDisabled(!can);
@@ -73,7 +74,7 @@ void gainOptButtons(App& a, bool running) {
             if (ImGui::Button(tr("Undo gain"))) {
                 setGain(a, s.undoDb, &s.undoStages);
                 apply(a);
-                a.agcOn = s.undoAgc; a.agc.reset();
+                a.agcOn = s.undoAgc; agcReset(a);
                 s.undoable = false; s.finished = false;
                 savePrefs(a);
                 a.engine.log("gain optimiser: undone, gain back to " + std::to_string(s.undoDb) + " dB");

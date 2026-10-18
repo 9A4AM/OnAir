@@ -390,10 +390,10 @@ Amp	Verst.
 LNA	LNA
 VGA	VGA
 AGC	AGC
-Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	Hält den ADC-Pegel in einem gesunden Bereich (etwa -16 dBFS rms, ohne Übersteuerung), indem LNA, VGA und Verstärker angepasst werden.\nEin Griff an einen Verstärkungsregler schaltet sie ab.
+Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off.	Hält die Eingangsstufe für die Betriebsart im besten Arbeitspunkt: gesunder ADC-Pegel, Rauschen über dem des ADC, starke Nachbarn bleiben draußen. Sie verstellt LNA und VGA (den Verstärker nur, wenn du es über das Zahnrad erlaubst) und bleibt still, solange ein Decoder eingerastet ist.\nEin Griff an einen Verstärkungsregler schaltet sie ab.
 Auto-tune	Auto-Abgleich
 Stop tune	Abgleich stoppen
-Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Verstärkungshelfer: probiert etwa 40 s lang LNA/VGA/Verstärker-Kombinationen und behält die mit dem besten SNR ohne Übersteuerung.\nBraucht ein Signal, auf das der Empfänger einrasten kann.
+Gain helper: tries LNA/VGA combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to. The amp stays as you set it.	Verstärkungshelfer: probiert etwa 40 s lang LNA/VGA-Kombinationen und behält die mit dem besten SNR ohne Übersteuerung.\nBraucht ein Signal, auf das der Empfänger einrasten kann. Der Verstärker bleibt, wie du ihn eingestellt hast.
 gain helper %d/%d ...	Verstärkungshelfer %d/%d ...
 ADC OVERLOAD - %s	ADC ÜBERSTEUERT - %s
 AGC is lowering the gain	AGC senkt die Verstärkung
@@ -2762,3 +2762,23 @@ Record audio saves the sound as you hear it now, cleaned, instead of the raw sou
 Skip silence in the recording	Stille in der Aufnahme überspringen
 Nothing is recorded while the silence gate holds the sound off.	Es wird nichts aufgenommen, solange die Stummschaltung bei Stille den Ton zurückhält.
 Reset to the preset	Auf die Voreinstellung zurücksetzen
+# auto gain (AGC): the gear button, the amp switch, what the AGC is doing
+Auto gain	Automatische Verstärkung
+AGC settings	AGC-Einstellungen
+Let AGC turn the amp on/off by itself	AGC darf den Verstärker selbst ein- und ausschalten
+Off by default. With this off the AGC only moves the LNA and VGA and never touches the amp: it stays as you set it. The amp is the first stage and can be damaged by strong signals.	Standardmäßig aus. Ist das aus, verstellt die AGC nur LNA und VGA und fasst den Verstärker nie an: er bleibt so, wie du ihn eingestellt hast. Der Verstärker ist die erste Stufe und kann durch starke Signale beschädigt werden.
+This radio has no amp for the AGC to switch.	Dieses Radio hat keinen Verstärker, den die AGC schalten könnte.
+The amp can fry itself on strong signals while on	Der Verstärker kann sich bei starken Signalen selbst zerstören, solange er an ist
+Aims for: %s	Ziel: %s
+wide channel: ADC headroom	breiter Kanal: ADC-Aussteuerungsreserve
+narrow channel: lowest noise, neighbours kept out	schmaler Kanal: wenig Rauschen, Nachbarn fernhalten
+pulsed signals: peaks decide	gepulste Signale: die Spitzen entscheiden
+strong stations: front end protected	starke Sender: Eingangsstufe geschützt
+Now: %s	Jetzt: %s
+cut after an overload	nach Übersteuerung gesenkt
+lowering the gain	Verstärkung wird gesenkt
+raising the gain	Verstärkung wird erhöht
+strong neighbour: front gain limited	starker Nachbar: Eingangsverstärkung begrenzt
+decoder locked: gain frozen	Decoder eingerastet: Verstärkung eingefroren
+at the end of the gain range	am Ende des Verstärkungsbereichs
+holding the level	Pegel wird gehalten

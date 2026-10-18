@@ -390,10 +390,10 @@ Amp	Stiprintuvas
 LNA	LNA
 VGA	VGA
 AGC	AGC
-Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	Palaiko tinkamą ADC lygį (apie -16 dBFS rms, be ribojimo), reguliuodamas LNA, VGA ir stiprintuvą.\nPalietus bet kurį stiprinimo valdiklį, jis išjungiamas.
+Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off.	Laiko įėjimo dalį geriausiame darbo taške šiam režimui: tinkamas ADC lygis, triukšmas virš paties ADC triukšmo, stiprūs kaimynai atmesti. Keičia LNA ir VGA (stiprintuvą tik jei leidžiate krumpliaračiu) ir nesikeičia, kol dekoderis užsifiksavęs.\nPaliietus stiprinimo valdiklį, jis išsijungia.
 Auto-tune	Auto derinimas
 Stop tune	Stabdyti derinimą
-Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Stiprinimo pagalbininkas: apie 40 s bando LNA/VGA/stiprintuvo derinius ir palieka tą, kurio SNR geriausias ir be ribojimo.\nReikia signalo, prie kurio imtuvas gali prisisinchronizuoti.
+Gain helper: tries LNA/VGA combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to. The amp stays as you set it.	Stiprinimo pagalbininkas: apie 40 s bando LNA/VGA derinius ir palieka tą, kurio SNR geriausias ir kuris neperkrauna.\nReikia signalo, prie kurio imtuvas gali užsifiksuoti. Stiprintuvas lieka toks, kokį nustatėte.
 gain helper %d/%d ...	stiprinimo pagalbininkas %d/%d ...
 ADC OVERLOAD - %s	ADC PERKROVA - %s
 AGC is lowering the gain	AGC mažina stiprinimą
@@ -2762,3 +2762,23 @@ Record audio saves the sound as you hear it now, cleaned, instead of the raw sou
 Skip silence in the recording	Praleisti tylą įraše
 Nothing is recorded while the silence gate holds the sound off.	Nieko neįrašoma, kol tylos vartai sulaiko garsą.
 Reset to the preset	Atstatyti iš anksto nustatytus
+# auto gain (AGC): the gear button, the amp switch, what the AGC is doing
+Auto gain	Automatinis stiprinimas
+AGC settings	AGC nustatymai
+Let AGC turn the amp on/off by itself	Leisti AGC pačiam įjungti ir išjungti stiprintuvą
+Off by default. With this off the AGC only moves the LNA and VGA and never touches the amp: it stays as you set it. The amp is the first stage and can be damaged by strong signals.	Pagal numatytuosius nustatymus išjungta. Kai tai išjungta, AGC keičia tik LNA ir VGA ir niekada neliečia stiprintuvo: jis lieka toks, kokį nustatėte. Stiprintuvas yra pirmoji pakopa, ir stiprūs signalai gali jį sugadinti.
+This radio has no amp for the AGC to switch.	Šis radijas neturi stiprintuvo, kurį AGC galėtų perjungti.
+The amp can fry itself on strong signals while on	Stiprintuvas gali sudegti nuo stiprių signalų, kol yra įjungtas
+Aims for: %s	Tikslas: %s
+wide channel: ADC headroom	platus kanalas: ADC atsarga
+narrow channel: lowest noise, neighbours kept out	siauras kanalas: mažiausias triukšmas, kaimynai atmesti
+pulsed signals: peaks decide	impulsiniai signalai: sprendžia pikai
+strong stations: front end protected	stiprios stotys: įėjimas apsaugotas
+Now: %s	Dabar: %s
+cut after an overload	sumažinta po perkrovos
+lowering the gain	stiprinimas mažinamas
+raising the gain	stiprinimas didinamas
+strong neighbour: front gain limited	stiprus kaimynas: įėjimo stiprinimas apribotas
+decoder locked: gain frozen	dekoderis užsifiksavo: stiprinimas užfiksuotas
+at the end of the gain range	stiprinimo ribos gale
+holding the level	lygis išlaikomas

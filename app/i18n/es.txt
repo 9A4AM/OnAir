@@ -390,10 +390,10 @@ Amp	Amp
 LNA	LNA
 VGA	VGA
 AGC	CAG
-Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	Mantiene el nivel del ADC en una franja sana (unos -16 dBFS rms, sin recorte) ajustando LNA, VGA y amplificador.\nTocar un control de ganancia la desactiva.
+Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off.	Mantiene la entrada en el mejor punto de trabajo para el modo: un buen nivel de ADC, el ruido por encima del propio del ADC y los vecinos fuertes fuera. Mueve el LNA y el VGA (el amplificador solo si lo permites con el engranaje) y se queda quieto mientras un decodificador está enganchado.\nTocar un control de ganancia lo desactiva.
 Auto-tune	Ajuste automático
 Stop tune	Detener el ajuste
-Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Asistente de ganancia: prueba combinaciones de LNA/VGA/amplificador durante unos 40 s y se queda con la de mejor SNR sin recorte.\nNecesita una señal en la que el receptor pueda engancharse.
+Gain helper: tries LNA/VGA combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to. The amp stays as you set it.	Ayudante de ganancia: prueba combinaciones de LNA/VGA durante unos 40 s y conserva la de mejor SNR sin saturar.\nNecesita una señal a la que el receptor pueda engancharse. El amplificador queda como lo pusiste.
 gain helper %d/%d ...	asistente de ganancia %d/%d ...
 ADC OVERLOAD - %s	SOBRECARGA DEL ADC - %s
 AGC is lowering the gain	el CAG está bajando la ganancia
@@ -2762,3 +2762,23 @@ Record audio saves the sound as you hear it now, cleaned, instead of the raw sou
 Skip silence in the recording	Saltar el silencio en la grabación
 Nothing is recorded while the silence gate holds the sound off.	No se graba nada mientras el silenciador de silencio retiene el sonido.
 Reset to the preset	Restablecer al preajuste
+# auto gain (AGC): the gear button, the amp switch, what the AGC is doing
+Auto gain	Ganancia automática
+AGC settings	Ajustes del AGC
+Let AGC turn the amp on/off by itself	Dejar que el AGC encienda y apague el amplificador por sí solo
+Off by default. With this off the AGC only moves the LNA and VGA and never touches the amp: it stays as you set it. The amp is the first stage and can be damaged by strong signals.	Desactivado por defecto. Con esto desactivado, el AGC solo mueve el LNA y el VGA y nunca toca el amplificador: queda como lo pusiste. El amplificador es la primera etapa y las señales fuertes pueden dañarlo.
+This radio has no amp for the AGC to switch.	Esta radio no tiene un amplificador que el AGC pueda conmutar.
+The amp can fry itself on strong signals while on	El amplificador puede quemarse con señales fuertes mientras está encendido
+Aims for: %s	Objetivo: %s
+wide channel: ADC headroom	canal ancho: margen del ADC
+narrow channel: lowest noise, neighbours kept out	canal estrecho: mínimo ruido, vecinos fuera
+pulsed signals: peaks decide	señales pulsadas: deciden los picos
+strong stations: front end protected	emisoras fuertes: entrada protegida
+Now: %s	Ahora: %s
+cut after an overload	reducida tras una sobrecarga
+lowering the gain	bajando la ganancia
+raising the gain	subiendo la ganancia
+strong neighbour: front gain limited	vecino fuerte: ganancia de entrada limitada
+decoder locked: gain frozen	decodificador enganchado: ganancia fija
+at the end of the gain range	en el límite del rango de ganancia
+holding the level	manteniendo el nivel

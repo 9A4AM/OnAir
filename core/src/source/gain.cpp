@@ -103,7 +103,7 @@ bool AutoGain::update(double now, const SignalStats& st, GainSetting& g) {
 }
 
 // ------------------------------------------------------------------ sweep
-void GainSweep::start(double now, int genericMaxDb, int rfMax) {
+void GainSweep::start(double now, int genericMaxDb, int rfMax, int ampMode) {
     e_.clear();
     bestRf_ = -1;
     if (genericMaxDb > 0 && rfMax > 0) {   // RF states from the most gain down, each with IF gains: less RF gain wants more IF
@@ -117,6 +117,14 @@ void GainSweep::start(double now, int genericMaxDb, int rfMax) {
         for (int vga : {12, 20, 28}) { Entry e; e.g = {lna, vga, true}; e_.push_back(e); }
     for (int lna : {32, 40})
         for (int vga : {20, 32}) { Entry e; e.g = {lna, vga, false}; e_.push_back(e); }
+    }
+    if (ampMode != 0 && genericMaxDb <= 0) {   // the amp is not the sweep's to switch: same totals, the VGA carries the 14 dB
+        const bool keep = ampMode == 2;
+        for (Entry& e : e_) {
+            if (e.g.amp == keep) continue;
+            e.g.vga = std::max(0, std::min(62, e.g.vga + (keep ? -14 : 14)));
+            e.g.amp = keep;
+        }
     }
     idx_ = -1;
     active_ = true;

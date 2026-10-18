@@ -220,7 +220,9 @@ struct Host : RemoteApiHost {
                 a.tune.gainDb = std::round(db);
             } else {
                 if (db < 0 || db > 116) { e = "the HackRF's total gain is 0 to 116 dB"; return false; }
-                const GainSetting g = gainForTotal((int)std::lround(db));
+                if (!a.tune.ampOn && db > 102) { e = "above 102 dB the amp is needed: switch it on yourself first (it can be damaged by strong signals)"; return false; }
+                if (a.tune.ampOn && db < 14) { e = "the amp is on (+14 dB): the total is 14 dB or more"; return false; }
+                const GainSetting g = agcModel(a).split((int)std::lround(db), a.tune.ampOn, 40);
                 a.tune.lnaDb = g.lna; a.tune.vgaDb = g.vga; a.tune.ampOn = g.amp;
             }
             a.agcOn = false;   // a gain that was set by hand is not the AGC's to change

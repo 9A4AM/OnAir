@@ -1,4 +1,4 @@
-// Command-line channel scanner:  dect2scan [--from MHz] [--to MHz] [--step MHz] [--bw MHz] [--quick] [--lna dB] [--vga dB] [--noamp]
+// Command-line channel scanner:  dect2scan [--from MHz] [--to MHz] [--step MHz] [--bw MHz] [--quick] [--lna dB] [--vga dB] [--amp]
 #include "dect2/engine/scanner.h"
 #include <chrono>
 #include <cstdio>
@@ -9,13 +9,13 @@
 using namespace dect2;
 int main(int argc, char** argv) {
     ScanConfig c;
-    c.tune.lnaDb = 32; c.tune.vgaDb = 20; c.tune.ampOn = true;
+    c.tune.lnaDb = 32; c.tune.vgaDb = 34; c.tune.ampOn = false;   // the amp is off unless the user asks for it (--amp): it can be damaged by strong signals
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         auto nx = [&]() { return i + 1 < argc ? atof(argv[++i]) : 0.0; };
         if (a == "--from") c.startMHz = nx(); else if (a == "--to") c.stopMHz = nx(); else if (a == "--step") c.stepMHz = nx();
         else if (a == "--bw") { c.bwMhz = nx(); c.autoBandwidth = false; } else if (a == "--quick") c.identifyServices = false;
-        else if (a == "--lna") c.tune.lnaDb = (int)nx(); else if (a == "--vga") c.tune.vgaDb = (int)nx(); else if (a == "--noamp") c.tune.ampOn = false;
+        else if (a == "--lna") c.tune.lnaDb = (int)nx(); else if (a == "--vga") c.tune.vgaDb = (int)nx(); else if (a == "--noamp") c.tune.ampOn = false; else if (a == "--amp") c.tune.ampOn = true;
         else if (a == "--occ") c.occupancyDb = nx();
     }
     std::string err;

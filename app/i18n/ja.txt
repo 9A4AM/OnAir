@@ -383,10 +383,10 @@ Amp	アンプ
 LNA	LNA
 VGA	VGA
 AGC	AGC
-Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	LNA、VGA、アンプを調整して、ADC レベルを適正な範囲 (約 -16 dBFS rms、クリップなし) に保ちます。\nゲインのコントロールを操作すると無効になります。
+Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off.	このモードに最適な動作点にフロントエンドを保ちます。ADCレベルを適正に、ノイズをADC自身のノイズより上に、強い隣接信号を遠ざけます。LNAとVGAを動かし(アンプは歯車ボタンで許可した場合のみ)、デコーダがロックしている間は動かしません。\nゲインの操作に触れるとオフになります。
 Auto-tune	自動調整
 Stop tune	調整を停止
-Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	ゲインヘルパー: 約 40 秒間 LNA / VGA / アンプの組み合わせを試し、クリップしない中で最も SNR の良いものを採用します。\n受信機がロックできる信号が必要です。
+Gain helper: tries LNA/VGA combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to. The amp stays as you set it.	ゲインヘルパー: 約40秒間LNA/VGAの組み合わせを試し、飽和しない中でSNRが最も良いものを残します。\n受信機がロックできる信号が必要です。アンプは設定したままです。
 gain helper %d/%d ...	ゲインヘルパー %d/%d ...
 ADC OVERLOAD - %s	ADC 過負荷 - %s
 AGC is lowering the gain	AGC がゲインを下げています
@@ -2762,3 +2762,23 @@ Record audio saves the sound as you hear it now, cleaned, instead of the raw sou
 Skip silence in the recording	録音中の無音をスキップ
 Nothing is recorded while the silence gate holds the sound off.	無音ゲートが音を止めている間は何も録音されません。
 Reset to the preset	プリセットに戻す
+# auto gain (AGC): the gear button, the amp switch, what the AGC is doing
+Auto gain	自動ゲイン
+AGC settings	AGC設定
+Let AGC turn the amp on/off by itself	AGCがアンプを自動でオン/オフすることを許可する
+Off by default. With this off the AGC only moves the LNA and VGA and never touches the amp: it stays as you set it. The amp is the first stage and can be damaged by strong signals.	初期設定はオフです。オフの間、AGCはLNAとVGAだけを動かし、アンプには一切触れません(設定したままです)。アンプは最初の段で、強い信号で破損することがあります。
+This radio has no amp for the AGC to switch.	このラジオにはAGCが切り替えられるアンプがありません。
+The amp can fry itself on strong signals while on	アンプはオンの間、強い信号で焼損することがあります
+Aims for: %s	目標: %s
+wide channel: ADC headroom	広帯域チャンネル: ADCの余裕を確保
+narrow channel: lowest noise, neighbours kept out	狭帯域チャンネル: 低雑音、隣接信号を排除
+pulsed signals: peaks decide	パルス信号: ピークで判断
+strong stations: front end protected	強い局: フロントエンドを保護
+Now: %s	現在: %s
+cut after an overload	過負荷のため下げました
+lowering the gain	ゲインを下げています
+raising the gain	ゲインを上げています
+strong neighbour: front gain limited	強い隣接信号: 入力段のゲインを制限
+decoder locked: gain frozen	デコーダがロック中: ゲイン固定
+at the end of the gain range	ゲイン範囲の端です
+holding the level	レベルを維持しています

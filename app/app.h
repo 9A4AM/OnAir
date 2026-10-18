@@ -32,6 +32,7 @@
 #include "dect2/engine/updater.h"
 #include "dect2/source/gain.h"
 #include "dect2/source/gain_opt.h"
+#include "dect2/source/agc.h"
 #include "dect2/tx/tx.h"
 #include "dect2/channels/channel.h"
 #include "dect2/dvbt/dvbt.h"
@@ -369,7 +370,7 @@ struct App {
     bool dabMode = false;     // DAB / DAB+ (family 2)
     bool fmMode = false;      // FM radio (family 5)
     bool newUi = true;        // the new interface (ui2.cpp) instead of the classic one (View > Classic interface)
-    struct FamGain { int lna = 32, vga = 20; bool amp = true, known = false; } famGain[kNumSlots];   // the radio gains remembered for each mode
+    struct FamGain { int lna = 32, vga = 34; bool amp = false, known = false; } famGain[kNumSlots];   // the radio gains remembered for each mode
     double famFreq[kNumSlots] = {};  // the frequency each of the modes added after FM was last tuned to (0 = never)
     std::string modeGroupsOpen;   // the mode list groups left unfolded, by name, separated by |
     int uiVariant = 0;        // layout of the new interface: 0 sidebar (the default), 1 scope, 2 tiles, 3 faceplate, 4-6 scope children, 7 panel
@@ -558,7 +559,12 @@ struct App {
     std::string biasCtx;        // the mode / radio the antenna power was last loaded for (biasContext)
     std::string rateCtx;        // mode / radio / channel width applyBandwidth() last ran for (the control refreshes Auto when it changes)
     std::string radioKey;  // the radio a.tune.radio (its own settings, DeviceInfo::settings) was loaded for (radioKeyOf); "" = none
-    AutoGain agc;
+    SmartAgc agc;          // the auto-gain loop (agc_ui.cpp, core/src/source/agc.cpp); configured per radio and mode when it starts
+    std::string agcCtx;    // the radio / mode / width / rate it was configured for ("" = start it afresh)
+    double agcFreqMhz = 0; // the frequency it last ran at: a retune starts a new acquisition
+    bool agcAmpAllow = false;   // "Let AGC turn the amp on/off by itself" for this radio (prefs agcamp.<radio>), default off
+    std::string agcAmpCtx;      // the prefs key agcAmpAllow was loaded for
+    bool agcGearOpen = false;
     GainSweep sweep;
     GainOptSession gopt;   // "Optimise gain" (gain_opt_ui.cpp): a sweep of the radio's gain range for the best quality that does not overload
     bool sweepRetune = false;
@@ -817,6 +823,16 @@ void loadFeedPrefs(App& a);         // feeds_ui.cpp: the data feed settings, and
 void saveFeedPrefs(const App& a);
 void gainOptButtons(App& a, bool running);   // gain_opt_ui.cpp: "Optimise gain" / "Cancel" and "Undo gain" on the gain row
 void gainOptTick(App& a);                      // every frame (gainControl): runs the sweep
+// agc_ui.cpp: the auto-gain loop's glue to the app
+void agcReset(App& a);                         // the AGC starts afresh (switched on, or the gain was changed by something else)
+bool agcStep(App& a, GainSetting& g);          // one tick: true when `g` (HackRF stages, or a generic radio's gain in .vga) must be applied
+void agcGear(App& a);                          // the gear button beside "AGC" and its popup
+void agcAmpWarning(const App& a);              // the "amp can fry itself" note, shown beside a manual Amp switch that is on
+bool agcAmpSwitchable(const App& a);           // this radio has an amplifier the user can switch
+bool agcAmpAllowed(App& a);                    // the user let the AGC switch it (default no)
+GainModel agcModel(const App& a);              // the selected radio's gain stages
+int agcMaxTotal(App& a);                       // the highest overall gain the AGC / the optimiser may use on this radio (without the amp unless allowed)
+GainSetting stagesFor(App& a, int totalDb);    // an overall gain as the radio's stages, the amp as the user set it (it joins only above its range when allowed)
 bool gainOptStatus(App& a);                    // the progress / result line; true when it drew something
 void remoteApiLoadPrefs(App& a);    // remote_api_app.cpp: the remote-control API (HTTP + WebSocket), off by default: its settings, started when on
 void remoteApiSavePrefs(const App& a);

@@ -383,10 +383,10 @@ Amp	Versterker
 LNA	LNA
 VGA	VGA
 AGC	AGC
-Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	Houdt het ADC-niveau in een gezond bereik (ongeveer -16 dBFS rms, zonder clipping) door LNA, VGA en versterker bij te stellen.\nEen versterkingsregelaar aanraken schakelt hem uit.
+Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off.	Houdt de ingang in het beste werkpunt voor de modus: een gezond ADC-niveau, ruis boven die van de ADC zelf, sterke buren buiten. Hij verstelt LNA en VGA (de versterker alleen als je dat met het tandwiel toestaat) en blijft stil zolang een decoder vergrendeld is.\nAan een versterkingsregelaar zitten zet hem uit.
 Auto-tune	Auto-afstemming
 Stop tune	Afstemming stoppen
-Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Versterkingshulp: probeert ongeveer 40 s lang combinaties van LNA/VGA/versterker en houdt de combinatie met de beste SNR zonder clipping.\nVereist een signaal waarop de ontvanger kan vergrendelen.
+Gain helper: tries LNA/VGA combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to. The amp stays as you set it.	Versterkingshulp: probeert ongeveer 40 s LNA/VGA-combinaties en houdt de combinatie met de beste SNR zonder overbelasting.\nHeeft een signaal nodig waarop de ontvanger kan vergrendelen. De versterker blijft zoals jij hem hebt ingesteld.
 gain helper %d/%d ...	versterkingshulp %d/%d ...
 ADC OVERLOAD - %s	ADC OVERBELAST - %s
 AGC is lowering the gain	AGC verlaagt de versterking
@@ -2762,3 +2762,23 @@ Record audio saves the sound as you hear it now, cleaned, instead of the raw sou
 Skip silence in the recording	Stilte in de opname overslaan
 Nothing is recorded while the silence gate holds the sound off.	Er wordt niets opgenomen zolang de stiltepoort het geluid tegenhoudt.
 Reset to the preset	Terug naar de voorinstelling
+# auto gain (AGC): the gear button, the amp switch, what the AGC is doing
+Auto gain	Automatische versterking
+AGC settings	AGC-instellingen
+Let AGC turn the amp on/off by itself	AGC mag de versterker zelf aan- en uitzetten
+Off by default. With this off the AGC only moves the LNA and VGA and never touches the amp: it stays as you set it. The amp is the first stage and can be damaged by strong signals.	Standaard uit. Als dit uit staat, verstelt de AGC alleen LNA en VGA en komt hij nooit aan de versterker: die blijft zoals jij hem hebt ingesteld. De versterker is de eerste trap en kan door sterke signalen beschadigd raken.
+This radio has no amp for the AGC to switch.	Deze radio heeft geen versterker die de AGC kan schakelen.
+The amp can fry itself on strong signals while on	De versterker kan bij sterke signalen doorbranden zolang hij aan staat
+Aims for: %s	Doel: %s
+wide channel: ADC headroom	breed kanaal: ADC-ruimte
+narrow channel: lowest noise, neighbours kept out	smal kanaal: laagste ruis, buren buiten
+pulsed signals: peaks decide	gepulste signalen: de pieken beslissen
+strong stations: front end protected	sterke zenders: ingang beschermd
+Now: %s	Nu: %s
+cut after an overload	verlaagd na een overbelasting
+lowering the gain	versterking wordt verlaagd
+raising the gain	versterking wordt verhoogd
+strong neighbour: front gain limited	sterke buur: ingangsversterking beperkt
+decoder locked: gain frozen	decoder vergrendeld: versterking bevroren
+at the end of the gain range	aan het eind van het versterkingsbereik
+holding the level	niveau wordt vastgehouden

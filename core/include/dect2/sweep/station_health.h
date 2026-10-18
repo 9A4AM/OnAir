@@ -31,6 +31,12 @@ struct AdcStats {
 };
 AdcStats measureAdc(const cf32* x, size_t n, float clipLevel = 0.98f);
 
+// The gain-stage model shared with the AGC (core/include/dect2/source/agc.h): quantisation noise of a full-scale-limited complex ADC (dBFS over the
+// whole rate), and how far the receiver's noise (a noise floor of floorDb per Hann-windowed bin of binHz, over rateHz) sits above it. Small = the ADC
+// limits sensitivity (raise the gain), large = the gain buys nothing more.
+double adcQuantFloorDbfs(int adcBits);
+double adcMarginDb(double floorDbPerBin, double binHz, double rateHz, int adcBits);
+
 enum class RefLevel { NotChecked, Absent, Weak, Ok };
 struct RefResult {
     HealthRef kind = HealthRef::None;
