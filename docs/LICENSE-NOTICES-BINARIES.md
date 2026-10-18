@@ -2,6 +2,8 @@
 
 OnAir is GPL-3.0-or-later (file LICENSE; source: https://github.com/adswill/OnAir). The full list of third-party code, data and credits is THIRD_PARTY.md; the licence texts are in LICENSES/.
 
+OnAir name and logo © 2026 Kristijonas Adomaitis. All rights reserved; the logo is not covered by the GPL licence of the source code.
+
 ## FFmpeg (libavcodec, libavformat, libavutil, libswscale, libswresample)
 
 - Version 8.0 (https://ffmpeg.org/releases/ffmpeg-8.0.tar.xz, unmodified), licence LGPL-2.1-or-later (LICENSES/LGPL-2.1.txt).

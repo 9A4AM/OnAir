@@ -29,6 +29,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleIdentifier</key><string>io.github.adswill.onair</string>
   <key>CFBundleExecutable</key><string>OnAir</string>
   <key>CFBundleIconFile</key><string>OnAir</string>
+  <key>NSHumanReadableCopyright</key><string>OnAir name and logo © 2026 Kristijonas Adomaitis. All rights reserved; the logo is not covered by the GPL licence of the source code.</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>$VERSION</string>
   <key>CFBundleVersion</key><string>$VERSION</string>
@@ -94,8 +95,13 @@ for root in /opt/homebrew/opt /usr/local/opt; do
 done
 # the app is signed ad hoc (no developer certificate): macOS shows a one-time "unidentified developer" prompt on first launch
 python3 tools/package/scrub_paths.py "$APP"   # no build-machine paths in the shipped files (before signing)
-for f in "$APP"/Contents/Frameworks/*.dylib "$APP"/Contents/Frameworks/SoapySDR/modules0.8/*; do [ -L "$f" ] || [ ! -f "$f" ] || codesign --force -s - "$f" >/dev/null 2>&1; done
-codesign --force --deep -s - "$APP" >/dev/null 2>&1
+# data files next to the program (the RX888 firmware in MacOS/codecs) must carry a signature too, or signing the app stops with "code object is not signed at all"
+for f in "$APP"/Contents/Frameworks/*.dylib "$APP"/Contents/Frameworks/SoapySDR/modules/* "$APP"/Contents/MacOS/codecs/*; do
+  if [ -L "$f" ] || [ ! -f "$f" ]; then continue; fi
+  codesign --force -s - "$f" || echo "warning: could not sign $f"
+done
+# no --deep: every library and module inside is signed above, and a folder name with an extension (SoapySDR "modules0.8") is read as a malformed bundle, hence "modules"
+codesign --force -s - "$APP" || { echo "Signing the app failed"; codesign -dvvv "$APP" 2>&1 | head -20; exit 1; }
 STAGE=$BUILD/dmg
 rm -rf $STAGE && mkdir -p $STAGE
 cp -R "$APP" $STAGE/

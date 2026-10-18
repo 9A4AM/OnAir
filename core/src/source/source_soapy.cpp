@@ -59,7 +59,7 @@ void soapyLocateModules() {
     }();
     (void)once;
 #elif defined(__APPLE__)
-    // macOS app bundle: the SoapyRemote client module is bundled in Contents/Frameworks/SoapySDR/modules0.8 (tools/package/bundle_macos.py). Homebrew's own
+    // macOS app bundle: the SoapyRemote client module is bundled in Contents/Frameworks/SoapySDR/modules (tools/package/bundle_macos.py; not "modules0.8": codesign reads that name as a bundle). Homebrew's own
     // module folder is still searched by SoapySDR, so a development build without the bundle keeps working.
     static const bool once = [] {
         char path[4096] = {0};
@@ -69,7 +69,7 @@ void soapyLocateModules() {
             const size_t cut = dir.find_last_of('/');
             if (cut != std::string::npos) {
                 dir.resize(cut);   // .../OnAir.app/Contents/MacOS
-                const std::string mods = dir + "/../Frameworks/SoapySDR/modules0.8";
+                const std::string mods = dir + "/../Frameworks/SoapySDR/modules";
                 if (access(mods.c_str(), R_OK) == 0) {
                     const char* old = getenv("SOAPY_SDR_PLUGIN_PATH");
                     const std::string v = old && *old ? mods + ":" + old : mods;

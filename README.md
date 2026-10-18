@@ -21,12 +21,14 @@ Free and open source, for macOS, Windows, Linux and Android.</p>
   <a href="https://on-air.dev"><b>Website</b></a> &nbsp;·&nbsp;
   <a href="https://on-air.dev/docs/"><b>Docs</b></a> &nbsp;·&nbsp;
   <a href="https://github.com/adswill/OnAir/releases/latest"><b>Download</b></a> &nbsp;·&nbsp;
-  <a href="https://github.com/adswill/OnAir/releases/download/v0.2.0/OnAir_promo_v0.2.0.mp4"><b>Overview video</b></a> &nbsp;·&nbsp;
+  <a href="https://github.com/adswill/OnAir/releases/download/v0.2.7/OnAir_promo_v0.2.7.mp4"><b>Overview video</b></a> &nbsp;·&nbsp;
   <a href="https://discord.gg/Kky9c6atm"><b>Discord</b></a> &nbsp;·&nbsp;
   <a href="https://files.on-air.dev"><b>Signal samples</b></a> &nbsp;·&nbsp;
   <a href="https://map.on-air.dev"><b>Live map</b></a> &nbsp;·&nbsp;
   <a href="https://github.com/adswill/OnAir-channels"><b>Channel list</b></a>
 </p>
+
+<p align="center"><a href="https://github.com/adswill/OnAir/releases/download/v0.2.7/OnAir_promo_v0.2.7.mp4"><img src="assets/promo-thumb-0.2.7.jpg" width="720" alt="OnAir 0.2.7 overview video"></a><br><sub>Watch the 0.2.7 overview video (2:46)</sub></p>
 
 <p align="center"><a href="https://ko-fi.com/adswill"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support OnAir on Ko-fi" height="36"></a></p>
 
@@ -578,6 +580,10 @@ I'm a bit embarrassed to ask this, but here goes. OnAir is free and always will 
 ## License
 
 OnAir is released under the **GNU General Public License v3.0 or later**, see [LICENSE](LICENSE).
+
+### Logo
+
+OnAir name and logo © 2026 Kristijonas Adomaitis. All rights reserved; the logo is not covered by the GPL licence of the source code. Designed by Cipta Karsa Studio as work for hire, all rights assigned to the owner (see [assets/branding](assets/branding/README.md)).
 
 ## Credits
 
