@@ -311,7 +311,7 @@ std::vector<AirportHit> AirportDb::search(const std::string& text, size_t maxHit
     return out;
 }
 
-std::vector<AirportHit> AirportDb::near(double lat, double lon, double radiusKm, size_t maxHits, bool airbandOnly) const {
+std::vector<AirportHit> AirportDb::nearby(double lat, double lon, double radiusKm, size_t maxHits, bool airbandOnly) const {
     std::vector<AirportHit> out;
     const double dLat = radiusKm / 111.0 + 0.01;
     for (size_t i = 0; i < v_.size(); i++) {

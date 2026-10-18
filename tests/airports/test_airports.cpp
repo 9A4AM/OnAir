@@ -68,12 +68,12 @@ int main() {
     }
     // ---- near
     {
-        const auto n = db.near(54.64, 25.28, 60);
+        const auto n = db.nearby(54.64, 25.28, 60);
         CHECK(!n.empty() && db.all()[n[0].index].icao == "EYVI" && n[0].km < 10, "nearest to Vilnius");
         for (size_t i = 1; i < n.size(); i++) CHECK(n[i].km >= n[i - 1].km && n[i].km <= 60, "sorted and inside");
-        CHECK(db.near(54.64, 25.28, 0.1, 5, true).size() <= 1, "tiny radius");
-        CHECK(db.near(-60, 0, 10).empty(), "the sea");
-        CHECK(db.near(54.64, 25.28, 5000, 7).size() == 7, "capped");
+        CHECK(db.nearby(54.64, 25.28, 0.1, 5, true).size() <= 1, "tiny radius");
+        CHECK(db.nearby(-60, 0, 10).empty(), "the sea");
+        CHECK(db.nearby(54.64, 25.28, 5000, 7).size() == 7, "capped");
         CHECK(std::fabs(airportDistanceKm(0, 0, 0, 1) - 111.19) < 0.1 && airportDistanceKm(10, 10, 10, 10) == 0, "distance");
     }
     // ---- the channels of an airport, and their grouping
@@ -134,7 +134,7 @@ int main() {
         CHECK(e.size() == 2 && r2.airports == 2 && r2.freqs == 2 && r2.skipped >= 6, "damaged: %zu airports, %zu freqs, %zu skipped", r2.airports, r2.freqs, r2.skipped);
         CHECK(e.size() == 2 && e.all()[0].freqs.size() == 1 && e.all()[1].freqs.size() == 1 && e.all()[1].elevFt == -20, "frequencies stay with their airport");
         AirportDb z;
-        CHECK(z.parseTsv("").airports == 0 && z.empty() && z.search("x").empty() && z.near(0, 0, 10).empty(), "empty table");
+        CHECK(z.parseTsv("").airports == 0 && z.empty() && z.search("x").empty() && z.nearby(0, 0, 10).empty(), "empty table");
     }
     // ---- OurAirports CSV import
     {

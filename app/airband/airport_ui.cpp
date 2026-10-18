@@ -153,7 +153,7 @@ void search() {
     const bool have = station(me[0], me[1]);
     if (S.nearMode) {
         if (!have) { S.hits.clear(); return; }
-        S.hits = db.near(me[0], me[1], S.radiusKm, 200, true);
+        S.hits = db.nearby(me[0], me[1], S.radiusKm, 200, true);
     } else {
         S.hits = db.search(S.query, 30, have ? me : nullptr, false);
     }
@@ -211,7 +211,7 @@ std::string airportLabelFor(double freqHz) {
     int whole = 0, frac = 0;
     if (sscanf(nm.c_str(), "%d.%d", &whole, &frac) != 2) return "";
     const int want = whole * 1000 + frac;
-    for (const auto& h : db.near(me[0], me[1], 150, 40, true)) {
+    for (const auto& h : db.nearby(me[0], me[1], 150, 40, true)) {
         const dect2::Airport& ap = db.all()[h.index];
         for (const auto& f : ap.freqs) if (f.khz == want) return ap.icao + " " + dect2::airportTypeName(f.type);
     }

@@ -59,7 +59,7 @@ public:
     // From a position, equal matches are ordered by distance; larger airports before smaller ones otherwise.
     std::vector<AirportHit> search(const std::string& text, size_t maxHits = 40, const double* fromLatLon = nullptr, bool withFreqOnly = false) const;
     // Airports within radiusKm of a position, nearest first. Only those with at least one airband frequency when airbandOnly.
-    std::vector<AirportHit> near(double latDeg, double lonDeg, double radiusKm, size_t maxHits = 200, bool airbandOnly = true) const;
+    std::vector<AirportHit> nearby(double latDeg, double lonDeg, double radiusKm, size_t maxHits = 200, bool airbandOnly = true) const;
 
 private:
     std::vector<Airport> v_;

@@ -1,7 +1,7 @@
 // Opt-in hardware acceptance tool. Uses OnAir's actual source, not a separate SDRplay implementation.
 // sdrplay_probe [--port 0|1|2] [--rate Hz] [--freq Hz] [--gain dB] [--secs N] [--matrix] [--capture file.cf32]
 // Antenna power stays OFF. No RF transmission. Run with SDRconnect/SDRuno and other receivers stopped.
-#include "../core/src/native_common.h"
+#include "../core/src/source/native_common.h"
 #include <fstream>
 #include <iostream>
 #include <iomanip>
