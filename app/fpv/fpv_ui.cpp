@@ -461,8 +461,8 @@ void tuner(App& a, bool&) {
     // the band and the channel of the frequency now
     int band = -1, ch = -1;
     const auto all = dect2::fpvAllChannels();
-    const int near = dect2::fpvNearest(all, a.freqMhz * 1e6, 1.0e6);
-    if (near >= 0) { band = all[(size_t)near].band; ch = all[(size_t)near].ch; }
+    const int nearIdx = dect2::fpvNearest(all, a.freqMhz * 1e6, 1.0e6);
+    if (nearIdx >= 0) { band = all[(size_t)nearIdx].band; ch = all[(size_t)nearIdx].ch; }
     ImGui::TextDisabled("%s", tr("Band")); ImGui::SameLine(0, 5 * gUi);
     ImGui::SetNextItemWidth(fit(120));
     if (ImGui::BeginCombo("##fpvband", band >= 0 ? dect2::kFpvBands[band].name : tr("(none)"))) {

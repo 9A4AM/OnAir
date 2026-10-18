@@ -228,9 +228,9 @@ void Detector::frame() {
                         }
                         const double den = m * sxx - sx * sx;
                         p.driftHzPerSec = (m >= 4 && den > 1e-9) ? (m * sxy - sx * sy) / den : 0;
-                        int near = 0;
-                        for (size_t i = 0; i < n; i++) if (lv_[i] >= lv_[ip] - 8.0f) near++;
-                        p.kind = (p.durSec >= 1.5 && near * 2 >= (int)n) ? 1 : 0;
+                        int nearBin = 0;
+                        for (size_t i = 0; i < n; i++) if (lv_[i] >= lv_[ip] - 8.0f) nearBin++;
+                        p.kind = (p.durSec >= 1.5 && nearBin * 2 >= (int)n) ? 1 : 0;
                         const size_t np = std::min<size_t>(n, kMsProfile);
                         p.profile.assign(np, -10.f);
                         for (size_t i = 0; i < n; i++) { float& q = p.profile[i * np / n]; q = std::max(q, lv_[i]); }

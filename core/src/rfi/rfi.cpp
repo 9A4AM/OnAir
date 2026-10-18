@@ -177,9 +177,9 @@ std::vector<Hump> findHumps(const Sweep& s, const std::vector<float>& ref, doubl
         std::vector<float> v(d.begin() + (long)a, d.begin() + (long)b + 1);
         // a hump is smooth: most bins sit near its median level (a comb of spurs over a quiet floor is not a hump)
         const float med = medianOf(v);
-        size_t near = 0;
-        for (float x : v) if (std::fabs(x - med) <= 5.f) near++;
-        if ((double)near < 0.6 * (double)v.size()) continue;
+        size_t nearBin = 0;
+        for (float x : v) if (std::fabs(x - med) <= 5.f) nearBin++;
+        if ((double)nearBin < 0.6 * (double)v.size()) continue;
         Hump h;
         h.startHz = s.freqOf(a); h.stopHz = s.freqOf(b); h.riseDb = med; h.notches = notches; h.hamNotches = ham;
         out.push_back(h);
