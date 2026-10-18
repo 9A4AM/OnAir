@@ -2666,7 +2666,7 @@ The watchlist file could not be read:	Le fichier des listes de surveillance n'a 
 APRS call signs	Indicatifs APRS
 Words in messages	Mots dans les messages
 One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Une par ligne : une adresse ICAO hexadécimale (4840D6), une immatriculation (A6-EDA) ou un indicatif (KLM1023). Un * final correspond au début (KLM*). Reçu par ADS-B, ACARS, VDL2 et HFDL.
-One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Une par ligne : un numéro MMSI, un nom de navire ou un indicatif. Un * final correspond au début (2190*). Reçu par AIS et DSC.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC. The entry DSC distress alerts on every DSC distress call.	Une par ligne : un numéro MMSI, un nom de navire ou un indicatif. Un * final correspond au début (2190*). Reçu par AIS et DSC. L'entrée DSC distress alerte à chaque appel de détresse DSC.
 One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Un par ligne : un indicatif. Sans SSID (LY1ABC), tous les SSID correspondent ; avec un SSID (LY1ABC-9), seulement celui-ci.
 One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Une par ligne : une fréquence en MHz (162.025), avec une unité (162025 kHz) ou une plage (144-146). Tout ce qui est décodé dessus compte.
 One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Un par ligne : un mot ou une expression (sans tenir compte de la casse). Un * final correspond aux débuts de mot (fire*). Recherché dans les messages de pagers, ACARS, APRS et autres textes décodés.
@@ -3189,3 +3189,17 @@ Ping	Ping
 with interference bursts	avec rafales de parasites
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Le signal de test est une balise à 420 Hz du centre avec des échos de météores simulés : des sous-denses courts et quelques surdenses longs.
 Beacon echoes, 143.050 MHz	Échos de balise, 143,050 MHz
+#  DSC audit
+category	catégorie
+from	de
+in distress	en détresse
+unreadable	illisible
+repair	réparation
+symbols	symboles
+DISTRESS	DÉTRESSE
+search calls	chercher des appels
+saved %s	enregistré %s
+could not write %s	impossible d'écrire %s
+%d symbols fixed, one rebuilt from the check character	%d symboles corrigés, un reconstruit avec le caractère de contrôle
+%d symbols taken from the second copy	%d symboles repris de la seconde copie
+In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	Dans une liste de navires, l'entrée DSC distress alerte à chaque appel de détresse DSC ; un MMSI alerte pour cette station.

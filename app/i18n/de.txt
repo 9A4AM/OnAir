@@ -2666,7 +2666,7 @@ The watchlist file could not be read:	Die Beobachtungslisten-Datei konnte nicht 
 APRS call signs	APRS-Rufzeichen
 Words in messages	Wörter in Nachrichten
 One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Eine pro Zeile: eine ICAO-Hex-Adresse (4840D6), eine Registrierung (A6-EDA) oder ein Rufzeichen (KLM1023). Ein * am Ende passt auf den Anfang (KLM*). Empfangen über ADS-B, ACARS, VDL2 und HFDL.
-One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Eine pro Zeile: eine MMSI-Nummer, ein Schiffsname oder ein Rufzeichen. Ein * am Ende passt auf den Anfang (2190*). Empfangen über AIS und DSC.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC. The entry DSC distress alerts on every DSC distress call.	Eine pro Zeile: eine MMSI-Nummer, ein Schiffsname oder ein Rufzeichen. Ein * am Ende passt auf den Anfang (2190*). Empfangen über AIS und DSC. Der Eintrag DSC distress löst bei jedem DSC-Notruf einen Alarm aus.
 One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Eine pro Zeile: ein Rufzeichen. Ohne SSID (LY1ABC) passt jede SSID, mit SSID (LY1ABC-9) nur diese.
 One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Eine pro Zeile: eine Frequenz in MHz (162.025), mit Einheit (162025 kHz) oder ein Bereich (144-146). Alles, was darauf dekodiert wird, zählt.
 One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Eine pro Zeile: ein Wort oder eine Wortgruppe (Groß-/Kleinschreibung egal). Ein * am Ende passt auf Wortanfänge (fire*). Gesucht wird in Pager-, ACARS-, APRS- und anderen dekodierten Texten.
@@ -3189,3 +3189,17 @@ Ping	Ping
 with interference bursts	mit Störimpulsen
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Das Testsignal ist eine Bake 420 Hz neben der Mitte mit simulierten Meteorechos: kurze unterdichte und einige lange überdichte.
 Beacon echoes, 143.050 MHz	Bakenechos, 143,050 MHz
+#  DSC audit
+category	Kategorie
+from	von
+in distress	in Seenot
+unreadable	unlesbar
+repair	Korrektur
+symbols	Symbole
+DISTRESS	NOTRUF
+search calls	Rufe suchen
+saved %s	gespeichert %s
+could not write %s	konnte %s nicht schreiben
+%d symbols fixed, one rebuilt from the check character	%d Symbole korrigiert, eines aus dem Prüfzeichen rekonstruiert
+%d symbols taken from the second copy	%d Symbole aus der zweiten Kopie übernommen
+In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	In einer Schiffsliste meldet der Eintrag DSC distress jeden DSC-Notruf; eine MMSI meldet diese Station.

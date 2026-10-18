@@ -129,6 +129,8 @@ struct MarineReceiver::Impl {
             ev.at(automation::wallNow(), "Marine", vhfPath ? 156.525e6 : 0);
             std::string sum = c.formatName + (c.categoryName.empty() ? "" : ", " + c.categoryName) + (c.distress ? ", " + c.natureName : "");
             ev.str("category", c.distress ? "distress" : c.categoryName).str("from_mmsi", c.fromMmsi).str("to_mmsi", c.to).str("summary", sum);
+            ev.str("kind", c.kind).str("nature", c.nature >= 0 ? c.natureName : "").str("distress_mmsi", c.distressMmsi).str("from_country", c.fromCountry);
+            ev.str("text", c.text);
             if (c.hasPos) ev.num("lat", c.lat).num("lon", c.lon);
             automation::emit(std::move(ev));
         }

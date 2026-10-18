@@ -2649,7 +2649,7 @@ The watchlist file could not be read:	Не удалось прочитать ф�
 APRS call signs	Позывные APRS
 Words in messages	Слова в сообщениях
 One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	По одному в строке: шестнадцатеричный адрес ICAO (4840D6), бортовой номер (A6-EDA) или позывной (KLM1023). * в конце означает начало (KLM*). Принимается по ADS-B, ACARS, VDL2 и HFDL.
-One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	По одному в строке: номер MMSI, название судна или позывной. * в конце означает начало (2190*). Принимается по AIS и DSC.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC. The entry DSC distress alerts on every DSC distress call.	По одному в строке: номер MMSI, название судна или позывной. * в конце означает начало (2190*). Принимается по AIS и DSC. Запись DSC distress оповещает о каждом вызове бедствия DSC.
 One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	По одному в строке: позывной. Без SSID (LY1ABC) подходит любой SSID, с SSID (LY1ABC-9) только он.
 One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	По одной в строке: частота в МГц (162.025), с единицей (162025 kHz) или диапазон (144-146). Учитывается всё, что декодировано на ней.
 One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	По одному в строке: слово или фраза (регистр не важен). * в конце означает начало слова (fire*). Поиск идёт в сообщениях пейджеров, ACARS, APRS и другом декодированном тексте.
@@ -3172,3 +3172,17 @@ Ping	Пинг
 with interference bursts	с импульсными помехами
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Тестовый сигнал - маяк на 420 Гц от центра с имитацией метеорного эха: короткие недоплотные и несколько долгих сверхплотных.
 Beacon echoes, 143.050 MHz	Эхо маяка, 143,050 МГц
+#  DSC audit
+category	категория
+from	от
+in distress	терпит бедствие
+unreadable	нечитаемо
+repair	восстановление
+symbols	символы
+DISTRESS	БЕДСТВИЕ
+search calls	поиск вызовов
+saved %s	сохранено %s
+could not write %s	не удалось записать %s
+%d symbols fixed, one rebuilt from the check character	исправлено символов: %d, один восстановлен по контрольному символу
+%d symbols taken from the second copy	символов из второй копии: %d
+In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	В списке судов запись DSC distress оповещает о каждом вызове бедствия DSC, а MMSI — об этой станции.

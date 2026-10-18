@@ -2649,7 +2649,7 @@ The watchlist file could not be read:	Impossibile leggere il file delle liste di
 APRS call signs	Nominativi APRS
 Words in messages	Parole nei messaggi
 One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Uno per riga: un indirizzo ICAO esadecimale (4840D6), una marca di registrazione (A6-EDA) o un nominativo (KLM1023). Un * finale corrisponde all'inizio (KLM*). Rilevato da ADS-B, ACARS, VDL2 e HFDL.
-One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Uno per riga: un numero MMSI, il nome di una nave o un nominativo. Un * finale corrisponde all'inizio (2190*). Rilevato da AIS e DSC.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC. The entry DSC distress alerts on every DSC distress call.	Uno per riga: un numero MMSI, il nome di una nave o un nominativo. Un * finale corrisponde all'inizio (2190*). Rilevato da AIS e DSC. La voce DSC distress avvisa a ogni chiamata di soccorso DSC.
 One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Uno per riga: un nominativo. Senza SSID (LY1ABC) corrisponde ogni SSID; con un SSID (LY1ABC-9) solo quello.
 One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Una per riga: una frequenza in MHz (162.025), con unità (162025 kHz) o un intervallo (144-146). Conta tutto ciò che viene decodificato su di essa.
 One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Uno per riga: una parola o una frase (senza distinzione tra maiuscole e minuscole). Un * finale corrisponde agli inizi di parola (fire*). Cercato nei messaggi dei pager, ACARS, APRS e in altri testi decodificati.
@@ -3172,3 +3172,17 @@ Ping	Ping
 with interference bursts	con raffiche di disturbo
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Il segnale di prova è un faro a 420 Hz dal centro con echi meteorici simulati: brevi sottodensi e alcuni lunghi sovradensi.
 Beacon echoes, 143.050 MHz	Echi del faro, 143,050 MHz
+#  DSC audit
+category	categoria
+from	da
+in distress	in pericolo
+unreadable	illeggibile
+repair	correzione
+symbols	simboli
+DISTRESS	PERICOLO
+search calls	cerca chiamate
+saved %s	salvato %s
+could not write %s	impossibile scrivere %s
+%d symbols fixed, one rebuilt from the check character	%d simboli corretti, uno ricostruito con il carattere di controllo
+%d symbols taken from the second copy	%d simboli presi dalla seconda copia
+In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	In un elenco di navi, la voce DSC distress avvisa a ogni chiamata di soccorso DSC; un MMSI avvisa per quella stazione.

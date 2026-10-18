@@ -2666,7 +2666,7 @@ The watchlist file could not be read:	ウォッチリストのファイルを読
 APRS call signs	APRSコールサイン
 Words in messages	メッセージ内の単語
 One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	1行に1件: ICAO の16進アドレス (4840D6)、登録記号 (A6-EDA)、またはコールサイン (KLM1023)。末尾の * は前方一致 (KLM*)。ADS-B、ACARS、VDL2、HFDL で検出されます。
-One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	1行に1件: MMSI 番号、船名、またはコールサイン。末尾の * は前方一致 (2190*)。AIS と DSC で検出されます。
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC. The entry DSC distress alerts on every DSC distress call.	1行に1件: MMSI 番号、船名、またはコールサイン。末尾の * は前方一致 (2190*)。AIS と DSC で検出されます。項目 DSC distress は、すべてのDSC遭難呼び出しで通知します。
 One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	1行に1件: コールサイン。SSID なし (LY1ABC) ではすべての SSID に一致し、SSID 付き (LY1ABC-9) ではそれだけに一致します。
 One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	1行に1件: MHz 単位の周波数 (162.025)、単位付き (162025 kHz)、または範囲 (144-146)。その周波数でデコードされたものはすべて対象になります。
 One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	1行に1件: 単語またはフレーズ (大文字小文字は区別しません)。末尾の * は単語の先頭に一致します (fire*)。ポケベル、ACARS、APRS などのデコードされたテキストから検索します。
@@ -3189,3 +3189,17 @@ Ping	ピング
 with interference bursts	干渉バースト付き
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	テスト信号は中心から420 Hz離れたビーコンと模擬流星エコーです。短い低密のものと、いくつかの長い過密のものを含みます。
 Beacon echoes, 143.050 MHz	ビーコンエコー、143.050 MHz
+#  DSC audit
+category	カテゴリ
+from	発信元
+in distress	遭難中
+unreadable	判読不能
+repair	修復
+symbols	シンボル
+DISTRESS	遭難
+search calls	呼び出しを検索
+saved %s	保存しました %s
+could not write %s	%s に書き込めませんでした
+%d symbols fixed, one rebuilt from the check character	%d シンボルを修正、1つはチェック文字から復元
+%d symbols taken from the second copy	%d シンボルを2番目のコピーから採用
+In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	船舶リストでは、項目 DSC distress がすべてのDSC遭難呼び出しで通知し、MMSI はその局で通知します。

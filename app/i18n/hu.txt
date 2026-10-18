@@ -2652,7 +2652,7 @@ The watchlist file could not be read:	A figyelőlista-fájlt nem sikerült beolv
 APRS call signs	APRS hívójelek
 Words in messages	Szavak az üzenetekben
 One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Soronként egy: ICAO hexa cím (4840D6), lajstromjel (A6-EDA) vagy hívójel (KLM1023). A végén lévő * az elejére illeszkedik (KLM*). ADS-B, ACARS, VDL2 és HFDL jelzéseiből.
-One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Soronként egy: MMSI szám, hajónév vagy hívójel. A végén lévő * az elejére illeszkedik (2190*). AIS és DSC jelzéseiből.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC. The entry DSC distress alerts on every DSC distress call.	Soronként egy: MMSI szám, hajónév vagy hívójel. A végén lévő * az elejére illeszkedik (2190*). AIS és DSC jelzéseiből. A DSC distress bejegyzés minden DSC vészhívásnál riaszt.
 One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Soronként egy hívójel. SSID nélkül (LY1ABC) minden SSID egyezik, SSID-vel (LY1ABC-9) csak az az egy.
 One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Soronként egy: frekvencia MHz-ben (162.025), mértékegységgel (162025 kHz) vagy tartomány (144-146). Minden dekódolt jel számít rajta.
 One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Soronként egy: szó vagy kifejezés (kis- és nagybetű nem számít). A végén lévő * a szókezdetekre illeszkedik (fire*). Keresés a személyhívó, ACARS, APRS és más dekódolt szövegekben.
@@ -3175,3 +3175,17 @@ Ping	Ping
 with interference bursts	zavarimpulzusokkal
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	A tesztjel egy 420 Hz-re a középtől lévő jeladó szimulált meteorvisszhangokkal: rövid alulsűrűek és néhány hosszú túlsűrű.
 Beacon echoes, 143.050 MHz	Jeladó-visszhangok, 143,050 MHz
+#  DSC audit
+category	kategória
+from	feladó
+in distress	veszélyben
+unreadable	olvashatatlan
+repair	javítás
+symbols	szimbólumok
+DISTRESS	VÉSZHELYZET
+search calls	hívások keresése
+saved %s	mentve: %s
+could not write %s	nem sikerült írni: %s
+%d symbols fixed, one rebuilt from the check character	%d szimbólum javítva, egy az ellenőrző karakterből helyreállítva
+%d symbols taken from the second copy	%d szimbólum a második másolatból
+In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	Hajólistában a DSC distress bejegyzés minden DSC vészhívásnál riaszt; egy MMSI az adott állomásnál.

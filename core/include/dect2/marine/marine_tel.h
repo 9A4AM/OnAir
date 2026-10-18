@@ -52,6 +52,14 @@ struct DscCall {
     double rxSec = 0;
     int64_t rxTime = 0;
     std::string text;                // one line for the table
+    // ---- the audit additions
+    std::string kind;                // what the call is: "Distress alert", "Distress alert acknowledgement", "Individual call acknowledgement", "Test call" ...
+    std::string fromCountry, toCountry, distressCountry;   // from the MID of the numbers ("" when none)
+    std::string fromType, toType;    // "ship", "coast station", "group" ...
+    std::vector<int> symbols;        // the information symbols as merged (format specifier .. last message symbol), -1 = unreadable
+    int repaired = 0;                // symbols taken from the second copy or rebuilt with the check character
+    bool recovered = false;          // one or more unreadable symbols were rebuilt with the check character
+    std::string fromName, toName;    // from the user's MMSI name table (filled by the UI)
 };
 
 struct MarineFaxInfo {

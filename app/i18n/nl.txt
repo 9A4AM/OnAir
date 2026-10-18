@@ -2666,7 +2666,7 @@ The watchlist file could not be read:	Het bestand met kijklijsten kon niet worde
 APRS call signs	APRS-roepletters
 Words in messages	Woorden in berichten
 One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Een per regel: een ICAO-hexadres (4840D6), een registratie (A6-EDA) of een roepnaam (KLM1023). Een * aan het eind komt overeen met het begin (KLM*). Gehoord via ADS-B, ACARS, VDL2 en HFDL.
-One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Een per regel: een MMSI-nummer, een scheepsnaam of een roepnaam. Een * aan het eind komt overeen met het begin (2190*). Gehoord via AIS en DSC.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC. The entry DSC distress alerts on every DSC distress call.	Een per regel: een MMSI-nummer, een scheepsnaam of een roepnaam. Een * aan het eind komt overeen met het begin (2190*). Gehoord via AIS en DSC. De invoer DSC distress waarschuwt bij elke DSC-noodoproep.
 One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Een per regel: een roepnaam. Zonder SSID (LY1ABC) komt elke SSID overeen, met SSID (LY1ABC-9) alleen die ene.
 One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Een per regel: een frequentie in MHz (162.025), met een eenheid (162025 kHz) of een bereik (144-146). Alles wat erop wordt gedecodeerd telt mee.
 One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Een per regel: een woord of zin (hoofdletterongevoelig). Een * aan het eind komt overeen met woordbegin (fire*). Gezocht in pager-, ACARS-, APRS- en andere gedecodeerde teksten.
@@ -3189,3 +3189,17 @@ Ping	Ping
 with interference bursts	met stoorpulsen
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Het testsignaal is een baken 420 Hz naast het midden met gesimuleerde meteorenechoën: korte onderdichte en enkele lange overdichte.
 Beacon echoes, 143.050 MHz	Bakenechoën, 143,050 MHz
+#  DSC audit
+category	categorie
+from	van
+in distress	in nood
+unreadable	onleesbaar
+repair	herstel
+symbols	symbolen
+DISTRESS	NOOD
+search calls	oproepen zoeken
+saved %s	opgeslagen %s
+could not write %s	kon %s niet schrijven
+%d symbols fixed, one rebuilt from the check character	%d symbolen hersteld, één opnieuw opgebouwd uit het controleteken
+%d symbols taken from the second copy	%d symbolen uit de tweede kopie genomen
+In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	In een scheepslijst waarschuwt de invoer DSC distress bij elke DSC-noodoproep; een MMSI waarschuwt voor dat station.

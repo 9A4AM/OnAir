@@ -2666,7 +2666,7 @@ The watchlist file could not be read:	无法读取监视列表文件:
 APRS call signs	APRS 呼号
 Words in messages	消息中的词语
 One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	每行一项: ICAO 十六进制地址 (4840D6)、注册号 (A6-EDA) 或呼号 (KLM1023)。末尾的 * 匹配开头 (KLM*)。可通过 ADS-B、ACARS、VDL2 和 HFDL 收到。
-One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	每行一项: MMSI 号码、船名或呼号。末尾的 * 匹配开头 (2190*)。可通过 AIS 和 DSC 收到。
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC. The entry DSC distress alerts on every DSC distress call.	每行一项: MMSI 号码、船名或呼号。末尾的 * 匹配开头 (2190*)。可通过 AIS 和 DSC 收到。条目 DSC distress 会在每次 DSC 遇险呼叫时发出提醒。
 One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	每行一项: 呼号。不带 SSID (LY1ABC) 时匹配所有 SSID，带 SSID (LY1ABC-9) 时只匹配该 SSID。
 One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	每行一项: 以 MHz 为单位的频率 (162.025)、带单位 (162025 kHz) 或范围 (144-146)。在该频率上解码的任何内容都会计入。
 One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	每行一项: 一个词或短语 (不区分大小写)。末尾的 * 匹配词首 (fire*)。在寻呼机、ACARS、APRS 及其他解码文本中搜索。
@@ -3189,3 +3189,17 @@ Ping	Ping
 with interference bursts	含干扰脉冲
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	测试信号是偏离中心 420 Hz 的信标,带有模拟流星回波:短的欠密回波和少量长的过密回波。
 Beacon echoes, 143.050 MHz	信标回波,143.050 MHz
+#  DSC audit
+category	类别
+from	发送方
+in distress	遇险
+unreadable	无法读取
+repair	修复
+symbols	符号
+DISTRESS	遇险
+search calls	搜索呼叫
+saved %s	已保存 %s
+could not write %s	无法写入 %s
+%d symbols fixed, one rebuilt from the check character	已修正 %d 个符号,其中一个由校验字符重建
+%d symbols taken from the second copy	%d 个符号取自第二份副本
+In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	在船舶列表中,条目 DSC distress 会在每次 DSC 遇险呼叫时提醒;MMSI 则对该电台提醒。

@@ -2666,7 +2666,7 @@ The watchlist file could not be read:	Stebėjimo sąrašų failo nepavyko perska
 APRS call signs	APRS šaukiniai
 Words in messages	Žodžiai pranešimuose
 One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Po vieną eilutėje: ICAO šešioliktainis adresas (4840D6), registracijos ženklas (A6-EDA) arba šaukinys (KLM1023). Galinė * atitinka pradžią (KLM*). Girdima per ADS-B, ACARS, VDL2 ir HFDL.
-One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Po vieną eilutėje: MMSI numeris, laivo pavadinimas arba šaukinys. Galinė * atitinka pradžią (2190*). Girdima per AIS ir DSC.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC. The entry DSC distress alerts on every DSC distress call.	Po vieną eilutėje: MMSI numeris, laivo pavadinimas arba šaukinys. Galinė * atitinka pradžią (2190*). Girdima per AIS ir DSC. Įrašas DSC distress perspėja apie kiekvieną DSC pagalbos šauksmą.
 One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Po vieną eilutėje: šaukinys. Be SSID (LY1ABC) tinka bet kuris SSID, su SSID (LY1ABC-9) tik tas vienas.
 One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Po vieną eilutėje: dažnis MHz (162.025), su vienetu (162025 kHz) arba intervalas (144-146). Skaičiuojama viskas, kas joje dekoduojama.
 One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Po vieną eilutėje: žodis arba frazė (didžiosios ir mažosios raidės nesvarbios). Galinė * atitinka žodžių pradžią (fire*). Ieškoma ieškiklių, ACARS, APRS ir kituose dekoduotuose tekstuose.
@@ -3189,3 +3189,17 @@ Ping	Pingas
 with interference bursts	su trukdžių impulsais
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Bandomasis signalas yra švyturys 420 Hz nuo centro su imituotais meteorų aidais: trumpais retais ir keliais ilgais tankiais.
 Beacon echoes, 143.050 MHz	Švyturio aidai, 143,050 MHz
+#  DSC audit
+category	kategorija
+from	nuo
+in distress	nelaimėje
+unreadable	neįskaitoma
+repair	taisymas
+symbols	simboliai
+DISTRESS	NELAIMĖ
+search calls	ieškoti iškvietimų
+saved %s	išsaugota %s
+could not write %s	nepavyko įrašyti %s
+%d symbols fixed, one rebuilt from the check character	ištaisyta simbolių: %d, vienas atkurtas iš kontrolinio simbolio
+%d symbols taken from the second copy	%d simboliai paimti iš antrosios kopijos
+In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	Laivų sąraše įrašas DSC distress perspėja apie kiekvieną DSC pagalbos šauksmą, o MMSI – apie tą stotį.

@@ -6,6 +6,10 @@
 #include "../adsb/adsb_map.h"
 #include "dect2/marine/marine_tel.h"
 #include "dect2/marine/marine_navtex_save.h"
+#include "dect2/marine/marine_mmsi.h"
+#include "platform/platform.h"
+#include <fstream>
+#include <sstream>
 #include "dect2/marine/marine_wefax_stations.h"
 #include "dect2/engine/updater.h"
 #include <algorithm>
@@ -42,6 +46,10 @@ struct State {
     int pushedAuto = -1;
     std::string navSel;              // header + time of the selected NAVTEX message
     std::string dscSelKey;
+    char dscFilter[64] = "";
+    dect2::marine::MmsiNames names;       // the user's own list: <data folder>/mmsi_names.tsv
+    bool namesLoaded = false;
+    std::string dscMsg;
     std::string mapKey;              // the call the small map was last centred on
     adsbmap::View map;
     // the fax picture
@@ -191,6 +199,57 @@ void navtexView(App& a) {
 
 // ---------------------------------------------------------------- DSC
 
+std::string lowerStr(std::string v) { for (char& ch : v) ch = (char)tolower((unsigned char)ch); return v; }
+
+void loadNames() {
+    if (S.namesLoaded) return;
+    S.namesLoaded = true;
+    std::ifstream f(std::filesystem::u8path(plat::dataDir() + "/mmsi_names.tsv"), std::ios::binary);
+    if (!f) return;
+    std::stringstream ss; ss << f.rdbuf();
+    S.names.load(ss.str());
+}
+
+// the numbers of a call with the name from the user's table, the kind of station and the country
+std::string mmsiLine(const std::string& m, const std::string& type, const std::string& country) {
+    if (m.empty()) return "";
+    std::string r = m;
+    const std::string nm = S.names.name(m);
+    if (!nm.empty()) r += "  " + nm;
+    if (!type.empty()) r += "  (" + type + (country.empty() ? "" : ", " + country) + ")";
+    else if (!country.empty()) r += "  (" + country + ")";
+    return r;
+}
+
+bool dscMatches(const DscCall& c, const std::string& needle) {
+    if (needle.empty()) return true;
+    std::string hay = c.text + "|" + c.kind + "|" + c.fromMmsi + "|" + c.to + "|" + c.distressMmsi + "|" + c.fromCountry + "|" + c.toCountry + "|" + c.distressCountry + "|" + c.natureName + "|" + c.telecmdText + "|" + c.posText + "|" +
+                      S.names.name(c.fromMmsi) + "|" + S.names.name(c.to) + "|" + S.names.name(c.distressMmsi);
+    return lowerStr(hay).find(needle) != std::string::npos;
+}
+
+std::string csvCell(const std::string& v) {
+    if (v.find_first_of(",\"\n") == std::string::npos) return v;
+    std::string o = "\"";
+    for (char ch : v) { if (ch == '"') o += '"'; o += ch; }
+    return o + "\"";
+}
+
+std::string dscCsv(const std::vector<DscCall>& calls) {
+    std::string o = "utc,band,kind,category,from,from_name,from_country,to,to_name,to_country,distress_mmsi,nature,lat,lon,position_time_utc,telecommand,freq_rx,freq_tx,eos,check,symbols_lost,symbols_repaired,symbols\n";
+    for (const DscCall& c : calls) {
+        char pos[48] = "", tm[16] = "";
+        if (c.hasPos) snprintf(pos, sizeof pos, "%.5f,%.5f", c.lat, c.lon); else snprintf(pos, sizeof pos, ",");
+        if (c.hasTime) snprintf(tm, sizeof tm, "%02d:%02d", c.utcHour, c.utcMin);
+        std::string sy;
+        for (size_t i = 0; i < c.symbols.size(); i++) { char q[8]; snprintf(q, sizeof q, "%s%d", i ? " " : "", c.symbols[i]); sy += q; }
+        o += csvCell(utcText(c.rxTime)) + "," + (c.vhf ? "VHF" : "MF/HF") + "," + csvCell(c.kind) + "," + csvCell(c.categoryName) + "," + csvCell(c.fromMmsi) + "," + csvCell(S.names.name(c.fromMmsi)) + "," + csvCell(c.fromCountry) + "," +
+             csvCell(c.to) + "," + csvCell(S.names.name(c.to)) + "," + csvCell(c.toCountry) + "," + csvCell(c.distressMmsi) + "," + csvCell(c.natureName) + "," + pos + "," + tm + "," + csvCell(c.telecmdText) + "," +
+             csvCell(c.freqRx) + "," + csvCell(c.freqTx) + "," + std::to_string(c.eos) + "," + (c.eccOk ? "ok" : "bad") + "," + std::to_string(c.erasures) + "," + std::to_string(c.repaired) + "," + csvCell(sy) + "\n";
+    }
+    return o;
+}
+
 void dscDetail(App& a, const DscCall* c, ImVec2 size) {
     if (!c) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", live(a) ? "click a call" : "start the receiver"); ImGui::PopTextWrapPos(); } return; }
     auto kv = [&](const char* k, const std::string& v) {
@@ -198,12 +257,13 @@ void dscDetail(App& a, const DscCall* c, ImVec2 size) {
         ImGui::TextDisabled("%s", k); kvColumn(96 * gUi);
         ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(v.c_str()); ImGui::PopTextWrapPos(); ImGui::PopFont();
     };
-    if (c->distress) ImGui::TextColored(pal::badRed(), "%s", c->formatName.c_str());
-    else ImGui::TextColored(pal::heading(), "%s", c->formatName.c_str());
-    kv("category", c->categoryName);
-    kv("from", c->fromMmsi.empty() ? "unreadable" : c->fromMmsi);
-    kv("to", c->to);
-    kv("in distress", c->distressMmsi);
+    const std::string head = c->kind.empty() ? c->formatName : c->kind;
+    if (c->distress) ImGui::TextColored(pal::badRed(), "%s", head.c_str());
+    else ImGui::TextColored(pal::heading(), "%s", head.c_str());
+    kv(tr("category"), c->categoryName);
+    kv(tr("from"), c->fromMmsi.empty() ? tr("unreadable") : mmsiLine(c->fromMmsi, c->fromType, c->fromCountry));
+    kv(tr("to"), c->to.size() == 9 && c->to.find_first_not_of("0123456789~") == std::string::npos ? mmsiLine(c->to, c->toType, c->toCountry) : c->to);
+    kv(tr("in distress"), mmsiLine(c->distressMmsi, "", c->distressCountry));
     kv("nature", c->natureName);
     kv("position", c->posText);
     if (c->hasTime) { char b[16]; snprintf(b, sizeof b, "%02d:%02d UTC", c->utcHour, c->utcMin); kv("time", b); }
@@ -214,6 +274,15 @@ void dscDetail(App& a, const DscCall* c, ImVec2 size) {
     char b[64];
     snprintf(b, sizeof b, "%s, %d symbols lost%s", c->eccOk ? "check ok" : "check failed", c->erasures, c->vhf ? ", VHF ch 70" : ", MF/HF");
     kv("received", b);
+    if (c->repaired > 0) {
+        snprintf(b, sizeof b, c->recovered ? tr("%d symbols fixed, one rebuilt from the check character") : tr("%d symbols taken from the second copy"), c->repaired);
+        kv(tr("repair"), b);
+    }
+    if (!c->symbols.empty()) {   // the raw symbols of the information part, like the numbers YADD shows
+        std::string sy;
+        for (size_t i = 0; i < c->symbols.size(); i++) { char q[8]; if (c->symbols[i] < 0) snprintf(q, sizeof q, "%s---", i ? " " : ""); else snprintf(q, sizeof q, "%s%03d", i ? " " : "", c->symbols[i]); sy += q; }
+        kv(tr("symbols"), sy);
+    }
     kv("heard", utcText(c->rxTime) + " UTC");
     if (!c->hasPos) return;
     ImGui::Spacing();
@@ -245,10 +314,32 @@ void dscView(App& a) {
     const dect2::MarineTelemetry& t = a.rx.marine;
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     const float dw = std::min(320.f * gUi, W * 0.32f);
+    loadNames();
     const DscCall* sel = nullptr;
     for (const auto& c : t.dsc) if (dscKey(c) == S.dscSelKey) sel = &c;
     if (!sel && !t.dsc.empty()) sel = &t.dsc.back();
     ImGui::BeginChild("##dsc_l", ImVec2(W - dw - 8 * gUi, H));
+    {   // a distress alert, relay or acknowledgement among the calls kept: a red banner with the newest one
+        const DscCall* d = nullptr;
+        for (const auto& c : t.dsc) if (c.distress && c.eccOk) d = &c;
+        if (d) {
+            ImGui::PushStyleColor(ImGuiCol_Text, pal::badRed());
+            ImGui::TextWrapped("%s: %s", tr("DISTRESS"), d->text.c_str());
+            ImGui::PopStyleColor();
+        }
+    }
+    ImGui::SetNextItemWidth(180 * gUi);
+    ImGui::InputTextWithHint("##dscf", tr("search calls"), S.dscFilter, sizeof S.dscFilter);
+    ImGui::SameLine();
+    if (ImGui::Button(tr("Export CSV")) && !t.dsc.empty()) {
+        const std::string p = saveFileDialog("dsc_calls.csv");
+        if (!p.empty()) { std::ofstream f(std::filesystem::u8path(p), std::ios::binary); f << dscCsv(t.dsc); { char mb[600]; snprintf(mb, sizeof mb, f ? tr("saved %s") : tr("could not write %s"), p.c_str()); S.dscMsg = mb; } }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(tr("Watchlists"))) a.watchlistOpen = true;
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station."));
+    if (!S.dscMsg.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", S.dscMsg.c_str()); }
+    const std::string needle = lowerStr(S.dscFilter);
     // fixed widths that fit the content and a horizontal scroll bar when the pane is narrow, so no column is cut
     const ImGuiTableFlags fl = ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable;
     if (ImGui::BeginTable("##dsc_t", 7, fl, ImVec2(0, ImGui::GetContentRegionAvail().y))) {
@@ -263,6 +354,7 @@ void dscView(App& a) {
         ImGui::TableHeadersRow();
         for (size_t i = t.dsc.size(); i-- > 0;) {    // newest first
             const DscCall& c = t.dsc[i];
+            if (!dscMatches(c, needle)) continue;
             ImGui::TableNextRow();
             if (c.distress) ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg1, IM_COL32(120, 28, 28, 150));
             ImGui::TableNextColumn();
@@ -271,12 +363,12 @@ void dscView(App& a) {
             if (ImGui::Selectable(utcText(c.rxTime).c_str(), sel == &c, ImGuiSelectableFlags_SpanAllColumns)) S.dscSelKey = k;
             ImGui::PopID();
             ImGui::TableNextColumn();
-            std::string nm = c.formatName;
+            std::string nm = c.kind.empty() ? c.formatName : c.kind;
             if (!c.natureName.empty()) nm += ": " + c.natureName;
             if (c.distress) ImGui::TextColored(ImVec4(1.f, 0.55f, 0.5f, 1), "%s", nm.c_str()); else ImGui::TextUnformatted(nm.c_str());
             ImGui::TableNextColumn(); ImGui::TextUnformatted(c.categoryName.c_str());
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(c.fromMmsi.empty() ? "?" : c.fromMmsi.c_str());
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(c.to.c_str());
+            ImGui::TableNextColumn(); { const std::string nm2 = S.names.name(c.fromMmsi); const std::string f = (c.fromMmsi.empty() ? std::string("?") : c.fromMmsi) + (nm2.empty() ? "" : " " + nm2); ImGui::TextUnformatted(f.c_str()); if (ImGui::IsItemHovered() && !c.fromCountry.empty()) ImGui::SetTooltip("%s", c.fromCountry.c_str()); }
+            ImGui::TableNextColumn(); { const std::string nm2 = S.names.name(c.to); const std::string f = c.to + (nm2.empty() ? "" : " " + nm2); ImGui::TextUnformatted(f.c_str()); if (ImGui::IsItemHovered() && !c.toCountry.empty()) ImGui::SetTooltip("%s", c.toCountry.c_str()); }
             ImGui::TableNextColumn(); if (c.hasPos) ImGui::TextUnformatted(c.posText.c_str()); else ImGui::TextDisabled("-");
             ImGui::TableNextColumn();
             if (c.eccOk) ImGui::TextColored(pal::okGreen(), "ok"); else ImGui::TextColored(pal::badRed(), "bad");

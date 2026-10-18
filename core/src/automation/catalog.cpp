@@ -68,7 +68,9 @@ std::vector<EventInfo> build() {
         {"alt_m", 'n', "altitude (geodetic) in metres", "80"}, {"speed_ms", 'n', "ground speed m/s", "9"}, {"op_lat", 'n', "operator latitude", "54.69"}, {"op_lon", 'n', "operator longitude", "25.28"}}});
     v.push_back({"dsc.call", "Marine DSC call", "Marine", "DSC", 156.525e6, {
         {"category", 's', "routine, safety, urgency, distress", "distress"}, {"from_mmsi", 's', "calling station", "219000123"}, {"to_mmsi", 's', "called station or all ships", "all"},
-        {"summary", 's', "one-line reading", "Distress: fire"}}});
+        {"summary", 's', "one-line reading", "Distress: fire"}, {"kind", 's', "Distress alert, Distress alert acknowledgement, Test call ...", "Distress alert"}, {"nature", 's', "nature of distress", "Fire, explosion"},
+        {"distress_mmsi", 's', "station in distress (acknowledgements and relays)", "219000123"}, {"from_country", 's', "country of the calling station's MID", "Denmark"}, {"text", 's', "the whole reading", ""},
+        {"lat", 'n', "latitude of the position in the call", "55.1"}, {"lon", 'n', "longitude of the position in the call", "11.2"}}});
     v.push_back({"signal.new", "New signal found by the sweep scanner", "Sweep scanner", "Sweep", 433.92e6, {
         {"bw_hz", 'n', "width", "12500"}, {"peak_db", 'n', "peak level dBFS", "-60"}, {"snr_db", 'n', "signal to noise ratio", "18"}}});
     v.push_back({"receiver.state", "Receiver state changed", "all", "", 0, {

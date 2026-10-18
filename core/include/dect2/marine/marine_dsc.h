@@ -23,6 +23,7 @@ const char* dscTelecmd1Name(int sym);
 const char* dscTelecmd2Name(int sym);
 
 // ---- number fields (Table 2): two decimal digits per symbol
+std::string dscMmsiLenient(const int* s5);                 // like the above, '~' for a symbol that could not be read, "" when none could
 std::string dscMmsiFromSymbols(const int* s5);             // 9 digits, "" when a symbol is not 00..99
 bool dscMmsiToSymbols(const std::string& mmsi9, int out[5]);
 bool dscPositionFromSymbols(const int* s5, double& lat, double& lon, std::string* text = nullptr);   // false: all 9s or unreadable
@@ -44,6 +45,8 @@ std::vector<uint8_t> dscFrameBits(const std::vector<int>& body, int eos, int dot
 // The same list of symbols in the order of the slots (DX at even places), for tests
 std::vector<int> dscFrameSymbols(const std::vector<int>& body, int eos);
 
+std::string dscCallKind(const DscCall& c);                 // "Distress alert acknowledgement", "Test call" ...
+
 // Parse the merged information symbols of a call (-1 = unreadable). body as above, eos = 117/122/127.
 DscCall dscParseCall(const std::vector<int>& body, int eos, bool eccOk, int erasures);
 
@@ -59,8 +62,8 @@ public:
     uint64_t callsOk() const { return ok_; }
     uint64_t callsBad() const { return bad_; }
 private:
-    struct Sym { int s = -1; float conf = 0; };
-    void onSymbol(int s, float conf);
+    struct Sym { int s = -1; float conf = 0; unsigned raw = 0; };
+    void onSymbol(int s, float conf, unsigned raw);
     void tryFinish();
     void abortLock();
     bool invert_, vhf_;

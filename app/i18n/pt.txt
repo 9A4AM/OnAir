@@ -2649,7 +2649,7 @@ The watchlist file could not be read:	Não foi possível ler o arquivo das lista
 APRS call signs	Indicativos APRS
 Words in messages	Palavras em mensagens
 One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Um por linha: um endereço ICAO hexadecimal (4840D6), uma matrícula (A6-EDA) ou um indicativo (KLM1023). Um * no fim corresponde ao início (KLM*). Ouvido por ADS-B, ACARS, VDL2 e HFDL.
-One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Um por linha: um número MMSI, o nome de um navio ou um indicativo. Um * no fim corresponde ao início (2190*). Ouvido por AIS e DSC.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC. The entry DSC distress alerts on every DSC distress call.	Um por linha: um número MMSI, o nome de um navio ou um indicativo. Um * no fim corresponde ao início (2190*). Ouvido por AIS e DSC. A entrada DSC distress alerta em cada chamada de socorro DSC.
 One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Um por linha: um indicativo. Sem SSID (LY1ABC) qualquer SSID corresponde; com SSID (LY1ABC-9) apenas esse.
 One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Uma por linha: uma frequência em MHz (162.025), com unidade (162025 kHz) ou uma faixa (144-146). Conta tudo o que for decodificado nela.
 One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Uma por linha: uma palavra ou frase (sem distinguir maiúsculas). Um * no fim corresponde a inícios de palavra (fire*). Procurado em pagers, ACARS, APRS e outros textos decodificados.
@@ -3172,3 +3172,17 @@ Ping	Ping
 with interference bursts	com rajadas de interferência
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	O sinal de teste é um farol a 420 Hz do centro com ecos de meteoros simulados: curtos subdensos e alguns longos sobredensos.
 Beacon echoes, 143.050 MHz	Ecos do farol, 143,050 MHz
+#  DSC audit
+category	categoria
+from	de
+in distress	em perigo
+unreadable	ilegível
+repair	reparo
+symbols	símbolos
+DISTRESS	PERIGO
+search calls	procurar chamadas
+saved %s	guardado %s
+could not write %s	não foi possível escrever %s
+%d symbols fixed, one rebuilt from the check character	%d símbolos corrigidos, um reconstruído a partir do carácter de verificação
+%d symbols taken from the second copy	%d símbolos tomados da segunda cópia
+In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	Numa lista de navios, a entrada DSC distress alerta em cada chamada de socorro DSC; um MMSI alerta para essa estação.
