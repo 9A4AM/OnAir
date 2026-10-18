@@ -1,3 +1,6 @@
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
+#include <arm_neon.h>
+#endif
 #include "dect2/atsc/atsc.h"
 #include "dect2/fec/fec_proto.h"
 #include <algorithm>
@@ -199,6 +202,51 @@ constexpr VitTab kVit;
 constexpr int kLanes = kNumEnc;
 
 // xt[t * kLanes + l]: the level of encoder l at step t. dec[(t * 8 + ns) * kLanes + l]: the winning incoming transition. fin[l]: best end state.
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
+static_assert(kLanes == 12, "three NEON vectors of four lanes");
+// The same arithmetic as the portable loop below (bit-exact), written with intrinsics: the state metrics stay in registers, the decisions are narrowed
+// to bytes in the register instead of through scalar selects.
+void viterbiLanes(const float* xt, int n, uint8_t* dec, int* fin) {
+    float32x4_t pm[8][3];
+    for (int s = 0; s < 8; s++) for (int v = 0; v < 3; v++) pm[s][v] = vdupq_n_f32(0);
+    const uint32x4_t two = vdupq_n_u32(2);
+    for (int t = 0; t < n; t++) {
+        const float* xv = xt + (size_t)t * kLanes;
+        const float32x4_t x0 = vld1q_f32(xv), x1 = vld1q_f32(xv + 4), x2 = vld1q_f32(xv + 8);
+        float32x4_t d[8][3];
+        for (int s = 0; s < 8; s++) {
+            const float32x4_t lv = vdupq_n_f32((float)(2 * s - 7));
+            const float32x4_t a0 = vsubq_f32(x0, lv), a1 = vsubq_f32(x1, lv), a2 = vsubq_f32(x2, lv);
+            d[s][0] = vmulq_f32(a0, a0); d[s][1] = vmulq_f32(a1, a1); d[s][2] = vmulq_f32(a2, a2);
+        }
+        uint8_t* dp = dec + (size_t)t * 8 * kLanes;
+        float32x4_t nm[8][3], mn[3] = {vdupq_n_f32(1e30f), vdupq_n_f32(1e30f), vdupq_n_f32(1e30f)};
+        for (int ns = 0; ns < 8; ns++) {
+            uint16x4_t dv[3];
+            for (int v = 0; v < 3; v++) {
+                const float32x4_t m0 = vaddq_f32(pm[kVit.from[ns][0]][v], d[kVit.sym[ns][0]][v]);
+                const float32x4_t m1 = vaddq_f32(pm[kVit.from[ns][1]][v], d[kVit.sym[ns][1]][v]);
+                const float32x4_t m2 = vaddq_f32(pm[kVit.from[ns][2]][v], d[kVit.sym[ns][2]][v]);
+                const float32x4_t m3 = vaddq_f32(pm[kVit.from[ns][3]][v], d[kVit.sym[ns][3]][v]);
+                const uint32x4_t b01 = vcltq_f32(m1, m0), b23 = vcltq_f32(m3, m2);
+                const float32x4_t a = vminq_f32(m0, m1), c = vminq_f32(m2, m3);
+                const uint32x4_t cw = vcltq_f32(c, a);
+                nm[ns][v] = vminq_f32(a, c);
+                mn[v] = vminq_f32(mn[v], nm[ns][v]);
+                dv[v] = vmovn_u32(vbslq_u32(cw, vaddq_u32(two, vshrq_n_u32(b23, 31)), vshrq_n_u32(b01, 31)));
+            }
+            vst1_u8(dp + ns * kLanes, vmovn_u16(vcombine_u16(dv[0], dv[1])));
+            vst1_lane_u32((uint32_t*)(dp + ns * kLanes + 8), vreinterpret_u32_u8(vmovn_u16(vcombine_u16(dv[2], dv[2]))), 0);
+        }
+        for (int s = 0; s < 8; s++) for (int v = 0; v < 3; v++) pm[s][v] = vsubq_f32(nm[s][v], mn[v]);
+    }
+    for (int l = 0; l < kLanes; l++) {
+        int state = 0;
+        for (int s = 1; s < 8; s++) if (pm[s][l >> 2][l & 3] < pm[state][l >> 2][l & 3]) state = s;
+        fin[l] = state;
+    }
+}
+#else
 void viterbiLanes(const float* xt, int n, uint8_t* dec, int* fin) {
     alignas(16) float pm[8][kLanes] = {}, nm[8][kLanes];
     for (int t = 0; t < n; t++) {
@@ -234,6 +282,7 @@ void viterbiLanes(const float* xt, int n, uint8_t* dec, int* fin) {
         fin[l] = state;
     }
 }
+#endif
 }
 
 int FieldDecoder::decode(const float* levels, uint8_t* out, FieldStats* st, uint8_t* symbolsOut) {
