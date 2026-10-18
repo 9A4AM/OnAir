@@ -137,7 +137,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential file cmake pkg-config nasm patchelf curl xz-utils libhackrf-dev libsoapysdr-dev libusb-1.0-0-dev libglfw3-dev libairspy0 libbladerf2 libiio0 liblimesuite20.10-1 libuhd4.1.0 libhamlib-dev
+          sudo apt-get install -y build-essential file cmake pkg-config ccache nasm patchelf curl xz-utils libhackrf-dev libsoapysdr-dev libusb-1.0-0-dev libglfw3-dev libairspy0 libbladerf2 libiio0 liblimesuite20.10-1 libuhd4.1.0 libhamlib-dev
       - name: Cache the static FFmpeg
         id: ffmpeg
         uses: actions/cache@v4
@@ -147,10 +147,23 @@ jobs:
         run: tools/package/build_ffmpeg_static.sh "$HOME/ffmpeg"
       - name: "Gather the radio libraries (RTL-SDR is built here from the RTL-SDR Blog source: the distribution's librtlsdr0 cannot drive the V4)"
         run: tools/package/collect_radio_libs_linux.sh "$GITHUB_WORKSPACE/build/radiolibs"
+      - uses: actions/cache@v4   # ccache, same scheme as ci.yml; separate cache per architecture
+        with:
+          path: .ccache
+          key: ccache-release-${{ matrix.arch }}-${{ hashFiles('CMakeLists.txt', 'cmake/**') }}-${{ github.sha }}
+          restore-keys: |
+            ccache-release-${{ matrix.arch }}-${{ hashFiles('CMakeLists.txt', 'cmake/**') }}-
+            ccache-release-${{ matrix.arch }}-
       - name: Build
+        env:
+          CCACHE_DIR: ${{ github.workspace }}/.ccache
+          CCACHE_BASEDIR: ${{ github.workspace }}
+          CCACHE_MAXSIZE: 1G
+          CCACHE_COMPRESS: "true"
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON -DDECT2_BUILD_TESTS=ON -DDECT2_HAVE_HAMLIB=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_SKIP_INSTALL_ALL_DEPENDENCY=ON -DDECT2_FFMPEG_PREFIX="$HOME/ffmpeg" -DDECT2_RADIO_LIB_DIR="$GITHUB_WORKSPACE/build/radiolibs" -DONAIR_VERSION="${{ needs.version.outputs.ver }}"
+          cmake -S . -B build -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON -DDECT2_BUILD_TESTS=ON -DDECT2_HAVE_HAMLIB=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_SKIP_INSTALL_ALL_DEPENDENCY=ON -DDECT2_FFMPEG_PREFIX="$HOME/ffmpeg" -DDECT2_RADIO_LIB_DIR="$GITHUB_WORKSPACE/build/radiolibs" -DONAIR_VERSION="${{ needs.version.outputs.ver }}"
           cmake --build build -j 4 --target dect2 dect2cli dect2scan
+          ccache -s
       - name: Package
         run: |
           cd build && cpack -G DEB

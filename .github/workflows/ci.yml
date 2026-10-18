@@ -13,9 +13,18 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Build cache (ccache, wrapped around every C/C++ compile via CMAKE_*_COMPILER_LAUNCHER):
+#  - the cache key is os + hash of CMakeLists.txt/cmake/** + the commit; the commit never matches an old run, so the
+#    restore-keys prefixes pick the newest cache of the same os (then the same CMake inputs) and only changed files recompile;
+#  - CCACHE_BASEDIR makes paths relative so a checkout in another directory still hits; compression keeps the cache small;
+#  - the Rust layers build with cargo inside build/rust from workspace sources only (no crates to download), and cargo
+#    decides by file mtime, which a fresh checkout resets, so caching its target dir would never hit and is left out.
 env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache
-  CCACHE_MAXSIZE: 500M
+  CCACHE_BASEDIR: ${{ github.workspace }}
+  CCACHE_MAXSIZE: 1G
+  CCACHE_COMPRESS: "true"
+  CCACHE_COMPRESSLEVEL: "6"
 
 jobs:
   unix:
@@ -40,12 +49,17 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .ccache
-          key: ccache-${{ matrix.os }}-${{ github.sha }}
-          restore-keys: ccache-${{ matrix.os }}-
+          key: ccache-${{ matrix.os }}-${{ hashFiles('CMakeLists.txt', 'cmake/**') }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.os }}-${{ hashFiles('CMakeLists.txt', 'cmake/**') }}-
+            ccache-${{ matrix.os }}-
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - name: Build
         run: cmake --build build -j 4
+      - name: ccache statistics
+        if: always()
+        run: ccache -s
       - name: Test (fast tests)
         run: ctest --test-dir build -j 4 -LE slow --output-on-failure --timeout 600
 
@@ -65,11 +79,16 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .ccache
-          key: ccache-windows-${{ github.sha }}
-          restore-keys: ccache-windows-
+          key: ccache-windows-${{ hashFiles('CMakeLists.txt', 'cmake/**') }}-${{ github.sha }}
+          restore-keys: |
+            ccache-windows-${{ hashFiles('CMakeLists.txt', 'cmake/**') }}-
+            ccache-windows-
       - name: Configure and build (app, tools, tests)
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build -j 4
+      - name: ccache statistics
+        if: always()
+        run: ccache -s
       - name: Test (fast tests)
         run: ctest --test-dir build -j 4 -LE slow --output-on-failure --timeout 600
