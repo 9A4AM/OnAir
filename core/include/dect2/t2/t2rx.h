@@ -86,6 +86,7 @@
 #include "dect2/tones/tones_tel.h"
 #include "dect2/sarsat/sarsat_tel.h"
 #include "dect2/mt63/mt63_tel.h"
+#include "dect2/mscatter/mscatter_tel.h"
 #include "dect2/rid/rid_tel.h"
 #include "dect2/meteor/meteor_tel.h"
 #include "dect2/nr/nr_tel.h"
@@ -186,6 +187,7 @@ struct RxTelemetry {
     SarsatTelemetry sarsat;   // valid when standard == 93 (COSPAS-SARSAT 406 MHz beacons)
     Mt63Telemetry mt63;       // valid when standard == 96 (MT63)
     EczasTelemetry eczas;     // valid when standard == 86 (e-Czas, 225 kHz Poland)
+    MsTelemetry mscatter;     // valid when standard == 105 (meteor scatter)
     HfbTelemetry hfb;         // valid when standard == 68 (HF beacons)
     WbTelemetry wb;           // valid when standard == 74 (Signal workbench)
     DatawellTelemetry datawell;   // valid when standard == 75 (Datawell buoy HF link)

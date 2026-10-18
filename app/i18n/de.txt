@@ -3085,3 +3085,49 @@ no callsigns yet	noch keine Rufzeichen
 start the receiver to read the band	Empfänger starten, um das Band zu lesen
 synchronising	synchronisiere
 unclear	unklar
+# Meteor scatter
+Copies the pings as CSV: id, UTC time, duration, peak level, Doppler, drift, type, beacon frequency.	Kopiert die Pings als CSV: ID, UTC-Zeit, Dauer, Spitzenpegel, Doppler, Drift, Typ, Baken-Frequenz.
+Log to file	In Datei protokollieren
+Appends every ping to meteor_scatter.csv in the data folder, also when nobody watches the screen.	Hängt jeden Ping an meteor_scatter.csv im Datenordner an, auch wenn niemand auf den Bildschirm schaut.
+threshold %d dB	Schwelle %d dB
+How far above its long-term level a spectrum bin must rise to count as an echo. Lower finds weaker pings and more false ones.	Wie weit ein Spektrumbin über seinen Langzeitpegel steigen muss, um als Echo zu zählen. Niedriger findet schwächere Pings und mehr falsche.
+start the receiver to see the pings	Empfänger starten, um die Pings zu sehen
+No beacon line found. Tune to the beacon (GRAVES: 143.050 MHz) so that it lies within 4 kHz of the centre, with 1 Msps or more.	Keine Bakenlinie gefunden. Auf die Bake (GRAVES: 143,050 MHz) abstimmen, sodass sie innerhalb von 4 kHz der Mitte liegt, mit 1 Msps oder mehr.
+Doppler	Doppler
+Drift	Drift
+overdense	überdicht
+underdense	unterdicht
+no ping yet: on GRAVES a quiet hour brings a few, a shower peak hundreds	noch kein Ping: bei GRAVES bringt eine ruhige Stunde einige, ein Schauer-Maximum Hunderte
+shape	Form
+overdense: long, flat top	überdicht: lang, flache Spitze
+underdense: sharp rise, exponential decay	unterdicht: steiler Anstieg, exponentieller Abfall
+start the receiver to see the rates	Empfänger starten, um die Raten zu sehen
+pings per hour (UTC), the last 24 hours	Pings pro Stunde (UTC), die letzten 24 Stunden
+pings per day (UTC), the last 30 days; showers marked at their peak	Pings pro Tag (UTC), die letzten 30 Tage; Schauer am Maximum markiert
+meteor showers now and near (peak date, typical hourly rate for an eye observer)	Meteorströme jetzt und in der Nähe (Maximum, typische Stundenrate für einen Beobachter mit bloßem Auge)
+Shower	Strom
+Rate	Rate
+today	heute
+in %d days	in %d Tagen
+%d days ago	vor %d Tagen
+active	aktiv
+, daytime: best for radio	, tagsüber: am besten für Funk
+not active	nicht aktiv
+start the receiver to see the echoes	Empfänger starten, um die Echos zu sehen
+echoes: +-500 Hz around the beacon line, the last 30 seconds (brighter = stronger over the background)	Echos: +-500 Hz um die Bakenlinie, die letzten 30 Sekunden (heller = stärker über dem Hintergrund)
+beacon	Bake
+ping	Ping
+long-term spectrum around the beacon (dB over the noise)	Langzeitspektrum um die Bake (dB über dem Rauschen)
+Pings	Pings
+Rates	Raten
+Echoes	Echos
+pings	Pings
+not found	nicht gefunden
+noise	Rauschen
+detector	Detektor
+log	Protokoll
+The beacon is a fixed transmitter far beyond the horizon: it is heard only when a meteor trail reflects it, as a short echo a few Hz to a few hundred Hz away from the line. Echoes closer than 18 Hz to the line are masked.	Die Bake ist ein fester Sender weit hinter dem Horizont: Sie ist nur zu hören, wenn eine Meteorspur sie reflektiert, als kurzes Echo wenige Hz bis einige hundert Hz neben der Linie. Echos näher als 18 Hz an der Linie werden ausgeblendet.
+Ping	Ping
+with interference bursts	mit Störimpulsen
+The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Das Testsignal ist eine Bake 420 Hz neben der Mitte mit simulierten Meteorechos: kurze unterdichte und einige lange überdichte.
+Beacon echoes, 143.050 MHz	Bakenechos, 143,050 MHz

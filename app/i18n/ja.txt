@@ -3085,3 +3085,49 @@ no callsigns yet	コールサインはまだありません
 start the receiver to read the band	受信機を開始してバンドを読み取ります
 synchronising	同期中
 unclear	不明瞭
+# Meteor scatter
+Copies the pings as CSV: id, UTC time, duration, peak level, Doppler, drift, type, beacon frequency.	ピングをCSVでコピーします: ID、UTC時刻、継続時間、ピークレベル、ドップラー、ドリフト、種類、ビーコン周波数。
+Log to file	ファイルに記録
+Appends every ping to meteor_scatter.csv in the data folder, also when nobody watches the screen.	画面を見ていないときも、すべてのピングをデータフォルダーのmeteor_scatter.csvに追記します。
+threshold %d dB	しきい値 %d dB
+How far above its long-term level a spectrum bin must rise to count as an echo. Lower finds weaker pings and more false ones.	スペクトルのビンが長期レベルをどれだけ超えるとエコーとして数えるか。低いと弱いピングが見つかりますが誤検出も増えます。
+start the receiver to see the pings	ピングを見るには受信を開始してください
+No beacon line found. Tune to the beacon (GRAVES: 143.050 MHz) so that it lies within 4 kHz of the centre, with 1 Msps or more.	ビーコンの線が見つかりません。ビーコン(GRAVES: 143.050 MHz)に合わせ、中心から4 kHz以内に入れてください。1 Msps以上が必要です。
+Doppler	ドップラー
+Drift	ドリフト
+overdense	過密
+underdense	低密
+no ping yet: on GRAVES a quiet hour brings a few, a shower peak hundreds	ピングはまだありません: GRAVESでは静かな1時間で数個、流星群の極大では数百個になります
+shape	形
+overdense: long, flat top	過密: 長く、頂上が平ら
+underdense: sharp rise, exponential decay	低密: 急な立ち上がり、指数関数的な減衰
+start the receiver to see the rates	レートを見るには受信を開始してください
+pings per hour (UTC), the last 24 hours	1時間あたりのピング数(UTC)、直近24時間
+pings per day (UTC), the last 30 days; showers marked at their peak	1日あたりのピング数(UTC)、直近30日間。流星群は極大日に印
+meteor showers now and near (peak date, typical hourly rate for an eye observer)	現在と近い流星群(極大日、肉眼観測者の典型的な毎時出現数)
+Shower	流星群
+Rate	出現数
+today	今日
+in %d days	%d日後
+%d days ago	%d日前
+active	活動中
+, daytime: best for radio	, 昼間: 電波観測に最適
+not active	活動なし
+start the receiver to see the echoes	エコーを見るには受信を開始してください
+echoes: +-500 Hz around the beacon line, the last 30 seconds (brighter = stronger over the background)	エコー: ビーコン線の前後±500 Hz、直近30秒(明るいほど背景より強い)
+beacon	ビーコン
+ping	ピング
+long-term spectrum around the beacon (dB over the noise)	ビーコン周辺の長期スペクトル(雑音からのdB)
+Pings	ピング
+Rates	レート
+Echoes	エコー
+pings	ピング
+not found	見つかりません
+noise	雑音
+detector	検出器
+log	ログ
+The beacon is a fixed transmitter far beyond the horizon: it is heard only when a meteor trail reflects it, as a short echo a few Hz to a few hundred Hz away from the line. Echoes closer than 18 Hz to the line are masked.	ビーコンは水平線のはるか先にある固定の送信機です。流星の電離痕が反射したときだけ、線から数Hz〜数百Hz離れた短いエコーとして聞こえます。線から18 Hz以内のエコーは除外されます。
+Ping	ピング
+with interference bursts	干渉バースト付き
+The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	テスト信号は中心から420 Hz離れたビーコンと模擬流星エコーです。短い低密のものと、いくつかの長い過密のものを含みます。
+Beacon echoes, 143.050 MHz	ビーコンエコー、143.050 MHz

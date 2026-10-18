@@ -3068,3 +3068,49 @@ no callsigns yet	ancora nessun nominativo
 start the receiver to read the band	avvia il ricevitore per leggere la banda
 synchronising	sincronizzazione
 unclear	incerti
+# Meteor scatter
+Copies the pings as CSV: id, UTC time, duration, peak level, Doppler, drift, type, beacon frequency.	Copia i ping come CSV: id, ora UTC, durata, livello di picco, Doppler, deriva, tipo, frequenza del faro.
+Log to file	Registra su file
+Appends every ping to meteor_scatter.csv in the data folder, also when nobody watches the screen.	Aggiunge ogni ping a meteor_scatter.csv nella cartella dati, anche quando nessuno guarda lo schermo.
+threshold %d dB	soglia %d dB
+How far above its long-term level a spectrum bin must rise to count as an echo. Lower finds weaker pings and more false ones.	Di quanto un bin dello spettro deve superare il suo livello a lungo termine per contare come eco. Più basso trova ping più deboli e più falsi.
+start the receiver to see the pings	avvia il ricevitore per vedere i ping
+No beacon line found. Tune to the beacon (GRAVES: 143.050 MHz) so that it lies within 4 kHz of the centre, with 1 Msps or more.	Nessuna riga del faro trovata. Sintonizza il faro (GRAVES: 143,050 MHz) in modo che sia entro 4 kHz dal centro, con 1 Msps o più.
+Doppler	Doppler
+Drift	Deriva
+overdense	sovradensa
+underdense	sottodensa
+no ping yet: on GRAVES a quiet hour brings a few, a shower peak hundreds	nessun ping finora: su GRAVES un'ora tranquilla ne porta alcuni, il picco di uno sciame centinaia
+shape	forma
+overdense: long, flat top	sovradensa: lunga, vetta piatta
+underdense: sharp rise, exponential decay	sottodensa: salita netta, decadimento esponenziale
+start the receiver to see the rates	avvia il ricevitore per vedere le frequenze
+pings per hour (UTC), the last 24 hours	ping all'ora (UTC), le ultime 24 ore
+pings per day (UTC), the last 30 days; showers marked at their peak	ping al giorno (UTC), gli ultimi 30 giorni; sciami segnati al picco
+meteor showers now and near (peak date, typical hourly rate for an eye observer)	sciami meteorici ora e vicini (data del picco, tasso orario tipico per un osservatore a occhio nudo)
+Shower	Sciame
+Rate	Tasso
+today	oggi
+in %d days	tra %d giorni
+%d days ago	%d giorni fa
+active	attivo
+, daytime: best for radio	, diurno: il migliore per la radio
+not active	non attivo
+start the receiver to see the echoes	avvia il ricevitore per vedere gli echi
+echoes: +-500 Hz around the beacon line, the last 30 seconds (brighter = stronger over the background)	echi: +-500 Hz attorno alla riga del faro, gli ultimi 30 secondi (più chiaro = più forte del fondo)
+beacon	faro
+ping	ping
+long-term spectrum around the beacon (dB over the noise)	spettro a lungo termine attorno al faro (dB sopra il rumore)
+Pings	Ping
+Rates	Tassi
+Echoes	Echi
+pings	ping
+not found	non trovato
+noise	rumore
+detector	rivelatore
+log	registro
+The beacon is a fixed transmitter far beyond the horizon: it is heard only when a meteor trail reflects it, as a short echo a few Hz to a few hundred Hz away from the line. Echoes closer than 18 Hz to the line are masked.	Il faro è un trasmettitore fisso ben oltre l'orizzonte: si sente solo quando una scia meteorica lo riflette, come un breve eco a pochi Hz o qualche centinaio di Hz dalla riga. Gli echi a meno di 18 Hz dalla riga sono mascherati.
+Ping	Ping
+with interference bursts	con raffiche di disturbo
+The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Il segnale di prova è un faro a 420 Hz dal centro con echi meteorici simulati: brevi sottodensi e alcuni lunghi sovradensi.
+Beacon echoes, 143.050 MHz	Echi del faro, 143,050 MHz

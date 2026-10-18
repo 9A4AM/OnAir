@@ -3085,3 +3085,49 @@ no callsigns yet	pas encore d'indicatifs
 start the receiver to read the band	démarrez le récepteur pour lire la bande
 synchronising	synchronisation
 unclear	peu clairs
+# Meteor scatter
+Copies the pings as CSV: id, UTC time, duration, peak level, Doppler, drift, type, beacon frequency.	Copie les pings en CSV : id, heure UTC, durée, niveau crête, Doppler, dérive, type, fréquence de la balise.
+Log to file	Enregistrer dans un fichier
+Appends every ping to meteor_scatter.csv in the data folder, also when nobody watches the screen.	Ajoute chaque ping à meteor_scatter.csv dans le dossier de données, même si personne ne regarde l'écran.
+threshold %d dB	seuil %d dB
+How far above its long-term level a spectrum bin must rise to count as an echo. Lower finds weaker pings and more false ones.	De combien une case du spectre doit dépasser son niveau moyen à long terme pour compter comme écho. Plus bas trouve des pings plus faibles et plus de faux.
+start the receiver to see the pings	démarrez le récepteur pour voir les pings
+No beacon line found. Tune to the beacon (GRAVES: 143.050 MHz) so that it lies within 4 kHz of the centre, with 1 Msps or more.	Aucune raie de balise trouvée. Accordez sur la balise (GRAVES : 143,050 MHz) pour qu'elle soit à moins de 4 kHz du centre, avec 1 Msps ou plus.
+Doppler	Doppler
+Drift	Dérive
+overdense	surdense
+underdense	sous-dense
+no ping yet: on GRAVES a quiet hour brings a few, a shower peak hundreds	aucun ping pour l'instant : sur GRAVES une heure calme en apporte quelques-uns, un pic d'essaim des centaines
+shape	forme
+overdense: long, flat top	surdense : longue, sommet plat
+underdense: sharp rise, exponential decay	sous-dense : montée brusque, décroissance exponentielle
+start the receiver to see the rates	démarrez le récepteur pour voir les taux
+pings per hour (UTC), the last 24 hours	pings par heure (UTC), les 24 dernières heures
+pings per day (UTC), the last 30 days; showers marked at their peak	pings par jour (UTC), les 30 derniers jours ; essaims marqués à leur pic
+meteor showers now and near (peak date, typical hourly rate for an eye observer)	essaims de météores actuels et proches (date du pic, taux horaire typique pour un observateur visuel)
+Shower	Essaim
+Rate	Taux
+today	aujourd'hui
+in %d days	dans %d jours
+%d days ago	il y a %d jours
+active	actif
+, daytime: best for radio	, de jour : le meilleur pour la radio
+not active	inactif
+start the receiver to see the echoes	démarrez le récepteur pour voir les échos
+echoes: +-500 Hz around the beacon line, the last 30 seconds (brighter = stronger over the background)	échos : +-500 Hz autour de la raie de la balise, les 30 dernières secondes (plus clair = plus fort que le fond)
+beacon	balise
+ping	ping
+long-term spectrum around the beacon (dB over the noise)	spectre à long terme autour de la balise (dB au-dessus du bruit)
+Pings	Pings
+Rates	Taux
+Echoes	Échos
+pings	pings
+not found	introuvable
+noise	bruit
+detector	détecteur
+log	journal
+The beacon is a fixed transmitter far beyond the horizon: it is heard only when a meteor trail reflects it, as a short echo a few Hz to a few hundred Hz away from the line. Echoes closer than 18 Hz to the line are masked.	La balise est un émetteur fixe bien au-delà de l'horizon : on ne l'entend que lorsqu'une traînée de météore la réfléchit, comme un écho bref à quelques Hz ou quelques centaines de Hz de la raie. Les échos à moins de 18 Hz de la raie sont masqués.
+Ping	Ping
+with interference bursts	avec rafales de parasites
+The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Le signal de test est une balise à 420 Hz du centre avec des échos de météores simulés : des sous-denses courts et quelques surdenses longs.
+Beacon echoes, 143.050 MHz	Échos de balise, 143,050 MHz
