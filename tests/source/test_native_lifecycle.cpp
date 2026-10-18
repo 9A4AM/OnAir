@@ -1,5 +1,5 @@
 // Shared native-source lifecycle: a rejected rate must never restart partially configured hardware.
-#include "../core/src/native_common.h"
+#include "../../core/src/source/native_common.h"
 #include <iostream>
 using namespace dect2;
 

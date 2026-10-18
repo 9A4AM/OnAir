@@ -1,6 +1,7 @@
 // Protocol lab tests: every stage alone, then the whole pipeline on generated signals of several known protocols.
 #include "dect2/protolab/protolab.h"
 #include <chrono>
+#include <cstring>
 #include <cstdio>
 #include <random>
 #include <string>

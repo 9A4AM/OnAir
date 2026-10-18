@@ -375,7 +375,15 @@ void replan(double now) {
     if (S.resv) {
         const std::time_t tt = (std::time_t)now;
         std::tm lt = *std::localtime(&tt);
-        busy = dect2::dailyBusy(S.resvFrom * 60, S.resvTo * 60, now - 86400, now + 2 * 86400, (double)lt.tm_gmtoff);
+        std::tm gt = *std::gmtime(&tt);
+        auto asUtc = [](std::tm t) {   // days-from-civil, no timegm needed
+            const long y = t.tm_year + 1900 - (t.tm_mon < 2), m = t.tm_mon + 1;
+            const long era = (y >= 0 ? y : y - 399) / 400, yoe = y - era * 400;
+            const long doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + t.tm_mday - 1;
+            const long doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+            return (double)((era * 146097 + doe - 719468) * 86400L + t.tm_hour * 3600L + t.tm_min * 60L + t.tm_sec);
+        };
+        busy = dect2::dailyBusy(S.resvFrom * 60, S.resvTo * 60, now - 86400, now + 2 * 86400, asUtc(lt) - asUtc(gt));
     }
     dect2::SchedParams prm; prm.leadSec = kSchedLead;
     S.plan = dect2::planPasses(ps, busy, now, prm);

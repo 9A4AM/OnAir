@@ -202,7 +202,7 @@ void openInDvbs(App& a, const sx::Measure& m) {
 }
 
 // the signal identifier on a region (radio Hz) of the spectrum
-void identifyRegion(App& a, double loRadio, double hiRadio) {
+void identifyRegionRadio(App& a, double loRadio, double hiRadio) {
     const double c = centreRadio(a);
     identifyStart(a, c, (loRadio + hiRadio) / 2 - c, std::fabs(hiRadio - loRadio), S.lnb.inverted() ? 0.0 : toRf(c));   // inverted: no band check
 }
@@ -212,7 +212,7 @@ void identifyRfAt(App& a, double rfHz) {
     const double r = toRadio(rfHz);
     double lo = r - 12.5e3, hi = r + 12.5e3;
     if (live(a)) for (const auto& m : sx::detect(view(a), 6, 3)) if (r >= m.loHz && r <= m.hiHz) { lo = m.loHz; hi = m.hiHz; break; }
-    identifyRegion(a, lo, hi);
+    identifyRegionRadio(a, lo, hi);
 }
 
 void measurePanel(App& a, const sx::Measure& m, bool canHand) {
@@ -242,7 +242,7 @@ void measurePanel(App& a, const sx::Measure& m, bool canHand) {
     }
     ImGui::EndTable();
     if (canHand) {
-        if (ImGui::Button("Identify this signal##region")) identifyRegion(a, m.loHz, m.hiHz);
+        if (ImGui::Button("Identify this signal##region")) identifyRegionRadio(a, m.loHz, m.hiHz);
         tip("Record a moment of this region and work out the modulation, symbol rate and the mode it could be");
         if (m.looksDvbs) ImGui::SameLine();
     }
