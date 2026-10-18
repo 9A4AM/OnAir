@@ -1235,6 +1235,13 @@ Right	Правый
 Left + right	Левый + правый
 IF centre	Центр ПЧ
 Swap sideband	Поменять боковую полосу
+Audio range	Звуковой диапазон
+Show the sound card's whole audio range, 0 Hz to half the sample rate, across the spectrum, with the frequency scale in audio Hz from the dial. Off: the IF centre in the middle (the decoders always get it there).	Показывает весь звуковой диапазон звуковой карты, от 0 Гц до половины частоты дискретизации, на спектре, со шкалой в звуковых Гц от частоты настройки. Выкл.: центр ПЧ посередине (декодеры всегда получают его там).
+Find centre	Найти центр
+Sets the IF centre to the middle of the strongest signal on the screen (a fax or FSK signal: halfway between its tones).	Устанавливает центр ПЧ в середину самого сильного сигнала на экране (сигнал факса или FSK: посередине между его тонами).
+Clipping: lower the input level	Перегрузка: уменьшите уровень входа
+Left and right are identical: this is audio, not I/Q.	Левый и правый каналы одинаковы: это звук, а не I/Q.
+Use Real (mono)	Использовать Real (моно)
 Remove DC	Убрать постоянную составляющую
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	Для WebSDR, виртуального аудиокабеля (VAC) или выхода динамика, линейного выхода либо выхода ПЧ радио в компьютер. Не заменяет SDR, когда нужны мегагерцы полосы. Поле частоты — настройка, которую должен принять декодер (радиочастота центра ПЧ); звуковая карта не настраивается.
 I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q стерео: левый — I, правый — Q (HDSDR / WebSDR VAC). USB-звук: вещественный звук в аналитический IQ для FT8, RTTY, CW, SSB с отвода динамика или звука приёмника. LSB-звук: то же, зеркально. Вещественный (моно): вещественные отсчёты (отвод НЧ, ПЧ вроде 12 кГц) делаются аналитическими, с переключателем боковой полосы ниже.

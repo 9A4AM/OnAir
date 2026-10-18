@@ -95,7 +95,7 @@ double Engine::captureCentreHz() const {
     { std::lock_guard<std::mutex> lk(tuneMu_); t = lastTune_; k = lastDev_.kind; }
     if (k == DeviceInfo::File || k == DeviceInfo::Audio || k == DeviceInfo::Hamlib) return t.centerHz;   // dial frequency (sound card / Hamlib + audio IQ)
     const ModeTuning* mt = modeTuning(stdMode_.load());
-    return t.centerHz + (mt ? mt->tuneOffsetHz : 0);   // the radio's centre (with offset tuning the samples are shifted back to it)
+    return t.centerHz + (mt && !noTuneOffset_.load() ? mt->tuneOffsetHz : 0);   // the radio's centre (with offset tuning the samples are shifted back to it)
 }
 
 // The receivers that can run as the second mode, set up for a sample rate (start() does it for all of them at the capture's)
@@ -265,8 +265,9 @@ void Engine::placeReceiverAsPrimary(int a) {
     DeviceInfo::Kind k;
     { std::lock_guard<std::mutex> lk(tuneMu_); t = lastTune_; k = lastDev_.kind; }
     const bool file = k == DeviceInfo::File;
+    const bool noOff = file || k == DeviceInfo::Audio;
     const ModeTuning* mt = modeTuning(stdMode_.load());
-    placeReceiver(a, mt && !file ? -mt->tuneOffsetHz : 0.0, file ? 0.0 : radioTune(t).centerHz, file ? 0.0 : t.centerHz, t.centerHz);
+    placeReceiver(a, mt && !noOff ? -mt->tuneOffsetHz : 0.0, file ? 0.0 : radioTune(t).centerHz, file ? 0.0 : t.centerHz, t.centerHz);
 }
 
 }   // namespace dect2

@@ -342,6 +342,7 @@ struct App {
     bool audioInvert = false;          // swap the sideband
     bool audioDc = true;              // remove the card's DC offset
     double audioGainDb = 0;       // input gain
+    bool audioAfView = true;      // a real (mono) feed: the spectrum shows the card's audio range 0..Nyquist across the screen (display only)
     int audioRate = 48000;        // the sound card's sample rate (8 kHz to 192 kHz); applied at start
     int bwIdx = 0;
     int constView = 0;        // data constellation: 0 cells, 1 density, 2 clusters
@@ -928,6 +929,7 @@ bool modeSelected(const App& a, const ModeDef& m);    // the row of the current 
 const char* modeSearchBox();                          // a search box at the top of a mode drop-down (mode_select.cpp); returns the query
 bool modeMatches(const ModeDef& m, const char* query); // the search box: name, subtitle, description and keywords
 void startReceiver(App& a);     // what the Start button does
+double audioViewOffsetHz(const App& a);   // a sound card in a Real mode with the audio-range view: where the spectrum's centre lies from the dial (else 0)
 void applyAudioSettings(App& a);   // the sound-card options into a.tune.radio (toolbar_source.cpp)
 enum TbPart { TbSource = 1, TbFreq = 2, TbTuner = 4, TbGain = 8, TbDecoder = 16, TbAll = 31 };
 void toolbarParts(App& a, int mask, bool vertical);   // pieces of the top bar, for the sidebar of the new interface

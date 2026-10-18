@@ -1252,6 +1252,13 @@ Right	Dešinysis
 Left + right	Kairysis + dešinysis
 IF centre	IF centras
 Swap sideband	Apversti juostą
+Audio range	Garso diapazonas
+Show the sound card's whole audio range, 0 Hz to half the sample rate, across the spectrum, with the frequency scale in audio Hz from the dial. Off: the IF centre in the middle (the decoders always get it there).	Rodo visą garso plokštės garso diapazoną, nuo 0 Hz iki pusės diskretizavimo dažnio, spektre, su skale garso Hz nuo rinkiklio dažnio. Išjungta: tarpinio dažnio centras viduryje (dekoderiai jį visada gauna ten).
+Find centre	Rasti centrą
+Sets the IF centre to the middle of the strongest signal on the screen (a fax or FSK signal: halfway between its tones).	Nustato tarpinio dažnio centrą į stipriausio ekrane matomo signalo vidurį (fakso ar FSK signalas: pusiaukelėje tarp jo tonų).
+Clipping: lower the input level	Perkrova: sumažinkite įėjimo lygį
+Left and right are identical: this is audio, not I/Q.	Kairė ir dešinė vienodos: tai garsas, ne I/Q.
+Use Real (mono)	Naudoti Realų (mono)
 Remove DC	Pašalinti nuolatinę dedamąją
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	WebSDR, virtualiam garso kabeliui (VAC) arba radijo garsiakalbio, linijos ar IF išvesties į kompiuterį. Ne SDR pakaitalas, kai reikia megahercų juostos. Dažnio laukas – rinkimo dažnis dekoderiui (IF centro radijo dažnis); garso plokštė nederinama.
 I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q stereo: kairysis yra I, dešinysis yra Q (HDSDR / WebSDR VAC). USB garsas: realus garsas į analitinį IQ FT8, RTTY, CW, SSB iš garsiakalbio atšakos ar imtuvo garso. LSB garsas: tas pats, veidrodiškai. Realus (mono): realūs mėginiai (garso atšaka, IF kaip 12 kHz) paverčiami analitiniais, su juostos jungikliu žemiau.

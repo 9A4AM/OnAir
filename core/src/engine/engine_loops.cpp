@@ -51,6 +51,15 @@ void Engine::spectrumLoop() {
             specQ_.pop_front();
         }
         const auto a0 = std::chrono::steady_clock::now();
+        if (const double sh = specShiftHz_.load(); sh != 0 && rate_.load() > 0) {   // the display range moved (a sound card's audio range centred): the decoders never see this
+            const double w = 2 * 3.14159265358979323846 * sh / rate_.load();
+            for (cf32& v : chunk) {
+                v *= cf32((float)std::cos(specPhase_), (float)std::sin(specPhase_));
+                specPhase_ += w;
+                if (specPhase_ > 3.14159265358979) specPhase_ -= 2 * 3.14159265358979323846;
+                else if (specPhase_ < -3.14159265358979) specPhase_ += 2 * 3.14159265358979323846;
+            }
+        }
         analyzer_.feed(chunk.data(), chunk.size());
         tSpec_ += std::chrono::duration<double>(std::chrono::steady_clock::now() - a0).count();
     }

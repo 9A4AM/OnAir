@@ -1252,6 +1252,13 @@ Right	右
 Left + right	左 + 右
 IF centre	中频中心
 Swap sideband	交换边带
+Audio range	音频范围
+Show the sound card's whole audio range, 0 Hz to half the sample rate, across the spectrum, with the frequency scale in audio Hz from the dial. Off: the IF centre in the middle (the decoders always get it there).	在频谱上显示声卡的整个音频范围(0 Hz 到采样率的一半),刻度为相对拨盘频率的音频 Hz。关闭:中频中心位于中间(解码器始终在那里收到)。
+Find centre	查找中心
+Sets the IF centre to the middle of the strongest signal on the screen (a fax or FSK signal: halfway between its tones).	将中频中心设为屏幕上最强信号的中间(传真或 FSK 信号:两个音调的中点)。
+Clipping: lower the input level	削波:请降低输入电平
+Left and right are identical: this is audio, not I/Q.	左右声道完全相同:这是音频,不是 I/Q。
+Use Real (mono)	使用实数(单声道)
 Remove DC	去除直流
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	用于 WebSDR、虚拟音频线（VAC），或电台的扬声器、线路或中频输出接入电脑。需要兆赫带宽时不能替代 SDR。频率栏是解码器应假定的刻度（中频中心的射频频率）；声卡不会被调谐。
 I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q 立体声：左为 I，右为 Q（HDSDR / WebSDR VAC）。USB 音频：将实数音频转为解析 IQ，用于来自扬声器抽头或接收机音频的 FT8、RTTY、CW、SSB。LSB 音频：相同，镜像。实数（单声道）：实数采样（音频抽头、12 kHz 等中频）转为解析信号，并配有下方的边带开关。

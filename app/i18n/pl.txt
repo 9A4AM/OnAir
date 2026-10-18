@@ -1252,6 +1252,13 @@ Right	Prawy
 Left + right	Lewy + prawy
 IF centre	Środek PCz
 Swap sideband	Zamień wstęgę
+Audio range	Zakres audio
+Show the sound card's whole audio range, 0 Hz to half the sample rate, across the spectrum, with the frequency scale in audio Hz from the dial. Off: the IF centre in the middle (the decoders always get it there).	Pokazuje cały zakres audio karty dźwiękowej, od 0 Hz do połowy częstotliwości próbkowania, na widmie, ze skalą w Hz audio od częstotliwości nastawy. Wyłączone: środek p.cz. na środku (dekodery zawsze dostają go tam).
+Find centre	Znajdź środek
+Sets the IF centre to the middle of the strongest signal on the screen (a fax or FSK signal: halfway between its tones).	Ustawia środek p.cz. na środku najsilniejszego sygnału na ekranie (sygnał faksu lub FSK: w połowie między jego tonami).
+Clipping: lower the input level	Przesterowanie: obniż poziom wejścia
+Left and right are identical: this is audio, not I/Q.	Lewy i prawy są identyczne: to jest dźwięk, nie I/Q.
+Use Real (mono)	Użyj Rzeczywisty (mono)
 Remove DC	Usuń DC
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	Dla WebSDR, wirtualnego kabla audio (VAC) albo wyjścia głośnikowego, liniowego lub PCz radia do komputera. Nie zastępuje SDR, gdy potrzeba megaherców pasma. Pole częstotliwości to wskazanie, które dekoder ma przyjąć (częstotliwość radiowa środka PCz); karta dźwiękowa nie jest strojona.
 I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q stereo: lewy to I, prawy to Q (HDSDR / WebSDR VAC). Audio USB: rzeczywiste audio na analityczne IQ dla FT8, RTTY, CW, SSB z odczepu głośnika lub audio odbiornika. Audio LSB: to samo, lustrzanie. Rzeczywiste (mono): rzeczywiste próbki (odczep m.cz., PCz jak 12 kHz) zamienione na analityczne, z przełącznikiem wstęgi poniżej.

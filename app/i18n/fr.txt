@@ -1252,6 +1252,13 @@ Right	Droite
 Left + right	Gauche + droite
 IF centre	Centre FI
 Swap sideband	Inverser la bande latérale
+Audio range	Plage audio
+Show the sound card's whole audio range, 0 Hz to half the sample rate, across the spectrum, with the frequency scale in audio Hz from the dial. Off: the IF centre in the middle (the decoders always get it there).	Affiche toute la plage audio de la carte son, de 0 Hz à la moitié de la fréquence d'échantillonnage, sur le spectre, avec l'échelle en Hz audio à partir de la fréquence du cadran. Désactivé : le centre FI au milieu (les décodeurs l'y reçoivent toujours).
+Find centre	Trouver le centre
+Sets the IF centre to the middle of the strongest signal on the screen (a fax or FSK signal: halfway between its tones).	Place le centre FI au milieu du signal le plus fort à l'écran (un signal fax ou FSK : à mi-chemin entre ses tons).
+Clipping: lower the input level	Écrêtage : baissez le niveau d'entrée
+Left and right are identical: this is audio, not I/Q.	Gauche et droite sont identiques : c'est de l'audio, pas de l'I/Q.
+Use Real (mono)	Utiliser Réel (mono)
 Remove DC	Retirer le DC
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	Pour WebSDR, un câble audio virtuel (VAC) ou la sortie haut-parleur, ligne ou FI d'une radio vers l'ordinateur. Ne remplace pas un SDR quand il faut des mégahertz de bande. Le champ de fréquence est le cadran que le décodeur doit supposer (la fréquence radio du centre de la FI) ; la carte son n'est pas accordée.
 I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q stéréo : la gauche est I, la droite est Q (HDSDR / WebSDR VAC). Audio USB : audio réel vers IQ analytique pour FT8, RTTY, CW, BLU depuis une prise haut-parleur ou l'audio d'un récepteur. Audio LSB : pareil, en miroir. Réel (mono) : échantillons réels (une prise BF, une FI comme 12 kHz) rendus analytiques, avec le commutateur de bande latérale ci-dessous.

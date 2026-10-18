@@ -32,10 +32,11 @@ namespace dect2 {
 // The radio of a narrow-channel mode is tuned tuneOffsetHz above the user's frequency, so the channel stays off the DC spike.
 TuneSettings Engine::radioTune(const TuneSettings& t) const {
     TuneSettings r = t;
-    if (const ModeTuning* mt = modeTuning(stdMode_.load())) {
+    if (const ModeTuning* mt = noTuneOffset_.load() ? nullptr : modeTuning(stdMode_.load())) {
         r.centerHz += mt->tuneOffsetHz;
         if (mt->tuneOffsetHz != 0) r.radio["tune_offset_hz"] = std::to_string(mt->tuneOffsetHz);   // a source with only a few kHz of spectrum (KiwiSDR) tunes to the dial and shifts the samples by it
     }
+    if (noTuneOffset_.load()) if (const ModeTuning* mt = modeTuning(stdMode_.load())) if (mt->minSampleRate > 0) r.radio["audio_min_rate"] = std::to_string(mt->minSampleRate);   // a sound card: interpolated up to what the mode's receiver needs
     if (offHz_ > 0) { r.centerHz -= offHz_; r.sampleRate = offRate_; r.basebandFilterHz = 0; }   // offset tuning: the radio below the channel
     if (specanSweep_) {   // HackrfSource sweeps this range itself (MHz)
         double lo = 0, hi = 0;
