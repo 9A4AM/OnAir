@@ -2703,3 +2703,10 @@ Watch for these	Hierop letten
 Lists	Lijsten
 Watchlists...	Kijklijsten...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Meldingen als aangewezen vliegtuigen, schepen, roepnamen, frequenties of woorden worden gehoord: melding, geluid, ntfy, Telegram of webhook
+# full screen on every map
+Full screen	Volledig scherm
+Exit full screen	Volledig scherm verlaten
+Back to the normal layout (Esc)	Terug naar de normale indeling (Esc)
+The map fills the whole window (Esc to leave)	De kaart vult het hele venster (Esc om te sluiten)
+The radar fills the whole window (Esc to leave)	De radar vult het hele venster (Esc om te sluiten)
+This screen fills the whole window (Esc to leave)	Dit scherm vult het hele venster (Esc om te sluiten)

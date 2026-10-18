@@ -2703,3 +2703,10 @@ Watch for these	监视这些
 Lists	列表
 Watchlists...	监视列表...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	当收到列表中的飞机、船舶、呼号、频率或词语时提醒: 通知、声音、ntfy、Telegram 或 Webhook
+# full screen on every map
+Full screen	全屏
+Exit full screen	退出全屏
+Back to the normal layout (Esc)	返回正常布局 (Esc)
+The map fills the whole window (Esc to leave)	地图铺满整个窗口 (按 Esc 退出)
+The radar fills the whole window (Esc to leave)	雷达铺满整个窗口 (按 Esc 退出)
+This screen fills the whole window (Esc to leave)	此界面铺满整个窗口 (按 Esc 退出)

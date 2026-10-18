@@ -2689,3 +2689,10 @@ Watch for these	Ezek figyelése
 Lists	Listák
 Watchlists...	Figyelőlisták...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Riasztás, ha a listán szereplő repülőt, hajót, hívójelet, frekvenciát vagy szót hallja: értesítés, hang, ntfy, Telegram vagy webhook
+# full screen on every map
+Full screen	Teljes képernyő
+Exit full screen	Kilépés a teljes képernyőből
+Back to the normal layout (Esc)	Vissza a normál elrendezéshez (Esc)
+The map fills the whole window (Esc to leave)	A térkép kitölti az egész ablakot (Esc a kilépéshez)
+The radar fills the whole window (Esc to leave)	A radar kitölti az egész ablakot (Esc a kilépéshez)
+This screen fills the whole window (Esc to leave)	Ez a képernyő kitölti az egész ablakot (Esc a kilépéshez)

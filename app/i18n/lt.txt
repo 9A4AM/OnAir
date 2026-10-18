@@ -2703,3 +2703,10 @@ Watch for these	Stebėti šiuos
 Lists	Sąrašai
 Watchlists...	Stebėjimo sąrašai...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Pranešimai, kai išgirstami sąraše esantys orlaiviai, laivai, šaukiniai, dažniai ar žodžiai: pranešimas, garsas, ntfy, Telegram arba webhook
+# full screen on every map
+Full screen	Visas ekranas
+Exit full screen	Išeiti iš viso ekrano
+Back to the normal layout (Esc)	Atgal į įprastą išdėstymą (Esc)
+The map fills the whole window (Esc to leave)	Žemėlapis užpildo visą langą (Esc – išeiti)
+The radar fills the whole window (Esc to leave)	Radaras užpildo visą langą (Esc – išeiti)
+This screen fills the whole window (Esc to leave)	Šis ekranas užpildo visą langą (Esc – išeiti)

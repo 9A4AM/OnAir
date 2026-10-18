@@ -2703,3 +2703,10 @@ Watch for these	これらを監視する
 Lists	リスト
 Watchlists...	ウォッチリスト...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	リストにある航空機、船舶、コールサイン、周波数、単語を受信したときに通知: 通知、音、ntfy、Telegram、Webhook
+# full screen on every map
+Full screen	全画面表示
+Exit full screen	全画面表示を終了
+Back to the normal layout (Esc)	通常のレイアウトに戻る (Esc)
+The map fills the whole window (Esc to leave)	地図がウィンドウ全体に広がります (Escで戻る)
+The radar fills the whole window (Esc to leave)	レーダーがウィンドウ全体に広がります (Escで戻る)
+This screen fills the whole window (Esc to leave)	この画面がウィンドウ全体に広がります (Escで戻る)

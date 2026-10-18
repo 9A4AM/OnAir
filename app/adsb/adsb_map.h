@@ -3,6 +3,7 @@
 #pragma once
 #include "imgui.h"
 #include <cmath>
+#include <functional>
 
 namespace adsbmap {
 
@@ -25,7 +26,19 @@ void legend(float mapWidth, const char* fmt, ...);   // TextDisabled() along the
 // deleted when OnAir closes, how many there are per zoom level, deleting them) and the "online map" switch. Both are one setting for every
 // map. `privacy` (or null) ends "only tile numbers are sent" in the switch's tooltip, e.g. "never the position itself". After draw(), with
 // SameLine() before it; when they do not fit before the map's right edge they go on a line of their own.
-void tileControls(const char* privacy);
+void tileControls(const char* privacy, bool fullButton = true);
+// Full screen, one for every map: the button ("full screen" / "exit full screen", Esc leaves) is part of tileControls(), so every map has it on
+// its control line. It makes the screen the map is on fill the whole window. mainTabs() wraps each tab body in a FullScope (the body is what
+// is drawn again over the whole window); screens with their own full-screen view pass fullButton=false and use fullButton() themselves.
+bool fullButton(bool on, const char* what);    // the shared button + tooltip; true when clicked. `what` is "map" or "radar" for the tooltip
+class FullScope {
+public:
+    FullScope(const void* owner, std::function<void()> body);   // owner: the App whose window it is
+    ~FullScope();
+    FullScope(const FullScope&) = delete;
+    FullScope& operator=(const FullScope&) = delete;
+};
+bool fullDraw(const void* owner, int family, ImVec2 disp);   // draw_ui.cpp, each frame: the full-screen screen over the whole window; false when not full
 bool online();                                 // tiles are fetched from the tile server (the "online map" switch)
 void shutdown();                               // stop the downloader; delete this session's tiles unless they are kept
 

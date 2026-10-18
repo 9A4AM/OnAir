@@ -10,6 +10,8 @@
 #include <condition_variable>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <functional>
 #include <deque>
 #include <map>
 #include <mutex>
@@ -652,11 +654,22 @@ void tilesMenu(ImVec4 buttonColour) {
 
 } // namespace
 
-void tileControls(const char* privacy) {
+namespace {
+struct FullCtx { const void* owner = nullptr; std::function<void()> body; };
+FullCtx gFullCtx;                       // the tab body being drawn (set by FullScope)
+bool gFullOn = false, gFullFamilyKnown = false;
+const void* gFullOwner = nullptr;
+std::function<void()> gFullBody;
+int gFullFamily = 0;
+}
+
+void tileControls(const char* privacy, bool fullBtn) {
     init();
     // a line of their own under the screen's buttons when they would run past the map's right edge (a narrow map, a large display scale)
     const ImGuiStyle& st = ImGui::GetStyle();
-    const float need = ImGui::CalcTextSize("tiles").x + 2 * st.FramePadding.x + 10 * gUi + ImGui::GetFrameHeight() + st.ItemInnerSpacing.x + ImGui::CalcTextSize("online map").x;
+    const bool canFull = fullBtn && (gFullCtx.body || gFullOn);
+    const float need = ImGui::CalcTextSize("tiles").x + 2 * st.FramePadding.x + 10 * gUi + ImGui::GetFrameHeight() + st.ItemInnerSpacing.x + ImGui::CalcTextSize("online map").x
+                       + (canFull ? ImGui::CalcTextSize(tr("Exit full screen")).x + 2 * st.FramePadding.x + 6 * gUi : 0.f);
     if (ImGui::GetCursorScreenPos().x + need > gOrigin.x + gSize.x - 8 * gUi) ImGui::SetCursorScreenPos(ImVec2(gOrigin.x + 8 * gUi, ImGui::GetItemRectMax().y + 4 * gUi));
     const ImVec2 at = ImGui::GetCursorScreenPos();   // where "tiles" goes: the checkbox is placed from this, not from the last item
     tilesMenu(ImVec4(0.06f, 0.07f, 0.08f, 0.85f));   // the colour of the buttons on the maps
@@ -669,6 +682,46 @@ void tileControls(const char* privacy) {
                           "Switch off to work offline: the map then shows the tiles already downloaded, or a plain grid.\nThis switch and the tiles menu are the same on every map.",
                           keepNew ? "keep them on this computer until you delete them (the tiles menu)" : "keep them only until OnAir closes (the tiles menu)",
                           privacy ? ", " : "", privacy ? privacy : "");
+    if (canFull) {
+        ImGui::SameLine(0, 6 * gUi);
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.06f, 0.07f, 0.08f, 0.85f));
+        static bool autoFull = std::getenv("ONAIR_MAP_FULL") != nullptr;   // dev: screenshots of the full-screen view (--shot) enter it by themselves
+        const bool autoHit = autoFull && !gFullOn && (autoFull = false, true);
+        if (fullButton(gFullOn, "screen") || autoHit) {
+            if (gFullOn) gFullOn = false;
+            else { gFullOn = true; gFullOwner = gFullCtx.owner; gFullBody = gFullCtx.body; gFullFamilyKnown = false; }
+        }
+        ImGui::PopStyleColor();
+    }
+}
+
+bool fullButton(bool on, const char* what) {
+    const bool hit = ImGui::Button(on ? tr("Exit full screen") : tr("Full screen"));
+    if (ImGui::IsItemHovered()) {
+        if (on) ImGui::SetTooltip("%s", tr("Back to the normal layout (Esc)"));
+        else if (!std::strcmp(what, "map")) ImGui::SetTooltip("%s", tr("The map fills the whole window (Esc to leave)"));
+        else if (!std::strcmp(what, "radar")) ImGui::SetTooltip("%s", tr("The radar fills the whole window (Esc to leave)"));
+        else ImGui::SetTooltip("%s", tr("This screen fills the whole window (Esc to leave)"));
+    }
+    return hit;
+}
+
+FullScope::FullScope(const void* owner, std::function<void()> body) { if (!gFullOn) { gFullCtx.owner = owner; gFullCtx.body = std::move(body); } }
+FullScope::~FullScope() { if (!gFullOn) gFullCtx = {}; }
+
+bool fullDraw(const void* owner, int family, ImVec2 disp) {
+    if (!gFullOn || gFullOwner != owner) return false;
+    if (!gFullFamilyKnown) { gFullFamily = family; gFullFamilyKnown = true; if (std::getenv("ONAIR_MAP_FULL")) std::fprintf(stderr, "[mapfull] entered, family %d\n", family); }
+    if (family != gFullFamily || !gFullBody) { gFullOn = false; return false; }   // another mode was picked: the screen is gone
+    if (!ImGui::GetIO().WantTextInput && !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && ImGui::IsKeyPressed(ImGuiKey_Escape, false)) { gFullOn = false; return false; }
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(disp);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4 * gUi, 4 * gUi));
+    ImGui::Begin("##mapfull", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollWithMouse);
+    ImGui::PopStyleVar();
+    gFullBody();
+    ImGui::End();
+    return true;
 }
 
 void shutdown() {

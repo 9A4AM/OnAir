@@ -2703,3 +2703,10 @@ Watch for these	Auf diese achten
 Lists	Listen
 Watchlists...	Beobachtungslisten...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Meldungen, wenn gelistete Flugzeuge, Schiffe, Rufzeichen, Frequenzen oder Wörter gehört werden: Benachrichtigung, Ton, ntfy, Telegram oder Webhook
+# full screen on every map
+Full screen	Vollbild
+Exit full screen	Vollbild beenden
+Back to the normal layout (Esc)	Zurück zum normalen Layout (Esc)
+The map fills the whole window (Esc to leave)	Die Karte füllt das ganze Fenster (Esc zum Verlassen)
+The radar fills the whole window (Esc to leave)	Das Radar füllt das ganze Fenster (Esc zum Verlassen)
+This screen fills the whole window (Esc to leave)	Dieser Bildschirm füllt das ganze Fenster (Esc zum Verlassen)

@@ -2686,3 +2686,10 @@ Watch for these	Следить за этими
 Lists	Списки
 Watchlists...	Списки наблюдения...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Оповещения, когда принимаются перечисленные самолёты, суда, позывные, частоты или слова: уведомление, звук, ntfy, Telegram или вебхук
+# full screen on every map
+Full screen	Во весь экран
+Exit full screen	Выйти из полноэкранного режима
+Back to the normal layout (Esc)	Вернуться к обычному виду (Esc)
+The map fills the whole window (Esc to leave)	Карта занимает всё окно (Esc для выхода)
+The radar fills the whole window (Esc to leave)	Радар занимает всё окно (Esc для выхода)
+This screen fills the whole window (Esc to leave)	Этот экран занимает всё окно (Esc для выхода)

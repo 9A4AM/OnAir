@@ -2686,3 +2686,10 @@ Watch for these	Vigiar estes
 Lists	Listas
 Watchlists...	Listas de vigilância...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alertas quando aeronaves, navios, indicativos, frequências ou palavras da lista são ouvidos: notificação, som, ntfy, Telegram ou webhook
+# full screen on every map
+Full screen	Ecrã inteiro
+Exit full screen	Sair do ecrã inteiro
+Back to the normal layout (Esc)	Voltar à disposição normal (Esc)
+The map fills the whole window (Esc to leave)	O mapa ocupa a janela toda (Esc para sair)
+The radar fills the whole window (Esc to leave)	O radar ocupa a janela toda (Esc para sair)
+This screen fills the whole window (Esc to leave)	Este ecrã ocupa a janela toda (Esc para sair)
