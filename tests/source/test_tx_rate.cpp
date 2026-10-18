@@ -7,10 +7,11 @@
 #include <cstdio>
 #include <limits>
 #include <memory>
+#include <iostream>
 #include <thread>
 using namespace dect2;
 static int failures = 0;
-#define CHECK(c, fmt, ...) do { if (!(c)) { printf("FAIL: " fmt "\n" __VA_OPT__(,) __VA_ARGS__); ++failures; } } while (0)
+#define CHECK(c, message) do { if (!(c)) { std::cerr << "FAIL: " << message << '\n'; ++failures; } } while (0)
 struct State {
     std::atomic<int> opens{0}, closes{0};
     std::atomic<uint64_t> samples{0};
@@ -38,17 +39,17 @@ static TxRequest request(double rate = 0) {
 static void rejected(TxRequest r, TxRateLimits lim, const char* text) {
     auto s = std::make_shared<State>(); TxSession tx; std::string err;
     CHECK(!tx.start(std::make_unique<MemorySink>(s), r, lim, err), "invalid TX Fs accepted");
-    CHECK(err.find(text) != std::string::npos, "error '%s' lacks '%s'", err.c_str(), text);
+    CHECK(err.find(text) != std::string::npos, "error '" << err << "' lacks '" << text << "'");
     CHECK(s->opens == 0 && s->samples == 0 && !tx.running(), "validation must precede hardware open and samples");
 }
 static void transmitted(double requested, double readback, double expectedRequest, double expectedRate) {
     auto s = std::make_shared<State>(); TxSession tx; std::string err;
-    CHECK(tx.start(std::make_unique<MemorySink>(s, readback), request(requested), {2.1e6, 61.44e6}, err), "start: %s", err.c_str());
+    CHECK(tx.start(std::make_unique<MemorySink>(s, readback), request(requested), {2.1e6, 61.44e6}, err), "start: " << err);
     const auto until = std::chrono::steady_clock::now() + std::chrono::seconds(5);
     while (tx.running() && std::chrono::steady_clock::now() < until) std::this_thread::sleep_for(std::chrono::milliseconds(2));
     CHECK(!tx.running() && tx.stats().finished && !tx.stats().failed, "short TX session finishes");
     tx.stop();
-    CHECK(s->requested == expectedRequest && tx.stats().rateHz == expectedRate, "requested %.3f, actual %.3f", s->requested, tx.stats().rateHz);
+    CHECK(s->requested == expectedRequest && tx.stats().rateHz == expectedRate, "requested " << s->requested << ", actual " << tx.stats().rateHz);
     CHECK(s->samples > 0 && s->closes == 1, "session sends samples and closes once");
 }
 int main() {
@@ -74,7 +75,7 @@ int main() {
         auto s = std::make_shared<State>(); TxSession tx; std::string err;
         CHECK(!tx.start(std::make_unique<MemorySink>(s, 8e6), request(4e6), {2.1e6, 61.44e6}, err), "manual rate may not silently adopt a different clock");
         CHECK(err.find("not the requested TX rate") != std::string::npos && s->closes == 1 && s->samples == 0,
-              "different readback closes without sending: %s", err.c_str());
+              "different readback closes without sending: " << err);
     }
     printf("TX rate: %s (%d failures)\n", failures ? "FAILED" : "passed", failures);
     return failures ? 1 : 0;
