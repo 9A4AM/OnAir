@@ -59,6 +59,7 @@
 #include <vector>
 #include <unistd.h>
 #include "gfx/colormap.h"
+#include "gfx/wf_view.h"
 
 using namespace dect2;
 
@@ -73,7 +74,11 @@ struct Waterfall {
     }
     gfx::Image* img = nullptr;
     uint32_t lut[256] = {};
-    int builtMap = -1;
+    int builtMap = -1, lutGen = 0;   // lutGen: counts the colour table rebuilds
+    std::vector<uint8_t> lv;         // the history as levels (0..255, the index into lut), W x H like the texture: the view is made from it
+    long long rows = 0;              // rows written since the start; the newest is number rows - 1, at writeRow
+    gfx::Image* viewImg = nullptr;   // the history at the size it is shown (the main waterfall; made on first use)
+    plt::WfView view;
     float gamma = 1.f, builtGamma = 1.f;   // contrast: the level ^ gamma picks the colour (below 1 lifts weak signals)
     std::vector<uint32_t> row;      // scratch for the row being written (kept: no allocation per frame)
     std::vector<float> acc, floorScratch;   // the highest level per bin since the last row; the samples of the noise floor estimate
@@ -110,10 +115,11 @@ struct Waterfall {
     int effMap() const { return map >= 0 && map < NumMaps ? map : pal::wfMode() == 2 ? Turbo : pal::wfMode() == 1 ? Grey : Classic; }
     static int& curMap() { static int m = 0; return m; }   // the map in use, for the other waterfalls (modes with their own picture) that colour with jet()
     static uint32_t jet(float v) { return color(curMap(), v); }
-    void palette() { builtMap = effMap(); curMap() = builtMap; for (int i = 0; i < 256; i++) lut[i] = color(builtMap, cmap::applyGamma(i / 255.0f, gamma)); builtGamma = gamma; }   // after the map or the interface palette changed
+    void palette() { builtMap = effMap(); curMap() = builtMap; for (int i = 0; i < 256; i++) lut[i] = color(builtMap, cmap::applyGamma(i / 255.0f, gamma)); builtGamma = gamma; lutGen++; }   // after the map or the interface palette changed
     void init(gfx::Backend* gfx) {
         img = gfx->createImage(W, H, 0xFF000000u);
         row.assign(W, 0);
+        lv.assign((size_t)W * H, 0);
         palette();
     }
     static uint32_t color(int map, float v) { return cmap::color(map, v); }
@@ -139,6 +145,8 @@ struct Waterfall {
     void writeFrom(const float* d, size_t n) {
         const float inv = 255.f / std::max(1.f, maxDb - minDb);
         uint32_t* r = row.data();
+        writeRow = (writeRow + H - 1) % H;
+        uint8_t* l = lv.data() + (size_t)writeRow * W;
         if (n >= (size_t)W && n % W == 0) {   // the usual 8k..64k FFT: the same number of bins in every column, so no division and a fixed-length max (vectorised)
             const size_t k = n / W;
             for (int x = 0; x < W; x++) {
@@ -146,11 +154,12 @@ struct Waterfall {
                 float m = c[0];
                 for (size_t j = 1; j < k; j++) m = std::max(m, c[j]);
                 const float v = (m - minDb) * inv;
-                r[x] = lut[v <= 0.f ? 0 : v >= 255.f ? 255 : (int)v];
+                l[x] = (uint8_t)(v <= 0.f ? 0 : v >= 255.f ? 255 : (int)v);
+                r[x] = lut[l[x]];
             }
-            writeRow = (writeRow + H - 1) % H;
             img->update(0, writeRow, W, 1, r);
             filled = std::min(H, filled + 1);
+            rows++;
             return;
         }
         for (int x = 0; x < W; x++) {
@@ -158,11 +167,12 @@ struct Waterfall {
             float m = d[a];
             for (size_t k = a + 1; k < b; k++) m = std::max(m, d[k]);
             const float v = (m - minDb) * inv;
-            r[x] = lut[v <= 0.f ? 0 : v >= 255.f ? 255 : (int)v];
+            l[x] = (uint8_t)(v <= 0.f ? 0 : v >= 255.f ? 255 : (int)v);
+            r[x] = lut[l[x]];
         }
-        writeRow = (writeRow + H - 1) % H;
         img->update(0, writeRow, W, 1, r);
         filled = std::min(H, filled + 1);
+        rows++;
     }
     // the range from the spectrum: the noise floor is the 20th percentile, the top is the strongest signal (at most 45 dB above the floor).
     // instant: set it at once; else move a part of the way (called a few times a second, so the colours do not jump)
