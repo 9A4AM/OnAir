@@ -984,13 +984,37 @@ static void waterfallPlot(App& a, ImVec2 size, int extraFlags) {
         // rows arrive at the engine's ~30 Hz, the screen draws faster: slide down by the part of a row that is due since the last one,
         // so the picture moves at an even speed instead of jumping a row at a time
         const double frac = a.wf.pushT > 0 && !a.wf.paused ? std::min(1.0, std::max(0.0, (glfwGetTime() - a.wf.pushT) / a.wf.rowDt)) : 0;
-        int w = a.wf.writeRow;
-        ImTextureID tex = a.wf.img->texture();
-        plt::PlotImage("a", tex, plt::Point(x0, -(H - w) - frac), plt::Point(x1, -frac), ImVec2(0, (float)w / H), ImVec2(1, 1));
-        if (w > 0)
-            plt::PlotImage("b", tex, plt::Point(x0, -H - frac), plt::Point(x1, -(H - w) - frac), ImVec2(0, 0), ImVec2(1, (float)w / H));
-        const float vNew = (w + 0.5f) / H;   // the gap above: the newest row, stretched
-        if (frac > 0) plt::PlotImage("top", tex, plt::Point(x0, -frac), plt::Point(x1, 0), ImVec2(0, vNew), ImVec2(1, vNew));
+        // Drawn from the history made to the size of the plot (wf_view.h): the visible columns onto the pixel columns, the rows in groups
+        // at least a pixel tall, so nothing is skipped by the texture sampling and the picture does not blink as it slides.
+        const ImVec2 psz = plt::GetPlotSize();   // first: it finishes the setup, after which the limits are this frame's
+        const plt::Rect vis = plt::GetPlotLimits();
+        const ImVec2 fbs = ImGui::GetIO().DisplayFramebufferScale;
+        const int W = Waterfall::W;
+        const int c0 = (int)std::floor((vis.X.Min - x0) / (x1 - x0) * W), c1 = (int)std::ceil((vis.X.Max - x0) / (x1 - x0) * W);
+        const int k = plt::WfView::groupRows(vis.Y.Max - vis.Y.Min, psz.y * std::max(1.f, fbs.y), H);
+        if (!a.wf.viewImg && gGfx) a.wf.viewImg = gGfx->createImage(W, H, 0xFF000000u);
+        bool full = false;
+        static std::vector<int> dirty;
+        plt::WfView& v = a.wf.view;
+        if (a.wf.viewImg && a.wf.view.update(a.wf.lv.data(), W, H, a.wf.writeRow, a.wf.rows - 1, a.wf.filled, a.wf.lut, a.wf.lutGen,
+                                              c0, c1, std::max(1, (int)(psz.x * std::max(1.f, fbs.x))), k, full, dirty)) {
+            if (full) a.wf.viewImg->update(0, 0, v.stride, v.rowsAlloc, v.px.data());
+            else for (int r : dirty) a.wf.viewImg->update(0, r, v.stride, 1, v.px.data() + (size_t)r * v.stride);
+        }
+        if (a.wf.viewImg && v.cols > 0 && a.wf.rows > 0) {
+            ImTextureID tex = a.wf.viewImg->texture();
+            const double vx0 = x0 + (x1 - x0) * v.c0 / W, vx1 = x0 + (x1 - x0) * v.c1 / W;
+            const float u1 = (float)v.cols / W;
+            const long long R = a.wf.rows - 1, gN = R / v.k;
+            const int w = v.rowOf(gN);
+            // row r takes y from -(R - r) - 1 - frac to -(R - r) - frac: the newest group's top is that of its last row (still to come
+            // while it fills: above the plot, clipped), the older groups below it, the ring's rows w..ring-1 then 0..w-1
+            const double top = -(double)(R - (gN * v.k + v.k - 1)) - frac, midY = top - (double)(v.ring - w) * v.k;
+            plt::PlotImage("a", tex, plt::Point(vx0, midY), plt::Point(vx1, top), ImVec2(0, (float)w / H), ImVec2(u1, (float)v.ring / H));
+            if (w > 0) plt::PlotImage("b", tex, plt::Point(vx0, midY - (double)w * v.k), plt::Point(vx1, midY), ImVec2(0, 0), ImVec2(u1, (float)w / H));
+            const float vNew = (w + 0.5f) / H;   // the gap above (a whole group in): the newest group, stretched
+            if (top < 0) plt::PlotImage("top", tex, plt::Point(vx0, top), plt::Point(vx1, 0), ImVec2(0, vNew), ImVec2(u1, vNew));
+        }
         channelBand(a, false);
         plotMin = plt::GetPlotPos(); plotSize = plt::GetPlotSize();
         wfScaleBar(a, plotMin, plotSize);
