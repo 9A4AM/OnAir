@@ -11,7 +11,7 @@ BEGIN
       VALUE "FileDescription", "OnAir DVB-T2 / DVB-T / ATSC / DAB receiver"
       VALUE "ProductName", "OnAir"
       VALUE "ProductVersion", "0.2.7"
-      VALUE "LegalCopyright", "GPL-3.0-or-later"
+      VALUE "LegalCopyright", "Code: GPL-3.0-or-later. OnAir name and logo (c) 2026 Kristijonas Adomaitis, all rights reserved; the logo is not covered by the GPL."
     END
   END
   BLOCK "VarFileInfo"

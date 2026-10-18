@@ -39,6 +39,8 @@ def table(cols):
 
 INTRO = """OnAir is released under the **GNU General Public License v3.0 or later** (see [LICENSE](LICENSE)). It stands on the work of many people. This file lists the third-party and derived code, libraries, data and specifications behind it, what each licence asks of us, and where we are not sure. The same list is in the program (Help, Credits and licences), on the website and in the wiki. If you wrote something we use and you are not named correctly, please open an issue and we will fix it at once.
 
+OnAir name and logo © 2026 Kristijonas Adomaitis. All rights reserved; the logo is not covered by the GPL licence of the source code.
+
 How to read the "How" column: **vendored** means the source is in this repository and compiled into OnAir; **ported / re-implemented / read** means OnAir's own code was written from that project's source or documentation (file headers name the project); **linked** means a library OnAir is built against; **loaded at run time** means the user installs it and OnAir finds it, it is not shipped.
 """
 
