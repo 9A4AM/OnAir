@@ -81,6 +81,7 @@ void parseDevFlags(App& app, int argc, char** argv, DevOpts& o) {
         if (std::string(argv[i]) == "--stress") o.stress = true;   // dev: retune frequency and gain every second, like moving the controls
         if (std::string(argv[i]) == "--shot" && i + 1 < argc) o.shotPath = argv[++i];
         if (std::string(argv[i]) == "--shotdelay" && i + 1 < argc) o.shotAfter = atof(argv[++i]);
+        if (std::string(argv[i]) == "--audioclean") audioCleanupDevOpen(i + 1 < argc && std::string(argv[i + 1]) == "adv");   // dev: the Audio cleanup pop-up open (adv: Advanced)
         if (std::string(argv[i]) == "--fmscan") o.fmScanAuto = true;
         if (std::string(argv[i]) == "--passes") app.passesOpen = true;
         if (std::string(argv[i]) == "--df") app.dfOpen = true;

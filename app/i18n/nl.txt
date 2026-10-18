@@ -2703,3 +2703,50 @@ Watch for these	Hierop letten
 Lists	Lijsten
 Watchlists...	Kijklijsten...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Meldingen als aangewezen vliegtuigen, schepen, roepnamen, frequenties of woorden worden gehoord: melding, geluid, ntfy, Telegram of webhook
+Data (off)	Data (uit)
+Generic	Algemeen
+AM / airband	AM / luchtvaart
+NFM / VHF / UHF	NFM / VHF / UHF
+WFM broadcast	WFM-omroep
+SSB / HF	SSB / HF
+CW	CW
+Audio cleanup: noise reduction, notch, leveller ...	Audio opschonen: ruisonderdrukking, notchfilter, nivelleerder ...
+Audio cleanup	Audio opschonen
+Basic	Eenvoudig
+Settings for	Instellingen voor
+Automatic (%s)	Automatisch (%s)
+A data mode: its sound is left as it is. Pick another kind above to clean it up anyway.	Een datamodus: het geluid blijft zoals het is. Kies hierboven een ander type om het toch op te schonen.
+Clean the sound you hear. The decoders always get the untouched sound.	Maakt het geluid dat je hoort schoner. De decoders krijgen altijd het onbewerkte geluid.
+Strength	Sterkte
+noise reduction	ruisonderdrukking
+auto notch	automatische notch
+leveller	nivelleerder
+silence gate	stiltepoort
+voice emphasis	stemversterking
+Nothing is on for this kind of mode. See Advanced.	Voor dit type modus staat niets aan. Zie Geavanceerd.
+Noise reduction	Ruisonderdrukking
+Takes down the steady hiss and rumble between and under the speech. More strength cleans more and costs some naturalness.	Verlaagt de constante ruis en bromtoon tussen en onder de spraak. Meer sterkte maakt schoner en kost wat natuurlijkheid.
+Auto notch	Automatische notch
+Finds a steady whistle, carrier or heterodyne in the sound and cuts it out narrowly, following it as it drifts. Lets go again when it stops.	Vindt een constante fluittoon, draaggolf of zwevingstoon in het geluid en knipt die smal weg, en volgt hem als hij wegdrijft. Laat los als hij stopt.
+cutting %.0f Hz	knipt %.0f Hz
+Manual notch	Handmatige notch
+Cuts one frequency out of the sound, for a tone you can see in the audio spectrum.	Knipt één frequentie uit het geluid, voor een toon die je in het audiospectrum ziet.
+width %.0f %%	breedte %.0f %%
+Leveller	Nivelleerder
+Brings quiet and loud stations to the same loudness, with a soft limiter against peaks.	Brengt zachte en luide zenders op hetzelfde volume, met een zachte begrenzer tegen pieken.
+balance %.0f %%	balans %.0f %%
+target %.0f dB	doel %.0f dB
+Do not boost the noise between transmissions	De ruis tussen uitzendingen niet versterken
+Silence gate	Stiltepoort
+Mutes the sound when only noise is left, like a squelch that follows the noise level by itself.	Dempt het geluid als alleen ruis overblijft, als een squelch die zelf het ruisniveau volgt.
+opens %.0f dB above noise	opent %.0f dB boven de ruis
+muted	gedempt
+Voice emphasis	Stemversterking
+Cuts the rumble below the voice and lifts the presence, so a weak voice is easier to understand.	Snijdt de bromtoon onder de stem weg en tilt de presence op, zodat een zwakke stem beter te verstaan is.
+De-esser	De-esser
+Softens sharp S sounds.	Maakt scherpe S-klanken zachter.
+Record the cleaned sound	Het opgeschoonde geluid opnemen
+Record audio saves the sound as you hear it now, cleaned, instead of the raw sound.	Audio opnemen bewaart het geluid zoals je het nu hoort, opgeschoond, in plaats van het ruwe geluid.
+Skip silence in the recording	Stilte in de opname overslaan
+Nothing is recorded while the silence gate holds the sound off.	Er wordt niets opgenomen zolang de stiltepoort het geluid tegenhoudt.
+Reset to the preset	Terug naar de voorinstelling

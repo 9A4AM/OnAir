@@ -2703,3 +2703,50 @@ Watch for these	Vigilar estos
 Lists	Listas
 Watchlists...	Listas de vigilancia...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alertas cuando se oyen aeronaves, barcos, indicativos, frecuencias o palabras de las listas: notificación, sonido, ntfy, Telegram o webhook
+Data (off)	Datos (desactivado)
+Generic	General
+AM / airband	AM / aeronáutica
+NFM / VHF / UHF	NFM / VHF / UHF
+WFM broadcast	Radiodifusión WFM
+SSB / HF	SSB / HF
+CW	CW
+Audio cleanup: noise reduction, notch, leveller ...	Limpieza de audio: reducción de ruido, filtro de muesca, nivelador ...
+Audio cleanup	Limpieza de audio
+Basic	Básico
+Settings for	Ajustes para
+Automatic (%s)	Automático (%s)
+A data mode: its sound is left as it is. Pick another kind above to clean it up anyway.	Un modo de datos: su sonido se deja tal cual. Elige arriba otro tipo para limpiarlo de todos modos.
+Clean the sound you hear. The decoders always get the untouched sound.	Limpia el sonido que oyes. Los decodificadores siempre reciben el sonido sin tocar.
+Strength	Intensidad
+noise reduction	reducción de ruido
+auto notch	muesca automática
+leveller	nivelador
+silence gate	silenciador de silencio
+voice emphasis	realce de voz
+Nothing is on for this kind of mode. See Advanced.	No hay nada activado para este tipo de modo. Mira Avanzado.
+Noise reduction	Reducción de ruido
+Takes down the steady hiss and rumble between and under the speech. More strength cleans more and costs some naturalness.	Reduce el siseo y el retumbo constantes entre y bajo la voz. Más intensidad limpia más y quita algo de naturalidad.
+Auto notch	Muesca automática
+Finds a steady whistle, carrier or heterodyne in the sound and cuts it out narrowly, following it as it drifts. Lets go again when it stops.	Encuentra un silbido, portadora o heterodino constante en el sonido y lo recorta de forma estrecha, siguiéndolo si se desplaza. Lo suelta cuando se detiene.
+cutting %.0f Hz	recortando %.0f Hz
+Manual notch	Muesca manual
+Cuts one frequency out of the sound, for a tone you can see in the audio spectrum.	Recorta una frecuencia del sonido, para un tono que ves en el espectro de audio.
+width %.0f %%	anchura %.0f %%
+Leveller	Nivelador
+Brings quiet and loud stations to the same loudness, with a soft limiter against peaks.	Lleva las emisoras débiles y fuertes a la misma sonoridad, con un limitador suave contra los picos.
+balance %.0f %%	equilibrio %.0f %%
+target %.0f dB	objetivo %.0f dB
+Do not boost the noise between transmissions	No subir el ruido entre transmisiones
+Silence gate	Silenciador de silencio
+Mutes the sound when only noise is left, like a squelch that follows the noise level by itself.	Silencia el sonido cuando solo queda ruido, como un squelch que sigue solo el nivel de ruido.
+opens %.0f dB above noise	abre %.0f dB sobre el ruido
+muted	silenciado
+Voice emphasis	Realce de voz
+Cuts the rumble below the voice and lifts the presence, so a weak voice is easier to understand.	Recorta el retumbo bajo la voz y sube la presencia, para entender mejor una voz débil.
+De-esser	De-esser
+Softens sharp S sounds.	Suaviza los sonidos S agudos.
+Record the cleaned sound	Grabar el sonido limpio
+Record audio saves the sound as you hear it now, cleaned, instead of the raw sound.	Grabar audio guarda el sonido tal como lo oyes ahora, limpio, en lugar del sonido sin procesar.
+Skip silence in the recording	Saltar el silencio en la grabación
+Nothing is recorded while the silence gate holds the sound off.	No se graba nada mientras el silenciador de silencio retiene el sonido.
+Reset to the preset	Restablecer al preajuste

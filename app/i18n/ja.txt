@@ -2703,3 +2703,50 @@ Watch for these	これらを監視する
 Lists	リスト
 Watchlists...	ウォッチリスト...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	リストにある航空機、船舶、コールサイン、周波数、単語を受信したときに通知: 通知、音、ntfy、Telegram、Webhook
+Data (off)	データ（オフ）
+Generic	汎用
+AM / airband	AM / 航空無線
+NFM / VHF / UHF	NFM / VHF / UHF
+WFM broadcast	WFM 放送
+SSB / HF	SSB / HF
+CW	CW
+Audio cleanup: noise reduction, notch, leveller ...	音声クリーンアップ: ノイズ低減、ノッチ、レベラー ...
+Audio cleanup	音声クリーンアップ
+Basic	基本
+Settings for	設定の対象
+Automatic (%s)	自動 (%s)
+A data mode: its sound is left as it is. Pick another kind above to clean it up anyway.	データモードです。音はそのままにされます。それでもクリーンアップするには、上で別の種類を選んでください。
+Clean the sound you hear. The decoders always get the untouched sound.	聞いている音をきれいにします。デコーダーには常に加工していない音が渡されます。
+Strength	強さ
+noise reduction	ノイズ低減
+auto notch	自動ノッチ
+leveller	レベラー
+silence gate	無音ゲート
+voice emphasis	音声強調
+Nothing is on for this kind of mode. See Advanced.	この種類のモードでは何もオンになっていません。詳細を参照してください。
+Noise reduction	ノイズ低減
+Takes down the steady hiss and rumble between and under the speech. More strength cleans more and costs some naturalness.	音声の合間や下にある一定のヒスやランブルを下げます。強さを上げるときれいになりますが、自然さが少し失われます。
+Auto notch	自動ノッチ
+Finds a steady whistle, carrier or heterodyne in the sound and cuts it out narrowly, following it as it drifts. Lets go again when it stops.	音の中の一定の笛音、キャリア、ヘテロダインを見つけて狭く除去し、ずれていくのに追従します。止まると解除します。
+cutting %.0f Hz	%.0f Hz を除去中
+Manual notch	手動ノッチ
+Cuts one frequency out of the sound, for a tone you can see in the audio spectrum.	音から1つの周波数を除去します。オーディオスペクトラムに見えるトーン用です。
+width %.0f %%	幅 %.0f %%
+Leveller	レベラー
+Brings quiet and loud stations to the same loudness, with a soft limiter against peaks.	小さい局と大きい局を同じ音量にそろえ、ピークにはソフトリミッターをかけます。
+balance %.0f %%	バランス %.0f %%
+target %.0f dB	目標 %.0f dB
+Do not boost the noise between transmissions	送信の合間のノイズを持ち上げない
+Silence gate	無音ゲート
+Mutes the sound when only noise is left, like a squelch that follows the noise level by itself.	ノイズしか残っていないときに音をミュートします。ノイズレベルに自動で追従するスケルチのようなものです。
+opens %.0f dB above noise	ノイズより %.0f dB 上で開く
+muted	ミュート中
+Voice emphasis	音声強調
+Cuts the rumble below the voice and lifts the presence, so a weak voice is easier to understand.	声の下のランブルをカットして存在感を上げ、弱い声を聞き取りやすくします。
+De-esser	ディエッサー
+Softens sharp S sounds.	鋭い S の音をやわらげます。
+Record the cleaned sound	クリーンアップした音を録音
+Record audio saves the sound as you hear it now, cleaned, instead of the raw sound.	音声録音は、生の音の代わりに、今聞いているとおりのクリーンアップ後の音を保存します。
+Skip silence in the recording	録音中の無音をスキップ
+Nothing is recorded while the silence gate holds the sound off.	無音ゲートが音を止めている間は何も録音されません。
+Reset to the preset	プリセットに戻す

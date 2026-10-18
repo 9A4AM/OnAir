@@ -2703,3 +2703,50 @@ Watch for these	Auf diese achten
 Lists	Listen
 Watchlists...	Beobachtungslisten...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Meldungen, wenn gelistete Flugzeuge, Schiffe, Rufzeichen, Frequenzen oder Wörter gehört werden: Benachrichtigung, Ton, ntfy, Telegram oder Webhook
+Data (off)	Daten (aus)
+Generic	Allgemein
+AM / airband	AM / Flugfunk
+NFM / VHF / UHF	NFM / VHF / UHF
+WFM broadcast	WFM-Rundfunk
+SSB / HF	SSB / KW
+CW	CW
+Audio cleanup: noise reduction, notch, leveller ...	Audio-Bereinigung: Rauschminderung, Kerbfilter, Pegelanpassung ...
+Audio cleanup	Audio-Bereinigung
+Basic	Einfach
+Settings for	Einstellungen für
+Automatic (%s)	Automatisch (%s)
+A data mode: its sound is left as it is. Pick another kind above to clean it up anyway.	Ein Datenmodus: sein Ton bleibt unverändert. Wähle oben eine andere Art, um ihn trotzdem zu bereinigen.
+Clean the sound you hear. The decoders always get the untouched sound.	Den Ton, den du hörst, bereinigen. Die Decoder bekommen immer den unveränderten Ton.
+Strength	Stärke
+noise reduction	Rauschminderung
+auto notch	Auto-Kerbfilter
+leveller	Pegelanpassung
+silence gate	Stummschaltung bei Stille
+voice emphasis	Stimmhervorhebung
+Nothing is on for this kind of mode. See Advanced.	Für diese Art von Modus ist nichts eingeschaltet. Siehe Erweitert.
+Noise reduction	Rauschminderung
+Takes down the steady hiss and rumble between and under the speech. More strength cleans more and costs some naturalness.	Senkt das gleichmäßige Rauschen und Brummen zwischen und unter der Sprache. Mehr Stärke reinigt mehr und kostet etwas Natürlichkeit.
+Auto notch	Auto-Kerbfilter
+Finds a steady whistle, carrier or heterodyne in the sound and cuts it out narrowly, following it as it drifts. Lets go again when it stops.	Findet einen gleichbleibenden Pfeifton, Träger oder Überlagerungston im Ton, schneidet ihn schmal heraus und folgt ihm, wenn er wandert. Lässt wieder los, wenn er aufhört.
+cutting %.0f Hz	schneidet %.0f Hz
+Manual notch	Manueller Kerbfilter
+Cuts one frequency out of the sound, for a tone you can see in the audio spectrum.	Schneidet eine Frequenz aus dem Ton, für einen Ton, den du im Audiospektrum siehst.
+width %.0f %%	Breite %.0f %%
+Leveller	Pegelanpassung
+Brings quiet and loud stations to the same loudness, with a soft limiter against peaks.	Bringt leise und laute Stationen auf dieselbe Lautstärke, mit einem weichen Begrenzer gegen Spitzen.
+balance %.0f %%	Ausgleich %.0f %%
+target %.0f dB	Ziel %.0f dB
+Do not boost the noise between transmissions	Rauschen zwischen den Sendungen nicht anheben
+Silence gate	Stummschaltung bei Stille
+Mutes the sound when only noise is left, like a squelch that follows the noise level by itself.	Schaltet den Ton stumm, wenn nur Rauschen übrig ist, wie eine Rauschsperre, die dem Rauschpegel selbst folgt.
+opens %.0f dB above noise	öffnet %.0f dB über dem Rauschen
+muted	stumm
+Voice emphasis	Stimmhervorhebung
+Cuts the rumble below the voice and lifts the presence, so a weak voice is easier to understand.	Schneidet das Brummen unter der Stimme ab und hebt die Präsenz an, damit eine schwache Stimme leichter zu verstehen ist.
+De-esser	De-Esser
+Softens sharp S sounds.	Mildert scharfe S-Laute.
+Record the cleaned sound	Bereinigten Ton aufnehmen
+Record audio saves the sound as you hear it now, cleaned, instead of the raw sound.	Audio aufnehmen speichert den Ton so, wie du ihn jetzt hörst, bereinigt, statt des Rohtons.
+Skip silence in the recording	Stille in der Aufnahme überspringen
+Nothing is recorded while the silence gate holds the sound off.	Es wird nichts aufgenommen, solange die Stummschaltung bei Stille den Ton zurückhält.
+Reset to the preset	Auf die Voreinstellung zurücksetzen
