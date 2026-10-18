@@ -1,8 +1,8 @@
 // The pure parsing and writing layers of the files the program reads and writes: CSV (channel lists), SigMF meta files, WAV headers of IQ recordings,
-// NORAD two-line elements, the SQLite page / record / cell decoding behind the MBTiles map reader, and the header of the saved results container. One implementation
-// per build: the C++ one in core/src/files/files_proto.cpp, or (DECT2_RUST_FILES) the Rust crate onair_files through core/src/files/files_proto_rs.cpp. The callers
-// (iq_file.cpp, iq_record.cpp, channel_db.cpp, passes.cpp, mbtiles.h, results_io.h) keep the file access and the state; the differential test compares both
-// implementations on the same inputs (tests/files/test_files_proto_rs.cpp).
+// NORAD two-line elements, the SQLite page / record / cell decoding behind the MBTiles map reader, and the header of the saved results container. Implemented by
+// the Rust crate onair_files through core/src/files/files_proto_rs.cpp. The callers
+// (iq_file.cpp, iq_record.cpp, channel_db.cpp, passes.cpp, mbtiles.h, results_io.h) keep the file access and the state; tests/files/test_files_proto_rs.cpp is the
+// golden-vector test.
 #pragma once
 #include <cstddef>
 #include <cstdint>

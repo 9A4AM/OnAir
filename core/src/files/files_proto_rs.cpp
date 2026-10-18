@@ -1,5 +1,11 @@
-// files_proto.h on top of the Rust crate rust/onair_files (DECT2_RUST_FILES): thin wrappers over the C ABI of core/include/dect2/rs/files.h. Empty when the crate is not built.
-#ifdef DECT2_RUST_FILES
+// files_proto.h on top of the Rust crate rust/onair_files: thin wrappers over the C ABI of core/include/dect2/rs/files.h. The code is what
+// used to sit in iq_file.cpp, iq_record.cpp, channel_db.cpp, passes.cpp, mbtiles.h and results_io.h, moved to Rust; the changes made on the way:
+//  * numbers read from text (SigMF meta, TLE fields) are decimal tokens only, [+-]? (digits [. digits*] | . digits) ([eE] [+-]? digits)?, converted by strtod: hex floats,
+//    "inf" and "nan" are no numbers (strtod used to accept them);
+//  * the SigMF meta writers do not cut long descriptions at 1023 bytes, a rate or frequency that is not finite is written as 0 (it was "nan" / "inf", not JSON) and
+//    the recorder leaves out a centre frequency of 1e18 or more (the %.1f text of 1e300 was cut at 95 digits);
+//  * a double that does not fit a 64 bit unsigned (SigMF sample_start, header_bytes) saturates, it was undefined;
+//  * the b-tree code refuses a usable page size under 36 bytes and checks the page is long enough for its header.
 #include "dect2/files/files_proto.h"
 #include "dect2/rs/files.h"
 #include <cstdio>
@@ -205,4 +211,3 @@ std::string containerHeader(uint64_t hash) {
 }
 
 } // namespace dect2::filesp
-#endif

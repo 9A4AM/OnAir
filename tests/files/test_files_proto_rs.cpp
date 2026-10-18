@@ -7,20 +7,13 @@
 // replaced.
 #include "dect2/files/files_proto.h"
 #include "../common/golden.h"
-#ifdef GOLDEN_REF   // transient, used once to record the digest from the C++ reference copy
-#include "files_proto_ref.h"
-#endif
 #include "dect2/rs/files.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <random>
-#ifdef GOLDEN_REF
-namespace A = dect2::filesp_ref;
-#else
 namespace A = dect2::filesp;
-#endif
 
 static golden::Digest dig;
 static long abiFails = 0;
@@ -476,5 +469,5 @@ int main() {
     containerFamily(iters);
     abiMisuse();
     if (abiFails) return 1;
-    return golden::check("files_proto_rs", dig, 0x0ull, !getenv("ONAIR_DIFF_ITERS"));
+    return golden::check("files_proto_rs", dig, 0x88007ab9e0e04110ull, !getenv("ONAIR_DIFF_ITERS"));
 }
