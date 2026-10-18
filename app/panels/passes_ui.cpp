@@ -861,7 +861,7 @@ void schedControls() {
     else calendarStrip(nowSec());
 }
 
-void window(App& a) {
+void drawWindow(App& a) {
     static bool full = false;   // the window over the whole display (the shared full-screen button; Esc leaves)
     { static bool af = std::getenv("ONAIR_MAP_FULL") != nullptr; if (af) { af = false; full = true; } }   // dev: --shot enters full screen
     if (full && !ImGui::GetIO().WantTextInput && !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && ImGui::IsKeyPressed(ImGuiKey_Escape, false)) full = false;
@@ -1036,7 +1036,7 @@ void passesWindow(App& a) {
     trackTick(a);
     dopplerCollect(a);
     aosBanner(a);
-    if (a.passesOpen) window(a);
+    if (a.passesOpen) drawWindow(a);
 }
 
 // The Globalstar activity monitor's overlay: every Globalstar satellite above the horizon at this time with the Doppler shift a link to it would have

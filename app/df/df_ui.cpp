@@ -332,7 +332,7 @@ void fixSection(App& a) {
     (void)a;
 }
 
-void window(App& a) {
+void drawWindow(App& a) {
     load();
     { static bool af = std::getenv("ONAIR_MAP_FULL") != nullptr; if (af) { af = false; gFull = true; } }   // dev: --shot enters full screen
     if (gFull && !ImGui::GetIO().WantTextInput && !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && ImGui::IsKeyPressed(ImGuiKey_Escape, false)) gFull = false;
@@ -438,7 +438,7 @@ void window(App& a) {
 
 void dfWindow(App& a) {
     if (!a.dfOpen) return;
-    window(a);
+    drawWindow(a);
 }
 
 bool dfMapLine(const App& a, DfMapLine& out) {
