@@ -2686,3 +2686,63 @@ Watch for these	Controlla questi
 Lists	Liste
 Watchlists...	Liste di controllo...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Avvisi quando si sentono aerei, navi, nominativi, frequenze o parole in elenco: notifica, suono, ntfy, Telegram o webhook
+# FPV video
+Scan done. Strongest: %s	Scansione terminata. Il più forte: %s
+Scan done. No transmitter found.	Scansione terminata. Nessun trasmettitore trovato.
+No picture yet.	Ancora nessuna immagine.
+The picture could not be saved.	Impossibile salvare l'immagine.
+Recording stopped: %d pictures	Registrazione fermata: %d immagini
+Recording into %s	Registrazione in %s
+no transmitter on this channel	nessun trasmettitore su questo canale
+transmitter found, waiting for sync	trasmettitore trovato, attendo la sincronizzazione
+waiting for a picture	in attesa di un'immagine
+colour	colore
+monochrome	monocromatico
+Snapshot	Istantanea
+Saves the picture as a PNG file into <data folder>/fpv/.	Salva l'immagine come file PNG in <data folder>/fpv/.
+Records up to 5 pictures a second as numbered PNG files into a new folder in <data folder>/fpv/.	Registra fino a 5 immagini al secondo come file PNG numerati in una nuova cartella in <data folder>/fpv/.
+video SNR	SNR video
+sync	sincronismo
+sound	audio
+The on-screen display (OSD) of the flight controller is part of the picture; it is shown, not decoded.	Il menu su schermo (OSD) del controller di volo fa parte dell'immagine; viene mostrato, non decodificato.
+Scan 5.8 GHz	Scansiona 5,8 GHz
+Scan 1.2 GHz	Scansiona 1,2 GHz
+Tune to the strongest	Sintonizza il più forte
+When the scan is done, tune to the channel with the most signal. Otherwise go back to the frequency before the scan.	Finita la scansione, sintonizza il canale con più segnale. Altrimenti torna alla frequenza precedente.
+A scan tunes the radio over the channels one after the other and measures each one inside the capture. Click a channel to tune to it.	Una scansione sintonizza la radio sui canali uno dopo l'altro e misura ognuno che cade nella cattura. Fai clic su un canale per sintonizzarlo.
+over the noise	sopra il rumore
+not measured yet	non ancora misurato
+tuned channel level	livello del canale sintonizzato
+the capture, MHz from the centre; the lines are the channels of the plans inside it	la cattura, MHz dal centro; le linee sono i canali dei piani che vi cadono
+start the receiver to see the spectrum	avvia il ricevitore per vedere lo spettro
+(none)	(nessuno)
+System	Sistema
+automatic	automatico
+Sound	Audio
+The sound subcarrier of the video transmitter, an FM carrier above the picture. Automatic takes the stronger of 6.0 and 6.5 MHz.	La sottoportante audio del trasmettitore video, una portante FM sopra l'immagine. In automatico prende la più forte tra 6,0 e 6,5 MHz.
+Saturation	Saturazione
+Weave	Weave
+Bob	Bob
+offset	scostamento
+picture	immagine
+lines	righe
+fields/s	semiquadri/s
+depth	profondità
+fields	semiquadri
+ok	ok
+damaged	danneggiati
+polarity	polarità
+sync tip is the lowest frequency	la punta di sincronismo è la frequenza più bassa
+sync tip is the highest frequency	la punta di sincronismo è la frequenza più alta
+over the noise beside them	sopra il rumore accanto
+5.8 GHz bands A, B, E, F, R (Raceband) and L, and the 1.2 GHz plan. Needs a wide radio: 20 Msps (a HackRF). The picture is the frequency of the carrier; PAL or NTSC is found by itself.	Bande 5,8 GHz A, B, E, F, R (Raceband) e L, e il piano 1,2 GHz. Serve una radio larga: 20 Msps (un HackRF). L'immagine è la frequenza della portante; PAL o NTSC si riconosce da solo.
+no transmitter heard: scan the channels, or tune to one	nessun trasmettitore ascoltato: scansiona i canali o sintonizzane uno
+Transmitter	Trasmettitore
+Video sync	Sincronismo video
+FPV video	Video FPV
+system	sistema
+test card	monoscopio
+colour bars	barre colore
+no transmitter (noise only)	nessun trasmettitore (solo rumore)
+The test signal is a transmitter on the channel the radio is tuned to: FM video with a 1 kHz tone on the sound subcarrier.	Il segnale di prova è un trasmettitore sul canale su cui è sintonizzata la radio: video FM con un tono da 1 kHz sulla sottoportante audio.
+5.8 / 1.2 GHz video	Video 5,8 / 1,2 GHz

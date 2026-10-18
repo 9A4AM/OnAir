@@ -2703,3 +2703,63 @@ Watch for these	Auf diese achten
 Lists	Listen
 Watchlists...	Beobachtungslisten...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Meldungen, wenn gelistete Flugzeuge, Schiffe, Rufzeichen, Frequenzen oder Wörter gehört werden: Benachrichtigung, Ton, ntfy, Telegram oder Webhook
+# FPV video
+Scan done. Strongest: %s	Suchlauf fertig. Stärkster: %s
+Scan done. No transmitter found.	Suchlauf fertig. Kein Sender gefunden.
+No picture yet.	Noch kein Bild.
+The picture could not be saved.	Das Bild konnte nicht gespeichert werden.
+Recording stopped: %d pictures	Aufnahme beendet: %d Bilder
+Recording into %s	Aufnahme in %s
+no transmitter on this channel	kein Sender auf diesem Kanal
+transmitter found, waiting for sync	Sender gefunden, warte auf Synchronisation
+waiting for a picture	warte auf ein Bild
+colour	Farbe
+monochrome	schwarzweiß
+Snapshot	Standbild
+Saves the picture as a PNG file into <data folder>/fpv/.	Speichert das Bild als PNG-Datei in <data folder>/fpv/.
+Records up to 5 pictures a second as numbered PNG files into a new folder in <data folder>/fpv/.	Nimmt bis zu 5 Bilder pro Sekunde als nummerierte PNG-Dateien in einem neuen Ordner in <data folder>/fpv/ auf.
+video SNR	Video-SNR
+sync	Sync
+sound	Ton
+The on-screen display (OSD) of the flight controller is part of the picture; it is shown, not decoded.	Das Bildschirmmenü (OSD) des Flugcontrollers ist Teil des Bildes; es wird angezeigt, aber nicht dekodiert.
+Scan 5.8 GHz	5,8 GHz durchsuchen
+Scan 1.2 GHz	1,2 GHz durchsuchen
+Tune to the strongest	Auf den stärksten abstimmen
+When the scan is done, tune to the channel with the most signal. Otherwise go back to the frequency before the scan.	Nach dem Suchlauf auf den Kanal mit dem meisten Signal abstimmen. Sonst zur Frequenz vor dem Suchlauf zurückkehren.
+A scan tunes the radio over the channels one after the other and measures each one inside the capture. Click a channel to tune to it.	Ein Suchlauf stimmt das Radio nacheinander auf die Kanäle ab und misst jeden, der in der Aufnahme liegt. Auf einen Kanal klicken, um darauf abzustimmen.
+over the noise	über dem Rauschen
+not measured yet	noch nicht gemessen
+tuned channel level	Pegel des eingestellten Kanals
+the capture, MHz from the centre; the lines are the channels of the plans inside it	die Aufnahme, MHz von der Mitte; die Linien sind die Kanäle der Pläne in der Aufnahme
+start the receiver to see the spectrum	den Empfänger starten, um das Spektrum zu sehen
+(none)	(keiner)
+System	System
+automatic	automatisch
+Sound	Ton
+The sound subcarrier of the video transmitter, an FM carrier above the picture. Automatic takes the stronger of 6.0 and 6.5 MHz.	Der Tonträger des Videosenders, ein FM-Träger oberhalb des Bildes. Automatisch nimmt den stärkeren von 6,0 und 6,5 MHz.
+Saturation	Sättigung
+Weave	Weave
+Bob	Bob
+offset	Versatz
+picture	Bild
+lines	Zeilen
+fields/s	Halbbilder/s
+depth	Tiefe
+fields	Halbbilder
+ok	ok
+damaged	beschädigt
+polarity	Polarität
+sync tip is the lowest frequency	Sync-Spitze ist die tiefste Frequenz
+sync tip is the highest frequency	Sync-Spitze ist die höchste Frequenz
+over the noise beside them	über dem Rauschen daneben
+5.8 GHz bands A, B, E, F, R (Raceband) and L, and the 1.2 GHz plan. Needs a wide radio: 20 Msps (a HackRF). The picture is the frequency of the carrier; PAL or NTSC is found by itself.	5,8-GHz-Bänder A, B, E, F, R (Raceband) und L sowie der 1,2-GHz-Plan. Braucht ein breites Radio: 20 Msps (ein HackRF). Das Bild ist die Frequenz des Trägers; PAL oder NTSC wird selbst erkannt.
+no transmitter heard: scan the channels, or tune to one	kein Sender gehört: die Kanäle durchsuchen oder auf einen abstimmen
+Transmitter	Sender
+Video sync	Video-Sync
+FPV video	FPV-Video
+system	System
+test card	Testbild
+colour bars	Farbbalken
+no transmitter (noise only)	kein Sender (nur Rauschen)
+The test signal is a transmitter on the channel the radio is tuned to: FM video with a 1 kHz tone on the sound subcarrier.	Das Testsignal ist ein Sender auf dem Kanal, auf den das Radio abgestimmt ist: FM-Video mit einem 1-kHz-Ton auf dem Tonträger.
+5.8 / 1.2 GHz video	5,8 / 1,2 GHz Video

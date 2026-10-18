@@ -2703,3 +2703,63 @@ Watch for these	これらを監視する
 Lists	リスト
 Watchlists...	ウォッチリスト...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	リストにある航空機、船舶、コールサイン、周波数、単語を受信したときに通知: 通知、音、ntfy、Telegram、Webhook
+# FPV video
+Scan done. Strongest: %s	スキャン完了。最も強い局: %s
+Scan done. No transmitter found.	スキャン完了。送信機は見つかりませんでした。
+No picture yet.	まだ映像がありません。
+The picture could not be saved.	映像を保存できませんでした。
+Recording stopped: %d pictures	録画を停止しました: %d 枚
+Recording into %s	%s に録画中
+no transmitter on this channel	このチャンネルに送信機はありません
+transmitter found, waiting for sync	送信機を検出、同期待ち
+waiting for a picture	映像を待っています
+colour	カラー
+monochrome	モノクロ
+Snapshot	スナップショット
+Saves the picture as a PNG file into <data folder>/fpv/.	映像を PNG ファイルとして <data folder>/fpv/ に保存します。
+Records up to 5 pictures a second as numbered PNG files into a new folder in <data folder>/fpv/.	1 秒あたり最大 5 枚を、<data folder>/fpv/ 内の新しいフォルダーに連番の PNG ファイルとして記録します。
+video SNR	映像 SNR
+sync	同期
+sound	音声
+The on-screen display (OSD) of the flight controller is part of the picture; it is shown, not decoded.	フライトコントローラーのオンスクリーンディスプレイ (OSD) は映像の一部です。表示されますがデコードはされません。
+Scan 5.8 GHz	5.8 GHz をスキャン
+Scan 1.2 GHz	1.2 GHz をスキャン
+Tune to the strongest	最も強いチャンネルに同調
+When the scan is done, tune to the channel with the most signal. Otherwise go back to the frequency before the scan.	スキャン完了後、信号が最も強いチャンネルに同調します。オフの場合はスキャン前の周波数に戻ります。
+A scan tunes the radio over the channels one after the other and measures each one inside the capture. Click a channel to tune to it.	スキャンはラジオをチャンネルへ順に同調し、キャプチャ内にある各チャンネルを測定します。チャンネルをクリックするとそこに同調します。
+over the noise	ノイズ比
+not measured yet	未測定
+tuned channel level	同調中チャンネルのレベル
+the capture, MHz from the centre; the lines are the channels of the plans inside it	キャプチャ (中心からの MHz)。線はキャプチャ内にあるプランのチャンネルです
+start the receiver to see the spectrum	スペクトルを見るには受信を開始してください
+(none)	(なし)
+System	方式
+automatic	自動
+Sound	音声
+The sound subcarrier of the video transmitter, an FM carrier above the picture. Automatic takes the stronger of 6.0 and 6.5 MHz.	映像送信機の音声サブキャリア。映像の上にある FM 搬送波です。自動では 6.0 と 6.5 MHz の強い方を使います。
+Saturation	彩度
+Weave	Weave
+Bob	Bob
+offset	オフセット
+picture	映像
+lines	ライン
+fields/s	フィールド/秒
+depth	深さ
+fields	フィールド
+ok	正常
+damaged	破損
+polarity	極性
+sync tip is the lowest frequency	同期チップが最も低い周波数
+sync tip is the highest frequency	同期チップが最も高い周波数
+over the noise beside them	隣のノイズ比
+5.8 GHz bands A, B, E, F, R (Raceband) and L, and the 1.2 GHz plan. Needs a wide radio: 20 Msps (a HackRF). The picture is the frequency of the carrier; PAL or NTSC is found by itself.	5.8 GHz バンド A、B、E、F、R (Raceband)、L と 1.2 GHz プラン。広帯域のラジオが必要です: 20 Msps (HackRF)。映像は搬送波の周波数で、PAL か NTSC は自動で判別されます。
+no transmitter heard: scan the channels, or tune to one	送信機が聞こえません: チャンネルをスキャンするか、どれかに同調してください
+Transmitter	送信機
+Video sync	映像同期
+FPV video	FPV 映像
+system	方式
+test card	テストカード
+colour bars	カラーバー
+no transmitter (noise only)	送信機なし (ノイズのみ)
+The test signal is a transmitter on the channel the radio is tuned to: FM video with a 1 kHz tone on the sound subcarrier.	テスト信号は、ラジオが同調しているチャンネル上の送信機です。音声サブキャリア上に 1 kHz トーンを載せた FM 映像です。
+5.8 / 1.2 GHz video	5.8 / 1.2 GHz 映像

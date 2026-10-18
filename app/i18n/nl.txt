@@ -2703,3 +2703,63 @@ Watch for these	Hierop letten
 Lists	Lijsten
 Watchlists...	Kijklijsten...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Meldingen als aangewezen vliegtuigen, schepen, roepnamen, frequenties of woorden worden gehoord: melding, geluid, ntfy, Telegram of webhook
+# FPV video
+Scan done. Strongest: %s	Scan klaar. Sterkste: %s
+Scan done. No transmitter found.	Scan klaar. Geen zender gevonden.
+No picture yet.	Nog geen beeld.
+The picture could not be saved.	Het beeld kon niet worden opgeslagen.
+Recording stopped: %d pictures	Opname gestopt: %d beelden
+Recording into %s	Opname in %s
+no transmitter on this channel	geen zender op dit kanaal
+transmitter found, waiting for sync	zender gevonden, wacht op synchronisatie
+waiting for a picture	wacht op een beeld
+colour	kleur
+monochrome	zwart-wit
+Snapshot	Momentopname
+Saves the picture as a PNG file into <data folder>/fpv/.	Slaat het beeld op als PNG-bestand in <data folder>/fpv/.
+Records up to 5 pictures a second as numbered PNG files into a new folder in <data folder>/fpv/.	Neemt tot 5 beelden per seconde op als genummerde PNG-bestanden in een nieuwe map in <data folder>/fpv/.
+video SNR	video-SNR
+sync	sync
+sound	geluid
+The on-screen display (OSD) of the flight controller is part of the picture; it is shown, not decoded.	Het schermmenu (OSD) van de flight controller is deel van het beeld; het wordt getoond, niet gedecodeerd.
+Scan 5.8 GHz	5,8 GHz scannen
+Scan 1.2 GHz	1,2 GHz scannen
+Tune to the strongest	Afstemmen op de sterkste
+When the scan is done, tune to the channel with the most signal. Otherwise go back to the frequency before the scan.	Na de scan afstemmen op het kanaal met het meeste signaal. Anders terug naar de frequentie van voor de scan.
+A scan tunes the radio over the channels one after the other and measures each one inside the capture. Click a channel to tune to it.	Een scan stemt de radio na elkaar af op de kanalen en meet elk kanaal dat in de opname valt. Klik op een kanaal om erop af te stemmen.
+over the noise	boven de ruis
+not measured yet	nog niet gemeten
+tuned channel level	niveau van het afgestemde kanaal
+the capture, MHz from the centre; the lines are the channels of the plans inside it	de opname, MHz vanaf het midden; de lijnen zijn de kanalen van de plannen die erin vallen
+start the receiver to see the spectrum	start de ontvanger om het spectrum te zien
+(none)	(geen)
+System	Systeem
+automatic	automatisch
+Sound	Geluid
+The sound subcarrier of the video transmitter, an FM carrier above the picture. Automatic takes the stronger of 6.0 and 6.5 MHz.	De geluidsdraaggolf van de videozender, een FM-draaggolf boven het beeld. Automatisch neemt de sterkste van 6,0 en 6,5 MHz.
+Saturation	Verzadiging
+Weave	Weave
+Bob	Bob
+offset	afwijking
+picture	beeld
+lines	lijnen
+fields/s	velden/s
+depth	diepte
+fields	velden
+ok	goed
+damaged	beschadigd
+polarity	polariteit
+sync tip is the lowest frequency	de sync-top is de laagste frequentie
+sync tip is the highest frequency	de sync-top is de hoogste frequentie
+over the noise beside them	boven de ruis ernaast
+5.8 GHz bands A, B, E, F, R (Raceband) and L, and the 1.2 GHz plan. Needs a wide radio: 20 Msps (a HackRF). The picture is the frequency of the carrier; PAL or NTSC is found by itself.	5,8 GHz-banden A, B, E, F, R (Raceband) en L, en het 1,2 GHz-plan. Vraagt een brede radio: 20 Msps (een HackRF). Het beeld is de frequentie van de draaggolf; PAL of NTSC wordt zelf herkend.
+no transmitter heard: scan the channels, or tune to one	geen zender gehoord: scan de kanalen of stem af op een kanaal
+Transmitter	Zender
+Video sync	Videosync
+FPV video	FPV-video
+system	systeem
+test card	testbeeld
+colour bars	kleurbalken
+no transmitter (noise only)	geen zender (alleen ruis)
+The test signal is a transmitter on the channel the radio is tuned to: FM video with a 1 kHz tone on the sound subcarrier.	Het testsignaal is een zender op het kanaal waarop de radio is afgestemd: FM-video met een 1 kHz-toon op de geluidsdraaggolf.
+5.8 / 1.2 GHz video	5,8 / 1,2 GHz video

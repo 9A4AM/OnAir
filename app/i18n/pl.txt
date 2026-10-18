@@ -2703,3 +2703,63 @@ Watch for these	Obserwuj te
 Lists	Listy
 Watchlists...	Listy obserwowanych...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alerty, gdy odebrane zostaną wymienione samoloty, statki, znaki wywoławcze, częstotliwości lub słowa: powiadomienie, dźwięk, ntfy, Telegram lub webhook
+# FPV video
+Scan done. Strongest: %s	Skanowanie zakończone. Najsilniejszy: %s
+Scan done. No transmitter found.	Skanowanie zakończone. Nie znaleziono nadajnika.
+No picture yet.	Jeszcze nie ma obrazu.
+The picture could not be saved.	Nie udało się zapisać obrazu.
+Recording stopped: %d pictures	Nagrywanie zatrzymane: %d obrazów
+Recording into %s	Nagrywanie do %s
+no transmitter on this channel	brak nadajnika na tym kanale
+transmitter found, waiting for sync	znaleziono nadajnik, czekam na synchronizację
+waiting for a picture	czekam na obraz
+colour	kolor
+monochrome	czarno-biały
+Snapshot	Zrzut
+Saves the picture as a PNG file into <data folder>/fpv/.	Zapisuje obraz jako plik PNG w <data folder>/fpv/.
+Records up to 5 pictures a second as numbered PNG files into a new folder in <data folder>/fpv/.	Nagrywa do 5 obrazów na sekundę jako ponumerowane pliki PNG w nowym folderze w <data folder>/fpv/.
+video SNR	SNR wideo
+sync	synchronizacja
+sound	dźwięk
+The on-screen display (OSD) of the flight controller is part of the picture; it is shown, not decoded.	Menu ekranowe (OSD) kontrolera lotu jest częścią obrazu; jest pokazywane, ale nie dekodowane.
+Scan 5.8 GHz	Skanuj 5,8 GHz
+Scan 1.2 GHz	Skanuj 1,2 GHz
+Tune to the strongest	Strój na najsilniejszy
+When the scan is done, tune to the channel with the most signal. Otherwise go back to the frequency before the scan.	Po skanowaniu stroi na kanał z największym sygnałem. W przeciwnym razie wraca do częstotliwości sprzed skanowania.
+A scan tunes the radio over the channels one after the other and measures each one inside the capture. Click a channel to tune to it.	Skanowanie stroi radio kolejno na kanały i mierzy każdy, który leży w nagraniu. Kliknij kanał, aby się na niego nastroić.
+over the noise	ponad szumem
+not measured yet	jeszcze nie zmierzono
+tuned channel level	poziom nastrojonego kanału
+the capture, MHz from the centre; the lines are the channels of the plans inside it	przechwycone pasmo, MHz od środka; linie to kanały planów leżące w nim
+start the receiver to see the spectrum	uruchom odbiornik, aby zobaczyć widmo
+(none)	(brak)
+System	System
+automatic	automatycznie
+Sound	Dźwięk
+The sound subcarrier of the video transmitter, an FM carrier above the picture. Automatic takes the stronger of 6.0 and 6.5 MHz.	Podnośna dźwięku nadajnika wideo, nośna FM nad obrazem. Automatycznie wybiera silniejszą z 6,0 i 6,5 MHz.
+Saturation	Nasycenie
+Weave	Weave
+Bob	Bob
+offset	przesunięcie
+picture	obraz
+lines	linie
+fields/s	półobrazy/s
+depth	głębokość
+fields	półobrazy
+ok	poprawne
+damaged	uszkodzone
+polarity	polaryzacja
+sync tip is the lowest frequency	szczyt synchronizacji to najniższa częstotliwość
+sync tip is the highest frequency	szczyt synchronizacji to najwyższa częstotliwość
+over the noise beside them	ponad szumem obok
+5.8 GHz bands A, B, E, F, R (Raceband) and L, and the 1.2 GHz plan. Needs a wide radio: 20 Msps (a HackRF). The picture is the frequency of the carrier; PAL or NTSC is found by itself.	Pasma 5,8 GHz A, B, E, F, R (Raceband) i L oraz plan 1,2 GHz. Wymaga szerokiego radia: 20 Msps (HackRF). Obraz to częstotliwość nośnej; PAL lub NTSC jest rozpoznawany samoczynnie.
+no transmitter heard: scan the channels, or tune to one	nie słychać nadajnika: przeskanuj kanały lub nastrój się na jeden
+Transmitter	Nadajnik
+Video sync	Synchronizacja wideo
+FPV video	Wideo FPV
+system	system
+test card	obraz testowy
+colour bars	pasy kolorów
+no transmitter (noise only)	brak nadajnika (tylko szum)
+The test signal is a transmitter on the channel the radio is tuned to: FM video with a 1 kHz tone on the sound subcarrier.	Sygnał testowy to nadajnik na kanale, na który nastrojone jest radio: wideo FM z tonem 1 kHz na podnośnej dźwięku.
+5.8 / 1.2 GHz video	Wideo 5,8 / 1,2 GHz

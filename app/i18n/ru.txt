@@ -2686,3 +2686,63 @@ Watch for these	Следить за этими
 Lists	Списки
 Watchlists...	Списки наблюдения...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Оповещения, когда принимаются перечисленные самолёты, суда, позывные, частоты или слова: уведомление, звук, ntfy, Telegram или вебхук
+# FPV video
+Scan done. Strongest: %s	Сканирование завершено. Самый сильный: %s
+Scan done. No transmitter found.	Сканирование завершено. Передатчик не найден.
+No picture yet.	Изображения пока нет.
+The picture could not be saved.	Не удалось сохранить изображение.
+Recording stopped: %d pictures	Запись остановлена: %d кадров
+Recording into %s	Запись в %s
+no transmitter on this channel	на этом канале нет передатчика
+transmitter found, waiting for sync	передатчик найден, ждём синхронизацию
+waiting for a picture	ждём изображение
+colour	цвет
+monochrome	чёрно-белое
+Snapshot	Снимок
+Saves the picture as a PNG file into <data folder>/fpv/.	Сохраняет изображение файлом PNG в <data folder>/fpv/.
+Records up to 5 pictures a second as numbered PNG files into a new folder in <data folder>/fpv/.	Записывает до 5 кадров в секунду пронумерованными файлами PNG в новую папку внутри <data folder>/fpv/.
+video SNR	SNR видео
+sync	синхронизация
+sound	звук
+The on-screen display (OSD) of the flight controller is part of the picture; it is shown, not decoded.	Экранное меню (OSD) полётного контроллера является частью изображения; оно показывается, но не декодируется.
+Scan 5.8 GHz	Сканировать 5,8 ГГц
+Scan 1.2 GHz	Сканировать 1,2 ГГц
+Tune to the strongest	Настроиться на самый сильный
+When the scan is done, tune to the channel with the most signal. Otherwise go back to the frequency before the scan.	После сканирования настроиться на канал с самым сильным сигналом. Иначе вернуться к частоте до сканирования.
+A scan tunes the radio over the channels one after the other and measures each one inside the capture. Click a channel to tune to it.	Сканирование по очереди настраивает радио на каналы и измеряет каждый, попавший в захват. Нажмите на канал, чтобы настроиться на него.
+over the noise	над шумом
+not measured yet	ещё не измерено
+tuned channel level	уровень настроенного канала
+the capture, MHz from the centre; the lines are the channels of the plans inside it	захват, МГц от центра; линии — каналы планов, попавшие в него
+start the receiver to see the spectrum	запустите приёмник, чтобы увидеть спектр
+(none)	(нет)
+System	Система
+automatic	автоматически
+Sound	Звук
+The sound subcarrier of the video transmitter, an FM carrier above the picture. Automatic takes the stronger of 6.0 and 6.5 MHz.	Поднесущая звука видеопередатчика — FM-несущая выше изображения. Автоматически берётся более сильная из 6,0 и 6,5 МГц.
+Saturation	Насыщенность
+Weave	Weave
+Bob	Bob
+offset	смещение
+picture	изображение
+lines	строки
+fields/s	полей/с
+depth	глубина
+fields	поля
+ok	целые
+damaged	повреждённые
+polarity	полярность
+sync tip is the lowest frequency	вершина синхроимпульса — самая низкая частота
+sync tip is the highest frequency	вершина синхроимпульса — самая высокая частота
+over the noise beside them	над соседним шумом
+5.8 GHz bands A, B, E, F, R (Raceband) and L, and the 1.2 GHz plan. Needs a wide radio: 20 Msps (a HackRF). The picture is the frequency of the carrier; PAL or NTSC is found by itself.	Диапазоны 5,8 ГГц A, B, E, F, R (Raceband) и L, а также план 1,2 ГГц. Нужно широкое радио: 20 Msps (HackRF). Изображение — это частота несущей; PAL или NTSC определяется сам.
+no transmitter heard: scan the channels, or tune to one	передатчиков не слышно: просканируйте каналы или настройтесь на один
+Transmitter	Передатчик
+Video sync	Синхронизация видео
+FPV video	FPV-видео
+system	система
+test card	испытательная таблица
+colour bars	цветные полосы
+no transmitter (noise only)	нет передатчика (только шум)
+The test signal is a transmitter on the channel the radio is tuned to: FM video with a 1 kHz tone on the sound subcarrier.	Тестовый сигнал — передатчик на канале, на который настроено радио: FM-видео с тоном 1 кГц на поднесущей звука.
+5.8 / 1.2 GHz video	Видео 5,8 / 1,2 ГГц

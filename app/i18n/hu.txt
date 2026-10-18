@@ -2689,3 +2689,63 @@ Watch for these	Ezek figyelése
 Lists	Listák
 Watchlists...	Figyelőlisták...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Riasztás, ha a listán szereplő repülőt, hajót, hívójelet, frekvenciát vagy szót hallja: értesítés, hang, ntfy, Telegram vagy webhook
+# FPV video
+Scan done. Strongest: %s	A keresés kész. Legerősebb: %s
+Scan done. No transmitter found.	A keresés kész. Nem található adó.
+No picture yet.	Még nincs kép.
+The picture could not be saved.	A képet nem sikerült elmenteni.
+Recording stopped: %d pictures	A felvétel leállt: %d kép
+Recording into %s	Felvétel ide: %s
+no transmitter on this channel	nincs adó ezen a csatornán
+transmitter found, waiting for sync	adó megtalálva, szinkronra vár
+waiting for a picture	képre vár
+colour	szín
+monochrome	fekete-fehér
+Snapshot	Pillanatkép
+Saves the picture as a PNG file into <data folder>/fpv/.	A képet PNG-fájlként menti a <data folder>/fpv/ mappába.
+Records up to 5 pictures a second as numbered PNG files into a new folder in <data folder>/fpv/.	Másodpercenként legfeljebb 5 képet vesz fel sorszámozott PNG-fájlként a <data folder>/fpv/ alatti új mappába.
+video SNR	videó SNR
+sync	szinkron
+sound	hang
+The on-screen display (OSD) of the flight controller is part of the picture; it is shown, not decoded.	A repülésvezérlő képernyőn megjelenő menüje (OSD) a kép része; megjelenik, de nincs dekódolva.
+Scan 5.8 GHz	5,8 GHz keresése
+Scan 1.2 GHz	1,2 GHz keresése
+Tune to the strongest	Ráhangolás a legerősebbre
+When the scan is done, tune to the channel with the most signal. Otherwise go back to the frequency before the scan.	A keresés végén a legtöbb jellel bíró csatornára hangol. Különben visszatér a keresés előtti frekvenciára.
+A scan tunes the radio over the channels one after the other and measures each one inside the capture. Click a channel to tune to it.	A keresés egymás után hangolja a rádiót a csatornákra, és megméri azt, amelyik a felvételbe esik. Egy csatornára kattintva ráhangolhatsz.
+over the noise	zaj felett
+not measured yet	még nincs megmérve
+tuned channel level	a behangolt csatorna szintje
+the capture, MHz from the centre; the lines are the channels of the plans inside it	a felvétel, MHz a középponttól; a vonalak a benne lévő tervek csatornái
+start the receiver to see the spectrum	indítsd el a vevőt a spektrum megtekintéséhez
+(none)	(nincs)
+System	Rendszer
+automatic	automatikus
+Sound	Hang
+The sound subcarrier of the video transmitter, an FM carrier above the picture. Automatic takes the stronger of 6.0 and 6.5 MHz.	A videóadó hang-segédvivője, egy FM-vivő a kép felett. Automatikus módban a 6,0 és 6,5 MHz közül az erősebbet veszi.
+Saturation	Telítettség
+Weave	Weave
+Bob	Bob
+offset	eltérés
+picture	kép
+lines	sor
+fields/s	mezők/s
+depth	mélység
+fields	mezők
+ok	rendben
+damaged	sérült
+polarity	polaritás
+sync tip is the lowest frequency	a szinkron csúcsa a legalacsonyabb frekvencia
+sync tip is the highest frequency	a szinkron csúcsa a legmagasabb frekvencia
+over the noise beside them	zaj felett mellette
+5.8 GHz bands A, B, E, F, R (Raceband) and L, and the 1.2 GHz plan. Needs a wide radio: 20 Msps (a HackRF). The picture is the frequency of the carrier; PAL or NTSC is found by itself.	5,8 GHz-es sávok: A, B, E, F, R (Raceband) és L, valamint az 1,2 GHz-es terv. Széles rádió kell hozzá: 20 Msps (HackRF). A kép a vivő frekvenciája; a PAL vagy NTSC magától felismerhető.
+no transmitter heard: scan the channels, or tune to one	nem hallható adó: keresd végig a csatornákat, vagy hangolj egyre
+Transmitter	Adó
+Video sync	Videószinkron
+FPV video	FPV videó
+system	rendszer
+test card	tesztkép
+colour bars	színsávok
+no transmitter (noise only)	nincs adó (csak zaj)
+The test signal is a transmitter on the channel the radio is tuned to: FM video with a 1 kHz tone on the sound subcarrier.	A tesztjel egy adó azon a csatornán, amelyre a rádió hangolva van: FM videó 1 kHz-es hanggal a hang-segédvivőn.
+5.8 / 1.2 GHz video	5,8 / 1,2 GHz videó

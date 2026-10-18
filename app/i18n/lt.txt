@@ -2703,3 +2703,63 @@ Watch for these	Stebėti šiuos
 Lists	Sąrašai
 Watchlists...	Stebėjimo sąrašai...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Pranešimai, kai išgirstami sąraše esantys orlaiviai, laivai, šaukiniai, dažniai ar žodžiai: pranešimas, garsas, ntfy, Telegram arba webhook
+# FPV video
+Scan done. Strongest: %s	Paieška baigta. Stipriausias: %s
+Scan done. No transmitter found.	Paieška baigta. Siųstuvo nerasta.
+No picture yet.	Vaizdo dar nėra.
+The picture could not be saved.	Vaizdo nepavyko išsaugoti.
+Recording stopped: %d pictures	Įrašymas sustabdytas: %d vaizdų
+Recording into %s	Įrašoma į %s
+no transmitter on this channel	šiame kanale nėra siųstuvo
+transmitter found, waiting for sync	siųstuvas rastas, laukiama sinchronizacijos
+waiting for a picture	laukiama vaizdo
+colour	spalva
+monochrome	nespalvotas
+Snapshot	Nuotrauka
+Saves the picture as a PNG file into <data folder>/fpv/.	Išsaugo vaizdą PNG failu aplanke <data folder>/fpv/.
+Records up to 5 pictures a second as numbered PNG files into a new folder in <data folder>/fpv/.	Įrašo iki 5 vaizdų per sekundę sunumeruotais PNG failais naujame aplanke <data folder>/fpv/.
+video SNR	vaizdo SNR
+sync	sinchronizacija
+sound	garsas
+The on-screen display (OSD) of the flight controller is part of the picture; it is shown, not decoded.	Skrydžio valdiklio ekrano meniu (OSD) yra vaizdo dalis; jis rodomas, bet nedekoduojamas.
+Scan 5.8 GHz	Ieškoti 5,8 GHz
+Scan 1.2 GHz	Ieškoti 1,2 GHz
+Tune to the strongest	Derinti prie stipriausio
+When the scan is done, tune to the channel with the most signal. Otherwise go back to the frequency before the scan.	Baigus paiešką, derinama prie kanalo su didžiausiu signalu. Kitaip grįžtama prie dažnio prieš paiešką.
+A scan tunes the radio over the channels one after the other and measures each one inside the capture. Click a channel to tune to it.	Paieška paeiliui derina radiją prie kanalų ir išmatuoja kiekvieną, patenkantį į įrašą. Spustelėkite kanalą, kad prie jo derintumėte.
+over the noise	virš triukšmo
+not measured yet	dar neišmatuota
+tuned channel level	suderinto kanalo lygis
+the capture, MHz from the centre; the lines are the channels of the plans inside it	įrašas, MHz nuo centro; linijos yra jame esančių planų kanalai
+start the receiver to see the spectrum	paleiskite imtuvą, kad pamatytumėte spektrą
+(none)	(nėra)
+System	Sistema
+automatic	automatinis
+Sound	Garsas
+The sound subcarrier of the video transmitter, an FM carrier above the picture. Automatic takes the stronger of 6.0 and 6.5 MHz.	Vaizdo siųstuvo garso paneštinė, FM nešlys virš vaizdo. Automatinis pasirenka stipresnę iš 6,0 ir 6,5 MHz.
+Saturation	Sodrumas
+Weave	Weave
+Bob	Bob
+offset	poslinkis
+picture	vaizdas
+lines	eilutės
+fields/s	pusrėmiai/s
+depth	gylis
+fields	pusrėmiai
+ok	gerų
+damaged	sugadintų
+polarity	poliškumas
+sync tip is the lowest frequency	sinchronizacijos viršūnė yra žemiausias dažnis
+sync tip is the highest frequency	sinchronizacijos viršūnė yra aukščiausias dažnis
+over the noise beside them	virš gretimo triukšmo
+5.8 GHz bands A, B, E, F, R (Raceband) and L, and the 1.2 GHz plan. Needs a wide radio: 20 Msps (a HackRF). The picture is the frequency of the carrier; PAL or NTSC is found by itself.	5,8 GHz juostos A, B, E, F, R (Raceband) ir L bei 1,2 GHz planas. Reikia plataus radijo: 20 Msps (HackRF). Vaizdas yra nešlio dažnis; PAL arba NTSC atpažįstamas pats.
+no transmitter heard: scan the channels, or tune to one	siųstuvo negirdėti: perieškokite kanalus arba derinkite prie vieno
+Transmitter	Siųstuvas
+Video sync	Vaizdo sinchronizacija
+FPV video	FPV vaizdas
+system	sistema
+test card	bandymo vaizdas
+colour bars	spalvų juostos
+no transmitter (noise only)	nėra siųstuvo (tik triukšmas)
+The test signal is a transmitter on the channel the radio is tuned to: FM video with a 1 kHz tone on the sound subcarrier.	Bandomasis signalas yra siųstuvas kanale, prie kurio suderintas radijas: FM vaizdas su 1 kHz tonu garso paneštinėje.
+5.8 / 1.2 GHz video	5,8 / 1,2 GHz vaizdas

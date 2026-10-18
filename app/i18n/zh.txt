@@ -2703,3 +2703,63 @@ Watch for these	监视这些
 Lists	列表
 Watchlists...	监视列表...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	当收到列表中的飞机、船舶、呼号、频率或词语时提醒: 通知、声音、ntfy、Telegram 或 Webhook
+# FPV video
+Scan done. Strongest: %s	扫描完成。最强：%s
+Scan done. No transmitter found.	扫描完成。未找到发射机。
+No picture yet.	还没有图像。
+The picture could not be saved.	无法保存图像。
+Recording stopped: %d pictures	录制已停止：%d 张图像
+Recording into %s	正在录制到 %s
+no transmitter on this channel	此信道上没有发射机
+transmitter found, waiting for sync	已找到发射机，等待同步
+waiting for a picture	等待图像
+colour	彩色
+monochrome	黑白
+Snapshot	快照
+Saves the picture as a PNG file into <data folder>/fpv/.	将图像保存为 PNG 文件到 <data folder>/fpv/。
+Records up to 5 pictures a second as numbered PNG files into a new folder in <data folder>/fpv/.	每秒最多录制 5 张图像，保存为编号的 PNG 文件，放在 <data folder>/fpv/ 下的新文件夹中。
+video SNR	视频信噪比
+sync	同步
+sound	声音
+The on-screen display (OSD) of the flight controller is part of the picture; it is shown, not decoded.	飞控的屏幕显示 (OSD) 是图像的一部分；会显示，但不会解码。
+Scan 5.8 GHz	扫描 5.8 GHz
+Scan 1.2 GHz	扫描 1.2 GHz
+Tune to the strongest	调谐到最强信道
+When the scan is done, tune to the channel with the most signal. Otherwise go back to the frequency before the scan.	扫描结束后调谐到信号最强的信道。否则返回扫描前的频率。
+A scan tunes the radio over the channels one after the other and measures each one inside the capture. Click a channel to tune to it.	扫描会依次把电台调到各信道，并测量落在采集范围内的每个信道。点击信道即可调谐到它。
+over the noise	高于噪声
+not measured yet	尚未测量
+tuned channel level	当前信道电平
+the capture, MHz from the centre; the lines are the channels of the plans inside it	采集范围，相对中心的 MHz；线条是落在其中的频率方案的信道
+start the receiver to see the spectrum	启动接收机以查看频谱
+(none)	（无）
+System	制式
+automatic	自动
+Sound	声音
+The sound subcarrier of the video transmitter, an FM carrier above the picture. Automatic takes the stronger of 6.0 and 6.5 MHz.	视频发射机的伴音副载波，位于图像之上的调频载波。自动时取 6.0 与 6.5 MHz 中较强者。
+Saturation	饱和度
+Weave	Weave
+Bob	Bob
+offset	偏移
+picture	图像
+lines	行
+fields/s	场/秒
+depth	深度
+fields	场
+ok	正常
+damaged	损坏
+polarity	极性
+sync tip is the lowest frequency	同步头是最低频率
+sync tip is the highest frequency	同步头是最高频率
+over the noise beside them	高于旁边的噪声
+5.8 GHz bands A, B, E, F, R (Raceband) and L, and the 1.2 GHz plan. Needs a wide radio: 20 Msps (a HackRF). The picture is the frequency of the carrier; PAL or NTSC is found by itself.	5.8 GHz 频段 A、B、E、F、R (Raceband)、L 以及 1.2 GHz 方案。需要宽带电台：20 Msps (HackRF)。图像就是载波的频率；PAL 或 NTSC 会自动识别。
+no transmitter heard: scan the channels, or tune to one	未听到发射机：请扫描信道或调谐到某一信道
+Transmitter	发射机
+Video sync	视频同步
+FPV video	FPV 视频
+system	制式
+test card	测试卡
+colour bars	彩条
+no transmitter (noise only)	无发射机（仅噪声）
+The test signal is a transmitter on the channel the radio is tuned to: FM video with a 1 kHz tone on the sound subcarrier.	测试信号是电台所调谐信道上的发射机：调频视频，伴音副载波上带 1 kHz 音调。
+5.8 / 1.2 GHz video	5.8 / 1.2 GHz 视频
