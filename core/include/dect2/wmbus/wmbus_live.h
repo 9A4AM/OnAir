@@ -1,0 +1,44 @@
+// Wireless M-Bus (EN 13757-4) receiver for the engine: IQ in, meter frames out.
+// 868 MHz plan: S1 on 868.3 MHz, T1 and C1 on 868.95 MHz, R2 on 868.03 / 868.09 / 868.15 MHz; 169 MHz plan: N1a..f from 169.40625 MHz in 12.5 kHz steps.
+// Every channel that lies inside the capture is mixed to baseband, filtered, FM-demodulated and run through a chip clock recovery and sync search per mode
+// (Manchester for S and R2, 3-out-of-6 for T, NRZ for C and N); the bytes are checked with the block CRCs and parsed (wmbus_proto.h).
+// Encrypted payloads are listed as encrypted and never decoded.
+//
+// Written to the engine's contract: configure() once the sample rate is known, feed() from the analysis thread (never blocks),
+// telemetry() and the setters from the interface thread.
+#pragma once
+#include "dect2/engine/mode_tuning.h"
+#include "dect2/common/ring.h"
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <string>
+
+namespace dect2 {
+
+struct WmbusTelemetry;   // wmbus_tel.h
+
+class WmbusLiveReceiver {
+public:
+    WmbusLiveReceiver();
+    ~WmbusLiveReceiver();
+
+    void configure(double inputRateHz);
+    void setSignalOffset(double hz);            // not used: the channels are placed from the centre frequency
+    void setCenterHz(double hz);                // the radio's centre (0: a file: the 868 MHz plan centred on 868.625 MHz); a centre below 300 MHz selects the 169 MHz plan
+    bool ready() const;
+    void reset();                               // the demodulators; the device table stays
+    void clearResults();                        // empties the device table and the frame log
+    void feed(const cf32* x, size_t n);
+    bool telemetry(WmbusTelemetry& out, uint64_t lastSeq);
+    void setLogCallback(std::function<void(const std::string&)> cb);
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> p_;
+};
+
+ModeTuning wmbusTuning();
+
+} // namespace dect2

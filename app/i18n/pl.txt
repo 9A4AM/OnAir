@@ -2703,3 +2703,24 @@ Watch for these	Obserwuj te
 Lists	Listy
 Watchlists...	Listy obserwowanych...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alerty, gdy odebrane zostaną wymienione samoloty, statki, znaki wywoławcze, częstotliwości lub słowa: powiadomienie, dźwięk, ntfy, Telegram lub webhook
+# Wireless M-Bus
+start the receiver to see the meters	uruchom odbiornik, aby zobaczyć liczniki
+Maker	Producent
+Last reading	Ostatni odczyt
+encrypted payload	zaszyfrowane dane
+no meter heard yet: most meters send every few seconds to a few minutes	nie słychać jeszcze żadnego licznika: większość nadaje co kilka sekund lub minut
+type	typ
+status	stan
+The payload of this meter is encrypted (AES). It is listed but never decoded.	Dane tego licznika są zaszyfrowane (AES). Jest na liście, ale nigdy nie jest odszyfrowywany.
+Meter	Licznik
+no frame yet	jeszcze brak ramek
+CRC failures	błędy CRC
+No Wireless M-Bus channel lies inside this capture. Tune to 868.625 MHz with 2 Msps (S1, T1, C1, R2) or to 169.4375 MHz (N1).	W tym przechwyceniu nie ma żadnego kanału Wireless M-Bus. Dostrój do 868,625 MHz z 2 Msps (S1, T1, C1, R2) lub do 169,4375 MHz (N1).
+strongest channel	najsilniejszy kanał
+last frame at the chip slicer	ostatnia ramka przy slicerze chipów
+The demodulated frequency of the last frame, one point per chip: +-1 is the nominal deviation of the mode.	Zdemodulowana częstotliwość ostatniej ramki, jeden punkt na chip: +-1 to nominalne odchylenie trybu.
+Meters	Liczniki
+meters	liczniki
+868 MHz: S1 868.3, T1 and C1 868.95, R2 868.03 - 868.15 MHz; 169 MHz: N1 169.40625 - 169.46875 MHz. Encrypted payloads are never decoded.	868 MHz: S1 868,3, T1 i C1 868,95, R2 868,03 - 868,15 MHz; 169 MHz: N1 169,40625 - 169,46875 MHz. Zaszyfrowane dane nigdy nie są dekodowane.
+The test signal sends six simulated meters (S1, T1, C1 in both formats, R2) on the 868 MHz channels, one with an encrypted payload.	Sygnał testowy nadaje sześć symulowanych liczników (S1, T1, C1 w obu formatach, R2) na kanałach 868 MHz, jeden z zaszyfrowanymi danymi.
+Meters, 868 / 169 MHz	Liczniki, 868 / 169 MHz

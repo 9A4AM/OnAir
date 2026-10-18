@@ -2703,3 +2703,24 @@ Watch for these	监视这些
 Lists	列表
 Watchlists...	监视列表...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	当收到列表中的飞机、船舶、呼号、频率或词语时提醒: 通知、声音、ntfy、Telegram 或 Webhook
+# Wireless M-Bus
+start the receiver to see the meters	启动接收机以查看表计
+Maker	制造商
+Last reading	最近读数
+encrypted payload	加密的有效载荷
+no meter heard yet: most meters send every few seconds to a few minutes	尚未收到任何表计：多数表计每隔几秒到几分钟发送一次
+type	类型
+status	状态
+The payload of this meter is encrypted (AES). It is listed but never decoded.	此表计的有效载荷已加密 (AES)。它会被列出，但绝不会被解密。
+Meter	表计
+no frame yet	暂无帧
+CRC failures	CRC 错误
+No Wireless M-Bus channel lies inside this capture. Tune to 868.625 MHz with 2 Msps (S1, T1, C1, R2) or to 169.4375 MHz (N1).	此次采集范围内没有 Wireless M-Bus 信道。请调谐到 868.625 MHz，采样率 2 Msps (S1、T1、C1、R2)，或调谐到 169.4375 MHz (N1)。
+strongest channel	最强信道
+last frame at the chip slicer	码片切片器处的最近一帧
+The demodulated frequency of the last frame, one point per chip: +-1 is the nominal deviation of the mode.	最近一帧的解调频率，每个码片一个点：±1 为该模式的标称频偏。
+Meters	表计
+meters	表计
+868 MHz: S1 868.3, T1 and C1 868.95, R2 868.03 - 868.15 MHz; 169 MHz: N1 169.40625 - 169.46875 MHz. Encrypted payloads are never decoded.	868 MHz：S1 868.3，T1 和 C1 868.95，R2 868.03 - 868.15 MHz；169 MHz：N1 169.40625 - 169.46875 MHz。加密的有效载荷绝不会被解码。
+The test signal sends six simulated meters (S1, T1, C1 in both formats, R2) on the 868 MHz channels, one with an encrypted payload.	测试信号在 868 MHz 信道上发送六个模拟表计 (S1、T1、两种格式的 C1、R2)，其中一个带有加密有效载荷。
+Meters, 868 / 169 MHz	表计，868 / 169 MHz

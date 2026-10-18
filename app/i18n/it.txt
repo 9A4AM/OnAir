@@ -2686,3 +2686,24 @@ Watch for these	Controlla questi
 Lists	Liste
 Watchlists...	Liste di controllo...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Avvisi quando si sentono aerei, navi, nominativi, frequenze o parole in elenco: notifica, suono, ntfy, Telegram o webhook
+# Wireless M-Bus
+start the receiver to see the meters	avvia il ricevitore per vedere i contatori
+Maker	Costruttore
+Last reading	Ultima lettura
+encrypted payload	dati cifrati
+no meter heard yet: most meters send every few seconds to a few minutes	nessun contatore ancora ascoltato: la maggior parte trasmette ogni pochi secondi o minuti
+type	tipo
+status	stato
+The payload of this meter is encrypted (AES). It is listed but never decoded.	I dati di questo contatore sono cifrati (AES). È in elenco, ma non viene mai decifrato.
+Meter	Contatore
+no frame yet	ancora nessun frame
+CRC failures	errori CRC
+No Wireless M-Bus channel lies inside this capture. Tune to 868.625 MHz with 2 Msps (S1, T1, C1, R2) or to 169.4375 MHz (N1).	Nessun canale Wireless M-Bus rientra in questa acquisizione. Sintonizza 868,625 MHz con 2 Msps (S1, T1, C1, R2) oppure 169,4375 MHz (N1).
+strongest channel	canale più forte
+last frame at the chip slicer	ultimo frame allo slicer dei chip
+The demodulated frequency of the last frame, one point per chip: +-1 is the nominal deviation of the mode.	La frequenza demodulata dell'ultimo frame, un punto per chip: +-1 è la deviazione nominale del modo.
+Meters	Contatori
+meters	contatori
+868 MHz: S1 868.3, T1 and C1 868.95, R2 868.03 - 868.15 MHz; 169 MHz: N1 169.40625 - 169.46875 MHz. Encrypted payloads are never decoded.	868 MHz: S1 868,3, T1 e C1 868,95, R2 868,03 - 868,15 MHz; 169 MHz: N1 169,40625 - 169,46875 MHz. I dati cifrati non vengono mai decodificati.
+The test signal sends six simulated meters (S1, T1, C1 in both formats, R2) on the 868 MHz channels, one with an encrypted payload.	Il segnale di prova trasmette sei contatori simulati (S1, T1, C1 in entrambi i formati, R2) sui canali a 868 MHz, uno con dati cifrati.
+Meters, 868 / 169 MHz	Contatori, 868 / 169 MHz
