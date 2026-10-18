@@ -95,7 +95,7 @@ double Engine::captureCentreHz() const {
     { std::lock_guard<std::mutex> lk(tuneMu_); t = lastTune_; k = lastDev_.kind; }
     if (k == DeviceInfo::File || k == DeviceInfo::Audio || k == DeviceInfo::Hamlib) return t.centerHz;   // dial frequency (sound card / Hamlib + audio IQ)
     const ModeTuning* mt = modeTuning(stdMode_.load());
-    return t.centerHz + (mt ? mt->tuneOffsetHz : 0);   // the radio's centre (with offset tuning the samples are shifted back to it)
+    return t.centerHz + (mt && !noTuneOffset_.load() ? mt->tuneOffsetHz : 0);   // the radio's centre (with offset tuning the samples are shifted back to it)
 }
 
 // The receivers that can run as the second mode, set up for a sample rate (start() does it for all of them at the capture's)
@@ -158,8 +158,14 @@ void Engine::configureReceiver(int a, double r) {
     case 76: rxMt_.configure(r); break;
     case 72: rxLr_.configure(r); break;
     case 85: rxWs_.configure(r); break;
+    case 99: rxZw_.configure(r); break;
     case 86: rxEcz_.configure(r); break;
     case 102: rxFpv_.configure(r); break;
+    case 87: rxWmb_.configure(r); break;
+    case 90: rxTones_.configure(r); break;
+    case 93: rxSar_.configure(r); break;
+    case 96: rxMt63_.configure(r); break;
+    case 105: rxMs_.configure(r); break;
     default: break;
     }
 }
@@ -255,9 +261,15 @@ void Engine::placeReceiver(int a, double o, double centreHz, double dialHz, doub
     case 83: rxVdl4_.setSignalOffset(o); rxVdl4_.setCenterHz(centreHz); break;
     case 76: rxMt_.setSignalOffset(o); break;
     case 72: rxLr_.setSignalOffset(o); break;
+    case 99: rxZw_.setSignalOffset(o); rxZw_.setCenterHz(centreHz); rxZw_.setDialHz(dialHz); break;
     case 85: rxWs_.setSignalOffset(o); rxWs_.setCenterHz(centreHz); rxWs_.setDialHz(dialHz); break;
     case 86: rxEcz_.setSignalOffset(o); break;
     case 102: rxFpv_.setSignalOffset(o); rxFpv_.setCenterHz(centreHz); break;
+    case 87: rxWmb_.setSignalOffset(o); rxWmb_.setCenterHz(centreHz); break;
+    case 90: rxTones_.setSignalOffset(o); break;
+    case 93: rxSar_.setSignalOffset(o); break;
+    case 96: rxMt63_.setSignalOffset(o); break;
+    case 105: rxMs_.setSignalOffset(o); rxMs_.setCenterHz(centreHz); break;
     default: break;   // DMR, ADS-B, Mode S uplink: the channel on the centre, nothing to place
     }
 }
@@ -267,8 +279,9 @@ void Engine::placeReceiverAsPrimary(int a) {
     DeviceInfo::Kind k;
     { std::lock_guard<std::mutex> lk(tuneMu_); t = lastTune_; k = lastDev_.kind; }
     const bool file = k == DeviceInfo::File;
+    const bool noOff = file || k == DeviceInfo::Audio;
     const ModeTuning* mt = modeTuning(stdMode_.load());
-    placeReceiver(a, mt && !file ? -mt->tuneOffsetHz : 0.0, file ? 0.0 : radioTune(t).centerHz, file ? 0.0 : t.centerHz, t.centerHz);
+    placeReceiver(a, mt && !noOff ? -mt->tuneOffsetHz : 0.0, file ? 0.0 : radioTune(t).centerHz, file ? 0.0 : t.centerHz, t.centerHz);
 }
 
 }   // namespace dect2

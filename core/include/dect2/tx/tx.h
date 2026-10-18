@@ -36,6 +36,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <deque>
+#include <map>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -117,7 +118,7 @@ struct TxRequest {
     std::string modeId;
     SynthConfig synth;
     double bandwidthMhz = 8;       // DVB-T2 / DVB-T channel width
-    TxTune tune;                   // frequency, gain, ... (sampleRate is chosen by the session)
+    TxTune tune;                   // frequency, gain, ...; sampleRate: 0 = automatic, positive = operator-requested TX Fs
     bool loop = true;              // true: until stopped; false: one pass of onceSeconds, then it stops by itself
     double onceSeconds = 10;
     std::string callsign;          // FT8, APRS, D-STAR, M17, …
@@ -161,6 +162,10 @@ struct TxRequest {
     std::function<bool(int w, int h, float* y, float* u, float* v)> pullVideo;   // analog YUV; empty = test card
     std::vector<DemoTsService> mux; // DVB/ATSC/ISDB/DVB-S programmes (own video+audio each). Empty: services[] names.
     std::string fileNote;          // after start / makeTxGenerator: how the video/TS file was used (demo, remux, error)
+    // The advanced parameters of the panel (app/panels/tx_params.cpp has the one table): numbers by key, e.g. "am.depth". A generator reads the keys it knows with
+    // o(key, default); a key it does not know is ignored. Keys: out.* (every mode), audio.* / am.* / ssb.* / fm.* / vox.* (analog voice), bfm.* (FM broadcast).
+    std::map<std::string, double> opt;
+    double o(const char* key, double def) const { const auto it = opt.find(key); return it == opt.end() ? def : it->second; }
 };
 
 // Whether this mode's vocoder can encode live speech with a library OnAir already loads (Codec 2 for M17 / FreeDV).
@@ -172,6 +177,9 @@ bool txModeNeedsAudio(const TxModeSpec& m, const TxRequest& r);
 // FT8 / FT4 / WSPR / JT* message built from callsign, grid, dest, text and kind. Empty when those fields are empty (the demo stations are used).
 std::string txFtxMessage(const TxRequest& r);
 
+// The output stage of every mode (keys out.trimDb, out.rampMs, out.swapIq of r.opt) on n samples that start at sample number firstSample of the transmission
+void txOutputStage(const TxRequest& r, cf32* x, size_t n, uint64_t firstSample, double rateHz);
+
 // The radio's rate limits for the choice of a rate (0 = unknown / no limit)
 struct TxRateLimits { double minHz = 0, maxHz = 0; };
 
@@ -179,7 +187,8 @@ struct TxRateLimits { double minHz = 0, maxHz = 0; };
 // at that rate or the options are invalid. The synthetic-signal impairments of r.synth are turned off. Empty payload fields fall back to the mode's demo signal.
 std::unique_ptr<TxGenerator> makeTxGenerator(const TxModeSpec& mode, const TxRequest& r, double rateHz, std::string& err);
 
-// The sample rate to ask the radio for: the mode's own, kept within the radio's limits
+// The sample rate to ask the radio for: explicit tune.sampleRate, or the mode's own kept within the radio's limits.
+// Explicit requests are not clamped; TxSession rejects invalid or unsupported rates before opening the sink.
 double txRequestRate(const TxModeSpec& mode, const TxRequest& r, const TxRateLimits& lim);
 
 // The transmitter's radio. It is independent of the receivers: a radio a receiver (Engine) has open is refused here, in plain words, unless it is

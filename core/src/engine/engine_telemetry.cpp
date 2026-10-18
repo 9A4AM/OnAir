@@ -280,9 +280,15 @@ int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
     case 83: return pollStd(rxVdl4_, 83, t, seqs[77], &RxTelemetry::vdl4);
     case 78: return pollStd(rxAnt_, 78, t, seqs[72], &RxTelemetry::ant);
     case 72: return pollStd(rxLr_, 72, t, seqs[66], &RxTelemetry::loraraw);
+    case 99: return pollStd(rxZw_, 99, t, seqs[90], &RxTelemetry::zwave);
     case 85: return pollStd(rxWs_, 85, t, seqs[79], &RxTelemetry::wisun);
     case 86: return pollStd(rxEcz_, 86, t, seqs[80], &RxTelemetry::eczas);
     case 102: return pollStd(rxFpv_, 102, t, seqs[96], &RxTelemetry::fpv);
+    case 87: return pollStd(rxWmb_, 87, t, seqs[81], &RxTelemetry::wmbus);
+    case 90: return pollStd(rxTones_, 90, t, seqs[85], &RxTelemetry::tones);
+    case 93: return pollStd(rxSar_, 93, t, seqs[87], &RxTelemetry::sarsat);
+    case 96: return pollStd(rxMt63_, 96, t, seqs[88], &RxTelemetry::mt63);
+    case 105: return pollStd(rxMs_, 105, t, seqs[101], &RxTelemetry::mscatter);
     default: return -1;
     }
 }

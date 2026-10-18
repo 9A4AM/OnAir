@@ -98,7 +98,7 @@ void setMode(App& a, int f, int sub) {
         const App::FamGain& g = a.famGain[to];
         if (g.known) { a.tune.lnaDb = g.lna; a.tune.vgaDb = g.vga; a.tune.ampOn = g.amp; }
         else if (f == 5) { a.tune.lnaDb = 24; a.tune.vgaDb = 20; a.tune.ampOn = false; }   // FM stations are strong
-        else if (a.family == 5 || f >= 6) { a.tune.lnaDb = 32; a.tune.vgaDb = 20; a.tune.ampOn = true; }
+        else if (a.family == 5 || f >= 6) { a.tune.lnaDb = 32; a.tune.vgaDb = 34; a.tune.ampOn = false; }   // the amp is off unless the user turns it on (it can be damaged by strong signals): its 14 dB are in the VGA
     }
     a.sub = sub;
     setFamilyFlags(a, f);
@@ -481,7 +481,7 @@ double radioCenterMhz(const App& a) {
     const ModeTuning* mt = a.family >= 6 ? modeTuning(a.family + 2) : nullptr;
     const bool file = !a.devices.empty() && a.devIdx >= 0 && a.devIdx < (int)a.devices.size() &&
                       (a.devices[a.devIdx].kind == DeviceInfo::File || a.devices[a.devIdx].isAudio() || a.devices[a.devIdx].kind == DeviceInfo::Hamlib);
-    return a.freqMhz + (mt && !file ? mt->tuneOffsetHz / 1e6 : 0.0);
+    return a.freqMhz + (mt && !file ? mt->tuneOffsetHz / 1e6 : 0.0) + audioViewOffsetHz(a) / 1e6;
 }
 
 std::vector<double> xs(const App& a) {

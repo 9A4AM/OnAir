@@ -3,6 +3,8 @@
 #pragma once
 #include "imgui.h"
 #include <cmath>
+#include <cstdlib>
+#include <functional>
 
 namespace adsbmap {
 
@@ -25,7 +27,22 @@ void legend(float mapWidth, const char* fmt, ...);   // TextDisabled() along the
 // deleted when OnAir closes, how many there are per zoom level, deleting them) and the "online map" switch. Both are one setting for every
 // map. `privacy` (or null) ends "only tile numbers are sent" in the switch's tooltip, e.g. "never the position itself". After draw(), with
 // SameLine() before it; when they do not fit before the map's right edge they go on a line of their own.
-void tileControls(const char* privacy);
+void tileControls(const char* privacy, bool fullButton = true);
+// Full screen, one for every map: the button ("full screen" / "exit full screen", Esc leaves) is part of tileControls(), so every map has it on
+// its control line. It makes the screen the map is on fill the whole window. mainTabs() wraps each tab body in a FullScope (the body is what
+// is drawn again over the whole window); screens with their own full-screen view pass fullButton=false and use fullButton() themselves.
+bool fullButton(bool on, const char* what);    // the shared button + tooltip; true when clicked. `what` is "map" or "radar" for the tooltip
+class FullScope {
+public:
+    FullScope(const void* owner, std::function<void()> body);   // owner: the App whose window it is
+    ~FullScope();
+    FullScope(const FullScope&) = delete;
+    FullScope& operator=(const FullScope&) = delete;
+};
+inline int devView(int dflt) { const char* e = std::getenv("ONAIR_VIEW"); return e ? std::atoi(e) : dflt; }   // dev: open a screen on view N (screenshots)
+bool fullActive();                             // the full-screen screen is being drawn now
+void fullCorner(ImVec2 p0, ImVec2 size);       // a full-screen button in the top right corner of a map-sized rectangle, for the maps without the tile controls (cursor is left where it was)
+bool fullDraw(const void* owner, int family, ImVec2 disp);   // draw_ui.cpp, each frame: the full-screen screen over the whole window; false when not full
 bool online();                                 // tiles are fetched from the tile server (the "online map" switch)
 void shutdown();                               // stop the downloader; delete this session's tiles unless they are kept
 

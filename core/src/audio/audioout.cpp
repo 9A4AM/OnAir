@@ -75,6 +75,7 @@ bool AudioOut::start(int rate) {
         }
     }
 #endif
+    p_->cleanup.prepare(rate);
     if (!audioBackendStart(p_.get(), rate)) return false;
     running_ = true;
     return true;
@@ -91,16 +92,29 @@ int AudioOut::write(const float* s, int frames) {
     const int space = (int)(p_->frames - (w - r));
     const int n = std::min(frames, space);
     const size_t mask = p_->frames - 1;
-    for (int i = 0; i < n; i++) {
-        const size_t k = (size_t)((w + i) & mask) * 2;
-        p_->ring[k] = s[2 * i]; p_->ring[k + 1] = s[2 * i + 1];
+    const AudioCleanupConfig& cc = AudioCleanupConfig::global();
+    const bool clean = !monitor_ && running_;   // the chain returns the input itself while it is off (and fades itself out when switched off)
+    for (int off = 0; off < n;) {
+        const int m = std::min(n - off, (int)AudioCleanup::kMaxChunk);
+        const float* raw = s + 2 * (size_t)off;
+        const float* src = raw;
+        bool active = false;
+        if (clean) src = p_->cleanup.process(raw, m, p_->cleanBuf, &active);
+        for (int i = 0; i < m; i++) {
+            const size_t k = (size_t)((w + off + i) & mask) * 2;
+            p_->ring[k] = src[2 * i]; p_->ring[k + 1] = src[2 * i + 1];
+        }
+        // "Record audio": the raw sound, or the cleaned one when asked; with "skip silence" nothing while the gate holds the sound off
+        if (active && cc.recCleaned.load(std::memory_order_relaxed)) {
+            if (!(cc.skipSilence.load(std::memory_order_relaxed) && !p_->cleanup.gateOpen())) AudioRecorder::offer(this, src, m, rate_);
+        } else AudioRecorder::offer(this, raw, m, rate_);
+        AudioClipRing::offer(this, raw, m, rate_);   // radio clips: the last seconds, kept in a ring
+        AudioTap::offer(this, raw, m, rate_);        // live transcripts of the modes that have no channel audio of their own
+        off += m;
     }
     p_->w.store(w + n, std::memory_order_release);
     p_->written.fetch_add(n);
     if (!monitor_ && !p_->muted.load(std::memory_order_relaxed) && n > 0) gModeWriteMs.store(nowMs(), std::memory_order_relaxed);   // the mode is playing: a monitor yields
-    AudioRecorder::offer(this, s, n, rate_);   // "Record audio": the sound before the volume, from any mode
-    AudioClipRing::offer(this, s, n, rate_);   // radio clips: the last seconds, kept in a ring
-    AudioTap::offer(this, s, n, rate_);        // live transcripts of the modes that have no channel audio of their own
     return n;
 }
 

@@ -33,7 +33,6 @@ Default input	Default input
 Destination	Destination
 Destination / ID	Destination / ID
 Destination ID	Destination ID
-Deviation (Hz)	Deviation (Hz)
 Device ID	Device ID
 Dial frequency the decoder should assume (the sound card is not tuned)	A dekóder által feltételezett tárcsa-frekvencia (a hangkártya nincs hangolva)
 DVB standard	DVB standard
@@ -386,10 +385,10 @@ Amp	Erősítő
 LNA	LNA
 VGA	VGA
 AGC	AGC
-Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	Az ADC-szintet egészséges tartományban tartja (kb. -16 dBFS rms, nincs túlvezérlés) az LNA, a VGA és az erősítő állításával.\nHa hozzányúlsz egy erősítésvezérlőhöz, kikapcsol.
+Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off.	A bemenetet az üzemmódnak legjobb munkapontján tartja: jó ADC-szint, az ADC saját zaja fölötti zaj, az erős szomszédok kint tartva. Az LNA-t és a VGA-t mozgatja (az előerősítőt csak akkor, ha a fogaskerékkel engedélyezed), és nem nyúl az erősítéshez, amíg egy dekóder rá van kapcsolódva.\nHa hozzányúlsz egy erősítésszabályzóhoz, kikapcsol.
 Auto-tune	Automatikus hangolás
 Stop tune	Hangolás leállítása
-Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Erősítéssegéd: kb. 40 mp-ig próbál LNA/VGA/erősítő kombinációkat, és a legjobb SNR-t adó, nem túlvezérelt beállítást tartja meg.\nOlyan jel kell hozzá, amelyre a vevő be tud kapcsolódni.
+Gain helper: tries LNA/VGA combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to. The amp stays as you set it.	Erősítéssegéd: körülbelül 40 másodpercig LNA/VGA kombinációkat próbál, és megtartja a legjobb SNR-ű, nem túlvezérelt beállítást.\nOlyan jel kell hozzá, amelyre a vevő rá tud kapcsolódni. Az előerősítő úgy marad, ahogy beállítottad.
 gain helper %d/%d ...	erősítéssegéd %d/%d ...
 ADC OVERLOAD - %s	ADC TÚLVEZÉRLÉS - %s
 AGC is lowering the gain	Az AGC csökkenti az erősítést
@@ -1173,24 +1172,17 @@ signal time	jelidő
 Apply frequency and level now	Frekvencia és szint alkalmazása most
 Bring it back here	Visszahozás ide
 Carrier tune (hold)	Vivőhullám hangolás (tartsd lenyomva)
-Choose a radio in step 2, or switch on the test (no RF).	Válassz rádiót a 2. lépésben, vagy kapcsold be a tesztet (RF nélkül).
-Choose a signal in step 1	Válassz jelet az 1. lépésben
-Choose a signal in step 1.	Válassz jelet az 1. lépésben.
 Clipping	Vágás
 Idle	Üresjárat
 No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list. The test below needs no radio.	Nem található adásra képes rádió. Csatlakoztass egyet (HackRF, PlutoSDR vagy adóval ellátott SoapySDR rádió), és frissítsd a listát. Az alábbi teszthez nem kell rádió.
 Nothing matches this search.	Nincs találat.
 Occupied bandwidth	Elfoglalt sávszélesség
-Offset (MHz)	Eltolás (MHz)
-Offset, repeat and timing	Eltolás, ismétlés és időzítés
 Output level (dB)	Kimeneti szint (dB)
 Peak	Csúcs
 Pop out into a window of its own	Kiemelés saját ablakba
 Preparing	Előkészítés
-Preview and send	Előnézet és adás
 RMS	Effektív
 Recent	Legutóbbiak
-Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels below show what would go out.	A jelgenerátor a rádió mintavételi sebességén fut a semmibe: nem nyílik meg rádió, és nem megy ki semmi. Az alábbi spektrum és szintek mutatják, mi menne ki.
 STOP	LEÁLLÍTÁS
 STOP ALL	MINDEN LEÁLLÍTÁSA
 Sample rate	Mintavételi sebesség
@@ -1216,11 +1208,8 @@ at full scale: the limiter will round the peaks	teljes kivezérlésen: a limiter
 making the preview...	előnézet készül...
 none chosen	nincs kiválasztva
 none: the signal fits	nincs: a jel belefér
-on the air	adásban
 radio range %s	a rádió tartománya %s
 test (no RF)	teszt (RF nélkül)
-test running	teszt fut
-test, no RF	teszt, RF nélkül
 the limiter is working: %.2f%% of samples (lower the level)	a limiter dolgozik: a minták %.2f%%-a (csökkentsd a szintet)
 25 kHz	25 kHz
 12.5 kHz	12.5 kHz
@@ -1238,6 +1227,13 @@ Right	Jobb
 Left + right	Bal + jobb
 IF centre	KF közép
 Swap sideband	Oldalsáv cseréje
+Audio range	Hangtartomány
+Show the sound card's whole audio range, 0 Hz to half the sample rate, across the spectrum, with the frequency scale in audio Hz from the dial. Off: the IF centre in the middle (the decoders always get it there).	A hangkártya teljes hangtartományát mutatja, 0 Hz-től a mintavételi frekvencia feléig, a spektrumon, a skála hang-Hz-ben a tárcsázott frekvenciától. Ki: a KF-közép van középen (a dekóderek mindig ott kapják).
+Find centre	Közép keresése
+Sets the IF centre to the middle of the strongest signal on the screen (a fax or FSK signal: halfway between its tones).	A KF-közepet a képernyő legerősebb jelének közepére állítja (fax vagy FSK jel: a hangjai között félúton).
+Clipping: lower the input level	Túlvezérlés: csökkentse a bemeneti szintet
+Left and right are identical: this is audio, not I/Q.	A bal és a jobb azonos: ez hang, nem I/Q.
+Use Real (mono)	Valós (mono) használata
 Remove DC	DC eltávolítása
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	WebSDR-hez, virtuális audiokábelhez (VAC) vagy egy rádió hangszóró-, vonal- vagy KF-kimenetéhez a számítógépen. Nem helyettesít egy SDR-t, ha megahertzes sávszélesség kell. A frekvenciamező a tárcsa, amelyet a dekódernek fel kell tételeznie (a KF közép rádiófrekvenciája); a hangkártyát nem hangolják.
 I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q sztereó: a bal I, a jobb Q (HDSDR / WebSDR VAC). USB hang: valós hang analitikus IQ-vá FT8-hoz, RTTY-hoz, CW-hez, SSB-hez hangszóró-leágazásról vagy egy vevő hangjából. LSB hang: ugyanez, tükrözve. Valós (mono): valós minták (egy NF-leágazás, egy 12 kHz-es KF) analitikussá téve, az alábbi oldalsáv-kapcsolóval.
@@ -2749,3 +2745,433 @@ colour bars	színsávok
 no transmitter (noise only)	nincs adó (csak zaj)
 The test signal is a transmitter on the channel the radio is tuned to: FM video with a 1 kHz tone on the sound subcarrier.	A tesztjel egy adó azon a csatornán, amelyre a rádió hangolva van: FM videó 1 kHz-es hanggal a hang-segédvivőn.
 5.8 / 1.2 GHz video	5,8 / 1,2 GHz videó
+TX sample rate	TX mintavételi frekvencia
+Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	A kért adási IQ mintavételi frekvencia. Közös RX/TX rádiónál mindkét oldalon ugyanazt a hardveres értéket állítsa be. Módosítás előtt állítsa le az adást.
+Manual TX sample rate must be greater than zero.	A kézi TX mintavételi frekvenciának nullánál nagyobbnak kell lennie.
+Data (off)	Adat (ki)
+Generic	Általános
+AM / airband	AM / légiforgalmi
+NFM / VHF / UHF	NFM / VHF / UHF
+WFM broadcast	WFM műsorszórás
+SSB / HF	SSB / HF
+CW	CW
+Audio cleanup: noise reduction, notch, leveller ...	Hangtisztítás: zajcsökkentés, rovátkaszűrő, szintkiegyenlítő ...
+Audio cleanup	Hangtisztítás
+Basic	Alap
+Settings for	Beállítások ehhez:
+Automatic (%s)	Automatikus (%s)
+A data mode: its sound is left as it is. Pick another kind above to clean it up anyway.	Adatüzemmód: a hangját változatlanul hagyja. Válassz fent másik típust, ha mégis tisztítani szeretnéd.
+Clean the sound you hear. The decoders always get the untouched sound.	Megtisztítja a hallott hangot. A dekóderek mindig az érintetlen hangot kapják.
+Strength	Erősség
+noise reduction	zajcsökkentés
+auto notch	automatikus rovátka
+leveller	szintkiegyenlítő
+silence gate	csendkapu
+voice emphasis	hangkiemelés
+Nothing is on for this kind of mode. See Advanced.	Ennél az üzemmódtípusnál semmi sincs bekapcsolva. Lásd: Haladó.
+Noise reduction	Zajcsökkentés
+Takes down the steady hiss and rumble between and under the speech. More strength cleans more and costs some naturalness.	Csökkenti az állandó sistergést és dübörgést a beszéd között és alatt. Nagyobb erősség jobban tisztít, de kicsit természetellenesebb.
+Auto notch	Automatikus rovátka
+Finds a steady whistle, carrier or heterodyne in the sound and cuts it out narrowly, following it as it drifts. Lets go again when it stops.	Megtalálja az állandó sípolást, vivőt vagy lebegést a hangban, keskenyen kivágja, és követi, ha elcsúszik. Elengedi, ha megszűnik.
+cutting %.0f Hz	vág: %.0f Hz
+Manual notch	Kézi rovátka
+Cuts one frequency out of the sound, for a tone you can see in the audio spectrum.	Egy frekvenciát vág ki a hangból, egy hangszínképen látható hanghoz.
+width %.0f %%	szélesség %.0f %%
+Leveller	Szintkiegyenlítő
+Brings quiet and loud stations to the same loudness, with a soft limiter against peaks.	A halk és hangos állomásokat azonos hangerőre hozza, lágy hangkorlátozóval a csúcsok ellen.
+balance %.0f %%	egyensúly %.0f %%
+target %.0f dB	cél %.0f dB
+Do not boost the noise between transmissions	Ne erősítse a zajt az adások között
+Silence gate	Csendkapu
+Mutes the sound when only noise is left, like a squelch that follows the noise level by itself.	Elnémítja a hangot, ha csak zaj marad, mint egy zajzár, amely magától követi a zajszintet.
+opens %.0f dB above noise	nyit: %.0f dB-lel a zaj fölött
+muted	némítva
+Voice emphasis	Hangkiemelés
+Cuts the rumble below the voice and lifts the presence, so a weak voice is easier to understand.	Levágja a dübörgést a hang alatt, és emeli a jelenlétet, hogy a gyenge hang könnyebben érthető legyen.
+De-esser	De-esser
+Softens sharp S sounds.	Lágyítja az éles S hangokat.
+Record the cleaned sound	A megtisztított hang rögzítése
+Record audio saves the sound as you hear it now, cleaned, instead of the raw sound.	A Hang rögzítése úgy menti a hangot, ahogy most hallod, megtisztítva, a nyers hang helyett.
+Skip silence in the recording	Csend kihagyása a felvételből
+Nothing is recorded while the silence gate holds the sound off.	Semmi sem kerül rögzítésre, amíg a csendkapu visszatartja a hangot.
+Reset to the preset	Visszaállítás az előbeállításra
+# auto gain (AGC): the gear button, the amp switch, what the AGC is doing
+Auto gain	Automatikus erősítés
+AGC settings	AGC beállítások
+Let AGC turn the amp on/off by itself	Az AGC maga kapcsolhassa be és ki az előerősítőt
+Off by default. With this off the AGC only moves the LNA and VGA and never touches the amp: it stays as you set it. The amp is the first stage and can be damaged by strong signals.	Alapból ki van kapcsolva. Kikapcsolva az AGC csak az LNA-t és a VGA-t mozgatja, az előerősítőhöz soha nem nyúl: úgy marad, ahogy beállítottad. Az előerősítő az első fokozat, és az erős jelek tönkretehetik.
+This radio has no amp for the AGC to switch.	Ennek a rádiónak nincs olyan előerősítője, amit az AGC kapcsolhatna.
+The amp can fry itself on strong signals while on	Az előerősítő erős jeleken tönkremehet, amíg be van kapcsolva
+Aims for: %s	Cél: %s
+wide channel: ADC headroom	széles csatorna: ADC-tartalék
+narrow channel: lowest noise, neighbours kept out	keskeny csatorna: legkisebb zaj, a szomszédok távol
+pulsed signals: peaks decide	impulzusos jelek: a csúcsok döntenek
+strong stations: front end protected	erős adók: a bemenet védve
+Now: %s	Most: %s
+cut after an overload	túlvezérlés után csökkentve
+lowering the gain	az erősítés csökken
+raising the gain	az erősítés nő
+strong neighbour: front gain limited	erős szomszéd: a bemeneti erősítés korlátozva
+decoder locked: gain frozen	dekóder bekapcsolódott: az erősítés rögzítve
+at the end of the gain range	az erősítési tartomány végén
+holding the level	a szint tartása
+# transmit panel: top bar, Basic / Advanced, per-signal parameters
+0 is the normal suppressed carrier. A little carrier helps a receiver lock on; the top of the range is as strong as the loudest audio.	A 0 a szokásos elnyomott vivő. Egy kis vivő segít a vevőnek ráakadni; a tartomány teteje olyan erős, mint a leghangosabb hang.
+A second tone added to the first (0 = off). Two tones make a two-tone linearity test.	Egy második hang az elsőhöz adva (0 = ki). Két hang kéttónusú linearitási tesztet ad.
+A sub-audible tone that opens a receiver's squelch (0 = off). 67 to 254.1 Hz.	Hallhatatlan hang, amely kinyitja a vevő zajzárját (0 = ki). 67–254,1 Hz.
+AM (carrier and sidebands)	AM (vivő és oldalsávok)
+AM sends the carrier and both sidebands. Double sideband with suppressed carrier sends only the sidebands.	Az AM a vivőt és mindkét oldalsávot küldi. Az elnyomott vivős kétoldalsávos csak az oldalsávokat küldi.
+Audio above this level is turned down.	Az e szint feletti hangot lehalkítja.
+Audio frequency	Hangfrekvencia
+Boosts the high notes before sending (0 = off).	Küldés előtt kiemeli a magas hangokat (0 = ki).
+Boosts the high notes before sending. 50 µs in Europe and most of the world, 75 µs in the Americas.	Küldés előtt kiemeli a magas hangokat. 50 µs Európában és a világ nagy részén, 75 µs Amerikában.
+CTCSS level	CTCSS szint
+CTCSS tone	CTCSS hang
+Carrier injection	Vivő beinjektálás
+Carrier level	Vivőszint
+Choose a radio below, or switch on the test (no RF).	Válassz alul egy rádiót, vagy kapcsold be a tesztet (RF nélkül).
+Choose a signal in the list.	Válassz egy jelet a listából.
+Cuts the audio above this pitch, which sets how wide the signal is (0 = off).	Levágja az e hangmagasság feletti hangot, ez adja a jel szélességét (0 = ki).
+DSB (suppressed carrier)	DSB (elnyomott vivő)
+Default: %s	Alapértelmezett: %s
+Deviation	Elhajlás
+Esc = stop	Esc = leállítás
+Evens out loud and quiet speech so the signal stays strong without over-modulating.	Kiegyenlíti a hangos és halk beszédet, hogy a jel erős maradjon túlmodulálás nélkül.
+Every setting of this signal: modulation, audio, filters, output and timing. The defaults are sensible; open this only to change them.	A jel összes beállítása: moduláció, hang, szűrők, kimenet és időzítés. Az alapértékek ésszerűek; csak módosításhoz nyisd meg.
+Filters	Szűrők
+Follow the receiver	A vevőt követi
+Frequency offset	Frekvenciaeltolás
+Gain added after the compressor.	A kompresszor után hozzáadott erősítés.
+Gain applied to the whole signal just before the radio. Lower it when the meter shows clipping; the radio's own gain is set above.	A teljes jelre közvetlenül a rádió előtt alkalmazott erősítés. Csökkentsd, ha a mérő vágást mutat; a rádió saját erősítése feljebb állítható.
+HOLD TO TRANSMIT	TARTSD LENYOMVA AZ ADÁSHOZ
+High-pass (low cut)	Felüláteresztő (mélyvágó)
+How far the RDS subcarrier deviates the carrier.	Mennyivel téríti el az RDS-alvivő a vivőt.
+How far the audio swings the frequency. 2.5 kHz is a 12.5 kHz channel, 5 kHz a 25 kHz channel.	Mennyire téríti el a hang a frekvenciát. A 2,5 kHz 12,5 kHz-es csatornához, az 5 kHz 25 kHz-es csatornához való.
+How far the audio swings the frequency. Broadcast FM uses 75 kHz.	Mennyire téríti el a hang a frekvenciát. A műsorszóró FM 75 kHz-et használ.
+How far the audio swings the signal. Full modulation is at 100 percent; more than that over-modulates and distorts.	Mennyire modulálja a hang a jelet. A teljes moduláció 100 százaléknál van; efölött túlmodulál és torzít.
+How fast the compressor lets go after a loud passage.	Milyen gyorsan enged el a kompresszor egy hangos szakasz után.
+How long the VOX stays open after the sound stops.	Meddig marad nyitva a VOX a hang megszűnése után.
+How loud the audio must be to open the VOX.	Milyen hangosnak kell lennie a hangnak a VOX kinyitásához.
+How loud the test tone is, as a share of full audio.	Milyen hangos a tesztjel, a teljes hangszint arányában.
+How strongly audio above the threshold is turned down; 20 is close to a hard limiter.	Mennyire halkítja le a küszöb feletti hangot; a 20 már majdnem kemény korlátozó.
+Key-up fade-in	Adásindítási felfutás
+Left level	Bal szint
+Left test tone	Bal oldali tesztjel
+Low-pass (audio bandwidth)	Aluláteresztő (hangsávszélesség)
+Lower sideband (LSB)	Alsó oldalsáv (LSB)
+Make-up gain	Kiegészítő erősítés
+Mirror the spectrum	Spektrum tükrözése
+Modulation depth	Modulációs mélység
+Music (not speech)	Zene (nem beszéd)
+Name for a new preset	Új előbeállítás neve
+No presets saved for this signal yet.	Ehhez a jelhez még nincs mentett előbeállítás.
+Output	Kimenet
+Output level	Kimeneti szint
+Output trim	Kimeneti finomhangolás
+Peak level	Csúcsszint
+Pilot level	Pilotszint
+Pitch	Hangmagasság
+Presets	Előbeállítások
+Preview	Előnézet
+Programme type	Műsortípus
+Push to talk (hold the button)	Nyomd a beszéléshez (tartsd lenyomva a gombot)
+Puts every setting below back to its default.	Minden lenti beállítást visszaállít az alapértékre.
+RDS	RDS
+RDS level	RDS szint
+RF level	RF szint
+RX %.6f MHz	RX %.6f MHz
+Ratio	Arány
+Release	Elengedés
+Removes rumble and hum below this pitch (0 = off).	Eltávolítja a zúgást és a búgást e hangmagasság alatt (0 = ki).
+Reset to default	Alapértékek visszaállítása
+Right level	Jobb szint
+Right test tone	Jobb oldali tesztjel
+Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels show what would go out.	A jelgenerátort a rádió mintavételi sebességén a semmibe futtatja: nem nyit meg rádiót, és semmit sem küld. A spektrum és a szintek azt mutatják, mi menne ki.
+Save preset	Előbeállítás mentése
+Saves the settings below, the frequency and the level under this name.	Elmenti az alábbi beállításokat, a frekvenciát és a szintet ezen a néven.
+Second test tone	Második tesztjel
+Sends the 19 kHz pilot and the stereo difference signal.	Elküldi a 19 kHz-es pilotot és a sztereó különbségi jelet.
+Sends the station name, radio text and programme type on a 57 kHz subcarrier.	Egy 57 kHz-es alvivőn elküldi az állomás nevét, a rádiószöveget és a műsortípust.
+Speech compressor	Beszédkompresszor
+Start transmitting	Adás indítása
+Stereo	Sztereó
+Stop transmitting	Adás leállítása
+Swaps I and Q so the signal is turned over: an upper sideband becomes a lower one. For a radio or mixer that inverts.	Felcseréli az I-t és a Q-t, így a jel megfordul: a felső oldalsáv alsóvá válik. Fordító rádióhoz vagy keverőhöz.
+TRANSMITTING (release to stop)	ADÁS (engedd el a leállításhoz)
+TX = RX	TX = RX
+TX independent	TX független
+Test tone	Tesztjel
+Test tone level	Tesztjel szintje
+The 19 kHz stereo pilot, as a share of the full deviation.	A 19 kHz-es sztereó pilot a teljes elhajlás arányában.
+The RDS flag for a station that carries traffic announcements.	Az RDS-jelző a közlekedési közleményeket sugárzó állomáshoz.
+The RDS flag for music instead of speech.	Az RDS-jelző zenéhez beszéd helyett.
+The RDS flag that a traffic announcement is on the air.	Az RDS-jelző, hogy éppen közlekedési közlemény megy.
+The RDS programme type code (0 to 31; 10 is pop music).	Az RDS műsortípuskód (0–31; a 10 a popzene).
+The largest signal as a share of full scale.	A legnagyobb jel a teljes skála arányában.
+The left test tone, as a share of full audio.	A bal oldali tesztjel a teljes hangszint arányában.
+The pitch of the Morse tone, as an offset above the dial frequency.	A morzehang hangmagassága, a hangolt frekvencia feletti eltolásként.
+The pitch of the test tone, used when the audio input is the test tone.	A tesztjel hangmagassága, ha a hangbemenet a tesztjel.
+The pitch on the left channel, used when the audio input is the test tone.	A bal csatorna hangmagassága, ha a hangbemenet a tesztjel.
+The pitch on the right channel (0 = three times the left).	A jobb csatorna hangmagassága (0 = a bal háromszorosa).
+The radio's output level. Start low.	A rádió kimeneti szintje. Kezdd alacsonyan.
+The right test tone, as a share of full audio.	A jobb oldali tesztjel a teljes hangszint arányában.
+The signal fades in over this time after Start, so the key-up does not click.	A jel indítás után ennyi idő alatt halkan felfut, hogy az adásbekapcsolás ne ropogjon.
+The signal goes out only while there is sound on the audio input.	A jel csak addig megy ki, amíg van hang a hangbemeneten.
+The signal goes out only while you hold the button down.	A jel csak addig megy ki, amíg lenyomva tartod a gombot.
+The size of the carrier as a share of full scale. At a depth of 85 percent the peaks reach about full scale.	A vivő mérete a teljes skála arányában. 85 százalékos mélységnél a csúcsok nagyjából a teljes skálát érik el.
+The size of the signal as a share of full scale.	A jel mérete a teljes skála arányában.
+The tone's share of the deviation.	A hang aránya az elhajláson belül.
+The transmit frequency follows the receiver's. Typing a different one here unlinks them. Click to unlink.	Az adási frekvencia követi a vevőét. Ha itt másikat írsz be, szétválnak. Kattints a szétválasztáshoz.
+The transmit frequency is its own. The receiver is on %.6f MHz. Click to make the transmitter follow it.	Az adási frekvencia független. A vevő %.6f MHz-en van. Kattints, hogy az adó kövesse.
+Threshold	Küszöb
+Timing	Időzítés
+Traffic announcement now	Közlekedési közlemény most
+Traffic programme	Közlekedési műsor
+Upper sideband (USB)	Felső oldalsáv (USB)
+VOX (transmit on voice)	VOX (adás hangra)
+VOX hang time	VOX tartási idő
+VOX threshold	VOX küszöb
+Well-known frequencies of this signal: pick one to set the transmit frequency	A jel ismert frekvenciái: válassz egyet az adási frekvencia beállításához
+Where the middle of the signal sits in the audio passband, as an offset above the dial frequency.	Hol van a jel közepe a hangsávban, a hangolt frekvencia feletti eltolásként.
+Where the signal sits in the audio passband, as an offset above the dial frequency.	Hol van a jel a hangsávban, a hangolt frekvencia feletti eltolásként.
+Which sideband is sent.	Melyik oldalsávot küldi.
+follows the receiver	a vevőt követi
+on	be
+# full screen on every map
+Full screen	Teljes képernyő
+Exit full screen	Kilépés a teljes képernyőből
+Back to the normal layout (Esc)	Vissza a normál elrendezéshez (Esc)
+The map fills the whole window (Esc to leave)	A térkép kitölti az egész ablakot (Esc a kilépéshez)
+The radar fills the whole window (Esc to leave)	A radar kitölti az egész ablakot (Esc a kilépéshez)
+This screen fills the whole window (Esc to leave)	Ez a képernyő kitölti az egész ablakot (Esc a kilépéshez)
+Labels	Nevek
+Names on the spectrum	Nevek a spektrumon
+Station and channel names on the spectrum and the waterfall. A click on a name tunes to it and opens its mode.	Adó- és csatornanevek a spektrumon és a vízesésen. A névre kattintva ráhangol, és megnyitja a hozzá tartozó módot.
+Frequency database	Frekvenciaadatbázis
+FM stations (RDS names)	FM-adók (RDS-nevek)
+DAB ensembles	DAB-multiplexek
+DVB networks and services	DVB-hálózatok és -szolgáltatások
+Memories	Memóriák
+Names that do not fit are left out. Zoom in to see more of them.	A nem elférő nevek kimaradnak. Nagyíts rá, hogy többet láss.
+Names of the stations and channels on the spectrum: choose which sources are shown	Adók és csatornák nevei a spektrumon: válaszd ki, mely források jelenjenek meg
+Click to tune here	Kattints a ráhangoláshoz
+Click to tune here and open its mode	Kattints a ráhangoláshoz és a mód megnyitásához
+Coastlines	Partvonalak
+Borders	Határok
+Mosaic	Mozaik
+Histogram	Hisztogram
+Crop to view	Vágás a nézetre
+Clear crop	Vágás törlése
+Save GeoTIFF...	GeoTIFF mentése...
+Add to mosaic	Hozzáadás a mozaikhoz
+Clear mosaic	Mozaik törlése
+S-curve (contrast)	S-görbe (kontraszt)
+Lift shadows	Árnyékok világosítása
+Cloud detail (flat bright end)	Felhőrészletek (lapos világos vég)
+Night infrared	Éjszakai infravörös
+No palette	Nincs paletta
+Thermal	Hő
+Rainbow	Szivárvány
+Enhanced infrared	Kiemelt infravörös
+Sepia	Szépia
+Tone curve applied after the gamma	A gamma után alkalmazott tónusgörbe
+Colour palette on the brightness of the picture, for infrared and other single-channel pictures	Színpaletta a kép fényességén, infravörösre és más egycsatornás képekre
+Simplified coastlines drawn into the map (good to about 50 - 100 km, not a survey)	Egyszerűsített partvonalak a térképen (kb. 50 - 100 km pontos, nem felmérés)
+A few of the longest country borders, simplified	Néhány leghosszabb országhatár, egyszerűsítve
+Zoom to the part you want, then crop: saving and mosaic use only the part inside the yellow frame	Nagyíts a kívánt részre, majd vágd: a mentés és a mozaik csak a sárga kereten belüli részt használja
+The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not reach) for GIS programs	A térkép GeoTIFF-ként (WGS 84, rárajzolások nélkül, átlátszó ahol az átvonulás nem ért el) GIS programokhoz
+Keep this projected pass to stitch with others in the Mosaic view	Tartsd meg ezt a vetített átvonulást, hogy a Mozaik nézetben másokkal összefűzd
+Stitch several projected passes into one map	Több vetített átvonulás összefűzése egy térképpé
+The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	A mozaik üres. Nyiss meg egy térképes átvonulást, kapcsold be a térképvetítést, és nyomd meg a Hozzáadás a mozaikhoz gombot. Több átvonulás egy térképpé fűződik össze.
+Data packs	Adatcsomagok
+Data packs...	Adatcsomagok...
+Download map tiles, satellite elements and airports once, to work without internet	Térképcsempék, műholdpályaadatok és repterek egyszeri letöltése az internet nélküli használathoz
+Map tiles	Térképcsempék
+Transmitters	Adók
+Downloaded: 	Letöltve: 
+Stopped: 	Leállítva: 
+ (start it again to continue)	 (indítsd újra a folytatáshoz)
+%ld tiles, zoom %d to %d	%ld csempe, nagyítás %d–%d
+Pack	Csomag
+Size	Méret
+Last updated	Utolsó frissítés
+Action	Művelet
+not downloaded	nincs letöltve
+Update	Frissítés
+Starts the download now. Files that are already there and correct are kept.	Most indítja a letöltést. A már meglévő, helyes fájlok megmaradnak.
+Check	Ellenőrzés
+Checks every file against the checksum recorded at the download	Minden fájlt ellenőriz a letöltéskor rögzített ellenőrző összeggel
+Deleted: 	Törölve: 
+Credit: 	Forrásmegjelölés: 
+Download data once and use it without internet. Nothing is downloaded until you click Download on a pack.	Töltsd le az adatokat egyszer, és használd internet nélkül. Semmi sem töltődik le, amíg egy csomagnál a Letöltésre nem kattintasz.
+Free disk space: %s	Szabad lemezterület: %s
+Map tiles around a position	Térképcsempék egy pozíció körül
+Radius (km)	Sugár (km)
+Deepest zoom	Legnagyobb nagyítás
+The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	A nagyítás magától csökken, hogy a terület legfeljebb 4000 csempe legyen (az OpenStreetMap csempeszabályzata tiltja a tömeges letöltést).
+Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Térképadatok (c) az OpenStreetMap közreműködői. Műholdpályaadatok: CelesTrak. Repterek: OurAirports (közkincs). Részletek: Súgó > Köszönetnyilvánítás.
+# Wireless M-Bus
+start the receiver to see the meters	indítsd el a vevőt a mérők megjelenítéséhez
+Maker	Gyártó
+Last reading	Utolsó leolvasás
+encrypted payload	titkosított adatok
+no meter heard yet: most meters send every few seconds to a few minutes	még nem hallatszik mérő: a legtöbb néhány másodpercenként vagy percenként ad
+type	típus
+status	állapot
+The payload of this meter is encrypted (AES). It is listed but never decoded.	Ennek a mérőnek az adatai titkosítottak (AES). Szerepel a listán, de soha nem fejtjük vissza.
+Meter	Mérő
+no frame yet	még nincs keret
+CRC failures	CRC-hibák
+No Wireless M-Bus channel lies inside this capture. Tune to 868.625 MHz with 2 Msps (S1, T1, C1, R2) or to 169.4375 MHz (N1).	Egyetlen Wireless M-Bus csatorna sem esik ebbe a felvételbe. Hangolj 868,625 MHz-re 2 Msps-szel (S1, T1, C1, R2) vagy 169,4375 MHz-re (N1).
+strongest channel	legerősebb csatorna
+last frame at the chip slicer	az utolsó keret a chip-szeletelőnél
+The demodulated frequency of the last frame, one point per chip: +-1 is the nominal deviation of the mode.	Az utolsó keret demodulált frekvenciája, chipenként egy pont: a +-1 a mód névleges frekvenciamenete.
+Meters	Mérők
+meters	mérő
+868 MHz: S1 868.3, T1 and C1 868.95, R2 868.03 - 868.15 MHz; 169 MHz: N1 169.40625 - 169.46875 MHz. Encrypted payloads are never decoded.	868 MHz: S1 868,3, T1 és C1 868,95, R2 868,03 - 868,15 MHz; 169 MHz: N1 169,40625 - 169,46875 MHz. A titkosított adatokat soha nem dekódoljuk.
+The test signal sends six simulated meters (S1, T1, C1 in both formats, R2) on the 868 MHz channels, one with an encrypted payload.	A tesztjel hat szimulált mérőt ad (S1, T1, C1 mindkét formátumban, R2) a 868 MHz-es csatornákon, az egyik titkosított adatokkal.
+Meters, 868 / 169 MHz	Mérők, 868 / 169 MHz
+#  tone decoders
+5-tone	5 hangos
+2-tone	2 hangos
+sub-audible	hallható alatti
+extended tone	bővített hang
+standard tone	szabványos hang
+code of the usual list	a szokásos listában szereplő kód
+code not in the usual list	nincs a szokásos listában
+same waveform	azonos hullámforma
+no CTCSS tone or DCS code	nincs CTCSS hang vagy DCS kód
+start the receiver on an FM channel or a sound card to decode tones	indítsa el a vevőt egy FM csatornán vagy hangkártyán a hangok dekódolásához
+voice-band tone	hang a beszédsávban
+keys	billentyűk
+, sound card	, hangkártya
+, FM	, FM
+gate	kapu
+open (no gate)	nyitva (kapu nélkül)
+audio spectrum, 0 - 3.5 kHz	hangspektrum, 0 - 3.5 kHz
+the 50 CTCSS tones, 67 - 254 Hz	az 50 CTCSS hang, 67 - 254 Hz
+The level of each of the 50 tones in the last second of the sub-audible band, left to right from 67.0 to 254.1 Hz. A tone that stands clear of the others for about half a second is taken as the CTCSS tone.	Az 50 hang szintje az utolsó másodpercben a hallható alatti sávban, balról jobbra 67,0-tól 254,1 Hz-ig. Az a hang, amely körülbelül fél másodpercig élesen kiemelkedik a többi közül, a CTCSS hang.
+start the receiver to see what is heard	indítsa el a vevőt a hallottak megtekintéséhez
+Length	Hossz
+Hear the channel (the sub-audible tones are taken out); with a gate set under Receiver the sound opens only for the chosen tone or code	A csatorna hallgatása (a hallható alatti hangok kiszűrve); a Vevő alatt beállított kapuval a hang csak a kiválasztott hangra vagy kódra nyílik meg
+sound card audio	hangkártya hang
+FM channel	FM csatorna
+Gate	Kapu
+Open the sound	Hang megnyitása
+always	mindig
+on any tone or code	bármely hangra vagy kódra
+only on the chosen tone or code	csak a kiválasztott hangra vagy kódra
+Like the squelch of a radio with CTCSS or DCS: while the gate is closed the Listen sound is muted. The decoders keep running either way.	Mint a CTCSS-es vagy DCS-es rádió zajzára: amíg a kapu zárva van, a hallgatott hang el van némítva. A dekóderek mindkét esetben tovább futnak.
+inverted	fordított
+DCS polarity (N or I) follows the deviation sign of the receiver; the same waveform can read as two codes, the second is shown as the alias. Five-tone tone lengths are vendor specific: when several standards fit, the one whose usual tone length is closest is listed first.	A DCS polaritás (N vagy I) a vevő deviációjának előjelét követi; ugyanaz a hullámforma két kódként is olvasható, a második aliasként jelenik meg. Az ötös hangsorok hangjainak hossza gyártófüggő: ha több szabvány is illik, az kerül előre, amelynek szokásos hanghossza a legközelebb áll.
+Tone decoders	Hangdekóderek
+The test signal repeats every 40 s: CTCSS 123.0 Hz under speech-like noise, DCS D023N, DTMF 159#, a ZVEI1 call 12345, SELCAL AM-CP and a two-tone page.	A tesztjel 40 másodpercenként ismétlődik: CTCSS 123,0 Hz beszédszerű zaj alatt, DCS D023N, DTMF 159#, egy ZVEI1 hívás 12345, SELCAL AM-CP és egy kéthangos hívás.
+CTCSS, DCS, DTMF, selcall	CTCSS, DCS, DTMF, szelektív hívás
+# COSPAS-SARSAT 406 MHz
+A 406 MHz distress beacon (EPIRB on a boat, ELT in an aircraft, PLB carried by a person) sends a burst of about half a second every 50 seconds: an unmodulated carrier, then 112 or 144 bits at 400 bit/s. The message holds a 15 digit hex ID that is unique to the beacon, the country, the kind of beacon, and often a position (rounded to 15 minutes in a short message, to 4 seconds in a long one). Two BCH checks protect the message; up to three damaged bits in the first field are repaired.\n\nOnAir only receives. Test beacons and self-test bursts are marked. If you think you heard a real one, tell the rescue coordination centre of your country; do not rely on this program for safety.	A 406 MHz-es vészjeladó (EPIRB hajón, ELT repülőgépben, PLB személynél) körülbelül 50 másodpercenként egy kb. fél másodperces adást küld: modulálatlan vivő, majd 112 vagy 144 bit 400 bit/s sebességgel. Az üzenet tartalmaz egy, a jeladóra egyedi 15 jegyű hexa azonosítót, az országot, a jeladó fajtáját és gyakran egy pozíciót (rövid üzenetben 15 percre, hosszúban 4 másodpercre kerekítve). Két BCH-ellenőrzés védi az üzenetet; az első mező legfeljebb három sérült bitje javítható.\n\nAz OnAir csak vesz. A tesztjeladók és az önteszt-adások jelölve vannak. Ha úgy gondolja, valódit hallott, értesítse országa mentési koordinációs központját; biztonsága érdekében ne erre a programra támaszkodjon.
+EPIRB (boat)	EPIRB (hajó)
+ELT (aircraft)	ELT (repülőgép)
+PLB (person)	PLB (személy)
+Ship security	Hajóbiztonság
+Test	Teszt
+What a 406 MHz beacon sends	Mit küld egy 406 MHz-es jeladó
+Hex ID	Hexa azonosító
+ (self-test burst)	 (önteszt-adás)
+Protocol	Protokoll
+Identification	Azonosítás
+Precision	Pontosság
+about 4 seconds of arc	kb. 4 ívmásodperc
+15 minutes of arc (short message)	15 ívperc (rövid üzenet)
+Homing 121.5 MHz	Önirányító 121,5 MHz
+no	nem
+long, 144 bits	hosszú, 144 bit
+short, 112 bits	rövid, 112 bit
+Check bits	Ellenőrző bitek
+both good	mindkettő jó
+first good, second failed	az első jó, a második hibás
+first good	az első jó
+bits repaired	bit javítva
+no beacon decoded yet; a beacon sends a burst about every 50 seconds	még nincs dekódolt jeladó; a jeladó kb. 50 másodpercenként küld egy adást
+Checks	Ellenőrzések
+fit	illesztés
+no decoded beacon carries a position yet	egy dekódolt jeladó sem tartalmaz még pozíciót
+blue EPIRB, orange ELT, green PLB, grey test; a short message is rounded to 15 minutes of arc	kék EPIRB, narancs ELT, zöld PLB, szürke teszt; a rövid üzenet 15 ívpercre kerekített
+nothing decoded yet	még nincs dekódolt adat
+Raw bits	Nyers bitek
+tune to 406.028 MHz and start the receiver	hangoljon 406,028 MHz-re és indítsa el a vevőt
+Receive only. A real beacon means somebody may be in danger: tell the rescue centre; do not rely on this program for safety.	Csak vétel. Egy valódi jeladó azt jelenti, hogy valaki veszélyben lehet: értesítse a mentési központot; biztonsága érdekében ne erre a programra támaszkodjon.
+no input	nincs bemenet
+beacon decoded lately	nemrég dekódolt jeladó
+Bursts	Adások
+heard	hallott
+failed the checks	nem felelt meg az ellenőrzésnek
+Last burst	Utolsó adás
+Input	Bemenet
+start the receiver to see beacons	indítsa el a vevőt a jeladók megjelenítéséhez
+The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	A tesztjel 3 másodpercenként ismétel öt kitalált jeladót (a valódiak 50 másodpercenként küldenek): egy EPIRB-t, egy PLB-t, egy ELT-t, egy tengeri felhasználói jeladót és egy EPIRB-t a déli féltekén.
+Distress beacons, 406 MHz	Vészjeladók, 406 MHz
+%.0f Hz above the dial (%.3f kHz)	%.0f Hz a tárcsafrekvencia felett (%.3f kHz)
+Interleave	Interleave
+Line	Sor
+Long	Hosszú
+MT63 comes in three widths, 500, 1000 and 2000 Hz (5, 10 and 20 characters per second). Automatic looks for all three.	Az MT63 három szélességben létezik: 500, 1000 és 2000 Hz (másodpercenként 5, 10 és 20 karakter). Az automatikus mindhármat keresi.
+Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way	A oldalsáv (tárcsa + 200 Hz és 3,8 kHz között) lejátszása a hangkártyán; a dekódolás mindkét esetben ugyanaz
+Robust chat, 14.1095 MHz	Robusztus csevegés, 14,1095 MHz
+Short	Rövid
+The 64 carriers: the level of each, relative to the strongest	A 64 vivő: mindegyik szintje a legerősebbhez viszonyítva
+The long interleave spreads every character over 64 symbols, the short one over 32: the long one survives longer fades and bursts, the short one has less delay. Automatic decodes both and shows the one with clean codewords.	A hosszú interleave minden karaktert 64 szimbólumra szór szét, a rövid 32-re: a hosszú hosszabb fadinget és zavarimpulzust is átvészel, a rövidnek kisebb a késleltetése. Az automatikus mindkettőt dekódolja, és a tiszta kódszavúat mutatja.
+bandwidth	sávszélesség
+centre	közép
+characters	karakterek
+codeword quality	kódszó minősége
+interleave	interleave
+no callsigns yet	még nincs hívójel
+start the receiver to read the band	indítsd el a vevőt a sáv olvasásához
+synchronising	szinkronizálás
+unclear	bizonytalan
+# Meteor scatter
+Copies the pings as CSV: id, UTC time, duration, peak level, Doppler, drift, type, beacon frequency.	A pingeket CSV-ként másolja: azonosító, UTC idő, időtartam, csúcsszint, Doppler, sodródás, típus, jeladó frekvenciája.
+Log to file	Naplózás fájlba
+Appends every ping to meteor_scatter.csv in the data folder, also when nobody watches the screen.	Minden pinget hozzáfűz a meteor_scatter.csv fájlhoz az adatmappában, akkor is, ha senki sem nézi a képernyőt.
+threshold %d dB	küszöb %d dB
+How far above its long-term level a spectrum bin must rise to count as an echo. Lower finds weaker pings and more false ones.	Mennyivel kell egy spektrumsávnak a hosszú távú szintje fölé emelkednie, hogy visszhangnak számítson. Alacsonyabban gyengébb és több téves ping jön.
+start the receiver to see the pings	indítsa el a vevőt a pingek megjelenítéséhez
+No beacon line found. Tune to the beacon (GRAVES: 143.050 MHz) so that it lies within 4 kHz of the centre, with 1 Msps or more.	Nem található jeladóvonal. Hangoljon a jeladóra (GRAVES: 143,050 MHz) úgy, hogy 4 kHz-en belül legyen a középtől, legalább 1 Msps-sel.
+Doppler	Doppler
+Drift	Sodródás
+overdense	túlsűrű
+underdense	alulsűrű
+no ping yet: on GRAVES a quiet hour brings a few, a shower peak hundreds	még nincs ping: a GRAVES-en egy csendes óra párat hoz, egy rajcsúcs százakat
+shape	alak
+overdense: long, flat top	túlsűrű: hosszú, lapos tetejű
+underdense: sharp rise, exponential decay	alulsűrű: meredek felfutás, exponenciális lecsengés
+start the receiver to see the rates	indítsa el a vevőt a gyakoriságok megjelenítéséhez
+pings per hour (UTC), the last 24 hours	ping óránként (UTC), az utolsó 24 óra
+pings per day (UTC), the last 30 days; showers marked at their peak	ping naponta (UTC), az utolsó 30 nap; a rajok a csúcsuknál jelölve
+meteor showers now and near (peak date, typical hourly rate for an eye observer)	hullócsillag-rajok most és a közelben (csúcs dátuma, tipikus óránkénti ráta szemmel figyelőnek)
+Shower	Raj
+Rate	Ráta
+today	ma
+in %d days	%d nap múlva
+%d days ago	%d napja
+active	aktív
+, daytime: best for radio	, nappali: rádióhoz a legjobb
+not active	nem aktív
+start the receiver to see the echoes	indítsa el a vevőt a visszhangok megjelenítéséhez
+echoes: +-500 Hz around the beacon line, the last 30 seconds (brighter = stronger over the background)	visszhangok: +-500 Hz a jeladóvonal körül, az utolsó 30 másodperc (világosabb = erősebb a háttérnél)
+beacon	jeladó
+ping	ping
+long-term spectrum around the beacon (dB over the noise)	hosszú távú spektrum a jeladó körül (dB a zaj fölött)
+Pings	Pingek
+Rates	Ráta
+Echoes	Visszhangok
+pings	ping
+not found	nem található
+noise	zaj
+detector	detektor
+log	napló
+The beacon is a fixed transmitter far beyond the horizon: it is heard only when a meteor trail reflects it, as a short echo a few Hz to a few hundred Hz away from the line. Echoes closer than 18 Hz to the line are masked.	A jeladó a horizonton túli fix adó: csak akkor hallható, ha egy meteornyom visszaveri, rövid visszhangként a vonaltól néhány Hz-re vagy néhány száz Hz-re. A vonaltól 18 Hz-nél közelebbi visszhangokat elfedjük.
+Ping	Ping
+with interference bursts	zavarimpulzusokkal
+The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	A tesztjel egy 420 Hz-re a középtől lévő jeladó szimulált meteorvisszhangokkal: rövid alulsűrűek és néhány hosszú túlsűrű.
+Beacon echoes, 143.050 MHz	Jeladó-visszhangok, 143,050 MHz

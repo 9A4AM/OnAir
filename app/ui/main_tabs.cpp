@@ -5,6 +5,7 @@
 #include <unistd.h>
 #endif
 #include "app.h"
+#include "adsb/adsb_map.h"
 #include "ui/contrast.h"
 #include "dect2/source/iq_file.h"
 #include "panels/gallery.h"
@@ -111,32 +112,32 @@ void mainTabs(App& a) {
     const bool bar = ImGui::BeginTabBar("tabs", pal::dev() ? ImGuiTabBarFlags_DrawSelectedOverline : 0);
     if (gTightTabs) ImGui::PopStyleVar();
     if (bar) {
-        if (tabItem(N_("Overview"), Ic::Grid)) { overviewTab(a); ImGui::EndTabItem(); }
+        if (tabItem(N_("Overview"), Ic::Grid)) { adsbmap::FullScope fs(&a, [&a]{ overviewTab(a); }); overviewTab(a); ImGui::EndTabItem(); }
         if (const ModeUi* mu = modeUi(a.family)) {   // a mode added after FM: its own tabs
-            if (mu->tab && tabItem(mu->tabName ? mu->tabName : "Mode", mu->tabIcon)) { mu->tab(a); ImGui::EndTabItem(); }
-            else if (!mu->tab && mu->stream && tabItem(N_("TV"), Ic::Tv)) { tvTab(a); ImGui::EndTabItem(); }
-            if (mu->receiver && tabItem(N_("Receiver"), Ic::Antenna)) { receiverTab(a); ImGui::EndTabItem(); }
-            if (mu->stream && tabItem(N_("Stream"), Ic::Layers)) { streamTab(a); ImGui::EndTabItem(); }
-            if (mu->scan && tabItem(N_("Scan"), Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
-            if (tabItem(N_("History"), Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
+            if (mu->tab && tabItem(mu->tabName ? mu->tabName : "Mode", mu->tabIcon)) { adsbmap::FullScope fs(&a, [&a, mu]{ mu->tab(a); }); mu->tab(a); ImGui::EndTabItem(); }
+            else if (!mu->tab && mu->stream && tabItem(N_("TV"), Ic::Tv)) { adsbmap::FullScope fs(&a, [&a]{ tvTab(a); }); tvTab(a); ImGui::EndTabItem(); }
+            if (mu->receiver && tabItem(N_("Receiver"), Ic::Antenna)) { adsbmap::FullScope fs(&a, [&a]{ receiverTab(a); }); receiverTab(a); ImGui::EndTabItem(); }
+            if (mu->stream && tabItem(N_("Stream"), Ic::Layers)) { adsbmap::FullScope fs(&a, [&a]{ streamTab(a); }); streamTab(a); ImGui::EndTabItem(); }
+            if (mu->scan && tabItem(N_("Scan"), Ic::Scan)) { adsbmap::FullScope fs(&a, [&a]{ scanTab(a); }); scanTab(a); ImGui::EndTabItem(); }
+            if (tabItem(N_("History"), Ic::Chart)) { adsbmap::FullScope fs(&a, [&a]{ historyLogTab(a); }); historyLogTab(a); ImGui::EndTabItem(); }
             memoryTabItem(a); freqdbTabItem(a);
             secondModeTabs(a);
             ImGui::EndTabBar();
             return;
         }
-        if (a.dabMode) { if (tabItem(N_("Radio"), Ic::Radio)) { dabRadioTab(a); ImGui::EndTabItem(); } }
-        else if (a.fmMode) { if (tabItem(N_("Radio"), Ic::Radio)) { fmRadioTab(a); ImGui::EndTabItem(); } }
-        else if (tabItem(N_("TV"), Ic::Tv)) { tvTab(a); ImGui::EndTabItem(); }
-        if (!a.fmMode && tabItem(a.dabMode ? N_("Ensemble") : N_("Receiver"), Ic::Antenna)) { receiverTab(a); ImGui::EndTabItem(); }
-        if (a.dabMode && tabItem(N_("Map"), Ic::Compass)) { dabTransmittersTab(a); ImGui::EndTabItem(); }
-        if (a.dabMode && tabItem(N_("Analyzer"), Ic::Grid)) { dabAnalyzerTab(a); ImGui::EndTabItem(); }
-        if (a.dabMode && dabHasSpi(a.engine.dabEnsemble()) && tabItem(N_("Guide"), Ic::Clock)) { dabGuideTab(a); ImGui::EndTabItem(); }
-        if (a.dabMode && dabHasJournaline(a.engine.dabEnsemble()) && tabItem(N_("Journaline"), Ic::Doc)) { dabJournalineTab(a); ImGui::EndTabItem(); }
-        if (a.dabMode && tabItem(N_("FIC"), Ic::Doc)) { dabFicTab(a); ImGui::EndTabItem(); }
-        if (!a.dabMode && !a.fmMode && tabItem(N_("Stream"), Ic::Layers)) { streamTab(a); ImGui::EndTabItem(); }
-        if (tabItem(N_("Scan"), Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
-        if (!a.fmMode && tabItem(N_("Antenna"), Ic::Compass)) { antennaTab(a); ImGui::EndTabItem(); }
-        if (tabItem(N_("History"), Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
+        if (a.dabMode) { if (tabItem(N_("Radio"), Ic::Radio)) { adsbmap::FullScope fs(&a, [&a]{ dabRadioTab(a); }); dabRadioTab(a); ImGui::EndTabItem(); } }
+        else if (a.fmMode) { if (tabItem(N_("Radio"), Ic::Radio)) { adsbmap::FullScope fs(&a, [&a]{ fmRadioTab(a); }); fmRadioTab(a); ImGui::EndTabItem(); } }
+        else if (tabItem(N_("TV"), Ic::Tv)) { adsbmap::FullScope fs(&a, [&a]{ tvTab(a); }); tvTab(a); ImGui::EndTabItem(); }
+        if (!a.fmMode && tabItem(a.dabMode ? N_("Ensemble") : N_("Receiver"), Ic::Antenna)) { adsbmap::FullScope fs(&a, [&a]{ receiverTab(a); }); receiverTab(a); ImGui::EndTabItem(); }
+        if (a.dabMode && tabItem(N_("Map"), Ic::Compass)) { adsbmap::FullScope fs(&a, [&a]{ dabTransmittersTab(a); }); dabTransmittersTab(a); ImGui::EndTabItem(); }
+        if (a.dabMode && tabItem(N_("Analyzer"), Ic::Grid)) { adsbmap::FullScope fs(&a, [&a]{ dabAnalyzerTab(a); }); dabAnalyzerTab(a); ImGui::EndTabItem(); }
+        if (a.dabMode && dabHasSpi(a.engine.dabEnsemble()) && tabItem(N_("Guide"), Ic::Clock)) { adsbmap::FullScope fs(&a, [&a]{ dabGuideTab(a); }); dabGuideTab(a); ImGui::EndTabItem(); }
+        if (a.dabMode && dabHasJournaline(a.engine.dabEnsemble()) && tabItem(N_("Journaline"), Ic::Doc)) { adsbmap::FullScope fs(&a, [&a]{ dabJournalineTab(a); }); dabJournalineTab(a); ImGui::EndTabItem(); }
+        if (a.dabMode && tabItem(N_("FIC"), Ic::Doc)) { adsbmap::FullScope fs(&a, [&a]{ dabFicTab(a); }); dabFicTab(a); ImGui::EndTabItem(); }
+        if (!a.dabMode && !a.fmMode && tabItem(N_("Stream"), Ic::Layers)) { adsbmap::FullScope fs(&a, [&a]{ streamTab(a); }); streamTab(a); ImGui::EndTabItem(); }
+        if (tabItem(N_("Scan"), Ic::Scan)) { adsbmap::FullScope fs(&a, [&a]{ scanTab(a); }); scanTab(a); ImGui::EndTabItem(); }
+        if (!a.fmMode && tabItem(N_("Antenna"), Ic::Compass)) { adsbmap::FullScope fs(&a, [&a]{ antennaTab(a); }); antennaTab(a); ImGui::EndTabItem(); }
+        if (tabItem(N_("History"), Ic::Chart)) { adsbmap::FullScope fs(&a, [&a]{ historyLogTab(a); }); historyLogTab(a); ImGui::EndTabItem(); }
         memoryTabItem(a); freqdbTabItem(a);
         secondModeTabs(a);
         ImGui::EndTabBar();

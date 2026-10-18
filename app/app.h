@@ -9,6 +9,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "gfx/plot.h"
+#include "gfx/autolabel_logic.h"
 #include "i18n/i18n.h"
 #include "state/fm_saved.h"
 
@@ -32,6 +33,7 @@
 #include "dect2/engine/updater.h"
 #include "dect2/source/gain.h"
 #include "dect2/source/gain_opt.h"
+#include "dect2/source/agc.h"
 #include "dect2/tx/tx.h"
 #include "dect2/channels/channel.h"
 #include "dect2/dvbt/dvbt.h"
@@ -59,6 +61,7 @@
 #include <vector>
 #include <unistd.h>
 #include "gfx/colormap.h"
+#include "gfx/wf_view.h"
 
 using namespace dect2;
 
@@ -73,7 +76,11 @@ struct Waterfall {
     }
     gfx::Image* img = nullptr;
     uint32_t lut[256] = {};
-    int builtMap = -1;
+    int builtMap = -1, lutGen = 0;   // lutGen: counts the colour table rebuilds
+    std::vector<uint8_t> lv;         // the history as levels (0..255, the index into lut), W x H like the texture: the view is made from it
+    long long rows = 0;              // rows written since the start; the newest is number rows - 1, at writeRow
+    gfx::Image* viewImg = nullptr;   // the history at the size it is shown (the main waterfall; made on first use)
+    plt::WfView view;
     float gamma = 1.f, builtGamma = 1.f;   // contrast: the level ^ gamma picks the colour (below 1 lifts weak signals)
     std::vector<uint32_t> row;      // scratch for the row being written (kept: no allocation per frame)
     std::vector<float> acc, floorScratch;   // the highest level per bin since the last row; the samples of the noise floor estimate
@@ -110,10 +117,11 @@ struct Waterfall {
     int effMap() const { return map >= 0 && map < NumMaps ? map : pal::wfMode() == 2 ? Turbo : pal::wfMode() == 1 ? Grey : Classic; }
     static int& curMap() { static int m = 0; return m; }   // the map in use, for the other waterfalls (modes with their own picture) that colour with jet()
     static uint32_t jet(float v) { return color(curMap(), v); }
-    void palette() { builtMap = effMap(); curMap() = builtMap; for (int i = 0; i < 256; i++) lut[i] = color(builtMap, cmap::applyGamma(i / 255.0f, gamma)); builtGamma = gamma; }   // after the map or the interface palette changed
+    void palette() { builtMap = effMap(); curMap() = builtMap; for (int i = 0; i < 256; i++) lut[i] = color(builtMap, cmap::applyGamma(i / 255.0f, gamma)); builtGamma = gamma; lutGen++; }   // after the map or the interface palette changed
     void init(gfx::Backend* gfx) {
         img = gfx->createImage(W, H, 0xFF000000u);
         row.assign(W, 0);
+        lv.assign((size_t)W * H, 0);
         palette();
     }
     static uint32_t color(int map, float v) { return cmap::color(map, v); }
@@ -139,6 +147,8 @@ struct Waterfall {
     void writeFrom(const float* d, size_t n) {
         const float inv = 255.f / std::max(1.f, maxDb - minDb);
         uint32_t* r = row.data();
+        writeRow = (writeRow + H - 1) % H;
+        uint8_t* l = lv.data() + (size_t)writeRow * W;
         if (n >= (size_t)W && n % W == 0) {   // the usual 8k..64k FFT: the same number of bins in every column, so no division and a fixed-length max (vectorised)
             const size_t k = n / W;
             for (int x = 0; x < W; x++) {
@@ -146,11 +156,12 @@ struct Waterfall {
                 float m = c[0];
                 for (size_t j = 1; j < k; j++) m = std::max(m, c[j]);
                 const float v = (m - minDb) * inv;
-                r[x] = lut[v <= 0.f ? 0 : v >= 255.f ? 255 : (int)v];
+                l[x] = (uint8_t)(v <= 0.f ? 0 : v >= 255.f ? 255 : (int)v);
+                r[x] = lut[l[x]];
             }
-            writeRow = (writeRow + H - 1) % H;
             img->update(0, writeRow, W, 1, r);
             filled = std::min(H, filled + 1);
+            rows++;
             return;
         }
         for (int x = 0; x < W; x++) {
@@ -158,11 +169,12 @@ struct Waterfall {
             float m = d[a];
             for (size_t k = a + 1; k < b; k++) m = std::max(m, d[k]);
             const float v = (m - minDb) * inv;
-            r[x] = lut[v <= 0.f ? 0 : v >= 255.f ? 255 : (int)v];
+            l[x] = (uint8_t)(v <= 0.f ? 0 : v >= 255.f ? 255 : (int)v);
+            r[x] = lut[l[x]];
         }
-        writeRow = (writeRow + H - 1) % H;
         img->update(0, writeRow, W, 1, r);
         filled = std::min(H, filled + 1);
+        rows++;
     }
     // the range from the spectrum: the noise floor is the 20th percentile, the top is the strongest signal (at most 45 dB above the floor).
     // instant: set it at once; else move a part of the way (called a few times a second, so the colours do not jump)
@@ -253,7 +265,7 @@ using SavedChannel = plat::Channel;
 // parts of the window the tour points at
 enum WizTarget { TgNone = 0, TgSwitch, TgToolbar, TgMain, TgRight, TgConst, TgCount };
 
-constexpr int kNumFamilies = 102;   // App::family runs from 0 to kNumFamilies - 1
+constexpr int kNumFamilies = 105;   // App::family runs from 0 to kNumFamilies - 1
 constexpr int kNumSubModes = 32;   // dect2::subModes(): the protocols of HF digital, mesh, pagers, marine and VOR / ILS listed as modes of their own
 constexpr int kNumSlots = kNumFamilies + kNumSubModes;   // what keeps its own frequency and gains: each family, and each protocol entry
 
@@ -278,6 +290,7 @@ struct App {
     bool sweepOpen = false;             // the sweep scanner window (View > Sweep scanner)
     bool scannerOpen = false;           // the scanner window (View > Scanner, highly experimental)
     bool memoryOpen = false;            // the Memory window (View > Memory, Ctrl+M; app/memory)
+    bool packsOpen = false;             // the Data packs window (View > Data packs; app/packs): offline map tiles, satellite elements, airports
     bool freqOpen = false;              // the Frequencies window (View > Frequencies, Ctrl+Shift+F; app/freqdb)
     bool freqTab = false;               // the Frequencies panel as a tab of the main screen (saved as freqTab)
     bool memoryTab = false;             // the Memory panel as a tab of the main screen (View > Memory as a tab; saved as memTab)
@@ -342,6 +355,7 @@ struct App {
     bool audioInvert = false;          // swap the sideband
     bool audioDc = true;              // remove the card's DC offset
     double audioGainDb = 0;       // input gain
+    bool audioAfView = true;      // a real (mono) feed: the spectrum shows the card's audio range 0..Nyquist across the screen (display only)
     int audioRate = 48000;        // the sound card's sample rate (8 kHz to 192 kHz); applied at start
     int bwIdx = 0;
     int constView = 0;        // data constellation: 0 cells, 1 density, 2 clusters
@@ -358,7 +372,7 @@ struct App {
     bool dabMode = false;     // DAB / DAB+ (family 2)
     bool fmMode = false;      // FM radio (family 5)
     bool newUi = true;        // the new interface (ui2.cpp) instead of the classic one (View > Classic interface)
-    struct FamGain { int lna = 32, vga = 20; bool amp = true, known = false; } famGain[kNumSlots];   // the radio gains remembered for each mode
+    struct FamGain { int lna = 32, vga = 34; bool amp = false, known = false; } famGain[kNumSlots];   // the radio gains remembered for each mode
     double famFreq[kNumSlots] = {};  // the frequency each of the modes added after FM was last tuned to (0 = never)
     std::string modeGroupsOpen;   // the mode list groups left unfolded, by name, separated by |
     int uiVariant = 0;        // layout of the new interface: 0 sidebar (the default), 1 scope, 2 tiles, 3 faceplate, 4-6 scope children, 7 panel
@@ -465,6 +479,7 @@ struct App {
     bool peakHold = true;               // the max-hold line
     float holdDecay = 4.5f;             // dB a second the max-hold line falls (0: it stays until it is reset)
     float specAvgSec = 0.08f;           // time constant of the averaged trace in seconds (0: the raw frames)
+    bool specLabels = true; int specLabelMask = 63;   // names drawn on the spectrum and the waterfall (gfx/autolabel.cpp); the mask: which sources (band plan, frequency database, FM, DAB, DVB, memories)
     bool specFill = true, specGrid = true, specPeaks = false, specReadout = true, specDbm = false;   // fill under the line, grid, peak markers, level at the cursor, dBm instead of dBFS
     double specLastT = 0;               // when the last spectrum frame came in
     ImFont* mono = nullptr;
@@ -547,7 +562,12 @@ struct App {
     std::string biasCtx;        // the mode / radio the antenna power was last loaded for (biasContext)
     std::string rateCtx;        // mode / radio / channel width applyBandwidth() last ran for (the control refreshes Auto when it changes)
     std::string radioKey;  // the radio a.tune.radio (its own settings, DeviceInfo::settings) was loaded for (radioKeyOf); "" = none
-    AutoGain agc;
+    SmartAgc agc;          // the auto-gain loop (agc_ui.cpp, core/src/source/agc.cpp); configured per radio and mode when it starts
+    std::string agcCtx;    // the radio / mode / width / rate it was configured for ("" = start it afresh)
+    double agcFreqMhz = 0; // the frequency it last ran at: a retune starts a new acquisition
+    bool agcAmpAllow = false;   // "Let AGC turn the amp on/off by itself" for this radio (prefs agcamp.<radio>), default off
+    std::string agcAmpCtx;      // the prefs key agcAmpAllow was loaded for
+    bool agcGearOpen = false;
     GainSweep sweep;
     GainOptSession gopt;   // "Optimise gain" (gain_opt_ui.cpp): a sweep of the radio's gain range for the best quality that does not overload
     bool sweepRetune = false;
@@ -696,9 +716,12 @@ void dfWindow(App& a);                              // df_ui.cpp: the direction 
 bool dfMapLine(const App& a, DfMapLine& out);       // df_ui.cpp: the current bearing as a map line, only when the user chose to share it and it is fresh and confident
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
 void memoryWindow(App& a);                         // memory_ui.cpp: the Memory window (a.memoryOpen), the Ctrl+M key, the scan of the flagged memories, every frame
+void packsWindow(App& a);                           // packs_ui.cpp: the Data packs window (a.packsOpen), every frame
 void freqdbWindow(App& a);                          // freqdb_ui.cpp: the Frequencies window (a.freqOpen), the Ctrl+Shift+F key, every frame
 void freqdbTabItem(App& a);                         // freqdb_ui.cpp: the "Frequencies" tab when it is switched on (inside the main tab bar)
 void freqdbTabToggle(App& a);
+struct ModeDef;
+bool freqdbPickMhz(const ModeDef& m, float width, double& mhz);   // freqdb_ui.cpp: the transmitter's band presets of one mode-list row; true when one is picked
 void freqdbKnownCombo(App& a, float width);         // freqdb_ui.cpp: the Tuner panel's "Known frequencies" drop-down for the mode on screen
 void memoryTabItem(App& a);                        // memory_ui.cpp: the "Memory" tab when View > Memory as a tab is on (inside the main tab bar)
 int memorySelfTest(App& a);                        // memory_selftest.cpp: --memory-selftest, the recall checked on a hidden run (exit code = failures)
@@ -739,6 +762,11 @@ void lossTooltip(const SampleLoss& l);
 // what it is, how to install it here, where to put it, a link to the full page and "Look again"
 enum class CodecHelp { Codec2, DmrAmbe, Hdc, Dra, AeroAmbe, IridiumAmbe, DstarAmbe, NxdnAmbe, DpmrAmbe, P25Imbe, Avs, DraTv, Ac4 };
 void codecHelpButton(CodecHelp c, const char* label = "?");   // label: the button's text ("?" by default)
+// Audio cleanup (audio_cleanup_ui.cpp): the button next to the volume that opens the pop-up (true when a setting changed), and the per-frame
+// hand-over of the settings of the mode's kind to the cleanup chain
+bool audioCleanupButton(App& a);
+void audioCleanupTick(App& a);
+void audioCleanupDevOpen(bool advanced);   // dev flag --audioclean [adv]: the pop-up opens at the start
 // A new file path in the "audio-streams" folder of the user data folder, without extension: "<stem>_<date>_<time>" (the stem cleaned for a file name)
 std::string streamSavePath(const std::string& stem);
 // "voice: needs mbelib (libmbe.dll, ...)": the exact file names tried, for the status line of the mbelib modes
@@ -801,6 +829,16 @@ void loadFeedPrefs(App& a);         // feeds_ui.cpp: the data feed settings, and
 void saveFeedPrefs(const App& a);
 void gainOptButtons(App& a, bool running);   // gain_opt_ui.cpp: "Optimise gain" / "Cancel" and "Undo gain" on the gain row
 void gainOptTick(App& a);                      // every frame (gainControl): runs the sweep
+// agc_ui.cpp: the auto-gain loop's glue to the app
+void agcReset(App& a);                         // the AGC starts afresh (switched on, or the gain was changed by something else)
+bool agcStep(App& a, GainSetting& g);          // one tick: true when `g` (HackRF stages, or a generic radio's gain in .vga) must be applied
+void agcGear(App& a);                          // the gear button beside "AGC" and its popup
+void agcAmpWarning(const App& a);              // the "amp can fry itself" note, shown beside a manual Amp switch that is on
+bool agcAmpSwitchable(const App& a);           // this radio has an amplifier the user can switch
+bool agcAmpAllowed(App& a);                    // the user let the AGC switch it (default no)
+GainModel agcModel(const App& a);              // the selected radio's gain stages
+int agcMaxTotal(App& a);                       // the highest overall gain the AGC / the optimiser may use on this radio (without the amp unless allowed)
+GainSetting stagesFor(App& a, int totalDb);    // an overall gain as the radio's stages, the amp as the user set it (it joins only above its range when allowed)
 bool gainOptStatus(App& a);                    // the progress / result line; true when it drew something
 void remoteApiLoadPrefs(App& a);    // remote_api_app.cpp: the remote-control API (HTTP + WebSocket), off by default: its settings, started when on
 void remoteApiSavePrefs(const App& a);
@@ -826,6 +864,7 @@ struct ModeDef;
 bool& txViewFlag();                // the RX / TX switch: true = TX view (never saved: the program opens in RX view)
 void txViewSwitch(App& a);         // the slider at the top left of both interfaces
 void txDevOpen(App& a, const char* modeId, bool dryRun);   // dev flags --tx / --txdry <mode id>: open the TX view on a signal, optionally with the test (no RF) running
+void txTopBar(App& a, ImVec2 disp);   // tx_panel.cpp: the top bar of the TX view (run button, frequency digits, link to RX, presets, output meter, level)
 void txPanel(App& a);              // the guided transmit panel (tx_panel.cpp): status header, 1 Signal, 2 Settings, 3 Preview and send; fills the main area in TX view
 void txSelectMode(App& a, int family, const char* subId);
 bool txModeHighlighted(const ModeDef& m);
@@ -928,6 +967,7 @@ bool modeSelected(const App& a, const ModeDef& m);    // the row of the current 
 const char* modeSearchBox();                          // a search box at the top of a mode drop-down (mode_select.cpp); returns the query
 bool modeMatches(const ModeDef& m, const char* query); // the search box: name, subtitle, description and keywords
 void startReceiver(App& a);     // what the Start button does
+double audioViewOffsetHz(const App& a);   // a sound card in a Real mode with the audio-range view: where the spectrum's centre lies from the dial (else 0)
 void applyAudioSettings(App& a);   // the sound-card options into a.tune.radio (toolbar_source.cpp)
 enum TbPart { TbSource = 1, TbFreq = 2, TbTuner = 4, TbGain = 8, TbDecoder = 16, TbAll = 31 };
 void toolbarParts(App& a, int mask, bool vertical);   // pieces of the top bar, for the sidebar of the new interface
@@ -969,6 +1009,13 @@ void multiSwitch(App& a, ImVec2 plotMin, ImVec2 plotSize);
 float specCornerPopup(App& a, const char* label, const char* popId, ImVec2 plotMin, ImVec2 plotSize, float rightUsed, float reserveLeft, float dropY, bool on, const char* tip, void (*body)(App&));
 float bandPlanStripHeight();         // plots.cpp: one text line plus padding; follows the font and resize
 void drawBandPlanStrip(ImDrawList* dl, float x0, float x1, float y, float h, double loMhz, double hiMhz);   // saAllocations in view
+// gfx/autolabel.cpp: the names of the stations in view, drawn on the spectrum (plotId 0) and the waterfall (1); a click on a name tunes and opens its mode
+void autoLabelsDraw(App& a, int plotId, ImVec2 plotMin, ImVec2 plotSize, double loMhz, double hiMhz);
+bool autoLabelsHovered();                 // the mouse is on a name: the plot's own click-to-tune stands back
+float autoLabelsButton(App& a, ImVec2 plotMin, ImVec2 plotSize, float rightUsed);   // the "Labels" corner button with the source toggles; returns its width
+// bandplan_ui.cpp and freqdb_ui.cpp: what they offer to the labels, and the click on a database entry
+void bandPlanLabelSource(const App& a, std::vector<autolabel::Label>& out);
+void freqdbLabelSource(std::vector<autolabel::Label>& out);
 void specxDrawBookmarks(ImDrawList* dl, double loHz, double hiHz, float x0, float x1, float y0, float y1);   // specx_ui.cpp: named point / range marks
 // specx_ident.cpp: "Identify this signal" (dect2/engine/sig_ident.h). The region is [offHz -+ widthHz / 2] from the samples' centre, which the radio
 // has at sampleCentreRadioHz (rfOfCentreHz: its RF, for the bands); identifyAt: the signal under a click on the spectrum (MHz)

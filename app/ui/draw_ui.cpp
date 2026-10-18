@@ -5,6 +5,7 @@
 #include <unistd.h>
 #endif
 #include "app.h"
+#include "adsb/adsb_map.h"
 #include "ui/contrast.h"
 #include "ui/touch.h"
 #include "clips/clips_ui.h"
@@ -50,6 +51,7 @@ static void tickReceiver(App& a) {
     }
     if (!a.engine.running()) { a.epg.clear(); }
     tvRecTick(a);
+    audioCleanupTick(a);
     timeMachineTick(a);
     gainControl(a);
     followBandwidth(a);
@@ -184,6 +186,7 @@ static void floatingWindows(App& a, ImVec2 disp) {
     stationHealthWindow(a);
     memoryWindow(a);
     freqdbWindow(a);
+    packsWindow(a);
     // the "add a radio" windows: here, not with the source controls, so they open whichever layout is up and from the setup wizard too
     netRadioWindow(a);
     kiwiFindWindow(a);
@@ -250,6 +253,7 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
     if (a.videoOnly) { videoOnlyWindow(a, disp); return; }
     applyUiTheme(a);
     if (adsbFullMap(a, disp)) return;   // the ADS-B map popped out over the whole window
+    if (adsbmap::fullDraw(&a, a.family, disp)) return;   // any other map screen: the tab it is on over the whole window (the "full screen" button on the map)
     if (a.touchUi) touch::shell(a, disp);   // the touch interface (ui/touch_shell.cpp) over either interface's panels
     else if (a.newUi) drawShell2(a, disp);
     else classicShell(a, disp);

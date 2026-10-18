@@ -30,6 +30,10 @@ public:
     void setGain(float g);
     // Interleaved stereo float at sampleRate(). Zeros if nothing is ready (mic underrun) or muted. Returns frames written (= n).
     int read(float* stereo, int n);
+    // A microphone ring only: up to n frames that have actually been captured, none invented (0 when nothing is ready). The sound-card source
+    // reads this way so the sample clock is the card's own and a late block is a wait, not a gap of zeros in the signal.
+    int readAvailable(float* stereo, int n);
+    uint64_t overruns() const;     // frames the capture ring had no room for (the reader was too slow)
     float peak() const;            // 0 .. 1, decays; for a meter
     int sampleRate() const { return rate_; }
     bool running() const { return running_; }

@@ -115,6 +115,10 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("wisun", "Wi-SUN", 86, "makeWisunSynth", kOpt, kUnv),
         mk("eczas", "e-Czas 225 kHz", 87, "makeEczasSynth", kOpt, kUnv),
         mk("fpv", "FPV video (analog)", 103, "makeFpvSynth", kOpt, kUnv),
+        mk("wmbus", "Wireless M-Bus", 88, "makeWmbusSynth", kOpt, kUnv),
+        mk("mt63", "MT63", 97, "makeMt63Synth", kOpt, kUnv),
+        mk("zwave", "Z-Wave", 100, "makeZwaveSynth", kOpt, kUnv),
+        mk("mscatter", "Meteor scatter", 106, "makeMscatterSynth", kOpt, kUnv),
         mk("vorils", "VOR / ILS", 32, "makeVorSynth", kOpt, kUnv),
         mk("m17", "M17", 33, "makeM17Synth", kOpt, kUnv),
         mk("dstar", "D-STAR", 35, "makeDstarSynth", kOpt, kUnv),
@@ -267,7 +271,7 @@ TxPayloadKind txPayloadKind(const std::string& id) {
     if (id == "uplink") return TxPayloadKind::Uplink;
     if (id == "mesh") return TxPayloadKind::Mesh;
     if (id == "mac") return TxPayloadKind::Mac;
-    if (id == "vdl4" || id == "uat" || id == "wisun") return TxPayloadKind::SatScene;   // demo-traffic generators, no custom message
+    if (id == "vdl4" || id == "uat" || id == "wisun" || id == "zwave") return TxPayloadKind::SatScene;   // demo-traffic generators, no custom message
     return TxPayloadKind::SatScene;   // never a generic callsign dump; unknown ids are treated as a test scene
 }
 
@@ -695,6 +699,7 @@ std::unique_ptr<TxGenerator> makeTxGenerator(const TxModeSpec& m, const TxReques
 }
 
 double txRequestRate(const TxModeSpec& m, const TxRequest& r, const TxRateLimits& lim) {
+    if (r.tune.sampleRate != 0) return r.tune.sampleRate;
     double rate = m.stdMode == 0 ? nativeRateHz(r.bandwidthMhz > 0 ? r.bandwidthMhz : 8) : m.nominalRateHz;
     if (m.stdMode == 6) rate = std::max(rate, (r.synth.isdbtBwMhz >= 7 ? r.synth.isdbtBwMhz : 6) * 1e6 * 1.34);
     if (lim.minHz > 0 && rate < lim.minHz) rate = lim.minHz;
@@ -806,6 +811,24 @@ std::unique_ptr<TxSink> makeNullTxSink() { return std::make_unique<NullTxSink>()
 namespace {
 constexpr size_t kBlock = 1 << 15;
 std::string mhzText(double hz) { char b[48]; snprintf(b, sizeof b, "%.6f MHz", hz / 1e6); return b; }
+std::string manualRateProblem(const TxModeSpec& m, const TxRequest& r, const TxRateLimits& lim) {
+    const double rate = r.tune.sampleRate;
+    if (rate == 0) return {};
+    if (!std::isfinite(rate) || rate <= 0) return "TX sample rate must be a finite positive number, or 0 for automatic";
+    char b[256];
+    if ((lim.minHz > 0 && rate < lim.minHz) || (lim.maxHz > 0 && rate > lim.maxHz)) {
+        snprintf(b, sizeof b, "requested TX rate %.6g Msps is outside the radio's range (minimum %.6g, maximum %.6g Msps; 0 means unknown)", rate / 1e6, lim.minHz / 1e6, lim.maxHz / 1e6);
+        return b;
+    }
+    double minimum = m.minRateHz;
+    if (m.stdMode == 0) minimum = std::max(minimum, (r.bandwidthMhz > 0 ? r.bandwidthMhz : 8) * 1e6);
+    if (m.stdMode == 6) minimum = std::max(minimum, (r.synth.isdbtBwMhz >= 7 ? r.synth.isdbtBwMhz : 6) * 1e6);
+    if (!r.carrierTune && rate < minimum) {
+        snprintf(b, sizeof b, "%s needs at least %.6g Msps; requested TX rate is %.6g Msps", m.name, minimum / 1e6, rate / 1e6);
+        return b;
+    }
+    return {};
+}
 }
 
 void TxSession::note(const std::string& s) {
@@ -865,10 +888,19 @@ bool TxSession::start(std::unique_ptr<TxSink> sink, const TxRequest& r, const Tx
         std::lock_guard<std::mutex> lk(rtMu_);
         rtPending_ = false; rtDone_ = false;
     }
+    const std::string rateProblem = manualRateProblem(*mode, r, lim);
+    if (!rateProblem.empty()) { err = rateProblem; note("could not start: " + err); sink_.reset(); return false; }
     TxTune t = r.tune;
     t.sampleRate = txRequestRate(*mode, r, lim);
     if (!sink_->open(t, err)) { note("could not start: " + err); sink_.reset(); return false; }
     rate_ = sink_->sampleRate() > 0 ? sink_->sampleRate() : t.sampleRate;
+    // Allow small hardware rounding, but never silently replace a manual Fs with
+    // a different clock (for example the faster rate of an already-running RX).
+    if (r.tune.sampleRate != 0 && std::fabs(rate_ - t.sampleRate) > std::max(1.0, t.sampleRate * 1e-4)) {
+        char b[256];
+        snprintf(b, sizeof b, "the radio runs at %.6g Msps, not the requested TX rate %.6g Msps; select a supported rate (if RX shares this radio, use its rate)", rate_ / 1e6, t.sampleRate / 1e6);
+        err = b; note("could not start: " + err); sink_->close(); sink_.reset(); return false;
+    }
     if (txModeNeedsAudio(*mode, req_) && !req_.carrierTune) {
         audio_ = std::make_unique<AudioIn>();
         AudioIn::Kind k = AudioIn::Tone;
@@ -928,6 +960,20 @@ bool TxSession::start(std::unique_ptr<TxSink> sink, const TxRequest& r, const Tx
     return true;
 }
 
+// the output stage every mode shares (out.* keys): a trim in dB, a fade-in over the first samples so that the key-up does not click, and an I / Q swap that mirrors the spectrum
+void txOutputStage(const TxRequest& r, cf32* x, size_t n, uint64_t firstSample, double rateHz) {
+    const float trim = (float)std::pow(10.0, r.o("out.trimDb", 0) / 20.0);
+    const uint64_t ramp = (uint64_t)std::max(0.0, r.o("out.rampMs", 0) * 1e-3 * rateHz);
+    const bool swapIq = r.o("out.swapIq", 0) > 0.5;
+    if (trim == 1.f && !ramp && !swapIq) return;
+    for (size_t i = 0; i < n; i++) {
+        float g = trim;
+        if (firstSample + i < ramp) g *= (float)(firstSample + i) / (float)ramp;
+        const cf32 v = x[i] * g;
+        x[i] = swapIq ? cf32(v.imag(), v.real()) : v;
+    }
+}
+
 void TxSession::generatorLoop() {
     const uint64_t limit = req_.loop ? ~0ull : (uint64_t)(std::max(0.1, req_.onceSeconds) * rate_);
     uint64_t made = 0;
@@ -941,6 +987,7 @@ void TxSession::generatorLoop() {
             }
             blk.resize(n);
             gen_->generate(blk.data(), n);
+            txOutputStage(req_, blk.data(), n, made, rate_);
             size_t lim = 0;
             txSoftLimit(blk.data(), n, &lim);   // never above full scale, never NaN, at the last step before the radio
             const TxLevel lv = txMeasure(blk.data(), n);

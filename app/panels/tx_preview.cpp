@@ -24,6 +24,7 @@ std::string keyOf(const TxRequest& r, double rate) {
     snprintf(b, sizeof b, "|%d %d %d %d %d %d %d %d %u %.1f %.4f %.4f %d %.0f %.0f %d %d %d %d %d %d %d", r.kind, r.baudIdx, r.shiftIdx, r.variant, r.wpm, r.dbm, r.function, r.serviceId, r.address, r.toneHz, r.lat, r.lon, (int)r.reverse,
              r.deviationHz, r.preemphUs, r.rdsPi, r.slot, r.colorCode, r.talkgroup, (int)r.analogVoice, r.audioSrc, r.videoSrc);
     k += b;
+    for (const auto& kv : r.opt) { snprintf(b, sizeof b, " %s=%.4f", kv.first.c_str(), kv.second); k += b; }
     for (int v : r.synth.modeOpt) k += " " + std::to_string(v);
     for (double v : r.synth.modeVal) k += " " + std::to_string(v);
     return k;
@@ -44,6 +45,7 @@ PreviewData make(TxRequest r, const TxModeSpec* mode, double rate) {
         const size_t n = (size_t)std::max(8192.0, std::min(262144.0, rate * 0.25));
         d.iq.resize(n);
         g->generate(d.iq.data(), n);
+        txOutputStage(r, d.iq.data(), n, 1u << 30, rate);   // the preview shows the trim and the mirrored spectrum (not the fade-in)
         size_t lim = 0;
         txSoftLimit(d.iq.data(), n, &lim);   // the preview shows what the radio would get: after the limiter
     } catch (const std::exception& e) {   // a generator that throws must not take the program down through future::get()

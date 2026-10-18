@@ -33,7 +33,6 @@ Default input	Default input
 Destination	Destination
 Destination / ID	Destination / ID
 Destination ID	Destination ID
-Deviation (Hz)	Deviation (Hz)
 Device ID	Device ID
 Dial frequency the decoder should assume (the sound card is not tuned)	Rinkimo dažnis, kurį dekoderis turi laikyti (garso plokštė nederinama)
 DVB standard	DVB standard
@@ -390,10 +389,10 @@ Amp	Stiprintuvas
 LNA	LNA
 VGA	VGA
 AGC	AGC
-Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	Palaiko tinkamą ADC lygį (apie -16 dBFS rms, be ribojimo), reguliuodamas LNA, VGA ir stiprintuvą.\nPalietus bet kurį stiprinimo valdiklį, jis išjungiamas.
+Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off.	Laiko įėjimo dalį geriausiame darbo taške šiam režimui: tinkamas ADC lygis, triukšmas virš paties ADC triukšmo, stiprūs kaimynai atmesti. Keičia LNA ir VGA (stiprintuvą tik jei leidžiate krumpliaračiu) ir nesikeičia, kol dekoderis užsifiksavęs.\nPaliietus stiprinimo valdiklį, jis išsijungia.
 Auto-tune	Auto derinimas
 Stop tune	Stabdyti derinimą
-Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Stiprinimo pagalbininkas: apie 40 s bando LNA/VGA/stiprintuvo derinius ir palieka tą, kurio SNR geriausias ir be ribojimo.\nReikia signalo, prie kurio imtuvas gali prisisinchronizuoti.
+Gain helper: tries LNA/VGA combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to. The amp stays as you set it.	Stiprinimo pagalbininkas: apie 40 s bando LNA/VGA derinius ir palieka tą, kurio SNR geriausias ir kuris neperkrauna.\nReikia signalo, prie kurio imtuvas gali užsifiksuoti. Stiprintuvas lieka toks, kokį nustatėte.
 gain helper %d/%d ...	stiprinimo pagalbininkas %d/%d ...
 ADC OVERLOAD - %s	ADC PERKROVA - %s
 AGC is lowering the gain	AGC mažina stiprinimą
@@ -1187,24 +1186,17 @@ signal time	signalo laikas
 Apply frequency and level now	Taikyti dažnį ir lygį dabar
 Bring it back here	Grąžinti čia
 Carrier tune (hold)	Nešlio derinimas (laikyti)
-Choose a radio in step 2, or switch on the test (no RF).	2 žingsnyje pasirinkite radiją arba įjunkite bandymą (be RF).
-Choose a signal in step 1	1 žingsnyje pasirinkite signalą
-Choose a signal in step 1.	1 žingsnyje pasirinkite signalą.
 Clipping	Apkirpimas
 Idle	Neveikia
 No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list. The test below needs no radio.	Radijo, galinčio siųsti, nerasta. Prijunkite (HackRF, PlutoSDR arba SoapySDR radiją su siųstuvu) ir atnaujinkite sąrašą. Bandymui žemiau radijo nereikia.
 Nothing matches this search.	Pagal paiešką nieko nerasta.
 Occupied bandwidth	Užimamas dažnių ruožas
-Offset (MHz)	Poslinkis (MHz)
-Offset, repeat and timing	Poslinkis, kartojimas ir trukmė
 Output level (dB)	Išėjimo lygis (dB)
 Peak	Pikas
 Pop out into a window of its own	Atskirti į savo langą
 Preparing	Ruošiama
-Preview and send	Peržiūra ir siuntimas
 RMS	RMS
 Recent	Neseniai
-Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels below show what would go out.	Signalų generatorius veikia radijo atrankos dažniu į niekur: radijas neatidaromas ir niekas nesiunčiama. Spektras ir lygiai žemiau rodo, kas būtų išsiųsta.
 STOP	STOP
 STOP ALL	SUSTABDYTI VISKĄ
 Sample rate	Atrankos dažnis
@@ -1230,11 +1222,8 @@ at full scale: the limiter will round the peaks	visa skalė: ribotuvas suapvalin
 making the preview...	kuriama peržiūra...
 none chosen	nepasirinkta
 none: the signal fits	nėra: signalas telpa
-on the air	eteryje
 radio range %s	radijo diapazonas %s
 test (no RF)	bandymas (be RF)
-test running	vyksta bandymas
-test, no RF	bandymas, be RF
 the limiter is working: %.2f%% of samples (lower the level)	ribotuvas veikia: %.2f%% imčių (sumažinkite lygį)
 25 kHz	25 kHz
 12.5 kHz	12.5 kHz
@@ -1252,6 +1241,13 @@ Right	Dešinysis
 Left + right	Kairysis + dešinysis
 IF centre	IF centras
 Swap sideband	Apversti juostą
+Audio range	Garso diapazonas
+Show the sound card's whole audio range, 0 Hz to half the sample rate, across the spectrum, with the frequency scale in audio Hz from the dial. Off: the IF centre in the middle (the decoders always get it there).	Rodo visą garso plokštės garso diapazoną, nuo 0 Hz iki pusės diskretizavimo dažnio, spektre, su skale garso Hz nuo rinkiklio dažnio. Išjungta: tarpinio dažnio centras viduryje (dekoderiai jį visada gauna ten).
+Find centre	Rasti centrą
+Sets the IF centre to the middle of the strongest signal on the screen (a fax or FSK signal: halfway between its tones).	Nustato tarpinio dažnio centrą į stipriausio ekrane matomo signalo vidurį (fakso ar FSK signalas: pusiaukelėje tarp jo tonų).
+Clipping: lower the input level	Perkrova: sumažinkite įėjimo lygį
+Left and right are identical: this is audio, not I/Q.	Kairė ir dešinė vienodos: tai garsas, ne I/Q.
+Use Real (mono)	Naudoti Realų (mono)
 Remove DC	Pašalinti nuolatinę dedamąją
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	WebSDR, virtualiam garso kabeliui (VAC) arba radijo garsiakalbio, linijos ar IF išvesties į kompiuterį. Ne SDR pakaitalas, kai reikia megahercų juostos. Dažnio laukas – rinkimo dažnis dekoderiui (IF centro radijo dažnis); garso plokštė nederinama.
 I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q stereo: kairysis yra I, dešinysis yra Q (HDSDR / WebSDR VAC). USB garsas: realus garsas į analitinį IQ FT8, RTTY, CW, SSB iš garsiakalbio atšakos ar imtuvo garso. LSB garsas: tas pats, veidrodiškai. Realus (mono): realūs mėginiai (garso atšaka, IF kaip 12 kHz) paverčiami analitiniais, su juostos jungikliu žemiau.
@@ -2763,3 +2759,433 @@ colour bars	spalvų juostos
 no transmitter (noise only)	nėra siųstuvo (tik triukšmas)
 The test signal is a transmitter on the channel the radio is tuned to: FM video with a 1 kHz tone on the sound subcarrier.	Bandomasis signalas yra siųstuvas kanale, prie kurio suderintas radijas: FM vaizdas su 1 kHz tonu garso paneštinėje.
 5.8 / 1.2 GHz video	5,8 / 1,2 GHz vaizdas
+TX sample rate	TX diskretizavimo dažnis
+Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	Prašomas siuntimo IQ diskretizavimo dažnis. Jei radijas bendras RX ir TX, abiejose pusėse nustatykite tą patį aparatinį dažnį. Prieš keisdami sustabdykite siuntimą.
+Manual TX sample rate must be greater than zero.	Rankiniu būdu nustatytas TX diskretizavimo dažnis turi būti didesnis už nulį.
+Data (off)	Duomenys (išjungta)
+Generic	Bendras
+AM / airband	AM / aviacija
+NFM / VHF / UHF	NFM / VHF / UHF
+WFM broadcast	WFM transliacija
+SSB / HF	SSB / HF
+CW	CW
+Audio cleanup: noise reduction, notch, leveller ...	Garso valymas: triukšmo mažinimas, notch filtras, lygintuvas ...
+Audio cleanup	Garso valymas
+Basic	Paprastas
+Settings for	Nustatymai
+Automatic (%s)	Automatinis (%s)
+A data mode: its sound is left as it is. Pick another kind above to clean it up anyway.	Duomenų režimas: jo garsas paliekamas toks, koks yra. Viršuje pasirinkite kitą tipą, jei vis tiek norite jį valyti.
+Clean the sound you hear. The decoders always get the untouched sound.	Išvalo girdimą garsą. Dekoderiai visada gauna nepakeistą garsą.
+Strength	Stiprumas
+noise reduction	triukšmo mažinimas
+auto notch	automatinis notch
+leveller	lygintuvas
+silence gate	tylos vartai
+voice emphasis	balso paryškinimas
+Nothing is on for this kind of mode. See Advanced.	Šio tipo režimui nieko neįjungta. Žr. Išplėstinis.
+Noise reduction	Triukšmo mažinimas
+Takes down the steady hiss and rumble between and under the speech. More strength cleans more and costs some naturalness.	Sumažina pastovų šnypštimą ir ūžesį tarp kalbos ir po ja. Didesnis stiprumas išvalo daugiau, bet šiek tiek sumažina natūralumą.
+Auto notch	Automatinis notch
+Finds a steady whistle, carrier or heterodyne in the sound and cuts it out narrowly, following it as it drifts. Lets go again when it stops.	Randa pastovų švilpimą, nešlį ar heterodiną garse, siaurai jį iškerpa ir seka, kai jis dreifuoja. Paleidžia, kai jis liaujasi.
+cutting %.0f Hz	kerpa %.0f Hz
+Manual notch	Rankinis notch
+Cuts one frequency out of the sound, for a tone you can see in the audio spectrum.	Iškerpa vieną dažnį iš garso, tonui, kurį matote garso spektre.
+width %.0f %%	plotis %.0f %%
+Leveller	Lygintuvas
+Brings quiet and loud stations to the same loudness, with a soft limiter against peaks.	Tylias ir garsias stotis suvienodina iki to paties garsumo, su švelniu ribotuvu nuo pikų.
+balance %.0f %%	balansas %.0f %%
+target %.0f dB	tikslas %.0f dB
+Do not boost the noise between transmissions	Nekelti triukšmo tarp perdavimų
+Silence gate	Tylos vartai
+Mutes the sound when only noise is left, like a squelch that follows the noise level by itself.	Nutildo garsą, kai lieka tik triukšmas, kaip squelch, kuris pats seka triukšmo lygį.
+opens %.0f dB above noise	atsidaro %.0f dB virš triukšmo
+muted	nutildyta
+Voice emphasis	Balso paryškinimas
+Cuts the rumble below the voice and lifts the presence, so a weak voice is easier to understand.	Nukerpa ūžesį po balsu ir pakelia ryškumą, kad silpną balsą būtų lengviau suprasti.
+De-esser	De-esser
+Softens sharp S sounds.	Sušvelnina aštrius S garsus.
+Record the cleaned sound	Įrašyti išvalytą garsą
+Record audio saves the sound as you hear it now, cleaned, instead of the raw sound.	Garso įrašymas išsaugo garsą taip, kaip dabar jį girdite, išvalytą, vietoj neapdoroto garso.
+Skip silence in the recording	Praleisti tylą įraše
+Nothing is recorded while the silence gate holds the sound off.	Nieko neįrašoma, kol tylos vartai sulaiko garsą.
+Reset to the preset	Atstatyti iš anksto nustatytus
+# auto gain (AGC): the gear button, the amp switch, what the AGC is doing
+Auto gain	Automatinis stiprinimas
+AGC settings	AGC nustatymai
+Let AGC turn the amp on/off by itself	Leisti AGC pačiam įjungti ir išjungti stiprintuvą
+Off by default. With this off the AGC only moves the LNA and VGA and never touches the amp: it stays as you set it. The amp is the first stage and can be damaged by strong signals.	Pagal numatytuosius nustatymus išjungta. Kai tai išjungta, AGC keičia tik LNA ir VGA ir niekada neliečia stiprintuvo: jis lieka toks, kokį nustatėte. Stiprintuvas yra pirmoji pakopa, ir stiprūs signalai gali jį sugadinti.
+This radio has no amp for the AGC to switch.	Šis radijas neturi stiprintuvo, kurį AGC galėtų perjungti.
+The amp can fry itself on strong signals while on	Stiprintuvas gali sudegti nuo stiprių signalų, kol yra įjungtas
+Aims for: %s	Tikslas: %s
+wide channel: ADC headroom	platus kanalas: ADC atsarga
+narrow channel: lowest noise, neighbours kept out	siauras kanalas: mažiausias triukšmas, kaimynai atmesti
+pulsed signals: peaks decide	impulsiniai signalai: sprendžia pikai
+strong stations: front end protected	stiprios stotys: įėjimas apsaugotas
+Now: %s	Dabar: %s
+cut after an overload	sumažinta po perkrovos
+lowering the gain	stiprinimas mažinamas
+raising the gain	stiprinimas didinamas
+strong neighbour: front gain limited	stiprus kaimynas: įėjimo stiprinimas apribotas
+decoder locked: gain frozen	dekoderis užsifiksavo: stiprinimas užfiksuotas
+at the end of the gain range	stiprinimo ribos gale
+holding the level	lygis išlaikomas
+# transmit panel: top bar, Basic / Advanced, per-signal parameters
+0 is the normal suppressed carrier. A little carrier helps a receiver lock on; the top of the range is as strong as the loudest audio.	0 – įprasta nuslopinta nešlio banga. Šiek tiek nešlio padeda imtuvui užsifiksuoti; didžiausia reikšmė tokia stipri kaip garsiausias garsas.
+A second tone added to the first (0 = off). Two tones make a two-tone linearity test.	Antras tonas, pridedamas prie pirmojo (0 = išjungta). Du tonai sudaro dviejų tonų tiesiškumo bandymą.
+A sub-audible tone that opens a receiver's squelch (0 = off). 67 to 254.1 Hz.	Neišgirstamas tonas, atidarantis imtuvo triukšmo slopintuvą (0 = išjungta). 67–254,1 Hz.
+AM (carrier and sidebands)	AM (nešlys ir šoninės juostos)
+AM sends the carrier and both sidebands. Double sideband with suppressed carrier sends only the sidebands.	AM siunčia nešlį ir abi šonines juostas. Dvigubos šoninės juostos su nuslopintu nešliu siunčia tik šonines juostas.
+Audio above this level is turned down.	Garsas, viršijantis šį lygį, nutildomas.
+Audio frequency	Garso dažnis
+Boosts the high notes before sending (0 = off).	Prieš siunčiant sustiprina aukštus tonus (0 = išjungta).
+Boosts the high notes before sending. 50 µs in Europe and most of the world, 75 µs in the Americas.	Prieš siunčiant sustiprina aukštus tonus. 50 µs Europoje ir didžiojoje pasaulio dalyje, 75 µs Amerikoje.
+CTCSS level	CTCSS lygis
+CTCSS tone	CTCSS tonas
+Carrier injection	Nešlio įterpimas
+Carrier level	Nešlio lygis
+Choose a radio below, or switch on the test (no RF).	Pasirinkite radiją žemiau arba įjunkite bandymą (be RF).
+Choose a signal in the list.	Pasirinkite signalą sąraše.
+Cuts the audio above this pitch, which sets how wide the signal is (0 = off).	Nukerpa garsą virš šio dažnio, o tai nustato signalo plotį (0 = išjungta).
+DSB (suppressed carrier)	DSB (nuslopintas nešlys)
+Default: %s	Numatytoji: %s
+Deviation	Nuokrypis
+Esc = stop	Esc = stabdyti
+Evens out loud and quiet speech so the signal stays strong without over-modulating.	Išlygina garsią ir tylią kalbą, kad signalas liktų stiprus be perdėto moduliavimo.
+Every setting of this signal: modulation, audio, filters, output and timing. The defaults are sensible; open this only to change them.	Visi šio signalo nustatymai: moduliacija, garsas, filtrai, išvestis ir laikas. Numatytosios vertės yra protingos; atverkite tai tik norėdami jas keisti.
+Filters	Filtrai
+Follow the receiver	Sekti imtuvą
+Frequency offset	Dažnio poslinkis
+Gain added after the compressor.	Stiprinimas, pridedamas po kompresoriaus.
+Gain applied to the whole signal just before the radio. Lower it when the meter shows clipping; the radio's own gain is set above.	Stiprinimas visam signalui prieš pat radiją. Sumažinkite, kai matuoklis rodo nukirpimą; paties radijo stiprinimas nustatomas aukščiau.
+HOLD TO TRANSMIT	LAIKYKITE NUSPAUSTĄ SIUSTI
+High-pass (low cut)	Aukšto dažnio filtras (žemų pjovimas)
+How far the RDS subcarrier deviates the carrier.	Kiek RDS posluostis nukreipia nešlį.
+How far the audio swings the frequency. 2.5 kHz is a 12.5 kHz channel, 5 kHz a 25 kHz channel.	Kiek garsas keičia dažnį. 2,5 kHz skirta 12,5 kHz kanalui, 5 kHz – 25 kHz kanalui.
+How far the audio swings the frequency. Broadcast FM uses 75 kHz.	Kiek garsas keičia dažnį. Transliacinis FM naudoja 75 kHz.
+How far the audio swings the signal. Full modulation is at 100 percent; more than that over-modulates and distorts.	Kiek garsas moduliuoja signalą. Pilna moduliacija yra ties 100 procentų; daugiau – perdėta moduliacija ir iškraipymai.
+How fast the compressor lets go after a loud passage.	Kaip greitai kompresorius atsileidžia po garsios vietos.
+How long the VOX stays open after the sound stops.	Kiek ilgai VOX lieka atviras garsui nutilus.
+How loud the audio must be to open the VOX.	Kokio garsumo turi būti garsas, kad atsidarytų VOX.
+How loud the test tone is, as a share of full audio.	Kokio garsumo bandomasis tonas, kaip viso garso dalis.
+How strongly audio above the threshold is turned down; 20 is close to a hard limiter.	Kaip stipriai nuslopinamas garsas virš slenksčio; 20 artima kietam ribotuvui.
+Key-up fade-in	Įjungimo švelnus didėjimas
+Left level	Kairysis lygis
+Left test tone	Kairysis bandomasis tonas
+Low-pass (audio bandwidth)	Žemų dažnių filtras (garso juostos plotis)
+Lower sideband (LSB)	Apatinė šoninė juosta (LSB)
+Make-up gain	Kompensacinis stiprinimas
+Mirror the spectrum	Veidrodžiu apversti spektrą
+Modulation depth	Moduliacijos gylis
+Music (not speech)	Muzika (ne kalba)
+Name for a new preset	Naujo išankstinio nustatymo pavadinimas
+No presets saved for this signal yet.	Šiam signalui dar nėra išsaugotų išankstinių nustatymų.
+Output	Išvestis
+Output level	Išvesties lygis
+Output trim	Išvesties koregavimas
+Peak level	Didžiausias lygis
+Pilot level	Pilotinio signalo lygis
+Pitch	Aukštis
+Presets	Išankstiniai nustatymai
+Preview	Peržiūra
+Programme type	Programos tipas
+Push to talk (hold the button)	Paspausk ir kalbėk (laikykite mygtuką nuspaustą)
+Puts every setting below back to its default.	Grąžina visus žemiau esančius nustatymus į numatytąsias vertes.
+RDS	RDS
+RDS level	RDS lygis
+RF level	RF lygis
+RX %.6f MHz	RX %.6f MHz
+Ratio	Santykis
+Release	Atleidimas
+Removes rumble and hum below this pitch (0 = off).	Pašalina dundesį ir ūžesį žemiau šio dažnio (0 = išjungta).
+Reset to default	Atkurti numatytąsias vertes
+Right level	Dešinysis lygis
+Right test tone	Dešinysis bandomasis tonas
+Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels show what would go out.	Paleidžia signalo generatorių radijo imties dažniu į tuštumą: radijas neatidaromas ir niekas nesiunčiama. Spektras ir lygiai rodo, kas būtų išsiųsta.
+Save preset	Išsaugoti nustatymą
+Saves the settings below, the frequency and the level under this name.	Išsaugo žemiau esančius nustatymus, dažnį ir lygį šiuo pavadinimu.
+Second test tone	Antrasis bandomasis tonas
+Sends the 19 kHz pilot and the stereo difference signal.	Siunčia 19 kHz pilotinį signalą ir stereo skirtuminį signalą.
+Sends the station name, radio text and programme type on a 57 kHz subcarrier.	Siunčia stoties pavadinimą, radijo tekstą ir programos tipą 57 kHz posluosčiu.
+Speech compressor	Kalbos kompresorius
+Start transmitting	Pradėti siųsti
+Stereo	Stereo
+Stop transmitting	Nustoti siųsti
+Swaps I and Q so the signal is turned over: an upper sideband becomes a lower one. For a radio or mixer that inverts.	Sukeičia I ir Q, todėl signalas apverčiamas: viršutinė šoninė juosta tampa apatine. Radijui ar maišytuvui, kuris apverčia.
+TRANSMITTING (release to stop)	SIUNČIA (atleiskite, kad sustotų)
+TX = RX	TX = RX
+TX independent	TX nepriklausomas
+Test tone	Bandomasis tonas
+Test tone level	Bandomojo tono lygis
+The 19 kHz stereo pilot, as a share of the full deviation.	19 kHz stereo pilotinis signalas, kaip viso nuokrypio dalis.
+The RDS flag for a station that carries traffic announcements.	RDS žymė stočiai, transliuojančiai eismo pranešimus.
+The RDS flag for music instead of speech.	RDS žymė muzikai vietoje kalbos.
+The RDS flag that a traffic announcement is on the air.	RDS žymė, kad eteryje eismo pranešimas.
+The RDS programme type code (0 to 31; 10 is pop music).	RDS programos tipo kodas (nuo 0 iki 31; 10 – pop muzika).
+The largest signal as a share of full scale.	Didžiausias signalas, kaip visos skalės dalis.
+The left test tone, as a share of full audio.	Kairysis bandomasis tonas, kaip viso garso dalis.
+The pitch of the Morse tone, as an offset above the dial frequency.	Morzės tono aukštis kaip poslinkis virš nustatyto dažnio.
+The pitch of the test tone, used when the audio input is the test tone.	Bandomojo tono aukštis, naudojamas, kai garso įvestis yra bandomasis tonas.
+The pitch on the left channel, used when the audio input is the test tone.	Kairiojo kanalo tono aukštis, naudojamas, kai garso įvestis yra bandomasis tonas.
+The pitch on the right channel (0 = three times the left).	Dešiniojo kanalo tono aukštis (0 = tris kartus didesnis nei kairiojo).
+The radio's output level. Start low.	Radijo išvesties lygis. Pradėkite nuo žemo.
+The right test tone, as a share of full audio.	Dešinysis bandomasis tonas, kaip viso garso dalis.
+The signal fades in over this time after Start, so the key-up does not click.	Pradėjus signalas šį laiką švelniai didėja, kad įjungimas nespragtelėtų.
+The signal goes out only while there is sound on the audio input.	Signalas siunčiamas tik tol, kol garso įvestyje yra garso.
+The signal goes out only while you hold the button down.	Signalas siunčiamas tik tol, kol laikote mygtuką nuspaustą.
+The size of the carrier as a share of full scale. At a depth of 85 percent the peaks reach about full scale.	Nešlio dydis kaip visos skalės dalis. Esant 85 procentų gyliui, viršūnės pasiekia beveik visą skalę.
+The size of the signal as a share of full scale.	Signalo dydis kaip visos skalės dalis.
+The tone's share of the deviation.	Tono dalis nuo nuokrypio.
+The transmit frequency follows the receiver's. Typing a different one here unlinks them. Click to unlink.	Siuntimo dažnis seka imtuvo dažnį. Įvedus kitą čia, jie atsiejami. Spustelėkite, kad atsietumėte.
+The transmit frequency is its own. The receiver is on %.6f MHz. Click to make the transmitter follow it.	Siuntimo dažnis yra atskiras. Imtuvas veikia %.6f MHz dažniu. Spustelėkite, kad siųstuvas jį sektų.
+Threshold	Slenkstis
+Timing	Laikas
+Traffic announcement now	Dabar eismo pranešimas
+Traffic programme	Eismo programa
+Upper sideband (USB)	Viršutinė šoninė juosta (USB)
+VOX (transmit on voice)	VOX (siųsti balsu)
+VOX hang time	VOX išlaikymo laikas
+VOX threshold	VOX slenkstis
+Well-known frequencies of this signal: pick one to set the transmit frequency	Žinomi šio signalo dažniai: pasirinkite vieną siuntimo dažniui nustatyti
+Where the middle of the signal sits in the audio passband, as an offset above the dial frequency.	Kur garso juostoje yra signalo vidurys, kaip poslinkis virš nustatyto dažnio.
+Where the signal sits in the audio passband, as an offset above the dial frequency.	Kur garso juostoje yra signalas, kaip poslinkis virš nustatyto dažnio.
+Which sideband is sent.	Kuri šoninė juosta siunčiama.
+follows the receiver	seka imtuvą
+on	įjungta
+# full screen on every map
+Full screen	Visas ekranas
+Exit full screen	Išeiti iš viso ekrano
+Back to the normal layout (Esc)	Atgal į įprastą išdėstymą (Esc)
+The map fills the whole window (Esc to leave)	Žemėlapis užpildo visą langą (Esc – išeiti)
+The radar fills the whole window (Esc to leave)	Radaras užpildo visą langą (Esc – išeiti)
+This screen fills the whole window (Esc to leave)	Šis ekranas užpildo visą langą (Esc – išeiti)
+Labels	Pavadinimai
+Names on the spectrum	Pavadinimai spektre
+Station and channel names on the spectrum and the waterfall. A click on a name tunes to it and opens its mode.	Stočių ir kanalų pavadinimai spektre ir krioklyje. Spustelėjus pavadinimą, prisiderinama prie jo ir atidaromas jo režimas.
+Frequency database	Dažnių duomenų bazė
+FM stations (RDS names)	FM stotys (RDS pavadinimai)
+DAB ensembles	DAB ansambliai
+DVB networks and services	DVB tinklai ir paslaugos
+Memories	Atmintys
+Names that do not fit are left out. Zoom in to see more of them.	Netelpantys pavadinimai praleidžiami. Priartink, kad matytum daugiau.
+Names of the stations and channels on the spectrum: choose which sources are shown	Stočių ir kanalų pavadinimai spektre: pasirink, kurie šaltiniai rodomi
+Click to tune here	Spustelėk, kad čia prisiderintum
+Click to tune here and open its mode	Spustelėk, kad čia prisiderintum ir atidarytum režimą
+Coastlines	Pakrantės
+Borders	Sienos
+Mosaic	Mozaika
+Histogram	Histograma
+Crop to view	Apkirpti pagal vaizdą
+Clear crop	Panaikinti apkirpimą
+Save GeoTIFF...	Įrašyti GeoTIFF...
+Add to mosaic	Pridėti prie mozaikos
+Clear mosaic	Išvalyti mozaiką
+S-curve (contrast)	S kreivė (kontrastas)
+Lift shadows	Šviesinti šešėlius
+Cloud detail (flat bright end)	Debesų detalės (plokščias šviesus galas)
+Night infrared	Naktinis infraraudonasis
+No palette	Be paletės
+Thermal	Terminė
+Rainbow	Vaivorykštė
+Enhanced infrared	Paryškintas infraraudonasis
+Sepia	Sepija
+Tone curve applied after the gamma	Tonų kreivė, taikoma po gama
+Colour palette on the brightness of the picture, for infrared and other single-channel pictures	Spalvų paletė vaizdo ryškumui, infraraudonajam ir kitiems vieno kanalo vaizdams
+Simplified coastlines drawn into the map (good to about 50 - 100 km, not a survey)	Supaprastintos pakrantės linijos žemėlapyje (tikslumas apie 50 - 100 km, ne geodezinis matavimas)
+A few of the longest country borders, simplified	Kelios ilgiausios valstybių sienos, supaprastintos
+Zoom to the part you want, then crop: saving and mosaic use only the part inside the yellow frame	Priartinkite norimą dalį ir apkirpkite: įrašant ir mozaikoje naudojama tik geltoname rėmelyje esanti dalis
+The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not reach) for GIS programs	Žemėlapis kaip GeoTIFF (WGS 84, be uždėjimų, permatomas ten, kur praskridimas nepasiekė) GIS programoms
+Keep this projected pass to stitch with others in the Mosaic view	Palikti šį suprojektuotą praskridimą, kad mozaikos rodinyje būtų sujungtas su kitais
+Stitch several projected passes into one map	Sujungti kelis suprojektuotus praskridimus į vieną žemėlapį
+The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	Mozaika tuščia. Atidarykite praskridimą su žemėlapiu, įjunkite žemėlapio projekciją ir spauskite Pridėti prie mozaikos. Keli praskridimai sujungiami į vieną žemėlapį.
+Data packs	Duomenų paketai
+Data packs...	Duomenų paketai...
+Download map tiles, satellite elements and airports once, to work without internet	Vieną kartą atsisiųskite žemėlapio plyteles, palydovų elementus ir oro uostus, kad galėtumėte dirbti be interneto
+Map tiles	Žemėlapio plytelės
+Transmitters	Siųstuvai
+Downloaded: 	Atsisiųsta: 
+Stopped: 	Sustabdyta: 
+ (start it again to continue)	 (paleiskite dar kartą, kad tęstumėte)
+%ld tiles, zoom %d to %d	%ld plytelių, mastelis %d–%d
+Pack	Paketas
+Size	Dydis
+Last updated	Paskutinį kartą atnaujinta
+Action	Veiksmas
+not downloaded	neatsisiųsta
+Update	Atnaujinti
+Starts the download now. Files that are already there and correct are kept.	Atsisiuntimas prasideda dabar. Jau esami ir teisingi failai paliekami.
+Check	Tikrinti
+Checks every file against the checksum recorded at the download	Tikrina kiekvieną failą pagal atsisiuntimo metu išsaugotą kontrolinę sumą
+Deleted: 	Ištrinta: 
+Credit: 	Autorystė: 
+Download data once and use it without internet. Nothing is downloaded until you click Download on a pack.	Atsisiųskite duomenis vieną kartą ir naudokite be interneto. Niekas neatsisiunčiama, kol paspaudžiate Atsisiųsti prie paketo.
+Free disk space: %s	Laisvos vietos diske: %s
+Map tiles around a position	Žemėlapio plytelės aplink vietą
+Radius (km)	Spindulys (km)
+Deepest zoom	Didžiausias mastelis
+The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	Mastelis sumažinamas pats, kad sritis neviršytų 4000 plytelių (OpenStreetMap plytelių politika neleidžia masinių atsisiuntimų).
+Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Žemėlapio duomenys (c) OpenStreetMap contributors. Palydovų elementai: CelesTrak. Oro uostai: OurAirports (viešasis turtas). Daugiau: Pagalba > Kreditai.
+# Wireless M-Bus
+start the receiver to see the meters	paleiskite imtuvą, kad matytumėte skaitiklius
+Maker	Gamintojas
+Last reading	Paskutinis rodmuo
+encrypted payload	užšifruoti duomenys
+no meter heard yet: most meters send every few seconds to a few minutes	dar nėra girdėto skaitiklio: dauguma siunčia kas kelias sekundes ar minutes
+type	tipas
+status	būsena
+The payload of this meter is encrypted (AES). It is listed but never decoded.	Šio skaitiklio duomenys užšifruoti (AES). Jis rodomas sąraše, bet niekada neiššifruojamas.
+Meter	Skaitiklis
+no frame yet	dar nėra kadrų
+CRC failures	CRC klaidos
+No Wireless M-Bus channel lies inside this capture. Tune to 868.625 MHz with 2 Msps (S1, T1, C1, R2) or to 169.4375 MHz (N1).	Šiame įraše nėra nė vieno Wireless M-Bus kanalo. Nustatykite 868,625 MHz su 2 Msps (S1, T1, C1, R2) arba 169,4375 MHz (N1).
+strongest channel	stipriausias kanalas
+last frame at the chip slicer	paskutinis kadras prie lustų pjovėjo
+The demodulated frequency of the last frame, one point per chip: +-1 is the nominal deviation of the mode.	Paskutinio kadro demoduliuotas dažnis, vienas taškas vienam lustui: +-1 yra nominali režimo nuokrypa.
+Meters	Skaitikliai
+meters	skaitikliai
+868 MHz: S1 868.3, T1 and C1 868.95, R2 868.03 - 868.15 MHz; 169 MHz: N1 169.40625 - 169.46875 MHz. Encrypted payloads are never decoded.	868 MHz: S1 868,3, T1 ir C1 868,95, R2 868,03 - 868,15 MHz; 169 MHz: N1 169,40625 - 169,46875 MHz. Užšifruoti duomenys niekada nedekoduojami.
+The test signal sends six simulated meters (S1, T1, C1 in both formats, R2) on the 868 MHz channels, one with an encrypted payload.	Bandomasis signalas siunčia šešis imituotus skaitiklius (S1, T1, C1 abiem formatais, R2) 868 MHz kanalais, vieną su užšifruotais duomenimis.
+Meters, 868 / 169 MHz	Skaitikliai, 868 / 169 MHz
+#  tone decoders
+5-tone	5 tonų
+2-tone	2 tonų
+sub-audible	negirdimas
+extended tone	išplėstinis tonas
+standard tone	standartinis tonas
+code of the usual list	įprasto sąrašo kodas
+code not in the usual list	kodo nėra įprastame sąraše
+same waveform	ta pati bangos forma
+no CTCSS tone or DCS code	nėra CTCSS tono ar DCS kodo
+start the receiver on an FM channel or a sound card to decode tones	paleiskite imtuvą FM kanale arba garso plokštėje, kad dekoduotumėte tonus
+voice-band tone	tonas kalbos juostoje
+keys	klavišai
+, sound card	, garso plokštė
+, FM	, FM
+gate	vartai
+open (no gate)	atviri (be vartų)
+audio spectrum, 0 - 3.5 kHz	garso spektras, 0 - 3.5 kHz
+the 50 CTCSS tones, 67 - 254 Hz	50 CTCSS tonų, 67 - 254 Hz
+The level of each of the 50 tones in the last second of the sub-audible band, left to right from 67.0 to 254.1 Hz. A tone that stands clear of the others for about half a second is taken as the CTCSS tone.	Kiekvieno iš 50 tonų lygis per paskutinę negirdimos juostos sekundę, iš kairės į dešinę nuo 67,0 iki 254,1 Hz. Tonas, apie pusę sekundės aiškiai išsiskiriantis iš kitų, laikomas CTCSS tonu.
+start the receiver to see what is heard	paleiskite imtuvą, kad matytumėte, kas girdima
+Length	Trukmė
+Hear the channel (the sub-audible tones are taken out); with a gate set under Receiver the sound opens only for the chosen tone or code	Klausytis kanalo (negirdimi tonai pašalinami); nustačius vartus skiltyje Imtuvas, garsas atsidaro tik pasirinktam tonui ar kodui
+sound card audio	garso plokštės garsas
+FM channel	FM kanalas
+Gate	Vartai
+Open the sound	Atverti garsą
+always	visada
+on any tone or code	esant bet kuriam tonui ar kodui
+only on the chosen tone or code	tik esant pasirinktam tonui ar kodui
+Like the squelch of a radio with CTCSS or DCS: while the gate is closed the Listen sound is muted. The decoders keep running either way.	Kaip radijo su CTCSS ar DCS triukšmų slopintuvas: kol vartai uždaryti, klausymosi garsas nutildytas. Dekoderiai veikia ir taip, ir taip.
+inverted	invertuotas
+DCS polarity (N or I) follows the deviation sign of the receiver; the same waveform can read as two codes, the second is shown as the alias. Five-tone tone lengths are vendor specific: when several standards fit, the one whose usual tone length is closest is listed first.	DCS poliškumas (N arba I) priklauso nuo imtuvo nuokrypio ženklo; ta pati bangos forma gali būti nuskaityta kaip du kodai, antrasis rodomas kaip alternatyva. Penkių tonų skambučių tonų trukmė priklauso nuo gamintojo: kai tinka keli standartai, pirmas rodomas tas, kurio įprasta tono trukmė artimiausia.
+Tone decoders	Tonų dekoderiai
+The test signal repeats every 40 s: CTCSS 123.0 Hz under speech-like noise, DCS D023N, DTMF 159#, a ZVEI1 call 12345, SELCAL AM-CP and a two-tone page.	Bandomasis signalas kartojasi kas 40 s: CTCSS 123,0 Hz po į kalbą panašiu triukšmu, DCS D023N, DTMF 159#, ZVEI1 iškvietimas 12345, SELCAL AM-CP ir dviejų tonų iškvietimas.
+CTCSS, DCS, DTMF, selcall	CTCSS, DCS, DTMF, selektyvus iškvietimas
+# COSPAS-SARSAT 406 MHz
+A 406 MHz distress beacon (EPIRB on a boat, ELT in an aircraft, PLB carried by a person) sends a burst of about half a second every 50 seconds: an unmodulated carrier, then 112 or 144 bits at 400 bit/s. The message holds a 15 digit hex ID that is unique to the beacon, the country, the kind of beacon, and often a position (rounded to 15 minutes in a short message, to 4 seconds in a long one). Two BCH checks protect the message; up to three damaged bits in the first field are repaired.\n\nOnAir only receives. Test beacons and self-test bursts are marked. If you think you heard a real one, tell the rescue coordination centre of your country; do not rely on this program for safety.	406 MHz avarinis švyturėlis (EPIRB laive, ELT orlaivyje, PLB asmens) maždaug kas 50 sekundžių siunčia apie pusės sekundės trukmės impulsą: nemoduliuotą nešlį, po to 112 arba 144 bitus 400 bit/s greičiu. Pranešime yra 15 skaitmenų šešioliktainis ID, vienintelis šiam švyturėliui, šalis, švyturėlio rūšis ir dažnai padėtis (trumpame pranešime suapvalinta iki 15 minučių, ilgame iki 4 sekundžių). Pranešimą saugo du BCH patikrinimai; iki trijų sugadintų pirmo lauko bitų pataisoma.\n\nOnAir tik priima. Bandomieji švyturėliai ir savitikros impulsai pažymimi. Jei manote išgirdę tikrą, praneškite savo šalies gelbėjimo koordinavimo centrui; savo saugumu nepasikliaukite šia programa.
+EPIRB (boat)	EPIRB (laivas)
+ELT (aircraft)	ELT (orlaivis)
+PLB (person)	PLB (asmuo)
+Ship security	Laivo apsauga
+Test	Bandymas
+What a 406 MHz beacon sends	Ką siunčia 406 MHz švyturėlis
+Hex ID	Šešiolikainis ID
+ (self-test burst)	 (savitikros impulsas)
+Protocol	Protokolas
+Identification	Identifikavimas
+Precision	Tikslumas
+about 4 seconds of arc	apie 4 lanko sekundes
+15 minutes of arc (short message)	15 lanko minučių (trumpas pranešimas)
+Homing 121.5 MHz	Pelengavimas 121,5 MHz
+no	ne
+long, 144 bits	ilgas, 144 bitai
+short, 112 bits	trumpas, 112 bitų
+Check bits	Tikrinimo bitai
+both good	abu geri
+first good, second failed	pirmas geras, antras nepavyko
+first good	pirmas geras
+bits repaired	bitų pataisyta
+no beacon decoded yet; a beacon sends a burst about every 50 seconds	dar nėra iššifruoto švyturėlio; švyturėlis siunčia impulsą maždaug kas 50 sekundžių
+Checks	Patikrinimai
+fit	tilpti
+no decoded beacon carries a position yet	joks iššifruotas švyturėlis dar neturi padėties
+blue EPIRB, orange ELT, green PLB, grey test; a short message is rounded to 15 minutes of arc	mėlyna EPIRB, oranžinė ELT, žalia PLB, pilka bandymas; trumpas pranešimas suapvalintas iki 15 lanko minučių
+nothing decoded yet	dar nieko neiššifruota
+Raw bits	Neapdoroti bitai
+tune to 406.028 MHz and start the receiver	sureguliuokite 406,028 MHz ir paleiskite imtuvą
+Receive only. A real beacon means somebody may be in danger: tell the rescue centre; do not rely on this program for safety.	Tik priėmimas. Tikras švyturėlis reiškia, kad kažkas gali būti pavojuje: praneškite gelbėjimo centrui; savo saugumu nepasikliaukite šia programa.
+no input	nėra įvesties
+beacon decoded lately	neseniai iššifruotas švyturėlis
+Bursts	Impulsai
+heard	išgirsta
+failed the checks	nepraėjo patikrinimų
+Last burst	Paskutinis impulsas
+Input	Įvestis
+start the receiver to see beacons	paleiskite imtuvą, kad matytumėte švyturėlius
+The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	Bandomasis signalas kas 3 sekundes kartoja penkis išgalvotus švyturėlius (tikri siunčia kas 50 sekundžių): EPIRB, PLB, ELT, jūrų naudotojo švyturėlį ir EPIRB pietiniame pusrutulyje.
+Distress beacons, 406 MHz	Avariniai švyturėliai, 406 MHz
+%.0f Hz above the dial (%.3f kHz)	%.0f Hz virš ratuko (%.3f kHz)
+Interleave	Persipynimas
+Line	Eilutė
+Long	Ilgas
+MT63 comes in three widths, 500, 1000 and 2000 Hz (5, 10 and 20 characters per second). Automatic looks for all three.	MT63 yra trijų pločių: 500, 1000 ir 2000 Hz (5, 10 ir 20 ženklų per sekundę). Automatinis ieško visų trijų.
+Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way	Groti šoninę juostą (ratukas + 200 Hz iki 3,8 kHz) garso plokšte; dekodavimas abiem atvejais tas pats
+Robust chat, 14.1095 MHz	Patikimas pokalbis, 14,1095 MHz
+Short	Trumpas
+The 64 carriers: the level of each, relative to the strongest	64 nešlio dažniai: kiekvieno lygis, palyginti su stipriausiu
+The long interleave spreads every character over 64 symbols, the short one over 32: the long one survives longer fades and bursts, the short one has less delay. Automatic decodes both and shows the one with clean codewords.	Ilgas persipynimas išskaido kiekvieną ženklą per 64 simbolius, trumpas per 32: ilgas atlaiko ilgesnius slopimus ir impulsinius trukdžius, trumpas turi mažesnę vėlinimą. Automatinis dekoduoja abu ir rodo tą, kurio kodo žodžiai švarūs.
+bandwidth	juostos plotis
+centre	centras
+characters	ženklai
+codeword quality	kodo žodžio kokybė
+interleave	persipynimas
+no callsigns yet	šaukinių dar nėra
+start the receiver to read the band	paleisk imtuvą, kad nuskaitytum juostą
+synchronising	sinchronizuojama
+unclear	neaiškūs
+# Meteor scatter
+Copies the pings as CSV: id, UTC time, duration, peak level, Doppler, drift, type, beacon frequency.	Nukopijuoja pingus kaip CSV: ID, UTC laikas, trukmė, piko lygis, Doplerio poslinkis, dreifas, tipas, švyturio dažnis.
+Log to file	Registruoti į failą
+Appends every ping to meteor_scatter.csv in the data folder, also when nobody watches the screen.	Prideda kiekvieną pingą prie meteor_scatter.csv duomenų aplanke, net kai niekas nežiūri į ekraną.
+threshold %d dB	slenkstis %d dB
+How far above its long-term level a spectrum bin must rise to count as an echo. Lower finds weaker pings and more false ones.	Kiek spektro rodiklis turi pakilti virš savo ilgalaikio lygio, kad būtų laikomas aidu. Žemesnis randa silpnesnius pingus ir daugiau klaidingų.
+start the receiver to see the pings	paleiskite imtuvą, kad matytumėte pingus
+No beacon line found. Tune to the beacon (GRAVES: 143.050 MHz) so that it lies within 4 kHz of the centre, with 1 Msps or more.	Švyturio linija nerasta. Sureguliuokite į švyturį (GRAVES: 143,050 MHz), kad jis būtų per 4 kHz nuo centro, su 1 Msps ar daugiau.
+Doppler	Doplerio poslinkis
+Drift	Dreifas
+overdense	tankus
+underdense	retas
+no ping yet: on GRAVES a quiet hour brings a few, a shower peak hundreds	pingų dar nėra: GRAVES tylią valandą duoda kelis, meteorų lietaus pikas šimtus
+shape	forma
+overdense: long, flat top	tankus: ilgas, plokščia viršūne
+underdense: sharp rise, exponential decay	retas: staigus kilimas, eksponentinis slopimas
+start the receiver to see the rates	paleiskite imtuvą, kad matytumėte dažnius
+pings per hour (UTC), the last 24 hours	pingai per valandą (UTC), paskutinės 24 valandos
+pings per day (UTC), the last 30 days; showers marked at their peak	pingai per dieną (UTC), paskutinės 30 dienų; lietūs pažymėti piko dieną
+meteor showers now and near (peak date, typical hourly rate for an eye observer)	meteorų lietūs dabar ir netoli (piko data, tipinis valandinis dažnis stebėtojui plika akimi)
+Shower	Lietus
+Rate	Dažnis
+today	šiandien
+in %d days	po %d d.
+%d days ago	prieš %d d.
+active	aktyvus
+, daytime: best for radio	, dieną: geriausias radijui
+not active	neaktyvus
+start the receiver to see the echoes	paleiskite imtuvą, kad matytumėte aidus
+echoes: +-500 Hz around the beacon line, the last 30 seconds (brighter = stronger over the background)	aidai: +-500 Hz aplink švyturio liniją, paskutinės 30 sekundžių (šviesiau = stipriau už foną)
+beacon	švyturys
+ping	pingas
+long-term spectrum around the beacon (dB over the noise)	ilgalaikis spektras aplink švyturį (dB virš triukšmo)
+Pings	Pingai
+Rates	Dažniai
+Echoes	Aidai
+pings	pingai
+not found	nerastas
+noise	triukšmas
+detector	detektorius
+log	žurnalas
+The beacon is a fixed transmitter far beyond the horizon: it is heard only when a meteor trail reflects it, as a short echo a few Hz to a few hundred Hz away from the line. Echoes closer than 18 Hz to the line are masked.	Švyturys yra nejudantis siųstuvas toli už horizonto: jis girdimas tik tada, kai jį atspindi meteoro pėdsakas, kaip trumpas aidas keli Hz ar keli šimtai Hz nuo linijos. Aidai arčiau nei 18 Hz nuo linijos užmaskuojami.
+Ping	Pingas
+with interference bursts	su trukdžių impulsais
+The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Bandomasis signalas yra švyturys 420 Hz nuo centro su imituotais meteorų aidais: trumpais retais ir keliais ilgais tankiais.
+Beacon echoes, 143.050 MHz	Švyturio aidai, 143,050 MHz

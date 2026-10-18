@@ -271,7 +271,7 @@ static void testRates() {
     SynthConfig sc;
     sc.snrDb = 30;
     testjobs::Jobs jobs;
-    for (double rate : {2.0e6, 2.048e6, 2.4e6, 4e6, 8e6, 10e6, 20e6}) jobs.add([=] {
+    for (double rate : {2.0e6, 2.048e6, 2.1e6, 2.4e6, 4e6, 8e6, 10e6, 20e6}) jobs.add([=] {
         char what[64];
         snprintf(what, sizeof what, "%.3f Msps", rate / 1e6);
         const auto t0 = std::chrono::steady_clock::now();

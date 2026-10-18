@@ -32,6 +32,7 @@ namespace dect2 {
 
 bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOptions& file) {
     stop();
+    noTuneOffset_ = dev.kind == DeviceInfo::Audio;   // a sound card has no radio to tune off the DC spike: the signal is where the IF centre puts it (0 Hz)
     ring_.clear();
     ring_.resetDropped();
     radioMissing_ = 0; radioMissEvents_ = 0; cpuDropEvents_ = 0; ringDroppedSeen_ = 0;
@@ -163,7 +164,7 @@ void Engine::configureTvReceivers(const DeviceInfo& dev, const TuneSettings& tun
 void Engine::placeNarrowReceivers(const DeviceInfo& dev, const TuneSettings& tune) {
     {   // a narrow channel sits tuneOffsetHz away from the radio's centre (a file holds the channel as recorded: no offset)
         const ModeTuning* mto = modeTuning(stdMode_.load());
-        const double o = mto && dev.kind != DeviceInfo::File ? -mto->tuneOffsetHz : 0.0;
+        const double o = mto && dev.kind != DeviceInfo::File && dev.kind != DeviceInfo::Audio ? -mto->tuneOffsetHz : 0.0;
         for (int wm : {10, 32, 34, 39, 46, 51, 24, 25}) wide_.configure(wm, rate_, o);
         wide_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : tune.centerHz);   // the logs of a whole-span decoder keep their rows' frequencies over a retune
         rxSonde_.setSignalOffset(o);
@@ -225,6 +226,15 @@ void Engine::placeNarrowReceivers(const DeviceInfo& dev, const TuneSettings& tun
         rxEcz_.setSignalOffset(o);
         rxFpv_.setSignalOffset(o);
         rxFpv_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // which channels of the plans lie in the capture
+        rxWmb_.setSignalOffset(o);
+        rxWmb_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // which channels lie in the capture
+        rxTones_.setSignalOffset(o);
+        rxSar_.setSignalOffset(o);
+        rxMt63_.setSignalOffset(o);
+        rxZw_.setDialHz(tune.centerHz);
+        rxZw_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);
+        rxMs_.setSignalOffset(o);
+        rxMs_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // for the CSV and the screen
         rxWs_.setDialHz(tune.centerHz);   // a file: where its channels are when it does not say
         rxWs_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // where every Wi-SUN channel lies in the band taken in
         rxZb_.setSignalOffset(o);
@@ -427,7 +437,20 @@ void Engine::configureDataReceivers(const DeviceInfo& dev, const TuneSettings& t
     rxWs_.setLogCallback([this](const std::string& s) { log(s); });
     rxFpv_.configure(rate_);
     rxFpv_.setLogCallback([this](const std::string& s) { log(s); });
+    rxTones_.setAudioInput(dev.kind == DeviceInfo::Audio);   // a sound card gives the audio itself, a radio gives an FM channel
+    rxTones_.configure(rate_);
+    rxTones_.setLogCallback([this](const std::string& s) { log(s); });
+    rxSar_.configure(rate_);
+    rxSar_.setLogCallback([this](const std::string& s) { log(s); });
+    rxMt63_.configure(rate_);
+    rxMt63_.setLogCallback([this](const std::string& s) { log(s); });
+    rxZw_.configure(rate_);
+    rxZw_.setLogCallback([this](const std::string& m) { log(m); });
     rxEcz_.configure(rate_);
+    rxWmb_.configure(rate_);
+    rxWmb_.setLogCallback([this](const std::string& s) { log(s); });
+    rxMs_.configure(rate_);
+    rxMs_.setLogCallback([this](const std::string& s) { log(s); });
     rxEcz_.setLogCallback([this](const std::string& s) { log(s); });
     rxEcz_.setClockMode(dev.kind == DeviceInfo::File ? 0 : 1);   // a file has no clock to compare; a radio and the test signal run on the computer's
     rxHfb_.configure(rate_);

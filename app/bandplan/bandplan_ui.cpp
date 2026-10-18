@@ -64,6 +64,46 @@ std::vector<TvRange> tvBandRanges(App& a) {
     return o;
 }
 
+// the active plan as labels on the spectrum: the numbered channels of the rasters (TV, DAB, FM ...) and the names of the plain ranges (ham, ISM ...)
+void bandPlanLabelSource(const App& a, std::vector<autolabel::Label>& out) {
+    const bp::Plan* p = activePlan(a);
+    if (!p) return;
+    auto modeKey = [](const bp::Band& b) -> std::string {
+        for (const std::string& m : b.modes) {
+            if (m == "DVB-T2" || m == "DVB-T") return "dvb";
+            if (m == "ATSC") return "atsc";
+            if (m == "ATSC 3.0") return "atsc3";
+            if (m == "ISDB-T") return "isdbt";
+            if (m == "FM") return "fm";
+            if (m == "DAB" || m == "DAB+") return "dab";
+        }
+        return std::string();
+    };
+    for (const bp::Band& b : p->bands) {
+        const int n = b.count();
+        if (n == 0) {
+            if (b.endHz <= b.startHz || b.name.empty()) continue;
+            autolabel::Label l;
+            l.mhz = (b.startHz + b.endHz) / 2e6; l.text = b.name; l.detail = b.note; l.src = autolabel::Band; l.prio = -0.5f; l.mode = modeKey(b);
+            out.push_back(l);
+            continue;
+        }
+        if (n > 2000) continue;
+        const std::string mk = modeKey(b);
+        for (const bp::Channel& c : b.list(2000)) {
+            autolabel::Label l;
+            l.mhz = c.centreHz / 1e6;
+            char t[48];
+            if (c.label.empty()) std::snprintf(t, sizeof t, "%.4g", l.mhz);
+            else std::snprintf(t, sizeof t, "%s%s", b.service == "tv" ? "CH " : "", c.label.c_str());
+            l.text = t;
+            char d[160]; std::snprintf(d, sizeof d, "%s  %.3f MHz", b.name.c_str(), l.mhz);
+            l.detail = d; l.src = autolabel::Band; l.mode = mk;
+            out.push_back(l);
+        }
+    }
+}
+
 bool bandPlanPicker(App& a) {
     bool changed = false;
     const bp::Plan* cur = activePlan(a);

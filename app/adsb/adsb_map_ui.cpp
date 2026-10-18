@@ -87,8 +87,7 @@ void radar(App& a, ImVec2 size) {
     if (!t.refValid) dl->AddText(ImVec2(p0.x + 6 * gUi, p0.y + 36 * gUi), IM_COL32(150, 154, 158, 255), "no reference position");
     ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + 8 * gUi));
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.06f, 0.07f, 0.08f, 0.85f));
-    if (ImGui::Button(S.full ? "exit full screen" : "full screen")) S.full = !S.full;
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip(S.full ? "Back to the normal layout (Esc)" : "The radar fills the whole window (Esc to leave)");
+    if (adsbmap::fullButton(S.full, "radar")) S.full = !S.full;
     ImGui::PopStyleColor();
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
     ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
@@ -267,8 +266,7 @@ static void mapCorner(App& a, ImVec2 p0, ImVec2 size, bool wrongRef, double area
     if (ImGui::Button("position")) ImGui::OpenPopup("##adsbpos");
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set where the antenna is: for ranges, the radar rings and decoding positions locally. You can also right-click the map.");
     ImGui::SameLine(0, 6 * gUi);
-    if (ImGui::Button(S.full ? "exit full screen" : "full screen")) S.full = !S.full;
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip(S.full ? "Back to the normal layout (Esc)" : "The map fills the whole window (Esc to leave)");
+    if (adsbmap::fullButton(S.full, "map")) S.full = !S.full;
     ImGui::PopStyleColor();
     ImGui::SameLine(0, 6 * gUi);
     unitsControls();
@@ -282,7 +280,7 @@ static void mapCorner(App& a, ImVec2 p0, ImVec2 size, bool wrongRef, double area
     gPred.load("adsb", true, false);
     gPred.controls();
     ImGui::SameLine(0, 6 * gUi);
-    adsbmap::tileControls(nullptr);
+    adsbmap::tileControls(nullptr, false);
     if (wrongRef) {
         ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + 38 * gUi));
         ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.18f, 0.14f, 0.04f, 0.92f));

@@ -90,8 +90,14 @@
 #include "dect2/multitone/multitone_rx.h"
 #include "dect2/loraraw/loraraw_rx.h"
 #include "dect2/wisun/wisun_rx.h"
+#include "dect2/zwave/zwave_rx.h"
 #include "dect2/eczas/eczas_live.h"
 #include "dect2/fpv/fpv_live.h"
+#include "dect2/wmbus/wmbus_live.h"
+#include "dect2/tones/tones_rx.h"
+#include "dect2/sarsat/sarsat_rx.h"
+#include "dect2/mt63/mt63_rx.h"
+#include "dect2/mscatter/mscatter_live.h"
 #include "dect2/rid/rid_rx.h"
 #include "dect2/meteor/meteor_rx.h"
 #include "dect2/nr/nr_rx.h"
@@ -246,6 +252,9 @@ public:
     AudioMonitor& monitor() { return monitor_; }
     void setMonitorOffsetHz(double hz) { monitorOffsetHz_ = hz; }
     bool latestRx2(RxTelemetry& out, uint64_t lastSeq);   // the second mode's report (as latestRx)
+    // Display only: the spectrum is mixed by hz (the samples the decoders get are not touched). A sound card showing the audio range 0..Nyquist uses it.
+    void setSpectrumShiftHz(double hz) { specShiftHz_ = hz; }
+    double spectrumShiftHz() const { return specShiftHz_.load(); }
     double captureCentreHz() const;   // the frequency at the centre of the samples the receivers get
     // The modes that can run second: narrow channels that neither retune the radio, nor make a transport stream, picture or player sound
     static bool secondaryAllowed(int stdMode);
@@ -374,8 +383,14 @@ public:
     NbiotReceiver& nbiot() { return rxNb_; }   // NB-IoT cells: clear the cell table (telemetry through latestRx)
     ZigbeeReceiver& zigbee() { return rxZb_; }   // Zigbee / 802.15.4: clear the PAN and device tables (telemetry through latestRx)
     FlarmReceiver& flarm() { return rxFlarm_; }   // FLARM: receiver position, clear (telemetry through latestRx)
+    WmbusLiveReceiver& wmbus() { return rxWmb_; }   // Wireless M-Bus meters: clear the device table (telemetry through latestRx)
+    TonesReceiver& tones() { return rxTones_; }   // tone decoders: audio input, the gate, listen (telemetry through latestRx)
+    SarsatReceiver& sarsat() { return rxSar_; }   // COSPAS-SARSAT 406 MHz beacons: clear the log (telemetry through latestRx)
+    Mt63Receiver& mt63() { return rxMt63_; }   // MT63: bandwidth and interleave (automatic by default), clear the text (telemetry through latestRx)
     EczasLiveReceiver& eczas() { return rxEcz_; }   // e-Czas (225 kHz, Poland): audio input, receiver position, clear the log (telemetry through latestRx)
     FpvReceiver& fpv() { return rxFpv_; }   // FPV video: picture controls, sound, clear the channel levels (telemetry through latestRx)
+    ZwaveReceiver& zwave() { return rxZw_; }   // Z-Wave: region, clear the tables (telemetry through latestRx)
+    MscatterLiveReceiver& mscatter() { return rxMs_; }   // meteor scatter: threshold, CSV log file, clear the list (telemetry through latestRx)
     WisunReceiver& wisun() { return rxWs_; }   // Wi-SUN FAN: region, clear the tables (telemetry through latestRx)
     LoraRawReceiver& loraraw() { return rxLr_; }   // LoRa (raw): settings, clear the frame log (telemetry through latestRx)
     HfbReceiver& hfbeacon() { return rxHfb_; }   // HF beacons: the list, receiver position, ppm, clock offset (telemetry through latestRx)
@@ -633,8 +648,14 @@ private:
     MultitoneReceiver rxMt_;
     LoraRawReceiver rxLr_;
     WisunReceiver rxWs_;
+    ZwaveReceiver rxZw_;
     EczasLiveReceiver rxEcz_;
     FpvReceiver rxFpv_;
+    WmbusLiveReceiver rxWmb_;
+    TonesReceiver rxTones_;
+    SarsatReceiver rxSar_;
+    Mt63Receiver rxMt63_;
+    MscatterLiveReceiver rxMs_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;
@@ -738,6 +759,9 @@ private:
     std::atomic<bool> radioLost_{false};
     TuneSettings hwTune(const TuneSettings& t) const;      // radioTune() through the converter (converter.h): what the radio itself is tuned to
     mutable std::atomic<bool> convSwap_{false};            // the converter mirrors the spectrum: ingest() swaps I and Q
+    std::atomic<double> specShiftHz_{0};
+    double specPhase_ = 0;                                // the spectrum thread's mixer
+    std::atomic<bool> noTuneOffset_{false};               // a sound card or a recording: the channel is where it was recorded, the mode's tuneOffsetHz does not apply
     TuneSettings radioTune(const TuneSettings& t) const;  // what the radio is tuned to: the user's frequency plus the mode's tuneOffsetHz
     mutable std::mutex tuneMu_;                 // lastDev_ / lastTune_: what to reopen the radio with
     DeviceInfo lastDev_;

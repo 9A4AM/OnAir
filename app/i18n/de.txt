@@ -33,7 +33,6 @@ Default input	Default input
 Destination	Destination
 Destination / ID	Destination / ID
 Destination ID	Destination ID
-Deviation (Hz)	Deviation (Hz)
 Device ID	Device ID
 Dial frequency the decoder should assume (the sound card is not tuned)	Wählfrequenz, die der Decoder annehmen soll (die Soundkarte wird nicht abgestimmt)
 DVB standard	DVB standard
@@ -390,10 +389,10 @@ Amp	Verst.
 LNA	LNA
 VGA	VGA
 AGC	AGC
-Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	Hält den ADC-Pegel in einem gesunden Bereich (etwa -16 dBFS rms, ohne Übersteuerung), indem LNA, VGA und Verstärker angepasst werden.\nEin Griff an einen Verstärkungsregler schaltet sie ab.
+Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off.	Hält die Eingangsstufe für die Betriebsart im besten Arbeitspunkt: gesunder ADC-Pegel, Rauschen über dem des ADC, starke Nachbarn bleiben draußen. Sie verstellt LNA und VGA (den Verstärker nur, wenn du es über das Zahnrad erlaubst) und bleibt still, solange ein Decoder eingerastet ist.\nEin Griff an einen Verstärkungsregler schaltet sie ab.
 Auto-tune	Auto-Abgleich
 Stop tune	Abgleich stoppen
-Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Verstärkungshelfer: probiert etwa 40 s lang LNA/VGA/Verstärker-Kombinationen und behält die mit dem besten SNR ohne Übersteuerung.\nBraucht ein Signal, auf das der Empfänger einrasten kann.
+Gain helper: tries LNA/VGA combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to. The amp stays as you set it.	Verstärkungshelfer: probiert etwa 40 s lang LNA/VGA-Kombinationen und behält die mit dem besten SNR ohne Übersteuerung.\nBraucht ein Signal, auf das der Empfänger einrasten kann. Der Verstärker bleibt, wie du ihn eingestellt hast.
 gain helper %d/%d ...	Verstärkungshelfer %d/%d ...
 ADC OVERLOAD - %s	ADC ÜBERSTEUERT - %s
 AGC is lowering the gain	AGC senkt die Verstärkung
@@ -1187,24 +1186,17 @@ signal time	Signalzeit
 Apply frequency and level now	Frequenz und Pegel jetzt übernehmen
 Bring it back here	Hierher zurückholen
 Carrier tune (hold)	Trägerabstimmung (halten)
-Choose a radio in step 2, or switch on the test (no RF).	Wähle in Schritt 2 ein Funkgerät oder schalte den Test (kein HF) ein.
-Choose a signal in step 1	Wähle in Schritt 1 ein Signal
-Choose a signal in step 1.	Wähle in Schritt 1 ein Signal.
 Clipping	Übersteuerung
 Idle	Bereit
 No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list. The test below needs no radio.	Es wurde kein sendefähiges Funkgerät gefunden. Schließe eines an (HackRF, PlutoSDR oder ein SoapySDR-Gerät mit Sender) und aktualisiere die Liste. Der Test unten braucht kein Funkgerät.
 Nothing matches this search.	Nichts passt zur Suche.
 Occupied bandwidth	Belegte Bandbreite
-Offset (MHz)	Versatz (MHz)
-Offset, repeat and timing	Versatz, Wiederholung und Dauer
 Output level (dB)	Ausgangspegel (dB)
 Peak	Spitze
 Pop out into a window of its own	In ein eigenes Fenster auslagern
 Preparing	Vorbereitung
-Preview and send	Vorschau und Senden
 RMS	Effektivwert
 Recent	Zuletzt
-Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels below show what would go out.	Lässt den Signalgenerator mit der Abtastrate des Funkgeräts ins Leere laufen: Kein Funkgerät wird geöffnet, nichts wird gesendet. Spektrum und Pegel unten zeigen, was gesendet würde.
 STOP	STOPP
 STOP ALL	ALLES STOPPEN
 Sample rate	Abtastrate
@@ -1230,11 +1222,8 @@ at full scale: the limiter will round the peaks	Vollaussteuerung: Der Begrenzer 
 making the preview...	Vorschau wird erstellt...
 none chosen	keins gewählt
 none: the signal fits	keine: das Signal passt
-on the air	auf Sendung
 radio range %s	Funkgerät-Bereich %s
 test (no RF)	Test (kein HF)
-test running	Test läuft
-test, no RF	Test, kein HF
 the limiter is working: %.2f%% of samples (lower the level)	Der Begrenzer arbeitet: %.2f%% der Samples (Pegel senken)
 25 kHz	25 kHz
 12.5 kHz	12.5 kHz
@@ -1252,6 +1241,13 @@ Right	Rechts
 Left + right	Links + rechts
 IF centre	ZF-Mitte
 Swap sideband	Seitenband tauschen
+Audio range	Audiobereich
+Show the sound card's whole audio range, 0 Hz to half the sample rate, across the spectrum, with the frequency scale in audio Hz from the dial. Off: the IF centre in the middle (the decoders always get it there).	Zeigt den ganzen Audiobereich der Soundkarte, 0 Hz bis halbe Abtastrate, über das Spektrum, mit der Frequenzskala in Audio-Hz ab der Wählfrequenz. Aus: die ZF-Mitte in der Mitte (die Decoder bekommen sie immer dort).
+Find centre	Mitte finden
+Sets the IF centre to the middle of the strongest signal on the screen (a fax or FSK signal: halfway between its tones).	Setzt die ZF-Mitte auf die Mitte des stärksten Signals auf dem Bildschirm (ein Fax- oder FSK-Signal: auf halbem Weg zwischen den Tönen).
+Clipping: lower the input level	Übersteuerung: Eingangspegel senken
+Left and right are identical: this is audio, not I/Q.	Links und rechts sind identisch: das ist Audio, kein I/Q.
+Use Real (mono)	Real (mono) verwenden
 Remove DC	DC entfernen
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	Für WebSDR, ein virtuelles Audiokabel (VAC) oder den Lautsprecher, Line- oder ZF-Ausgang eines Radios am Computer. Kein Ersatz für ein SDR, wenn Megahertz Bandbreite nötig sind. Das Frequenzfeld ist der Rasterwert, den der Dekoder annehmen soll (die Funkfrequenz der ZF-Mitte); die Soundkarte wird nicht abgestimmt.
 I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q-Stereo: links ist I, rechts ist Q (HDSDR / WebSDR VAC). USB-Audio: reelles Audio zu analytischem IQ für FT8, RTTY, CW, SSB von einem Lautsprecher-Abgriff oder dem Audio eines Empfängers. LSB-Audio: dasselbe, gespiegelt. Reell (mono): reelle Samples (ein NF-Abgriff, eine ZF wie 12 kHz) analytisch gemacht, mit dem Seitenband-Schalter darunter.
@@ -2763,3 +2759,433 @@ colour bars	Farbbalken
 no transmitter (noise only)	kein Sender (nur Rauschen)
 The test signal is a transmitter on the channel the radio is tuned to: FM video with a 1 kHz tone on the sound subcarrier.	Das Testsignal ist ein Sender auf dem Kanal, auf den das Radio abgestimmt ist: FM-Video mit einem 1-kHz-Ton auf dem Tonträger.
 5.8 / 1.2 GHz video	5,8 / 1,2 GHz Video
+TX sample rate	TX-Abtastrate
+Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	Angeforderte IQ-Abtastrate für das Senden. Bei einem gemeinsam für RX/TX genutzten Funkgerät auf beiden Seiten dieselbe Hardware-Rate einstellen. Vor dem Ändern das Senden stoppen.
+Manual TX sample rate must be greater than zero.	Die manuelle TX-Abtastrate muss größer als null sein.
+Data (off)	Daten (aus)
+Generic	Allgemein
+AM / airband	AM / Flugfunk
+NFM / VHF / UHF	NFM / VHF / UHF
+WFM broadcast	WFM-Rundfunk
+SSB / HF	SSB / KW
+CW	CW
+Audio cleanup: noise reduction, notch, leveller ...	Audio-Bereinigung: Rauschminderung, Kerbfilter, Pegelanpassung ...
+Audio cleanup	Audio-Bereinigung
+Basic	Einfach
+Settings for	Einstellungen für
+Automatic (%s)	Automatisch (%s)
+A data mode: its sound is left as it is. Pick another kind above to clean it up anyway.	Ein Datenmodus: sein Ton bleibt unverändert. Wähle oben eine andere Art, um ihn trotzdem zu bereinigen.
+Clean the sound you hear. The decoders always get the untouched sound.	Den Ton, den du hörst, bereinigen. Die Decoder bekommen immer den unveränderten Ton.
+Strength	Stärke
+noise reduction	Rauschminderung
+auto notch	Auto-Kerbfilter
+leveller	Pegelanpassung
+silence gate	Stummschaltung bei Stille
+voice emphasis	Stimmhervorhebung
+Nothing is on for this kind of mode. See Advanced.	Für diese Art von Modus ist nichts eingeschaltet. Siehe Erweitert.
+Noise reduction	Rauschminderung
+Takes down the steady hiss and rumble between and under the speech. More strength cleans more and costs some naturalness.	Senkt das gleichmäßige Rauschen und Brummen zwischen und unter der Sprache. Mehr Stärke reinigt mehr und kostet etwas Natürlichkeit.
+Auto notch	Auto-Kerbfilter
+Finds a steady whistle, carrier or heterodyne in the sound and cuts it out narrowly, following it as it drifts. Lets go again when it stops.	Findet einen gleichbleibenden Pfeifton, Träger oder Überlagerungston im Ton, schneidet ihn schmal heraus und folgt ihm, wenn er wandert. Lässt wieder los, wenn er aufhört.
+cutting %.0f Hz	schneidet %.0f Hz
+Manual notch	Manueller Kerbfilter
+Cuts one frequency out of the sound, for a tone you can see in the audio spectrum.	Schneidet eine Frequenz aus dem Ton, für einen Ton, den du im Audiospektrum siehst.
+width %.0f %%	Breite %.0f %%
+Leveller	Pegelanpassung
+Brings quiet and loud stations to the same loudness, with a soft limiter against peaks.	Bringt leise und laute Stationen auf dieselbe Lautstärke, mit einem weichen Begrenzer gegen Spitzen.
+balance %.0f %%	Ausgleich %.0f %%
+target %.0f dB	Ziel %.0f dB
+Do not boost the noise between transmissions	Rauschen zwischen den Sendungen nicht anheben
+Silence gate	Stummschaltung bei Stille
+Mutes the sound when only noise is left, like a squelch that follows the noise level by itself.	Schaltet den Ton stumm, wenn nur Rauschen übrig ist, wie eine Rauschsperre, die dem Rauschpegel selbst folgt.
+opens %.0f dB above noise	öffnet %.0f dB über dem Rauschen
+muted	stumm
+Voice emphasis	Stimmhervorhebung
+Cuts the rumble below the voice and lifts the presence, so a weak voice is easier to understand.	Schneidet das Brummen unter der Stimme ab und hebt die Präsenz an, damit eine schwache Stimme leichter zu verstehen ist.
+De-esser	De-Esser
+Softens sharp S sounds.	Mildert scharfe S-Laute.
+Record the cleaned sound	Bereinigten Ton aufnehmen
+Record audio saves the sound as you hear it now, cleaned, instead of the raw sound.	Audio aufnehmen speichert den Ton so, wie du ihn jetzt hörst, bereinigt, statt des Rohtons.
+Skip silence in the recording	Stille in der Aufnahme überspringen
+Nothing is recorded while the silence gate holds the sound off.	Es wird nichts aufgenommen, solange die Stummschaltung bei Stille den Ton zurückhält.
+Reset to the preset	Auf die Voreinstellung zurücksetzen
+# auto gain (AGC): the gear button, the amp switch, what the AGC is doing
+Auto gain	Automatische Verstärkung
+AGC settings	AGC-Einstellungen
+Let AGC turn the amp on/off by itself	AGC darf den Verstärker selbst ein- und ausschalten
+Off by default. With this off the AGC only moves the LNA and VGA and never touches the amp: it stays as you set it. The amp is the first stage and can be damaged by strong signals.	Standardmäßig aus. Ist das aus, verstellt die AGC nur LNA und VGA und fasst den Verstärker nie an: er bleibt so, wie du ihn eingestellt hast. Der Verstärker ist die erste Stufe und kann durch starke Signale beschädigt werden.
+This radio has no amp for the AGC to switch.	Dieses Radio hat keinen Verstärker, den die AGC schalten könnte.
+The amp can fry itself on strong signals while on	Der Verstärker kann sich bei starken Signalen selbst zerstören, solange er an ist
+Aims for: %s	Ziel: %s
+wide channel: ADC headroom	breiter Kanal: ADC-Aussteuerungsreserve
+narrow channel: lowest noise, neighbours kept out	schmaler Kanal: wenig Rauschen, Nachbarn fernhalten
+pulsed signals: peaks decide	gepulste Signale: die Spitzen entscheiden
+strong stations: front end protected	starke Sender: Eingangsstufe geschützt
+Now: %s	Jetzt: %s
+cut after an overload	nach Übersteuerung gesenkt
+lowering the gain	Verstärkung wird gesenkt
+raising the gain	Verstärkung wird erhöht
+strong neighbour: front gain limited	starker Nachbar: Eingangsverstärkung begrenzt
+decoder locked: gain frozen	Decoder eingerastet: Verstärkung eingefroren
+at the end of the gain range	am Ende des Verstärkungsbereichs
+holding the level	Pegel wird gehalten
+# transmit panel: top bar, Basic / Advanced, per-signal parameters
+0 is the normal suppressed carrier. A little carrier helps a receiver lock on; the top of the range is as strong as the loudest audio.	0 ist der normale unterdrückte Träger. Ein wenig Träger hilft dem Empfänger beim Einrasten; das obere Ende des Bereichs ist so stark wie das lauteste Audio.
+A second tone added to the first (0 = off). Two tones make a two-tone linearity test.	Ein zweiter Ton, der zum ersten addiert wird (0 = aus). Zwei Töne ergeben einen Zweiton-Linearitätstest.
+A sub-audible tone that opens a receiver's squelch (0 = off). 67 to 254.1 Hz.	Ein unhörbarer Ton, der die Rauschsperre eines Empfängers öffnet (0 = aus). 67 bis 254,1 Hz.
+AM (carrier and sidebands)	AM (Träger und Seitenbänder)
+AM sends the carrier and both sidebands. Double sideband with suppressed carrier sends only the sidebands.	AM sendet den Träger und beide Seitenbänder. Doppelseitenband mit unterdrücktem Träger sendet nur die Seitenbänder.
+Audio above this level is turned down.	Audio oberhalb dieses Pegels wird abgesenkt.
+Audio frequency	Audiofrequenz
+Boosts the high notes before sending (0 = off).	Hebt vor dem Senden die hohen Töne an (0 = aus).
+Boosts the high notes before sending. 50 µs in Europe and most of the world, 75 µs in the Americas.	Hebt vor dem Senden die hohen Töne an. 50 µs in Europa und dem Großteil der Welt, 75 µs in Amerika.
+CTCSS level	CTCSS-Pegel
+CTCSS tone	CTCSS-Ton
+Carrier injection	Trägerzumischung
+Carrier level	Trägerpegel
+Choose a radio below, or switch on the test (no RF).	Wähle unten ein Funkgerät oder schalte den Test ein (ohne HF).
+Choose a signal in the list.	Wähle in der Liste ein Signal.
+Cuts the audio above this pitch, which sets how wide the signal is (0 = off).	Schneidet das Audio oberhalb dieser Tonhöhe ab und bestimmt damit die Signalbreite (0 = aus).
+DSB (suppressed carrier)	DSB (unterdrückter Träger)
+Default: %s	Standard: %s
+Deviation	Hub
+Esc = stop	Esc = Stopp
+Evens out loud and quiet speech so the signal stays strong without over-modulating.	Gleicht laute und leise Sprache aus, damit das Signal stark bleibt, ohne zu übersteuern.
+Every setting of this signal: modulation, audio, filters, output and timing. The defaults are sensible; open this only to change them.	Alle Einstellungen dieses Signals: Modulation, Audio, Filter, Ausgang und Zeitverhalten. Die Voreinstellungen sind sinnvoll; öffne dies nur, um sie zu ändern.
+Filters	Filter
+Follow the receiver	Dem Empfänger folgen
+Frequency offset	Frequenzversatz
+Gain added after the compressor.	Verstärkung, die nach dem Kompressor hinzukommt.
+Gain applied to the whole signal just before the radio. Lower it when the meter shows clipping; the radio's own gain is set above.	Verstärkung des gesamten Signals direkt vor dem Funkgerät. Senke sie, wenn die Anzeige Übersteuerung zeigt; die eigene Verstärkung des Funkgeräts wird oben eingestellt.
+HOLD TO TRANSMIT	ZUM SENDEN GEDRÜCKT HALTEN
+High-pass (low cut)	Hochpass (Tiefenschnitt)
+How far the RDS subcarrier deviates the carrier.	Wie weit der RDS-Hilfsträger den Träger auslenkt.
+How far the audio swings the frequency. 2.5 kHz is a 12.5 kHz channel, 5 kHz a 25 kHz channel.	Wie weit das Audio die Frequenz auslenkt. 2,5 kHz gehören zu einem 12,5-kHz-Kanal, 5 kHz zu einem 25-kHz-Kanal.
+How far the audio swings the frequency. Broadcast FM uses 75 kHz.	Wie weit das Audio die Frequenz auslenkt. UKW-Rundfunk verwendet 75 kHz.
+How far the audio swings the signal. Full modulation is at 100 percent; more than that over-modulates and distorts.	Wie weit das Audio das Signal aussteuert. Volle Modulation liegt bei 100 Prozent; mehr übersteuert und verzerrt.
+How fast the compressor lets go after a loud passage.	Wie schnell der Kompressor nach einer lauten Passage wieder loslässt.
+How long the VOX stays open after the sound stops.	Wie lange das VOX nach dem Ende des Tons geöffnet bleibt.
+How loud the audio must be to open the VOX.	Wie laut das Audio sein muss, damit das VOX öffnet.
+How loud the test tone is, as a share of full audio.	Wie laut der Testton ist, als Anteil des vollen Audiopegels.
+How strongly audio above the threshold is turned down; 20 is close to a hard limiter.	Wie stark Audio oberhalb der Schwelle abgesenkt wird; 20 entspricht fast einem harten Begrenzer.
+Key-up fade-in	Einblenden beim Tastendruck
+Left level	Pegel links
+Left test tone	Testton links
+Low-pass (audio bandwidth)	Tiefpass (Audiobandbreite)
+Lower sideband (LSB)	Unteres Seitenband (LSB)
+Make-up gain	Ausgleichsverstärkung
+Mirror the spectrum	Spektrum spiegeln
+Modulation depth	Modulationsgrad
+Music (not speech)	Musik (keine Sprache)
+Name for a new preset	Name für eine neue Voreinstellung
+No presets saved for this signal yet.	Für dieses Signal sind noch keine Voreinstellungen gespeichert.
+Output	Ausgang
+Output level	Ausgangspegel
+Output trim	Ausgangsabgleich
+Peak level	Spitzenpegel
+Pilot level	Pilotpegel
+Pitch	Tonhöhe
+Presets	Voreinstellungen
+Preview	Vorschau
+Programme type	Programmtyp
+Push to talk (hold the button)	Sprechtaste (Taste gedrückt halten)
+Puts every setting below back to its default.	Setzt jede Einstellung unten auf ihren Standardwert zurück.
+RDS	RDS
+RDS level	RDS-Pegel
+RF level	HF-Pegel
+RX %.6f MHz	RX %.6f MHz
+Ratio	Verhältnis
+Release	Rücklaufzeit
+Removes rumble and hum below this pitch (0 = off).	Entfernt Dröhnen und Brummen unterhalb dieser Tonhöhe (0 = aus).
+Reset to default	Auf Standard zurücksetzen
+Right level	Pegel rechts
+Right test tone	Testton rechts
+Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels show what would go out.	Lässt den Signalgenerator mit der Abtastrate des Funkgeräts ins Leere laufen: Es wird kein Funkgerät geöffnet und nichts gesendet. Spektrum und Pegel zeigen, was gesendet würde.
+Save preset	Voreinstellung speichern
+Saves the settings below, the frequency and the level under this name.	Speichert die Einstellungen unten, die Frequenz und den Pegel unter diesem Namen.
+Second test tone	Zweiter Testton
+Sends the 19 kHz pilot and the stereo difference signal.	Sendet den 19-kHz-Pilotton und das Stereo-Differenzsignal.
+Sends the station name, radio text and programme type on a 57 kHz subcarrier.	Sendet Sendername, Radiotext und Programmtyp auf einem 57-kHz-Hilfsträger.
+Speech compressor	Sprachkompressor
+Start transmitting	Senden starten
+Stereo	Stereo
+Stop transmitting	Senden beenden
+Swaps I and Q so the signal is turned over: an upper sideband becomes a lower one. For a radio or mixer that inverts.	Vertauscht I und Q, sodass das Signal gedreht wird: Aus einem oberen wird ein unteres Seitenband. Für ein Funkgerät oder einen Mischer, der invertiert.
+TRANSMITTING (release to stop)	SENDET (zum Beenden loslassen)
+TX = RX	TX = RX
+TX independent	TX unabhängig
+Test tone	Testton
+Test tone level	Testtonpegel
+The 19 kHz stereo pilot, as a share of the full deviation.	Der 19-kHz-Stereopilot als Anteil des vollen Hubs.
+The RDS flag for a station that carries traffic announcements.	Das RDS-Kennzeichen für einen Sender mit Verkehrsdurchsagen.
+The RDS flag for music instead of speech.	Das RDS-Kennzeichen für Musik statt Sprache.
+The RDS flag that a traffic announcement is on the air.	Das RDS-Kennzeichen, dass gerade eine Verkehrsdurchsage läuft.
+The RDS programme type code (0 to 31; 10 is pop music).	Der RDS-Programmtypcode (0 bis 31; 10 ist Popmusik).
+The largest signal as a share of full scale.	Das größte Signal als Anteil des Vollausschlags.
+The left test tone, as a share of full audio.	Der linke Testton als Anteil des vollen Audiopegels.
+The pitch of the Morse tone, as an offset above the dial frequency.	Die Tonhöhe des Morsetons als Versatz über der Dialfrequenz.
+The pitch of the test tone, used when the audio input is the test tone.	Die Tonhöhe des Testtons, verwendet, wenn der Audioeingang der Testton ist.
+The pitch on the left channel, used when the audio input is the test tone.	Die Tonhöhe auf dem linken Kanal, verwendet, wenn der Audioeingang der Testton ist.
+The pitch on the right channel (0 = three times the left).	Die Tonhöhe auf dem rechten Kanal (0 = dreimal so hoch wie links).
+The radio's output level. Start low.	Der Ausgangspegel des Funkgeräts. Beginne niedrig.
+The right test tone, as a share of full audio.	Der rechte Testton als Anteil des vollen Audiopegels.
+The signal fades in over this time after Start, so the key-up does not click.	Das Signal wird nach dem Start über diese Zeit eingeblendet, damit das Einschalten nicht knackt.
+The signal goes out only while there is sound on the audio input.	Das Signal wird nur gesendet, solange am Audioeingang Ton anliegt.
+The signal goes out only while you hold the button down.	Das Signal wird nur gesendet, solange du die Taste gedrückt hältst.
+The size of the carrier as a share of full scale. At a depth of 85 percent the peaks reach about full scale.	Die Größe des Trägers als Anteil des Vollausschlags. Bei einem Modulationsgrad von 85 Prozent erreichen die Spitzen etwa den Vollausschlag.
+The size of the signal as a share of full scale.	Die Größe des Signals als Anteil des Vollausschlags.
+The tone's share of the deviation.	Der Anteil des Tons am Hub.
+The transmit frequency follows the receiver's. Typing a different one here unlinks them. Click to unlink.	Die Sendefrequenz folgt der des Empfängers. Gibst du hier eine andere ein, werden beide getrennt. Klicken zum Trennen.
+The transmit frequency is its own. The receiver is on %.6f MHz. Click to make the transmitter follow it.	Die Sendefrequenz ist eigenständig. Der Empfänger steht auf %.6f MHz. Klicken, damit der Sender ihr folgt.
+Threshold	Schwelle
+Timing	Zeitverhalten
+Traffic announcement now	Verkehrsdurchsage jetzt
+Traffic programme	Verkehrsfunk
+Upper sideband (USB)	Oberes Seitenband (USB)
+VOX (transmit on voice)	VOX (Senden bei Sprache)
+VOX hang time	VOX-Nachlaufzeit
+VOX threshold	VOX-Schwelle
+Well-known frequencies of this signal: pick one to set the transmit frequency	Bekannte Frequenzen dieses Signals: Wähle eine, um die Sendefrequenz zu setzen
+Where the middle of the signal sits in the audio passband, as an offset above the dial frequency.	Wo die Mitte des Signals im Audiobereich liegt, als Versatz über der Dialfrequenz.
+Where the signal sits in the audio passband, as an offset above the dial frequency.	Wo das Signal im Audiobereich liegt, als Versatz über der Dialfrequenz.
+Which sideband is sent.	Welches Seitenband gesendet wird.
+follows the receiver	folgt dem Empfänger
+on	an
+# full screen on every map
+Full screen	Vollbild
+Exit full screen	Vollbild beenden
+Back to the normal layout (Esc)	Zurück zum normalen Layout (Esc)
+The map fills the whole window (Esc to leave)	Die Karte füllt das ganze Fenster (Esc zum Verlassen)
+The radar fills the whole window (Esc to leave)	Das Radar füllt das ganze Fenster (Esc zum Verlassen)
+This screen fills the whole window (Esc to leave)	Dieser Bildschirm füllt das ganze Fenster (Esc zum Verlassen)
+Labels	Namen
+Names on the spectrum	Namen im Spektrum
+Station and channel names on the spectrum and the waterfall. A click on a name tunes to it and opens its mode.	Sender- und Kanalnamen im Spektrum und im Wasserfall. Ein Klick auf einen Namen stimmt darauf ab und öffnet dessen Modus.
+Frequency database	Frequenzdatenbank
+FM stations (RDS names)	UKW-Sender (RDS-Namen)
+DAB ensembles	DAB-Ensembles
+DVB networks and services	DVB-Netze und -Dienste
+Memories	Speicher
+Names that do not fit are left out. Zoom in to see more of them.	Namen, die nicht passen, werden weggelassen. Zoome hinein, um mehr davon zu sehen.
+Names of the stations and channels on the spectrum: choose which sources are shown	Namen der Sender und Kanäle im Spektrum: Wähle, welche Quellen angezeigt werden
+Click to tune here	Klicken, um hier abzustimmen
+Click to tune here and open its mode	Klicken, um hier abzustimmen und den Modus zu öffnen
+Coastlines	Küstenlinien
+Borders	Grenzen
+Mosaic	Mosaik
+Histogram	Histogramm
+Crop to view	Auf Ansicht zuschneiden
+Clear crop	Zuschnitt löschen
+Save GeoTIFF...	GeoTIFF speichern...
+Add to mosaic	Zum Mosaik hinzufügen
+Clear mosaic	Mosaik leeren
+S-curve (contrast)	S-Kurve (Kontrast)
+Lift shadows	Schatten aufhellen
+Cloud detail (flat bright end)	Wolkendetails (flaches helles Ende)
+Night infrared	Nachtinfrarot
+No palette	Keine Palette
+Thermal	Thermisch
+Rainbow	Regenbogen
+Enhanced infrared	Verstärktes Infrarot
+Sepia	Sepia
+Tone curve applied after the gamma	Tonwertkurve, die nach dem Gamma angewendet wird
+Colour palette on the brightness of the picture, for infrared and other single-channel pictures	Farbpalette auf der Helligkeit des Bildes, für Infrarot und andere Einkanalbilder
+Simplified coastlines drawn into the map (good to about 50 - 100 km, not a survey)	Vereinfachte Küstenlinien in der Karte (auf etwa 50 - 100 km genau, keine Vermessung)
+A few of the longest country borders, simplified	Einige der längsten Ländergrenzen, vereinfacht
+Zoom to the part you want, then crop: saving and mosaic use only the part inside the yellow frame	Auf den gewünschten Ausschnitt zoomen, dann zuschneiden: Speichern und Mosaik verwenden nur den Teil im gelben Rahmen
+The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not reach) for GIS programs	Die Karte als GeoTIFF (WGS 84, ohne Überlagerungen, transparent wo der Überflug nicht reichte) für GIS-Programme
+Keep this projected pass to stitch with others in the Mosaic view	Diesen projizierten Überflug behalten, um ihn in der Mosaik-Ansicht mit anderen zusammenzufügen
+Stitch several projected passes into one map	Mehrere projizierte Überflüge zu einer Karte zusammenfügen
+The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	Das Mosaik ist leer. Öffne einen Überflug mit Karte, schalte Kartenprojektion ein und drücke Zum Mosaik hinzufügen. Mehrere Überflüge werden zu einer Karte zusammengefügt.
+Data packs	Datenpakete
+Data packs...	Datenpakete...
+Download map tiles, satellite elements and airports once, to work without internet	Kartenkacheln, Satellitenbahndaten und Flughäfen einmal laden, um ohne Internet zu arbeiten
+Map tiles	Kartenkacheln
+Transmitters	Sender
+Downloaded: 	Geladen: 
+Stopped: 	Gestoppt: 
+ (start it again to continue)	 (erneut starten, um fortzufahren)
+%ld tiles, zoom %d to %d	%ld Kacheln, Zoom %d bis %d
+Pack	Paket
+Size	Größe
+Last updated	Zuletzt aktualisiert
+Action	Aktion
+not downloaded	nicht geladen
+Update	Aktualisieren
+Starts the download now. Files that are already there and correct are kept.	Startet den Download jetzt. Vorhandene, korrekte Dateien bleiben erhalten.
+Check	Prüfen
+Checks every file against the checksum recorded at the download	Prüft jede Datei gegen die beim Download gespeicherte Prüfsumme
+Deleted: 	Gelöscht: 
+Credit: 	Quellenangabe: 
+Download data once and use it without internet. Nothing is downloaded until you click Download on a pack.	Daten einmal laden und ohne Internet nutzen. Es wird nichts geladen, bis Sie bei einem Paket auf Laden klicken.
+Free disk space: %s	Freier Speicherplatz: %s
+Map tiles around a position	Kartenkacheln um eine Position
+Radius (km)	Radius (km)
+Deepest zoom	Tiefster Zoom
+The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	Der Zoom wird automatisch verringert, damit das Gebiet höchstens 4000 Kacheln umfasst (die OpenStreetMap-Kachelrichtlinie erlaubt keine Massendownloads).
+Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Kartendaten (c) OpenStreetMap-Mitwirkende. Satellitenbahndaten: CelesTrak. Flughäfen: OurAirports (gemeinfrei). Details: Hilfe > Danksagungen.
+# Wireless M-Bus
+start the receiver to see the meters	den Empfänger starten, um die Zähler zu sehen
+Maker	Hersteller
+Last reading	Letzter Messwert
+encrypted payload	verschlüsselte Nutzdaten
+no meter heard yet: most meters send every few seconds to a few minutes	noch kein Zähler gehört: die meisten Zähler senden alle paar Sekunden bis Minuten
+type	Typ
+status	Status
+The payload of this meter is encrypted (AES). It is listed but never decoded.	Die Nutzdaten dieses Zählers sind verschlüsselt (AES). Er wird aufgelistet, aber nie entschlüsselt.
+Meter	Zähler
+no frame yet	noch kein Frame
+CRC failures	CRC-Fehler
+No Wireless M-Bus channel lies inside this capture. Tune to 868.625 MHz with 2 Msps (S1, T1, C1, R2) or to 169.4375 MHz (N1).	Kein Wireless-M-Bus-Kanal liegt in dieser Aufnahme. Auf 868,625 MHz mit 2 Msps (S1, T1, C1, R2) oder auf 169,4375 MHz (N1) einstellen.
+strongest channel	stärkster Kanal
+last frame at the chip slicer	letzter Frame am Chip-Slicer
+The demodulated frequency of the last frame, one point per chip: +-1 is the nominal deviation of the mode.	Die demodulierte Frequenz des letzten Frames, ein Punkt pro Chip: +-1 ist der Nennhub des Modus.
+Meters	Zähler
+meters	Zähler
+868 MHz: S1 868.3, T1 and C1 868.95, R2 868.03 - 868.15 MHz; 169 MHz: N1 169.40625 - 169.46875 MHz. Encrypted payloads are never decoded.	868 MHz: S1 868,3, T1 und C1 868,95, R2 868,03 - 868,15 MHz; 169 MHz: N1 169,40625 - 169,46875 MHz. Verschlüsselte Nutzdaten werden nie dekodiert.
+The test signal sends six simulated meters (S1, T1, C1 in both formats, R2) on the 868 MHz channels, one with an encrypted payload.	Das Testsignal sendet sechs simulierte Zähler (S1, T1, C1 in beiden Formaten, R2) auf den 868-MHz-Kanälen, einer mit verschlüsselten Nutzdaten.
+Meters, 868 / 169 MHz	Zähler, 868 / 169 MHz
+#  tone decoders
+5-tone	5-Ton
+2-tone	2-Ton
+sub-audible	unhörbar
+extended tone	erweiterter Ton
+standard tone	Standardton
+code of the usual list	Code der üblichen Liste
+code not in the usual list	Code nicht in der üblichen Liste
+same waveform	gleiche Signalform
+no CTCSS tone or DCS code	kein CTCSS-Ton oder DCS-Code
+start the receiver on an FM channel or a sound card to decode tones	Empfänger auf einem FM-Kanal oder einer Soundkarte starten, um Töne zu dekodieren
+voice-band tone	Ton im Sprachband
+keys	Tasten
+, sound card	, Soundkarte
+, FM	, FM
+gate	Sperre
+open (no gate)	offen (keine Sperre)
+audio spectrum, 0 - 3.5 kHz	Audiospektrum, 0 - 3.5 kHz
+the 50 CTCSS tones, 67 - 254 Hz	die 50 CTCSS-Töne, 67 - 254 Hz
+The level of each of the 50 tones in the last second of the sub-audible band, left to right from 67.0 to 254.1 Hz. A tone that stands clear of the others for about half a second is taken as the CTCSS tone.	Der Pegel jedes der 50 Töne in der letzten Sekunde des unhörbaren Bandes, von links nach rechts von 67,0 bis 254,1 Hz. Ein Ton, der sich etwa eine halbe Sekunde lang deutlich von den anderen abhebt, gilt als CTCSS-Ton.
+start the receiver to see what is heard	Empfänger starten, um das Gehörte zu sehen
+Length	Länge
+Hear the channel (the sub-audible tones are taken out); with a gate set under Receiver the sound opens only for the chosen tone or code	Den Kanal hören (die unhörbaren Töne werden entfernt); mit einer Sperre unter Empfänger öffnet sich der Ton nur für den gewählten Ton oder Code
+sound card audio	Soundkarten-Audio
+FM channel	FM-Kanal
+Gate	Sperre
+Open the sound	Ton öffnen
+always	immer
+on any tone or code	bei jedem Ton oder Code
+only on the chosen tone or code	nur beim gewählten Ton oder Code
+Like the squelch of a radio with CTCSS or DCS: while the gate is closed the Listen sound is muted. The decoders keep running either way.	Wie die Rauschsperre eines Funkgeräts mit CTCSS oder DCS: Solange die Sperre geschlossen ist, bleibt der Hörton stumm. Die Dekoder laufen in jedem Fall weiter.
+inverted	invertiert
+DCS polarity (N or I) follows the deviation sign of the receiver; the same waveform can read as two codes, the second is shown as the alias. Five-tone tone lengths are vendor specific: when several standards fit, the one whose usual tone length is closest is listed first.	Die DCS-Polarität (N oder I) folgt dem Vorzeichen des Hubs im Empfänger; dieselbe Signalform kann als zwei Codes gelesen werden, der zweite wird als Alias angezeigt. Die Tonlängen der Fünftonfolgen sind herstellerabhängig: passen mehrere Normen, steht die mit der üblichen Tonlänge am nächsten zuerst.
+Tone decoders	Tondekoder
+The test signal repeats every 40 s: CTCSS 123.0 Hz under speech-like noise, DCS D023N, DTMF 159#, a ZVEI1 call 12345, SELCAL AM-CP and a two-tone page.	Das Testsignal wiederholt sich alle 40 s: CTCSS 123,0 Hz unter sprachähnlichem Rauschen, DCS D023N, DTMF 159#, ein ZVEI1-Ruf 12345, SELCAL AM-CP und ein Zweiton-Ruf.
+CTCSS, DCS, DTMF, selcall	CTCSS, DCS, DTMF, Selektivruf
+# COSPAS-SARSAT 406 MHz
+A 406 MHz distress beacon (EPIRB on a boat, ELT in an aircraft, PLB carried by a person) sends a burst of about half a second every 50 seconds: an unmodulated carrier, then 112 or 144 bits at 400 bit/s. The message holds a 15 digit hex ID that is unique to the beacon, the country, the kind of beacon, and often a position (rounded to 15 minutes in a short message, to 4 seconds in a long one). Two BCH checks protect the message; up to three damaged bits in the first field are repaired.\n\nOnAir only receives. Test beacons and self-test bursts are marked. If you think you heard a real one, tell the rescue coordination centre of your country; do not rely on this program for safety.	Ein 406-MHz-Notfunkbake (EPIRB auf einem Boot, ELT in einem Flugzeug, PLB bei einer Person) sendet etwa alle 50 Sekunden einen Burst von rund einer halben Sekunde: ein unmodulierter Träger, dann 112 oder 144 Bit mit 400 Bit/s. Die Nachricht enthält eine 15-stellige Hex-ID, die für die Bake einmalig ist, das Land, die Art der Bake und oft eine Position (in einer kurzen Nachricht auf 15 Minuten gerundet, in einer langen auf 4 Sekunden). Zwei BCH-Prüfungen schützen die Nachricht; bis zu drei beschädigte Bits im ersten Feld werden repariert.\n\nOnAir empfängt nur. Testbaken und Selbsttest-Bursts sind markiert. Wenn Sie glauben, eine echte gehört zu haben, melden Sie es der Rettungsleitstelle Ihres Landes; verlassen Sie sich nicht auf dieses Programm, wenn es um Sicherheit geht.
+EPIRB (boat)	EPIRB (Boot)
+ELT (aircraft)	ELT (Flugzeug)
+PLB (person)	PLB (Person)
+Ship security	Schiffssicherung
+Test	Test
+What a 406 MHz beacon sends	Was eine 406-MHz-Bake sendet
+Hex ID	Hex-ID
+ (self-test burst)	 (Selbsttest-Burst)
+Protocol	Protokoll
+Identification	Kennung
+Precision	Genauigkeit
+about 4 seconds of arc	etwa 4 Bogensekunden
+15 minutes of arc (short message)	15 Bogenminuten (kurze Nachricht)
+Homing 121.5 MHz	Peilsender 121,5 MHz
+no	nein
+long, 144 bits	lang, 144 Bit
+short, 112 bits	kurz, 112 Bit
+Check bits	Prüfbits
+both good	beide gut
+first good, second failed	erste gut, zweite fehlgeschlagen
+first good	erste gut
+bits repaired	Bits repariert
+no beacon decoded yet; a beacon sends a burst about every 50 seconds	noch keine Bake dekodiert; eine Bake sendet etwa alle 50 Sekunden einen Burst
+Checks	Prüfungen
+fit	Einpassen
+no decoded beacon carries a position yet	keine dekodierte Bake enthält bisher eine Position
+blue EPIRB, orange ELT, green PLB, grey test; a short message is rounded to 15 minutes of arc	blau EPIRB, orange ELT, grün PLB, grau Test; eine kurze Nachricht ist auf 15 Bogenminuten gerundet
+nothing decoded yet	noch nichts dekodiert
+Raw bits	Rohbits
+tune to 406.028 MHz and start the receiver	auf 406,028 MHz abstimmen und den Empfänger starten
+Receive only. A real beacon means somebody may be in danger: tell the rescue centre; do not rely on this program for safety.	Nur Empfang. Eine echte Bake bedeutet, dass jemand in Gefahr sein kann: informieren Sie die Rettungsleitstelle; verlassen Sie sich für Ihre Sicherheit nicht auf dieses Programm.
+no input	kein Eingang
+beacon decoded lately	Bake kürzlich dekodiert
+Bursts	Bursts
+heard	gehört
+failed the checks	Prüfung nicht bestanden
+Last burst	Letzter Burst
+Input	Eingang
+start the receiver to see beacons	Empfänger starten, um Baken zu sehen
+The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	Das Testsignal wiederholt alle 3 Sekunden fünf erfundene Baken (echte senden alle 50 Sekunden): eine EPIRB, eine PLB, eine ELT, eine Seefunk-Nutzerbake und eine EPIRB auf der Südhalbkugel.
+Distress beacons, 406 MHz	Notfunkbaken, 406 MHz
+%.0f Hz above the dial (%.3f kHz)	%.0f Hz über der Dial-Frequenz (%.3f kHz)
+Interleave	Interleave
+Line	Zeile
+Long	Lang
+MT63 comes in three widths, 500, 1000 and 2000 Hz (5, 10 and 20 characters per second). Automatic looks for all three.	MT63 gibt es in drei Breiten, 500, 1000 und 2000 Hz (5, 10 und 20 Zeichen pro Sekunde). Automatisch sucht nach allen dreien.
+Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way	Das Seitenband (Dial + 200 Hz bis 3,8 kHz) über die Soundkarte abspielen; die Dekodierung ist in beiden Fällen gleich
+Robust chat, 14.1095 MHz	Robuster Chat, 14,1095 MHz
+Short	Kurz
+The 64 carriers: the level of each, relative to the strongest	Die 64 Träger: der Pegel jedes Trägers relativ zum stärksten
+The long interleave spreads every character over 64 symbols, the short one over 32: the long one survives longer fades and bursts, the short one has less delay. Automatic decodes both and shows the one with clean codewords.	Das lange Interleave verteilt jedes Zeichen über 64 Symbole, das kurze über 32: das lange übersteht längere Schwunde und Störimpulse, das kurze hat weniger Verzögerung. Automatisch dekodiert beide und zeigt das mit den sauberen Codewörtern.
+bandwidth	Bandbreite
+centre	Mitte
+characters	Zeichen
+codeword quality	Codewortqualität
+interleave	Interleave
+no callsigns yet	noch keine Rufzeichen
+start the receiver to read the band	Empfänger starten, um das Band zu lesen
+synchronising	synchronisiere
+unclear	unklar
+# Meteor scatter
+Copies the pings as CSV: id, UTC time, duration, peak level, Doppler, drift, type, beacon frequency.	Kopiert die Pings als CSV: ID, UTC-Zeit, Dauer, Spitzenpegel, Doppler, Drift, Typ, Baken-Frequenz.
+Log to file	In Datei protokollieren
+Appends every ping to meteor_scatter.csv in the data folder, also when nobody watches the screen.	Hängt jeden Ping an meteor_scatter.csv im Datenordner an, auch wenn niemand auf den Bildschirm schaut.
+threshold %d dB	Schwelle %d dB
+How far above its long-term level a spectrum bin must rise to count as an echo. Lower finds weaker pings and more false ones.	Wie weit ein Spektrumbin über seinen Langzeitpegel steigen muss, um als Echo zu zählen. Niedriger findet schwächere Pings und mehr falsche.
+start the receiver to see the pings	Empfänger starten, um die Pings zu sehen
+No beacon line found. Tune to the beacon (GRAVES: 143.050 MHz) so that it lies within 4 kHz of the centre, with 1 Msps or more.	Keine Bakenlinie gefunden. Auf die Bake (GRAVES: 143,050 MHz) abstimmen, sodass sie innerhalb von 4 kHz der Mitte liegt, mit 1 Msps oder mehr.
+Doppler	Doppler
+Drift	Drift
+overdense	überdicht
+underdense	unterdicht
+no ping yet: on GRAVES a quiet hour brings a few, a shower peak hundreds	noch kein Ping: bei GRAVES bringt eine ruhige Stunde einige, ein Schauer-Maximum Hunderte
+shape	Form
+overdense: long, flat top	überdicht: lang, flache Spitze
+underdense: sharp rise, exponential decay	unterdicht: steiler Anstieg, exponentieller Abfall
+start the receiver to see the rates	Empfänger starten, um die Raten zu sehen
+pings per hour (UTC), the last 24 hours	Pings pro Stunde (UTC), die letzten 24 Stunden
+pings per day (UTC), the last 30 days; showers marked at their peak	Pings pro Tag (UTC), die letzten 30 Tage; Schauer am Maximum markiert
+meteor showers now and near (peak date, typical hourly rate for an eye observer)	Meteorströme jetzt und in der Nähe (Maximum, typische Stundenrate für einen Beobachter mit bloßem Auge)
+Shower	Strom
+Rate	Rate
+today	heute
+in %d days	in %d Tagen
+%d days ago	vor %d Tagen
+active	aktiv
+, daytime: best for radio	, tagsüber: am besten für Funk
+not active	nicht aktiv
+start the receiver to see the echoes	Empfänger starten, um die Echos zu sehen
+echoes: +-500 Hz around the beacon line, the last 30 seconds (brighter = stronger over the background)	Echos: +-500 Hz um die Bakenlinie, die letzten 30 Sekunden (heller = stärker über dem Hintergrund)
+beacon	Bake
+ping	Ping
+long-term spectrum around the beacon (dB over the noise)	Langzeitspektrum um die Bake (dB über dem Rauschen)
+Pings	Pings
+Rates	Raten
+Echoes	Echos
+pings	Pings
+not found	nicht gefunden
+noise	Rauschen
+detector	Detektor
+log	Protokoll
+The beacon is a fixed transmitter far beyond the horizon: it is heard only when a meteor trail reflects it, as a short echo a few Hz to a few hundred Hz away from the line. Echoes closer than 18 Hz to the line are masked.	Die Bake ist ein fester Sender weit hinter dem Horizont: Sie ist nur zu hören, wenn eine Meteorspur sie reflektiert, als kurzes Echo wenige Hz bis einige hundert Hz neben der Linie. Echos näher als 18 Hz an der Linie werden ausgeblendet.
+Ping	Ping
+with interference bursts	mit Störimpulsen
+The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Das Testsignal ist eine Bake 420 Hz neben der Mitte mit simulierten Meteorechos: kurze unterdichte und einige lange überdichte.
+Beacon echoes, 143.050 MHz	Bakenechos, 143,050 MHz

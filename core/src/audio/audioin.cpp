@@ -25,7 +25,7 @@ bool loadPcmWav(const std::string& path, std::vector<float>& stereo, int wantRat
     if (fread(riff, 1, 12, f) != 12 || memcmp(riff, "RIFF", 4) || memcmp(riff + 8, "WAVE", 4)) { fclose(f); return false; }
     int16_t ch = 1, bits = 16;
     int32_t sr = 8000;
-    std::vector<float> mono;
+    std::vector<float> lft, rgt;   // two channels are kept apart (stereo I/Q files); one is copied to both, more are averaged
     for (;;) {
         char id[4];
         uint32_t n = 0;
@@ -44,26 +44,27 @@ bool loadPcmWav(const std::string& path, std::vector<float>& stereo, int wantRat
             fclose(f);
             const int c = std::max(1, (int)ch);
             const size_t frames = raw.size() / (size_t)c;
-            mono.resize(frames);
+            lft.resize(frames);
+            rgt.resize(frames);
             for (size_t i = 0; i < frames; i++) {
+                if (c == 2) { lft[i] = raw[i * 2] / 32768.f; rgt[i] = raw[i * 2 + 1] / 32768.f; continue; }
                 float s = 0;
                 for (int k = 0; k < c; k++) s += raw[i * (size_t)c + (size_t)k] / 32768.f;
-                mono[i] = s / (float)c;
+                lft[i] = rgt[i] = s / (float)c;
             }
             break;
         } else fseek(f, (long)n, SEEK_CUR);
     }
-    if (mono.empty()) return false;
+    if (lft.empty()) return false;
     const double adv = (double)sr / (double)wantRate;
-    stereo.resize((size_t)wantRate * 2 * mono.size() / (size_t)std::max(1, sr) + 4);
+    stereo.resize((size_t)wantRate * 2 * lft.size() / (size_t)std::max(1, sr) + 4);
     size_t o = 0;
     double pos = 0;
-    while (pos + 1 < (double)mono.size() && o + 1 < stereo.size()) {
-        const size_t i = (size_t)pos;
-        const float a = mono[i], b = mono[std::min(i + 1, mono.size() - 1)];
-        const float s = a + (b - a) * (float)(pos - (double)i);
-        stereo[o++] = s;
-        stereo[o++] = s;
+    while (pos + 1 < (double)lft.size() && o + 1 < stereo.size()) {
+        const size_t i = (size_t)pos, j = std::min(i + 1, lft.size() - 1);
+        const float fr = (float)(pos - (double)i);
+        stereo[o++] = lft[i] + (lft[j] - lft[i]) * fr;
+        stereo[o++] = rgt[i] + (rgt[j] - rgt[i]) * fr;
         pos += adv;
     }
     stereo.resize(o);
@@ -132,10 +133,39 @@ void measure(std::atomic<float>& peak, const float* s, int n, float gain) {
 }
 }
 
-void AudioIn::Impl::push(const float* in, uint32_t nFrames) {
+bool AudioIn::Impl::setResample(double devRate, double wantRate) {
+    useRs = false;
+    if (std::fabs(devRate - wantRate) < 0.5) return true;
+    if (!rs.configure(devRate, wantRate)) return false;
+    rs.reset();
+    useRs = true;
+    return true;
+}
+
+void AudioIn::Impl::push(const float* in, uint32_t nFrames, int chans) {
+    if (chans == 1 || useRs) {   // a mono device is copied to both channels; a rate change goes through the polyphase resampler
+        rsIn.resize(nFrames);
+        for (uint32_t i = 0; i < nFrames; i++) rsIn[i] = chans == 1 ? cf32(in[i], in[i]) : cf32(in[2 * i], in[2 * i + 1]);
+        if (useRs) {
+            rsOut.clear();
+            rs.process(rsIn.data(), nFrames, rsOut);
+            conv.resize(rsOut.size() * 2);
+            for (size_t i = 0; i < rsOut.size(); i++) { conv[2 * i] = rsOut[i].real(); conv[2 * i + 1] = rsOut[i].imag(); }
+        } else {
+            conv.resize((size_t)nFrames * 2);
+            for (uint32_t i = 0; i < nFrames; i++) { conv[2 * i] = rsIn[i].real(); conv[2 * i + 1] = rsIn[i].imag(); }
+        }
+        pushStereo(conv.data(), (uint32_t)(conv.size() / 2));
+        return;
+    }
+    pushStereo(in, nFrames);
+}
+
+void AudioIn::Impl::pushStereo(const float* in, uint32_t nFrames) {
     const uint64_t wr = w.load(std::memory_order_relaxed), rd = r.load(std::memory_order_acquire);
     const int space = (int)(frames - (wr - rd));
     const int n = std::min((int)nFrames, std::max(0, space));
+    if (n < (int)nFrames) overrun += nFrames - (uint32_t)n;
     const float g = gain.load(std::memory_order_relaxed);
     const size_t mask = frames - 1;
     for (int i = 0; i < n; i++) {
@@ -164,8 +194,12 @@ bool AudioIn::start(Kind k, int sampleRate, const std::string& pathOrDevice, dou
     p_->w = 0;
     p_->r = 0;
     p_->peak = 0;
+    p_->overrun = 0;
+    p_->actualRate = 0;
+    p_->useRs = false;
     if (k == Mic) {
         if (!audioInMicStart(p_.get(), rate_, pathOrDevice, err)) { kind_ = None; return false; }
+        if (p_->actualRate > 0) rate_ = p_->actualRate;   // the card would not run at the rate asked for: the real one is reported
         running_ = true;
         return true;
     }
@@ -197,6 +231,23 @@ void AudioIn::stop() {
 void AudioIn::setMuted(bool m) { p_->muted.store(m); }
 void AudioIn::setGain(float g) { p_->gain.store(g); }
 float AudioIn::peak() const { return p_->peak.load(); }
+uint64_t AudioIn::overruns() const { return p_->overrun.load(); }
+
+int AudioIn::readAvailable(float* stereo, int n) {
+    if (n <= 0) return 0;
+    if (kind_ != Mic) return read(stereo, n);   // a file, tone or silence is always ready
+    const bool mute = p_->muted.load();
+    const uint64_t wr = p_->w.load(std::memory_order_acquire), rd = p_->r.load(std::memory_order_relaxed);
+    const int have = (int)std::min<uint64_t>(wr - rd, (uint64_t)n);
+    const size_t mask = p_->frames - 1;
+    for (int i = 0; i < have; i++) {
+        const size_t k = (size_t)((rd + i) & mask) * 2;
+        stereo[2 * i] = mute ? 0 : p_->ring[k];
+        stereo[2 * i + 1] = mute ? 0 : p_->ring[k + 1];
+    }
+    p_->r.store(rd + (uint64_t)have, std::memory_order_release);
+    return have;
+}
 
 int AudioIn::read(float* stereo, int n) {
     if (n <= 0) return 0;

@@ -101,8 +101,14 @@ astro	--mode astro	Overview|Astronomy|Receiver|History
 ble	--mode ble	Overview|Devices|Receiver|History
 zigbee	--mode zigbee	Overview|Zigbee|Receiver|History
 wisun	--mode wisun	Overview|Wi-SUN|Receiver|History
+zwave	--mode zwave	Overview|Z-Wave|Receiver|History
 eczas	--mode eczas	Overview|e-Czas|Receiver|History
 fpv	--mode fpv	Overview|FPV|Receiver|History
+wmbus	--mode wmbus	Overview|Meters|Receiver|History
+tones	--mode tones	Overview|Tones|Receiver|History
+sarsat	--mode sarsat	Overview|Beacons|Receiver|History
+mt63	--mode mt63	Overview|MT63|Receiver|History
+mscatter	--mode mscatter	Overview|Meteors|Receiver|History
 nbiot	--mode nbiot	Overview|NB-IoT|Receiver|History
 codar	--mode codar	Overview|Radar|Receiver|History
 wb	--mode wb	Overview|Workbench|Receiver|History

@@ -7,7 +7,7 @@
 
 namespace {
 
-struct State { bool loaded = false; int view = 0; uint64_t sel = 0; adsbmap::View map; };
+struct State { bool loaded = false; int view = adsbmap::devView(0); uint64_t sel = 0; adsbmap::View map; };
 State S;
 
 bool live(const App& a) { return a.rx.standard == 83; }
@@ -55,6 +55,7 @@ void tab(App& a) {
         adsbmap::draw(S.map, sz);
         ImDrawList* dl = ImGui::GetWindowDrawList();
         const ImVec2 p0 = ImGui::GetItemRectMin();
+        adsbmap::fullCorner(p0, sz);
         for (const auto& ac : t.aircraft) {
             if (!ac.hasPos) continue;
             const ImVec2 q = adsbmap::project(ac.lat, ac.lon);

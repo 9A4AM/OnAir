@@ -46,6 +46,7 @@ static const auto gT0 = std::chrono::steady_clock::now();
 static double secsSinceStart() { return std::chrono::duration<double>(std::chrono::steady_clock::now() - gT0).count(); }
 
 int main(int argc, char** argv) {
+    std::string msLog;
     dect2::crash::install("crash-cli");   // a crash leaves crash-cli.txt next to the log
     if (!dect2::cpuSupportsBuild()) { fprintf(stderr, "this build needs a processor with AVX2 and FMA\n"); return 1; }
     Engine e;
@@ -96,6 +97,7 @@ int main(int argc, char** argv) {
         else if (a == "--bw") tune.bandwidthMhz = atof(next());
         else if (a == "--autobw") autoBw = true;
         else if (a == "--secs") secs = atof(next());
+        else if (a == "--ms-log") msLog = next();   // with --standard mscatter: append every ping to this CSV file
         else if (a == "--play") playSid = atoi(next());
         else if (a == "--serve") servePort = atoi(next());
         else if (a == "--lan") serveLan = true;
@@ -219,6 +221,7 @@ int main(int argc, char** argv) {
     e.general().setSilent(true);  // general receiver: no sound from the command line
     e.wifi().clearNetworks();     // Wi-Fi networks: no sound; the network table is printed with each line
     e.flarm().clearResults();
+    if (!msLog.empty()) e.mscatter().setLogFile(msLog);   // meteor scatter: the pings are appended to a CSV file
     e.hfbeacon().setSilent(true);   // HF beacons: no sound in the command line
     e.dji().clearResults();       // DJI drones: the drones and signals are printed with each line
     e.wb().clearResults();
@@ -407,6 +410,11 @@ int main(int argc, char** argv) {
                 for (const auto& n : t.halow.nets)
                     printf("  halow: %s %-32s ch %3d %6.1f MHz %d MHz MCS %d x%d %-9s %-9s SNR %3.0f dB %6.1f dBFS %s\n", n.bssid.c_str(), n.hasSsid ? n.ssid.c_str() : n.hidden ? "(hidden)" : "(compressed SSID)", n.ccf, n.freqMhz,
                            n.seenWidthMhz, n.mcs, n.nss, n.security.c_str(), n.pre == 0 ? "S1G_SHORT" : n.pre == 1 ? "S1G_LONG" : "S1G_1M", n.snrDb, n.rssi, n.vendor.c_str());
+            if (t.standard == 105)   // meteor scatter: the newest pings
+                for (size_t i = 0; i < t.mscatter.pings.size() && i < 3; i++) {
+                    const auto& p = t.mscatter.pings[i];
+                    printf("  ping: %.2f s %5.1f dB %+6.1f Hz %s\n", (double)p.durationSec, (double)p.peakSnrDb, (double)p.dopplerHz, p.kind ? "overdense" : "underdense");
+                }
             if (t.standard == 85) {   // Wi-SUN FAN: frames by type, then the newest frames
                 printf("  wisun types:");
                 for (int k = 0; k < kWsUttTypes; k++) if (t.wisun.perUtt[k]) printf(" %s %llu", wisun::uttShort(k), (unsigned long long)t.wisun.perUtt[k]);

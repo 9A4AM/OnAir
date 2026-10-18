@@ -210,10 +210,13 @@ static void toolbarGain(App& a, bool vertical, bool running, bool& retune) {
     if (ImGui::IsItemDeactivatedAfterEdit()) retune = true, a.agcOn = false;
     if (!vertical) flowNext();
     if (ImGui::Checkbox(tr("Amp"), &a.tune.ampOn)) retune = true, a.agcOn = false;
+    if (a.tune.ampOn) { if (!vertical) flowNext(6 * gUi); agcAmpWarning(a); }   // beside a manual Amp switch that is on: the amp can be damaged by strong signals
     }
-    if (!vertical) flowNext(); else if (!generic) ImGui::SameLine();   // side panel, generic radio: AGC and Auto-tune on the row below the slider
-    if (ImGui::Checkbox(tr("AGC"), &a.agcOn)) { a.agc.reset(); }
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off."));
+    if (!vertical) flowNext(); else if (!generic && !a.tune.ampOn) ImGui::SameLine();   // side panel, generic radio: AGC and Auto-tune on the row below the slider
+    if (ImGui::Checkbox(tr("AGC"), &a.agcOn)) agcReset(a);
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off."));
+    ImGui::SameLine(0, 4 * gUi);
+    agcGear(a);
     if (vertical) ImGui::SameLine(0, 14 * gUi); else flowNext();
     if (a.sweep.active()) {
         if (ImGui::Button(tr("Stop tune"))) { a.sweep = GainSweep(); }
@@ -226,10 +229,10 @@ static void toolbarGain(App& a, bool vertical, bool running, bool& retune) {
                         if (rs.values[i] != "auto") { rfMax = atoi(rs.values[i].c_str()); break; }
             if (rfMax == 0 && curDev.board == "sdrplay") rfMax = 9;   // known before the radio has been opened once
         }
-        a.sweep.start(ImGui::GetTime(), generic ? (int)curDev.gainMaxDb : 0, rfMax);
+        a.sweep.start(ImGui::GetTime(), generic ? (int)curDev.gainMaxDb : 0, rfMax, generic ? 0 : (a.tune.ampOn ? 2 : 1));   // the amp stays as the user set it
         a.agcOn = false;
     }
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to."));
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Gain helper: tries LNA/VGA combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to. The amp stays as you set it."));
     gainOptButtons(a, running);
     ImGui::EndDisabled();
     if (!isHw && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Gain controls apply to radios only (not to a recording, a sound card, or the synthetic signal)"));

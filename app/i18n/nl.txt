@@ -28,7 +28,6 @@ Default input	Default input
 Destination	Destination
 Destination / ID	Destination / ID
 Destination ID	Destination ID
-Deviation (Hz)	Deviation (Hz)
 Device ID	Device ID
 Dial frequency the decoder should assume (the sound card is not tuned)	Kiesfrequentie die de decoder moet aannemen (de geluidskaart wordt niet afgestemd)
 DVB standard	DVB standard
@@ -383,10 +382,10 @@ Amp	Versterker
 LNA	LNA
 VGA	VGA
 AGC	AGC
-Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	Houdt het ADC-niveau in een gezond bereik (ongeveer -16 dBFS rms, zonder clipping) door LNA, VGA en versterker bij te stellen.\nEen versterkingsregelaar aanraken schakelt hem uit.
+Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off.	Houdt de ingang in het beste werkpunt voor de modus: een gezond ADC-niveau, ruis boven die van de ADC zelf, sterke buren buiten. Hij verstelt LNA en VGA (de versterker alleen als je dat met het tandwiel toestaat) en blijft stil zolang een decoder vergrendeld is.\nAan een versterkingsregelaar zitten zet hem uit.
 Auto-tune	Auto-afstemming
 Stop tune	Afstemming stoppen
-Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Versterkingshulp: probeert ongeveer 40 s lang combinaties van LNA/VGA/versterker en houdt de combinatie met de beste SNR zonder clipping.\nVereist een signaal waarop de ontvanger kan vergrendelen.
+Gain helper: tries LNA/VGA combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to. The amp stays as you set it.	Versterkingshulp: probeert ongeveer 40 s LNA/VGA-combinaties en houdt de combinatie met de beste SNR zonder overbelasting.\nHeeft een signaal nodig waarop de ontvanger kan vergrendelen. De versterker blijft zoals jij hem hebt ingesteld.
 gain helper %d/%d ...	versterkingshulp %d/%d ...
 ADC OVERLOAD - %s	ADC OVERBELAST - %s
 AGC is lowering the gain	AGC verlaagt de versterking
@@ -1187,24 +1186,17 @@ signal time	signaaltijd
 Apply frequency and level now	Frequentie en niveau nu toepassen
 Bring it back here	Terugbrengen naar hier
 Carrier tune (hold)	Draaggolf afstemmen (ingedrukt houden)
-Choose a radio in step 2, or switch on the test (no RF).	Kies een radio in stap 2 of zet de test (geen RF) aan.
-Choose a signal in step 1	Kies een signaal in stap 1
-Choose a signal in step 1.	Kies een signaal in stap 1.
 Clipping	Clipping
 Idle	Inactief
 No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list. The test below needs no radio.	Geen radio gevonden die kan zenden. Sluit er een aan (HackRF, PlutoSDR of een SoapySDR-radio met zender) en ververs de lijst. De test hieronder heeft geen radio nodig.
 Nothing matches this search.	Niets komt overeen met de zoekopdracht.
 Occupied bandwidth	Bezette bandbreedte
-Offset (MHz)	Offset (MHz)
-Offset, repeat and timing	Offset, herhaling en duur
 Output level (dB)	Uitgangsniveau (dB)
 Peak	Piek
 Pop out into a window of its own	Naar een eigen venster halen
 Preparing	Voorbereiden
-Preview and send	Voorbeeld en verzenden
 RMS	RMS
 Recent	Recent
-Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels below show what would go out.	Laat de signaalgenerator op de samplefrequentie van de radio in het niets draaien: er wordt geen radio geopend en er wordt niets verzonden. Het spectrum en de niveaus hieronder tonen wat er uit zou gaan.
 STOP	STOP
 STOP ALL	ALLES STOPPEN
 Sample rate	Samplefrequentie
@@ -1230,11 +1222,8 @@ at full scale: the limiter will round the peaks	op volle schaal: de limiter rond
 making the preview...	voorbeeld wordt gemaakt...
 none chosen	niets gekozen
 none: the signal fits	geen: het signaal past
-on the air	in de lucht
 radio range %s	bereik van de radio %s
 test (no RF)	test (geen RF)
-test running	test loopt
-test, no RF	test, geen RF
 the limiter is working: %.2f%% of samples (lower the level)	de limiter werkt: %.2f%% van de samples (verlaag het niveau)
 25 kHz	25 kHz
 12.5 kHz	12.5 kHz
@@ -1252,6 +1241,13 @@ Right	Rechts
 Left + right	Links + rechts
 IF centre	MF-midden
 Swap sideband	Zijband omkeren
+Audio range	Audiobereik
+Show the sound card's whole audio range, 0 Hz to half the sample rate, across the spectrum, with the frequency scale in audio Hz from the dial. Off: the IF centre in the middle (the decoders always get it there).	Toont het hele audiobereik van de geluidskaart, 0 Hz tot de helft van de samplefrequentie, in het spectrum, met de schaal in audio-Hz vanaf de afstemfrequentie. Uit: het IF-midden in het midden (de decoders krijgen het altijd daar).
+Find centre	Midden zoeken
+Sets the IF centre to the middle of the strongest signal on the screen (a fax or FSK signal: halfway between its tones).	Zet het IF-midden op het midden van het sterkste signaal op het scherm (een fax- of FSK-signaal: halverwege tussen de tonen).
+Clipping: lower the input level	Clipping: verlaag het ingangsniveau
+Left and right are identical: this is audio, not I/Q.	Links en rechts zijn identiek: dit is audio, geen I/Q.
+Use Real (mono)	Reëel (mono) gebruiken
 Remove DC	DC verwijderen
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	Voor WebSDR, een virtuele audiokabel (VAC) of de luidspreker-, lijn- of MF-uitgang van een radio naar de computer. Geen vervanging voor een SDR als je megahertz bandbreedte nodig hebt. Het frequentieveld is de afstemming die de decoder moet aannemen (de radiofrequentie van het MF-midden); de geluidskaart wordt niet afgestemd.
 I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q stereo: links is I, rechts is Q (HDSDR / WebSDR VAC). USB-audio: reële audio naar analytische IQ voor FT8, RTTY, CW, SSB van een luidsprekeraftakking of de audio van een ontvanger. LSB-audio: hetzelfde, gespiegeld. Reëel (mono): reële samples (een LF-aftakking, een MF zoals 12 kHz) analytisch gemaakt, met de zijbandschakelaar hieronder.
@@ -2763,3 +2759,433 @@ colour bars	kleurbalken
 no transmitter (noise only)	geen zender (alleen ruis)
 The test signal is a transmitter on the channel the radio is tuned to: FM video with a 1 kHz tone on the sound subcarrier.	Het testsignaal is een zender op het kanaal waarop de radio is afgestemd: FM-video met een 1 kHz-toon op de geluidsdraaggolf.
 5.8 / 1.2 GHz video	5,8 / 1,2 GHz video
+TX sample rate	TX-samplefrequentie
+Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	Gevraagde IQ-samplefrequentie voor zenden. Stel bij een gedeelde RX/TX-radio aan beide kanten dezelfde hardwarefrequentie in. Stop het zenden voordat u dit wijzigt.
+Manual TX sample rate must be greater than zero.	De handmatige TX-samplefrequentie moet groter zijn dan nul.
+Data (off)	Data (uit)
+Generic	Algemeen
+AM / airband	AM / luchtvaart
+NFM / VHF / UHF	NFM / VHF / UHF
+WFM broadcast	WFM-omroep
+SSB / HF	SSB / HF
+CW	CW
+Audio cleanup: noise reduction, notch, leveller ...	Audio opschonen: ruisonderdrukking, notchfilter, nivelleerder ...
+Audio cleanup	Audio opschonen
+Basic	Eenvoudig
+Settings for	Instellingen voor
+Automatic (%s)	Automatisch (%s)
+A data mode: its sound is left as it is. Pick another kind above to clean it up anyway.	Een datamodus: het geluid blijft zoals het is. Kies hierboven een ander type om het toch op te schonen.
+Clean the sound you hear. The decoders always get the untouched sound.	Maakt het geluid dat je hoort schoner. De decoders krijgen altijd het onbewerkte geluid.
+Strength	Sterkte
+noise reduction	ruisonderdrukking
+auto notch	automatische notch
+leveller	nivelleerder
+silence gate	stiltepoort
+voice emphasis	stemversterking
+Nothing is on for this kind of mode. See Advanced.	Voor dit type modus staat niets aan. Zie Geavanceerd.
+Noise reduction	Ruisonderdrukking
+Takes down the steady hiss and rumble between and under the speech. More strength cleans more and costs some naturalness.	Verlaagt de constante ruis en bromtoon tussen en onder de spraak. Meer sterkte maakt schoner en kost wat natuurlijkheid.
+Auto notch	Automatische notch
+Finds a steady whistle, carrier or heterodyne in the sound and cuts it out narrowly, following it as it drifts. Lets go again when it stops.	Vindt een constante fluittoon, draaggolf of zwevingstoon in het geluid en knipt die smal weg, en volgt hem als hij wegdrijft. Laat los als hij stopt.
+cutting %.0f Hz	knipt %.0f Hz
+Manual notch	Handmatige notch
+Cuts one frequency out of the sound, for a tone you can see in the audio spectrum.	Knipt één frequentie uit het geluid, voor een toon die je in het audiospectrum ziet.
+width %.0f %%	breedte %.0f %%
+Leveller	Nivelleerder
+Brings quiet and loud stations to the same loudness, with a soft limiter against peaks.	Brengt zachte en luide zenders op hetzelfde volume, met een zachte begrenzer tegen pieken.
+balance %.0f %%	balans %.0f %%
+target %.0f dB	doel %.0f dB
+Do not boost the noise between transmissions	De ruis tussen uitzendingen niet versterken
+Silence gate	Stiltepoort
+Mutes the sound when only noise is left, like a squelch that follows the noise level by itself.	Dempt het geluid als alleen ruis overblijft, als een squelch die zelf het ruisniveau volgt.
+opens %.0f dB above noise	opent %.0f dB boven de ruis
+muted	gedempt
+Voice emphasis	Stemversterking
+Cuts the rumble below the voice and lifts the presence, so a weak voice is easier to understand.	Snijdt de bromtoon onder de stem weg en tilt de presence op, zodat een zwakke stem beter te verstaan is.
+De-esser	De-esser
+Softens sharp S sounds.	Maakt scherpe S-klanken zachter.
+Record the cleaned sound	Het opgeschoonde geluid opnemen
+Record audio saves the sound as you hear it now, cleaned, instead of the raw sound.	Audio opnemen bewaart het geluid zoals je het nu hoort, opgeschoond, in plaats van het ruwe geluid.
+Skip silence in the recording	Stilte in de opname overslaan
+Nothing is recorded while the silence gate holds the sound off.	Er wordt niets opgenomen zolang de stiltepoort het geluid tegenhoudt.
+Reset to the preset	Terug naar de voorinstelling
+# auto gain (AGC): the gear button, the amp switch, what the AGC is doing
+Auto gain	Automatische versterking
+AGC settings	AGC-instellingen
+Let AGC turn the amp on/off by itself	AGC mag de versterker zelf aan- en uitzetten
+Off by default. With this off the AGC only moves the LNA and VGA and never touches the amp: it stays as you set it. The amp is the first stage and can be damaged by strong signals.	Standaard uit. Als dit uit staat, verstelt de AGC alleen LNA en VGA en komt hij nooit aan de versterker: die blijft zoals jij hem hebt ingesteld. De versterker is de eerste trap en kan door sterke signalen beschadigd raken.
+This radio has no amp for the AGC to switch.	Deze radio heeft geen versterker die de AGC kan schakelen.
+The amp can fry itself on strong signals while on	De versterker kan bij sterke signalen doorbranden zolang hij aan staat
+Aims for: %s	Doel: %s
+wide channel: ADC headroom	breed kanaal: ADC-ruimte
+narrow channel: lowest noise, neighbours kept out	smal kanaal: laagste ruis, buren buiten
+pulsed signals: peaks decide	gepulste signalen: de pieken beslissen
+strong stations: front end protected	sterke zenders: ingang beschermd
+Now: %s	Nu: %s
+cut after an overload	verlaagd na een overbelasting
+lowering the gain	versterking wordt verlaagd
+raising the gain	versterking wordt verhoogd
+strong neighbour: front gain limited	sterke buur: ingangsversterking beperkt
+decoder locked: gain frozen	decoder vergrendeld: versterking bevroren
+at the end of the gain range	aan het eind van het versterkingsbereik
+holding the level	niveau wordt vastgehouden
+# transmit panel: top bar, Basic / Advanced, per-signal parameters
+0 is the normal suppressed carrier. A little carrier helps a receiver lock on; the top of the range is as strong as the loudest audio.	0 is de gewone onderdrukte draaggolf. Een beetje draaggolf helpt de ontvanger te vergrendelen; het bovenste einde van het bereik is even sterk als het luidste geluid.
+A second tone added to the first (0 = off). Two tones make a two-tone linearity test.	Een tweede toon bovenop de eerste (0 = uit). Twee tonen vormen een tweetoons-lineariteitstest.
+A sub-audible tone that opens a receiver's squelch (0 = off). 67 to 254.1 Hz.	Een niet-hoorbare toon die de squelch van een ontvanger opent (0 = uit). 67 tot 254,1 Hz.
+AM (carrier and sidebands)	AM (draaggolf en zijbanden)
+AM sends the carrier and both sidebands. Double sideband with suppressed carrier sends only the sidebands.	AM zendt de draaggolf en beide zijbanden uit. Dubbele zijband met onderdrukte draaggolf zendt alleen de zijbanden uit.
+Audio above this level is turned down.	Geluid boven dit niveau wordt zachter gezet.
+Audio frequency	Audiofrequentie
+Boosts the high notes before sending (0 = off).	Versterkt de hoge tonen voor het zenden (0 = uit).
+Boosts the high notes before sending. 50 µs in Europe and most of the world, 75 µs in the Americas.	Versterkt de hoge tonen voor het zenden. 50 µs in Europa en het grootste deel van de wereld, 75 µs in Amerika.
+CTCSS level	CTCSS-niveau
+CTCSS tone	CTCSS-toon
+Carrier injection	Draaggolfinjectie
+Carrier level	Draaggolfniveau
+Choose a radio below, or switch on the test (no RF).	Kies hieronder een radio of schakel de test in (zonder RF).
+Choose a signal in the list.	Kies een signaal in de lijst.
+Cuts the audio above this pitch, which sets how wide the signal is (0 = off).	Knipt het geluid boven deze toonhoogte af, wat de breedte van het signaal bepaalt (0 = uit).
+DSB (suppressed carrier)	DSB (onderdrukte draaggolf)
+Default: %s	Standaard: %s
+Deviation	Deviatie
+Esc = stop	Esc = stop
+Evens out loud and quiet speech so the signal stays strong without over-modulating.	Egaliseert luide en zachte spraak zodat het signaal sterk blijft zonder overmodulatie.
+Every setting of this signal: modulation, audio, filters, output and timing. The defaults are sensible; open this only to change them.	Alle instellingen van dit signaal: modulatie, audio, filters, uitgang en timing. De standaardwaarden zijn verstandig; open dit alleen om ze te wijzigen.
+Filters	Filters
+Follow the receiver	De ontvanger volgen
+Frequency offset	Frequentieverschuiving
+Gain added after the compressor.	Versterking die na de compressor wordt toegevoegd.
+Gain applied to the whole signal just before the radio. Lower it when the meter shows clipping; the radio's own gain is set above.	Versterking van het hele signaal vlak voor de radio. Zet hem lager als de meter clipping toont; de eigen versterking van de radio stel je hierboven in.
+HOLD TO TRANSMIT	HOUD INGEDRUKT OM TE ZENDEN
+High-pass (low cut)	Hoogdoorlaat (laagsnijder)
+How far the RDS subcarrier deviates the carrier.	Hoever de RDS-subdraaggolf de draaggolf afwijkt.
+How far the audio swings the frequency. 2.5 kHz is a 12.5 kHz channel, 5 kHz a 25 kHz channel.	Hoever het geluid de frequentie laat variëren. 2,5 kHz hoort bij een kanaal van 12,5 kHz, 5 kHz bij een kanaal van 25 kHz.
+How far the audio swings the frequency. Broadcast FM uses 75 kHz.	Hoever het geluid de frequentie laat variëren. Omroep-FM gebruikt 75 kHz.
+How far the audio swings the signal. Full modulation is at 100 percent; more than that over-modulates and distorts.	Hoever het geluid het signaal moduleert. Volle modulatie is 100 procent; meer geeft overmodulatie en vervorming.
+How fast the compressor lets go after a loud passage.	Hoe snel de compressor loslaat na een luide passage.
+How long the VOX stays open after the sound stops.	Hoe lang de VOX open blijft nadat het geluid stopt.
+How loud the audio must be to open the VOX.	Hoe luid het geluid moet zijn om de VOX te openen.
+How loud the test tone is, as a share of full audio.	Hoe luid de testtoon is, als deel van het volle geluidsniveau.
+How strongly audio above the threshold is turned down; 20 is close to a hard limiter.	Hoe sterk geluid boven de drempel wordt teruggebracht; 20 komt dicht bij een harde limiter.
+Key-up fade-in	Opbouw bij het inschakelen
+Left level	Niveau links
+Left test tone	Testtoon links
+Low-pass (audio bandwidth)	Laagdoorlaat (audiobandbreedte)
+Lower sideband (LSB)	Onderste zijband (LSB)
+Make-up gain	Make-up-versterking
+Mirror the spectrum	Spectrum spiegelen
+Modulation depth	Modulatiediepte
+Music (not speech)	Muziek (geen spraak)
+Name for a new preset	Naam voor een nieuwe preset
+No presets saved for this signal yet.	Er zijn nog geen presets opgeslagen voor dit signaal.
+Output	Uitgang
+Output level	Uitgangsniveau
+Output trim	Uitgangstrim
+Peak level	Piekniveau
+Pilot level	Pilootniveau
+Pitch	Toonhoogte
+Presets	Presets
+Preview	Voorbeeld
+Programme type	Programmatype
+Push to talk (hold the button)	Push-to-talk (houd de knop ingedrukt)
+Puts every setting below back to its default.	Zet elke instelling hieronder terug op de standaardwaarde.
+RDS	RDS
+RDS level	RDS-niveau
+RF level	RF-niveau
+RX %.6f MHz	RX %.6f MHz
+Ratio	Verhouding
+Release	Release
+Removes rumble and hum below this pitch (0 = off).	Verwijdert gedreun en brom onder deze toonhoogte (0 = uit).
+Reset to default	Terug naar standaard
+Right level	Niveau rechts
+Right test tone	Testtoon rechts
+Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels show what would go out.	Laat de signaalgenerator op de samplefrequentie van de radio in het niets draaien: er wordt geen radio geopend en er wordt niets uitgezonden. Spectrum en niveaus tonen wat eruit zou gaan.
+Save preset	Preset opslaan
+Saves the settings below, the frequency and the level under this name.	Slaat de instellingen hieronder, de frequentie en het niveau onder deze naam op.
+Second test tone	Tweede testtoon
+Sends the 19 kHz pilot and the stereo difference signal.	Zendt de 19-kHz-piloottoon en het stereoverschilsignaal uit.
+Sends the station name, radio text and programme type on a 57 kHz subcarrier.	Zendt de zendernaam, radiotekst en het programmatype uit op een subdraaggolf van 57 kHz.
+Speech compressor	Spraakcompressor
+Start transmitting	Zenden starten
+Stereo	Stereo
+Stop transmitting	Zenden stoppen
+Swaps I and Q so the signal is turned over: an upper sideband becomes a lower one. For a radio or mixer that inverts.	Verwisselt I en Q zodat het signaal wordt omgedraaid: een bovenste zijband wordt een onderste. Voor een radio of mixer die inverteert.
+TRANSMITTING (release to stop)	ZENDT (loslaten om te stoppen)
+TX = RX	TX = RX
+TX independent	TX onafhankelijk
+Test tone	Testtoon
+Test tone level	Niveau van de testtoon
+The 19 kHz stereo pilot, as a share of the full deviation.	De 19-kHz-stereopiloot, als deel van de volledige deviatie.
+The RDS flag for a station that carries traffic announcements.	De RDS-vlag voor een zender die verkeersberichten uitzendt.
+The RDS flag for music instead of speech.	De RDS-vlag voor muziek in plaats van spraak.
+The RDS flag that a traffic announcement is on the air.	De RDS-vlag dat er nu een verkeersbericht wordt uitgezonden.
+The RDS programme type code (0 to 31; 10 is pop music).	De RDS-programmatypecode (0 tot 31; 10 is popmuziek).
+The largest signal as a share of full scale.	Het grootste signaal als deel van het volle bereik.
+The left test tone, as a share of full audio.	De linker testtoon, als deel van het volle geluidsniveau.
+The pitch of the Morse tone, as an offset above the dial frequency.	De toonhoogte van de morsetoon, als verschuiving boven de afstemfrequentie.
+The pitch of the test tone, used when the audio input is the test tone.	De toonhoogte van de testtoon, gebruikt wanneer de audio-ingang de testtoon is.
+The pitch on the left channel, used when the audio input is the test tone.	De toonhoogte op het linkerkanaal, gebruikt wanneer de audio-ingang de testtoon is.
+The pitch on the right channel (0 = three times the left).	De toonhoogte op het rechterkanaal (0 = drie keer de linker).
+The radio's output level. Start low.	Het uitgangsniveau van de radio. Begin laag.
+The right test tone, as a share of full audio.	De rechter testtoon, als deel van het volle geluidsniveau.
+The signal fades in over this time after Start, so the key-up does not click.	Het signaal wordt na de start over deze tijd opgebouwd, zodat het inschakelen niet klikt.
+The signal goes out only while there is sound on the audio input.	Het signaal gaat alleen uit zolang er geluid op de audio-ingang is.
+The signal goes out only while you hold the button down.	Het signaal gaat alleen uit zolang je de knop ingedrukt houdt.
+The size of the carrier as a share of full scale. At a depth of 85 percent the peaks reach about full scale.	De grootte van de draaggolf als deel van het volle bereik. Bij een diepte van 85 procent halen de pieken ongeveer het volle bereik.
+The size of the signal as a share of full scale.	De grootte van het signaal als deel van het volle bereik.
+The tone's share of the deviation.	Het aandeel van de toon in de deviatie.
+The transmit frequency follows the receiver's. Typing a different one here unlinks them. Click to unlink.	De zendfrequentie volgt die van de ontvanger. Een andere typen ontkoppelt ze. Klik om te ontkoppelen.
+The transmit frequency is its own. The receiver is on %.6f MHz. Click to make the transmitter follow it.	De zendfrequentie staat los. De ontvanger staat op %.6f MHz. Klik om de zender die te laten volgen.
+Threshold	Drempel
+Timing	Timing
+Traffic announcement now	Verkeersbericht nu
+Traffic programme	Verkeersprogramma
+Upper sideband (USB)	Bovenste zijband (USB)
+VOX (transmit on voice)	VOX (zenden op spraak)
+VOX hang time	VOX-nalooptijd
+VOX threshold	VOX-drempel
+Well-known frequencies of this signal: pick one to set the transmit frequency	Bekende frequenties van dit signaal: kies er een om de zendfrequentie in te stellen
+Where the middle of the signal sits in the audio passband, as an offset above the dial frequency.	Waar het midden van het signaal in de audioband ligt, als verschuiving boven de afstemfrequentie.
+Where the signal sits in the audio passband, as an offset above the dial frequency.	Waar het signaal in de audioband ligt, als verschuiving boven de afstemfrequentie.
+Which sideband is sent.	Welke zijband wordt uitgezonden.
+follows the receiver	volgt de ontvanger
+on	aan
+# full screen on every map
+Full screen	Volledig scherm
+Exit full screen	Volledig scherm verlaten
+Back to the normal layout (Esc)	Terug naar de normale indeling (Esc)
+The map fills the whole window (Esc to leave)	De kaart vult het hele venster (Esc om te sluiten)
+The radar fills the whole window (Esc to leave)	De radar vult het hele venster (Esc om te sluiten)
+This screen fills the whole window (Esc to leave)	Dit scherm vult het hele venster (Esc om te sluiten)
+Labels	Namen
+Names on the spectrum	Namen op het spectrum
+Station and channel names on the spectrum and the waterfall. A click on a name tunes to it and opens its mode.	Zender- en kanaalnamen op het spectrum en de waterval. Een klik op een naam stemt erop af en opent de bijbehorende modus.
+Frequency database	Frequentiedatabase
+FM stations (RDS names)	FM-zenders (RDS-namen)
+DAB ensembles	DAB-ensembles
+DVB networks and services	DVB-netwerken en -diensten
+Memories	Geheugens
+Names that do not fit are left out. Zoom in to see more of them.	Namen die niet passen worden weggelaten. Zoom in om er meer te zien.
+Names of the stations and channels on the spectrum: choose which sources are shown	Namen van zenders en kanalen op het spectrum: kies welke bronnen worden getoond
+Click to tune here	Klik om hier af te stemmen
+Click to tune here and open its mode	Klik om hier af te stemmen en de modus te openen
+Coastlines	Kustlijnen
+Borders	Grenzen
+Mosaic	Mozaïek
+Histogram	Histogram
+Crop to view	Bijsnijden tot weergave
+Clear crop	Bijsnijden wissen
+Save GeoTIFF...	GeoTIFF opslaan...
+Add to mosaic	Aan mozaïek toevoegen
+Clear mosaic	Mozaïek leegmaken
+S-curve (contrast)	S-curve (contrast)
+Lift shadows	Schaduwen opheffen
+Cloud detail (flat bright end)	Wolkendetail (vlak helder einde)
+Night infrared	Nacht-infrarood
+No palette	Geen palet
+Thermal	Thermisch
+Rainbow	Regenboog
+Enhanced infrared	Versterkt infrarood
+Sepia	Sepia
+Tone curve applied after the gamma	Tooncurve die na de gamma wordt toegepast
+Colour palette on the brightness of the picture, for infrared and other single-channel pictures	Kleurenpalet op de helderheid van het beeld, voor infrarood en andere eenkanaalsbeelden
+Simplified coastlines drawn into the map (good to about 50 - 100 km, not a survey)	Vereenvoudigde kustlijnen in de kaart getekend (nauwkeurig tot ongeveer 50 - 100 km, geen landmeting)
+A few of the longest country borders, simplified	Enkele van de langste landsgrenzen, vereenvoudigd
+Zoom to the part you want, then crop: saving and mosaic use only the part inside the yellow frame	Zoom in op het gewenste deel en snijd dan bij: opslaan en mozaïek gebruiken alleen het deel binnen het gele kader
+The map as a GeoTIFF (WGS 84, no overlays, transparent where the pass did not reach) for GIS programs	De kaart als GeoTIFF (WGS 84, zonder overlays, doorzichtig waar de overpass niet kwam) voor GIS-programma's
+Keep this projected pass to stitch with others in the Mosaic view	Bewaar deze geprojecteerde overpass om hem in de mozaïekweergave met andere samen te voegen
+Stitch several projected passes into one map	Meerdere geprojecteerde overpasses samenvoegen tot één kaart
+The mosaic is empty. Open a pass with a map, switch Map projection on and press Add to mosaic. Several passes are stitched into one map.	Het mozaïek is leeg. Open een overpass met kaart, zet kaartprojectie aan en druk op Aan mozaïek toevoegen. Meerdere overpasses worden samengevoegd tot één kaart.
+Data packs	Datapakketten
+Data packs...	Datapakketten...
+Download map tiles, satellite elements and airports once, to work without internet	Download kaarttegels, satellietelementen en luchthavens eenmalig om zonder internet te werken
+Map tiles	Kaarttegels
+Transmitters	Zenders
+Downloaded: 	Gedownload: 
+Stopped: 	Gestopt: 
+ (start it again to continue)	 (start opnieuw om door te gaan)
+%ld tiles, zoom %d to %d	%ld tegels, zoom %d tot %d
+Pack	Pakket
+Size	Grootte
+Last updated	Laatst bijgewerkt
+Action	Actie
+not downloaded	niet gedownload
+Update	Bijwerken
+Starts the download now. Files that are already there and correct are kept.	Start de download nu. Bestanden die er al zijn en kloppen blijven behouden.
+Check	Controleren
+Checks every file against the checksum recorded at the download	Controleert elk bestand met de bij het downloaden bewaarde controlesom
+Deleted: 	Verwijderd: 
+Credit: 	Bronvermelding: 
+Download data once and use it without internet. Nothing is downloaded until you click Download on a pack.	Download gegevens één keer en gebruik ze zonder internet. Er wordt niets gedownload tot je bij een pakket op Downloaden klikt.
+Free disk space: %s	Vrije schijfruimte: %s
+Map tiles around a position	Kaarttegels rond een positie
+Radius (km)	Straal (km)
+Deepest zoom	Diepste zoom
+The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	De zoom wordt vanzelf verlaagd zodat het gebied binnen 4000 tegels blijft (het tegelbeleid van OpenStreetMap staat bulkdownloads niet toe).
+Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Kaartgegevens (c) OpenStreetMap-bijdragers. Satellietelementen: CelesTrak. Luchthavens: OurAirports (publiek domein). Details: Help > Credits.
+# Wireless M-Bus
+start the receiver to see the meters	start de ontvanger om de meters te zien
+Maker	Fabrikant
+Last reading	Laatste meterstand
+encrypted payload	versleutelde gegevens
+no meter heard yet: most meters send every few seconds to a few minutes	nog geen meter gehoord: de meeste sturen om de paar seconden tot minuten
+type	type
+status	status
+The payload of this meter is encrypted (AES). It is listed but never decoded.	De gegevens van deze meter zijn versleuteld (AES). Hij staat in de lijst, maar wordt nooit ontsleuteld.
+Meter	Meter
+no frame yet	nog geen frame
+CRC failures	CRC-fouten
+No Wireless M-Bus channel lies inside this capture. Tune to 868.625 MHz with 2 Msps (S1, T1, C1, R2) or to 169.4375 MHz (N1).	Er valt geen Wireless M-Bus-kanaal binnen deze opname. Stem af op 868,625 MHz met 2 Msps (S1, T1, C1, R2) of op 169,4375 MHz (N1).
+strongest channel	sterkste kanaal
+last frame at the chip slicer	laatste frame bij de chipslicer
+The demodulated frequency of the last frame, one point per chip: +-1 is the nominal deviation of the mode.	De gedemoduleerde frequentie van het laatste frame, één punt per chip: +-1 is de nominale zwaai van de modus.
+Meters	Meters
+meters	meters
+868 MHz: S1 868.3, T1 and C1 868.95, R2 868.03 - 868.15 MHz; 169 MHz: N1 169.40625 - 169.46875 MHz. Encrypted payloads are never decoded.	868 MHz: S1 868,3, T1 en C1 868,95, R2 868,03 - 868,15 MHz; 169 MHz: N1 169,40625 - 169,46875 MHz. Versleutelde gegevens worden nooit gedecodeerd.
+The test signal sends six simulated meters (S1, T1, C1 in both formats, R2) on the 868 MHz channels, one with an encrypted payload.	Het testsignaal stuurt zes gesimuleerde meters (S1, T1, C1 in beide formaten, R2) op de 868-MHz-kanalen, één met versleutelde gegevens.
+Meters, 868 / 169 MHz	Meters, 868 / 169 MHz
+#  tone decoders
+5-tone	5-toon
+2-tone	2-toon
+sub-audible	sub-hoorbaar
+extended tone	uitgebreide toon
+standard tone	standaardtoon
+code of the usual list	code uit de gebruikelijke lijst
+code not in the usual list	code niet in de gebruikelijke lijst
+same waveform	zelfde golfvorm
+no CTCSS tone or DCS code	geen CTCSS-toon of DCS-code
+start the receiver on an FM channel or a sound card to decode tones	start de ontvanger op een FM-kanaal of een geluidskaart om tonen te decoderen
+voice-band tone	toon in de spraakband
+keys	toetsen
+, sound card	, geluidskaart
+, FM	, FM
+gate	poort
+open (no gate)	open (geen poort)
+audio spectrum, 0 - 3.5 kHz	audiospectrum, 0 - 3.5 kHz
+the 50 CTCSS tones, 67 - 254 Hz	de 50 CTCSS-tonen, 67 - 254 Hz
+The level of each of the 50 tones in the last second of the sub-audible band, left to right from 67.0 to 254.1 Hz. A tone that stands clear of the others for about half a second is taken as the CTCSS tone.	Het niveau van elk van de 50 tonen in de laatste seconde van de sub-hoorbare band, van links naar rechts van 67,0 tot 254,1 Hz. Een toon die ongeveer een halve seconde duidelijk boven de andere uitsteekt, geldt als de CTCSS-toon.
+start the receiver to see what is heard	start de ontvanger om te zien wat er wordt gehoord
+Length	Duur
+Hear the channel (the sub-audible tones are taken out); with a gate set under Receiver the sound opens only for the chosen tone or code	Het kanaal beluisteren (de sub-hoorbare tonen worden verwijderd); met een poort bij Ontvanger gaat het geluid alleen open voor de gekozen toon of code
+sound card audio	geluidskaartaudio
+FM channel	FM-kanaal
+Gate	Poort
+Open the sound	Geluid openen
+always	altijd
+on any tone or code	bij elke toon of code
+only on the chosen tone or code	alleen bij de gekozen toon of code
+Like the squelch of a radio with CTCSS or DCS: while the gate is closed the Listen sound is muted. The decoders keep running either way.	Net als de squelch van een radio met CTCSS of DCS: zolang de poort dicht is, is het luistergeluid gedempt. De decoders blijven in beide gevallen draaien.
+inverted	geïnverteerd
+DCS polarity (N or I) follows the deviation sign of the receiver; the same waveform can read as two codes, the second is shown as the alias. Five-tone tone lengths are vendor specific: when several standards fit, the one whose usual tone length is closest is listed first.	De DCS-polariteit (N of I) volgt het teken van de afwijking van de ontvanger; dezelfde golfvorm kan als twee codes gelezen worden, de tweede wordt als alias getoond. De toonlengtes van vijftoonsoproepen zijn fabrikantafhankelijk: passen meerdere normen, dan staat die met de dichtstbijzijnde gebruikelijke toonlengte bovenaan.
+Tone decoders	Tonendecoders
+The test signal repeats every 40 s: CTCSS 123.0 Hz under speech-like noise, DCS D023N, DTMF 159#, a ZVEI1 call 12345, SELCAL AM-CP and a two-tone page.	Het testsignaal herhaalt zich elke 40 s: CTCSS 123,0 Hz onder spraakachtige ruis, DCS D023N, DTMF 159#, een ZVEI1-oproep 12345, SELCAL AM-CP en een tweetoonsoproep.
+CTCSS, DCS, DTMF, selcall	CTCSS, DCS, DTMF, selectieve oproep
+# COSPAS-SARSAT 406 MHz
+A 406 MHz distress beacon (EPIRB on a boat, ELT in an aircraft, PLB carried by a person) sends a burst of about half a second every 50 seconds: an unmodulated carrier, then 112 or 144 bits at 400 bit/s. The message holds a 15 digit hex ID that is unique to the beacon, the country, the kind of beacon, and often a position (rounded to 15 minutes in a short message, to 4 seconds in a long one). Two BCH checks protect the message; up to three damaged bits in the first field are repaired.\n\nOnAir only receives. Test beacons and self-test bursts are marked. If you think you heard a real one, tell the rescue coordination centre of your country; do not rely on this program for safety.	Een 406 MHz-noodbaken (EPIRB op een boot, ELT in een vliegtuig, PLB bij een persoon) zendt ongeveer elke 50 seconden een burst van een halve seconde uit: een ongemoduleerde draaggolf, daarna 112 of 144 bits met 400 bit/s. Het bericht bevat een hex-ID van 15 cijfers dat uniek is voor de baken, het land, het soort baken en vaak een positie (in een kort bericht afgerond op 15 minuten, in een lang op 4 seconden). Twee BCH-controles beschermen het bericht; tot drie beschadigde bits in het eerste veld worden hersteld.\n\nOnAir ontvangt alleen. Testbakens en zelftestbursts zijn gemarkeerd. Denkt u een echte te hebben gehoord, meld dit dan bij het reddingscoördinatiecentrum van uw land; vertrouw voor uw veiligheid niet op dit programma.
+EPIRB (boat)	EPIRB (boot)
+ELT (aircraft)	ELT (vliegtuig)
+PLB (person)	PLB (persoon)
+Ship security	Scheepsbeveiliging
+Test	Test
+What a 406 MHz beacon sends	Wat een 406 MHz-baken zendt
+Hex ID	Hex-ID
+ (self-test burst)	 (zelftestburst)
+Protocol	Protocol
+Identification	Identificatie
+Precision	Nauwkeurigheid
+about 4 seconds of arc	ongeveer 4 boogseconden
+15 minutes of arc (short message)	15 boogminuten (kort bericht)
+Homing 121.5 MHz	Peilzender 121,5 MHz
+no	nee
+long, 144 bits	lang, 144 bits
+short, 112 bits	kort, 112 bits
+Check bits	Controlebits
+both good	beide goed
+first good, second failed	eerste goed, tweede mislukt
+first good	eerste goed
+bits repaired	bits hersteld
+no beacon decoded yet; a beacon sends a burst about every 50 seconds	nog geen baken gedecodeerd; een baken zendt ongeveer elke 50 seconden een burst
+Checks	Controles
+fit	passend
+no decoded beacon carries a position yet	nog geen gedecodeerd baken heeft een positie
+blue EPIRB, orange ELT, green PLB, grey test; a short message is rounded to 15 minutes of arc	blauw EPIRB, oranje ELT, groen PLB, grijs test; een kort bericht is afgerond op 15 boogminuten
+nothing decoded yet	nog niets gedecodeerd
+Raw bits	Ruwe bits
+tune to 406.028 MHz and start the receiver	stem af op 406,028 MHz en start de ontvanger
+Receive only. A real beacon means somebody may be in danger: tell the rescue centre; do not rely on this program for safety.	Alleen ontvangen. Een echte baken betekent dat iemand mogelijk in gevaar is: meld het bij het reddingscentrum; vertrouw voor uw veiligheid niet op dit programma.
+no input	geen ingang
+beacon decoded lately	baken onlangs gedecodeerd
+Bursts	Bursts
+heard	gehoord
+failed the checks	controles niet doorstaan
+Last burst	Laatste burst
+Input	Ingang
+start the receiver to see beacons	start de ontvanger om bakens te zien
+The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	Het testsignaal herhaalt elke 3 seconden vijf verzonnen bakens (echte zenden elke 50 seconden): een EPIRB, een PLB, een ELT, een maritieme gebruikersbaken en een EPIRB op het zuidelijk halfrond.
+Distress beacons, 406 MHz	Noodbakens, 406 MHz
+%.0f Hz above the dial (%.3f kHz)	%.0f Hz boven de dial (%.3f kHz)
+Interleave	Interleave
+Line	Regel
+Long	Lang
+MT63 comes in three widths, 500, 1000 and 2000 Hz (5, 10 and 20 characters per second). Automatic looks for all three.	MT63 bestaat in drie breedtes, 500, 1000 en 2000 Hz (5, 10 en 20 tekens per seconde). Automatisch zoekt naar alle drie.
+Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way	Speel de zijband (dial + 200 Hz tot 3,8 kHz) af op de geluidskaart; het decoderen is in beide gevallen hetzelfde
+Robust chat, 14.1095 MHz	Robuuste chat, 14,1095 MHz
+Short	Kort
+The 64 carriers: the level of each, relative to the strongest	De 64 dragers: het niveau van elk, relatief aan de sterkste
+The long interleave spreads every character over 64 symbols, the short one over 32: the long one survives longer fades and bursts, the short one has less delay. Automatic decodes both and shows the one with clean codewords.	De lange interleave verspreidt elk teken over 64 symbolen, de korte over 32: de lange overleeft langere fades en stoorbursts, de korte heeft minder vertraging. Automatisch decodeert beide en toont die met de schone codewoorden.
+bandwidth	bandbreedte
+centre	midden
+characters	tekens
+codeword quality	kwaliteit codewoord
+interleave	interleave
+no callsigns yet	nog geen roepletters
+start the receiver to read the band	start de ontvanger om de band te lezen
+synchronising	synchroniseren
+unclear	onduidelijk
+# Meteor scatter
+Copies the pings as CSV: id, UTC time, duration, peak level, Doppler, drift, type, beacon frequency.	Kopieert de pings als CSV: id, UTC-tijd, duur, piekniveau, Doppler, drift, type, bakenfrequentie.
+Log to file	Naar bestand loggen
+Appends every ping to meteor_scatter.csv in the data folder, also when nobody watches the screen.	Voegt elke ping toe aan meteor_scatter.csv in de gegevensmap, ook als niemand naar het scherm kijkt.
+threshold %d dB	drempel %d dB
+How far above its long-term level a spectrum bin must rise to count as an echo. Lower finds weaker pings and more false ones.	Hoeveel een spectrumbin boven zijn langetermijnniveau moet uitkomen om als echo te tellen. Lager vindt zwakkere pings en meer valse.
+start the receiver to see the pings	start de ontvanger om de pings te zien
+No beacon line found. Tune to the beacon (GRAVES: 143.050 MHz) so that it lies within 4 kHz of the centre, with 1 Msps or more.	Geen bakenlijn gevonden. Stem af op het baken (GRAVES: 143,050 MHz) zodat het binnen 4 kHz van het midden ligt, met 1 Msps of meer.
+Doppler	Doppler
+Drift	Drift
+overdense	overdicht
+underdense	onderdicht
+no ping yet: on GRAVES a quiet hour brings a few, a shower peak hundreds	nog geen ping: op GRAVES levert een rustig uur er enkele, een zwermpiek honderden
+shape	vorm
+overdense: long, flat top	overdicht: lang, vlakke top
+underdense: sharp rise, exponential decay	onderdicht: scherpe stijging, exponentiële daling
+start the receiver to see the rates	start de ontvanger om de snelheden te zien
+pings per hour (UTC), the last 24 hours	pings per uur (UTC), de laatste 24 uur
+pings per day (UTC), the last 30 days; showers marked at their peak	pings per dag (UTC), de laatste 30 dagen; zwermen gemarkeerd op hun piek
+meteor showers now and near (peak date, typical hourly rate for an eye observer)	meteorenzwermen nu en dichtbij (pieckdatum, typische uursnelheid voor een waarnemer met het blote oog)
+Shower	Zwerm
+Rate	Snelheid
+today	vandaag
+in %d days	over %d dagen
+%d days ago	%d dagen geleden
+active	actief
+, daytime: best for radio	, overdag: het best voor radio
+not active	niet actief
+start the receiver to see the echoes	start de ontvanger om de echo's te zien
+echoes: +-500 Hz around the beacon line, the last 30 seconds (brighter = stronger over the background)	echo's: +-500 Hz rond de bakenlijn, de laatste 30 seconden (helderder = sterker dan de achtergrond)
+beacon	baken
+ping	ping
+long-term spectrum around the beacon (dB over the noise)	langetermijnspectrum rond het baken (dB boven de ruis)
+Pings	Pings
+Rates	Snelheden
+Echoes	Echo's
+pings	pings
+not found	niet gevonden
+noise	ruis
+detector	detector
+log	log
+The beacon is a fixed transmitter far beyond the horizon: it is heard only when a meteor trail reflects it, as a short echo a few Hz to a few hundred Hz away from the line. Echoes closer than 18 Hz to the line are masked.	Het baken is een vaste zender ver voorbij de horizon: het is alleen te horen als een meteorenspoor het weerkaatst, als een korte echo enkele Hz tot enkele honderden Hz van de lijn. Echo's dichter dan 18 Hz bij de lijn worden gemaskeerd.
+Ping	Ping
+with interference bursts	met stoorpulsen
+The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Het testsignaal is een baken 420 Hz naast het midden met gesimuleerde meteorenechoën: korte onderdichte en enkele lange overdichte.
+Beacon echoes, 143.050 MHz	Bakenechoën, 143,050 MHz

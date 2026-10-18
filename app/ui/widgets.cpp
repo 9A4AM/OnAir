@@ -523,6 +523,8 @@ bool listenControls(App& a, bool& on, const char* prefKey, const char* id, const
     float vol = a.volume * 100.f;
     if (ImGui::SliderFloat("##vol", &vol, 0, 100, "%.0f %%")) a.volume = vol / 100.f;
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Volume (shared with the other modes)"));
+    ImGui::SameLine(0, 4 * gUi);
+    audioCleanupButton(a);
     ImGui::PopID();
     return changed;
 }

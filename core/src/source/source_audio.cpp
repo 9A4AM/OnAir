@@ -2,6 +2,7 @@
 // Reuses AudioIn (CoreAudio / miniaudio). The microphone is never opened until start().
 #include "dect2/audio/audioin.h"
 #include "dect2/source/audio_if.h"
+#include "dect2/dsp/resampler.h"
 #include "dect2/source/source.h"
 
 #include <atomic>
@@ -66,9 +67,13 @@ public:
             return false;
         }
         live_ = k == AudioIn::Mic;
+        pace_ = live_ ? 1.0 : std::max(0.1, std::min(200.0, radioNumber(s, "audio_pace", 1)));   // a file can play faster than real time (tests)
         rate_ = in_->sampleRate() > 0 ? in_->sampleRate() : 48000;
         st_ = AudioIfState();
         cfg_.rate = rate_;
+        factor_ = audioOutFactor(rate_, cfg_.minOutRate);
+        baseRate_ = rate_;
+        rate_ = baseRate_ * factor_;
         ring_ = &ring;
         run_ = true;
         th_ = std::thread([this] { loop(); });
@@ -89,10 +94,12 @@ public:
         c.rate = rate;   // a new sample rate needs a restart
         std::lock_guard<std::mutex> lk(cfgMu_);
         cfg_ = c;
+        const int f = audioOutFactor(baseRate_, c.minOutRate);   // another mode needs another rate: the engine sees the new one and restarts its receivers
+        if (f != factor_) { factor_ = f; rate_ = baseRate_ * f; }
         return true;
     }
-    double sampleRate() const override { return rate_; }
-    bool realtimeHardware() const override { return true; }
+    double sampleRate() const override { std::lock_guard<std::mutex> lk(cfgMu_); return rate_; }
+    bool realtimeHardware() const override { return live_; }   // a card is; a WAV file standing in for it is a recording (slots found from the signal, a slow receiver is waited for)
 
 private:
     void loop() {
@@ -101,20 +108,33 @@ private:
         auto t0 = Clock::now();
         uint64_t sent = 0;
         while (run_ && in_) {
-            const int n = 1024;
-            in_->read(st.data(), n);
+            int n = 1024;
+            if (live_) {   // paced by the card's own clock: take what has been captured, wait when there is none (no zeros inserted, no frames repeated)
+                n = in_->readAvailable(st.data(), 2048);
+                if (n <= 0) { std::this_thread::sleep_for(std::chrono::milliseconds(2)); continue; }
+            } else in_->read(st.data(), n);
             AudioIfConfig c;
             { std::lock_guard<std::mutex> lk(cfgMu_); c = cfg_; }
             audioIfProcess(st.data(), n, c, iq.data(), st_);
+            int f;
+            { std::lock_guard<std::mutex> lk(cfgMu_); f = factor_; }
+            const cf32* outp = iq.data();
+            size_t outN = (size_t)n;
+            if (f > 1) {   // a receiver that wants more samples per second than a sound card gives: interpolated up, nothing added to the signal
+                if (f != upFactor_) { up_.configure(baseRate_, baseRate_ * f); up_.reset(); upFactor_ = f; }
+                upOut_.clear();
+                up_.process(iq.data(), (size_t)n, upOut_);
+                outp = upOut_.data(); outN = upOut_.size();
+            } else upFactor_ = 1;
             if (live_) {
-                ring_->write(iq.data(), (size_t)n);   // a live tap drops when the receiver is slow (the capture ring would overflow anyway)
-            } else {
-                while (run_ && ring_->capacity() - ring_->available() < (size_t)n) std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                if (!run_) break;
-                ring_->write(iq.data(), (size_t)n);
+                ring_->write(outp, outN);   // a live tap drops when the receiver is slow (the capture ring would overflow anyway)
+                continue;
             }
+            while (run_ && ring_->capacity() - ring_->available() < outN) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            if (!run_) break;
+            ring_->write(outp, outN);
             sent += (uint64_t)n;
-            auto due = t0 + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(sent / rate_));
+            auto due = t0 + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(sent / (baseRate_ * pace_)));
             std::this_thread::sleep_until(due);
         }
     }
@@ -124,9 +144,15 @@ private:
     IqRing* ring_ = nullptr;
     double rate_ = 48000;
     bool live_ = true;
+    double pace_ = 1;
     AudioIfState st_;
     AudioIfConfig cfg_;
-    std::mutex cfgMu_;
+    mutable std::mutex cfgMu_;
+    int factor_ = 1;
+    double baseRate_ = 48000;
+    RationalResampler up_;
+    int upFactor_ = 1;
+    std::vector<cf32> upOut_;
     std::atomic<bool> run_{false};
     std::thread th_;
 };

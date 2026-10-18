@@ -56,6 +56,7 @@ static float identifyButton(App& a, ImVec2 plotMin, ImVec2 plotSize, float right
 }
 
 static void clickToTune(App& a, int plotId) {
+    if (autoLabelsHovered()) return;   // the mouse is on a name: it tunes (autolabel.cpp)
     if (a.family == 55) { generalPlotMouse(a, plotId); return; }   // the general receiver: its channel marker, without retuning the radio
     if (!plt::IsPlotHovered() || a.fmScan.running) return;
     if (a.identifyTool || ImGui::GetIO().KeyShift) return;   // the Identify tool and Shift+drag select a signal instead of tuning (identifyPlotInput)
@@ -876,22 +877,10 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
             double cx[2] = {a.freqMhz, a.freqMhz}, cy[2] = {a.yMin, a.yMax};
             plt::Spec cs; cs.LineColor = pal::grey(0.35f);
             plt::PlotLine("centre", cx, cy, 2, cs);
-            if (a.fmMode && pal::dev()) {   // the stations the scan found, as bookmarks (as in SDR++)
-                const plt::Rect lim = plt::GetPlotLimits();
-                int k = 0;
-                for (const auto& r : a.fmScan.results) {
-                    if (!r.found || r.mhz < lim.X.Min || r.mhz > lim.X.Max) continue;
-                    double mx[2] = {r.mhz, r.mhz}, my[2] = {a.yMin, a.yMax};
-                    plt::Spec ms; ms.LineColor = ImVec4(0.85f, 0.85f, 0.85f, 0.22f);
-                    char id[16]; snprintf(id, sizeof id, "mark%d", k++);
-                    plt::PlotLine(id, mx, my, 2, ms);
-                    char lb[48]; snprintf(lb, sizeof lb, "%s", r.name.empty() ? "" : r.name.c_str());
-                    if (lb[0]) plt::PlotText(lb, r.mhz, a.yMax, ImVec2(ImGui::CalcTextSize(lb).x * 0.5f + 4, bandPlanStripHeight() + 4 * gUi + (k % 2) * ImGui::GetTextLineHeight()));
-                }
-            }
         }
         wideMarkers(a);
         multiMarkers(a);
+        autoLabelsDraw(a, 0, plotMin, plotSize, plt::GetPlotLimits().X.Min, plt::GetPlotLimits().X.Max);
         clickToTune(a, 0);
         identifyPlotInput(a, 0);
         visLo = plt::GetPlotLimits().X.Min; visHi = plt::GetPlotLimits().X.Max;
@@ -906,7 +895,8 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
         channelWidthButton(a, plotMin, plotSize, kYLabel); wideSwitch(a, plotMin, plotSize); multiSwitch(a, plotMin, plotSize);
         gSpecBtnW = cornerPopup(a, "Spectrum###specbtn", "##specpop", plotMin, plotSize, gBwBtnW + gWideBtnW, ImGui::CalcTextSize(kYLabel).x + 24 * gUi, 0, false,
                                 tr("Spectrum: averaging, max hold, peak markers, fill, grid and the unit (dBFS or dBm)"), specDisplayPopup);
-        identifyButton(a, plotMin, plotSize, gBwBtnW + gWideBtnW + gSpecBtnW);
+        const float idW = identifyButton(a, plotMin, plotSize, gBwBtnW + gWideBtnW + gSpecBtnW);
+        autoLabelsButton(a, plotMin, plotSize, gBwBtnW + gWideBtnW + gSpecBtnW + idW);
     }
     // right-click: what is this signal?
     if (openCtx) ImGui::OpenPopup("##specctx");
@@ -984,16 +974,41 @@ static void waterfallPlot(App& a, ImVec2 size, int extraFlags) {
         // rows arrive at the engine's ~30 Hz, the screen draws faster: slide down by the part of a row that is due since the last one,
         // so the picture moves at an even speed instead of jumping a row at a time
         const double frac = a.wf.pushT > 0 && !a.wf.paused ? std::min(1.0, std::max(0.0, (glfwGetTime() - a.wf.pushT) / a.wf.rowDt)) : 0;
-        int w = a.wf.writeRow;
-        ImTextureID tex = a.wf.img->texture();
-        plt::PlotImage("a", tex, plt::Point(x0, -(H - w) - frac), plt::Point(x1, -frac), ImVec2(0, (float)w / H), ImVec2(1, 1));
-        if (w > 0)
-            plt::PlotImage("b", tex, plt::Point(x0, -H - frac), plt::Point(x1, -(H - w) - frac), ImVec2(0, 0), ImVec2(1, (float)w / H));
-        const float vNew = (w + 0.5f) / H;   // the gap above: the newest row, stretched
-        if (frac > 0) plt::PlotImage("top", tex, plt::Point(x0, -frac), plt::Point(x1, 0), ImVec2(0, vNew), ImVec2(1, vNew));
+        // Drawn from the history made to the size of the plot (wf_view.h): the visible columns onto the pixel columns, the rows in groups
+        // at least a pixel tall, so nothing is skipped by the texture sampling and the picture does not blink as it slides.
+        const ImVec2 psz = plt::GetPlotSize();   // first: it finishes the setup, after which the limits are this frame's
+        const plt::Rect vis = plt::GetPlotLimits();
+        const ImVec2 fbs = ImGui::GetIO().DisplayFramebufferScale;
+        const int W = Waterfall::W;
+        const int c0 = (int)std::floor((vis.X.Min - x0) / (x1 - x0) * W), c1 = (int)std::ceil((vis.X.Max - x0) / (x1 - x0) * W);
+        const int k = plt::WfView::groupRows(vis.Y.Max - vis.Y.Min, psz.y * std::max(1.f, fbs.y), H);
+        if (!a.wf.viewImg && gGfx) a.wf.viewImg = gGfx->createImage(W, H, 0xFF000000u);
+        bool full = false;
+        static std::vector<int> dirty;
+        plt::WfView& v = a.wf.view;
+        if (a.wf.viewImg && a.wf.view.update(a.wf.lv.data(), W, H, a.wf.writeRow, a.wf.rows - 1, a.wf.filled, a.wf.lut, a.wf.lutGen,
+                                              c0, c1, std::max(1, (int)(psz.x * std::max(1.f, fbs.x))), k, full, dirty)) {
+            if (full) a.wf.viewImg->update(0, 0, v.stride, v.rowsAlloc, v.px.data());
+            else for (int r : dirty) a.wf.viewImg->update(0, r, v.stride, 1, v.px.data() + (size_t)r * v.stride);
+        }
+        if (a.wf.viewImg && v.cols > 0 && a.wf.rows > 0) {
+            ImTextureID tex = a.wf.viewImg->texture();
+            const double vx0 = x0 + (x1 - x0) * v.c0 / W, vx1 = x0 + (x1 - x0) * v.c1 / W;
+            const float u1 = (float)v.cols / W;
+            const long long R = a.wf.rows - 1, gN = R / v.k;
+            const int w = v.rowOf(gN);
+            // row r takes y from -(R - r) - 1 - frac to -(R - r) - frac: the newest group's top is that of its last row (still to come
+            // while it fills: above the plot, clipped), the older groups below it, the ring's rows w..ring-1 then 0..w-1
+            const double top = -(double)(R - (gN * v.k + v.k - 1)) - frac, midY = top - (double)(v.ring - w) * v.k;
+            plt::PlotImage("a", tex, plt::Point(vx0, midY), plt::Point(vx1, top), ImVec2(0, (float)w / H), ImVec2(u1, (float)v.ring / H));
+            if (w > 0) plt::PlotImage("b", tex, plt::Point(vx0, midY - (double)w * v.k), plt::Point(vx1, midY), ImVec2(0, 0), ImVec2(u1, (float)w / H));
+            const float vNew = (w + 0.5f) / H;   // the gap above (a whole group in): the newest group, stretched
+            if (top < 0) plt::PlotImage("top", tex, plt::Point(vx0, top), plt::Point(vx1, 0), ImVec2(0, vNew), ImVec2(u1, vNew));
+        }
         channelBand(a, false);
         plotMin = plt::GetPlotPos(); plotSize = plt::GetPlotSize();
         wfScaleBar(a, plotMin, plotSize);
+        autoLabelsDraw(a, 1, plotMin, plotSize, plt::GetPlotLimits().X.Min, plt::GetPlotLimits().X.Max);
         clickToTune(a, 1);
         identifyPlotInput(a, 1);
         plt::EndPlot();

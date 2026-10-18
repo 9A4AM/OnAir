@@ -96,7 +96,7 @@ const std::vector<PrefKey>& keyTable() {
         flagB("specHold", AT(a.peakHold), false, false, true),
         real("holdDecay", AT(a.holdDecay), 0, 60),
         real("specAvg", AT(a.specAvgSec), 0, 5),
-        flagB("specFill", AT(a.specFill), true, false, true), flagB("specGrid", AT(a.specGrid), false, false, true), flagB("specPeaks", AT(a.specPeaks), false, false, true),
+        flagB("specFill", AT(a.specFill), true, false, true), flagB("specGrid", AT(a.specGrid), false, false, true), flagB("specPeaks", AT(a.specPeaks), false, false, true), flagB("specLabels", AT(a.specLabels), true, false, true), num("specLabelMask", AT(a.specLabelMask), 63, 0, 63, true),
         flagB("specReadout", AT(a.specReadout), false, false, true), flagB("specDbm", AT(a.specDbm), false, false, true),
         num("tuningMode", AT(a.tuningMode), 0, 0, 1, true),
         flagI("fmMono", AT(a.fmMono), false),
@@ -135,7 +135,7 @@ const std::vector<PrefKey>& keyTable() {
         shared(num("uiTheme", AT(a.uiTheme), 1, 0, 2, true)),
         shared(num("audioIq", AT(a.audioIqMode), 0, 0, 3)),
         shared(num("audioChan", AT(a.audioChan), 0, 0, 2)), shared(dbl("audioIfHz", AT(a.audioIfHz), 0)), shared(flagI("audioInvert", AT(a.audioInvert), false)),
-        shared(flagI("audioDc", AT(a.audioDc), true)), shared(dbl("audioGainDb", AT(a.audioGainDb), 0)), shared(num("audioRate", AT(a.audioRate), 48000, 8000, 192000)),
+        shared(flagI("audioDc", AT(a.audioDc), true)), shared(flagI("audioAfView", AT(a.audioAfView), true)), shared(dbl("audioGainDb", AT(a.audioGainDb), 0)), shared(num("audioRate", AT(a.audioRate), 48000, 8000, 192000)),
         shared(flagFn("smoothGaps", [](const App& a) { return a.engine.player().conceal(); }, [](App& a, bool v) { a.engine.player().setConceal(v); })),
         shared(flagFn("dcRemove", [](const App& a) { return (bool)a.engine.iqFix().dc.load(); }, [](App& a, bool v) { a.engine.iqFix().dc = v; })),
         shared(flagFn("offsetTune", [](const App& a) { return a.engine.autoOffset(); }, [](App& a, bool v) { a.engine.setAutoOffset(v); })),
@@ -261,7 +261,7 @@ void loadModeAndGains(plat::Prefs& d, App& a) {
     for (int f = 0; f < kNumSlots; f++) {   // as many as savePrefs writes
         const std::string k = slotKey(f);
         if (!d.has(("gLna" + k).c_str())) continue;
-        a.famGain[f] = {(int)d.getI(("gLna" + k).c_str(), 32), (int)d.getI(("gVga" + k).c_str(), 20), d.getB(("gAmp" + k).c_str(), true), true};
+        a.famGain[f] = {(int)d.getI(("gLna" + k).c_str(), 32), (int)d.getI(("gVga" + k).c_str(), 20), d.getB(("gAmp" + k).c_str(), false), true};
     }
     {   // a protocol entry never used yet starts with the gains its family had as one entry
         int n = 0;

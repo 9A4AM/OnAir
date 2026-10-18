@@ -2,24 +2,32 @@
 
 **You are responsible.** OnAir limits nothing: not the frequency, not the power. What you type goes to the radio as typed (the radio's own range is shown as information only). Transmitting needs a licence or permission where you are, and a radio without an antenna, an attenuator or a dummy load can disturb others. Transmit is meant for test signals into a dummy load or a shielded setup, and for your own use. The first time you start, a one-time notice has to be accepted with "I understand".
 
-## How to transmit, step by step
+## How to transmit
 
-Switch the RX / TX slider at the top left to **TX**. The transmit panel fills the window. Nothing is sent until you press the big Start button.
+Switch the RX / TX slider at the top left to **TX**. The transmit view looks like the receiver: nothing is sent until you press the big Start button.
 
-**The header.** A big status word: **Idle**, **Preparing** (the radio is being opened and the first samples made), **Transmitting** (with a pulsing red dot and the elapsed time), **Test (no RF)** or **Carrier tune**. Next to it is the one primary button: **START TRANSMITTING** or **STOP**. Space starts and stops, Esc stops (not while you are typing in a text box). Errors and notes appear as boxes under the header, never as popups (except the one-time notice).
+**The top bar.** The same bar as the receiver's. On the left the run button (start / stop) and the **big frequency digits**, the same widget as the receiver's: click the upper or lower half of a digit to step it, scroll over a digit, type digits while the mouse is over the row, or double-click to type the whole frequency in MHz. Next to the digits a chip says whether the transmit frequency is **TX = RX** (it follows the receiver; typing a different frequency unlinks it) or **TX independent** (its own; the receiver's frequency is shown under it, and a click makes the transmitter follow it). **Presets** lists the well-known frequencies of the chosen signal. On the right: the **output level meter** (what goes to the radio, in dBFS) and the **Level** slider (the radio's own TX gain scale).
 
-**Step 1, Signal.** A searchable list of every signal OnAir can send, grouped like the receiver's mode list, with a short description and an icon per group. Click one to choose it. The **Recent** buttons above the list bring back one of the last signals with its frequency and level.
+**Three panes.** Left: the **signal list** (searchable, grouped like the receiver's mode list, with the last signals as one-click Recent buttons). Middle: the **Basic** block. Right: the **preview**. A narrow window or the pop-out window stacks them in one column.
 
-**Step 2, Settings.**
-- **Test (dry run, no RF)**: runs the generator at the radio's sample rate into nothing. No radio is opened or claimed, nothing is sent, and the spectrum and levels in step 3 show what would go out. Use it to try a signal and its settings first.
-- **Transmit radio**: only radios with a transmit path are listed. If there is none, receive-only radios are named with the reason. A radio a receiver is using is refused in plain words unless it is genuinely full duplex.
-- **Frequency (MHz)**: any value. The radio's specified range is shown next to the field; a value outside it gets a note, not a block.
-- **Output level (dB)**: a slider over the radio's own TX gain scale, with the radio's stage names under it (HackRF: TX VGA, and the +14 dB amplifier as its own switch). Start low.
-- **Offset, repeat and timing**: an offset added only to the frequency sent to the radio, "repeat until stopped" or one pass of N seconds.
-- The signal's own options (message text, callsign, bandwidth, modulation, test pattern, input file, microphone / camera choice) sit under the signal's name, with sensible defaults. Empty fields send the mode's built-in demo signal.
-- While a transmission runs, the frequency and the level can still be changed: **Apply frequency and level now** retunes the running radio (a radio that cannot change while sending says so and carries on as before).
+**Basic.** The state word (**Idle**, **Preparing**, **Transmitting** with a pulsing red dot and the elapsed time, **Test (no RF)**, **Carrier tune**) and the one big button: **START TRANSMITTING** or **STOP**. Space starts and stops, Esc stops (not while you are typing in a text box). For voice signals **Push to talk** turns the button into one that transmits only while you hold it. Errors and notes appear as boxes, never as popups (except the one-time notice). Under the button: **Test (dry run, no RF)** (the generator runs into nothing: no radio is opened or claimed, and the spectrum and levels show what would go out), the **transmit radio** (only radios with a transmit path are listed; a radio a receiver is using is refused in plain words unless it is genuinely full duplex), the radio's range as information, the **output level** (the radio's own TX gain scale, with its stage names; HackRF: TX VGA, and the +14 dB amplifier as its own switch), and **what to send**: the signal's own content (message text, callsign, bandwidth, test pattern, input file, microphone / camera choice) with sensible defaults. Empty fields send the mode's built-in demo signal. While a transmission runs the frequency and the level can still be changed: **Apply frequency and level now** retunes the running radio (a radio that cannot change while sending says so and carries on as before).
 
-**Step 3, Preview and send.** A live spectrum and waterfall of what will be sent (made in the background a moment after each change) or, while running, of the IQ really handed to the radio. Under it: **Peak** and **RMS** meters in dBFS, a **Clipping** lamp (red when the limiter has to work: lower the level), the **Sample rate** the radio will use and the estimated **Occupied bandwidth** (99% of the power), and an IQ scatter. **Carrier tune (hold)** sends an unmodulated carrier while the button is held, for adjusting drive, filter and SWR. **STOP ALL** stops the transmission, the test, the carrier and any pending start and gives the radio back. The log below lists what was sent and what happened.
+**Advanced.** Folded under Basic. Every parameter of the signal, in the sections **Modulation**, **Audio**, **Filters**, **Output** and **Timing**. Each row has a tooltip with what it does, its unit and its default; a row that differs from its default is drawn brighter. **Reset to default** puts every row back; **Save preset** keeps the rows, the frequency and the level under a name for this signal, and the **Presets** list brings them back. The last values of each signal are remembered. The table lives in `app/panels/tx_params.cpp` (one row per parameter: key, label, tooltip, range, default); the values reach the generator as `TxRequest::opt` (keys such as `am.depthPct`) or the request's own fields. What each signal offers:
+
+| Signal | Parameters |
+|---|---|
+| Airband AM | type (AM / DSB suppressed carrier), modulation depth, carrier level, test tone and a second tone, speech compressor (threshold, ratio, make-up, release), high-pass, low-pass, VOX (threshold, hang time) |
+| QO-100 SSB | sideband (USB / LSB), carrier injection, peak level, the same audio, filter, compressor and VOX rows (the DATV path has the TV settings) |
+| FM broadcast | deviation, pre-emphasis, stereo and pilot level, RDS on / level / programme type / TP / TA / music flag, left and right test tones and levels, RF level |
+| Digital voice and scene signals with "send analog NFM instead" | deviation, pre-emphasis, CTCSS tone and level, RF level, the same audio, filter, compressor and VOX rows |
+| FT8 / FT4 / WSPR / JT / Q65 / FST4 / MSK144 | audio frequency, sideband |
+| Olivia / Contestia / MFSK / THOR / DominoEX / Hell | centre frequency, sideband |
+| CW, PSK | pitch / audio frequency |
+| Every signal | output trim, mirror the spectrum (swap I and Q), key-up fade-in, frequency offset, repeat or one pass of N seconds |
+
+The signal-specific content (callsign, text, IDs, files, services, test pictures, baud and shift tables) stays under Basic.
+
+**Preview.** A live spectrum and waterfall of what will be sent (made in the background a moment after each change) or, while running, of the IQ really handed to the radio. Under it: **Peak** and **RMS** meters in dBFS, a **Clipping** lamp (red when the limiter has to work: lower the level), the **Sample rate** the radio will use and the estimated **Occupied bandwidth** (99% of the power), and an IQ scatter. **Carrier tune (hold)** sends an unmodulated carrier while the button is held, for adjusting drive, filter and SWR. **STOP ALL** stops the transmission, the test, the carrier and any pending start and gives the radio back. The log below lists what was sent and what happened.
 
 **Pop out.** The small button in the top right corner moves the whole panel into a window of its own.
 
@@ -86,6 +94,10 @@ This list is taken from the tables in `core/src/tx/tx.cpp` (`txModes()`).
 | wisun | Wi-SUN | 86 | makeWisunSynth |
 | eczas | e-Czas 225 kHz | 87 | makeEczasSynth |
 | fpv | FPV video (analog) | 103 | makeFpvSynth |
+| wmbus | Wireless M-Bus | 88 | makeWmbusSynth |
+| mt63 | MT63 | 97 | makeMt63Synth |
+| zwave | Z-Wave | 100 | makeZwaveSynth |
+| mscatter | Meteor scatter | 106 | makeMscatterSynth |
 | vorils | VOR / ILS | 32 | makeVorSynth |
 | m17 | M17 | 33 | makeM17Synth |
 | dstar | D-STAR | 35 | makeDstarSynth |

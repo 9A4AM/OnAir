@@ -81,13 +81,16 @@ void parseDevFlags(App& app, int argc, char** argv, DevOpts& o) {
         if (std::string(argv[i]) == "--stress") o.stress = true;   // dev: retune frequency and gain every second, like moving the controls
         if (std::string(argv[i]) == "--shot" && i + 1 < argc) o.shotPath = argv[++i];
         if (std::string(argv[i]) == "--shotdelay" && i + 1 < argc) o.shotAfter = atof(argv[++i]);
+        if (std::string(argv[i]) == "--audioclean") audioCleanupDevOpen(i + 1 < argc && std::string(argv[i + 1]) == "adv");   // dev: the Audio cleanup pop-up open (adv: Advanced)
         if (std::string(argv[i]) == "--fmscan") o.fmScanAuto = true;
         if (std::string(argv[i]) == "--passes") app.passesOpen = true;
         if (std::string(argv[i]) == "--df") app.dfOpen = true;
         if (std::string(argv[i]) == "--passive-radar") app.passiveRadarOpen = true;
         if (std::string(argv[i]) == "--rfi") app.rfiOpen = true;
         if (std::string(argv[i]) == "--images") app.galleryOpen = true;   // dev: open View > Images
+        if (std::string(argv[i]) == "--images-dev" && i + 1 < argc) { app.galleryOpen = true; galleryDev(atoi(argv[++i])); }   // dev: Images with a studio view (1 map + histogram, 2 mosaic)
         if (std::string(argv[i]) == "--hamlib") app.hamlibAddOpen = true;   // dev: open the Add Hamlib rig window
+        if (std::string(argv[i]) == "--packs") app.packsOpen = true;   // dev: open View > Data packs
         if (std::string(argv[i]) == "--map") app.mapOpen = true;   // dev: open View > Map
         if (std::string(argv[i]) == "--memory-selftest") o.memSelfTest = true;
         if (std::string(argv[i]) == "--memdev" && i + 1 < argc) memoryDev(atoi(argv[++i]));   // dev: 1 the Store current dialog, 2 the quick list as a window
@@ -153,6 +156,11 @@ void parseDevFlags(App& app, int argc, char** argv, DevOpts& o) {
         if (std::string(argv[i]) == "--nodeint") app.video.deint = false;
         if (std::string(argv[i]) == "--fakeepg") app.fakeEpg = true;
         if (std::string(argv[i]) == "--agc") app.agcOn = true;
+        if (std::string(argv[i]) == "--agcgear") app.agcGearOpen = true;   // dev: open the AGC settings popup (screenshots)
+        if (std::string(argv[i]) == "--fakehackrf") {   // dev: list a HackRF that is not there and select it, to see the gain controls of a radio in a screenshot
+            DeviceInfo d; d.kind = DeviceInfo::HackRF; d.board = "HackRF One"; d.name = "HackRF One (screenshot)"; d.serial = "screenshot";
+            app.devices.push_back(d); app.devIdx = (int)app.devices.size() - 1;
+        }
         if (std::string(argv[i]) == "--fft" && i + 1 < argc) app.tune.synth.tx.s2field1 = atoi(argv[++i]);
         if (std::string(argv[i]) == "--gi" && i + 1 < argc) app.tune.synth.tx.giIdx = atoi(argv[++i]);
         if (std::string(argv[i]) == "--cfo" && i + 1 < argc) app.tune.synth.cfoHz = atof(argv[++i]);
