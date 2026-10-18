@@ -3175,3 +3175,37 @@ Ping	Ping
 with interference bursts	zavarimpulzusokkal
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	A tesztjel egy 420 Hz-re a középtől lévő jeladó szimulált meteorvisszhangokkal: rövid alulsűrűek és néhány hosszú túlsűrű.
 Beacon echoes, 143.050 MHz	Jeladó-visszhangok, 143,050 MHz
+# BLE tracker detector
+Receive only: item trackers are recognised from their public advertisements. OnAir never connects to one, sends to one or reads its owner's data. Identifiers stay in memory for 30 minutes after a tracker was last heard, are shown as the last two address bytes only and are never saved.	Csak vétel: a tárgykövetőket nyilvános hirdetéseikről ismeri fel. Az OnAir soha nem csatlakozik egyhez sem, nem küld neki semmit, és nem olvassa a tulajdonos adatait. Az azonosítók az utolsó vétel után 30 percig maradnak a memóriában, csak a cím utolsó két bájtjaként jelennek meg, és soha nem kerülnek mentésre.
+your own	a saját
+following you	követ téged
+separated from its owner	elvált a tulajdonosától
+nearby	közelben
+start the receiver to see the trackers around you	indítsd el a vevőt a körülötted lévő követők megjelenítéséhez
+Tracker	Követő
+Stays	Marad
+Near	Közel
+Trend	Irány
+Addresses	Címek
+closer	közeledik
+farther	távolodik
+steady	állandó
+Unmark	Jelölés törlése
+Mark as mine	Megjelölés sajátként
+no trackers heard yet	még nem hallatszik követő
+An alert is also sent to the watchlists: add the word tracker to a list of the Words kind to get a notification or a push message.	A riasztás a figyelőlistákhoz is eljut: add hozzá a tracker szót egy Szavak típusú listához, hogy értesítést vagy push üzenetet kapj.
+Alert	Riasztás
+no alerts yet	még nincs riasztás
+Trackers	Követők
+packets	csomag
+in the last minute	az elmúlt percben
+in the last 30 min	az elmúlt 30 percben
+alert after	riasztás után
+A tracker that stays near a fixed receiver, such as a neighbour's tag, is reported too, and the levels are the radio's own, not calibrated distances. The detector is meant for a receiver that travels with you.	Az álló vevő közelében maradó követőt, például a szomszéd jelzőjét, szintén jelzi, a szintek pedig a rádió saját szintjei, nem kalibrált távolságok. Az érzékelő olyan vevőhöz készült, amely veled utazik.
+Adverts	Hirdetések
+Trackers advertise on all three channels in turn, so any one of them hears every tracker.	A követők sorban mindhárom csatornán hirdetnek, így bármelyik csatorna hallja az összes követőt.
+Alert after	Riasztás után
+How long a tracker must stay with the receiver before the alert.	Mennyi ideig kell a követőnek a vevő mellett maradnia a riasztás előtt.
+Near level	Közelségi szint
+The averaged level from which a tracker counts as near. The radio's level, not a calibrated distance.	Az átlagolt szint, amitől a követő közelinek számít. A rádió szintje, nem kalibrált távolság.
+Trackers, 2.4 GHz	Követők, 2,4 GHz

@@ -3189,3 +3189,37 @@ Ping	Ping
 with interference bursts	con ráfagas de interferencia
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	La señal de prueba es una baliza a 420 Hz del centro con ecos de meteoros simulados: cortos subdensos y algunos largos sobredensos.
 Beacon echoes, 143.050 MHz	Ecos de baliza, 143,050 MHz
+# BLE tracker detector
+Receive only: item trackers are recognised from their public advertisements. OnAir never connects to one, sends to one or reads its owner's data. Identifiers stay in memory for 30 minutes after a tracker was last heard, are shown as the last two address bytes only and are never saved.	Solo recepción: los rastreadores de objetos se reconocen por sus anuncios públicos. OnAir nunca se conecta a uno, no le envía nada ni lee los datos de su propietario. Los identificadores permanecen en memoria 30 minutos tras la última vez que se oyó el rastreador, se muestran solo como los dos últimos bytes de la dirección y nunca se guardan.
+your own	tuyo
+following you	te sigue
+separated from its owner	separado de su propietario
+nearby	cerca
+start the receiver to see the trackers around you	inicia el receptor para ver los rastreadores a tu alrededor
+Tracker	Rastreador
+Stays	Permanece
+Near	Cerca
+Trend	Tendencia
+Addresses	Direcciones
+closer	más cerca
+farther	más lejos
+steady	estable
+Unmark	Desmarcar
+Mark as mine	Marcar como mío
+no trackers heard yet	aún no se oye ningún rastreador
+An alert is also sent to the watchlists: add the word tracker to a list of the Words kind to get a notification or a push message.	Una alerta también se envía a las listas de vigilancia: añade la palabra tracker a una lista del tipo Palabras para recibir una notificación o un mensaje push.
+Alert	Alerta
+no alerts yet	aún no hay alertas
+Trackers	Rastreadores
+packets	paquetes
+in the last minute	en el último minuto
+in the last 30 min	en los últimos 30 min
+alert after	alerta tras
+A tracker that stays near a fixed receiver, such as a neighbour's tag, is reported too, and the levels are the radio's own, not calibrated distances. The detector is meant for a receiver that travels with you.	Un rastreador que permanece cerca de un receptor fijo, como la etiqueta de un vecino, también se notifica, y los niveles son los de la radio, no distancias calibradas. El detector está pensado para un receptor que viaja contigo.
+Adverts	Anuncios
+Trackers advertise on all three channels in turn, so any one of them hears every tracker.	Los rastreadores emiten por turnos en los tres canales, así que cualquiera de ellos oye todos los rastreadores.
+Alert after	Alerta tras
+How long a tracker must stay with the receiver before the alert.	Cuánto tiempo debe permanecer un rastreador con el receptor antes de la alerta.
+Near level	Nivel de cercanía
+The averaged level from which a tracker counts as near. The radio's level, not a calibrated distance.	El nivel promediado a partir del cual un rastreador cuenta como cercano. El nivel de la radio, no una distancia calibrada.
+Trackers, 2.4 GHz	Rastreadores, 2,4 GHz

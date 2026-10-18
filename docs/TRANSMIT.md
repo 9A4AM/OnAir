@@ -98,6 +98,7 @@ This list is taken from the tables in `core/src/tx/tx.cpp` (`txModes()`).
 | mt63 | MT63 | 97 | makeMt63Synth |
 | zwave | Z-Wave | 100 | makeZwaveSynth |
 | mscatter | Meteor scatter | 106 | makeMscatterSynth |
+| bletracker | BLE tracker detector | 109 | makeBletrkSynth |
 | vorils | VOR / ILS | 32 | makeVorSynth |
 | m17 | M17 | 33 | makeM17Synth |
 | dstar | D-STAR | 35 | makeDstarSynth |

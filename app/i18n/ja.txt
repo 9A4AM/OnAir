@@ -3189,3 +3189,37 @@ Ping	ピング
 with interference bursts	干渉バースト付き
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	テスト信号は中心から420 Hz離れたビーコンと模擬流星エコーです。短い低密のものと、いくつかの長い過密のものを含みます。
 Beacon echoes, 143.050 MHz	ビーコンエコー、143.050 MHz
+# BLE tracker detector
+Receive only: item trackers are recognised from their public advertisements. OnAir never connects to one, sends to one or reads its owner's data. Identifiers stay in memory for 30 minutes after a tracker was last heard, are shown as the last two address bytes only and are never saved.	受信専用：物品トラッカーは公開されているアドバタイズから識別します。OnAirはトラッカーに接続せず、何も送信せず、所有者のデータも読みません。識別子は最後に受信してから30分間だけメモリに保持され、アドレスの下位2バイトのみ表示され、保存されることはありません。
+your own	自分用
+following you	あなたを追跡中
+separated from its owner	持ち主から離れている
+nearby	近く
+start the receiver to see the trackers around you	受信を開始して周囲のトラッカーを表示します
+Tracker	トラッカー
+Stays	滞在
+Near	近さ
+Trend	傾向
+Addresses	アドレス数
+closer	近づく
+farther	遠ざかる
+steady	一定
+Unmark	マークを外す
+Mark as mine	自分のものとしてマーク
+no trackers heard yet	トラッカーはまだ受信されていません
+An alert is also sent to the watchlists: add the word tracker to a list of the Words kind to get a notification or a push message.	警報はウォッチリストにも送られます。通知やプッシュメッセージを受け取るには、単語タイプのリストに tracker という語を追加してください。
+Alert	警報
+no alerts yet	警報はまだありません
+Trackers	トラッカー
+packets	パケット
+in the last minute	直近1分
+in the last 30 min	直近30分
+alert after	警報までの時間
+A tracker that stays near a fixed receiver, such as a neighbour's tag, is reported too, and the levels are the radio's own, not calibrated distances. The detector is meant for a receiver that travels with you.	固定受信機の近くにとどまるトラッカー（隣人のタグなど）も報告されます。また、レベルは無線機自身の値で、校正された距離ではありません。この検出器は持ち歩く受信機向けです。
+Adverts	アドバタイズ
+Trackers advertise on all three channels in turn, so any one of them hears every tracker.	トラッカーは3つのチャンネルで順に送信するため、どのチャンネルでもすべてのトラッカーが聞こえます。
+Alert after	警報までの時間
+How long a tracker must stay with the receiver before the alert.	警報の前にトラッカーが受信機のそばにとどまる必要がある時間。
+Near level	近さのレベル
+The averaged level from which a tracker counts as near. The radio's level, not a calibrated distance.	トラッカーを近いと見なす平均レベル。無線機のレベルであり、校正された距離ではありません。
+Trackers, 2.4 GHz	トラッカー、2.4 GHz
