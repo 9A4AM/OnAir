@@ -78,7 +78,7 @@ OnAir is a receiver first. It can also send test signals through a transmit-capa
 
 | Family | Modes | What you get |
 |---|:---:|---|
-| **TV** | 10 | DVB-T/T2, DVB-S/S2/S2X, DVB-C, ATSC 1.0 and 3.0, ISDB-T, DTMB, analogue TV and MAC, analog FPV video (5.8 / 1.2 GHz), with a live player (picture, sound, subtitles, teletext, programme guide), recording, pause and live buffer, and 2-3 adjacent channels from one wide capture |
+| **TV** | 11 | DVB-T/T2, DVB-S/S2/S2X, TV sat beacon decoder, DVB-C, ATSC 1.0 and 3.0, ISDB-T, DTMB, analogue TV and MAC, analog FPV video (5.8 / 1.2 GHz), with a live player (picture, sound, subtitles, teletext, programme guide), recording, pause and live buffer, and 2-3 adjacent channels from one wide capture |
 | **Broadcast radio** | 5 | DAB+, DRM (with its data services), HD Radio, CDR, and FM with RDS, a Mono switch for weak stations and a saved-station library |
 | **Aviation** | 14 | ADS-B with a live map, UAT, ACARS, VDL2 and VDL4, HFDL, airband, VOR / ILS / NDB, FLARM, drones |
 | **Maritime** | 5 | AIS, VDES, NAVTEX, DSC, weather fax |
@@ -88,7 +88,7 @@ OnAir is a receiver first. It can also send test signals through a transmit-capa
 | **Pagers** | 3 | POCSAG, FLEX, Multitone |
 | **IoT and sensors** | 14 | ISM sensors, LoRaWAN, Meshtastic, MeshCore, Bluetooth LE, Zigbee, Wi-Fi, Wi-SUN, Wireless M-Bus, Z-Wave, DECT, ANT+ |
 | **Amateur** | 28 | FT8, FT4, WSPR, JS8Call, RTTY, PSK, MT63, SSTV, FreeDV, APRS, LoRa APRS, MeshCom and more |
-| **Weather and science** | 8 | Radiosondes, SAME alerts, time signals, ionospheric sounders, radio astronomy, meteor scatter, satellite beacons |
+| **Weather and science** | 7 | Radiosondes, SAME alerts, time signals, ionospheric sounders, radio astronomy, meteor scatter |
 | **HF utility** | 4 | ALE, beacons, Datawell buoys, CODAR |
 | **Tools** | 4 | General receiver, spectrum analyser, spectrum explorer, signal workbench; also a gain optimiser, a direction finder, a pass planner and a remote-control API |
 
@@ -183,6 +183,7 @@ No radio? Open an IQ recording through the *IQ recording file* source (cs8, cu8,
 - **ATSC 1.0** (North America, South Korea) and **ATSC 3.0** NextGen TV (ROUTE, HEVC video with AAC audio, optional AC-4 audio through libavcodec when installed; needs 6.5 Msps or more; MMTP services are not supported).
 - **ISDB-T** (Japan, Brazil and most of South America, Philippines; 13 segments, up to three layers, one-segment mobile TV).
 - **DVB-S / S2 / S2X** satellite TV through an LNB, all MODCODs, VL-SNR frames, polarisation warning.
+- **TV sat beacon decoder** (the narrow carrier of a geostationary beacon, found anywhere in the capture and tracked: level, C/N0, offset, drift; the reference carrier; phase-modulated telemetry recovered as bits and frames with the frame length learned from the repetition; CSV logging; a decoded view of every word of the frames with its confidence, the satellite estimated from the frequency, CSV and JSON export; [details](docs/satbeacon.md)).
 - **DTMB** (China, Hong Kong, Macau 8 MHz, Cuba 6 MHz).
 - **DVB-C** cable (EN 300 429 / J.83 annex A and C, 16 to 256-QAM, symbol rate and QAM found automatically; needs a cable feed).
 - **Analog TV:** PAL, SECAM, NTSC; systems B/G, I, D/K, M, N, H, K', 405-line A, C, E (819 lines), L, L'; NBTV and mechanical TV. Picture and sound.
@@ -242,7 +243,6 @@ No radio? Open an IQ recording through the *IQ recording file* source (cs8, cu8,
 - **Time signals** (DCF77, MSF, WWVB, JJY, WWV / WWVH, BPM, BPC and more; the computer clock can be synced), **e-Czas** (Poland's official time on 225 kHz long wave, from a long-wave capable radio or an upconverter; [how to receive it](docs/eczas.md)) and **Ionospheric sounders** (ionograms from chirp sounders).
 - **Radio astronomy** (21 cm hydrogen line and OH lines).
 - **Meteor scatter** (pings of meteor trails reflecting a distant beacon such as GRAVES on 143.050 MHz: start, duration, peak level, Doppler, rates per hour and day with the showers marked, CSV logging; [details](docs/mscatter.md)).
-- **Satellite beacon** (the narrow carrier of a geostationary beacon, found anywhere in the capture and tracked: level, C/N0, offset, drift; the reference carrier; phase-modulated telemetry recovered as bits and frames with the frame length learned from the repetition; CSV logging; [details](docs/satbeacon.md)).
 
 ### Amateur: digital
 

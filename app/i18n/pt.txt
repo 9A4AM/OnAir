@@ -3190,3 +3190,12 @@ other lines	outras linhas
 A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	Um farol de satélite é uma portadora, por vezes modulada em fase com telemetria, que as estações terrestres usam para medir a ligação. A portadora é seguida em frequência e nível; a telemetria é recuperada como tramas em bruto e o comprimento da trama é aprendido a partir da sua repetição. A estrutura das tramas de um satélite concreto não é descodificada.
 The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	O sinal de teste é uma portadora a 236 kHz do centro, com deriva como um LNB, com uma segunda portadora 545 kHz acima e telemetria bifase de 4800 bit/s numa subportadora de 48 kHz, em tramas de 256 bytes.
 Carrier, drift, telemetry frames	Portadora, deriva, tramas de telemetria
+# TV sat beacon decoder: decoded view
+decoded	descodificado
+estimated	estimado
+unknown meaning	significado desconhecido
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	descodificado: verificado com os dados. estimado: deduzido, o motivo aparece ao passar o rato. significado desconhecido: mostrado tal como está; o significado de uma palavra é do fabricante do satélite e nunca é adivinhado.
+Save JSON	Guardar JSON
+saved to	guardado em
+Value	Valor
+Raw	Bruto

@@ -3190,3 +3190,12 @@ other lines	другие линии
 A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	Спутниковый маяк — это несущая, иногда фазово модулированная телеметрией, по которой наземные станции измеряют линию связи. Несущая отслеживается по частоте и уровню; телеметрия восстанавливается в виде необработанных кадров, а длина кадра определяется по их повторению. Структура кадров конкретного спутника не декодируется.
 The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	Тестовый сигнал — несущая в 236 кГц от центра, дрейфующая как у LNB, со второй несущей на 545 кГц выше и бифазной телеметрией 4800 бит/с на поднесущей 48 кГц в кадрах по 256 байт.
 Carrier, drift, telemetry frames	Несущая, дрейф, кадры телеметрии
+# TV sat beacon decoder: decoded view
+decoded	декодировано
+estimated	оценка
+unknown meaning	значение неизвестно
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	декодировано: проверено по данным. оценка: выведено, причина видна при наведении. значение неизвестно: показано как есть; смысл слова определяет изготовитель спутника, и его никогда не угадывают.
+Save JSON	Сохранить JSON
+saved to	сохранено в
+Value	Значение
+Raw	Сырое

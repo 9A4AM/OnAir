@@ -39,9 +39,9 @@ static int framesMatching(const SbTelemetry& t, uint32_t seed, size_t counterByt
 int main() {
     // the generator: golden frames
     {
-        CHECK(hexBytes(satbeaconFrameBytes(1, 0), 48) == "FAF320FE0000001EA32B607BE9FF0000FFFFFE9100609060EFBA60FFA27D0000FF600000FF0060F862000061005A3BD4", "frame 0 golden");
-        CHECK(hexBytes(satbeaconFrameBytes(1, 1), 48) == "FAF320FE0100001EA32B60B12CFF0000FFFF72B0006035609F2060FFA7330000FF600000FF006010FC0000C9009B02DA", "frame 1 golden");
-        CHECK(hexBytes(satbeaconFrameBytes(1, 31), 48) == "FAF320FE1F00001EA32B60F809FF0000FFFF03D600607B60EEAB60FF427D0000FF600000FF006067410000A2006C731E", "frame 31 golden");
+        CHECK(hexBytes(satbeaconFrameBytes(1, 0), 48) == "FAF320FE0000001EA32B607B23FB0011FBFBFE2600609060D5038FFFA27D0000FF600000FF0065F8EE00009E005A3BD4", "frame 0 golden");
+        CHECK(hexBytes(satbeaconFrameBytes(1, 1), 48) == "FAF320FE0100001EA32B60B14AFB0011FBFB72D800603560688B1EFFA7330000FF600000FF0059100B0000D9009B02DA", "frame 1 golden");
+        CHECK(hexBytes(satbeaconFrameBytes(1, 31), 48) == "FAF320FE1F00001EA32B60F85FFB001EFBFB03F400607B60A08CE5FF427D0000FF600000FF007D6773000058006C731E", "frame 31 golden");
         CHECK(satbeaconFrameBytes(1, 32)[4] == 0 && satbeaconFrameBytes(1, 32) != satbeaconFrameBytes(1, 0), "counter wraps at 32, payload changes");
         CHECK(satbeaconFrameBytes(2, 0) != satbeaconFrameBytes(1, 0), "the seed changes the payload");
     }

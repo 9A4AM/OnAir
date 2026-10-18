@@ -1,9 +1,10 @@
-// Satellite beacon screens: the carrier (level, C/N0, offset, drift, the other narrow lines, the spectrum of the capture) and the telemetry (the subcarrier tones,
+// TV sat beacon decoder screens: the carrier (level, C/N0, offset, drift, the other narrow lines, the spectrum of the capture) and the telemetry (the subcarrier tones,
 // the spectrum of the carrier's phase modulation, the bit rate, the frames recovered with the frame length and template learned from their repetition).
 // A beacon is an unmodulated or phase-modulated carrier from a geostationary satellite; the frame layout of a given satellite is not decoded, only recovered as bits.
 #include "app.h"
 #include "dect2/satbeacon/satbeacon_live.h"
 #include "dect2/satbeacon/satbeacon_tel.h"
+#include <fstream>
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>
@@ -14,7 +15,8 @@
 namespace {
 
 struct State {
-    int view = 0;                 // 0 carrier, 1 telemetry
+    int view = 0;                 // 0 carrier, 1 telemetry, 2 decoded
+    std::string saved;            // where the last export went
     bool logOn = true;
     int pushedLog = -1;
 };
@@ -170,10 +172,88 @@ void telemetryView(App& a) {
     }
 }
 
+const char* confText(int c) { return c >= 2 ? tr("decoded") : (c == 1 ? tr("estimated") : tr("unknown meaning")); }
+ImVec4 confColor(int c) { return c >= 2 ? ImVec4(0.45f, 0.85f, 0.55f, 1) : (c == 1 ? ImVec4(0.95f, 0.75f, 0.35f, 1) : ImVec4(0.65f, 0.67f, 0.72f, 1)); }
+
+// satellite, slot, frequency, level and C/N0, frames and their health: the top of every view
+void summaryBlock(App& a) {
+    if (!live(a)) return;
+    const dect2::SbTelemetry& t = a.rx.satbeacon;
+    auto find = [&](const char* l) -> const dect2::SbInfo* { for (const auto& i : t.info) if (i.label == l) return &i; return nullptr; };
+    ImGui::PushFont(a.mono, 0);
+    const dect2::SbInfo* sat = find("Satellite");
+    const dect2::SbInfo* hl = find("Frame health");
+    if (sat) { ImGui::TextColored(confColor(sat->confidence), "%s: %s [%s]", tr("Satellite"), sat->value.c_str(), confText(sat->confidence)); }
+    const double mhz = t.centreHz > 0 ? (t.centreHz + t.cfoHz) / 1e6 : 0.0;
+    if (t.state > 0) ImGui::Text("%s %s  %.1f dB-Hz  %.1f dBFS  %llu %s%s%s", tr("Frequency"), mhz > 0 ? (std::to_string(mhz).substr(0, 10) + " MHz").c_str() : "", (double)t.snrDb, (double)t.levelDb, (unsigned long long)t.framesTotal, tr("frames"), hl ? ", " : "", hl ? hl->value.c_str() : "");
+    ImGui::PopFont();
+    ImGui::Separator();
+}
+
+void exportButtons(App& a) {
+    const dect2::SbTelemetry& t = a.rx.satbeacon;
+    auto save = [&](const char* name, const std::string& body) {
+        const std::string path = plat::dataDir() + "/" + name;
+        std::ofstream f(path, std::ios::binary);
+        if (f) { f << body; S.saved = path; } else S.saved.clear();
+    };
+    if (ImGui::Button(tr("Save CSV"))) save("tv_sat_beacon_decoded.csv", dect2::sbExportCsv(t));
+    ImGui::SameLine();
+    if (ImGui::Button(tr("Save JSON"))) save("tv_sat_beacon_decoded.json", dect2::sbExportJson(t));
+    ImGui::SameLine();
+    if (ImGui::Button(tr("Copy"))) ImGui::SetClipboardText(dect2::sbExportCsv(t).c_str());
+    if (!S.saved.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s %s", tr("saved to"), S.saved.c_str()); }
+}
+
+void decodedView(App& a) {
+    if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? tr("starting") : tr("start the receiver to see the beacon")); return; }
+    const dect2::SbTelemetry& t = a.rx.satbeacon;
+    exportButtons(a);
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextDisabled("%s", tr("decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed."));
+    ImGui::PopTextWrapPos();
+    if (t.info.empty()) return;
+    if (ImGui::BeginTable("##sbinfo", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV)) {
+        ImGui::PushFont(a.mono, 0);
+        for (const auto& i : t.info) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(tr(i.label.c_str()));
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(i.value.c_str());
+            if (ImGui::IsItemHovered()) { ImGui::SetTooltip("%s", i.how.c_str()); }
+            ImGui::TableNextColumn(); ImGui::TextColored(confColor(i.confidence), "%s", confText(i.confidence));
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", i.how.c_str());
+        }
+        ImGui::PopFont();
+        ImGui::EndTable();
+    }
+    if (t.fields.empty()) return;
+    if (ImGui::BeginTable("##sbfields", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX, ImVec2(0, std::max(140.f * gUi, ImGui::GetContentRegionAvail().y)))) {
+        ImGui::TableSetupScrollFreeze(0, 1);
+        ImGui::TableSetupColumn(tr("Bytes")); ImGui::TableSetupColumn(tr("Name")); ImGui::TableSetupColumn(tr("Value")); ImGui::TableSetupColumn(tr("Unit")); ImGui::TableSetupColumn(tr("Raw")); ImGui::TableSetupColumn("");
+        ImGui::TableHeadersRow();
+        ImGui::PushFont(a.mono, 0);
+        for (const auto& f : t.fields) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); if (f.firstByte == f.lastByte) ImGui::Text("%d", f.firstByte); else ImGui::Text("%d-%d", f.firstByte, f.lastByte);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(f.name.c_str());
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", f.how.c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(f.value.c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(f.unit.c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(f.raw.c_str());
+            ImGui::TableNextColumn(); ImGui::TextColored(confColor(f.confidence), "%s", confText(f.confidence));
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", f.how.c_str());
+        }
+        ImGui::PopFont();
+        ImGui::EndTable();
+    }
+}
+
 void tab(App& a) {
-    subNav("sbc", S.view, {tr("Carrier"), tr("Telemetry")});
+    summaryBlock(a);
+    subNav("sbc", S.view, {tr("Carrier"), tr("Telemetry"), tr("Decoded")});
     if (S.view == 0) carrierView(a);
-    else telemetryView(a);
+    else if (S.view == 1) telemetryView(a);
+    else decodedView(a);
 }
 
 void list(App& a) {
@@ -217,7 +297,7 @@ void status(App& a) {
 }
 
 void summary(const App& a, std::string& l1, std::string& l2) {
-    l1 = "Satellite beacon";
+    l1 = "TV sat beacon decoder";
     if (live(a)) l2 = dect2::sbSummary(a.rx.satbeacon);
 }
 

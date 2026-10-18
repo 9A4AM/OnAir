@@ -3190,3 +3190,12 @@ other lines	altre righe
 A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	Un faro satellitare è una portante, a volte modulata in fase con telemetria, che le stazioni a terra usano per misurare il collegamento. La portante viene seguita in frequenza e livello; la telemetria viene recuperata come frame grezzi e la lunghezza del frame viene appresa dalla loro ripetizione. La struttura dei frame di un dato satellite non viene decodificata.
 The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	Il segnale di prova è una portante a 236 kHz dal centro, che deriva come un LNB, con una seconda portante 545 kHz sopra e telemetria bifase a 4800 bit/s su una sottoportante a 48 kHz, in frame da 256 byte.
 Carrier, drift, telemetry frames	Portante, deriva, frame di telemetria
+# TV sat beacon decoder: decoded view
+decoded	decodificato
+estimated	stimato
+unknown meaning	significato sconosciuto
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	decodificato: verificato sui dati. stimato: dedotto, il motivo appare al passaggio del mouse. significato sconosciuto: mostrato com'è; il significato di una parola è del costruttore del satellite e non viene mai indovinato.
+Save JSON	Salva JSON
+saved to	salvato in
+Value	Valore
+Raw	Grezzo

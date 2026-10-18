@@ -119,7 +119,7 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("mt63", "MT63", 97, "makeMt63Synth", kOpt, kUnv),
         mk("zwave", "Z-Wave", 100, "makeZwaveSynth", kOpt, kUnv),
         mk("mscatter", "Meteor scatter", 106, "makeMscatterSynth", kOpt, kUnv),
-        mk("satbeacon", "Satellite beacon", 109, "makeSatbeaconSynth", kOpt, kUnv),
+        mk("satbeacon", "TV sat beacon decoder", 109, "makeSatbeaconSynth", kOpt, kUnv),
         mk("vorils", "VOR / ILS", 32, "makeVorSynth", kOpt, kUnv),
         mk("m17", "M17", 33, "makeM17Synth", kOpt, kUnv),
         mk("dstar", "D-STAR", 35, "makeDstarSynth", kOpt, kUnv),

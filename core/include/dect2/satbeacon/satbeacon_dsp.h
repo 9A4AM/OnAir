@@ -7,6 +7,7 @@
 //                 per-tone Costas loops, bit clock from the edges, bits, frame length / frame start / template learning
 // Written for any sample rate from 250 kHz up; the decimated work rate is 200 to 400 kHz.
 #pragma once
+#include "dect2/satbeacon/satbeacon_decode.h"
 #include "dect2/satbeacon/satbeacon_tel.h"
 #include "dect2/common/ring.h"
 #include "dect2/dsp/fftutil.h"
@@ -82,6 +83,7 @@ public:
     void process(const cf32* x, size_t n);
     void fill(SbTelemetry& t) const;
     double workRate() const { return wrate_; }
+    const Analyzer& analyzer() const { return an_; }   // what the frames carry (see satbeacon_decode.h)
     const std::vector<uint8_t>& recentBits() const { return ch_[active()].recent(); }   // tests
 private:
     int active() const { return biphase_ ? 1 : 0; }   // the stream the telemetry shows
@@ -142,6 +144,10 @@ private:
     uint64_t chipN_ = 0;
     double pairD_[2] = {0, 0}, chipAbs_ = 0;
     bool biphase_ = false;
+    void feedAnalyzer();
+    Analyzer an_;
+    int anChan_ = -1;
+    uint32_t anId_ = 0;
     Channel ch_[2];   // 0: the chips as NRZ bits, 1: bi-phase pairs
 };
 

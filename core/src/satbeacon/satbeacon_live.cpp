@@ -28,11 +28,12 @@ struct SatbeaconLiveReceiver::Impl {
         pub.seq++;
         beacon.fill(pub);
         pub.centreHz = centreHz;
+        beacon.analyzer().fill(pub, centreHz > 0 ? centreHz + pub.cfoHz : 0.0);
         pub.logging = false;
         if (pub.state != lastState) {
             lastState = pub.state;
             static const char* names[] = {"no carrier", "carrier locked", "telemetry clock locked", "frames found"};
-            if (log) { char b[160]; snprintf(b, sizeof b, "Satellite beacon: %s", names[std::max(0, std::min(3, pub.state))]); log(b); }
+            if (log) { char b[160]; snprintf(b, sizeof b, "TV sat beacon decoder: %s", names[std::max(0, std::min(3, pub.state))]); log(b); }
         }
         if (!logPath.empty()) writeLog();
     }
@@ -114,7 +115,7 @@ void SatbeaconLiveReceiver::feed(const cf32* x, size_t n) {
 
 ModeTuning satbeaconTuning() {
     ModeTuning t;
-    t.stdMode = 109; t.id = "satbeacon"; t.name = "Satellite beacon";
+    t.stdMode = 109; t.id = "satbeacon"; t.name = "TV sat beacon decoder";
     t.minMhz = 1000; t.maxMhz = 20000; t.defMhz = 11705.250;
     t.sampleRate = 2e6;
     t.basebandHz = 0;

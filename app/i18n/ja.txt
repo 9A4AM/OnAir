@@ -3207,3 +3207,12 @@ other lines	他のライン
 A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	衛星ビーコンは、地上局が回線を測定するために使う搬送波で、テレメトリで位相変調されていることもあります。搬送波は周波数とレベルで追跡され、テレメトリは生のフレームとして復元され、フレーム長はその繰り返しから学習されます。個々の衛星のフレーム構造はデコードしません。
 The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	テストシグナルは、中心から 236 kHz 離れて LNB のようにドリフトする搬送波で、その 545 kHz 上に第2の搬送波があり、48 kHz の副搬送波に 4800 bit/s のバイフェーズ・テレメトリが 256 バイトのフレームで載っています。
 Carrier, drift, telemetry frames	搬送波、ドリフト、テレメトリフレーム
+# TV sat beacon decoder: decoded view
+decoded	デコード済み
+estimated	推定
+unknown meaning	意味は不明
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	デコード済み：データで確認済み。推定：推論した値で、理由はマウスを重ねると表示されます。意味は不明：そのまま表示しています。ワードの意味は衛星メーカーのもので、推測はしません。
+Save JSON	JSON を保存
+saved to	保存先
+Value	値
+Raw	生値

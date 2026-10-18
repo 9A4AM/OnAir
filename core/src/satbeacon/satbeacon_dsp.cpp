@@ -481,6 +481,20 @@ void Beacon::process(const cf32* x, size_t n) {
         }
     }
     frontPh_ = -std::arg(ph);
+    feedAnalyzer();
+}
+
+// the new good frames of the shown stream go to the analyzer; a change of stream, of the frame layout or a restart of the counting starts it again
+void Beacon::feedAnalyzer() {
+    const int ai = active();
+    const Channel& c = ch_[ai];
+    if (ai != anChan_ || c.frames.empty() || c.frames.front().id < anId_) { an_.reset(); anChan_ = ai; anId_ = 0; }
+    if (c.frames.empty()) return;
+    for (auto it = c.frames.rbegin(); it != c.frames.rend(); ++it) {   // oldest first
+        if (it->id <= anId_) continue;
+        anId_ = it->id;
+        if (it->good) an_.add(it->bytes, c.counterByte, c.counterMod, c.frameL / std::max(1.0, clkLock_ ? clkB_ / (ai == 1 ? 2.0 : 1.0) : 4800.0));
+    }
 }
 
 void Beacon::feedWork(cf32 y) {
@@ -773,8 +787,10 @@ void Beacon::fill(SbTelemetry& t) const {
     t.blocksOk = ac.ok; t.blocksBad = ac.bad;
     t.templateBytes = ac.tmpl; t.fixedMask = ac.mask; t.colStability = ac.stab;
     t.frames.assign(ac.frames.begin(), ac.frames.end());
-    t.dataValid = ac.ok >= 4;
-    t.state = !haveCarrier_ ? 0 : (ac.ok >= 4 ? 3 : (clkLock_ ? 2 : 1));
+    // frames count as found when a known sync word starts them, or after many frames of a learned layout (early periodicities are chance)
+    const bool found = ac.ok >= 4 && (ac.syncIdx >= 0 || ac.ok >= 24);
+    t.dataValid = found;
+    t.state = !haveCarrier_ ? 0 : (found ? 3 : (clkLock_ ? 2 : 1));
 }
 
 } // namespace sb

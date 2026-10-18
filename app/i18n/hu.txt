@@ -3193,3 +3193,12 @@ other lines	további vonalak
 A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	A műholdas jeladó egy vivő, néha telemetriával fázismodulálva, amellyel a földi állomások a összeköttetést mérik. A vivőt frekvenciában és szintben követi a program; a telemetriát nyers keretekként nyeri vissza, a keretméretet az ismétlődésükből tanulja meg. Egy adott műhold kereteinek szerkezetét nem dekódolja.
 The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	A tesztjel egy a középtől 236 kHz-re lévő, LNB-hez hasonlóan sodródó vivő, felette 545 kHz-cel egy második vivővel, és 4800 bit/s kétfázisú telemetriával egy 48 kHz-es segédvivőn, 256 bájtos keretekben.
 Carrier, drift, telemetry frames	Vivő, sodródás, telemetriakeretek
+# TV sat beacon decoder: decoded view
+decoded	dekódolt
+estimated	becsült
+unknown meaning	ismeretlen jelentés
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	dekódolt: az adatokon ellenőrizve. becsült: következtetett, az okot az egérmutató mutatja. ismeretlen jelentés: változatlanul látható; egy szó jelentését a műholdgyártó határozza meg, és soha nem találgatjuk.
+Save JSON	JSON mentése
+saved to	mentve ide:
+Value	Érték
+Raw	Nyers

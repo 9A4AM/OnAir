@@ -3207,3 +3207,12 @@ other lines	andere Linien
 A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	Eine Satellitenbake ist ein Träger, manchmal mit Telemetrie phasenmoduliert, mit dem Bodenstationen die Strecke messen. Der Träger wird nach Frequenz und Pegel verfolgt; die Telemetrie wird als rohe Frames wiedergewonnen, die Framelänge wird aus ihrer Wiederholung gelernt. Der Aufbau der Frames eines bestimmten Satelliten wird nicht dekodiert.
 The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	Das Testsignal ist ein Träger 236 kHz neben der Mitte, der wie ein LNB driftet, mit einem zweiten Träger 545 kHz darüber und 4800 bit/s Biphase-Telemetrie auf einem 48-kHz-Hilfsträger in Frames zu 256 Bytes.
 Carrier, drift, telemetry frames	Träger, Drift, Telemetrie-Frames
+# TV sat beacon decoder: decoded view
+decoded	dekodiert
+estimated	geschätzt
+unknown meaning	Bedeutung unbekannt
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	dekodiert: an den Daten geprüft. geschätzt: abgeleitet, der Grund steht im Tooltip. Bedeutung unbekannt: unverändert gezeigt; was ein Wort bedeutet, bestimmt der Satellitenhersteller und wird nie geraten.
+Save JSON	JSON speichern
+saved to	gespeichert in
+Value	Wert
+Raw	Rohwert

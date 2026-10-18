@@ -3207,3 +3207,12 @@ other lines	其他谱线
 A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	卫星信标是一种载波，有时用遥测对其进行相位调制，地面站用它来测量链路。程序按频率和电平跟踪载波；遥测被恢复为原始帧，帧长度则根据帧的重复规律学习得到。特定卫星的帧结构不会被解码。
 The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	测试信号是偏离中心 236 kHz、像 LNB 一样漂移的载波，其上方 545 kHz 处有第二个载波，并在 48 kHz 副载波上以双相码携带 4800 bit/s 的遥测，帧长 256 字节。
 Carrier, drift, telemetry frames	载波、漂移、遥测帧
+# TV sat beacon decoder: decoded view
+decoded	已解码
+estimated	估计
+unknown meaning	含义未知
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	已解码：已对照数据核实。估计：由推断得出，悬停可看原因。含义未知：原样显示；字的含义由卫星制造商决定，绝不猜测。
+Save JSON	保存 JSON
+saved to	已保存到
+Value	值
+Raw	原始值

@@ -1,6 +1,6 @@
-# Satellite beacon
+# TV sat beacon decoder
 
-The mode **Satellite beacon** (Weather & science group) monitors the narrow carrier of a geostationary satellite beacon, usually a Ku or Ka band beacon seen
+The mode **TV sat beacon decoder** (TV group, next to DVB-S/S2) monitors the narrow carrier of a geostationary satellite beacon, usually a Ku or Ka band beacon seen
 through an LNB, and recovers the telemetry that some beacons carry on it. It is receive only and written clean-room from textbook methods and from our own
 analysis of a recording of a beacon.
 
@@ -59,6 +59,26 @@ The test signal (`--synthetic --standard satbeacon`) is a carrier 236 kHz off th
 telemetry on a 48 kHz subcarrier (index 1.2 rad, data clock 7 ppm off) in frames of 256 bytes (FAF320, FE, a counter 0 to 31, fixed words and pseudo-random words; this layout
 is made up for the tests); nothing is transmitted.
 
+## The Decoded view
+
+The Decoded view (and the summary at the top of every view of the mode) shows everything the frames carry as far as it can be told from the frames themselves, each line
+with how sure it is: **decoded** (checked against the data), **estimated** (inferred; hover for the reason) or **unknown meaning** (shown as it is; what a word means is the spacecraft
+maker's, and is never guessed). All frames seen are analysed, word by word and by the position of the frame in the major frame (the counter). On the recorded beacon:
+
+- **Decoded**: the sync word FAF320; byte 3 (0xFE, constant); the minor frame counter in byte 4 (0 to 31, a major frame of 13.65 s); a **checksum in the last byte**, which is the
+  sum of the other 255 bytes modulo 256 (true in all 512 frames of the recording, which is also how a good frame is told from a damaged one); a copy of the counter in byte 122.
+- **Estimated**: a **clock** in byte 15 that goes up by one at 1.000 per second and never otherwise (a seconds counter, 8 bit, it carries no date); the satellite and orbital
+  slot from the measured frequency against a table of 87 published Ku-band beacons (110 to 180 E): the nearest is BSAT-4b, 110 E, 11705.7 MHz, 214 kHz from the measured
+  11705.486 MHz, which is a guess (the radio's and the LNB's frequency errors can be that large, the list is a community list and unconfirmed).
+- **Unknown meaning**, shown raw and grouped: constant words (bytes 5-9 are 00 00 1E A3 2B; DecSAT's Intelsat 19 frames have 00 01 9E A3 2B there), idle fill (FB/FC), about
+  twenty words that depend only on the position in the major frame (a table of 32 values each), and about sixty words that change from frame to frame (range and mean, as raw
+  counts; some are noisy like sensor readings, some drift slowly).
+- **Not found** (listed as such): a date or time of day, an orbit or ephemeris, a transponder or channel table, text. No run of printable characters and no word counting like a calendar
+  was found in the 512 frames.
+
+The CSV and JSON exports (Save CSV, Save JSON, Copy in the Decoded view; `tv_sat_beacon_decoded.csv` and `.json` in the data folder) hold the summary lines, every field with its raw hex, byte
+position, confidence and the reason, and the frames.
+
 ## What is not done
 
 Only the formats above are looked for: a beacon whose telemetry is on the carrier's phase without a subcarrier (PCM/PM), a suppressed carrier, other sync words, CCSDS Reed-Solomon
@@ -67,7 +87,7 @@ and the Viterbi code of CCSDS frames are not handled, and a frame layout is not 
 ## Credits
 
 The format of this class of beacon (PCM/PSK/PM, bi-phase on a subcarrier, IRIG 106 and CCSDS sync words, the minor frame counter) was recognised thanks to the published
-description in the README of DecSAT by Arclamp ([CasualArclamp](https://github.com/CasualArclamp/DecSAT), GPL-3.0-or-later). No code of DecSAT is in this mode.
+description in the README of DecSAT by Arclamp ([CasualArclamp](https://github.com/CasualArclamp/DecSAT), GPL-3.0-or-later). No code of DecSAT is in this mode; the table of published Ku-band beacons (`core/src/satbeacon/satbeacon_ku.cpp`) is DecSAT's `ku_beacons.csv` (the author's research of October 2026, GPL-3.0-or-later) turned into a C++ table, with its notice kept.
 
 ## Tests
 

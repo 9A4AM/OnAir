@@ -1,4 +1,4 @@
-// Satellite beacon receiver telemetry, shared by the receiver and the UI.
+// Satellite beacon (TV sat beacon decoder) receiver telemetry, shared by the receiver and the UI.
 // The first members are copied into RxTelemetry (history plot, top bar): keep them and their meaning.
 #pragma once
 #include <cstdint>
@@ -25,6 +25,20 @@ struct SbFrame {
     int fixedErrors = 0;              // bits that differ from the learned template in the columns that never change
     int counter = -1;                 // the minor frame counter (see SbTelemetry::counterByte), -1 when there is none
     bool good = false;                // fixedErrors small enough to trust the frame
+};
+
+// One row of the decoded view: a word (or a run of words) of the frame, what is known about it and how sure.
+// confidence: 0 raw (seen as it is, the meaning is the spacecraft maker's and unknown), 1 estimated (inferred, `how` says from what), 2 decoded (checked against the data)
+struct SbField {
+    std::string name, value, unit, raw, how;
+    int firstByte = 0, lastByte = 0;
+    int confidence = 0;
+};
+
+// A plain line of the summary: satellite, slot, time, ... Missing things are listed too, as "not found".
+struct SbInfo {
+    std::string label, value, how;
+    int confidence = 0;               // as SbField
 };
 
 struct SbTelemetry {
@@ -60,6 +74,10 @@ struct SbTelemetry {
     std::vector<uint8_t> fixedMask;       // 1 bits: columns that never change
     std::vector<float> colStability;      // per column of the frame, 0.5 random .. 1 fixed
     std::vector<SbFrame> frames;          // newest first
+    std::vector<SbField> fields;          // the decoded view (see satbeacon_decode.h), from all frames seen
+    std::vector<SbInfo> info;             // the summary lines
+    uint64_t checksumOk = 0, checksumBad = 0;   // frames whose last byte is the sum of the others, when the frames have such a check
+    uint64_t analysedFrames = 0;
     std::vector<SbLine> lines;            // narrow lines in the capture, strongest first (the first is the main carrier)
     double lineSpacingHz = 0;             // distance of the main carrier to the strongest other carrier (0: none)
     std::vector<float> rfSpectrum;        // kSbSpecPts dB over noise, the whole capture
@@ -71,10 +89,14 @@ struct SbTelemetry {
 
 inline std::string sbSummary(const SbTelemetry& t) {
     char b[200];
-    if (t.state == 0) return "Satellite beacon: no carrier in the capture";
-    if (t.state == 1 || t.baud <= 0) snprintf(b, sizeof b, "Satellite beacon: carrier %+.1f Hz, %.1f dB-Hz", t.cfoHz, (double)t.snrDb);
-    else snprintf(b, sizeof b, "Satellite beacon: carrier %.1f dB-Hz, %.0f bit/s on %.1f kHz, %llu frames", (double)t.snrDb, t.baud, t.subcarrierHz / 1e3, (unsigned long long)t.framesTotal);
+    if (t.state == 0) return "TV sat beacon decoder: no carrier in the capture";
+    if (t.state == 1 || t.baud <= 0) snprintf(b, sizeof b, "TV sat beacon decoder: carrier %+.1f Hz, %.1f dB-Hz", t.cfoHz, (double)t.snrDb);
+    else snprintf(b, sizeof b, "TV sat beacon decoder: carrier %.1f dB-Hz, %.0f bit/s on %.1f kHz, %llu frames", (double)t.snrDb, t.baud, t.subcarrierHz / 1e3, (unsigned long long)t.framesTotal);
     return b;
 }
+
+// the decoded data as CSV (one row per field and per summary line) and as JSON; satbeacon_decode.cpp
+std::string sbExportCsv(const SbTelemetry& t);
+std::string sbExportJson(const SbTelemetry& t);
 
 } // namespace dect2

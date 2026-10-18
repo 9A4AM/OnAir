@@ -3207,3 +3207,12 @@ other lines	autres raies
 A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	Une balise de satellite est une porteuse, parfois modulée en phase par de la télémétrie, qui sert aux stations au sol à mesurer la liaison. La porteuse est suivie en fréquence et en niveau ; la télémétrie est récupérée sous forme de trames brutes et la longueur de trame est apprise par leur répétition. La structure des trames d'un satellite donné n'est pas décodée.
 The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	Le signal de test est une porteuse à 236 kHz du centre, dérivant comme un LNB, avec une seconde porteuse 545 kHz au-dessus et une télémétrie biphase de 4800 bit/s sur une sous-porteuse de 48 kHz, en trames de 256 octets.
 Carrier, drift, telemetry frames	Porteuse, dérive, trames de télémétrie
+# TV sat beacon decoder: decoded view
+decoded	décodé
+estimated	estimé
+unknown meaning	signification inconnue
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	décodé : vérifié sur les données. estimé : déduit, la raison s'affiche au survol. signification inconnue : montré tel quel ; le sens d'un mot est celui du constructeur du satellite et n'est jamais deviné.
+Save JSON	Enregistrer en JSON
+saved to	enregistré dans
+Value	Valeur
+Raw	Brut

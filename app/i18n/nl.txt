@@ -3207,3 +3207,12 @@ other lines	andere lijnen
 A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	Een satellietbaken is een draaggolf, soms met telemetrie fasegemoduleerd, waarmee grondstations de verbinding meten. De draaggolf wordt gevolgd in frequentie en niveau; de telemetrie wordt teruggewonnen als ruwe frames en de framelengte wordt uit hun herhaling geleerd. De opbouw van de frames van een bepaalde satelliet wordt niet gedecodeerd.
 The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	Het testsignaal is een draaggolf 236 kHz naast het midden, die driftt als een LNB, met een tweede draaggolf 545 kHz erboven en 4800 bit/s biphase-telemetrie op een hulpdraaggolf van 48 kHz, in frames van 256 bytes.
 Carrier, drift, telemetry frames	Draaggolf, drift, telemetrieframes
+# TV sat beacon decoder: decoded view
+decoded	gedecodeerd
+estimated	geschat
+unknown meaning	betekenis onbekend
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	gedecodeerd: aan de gegevens getoetst. geschat: afgeleid, de reden staat in de tooltip. betekenis onbekend: ongewijzigd getoond; wat een woord betekent bepaalt de satellietbouwer en wordt nooit geraden.
+Save JSON	JSON opslaan
+saved to	opgeslagen in
+Value	Waarde
+Raw	Ruw

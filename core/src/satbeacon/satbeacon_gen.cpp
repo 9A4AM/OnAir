@@ -21,14 +21,23 @@ std::vector<uint8_t> satbeaconFrameBytes(uint32_t seed, uint32_t n) {
     b[0] = 0xFA; b[1] = 0xF3; b[2] = 0x20; b[3] = 0xFE;
     b[4] = (uint8_t)(n % 32);
     b[7] = 0x1E; b[8] = 0xA3; b[9] = 0x2B;
-    for (int i = 10; i < kSbGenFrameBytes; i++) {
+    for (int i = 10; i < kSbGenFrameBytes - 1; i++) {
         const uint64_t col = mix64(((uint64_t)seed << 32) ^ (uint64_t)i);
         const uint64_t val = mix64(((uint64_t)seed << 48) ^ ((uint64_t)n << 12) ^ (uint64_t)i);
-        if ((col & 15) < 9) {                       // a word that never changes: mostly 00 and FF as in the recorded beacon
+        const uint64_t pv = mix64(((uint64_t)seed << 48) ^ ((uint64_t)(n % 32) << 12) ^ (uint64_t)i ^ 0x5555);
+        const uint64_t kind = col & 15;
+        if (kind < 6) {                              // a word that never changes: mostly 00 and FF as in the recorded beacon
             static const uint8_t fixedWords[4] = {0x00, 0x00, 0xFF, 0x60};
             b[(size_t)i] = fixedWords[(col >> 8) & 3];
-        } else b[(size_t)i] = (uint8_t)(val & 0xFF);
+        } else if (kind < 8) b[(size_t)i] = 0xFB;    // idle fill
+        else if (kind < 12) b[(size_t)i] = (uint8_t)(pv & 0xFF);   // a commutated word: its value depends on the position in the major frame
+        else b[(size_t)i] = (uint8_t)(val & 0xFF);                // a sample: changes every frame
     }
+    b[15] = (uint8_t)(17 + (uint64_t)n * 128 / 300);   // a clock: one count per second (a frame is 2048 bits at 4800 bit/s = 0.42667 s)
+    b[122] = (uint8_t)(n % 32);                         // a copy of the counter
+    unsigned sum = 0;
+    for (int i = 0; i < kSbGenFrameBytes - 1; i++) sum += b[(size_t)i];
+    b[kSbGenFrameBytes - 1] = (uint8_t)(sum & 255);     // the checksum: the sum of the others
     return b;
 }
 
