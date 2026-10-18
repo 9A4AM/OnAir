@@ -2703,3 +2703,46 @@ Watch for these	Auf diese achten
 Lists	Listen
 Watchlists...	Beobachtungslisten...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Meldungen, wenn gelistete Flugzeuge, Schiffe, Rufzeichen, Frequenzen oder Wörter gehört werden: Benachrichtigung, Ton, ntfy, Telegram oder Webhook
+# COSPAS-SARSAT 406 MHz
+A 406 MHz distress beacon (EPIRB on a boat, ELT in an aircraft, PLB carried by a person) sends a burst of about half a second every 50 seconds: an unmodulated carrier, then 112 or 144 bits at 400 bit/s. The message holds a 15 digit hex ID that is unique to the beacon, the country, the kind of beacon, and often a position (rounded to 15 minutes in a short message, to 4 seconds in a long one). Two BCH checks protect the message; up to three damaged bits in the first field are repaired.\n\nOnAir only receives. Test beacons and self-test bursts are marked. If you think you heard a real one, tell the rescue coordination centre of your country; do not rely on this program for safety.	Ein 406-MHz-Notfunkbake (EPIRB auf einem Boot, ELT in einem Flugzeug, PLB bei einer Person) sendet etwa alle 50 Sekunden einen Burst von rund einer halben Sekunde: ein unmodulierter Träger, dann 112 oder 144 Bit mit 400 Bit/s. Die Nachricht enthält eine 15-stellige Hex-ID, die für die Bake einmalig ist, das Land, die Art der Bake und oft eine Position (in einer kurzen Nachricht auf 15 Minuten gerundet, in einer langen auf 4 Sekunden). Zwei BCH-Prüfungen schützen die Nachricht; bis zu drei beschädigte Bits im ersten Feld werden repariert.\n\nOnAir empfängt nur. Testbaken und Selbsttest-Bursts sind markiert. Wenn Sie glauben, eine echte gehört zu haben, melden Sie es der Rettungsleitstelle Ihres Landes; verlassen Sie sich nicht auf dieses Programm, wenn es um Sicherheit geht.
+EPIRB (boat)	EPIRB (Boot)
+ELT (aircraft)	ELT (Flugzeug)
+PLB (person)	PLB (Person)
+Ship security	Schiffssicherung
+Test	Test
+What a 406 MHz beacon sends	Was eine 406-MHz-Bake sendet
+Hex ID	Hex-ID
+ (self-test burst)	 (Selbsttest-Burst)
+Protocol	Protokoll
+Identification	Kennung
+Precision	Genauigkeit
+about 4 seconds of arc	etwa 4 Bogensekunden
+15 minutes of arc (short message)	15 Bogenminuten (kurze Nachricht)
+Homing 121.5 MHz	Peilsender 121,5 MHz
+no	nein
+long, 144 bits	lang, 144 Bit
+short, 112 bits	kurz, 112 Bit
+Check bits	Prüfbits
+both good	beide gut
+first good, second failed	erste gut, zweite fehlgeschlagen
+first good	erste gut
+bits repaired	Bits repariert
+no beacon decoded yet; a beacon sends a burst about every 50 seconds	noch keine Bake dekodiert; eine Bake sendet etwa alle 50 Sekunden einen Burst
+Checks	Prüfungen
+fit	Einpassen
+no decoded beacon carries a position yet	keine dekodierte Bake enthält bisher eine Position
+blue EPIRB, orange ELT, green PLB, grey test; a short message is rounded to 15 minutes of arc	blau EPIRB, orange ELT, grün PLB, grau Test; eine kurze Nachricht ist auf 15 Bogenminuten gerundet
+nothing decoded yet	noch nichts dekodiert
+Raw bits	Rohbits
+tune to 406.028 MHz and start the receiver	auf 406,028 MHz abstimmen und den Empfänger starten
+Receive only. A real beacon means somebody may be in danger: tell the rescue centre; do not rely on this program for safety.	Nur Empfang. Eine echte Bake bedeutet, dass jemand in Gefahr sein kann: informieren Sie die Rettungsleitstelle; verlassen Sie sich für Ihre Sicherheit nicht auf dieses Programm.
+no input	kein Eingang
+beacon decoded lately	Bake kürzlich dekodiert
+Bursts	Bursts
+heard	gehört
+failed the checks	Prüfung nicht bestanden
+Last burst	Letzter Burst
+Input	Eingang
+start the receiver to see beacons	Empfänger starten, um Baken zu sehen
+The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	Das Testsignal wiederholt alle 3 Sekunden fünf erfundene Baken (echte senden alle 50 Sekunden): eine EPIRB, eine PLB, eine ELT, eine Seefunk-Nutzerbake und eine EPIRB auf der Südhalbkugel.
+Distress beacons, 406 MHz	Notfunkbaken, 406 MHz

@@ -2689,3 +2689,46 @@ Watch for these	Ezek figyelése
 Lists	Listák
 Watchlists...	Figyelőlisták...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Riasztás, ha a listán szereplő repülőt, hajót, hívójelet, frekvenciát vagy szót hallja: értesítés, hang, ntfy, Telegram vagy webhook
+# COSPAS-SARSAT 406 MHz
+A 406 MHz distress beacon (EPIRB on a boat, ELT in an aircraft, PLB carried by a person) sends a burst of about half a second every 50 seconds: an unmodulated carrier, then 112 or 144 bits at 400 bit/s. The message holds a 15 digit hex ID that is unique to the beacon, the country, the kind of beacon, and often a position (rounded to 15 minutes in a short message, to 4 seconds in a long one). Two BCH checks protect the message; up to three damaged bits in the first field are repaired.\n\nOnAir only receives. Test beacons and self-test bursts are marked. If you think you heard a real one, tell the rescue coordination centre of your country; do not rely on this program for safety.	A 406 MHz-es vészjeladó (EPIRB hajón, ELT repülőgépben, PLB személynél) körülbelül 50 másodpercenként egy kb. fél másodperces adást küld: modulálatlan vivő, majd 112 vagy 144 bit 400 bit/s sebességgel. Az üzenet tartalmaz egy, a jeladóra egyedi 15 jegyű hexa azonosítót, az országot, a jeladó fajtáját és gyakran egy pozíciót (rövid üzenetben 15 percre, hosszúban 4 másodpercre kerekítve). Két BCH-ellenőrzés védi az üzenetet; az első mező legfeljebb három sérült bitje javítható.\n\nAz OnAir csak vesz. A tesztjeladók és az önteszt-adások jelölve vannak. Ha úgy gondolja, valódit hallott, értesítse országa mentési koordinációs központját; biztonsága érdekében ne erre a programra támaszkodjon.
+EPIRB (boat)	EPIRB (hajó)
+ELT (aircraft)	ELT (repülőgép)
+PLB (person)	PLB (személy)
+Ship security	Hajóbiztonság
+Test	Teszt
+What a 406 MHz beacon sends	Mit küld egy 406 MHz-es jeladó
+Hex ID	Hexa azonosító
+ (self-test burst)	 (önteszt-adás)
+Protocol	Protokoll
+Identification	Azonosítás
+Precision	Pontosság
+about 4 seconds of arc	kb. 4 ívmásodperc
+15 minutes of arc (short message)	15 ívperc (rövid üzenet)
+Homing 121.5 MHz	Önirányító 121,5 MHz
+no	nem
+long, 144 bits	hosszú, 144 bit
+short, 112 bits	rövid, 112 bit
+Check bits	Ellenőrző bitek
+both good	mindkettő jó
+first good, second failed	az első jó, a második hibás
+first good	az első jó
+bits repaired	bit javítva
+no beacon decoded yet; a beacon sends a burst about every 50 seconds	még nincs dekódolt jeladó; a jeladó kb. 50 másodpercenként küld egy adást
+Checks	Ellenőrzések
+fit	illesztés
+no decoded beacon carries a position yet	egy dekódolt jeladó sem tartalmaz még pozíciót
+blue EPIRB, orange ELT, green PLB, grey test; a short message is rounded to 15 minutes of arc	kék EPIRB, narancs ELT, zöld PLB, szürke teszt; a rövid üzenet 15 ívpercre kerekített
+nothing decoded yet	még nincs dekódolt adat
+Raw bits	Nyers bitek
+tune to 406.028 MHz and start the receiver	hangoljon 406,028 MHz-re és indítsa el a vevőt
+Receive only. A real beacon means somebody may be in danger: tell the rescue centre; do not rely on this program for safety.	Csak vétel. Egy valódi jeladó azt jelenti, hogy valaki veszélyben lehet: értesítse a mentési központot; biztonsága érdekében ne erre a programra támaszkodjon.
+no input	nincs bemenet
+beacon decoded lately	nemrég dekódolt jeladó
+Bursts	Adások
+heard	hallott
+failed the checks	nem felelt meg az ellenőrzésnek
+Last burst	Utolsó adás
+Input	Bemenet
+start the receiver to see beacons	indítsa el a vevőt a jeladók megjelenítéséhez
+The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	A tesztjel 3 másodpercenként ismétel öt kitalált jeladót (a valódiak 50 másodpercenként küldenek): egy EPIRB-t, egy PLB-t, egy ELT-t, egy tengeri felhasználói jeladót és egy EPIRB-t a déli féltekén.
+Distress beacons, 406 MHz	Vészjeladók, 406 MHz

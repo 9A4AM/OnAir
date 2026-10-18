@@ -2703,3 +2703,46 @@ Watch for these	Vigilar estos
 Lists	Listas
 Watchlists...	Listas de vigilancia...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alertas cuando se oyen aeronaves, barcos, indicativos, frecuencias o palabras de las listas: notificación, sonido, ntfy, Telegram o webhook
+# COSPAS-SARSAT 406 MHz
+A 406 MHz distress beacon (EPIRB on a boat, ELT in an aircraft, PLB carried by a person) sends a burst of about half a second every 50 seconds: an unmodulated carrier, then 112 or 144 bits at 400 bit/s. The message holds a 15 digit hex ID that is unique to the beacon, the country, the kind of beacon, and often a position (rounded to 15 minutes in a short message, to 4 seconds in a long one). Two BCH checks protect the message; up to three damaged bits in the first field are repaired.\n\nOnAir only receives. Test beacons and self-test bursts are marked. If you think you heard a real one, tell the rescue coordination centre of your country; do not rely on this program for safety.	Una baliza de socorro de 406 MHz (EPIRB en un barco, ELT en una aeronave, PLB que lleva una persona) envía una ráfaga de medio segundo aproximadamente cada 50 segundos: una portadora sin modular y después 112 o 144 bits a 400 bit/s. El mensaje contiene un ID hexadecimal de 15 dígitos único de la baliza, el país, el tipo de baliza y a menudo una posición (redondeada a 15 minutos en un mensaje corto y a 4 segundos en uno largo). Dos comprobaciones BCH protegen el mensaje; se reparan hasta tres bits dañados del primer campo.\n\nOnAir solo recibe. Las balizas de prueba y las ráfagas de autotest están marcadas. Si cree haber oído una real, avise al centro de coordinación de salvamento de su país; no confíe en este programa para su seguridad.
+EPIRB (boat)	EPIRB (barco)
+ELT (aircraft)	ELT (aeronave)
+PLB (person)	PLB (persona)
+Ship security	Seguridad del buque
+Test	Prueba
+What a 406 MHz beacon sends	Qué envía una baliza de 406 MHz
+Hex ID	ID hex
+ (self-test burst)	 (ráfaga de autotest)
+Protocol	Protocolo
+Identification	Identificación
+Precision	Precisión
+about 4 seconds of arc	unos 4 segundos de arco
+15 minutes of arc (short message)	15 minutos de arco (mensaje corto)
+Homing 121.5 MHz	Radiobaliza 121,5 MHz
+no	no
+long, 144 bits	largo, 144 bits
+short, 112 bits	corto, 112 bits
+Check bits	Bits de control
+both good	ambas correctas
+first good, second failed	la primera correcta, la segunda falló
+first good	la primera correcta
+bits repaired	bits reparados
+no beacon decoded yet; a beacon sends a burst about every 50 seconds	aún no se ha decodificado ninguna baliza; una baliza envía una ráfaga cada 50 segundos aproximadamente
+Checks	Comprobaciones
+fit	ajustar
+no decoded beacon carries a position yet	ninguna baliza decodificada lleva posición todavía
+blue EPIRB, orange ELT, green PLB, grey test; a short message is rounded to 15 minutes of arc	azul EPIRB, naranja ELT, verde PLB, gris prueba; un mensaje corto se redondea a 15 minutos de arco
+nothing decoded yet	aún no se ha decodificado nada
+Raw bits	Bits en bruto
+tune to 406.028 MHz and start the receiver	sintonice 406,028 MHz e inicie el receptor
+Receive only. A real beacon means somebody may be in danger: tell the rescue centre; do not rely on this program for safety.	Solo recepción. Una baliza real significa que alguien puede estar en peligro: avise al centro de salvamento; no confíe en este programa para su seguridad.
+no input	sin entrada
+beacon decoded lately	baliza decodificada hace poco
+Bursts	Ráfagas
+heard	oídas
+failed the checks	no pasaron las comprobaciones
+Last burst	Última ráfaga
+Input	Entrada
+start the receiver to see beacons	inicie el receptor para ver balizas
+The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	La señal de prueba repite cada 3 segundos cinco balizas inventadas (las reales envían cada 50 segundos): una EPIRB, una PLB, una ELT, una baliza de usuario marítimo y una EPIRB en el hemisferio sur.
+Distress beacons, 406 MHz	Balizas de socorro, 406 MHz

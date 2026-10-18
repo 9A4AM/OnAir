@@ -2703,3 +2703,46 @@ Watch for these	Obserwuj te
 Lists	Listy
 Watchlists...	Listy obserwowanych...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alerty, gdy odebrane zostaną wymienione samoloty, statki, znaki wywoławcze, częstotliwości lub słowa: powiadomienie, dźwięk, ntfy, Telegram lub webhook
+# COSPAS-SARSAT 406 MHz
+A 406 MHz distress beacon (EPIRB on a boat, ELT in an aircraft, PLB carried by a person) sends a burst of about half a second every 50 seconds: an unmodulated carrier, then 112 or 144 bits at 400 bit/s. The message holds a 15 digit hex ID that is unique to the beacon, the country, the kind of beacon, and often a position (rounded to 15 minutes in a short message, to 4 seconds in a long one). Two BCH checks protect the message; up to three damaged bits in the first field are repaired.\n\nOnAir only receives. Test beacons and self-test bursts are marked. If you think you heard a real one, tell the rescue coordination centre of your country; do not rely on this program for safety.	Radiopława ratunkowa 406 MHz (EPIRB na łodzi, ELT w statku powietrznym, PLB noszona przez osobę) co około 50 sekund nadaje impuls trwający około pół sekundy: niemodulowaną nośną, potem 112 lub 144 bity z szybkością 400 bit/s. Wiadomość zawiera 15-cyfrowy identyfikator szesnastkowy, unikalny dla radiopławy, kraj, rodzaj radiopławy i często pozycję (w krótkiej wiadomości zaokrągloną do 15 minut, w długiej do 4 sekund). Wiadomość chronią dwie kontrole BCH; do trzech uszkodzonych bitów pierwszego pola jest naprawianych.\n\nOnAir tylko odbiera. Radiopławy testowe i impulsy autotestu są oznaczone. Jeśli uważasz, że usłyszałeś prawdziwą, powiadom centrum koordynacji ratownictwa w swoim kraju; nie polegaj na tym programie, jeśli chodzi o bezpieczeństwo.
+EPIRB (boat)	EPIRB (łódź)
+ELT (aircraft)	ELT (statek powietrzny)
+PLB (person)	PLB (osoba)
+Ship security	Ochrona statku
+Test	Test
+What a 406 MHz beacon sends	Co nadaje radiopława 406 MHz
+Hex ID	Identyfikator hex
+ (self-test burst)	 (impuls autotestu)
+Protocol	Protokół
+Identification	Identyfikacja
+Precision	Dokładność
+about 4 seconds of arc	około 4 sekundy łuku
+15 minutes of arc (short message)	15 minut łuku (krótka wiadomość)
+Homing 121.5 MHz	Namierzanie 121,5 MHz
+no	nie
+long, 144 bits	długa, 144 bity
+short, 112 bits	krótka, 112 bitów
+Check bits	Bity kontrolne
+both good	obie dobre
+first good, second failed	pierwsza dobra, druga nie powiodła się
+first good	pierwsza dobra
+bits repaired	bity naprawione
+no beacon decoded yet; a beacon sends a burst about every 50 seconds	nie zdekodowano jeszcze żadnej radiopławy; radiopława nadaje impuls mniej więcej co 50 sekund
+Checks	Kontrole
+fit	dopasuj
+no decoded beacon carries a position yet	żadna zdekodowana radiopława nie ma jeszcze pozycji
+blue EPIRB, orange ELT, green PLB, grey test; a short message is rounded to 15 minutes of arc	niebieski EPIRB, pomarańczowy ELT, zielony PLB, szary test; krótka wiadomość jest zaokrąglona do 15 minut łuku
+nothing decoded yet	jeszcze nic nie zdekodowano
+Raw bits	Surowe bity
+tune to 406.028 MHz and start the receiver	dostrój do 406,028 MHz i uruchom odbiornik
+Receive only. A real beacon means somebody may be in danger: tell the rescue centre; do not rely on this program for safety.	Tylko odbiór. Prawdziwa radiopława oznacza, że ktoś może być w niebezpieczeństwie: powiadom centrum ratownictwa; nie polegaj na tym programie, jeśli chodzi o bezpieczeństwo.
+no input	brak wejścia
+beacon decoded lately	radiopława zdekodowana niedawno
+Bursts	Impulsy
+heard	usłyszane
+failed the checks	nie przeszły kontroli
+Last burst	Ostatni impuls
+Input	Wejście
+start the receiver to see beacons	uruchom odbiornik, aby zobaczyć radiopławy
+The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	Sygnał testowy co 3 sekundy powtarza pięć zmyślonych radiopław (prawdziwe nadają co 50 sekund): EPIRB, PLB, ELT, radiopławę użytkownika morskiego i EPIRB na półkuli południowej.
+Distress beacons, 406 MHz	Radiopławy ratunkowe, 406 MHz

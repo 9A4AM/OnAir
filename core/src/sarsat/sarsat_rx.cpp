@@ -1,0 +1,416 @@
+// COSPAS-SARSAT 406 MHz receiver (see sarsat_rx.h).
+//
+// Burst finder: the stream is mixed to the dial offset, averaged down to 32 kHz and cut into blocks of 1024 samples (32 ms); a Hann-windowed FFT of each block
+// is searched for one line that stands out from the median bin (the 160 ms unmodulated preamble) and that was not already there a moment ago (radio DC spikes
+// and carriers do not count). A burst runs from the first block with a line until 6 blocks without one. Its carrier frequency is the median of the first lines.
+// Demodulator: the burst is rotated to zero frequency; each bit is two half-bit vector sums, and the angle between them (Manchester phase modulation of
+// +-1.1 rad turns the carrier phase by +2.2 rad between the halves of a bit, whatever the carrier phase is) gives the bit. Bit timing, bit rate (+-1 %) and
+// polarity are found by sliding the 24 sync bits over the burst; the best candidates are decoded and the one the BCH check repairs with the fewest changes wins.
+#include "dect2/sarsat/sarsat_rx.h"
+#include "dect2/sarsat/sarsat_tel.h"
+#include "dect2/common/mathconst.h"
+#include "dect2/dsp/fftutil.h"
+#include <algorithm>
+#include <cmath>
+#include <complex>
+#include <ctime>
+#include <mutex>
+
+namespace dect2 {
+
+using dect2::math::kPi;
+using sarsat::kFs;
+using sarsat::kBitRate;
+
+ModeTuning sarsatTuning() {
+    ModeTuning t;
+    t.stdMode = 94;
+    t.id = "sarsat";
+    t.name = "COSPAS-SARSAT 406 MHz";
+    t.minMhz = 406.0;
+    t.maxMhz = 406.1;
+    t.defMhz = sarsat::kDefaultMhz;
+    t.sampleRate = 256000;
+    t.basebandHz = 16000;
+    t.bandwidthMhz = 0.032;
+    t.minSampleRate = 64000;
+    t.tuneOffsetHz = 20000;
+    return t;
+}
+
+namespace sarsat {
+
+namespace {
+
+using cd = std::complex<double>;
+
+struct Cand {
+    int matches = 0;
+    double conf = 0;
+    double t0 = 0, r = 0;
+    bool inv = false, test = false;
+};
+
+struct Slicer {
+    std::vector<cd> P;   // prefix sums of the rotated burst
+    size_t n = 0;
+    bool soft(double b0, double spb, double& d) const {
+        const double bm = b0 + spb * 0.5, b1 = b0 + spb;
+        if (b0 < 0 || b1 > (double)n) return false;
+        const size_t i0 = (size_t)std::lround(b0), im = (size_t)std::lround(bm), i1 = std::min(n, (size_t)std::lround(b1));
+        const cd h1 = P[im] - P[i0], h2 = P[i1] - P[im];
+        const double m = std::abs(h1) * std::abs(h2);
+        if (m <= 1e-12) { d = 0; return true; }
+        d = (h1 * std::conj(h2)).imag() / m;
+        return true;
+    }
+    // the first `count` bits starting at t0 with bit period spb; stops at the end of the burst
+    std::vector<double> bits(double t0, double spb, int count) const {
+        std::vector<double> v;
+        for (int k = 0; k < count; k++) {
+            double d;
+            if (!soft(t0 + k * spb, spb, d)) break;
+            v.push_back(d);
+        }
+        return v;
+    }
+};
+
+Cand syncScore(const Slicer& s, double t0, double r) {
+    Cand c;
+    c.t0 = t0; c.r = r;
+    const double spb = kFs / kBitRate * (1 + r);
+    const std::vector<double> d = s.bits(t0, spb, kSyncBits);
+    if (d.size() < (size_t)kSyncBits) return c;
+    for (int test = 0; test < 2; test++) {
+        const std::vector<uint8_t> ref = syncBits(test != 0);
+        for (int inv = 0; inv < 2; inv++) {
+            int m = 0;
+            double conf = 0;
+            for (int k = 0; k < kSyncBits; k++) {
+                const int want = (ref[(size_t)k] ^ inv) ? 1 : -1;
+                const int got = d[(size_t)k] > 0 ? 1 : -1;
+                if (want == got) m++;
+                conf += want * d[(size_t)k];
+            }
+            if (m > c.matches || (m == c.matches && conf > c.conf)) { c.matches = m; c.conf = conf; c.inv = inv != 0; c.test = test != 0; }
+        }
+    }
+    return c;
+}
+
+bool tryDecode(const Slicer& s, const Cand& c, Beacon& out, int& matches) {
+    const double spb = kFs / kBitRate * (1 + c.r);
+    const std::vector<double> d = s.bits(c.t0, spb, kLongBits);
+    if (d.size() < (size_t)kShortBits) return false;
+    std::vector<uint8_t> b(d.size());
+    for (size_t k = 0; k < d.size(); k++) b[k] = (uint8_t)((d[k] > 0) != c.inv);
+    // a real burst starts with 160 ms of bare carrier: the two halves of the 20 bit periods before the sync point the same way (cosine of the angle near 1);
+    // data and noise do not do that. This keeps a burst that was caught in the middle, or noise, from passing as a message.
+    {
+        double cs = 0;
+        int cnt = 0;
+        for (int k = 1; k <= 20; k++) {
+            const double b0 = c.t0 - k * spb;
+            if (b0 < 0) break;
+            const size_t i0 = (size_t)std::lround(b0), im = (size_t)std::lround(b0 + spb * 0.5), i1 = (size_t)std::lround(b0 + spb);
+            const cd h1 = s.P[im] - s.P[i0], h2 = s.P[i1] - s.P[im];
+            const double m = std::abs(h1) * std::abs(h2);
+            if (m > 1e-12) { cs += (h1 * std::conj(h2)).real() / m; cnt++; }
+        }
+        if (cnt < 16 || cs / cnt < 0.35) return false;
+    }
+    // the sync bits must be the ones found
+    const std::vector<uint8_t> ref = syncBits(c.test);
+    matches = 0;
+    for (int k = 0; k < kSyncBits; k++) matches += b[(size_t)k] == ref[(size_t)k];
+    if (matches < 23) return false;
+    Beacon o;
+    if (!decode(b, o)) return false;
+    o.selfTest = c.test;
+    o.rawHex = bitsToHex(b, 1, o.longMsg ? kLongBits : kShortBits);
+    out = o;
+    return true;
+}
+
+}  // namespace
+
+bool demodBurst(const std::vector<cf32>& x, double carrierHz, Beacon& out) {
+    const size_t n = x.size();
+    if (n < (size_t)(kFs * 0.4)) return false;
+    Slicer s;
+    s.n = n;
+    s.P.assign(n + 1, cd(0, 0));
+    cd lo(1, 0);
+    const double w = -2 * kPi * carrierHz / kFs;
+    const cd st(std::cos(w), std::sin(w));
+    for (size_t i = 0; i < n; i++) {
+        s.P[i + 1] = s.P[i] + cd(x[i].real(), x[i].imag()) * lo;
+        lo *= st;
+        if ((i & 1023) == 1023) lo /= std::abs(lo);
+    }
+    const double spb0 = kFs / kBitRate;
+    const double rates[] = {-0.01, -0.005, 0.0, 0.005, 0.01};
+    std::vector<Cand> cands;
+    for (double r : rates) {
+        const double spb = spb0 * (1 + r);
+        for (double t0 = 0; t0 + kSyncBits * spb < (double)n; t0 += 4) {
+            const Cand c = syncScore(s, t0, r);
+            if (c.matches >= 22) cands.push_back(c);
+        }
+    }
+    if (cands.empty()) return false;
+    std::sort(cands.begin(), cands.end(), [](const Cand& a, const Cand& b) { return a.matches != b.matches ? a.matches > b.matches : a.conf > b.conf; });
+    if (cands.size() > 10) cands.resize(10);
+    bool found = false;
+    int bestCorr = 99;
+    double bestConf = -1;
+    for (const Cand& c0 : cands) {
+        for (double dt = -4; dt <= 4; dt += 1) {
+            for (double dr = -0.0025; dr <= 0.0026; dr += 0.0025) {
+                Cand c = syncScore(s, c0.t0 + dt, c0.r + dr);
+                if (c.matches < 23) continue;
+                Beacon o;
+                int m = 0;
+                if (!tryDecode(s, c, o, m)) continue;
+                if (o.corrected < bestCorr || (o.corrected == bestCorr && c.conf > bestConf)) { bestCorr = o.corrected; bestConf = c.conf; out = o; found = true; }
+            }
+        }
+    }
+    return found;
+}
+
+}  // namespace sarsat
+
+struct SarsatReceiver::Impl {
+    std::mutex mu;
+    SarsatTelemetry tel;
+    std::function<void(const std::string&)> log;
+    double fs = 0, offHz = 0;
+    bool rateSet = false;
+
+    // mixer and the average down to 32 kHz
+    double loRe = 1, loIm = 0, stRe = 1, stIm = 0;
+    int loCount = 0;
+    double accRe = 0, accIm = 0;
+    int accN = 0;
+    uint64_t nIn = 0, k32 = 0;
+    double binEnd = 0;
+
+    // the 32 kHz stream
+    static constexpr size_t kRing = 65536, kBlock = 1024;
+    std::vector<cf32> ring = std::vector<cf32>(kRing);
+    uint64_t n32 = 0;
+    std::vector<float> win = std::vector<float>(kBlock);
+    Fft fft{(int)kBlock};
+    std::vector<float> bg = std::vector<float>(kBlock, 0.f);
+    int warm = 0;
+
+    // burst state
+    bool active = false;
+    int miss = 0, dets = 0;
+    uint64_t firstBlockStart = 0;
+    std::vector<double> peaks;
+    float peakSnr = -200, peakLevel = -200;
+    double lastDecodeSec = -1e9, lastPublish = 0;
+
+    Impl() {
+        for (size_t i = 0; i < kBlock; i++) win[i] = (float)(0.5 - 0.5 * std::cos(2 * kPi * (double)i / (double)kBlock));
+    }
+
+    void resetState() {
+        loRe = 1; loIm = 0;
+        const double w = -2 * kPi * offHz / (fs > 0 ? fs : 1);
+        stRe = std::cos(w); stIm = std::sin(w);
+        accRe = accIm = 0; accN = 0; nIn = 0; k32 = 0;
+        binEnd = fs > 0 ? fs / kFs : 0;
+        n32 = 0;
+        std::fill(bg.begin(), bg.end(), 0.f);
+        warm = 0; active = false; miss = 0; dets = 0; peaks.clear();
+        lastDecodeSec = -1e9; lastPublish = 0;
+    }
+
+    double timeSec() const { return (double)n32 / kFs; }
+
+    void publish() {
+        tel.timeSec = timeSec();
+        tel.state = rateSet ? (timeSec() - lastDecodeSec < 300 ? 2 : 1) : 0;
+        tel.seq++;
+    }
+
+    void finishBurst() {
+        active = false;
+        if (dets >= 3) {
+            tel.bursts++;
+            const uint64_t start = firstBlockStart >= 2048 ? firstBlockStart - 2048 : 0;
+            const uint64_t from = n32 > kRing - 1024 && start < n32 - (kRing - 1024) ? n32 - (kRing - 1024) : start;
+            std::vector<cf32> x;
+            x.reserve((size_t)(n32 - from));
+            for (uint64_t i = from; i < n32; i++) x.push_back(ring[(size_t)(i & (kRing - 1))]);
+            std::vector<double> pk(peaks.begin(), peaks.begin() + std::min<size_t>(4, peaks.size()));
+            std::sort(pk.begin(), pk.end());
+            const double carrier = pk[pk.size() / 2];
+            sarsat::Beacon b;
+            if (sarsat::demodBurst(x, carrier, b)) {
+                SarsatEntry e;
+                e.wallTime = (int64_t)std::time(nullptr);
+                e.timeSec = timeSec();
+                e.b = b;
+                e.snrDb = peakSnr; e.levelDb = peakLevel; e.cfoHz = (float)carrier;
+                tel.log.insert(tel.log.begin(), e);
+                if (tel.log.size() > kSarsatLogMax) tel.log.pop_back();
+                tel.blocksOk++;
+                tel.dataValid = true;
+                lastDecodeSec = timeSec();
+                if (log) {
+                    char line[256];
+                    snprintf(line, sizeof line, "COSPAS-SARSAT %s %s %s%s", b.hexId.c_str(), b.beaconType.c_str(), b.country.c_str(), b.hasPos ? " (position)" : "");
+                    log(line);
+                }
+            } else {
+                tel.blocksBad++;
+            }
+            tel.cfoHz = carrier; tel.snrDb = peakSnr; tel.levelDb = peakLevel;
+        }
+        peaks.clear(); dets = 0; peakSnr = -200; peakLevel = -200;
+        publish();
+    }
+
+    void block() {   // the last kBlock samples of the ring
+        const uint64_t base = n32 - kBlock;
+        std::vector<cf32> buf(kBlock);
+        double pw = 0;
+        for (size_t i = 0; i < kBlock; i++) {
+            const cf32 v = ring[(size_t)((base + i) & (kRing - 1))];
+            pw += (double)v.real() * v.real() + (double)v.imag() * v.imag();
+            buf[i] = v * win[i];
+        }
+        fft.forward(buf.data());
+        std::vector<float> p(kBlock);
+        for (size_t k = 0; k < kBlock; k++) p[k] = buf[k].real() * buf[k].real() + buf[k].imag() * buf[k].imag();
+        const size_t kMax = (size_t)(14500.0 / kFs * (double)kBlock);   // keep to +-14.5 kHz: the edges are attenuated by the average
+        auto allowed = [&](size_t k) { return k <= kMax || k >= kBlock - kMax; };
+        std::vector<float> sel;
+        sel.reserve(kBlock);
+        for (size_t k = 0; k < kBlock; k++) if (allowed(k)) sel.push_back(p[k]);
+        std::nth_element(sel.begin(), sel.begin() + (long)(sel.size() / 2), sel.end());
+        const float med = std::max(sel[sel.size() / 2], 1e-20f);
+        size_t pk = 0;
+        float pmax = 0;
+        for (size_t k = 0; k < kBlock; k++) if (allowed(k) && p[k] > pmax && p[k] > 6.f * bg[k]) { pmax = p[k]; pk = k; }
+        bool det = warm >= 12 && pmax >= 30.f * med;
+        float snr = -200;
+        double f = 0;
+        if (det) {
+            const size_t a = (pk + kBlock - 1) % kBlock, c = (pk + 1) % kBlock;
+            const double la = std::log((double)p[a] + 1e-30), lb = std::log((double)p[pk] + 1e-30), lc = std::log((double)p[c] + 1e-30);
+            const double den = la - 2 * lb + lc;
+            const double delta = std::fabs(den) > 1e-9 ? 0.5 * (la - lc) / den : 0.0;
+            const double bin = (double)(pk < kBlock / 2 ? (long)pk : (long)pk - (long)kBlock) + std::max(-1.0, std::min(1.0, delta));
+            f = bin * kFs / (double)kBlock;
+            const float nm = med / 0.6931f;
+            const float s3 = p[a] + p[pk] + p[c];
+            snr = 10.f * std::log10(std::max(1e-3f, (s3 - 3 * nm) / (1.5f * nm)));
+        }
+        if (det) {
+            if (!active) { active = true; firstBlockStart = base; miss = 0; dets = 0; peakSnr = -200; peakLevel = -200; peaks.clear(); }
+            miss = 0; dets++;
+            peaks.push_back(f);
+            peakSnr = std::max(peakSnr, snr);
+            peakLevel = std::max(peakLevel, 10.f * std::log10((float)(pw / kBlock) + 1e-12f));
+        } else if (active) {
+            miss++;
+        }
+        if (active && (miss >= 6 || n32 - firstBlockStart > (uint64_t)(0.9 * kFs))) finishBurst();
+        if (!active && !det) {
+            for (size_t k = 0; k < kBlock; k++) bg[k] = warm == 0 ? p[k] : bg[k] * 0.98f + p[k] * 0.02f;
+            if (warm < 1000) warm++;
+        }
+        tel.levelDb = active ? tel.levelDb : 10.f * std::log10((float)(pw / kBlock) + 1e-12f);
+    }
+
+    void sample32(double re, double im) {
+        ring[(size_t)(n32 & (kRing - 1))] = cf32((float)re, (float)im);
+        n32++;
+        if (n32 % kBlock == 0) block();
+    }
+};
+
+SarsatReceiver::SarsatReceiver() : p_(std::make_unique<Impl>()) {}
+SarsatReceiver::~SarsatReceiver() = default;
+
+void SarsatReceiver::configure(double inputRateHz) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->fs = inputRateHz;
+    p_->rateSet = inputRateHz >= sarsatTuning().minSampleRate - 1;
+    p_->resetState();
+    p_->tel.inputRate = inputRateHz;
+    p_->tel.state = p_->rateSet ? 1 : 0;
+    p_->tel.seq++;
+}
+void SarsatReceiver::setSignalOffset(double hz) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    if (hz == p_->offHz) return;
+    p_->offHz = hz;
+    const double w = -2 * kPi * hz / (p_->fs > 0 ? p_->fs : 1);
+    p_->stRe = std::cos(w); p_->stIm = std::sin(w);
+}
+bool SarsatReceiver::ready() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return p_->rateSet;
+}
+void SarsatReceiver::reset() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->resetState();
+    const uint64_t seq = p_->tel.seq;
+    p_->tel = SarsatTelemetry();
+    p_->tel.seq = seq + 1;
+    p_->tel.inputRate = p_->fs;
+    p_->tel.state = p_->rateSet ? 1 : 0;
+}
+void SarsatReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->tel.log.clear();
+    p_->tel.dataValid = false;
+    p_->tel.blocksOk = p_->tel.blocksBad = p_->tel.bursts = 0;
+    p_->tel.seq++;
+}
+void SarsatReceiver::setLogCallback(std::function<void(const std::string&)> cb) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->log = std::move(cb);
+}
+bool SarsatReceiver::telemetry(SarsatTelemetry& out, uint64_t lastSeq) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    if (p_->tel.seq <= lastSeq) return false;
+    out = p_->tel;
+    return true;
+}
+
+void SarsatReceiver::feed(const cf32* x, size_t n) {
+    if (!x || !n) return;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl& m = *p_;
+    if (!m.rateSet) { m.tel.state = 0; return; }
+    const double binW = m.fs / kFs;
+    for (size_t i = 0; i < n; i++) {
+        float re = x[i].real(), im = x[i].imag();
+        if (!std::isfinite(re) || !std::isfinite(im)) re = im = 0;
+        m.accRe += re * m.loRe - im * m.loIm;
+        m.accIm += re * m.loIm + im * m.loRe;
+        m.accN++;
+        const double nr = m.loRe * m.stRe - m.loIm * m.stIm, ni = m.loRe * m.stIm + m.loIm * m.stRe;
+        m.loRe = nr; m.loIm = ni;
+        if (++m.loCount >= 4096) { m.loCount = 0; const double a = 1.0 / std::sqrt(m.loRe * m.loRe + m.loIm * m.loIm); m.loRe *= a; m.loIm *= a; }
+        m.nIn++;
+        if ((double)m.nIn >= m.binEnd) {
+            const double inv = 1.0 / (double)m.accN;
+            m.sample32(m.accRe * inv, m.accIm * inv);
+            m.accRe = m.accIm = 0; m.accN = 0;
+            m.k32++;
+            m.binEnd = (double)(m.k32 + 1) * binW;
+        }
+    }
+    if (m.timeSec() - m.lastPublish >= 0.25) { m.lastPublish = m.timeSec(); m.publish(); }
+}
+
+} // namespace dect2
