@@ -889,6 +889,7 @@ static TxPayloadKind expectedKind(const std::string& id) {
     if (id == "vdl4" || id == "uat" || id == "wisun") return TxPayloadKind::SatScene;
     // modes that were once refused: a generic test scene, no custom message
     static const char* scene[] = {"gnss", "ism", "cell", "gsmr", "specx", "specan", "astro", "ble", "iono", "wifi", "general", "rid", "nr", "timesig", "nbiot", "halow", "codar", "datawell", "multitone", "ant", "tetrapol", "ndb", "elektro", "lbj", "eczas", "wmbus"};
+    static const char* scene[] = {"gnss", "ism", "cell", "gsmr", "specx", "specan", "astro", "ble", "iono", "wifi", "general", "rid", "nr", "timesig", "nbiot", "halow", "codar", "datawell", "multitone", "ant", "tetrapol", "ndb", "elektro", "lbj", "eczas", "mt63"};
     for (const char* w : scene) if (id == w) return TxPayloadKind::SatScene;
     return (TxPayloadKind)(-1);
 }

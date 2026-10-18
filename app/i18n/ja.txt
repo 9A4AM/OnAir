@@ -3066,3 +3066,22 @@ Input	入力
 start the receiver to see beacons	ビーコンを見るには受信機を開始してください
 The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	テスト信号は、架空のビーコン5つ(EPIRB、PLB、ELT、海上ユーザービーコン、南半球のEPIRB)を3秒ごとに繰り返します(本物は50秒ごと)。
 Distress beacons, 406 MHz	遭難ビーコン、406 MHz
+%.0f Hz above the dial (%.3f kHz)	ダイヤルより %.0f Hz 上 (%.3f kHz)
+Interleave	インターリーブ
+Line	行
+Long	長
+MT63 comes in three widths, 500, 1000 and 2000 Hz (5, 10 and 20 characters per second). Automatic looks for all three.	MT63 には 500、1000、2000 Hz の 3 つの帯域幅があります(毎秒 5、10、20 文字)。自動では 3 つすべてを探します。
+Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way	サイドバンド(ダイヤル + 200 Hz〜3.8 kHz)をサウンドカードで再生します。デコードはどちらでも同じです
+Robust chat, 14.1095 MHz	堅牢なチャット、14.1095 MHz
+Short	短
+The 64 carriers: the level of each, relative to the strongest	64 本のキャリア:最も強いものを基準にした各レベル
+The long interleave spreads every character over 64 symbols, the short one over 32: the long one survives longer fades and bursts, the short one has less delay. Automatic decodes both and shows the one with clean codewords.	長いインターリーブは各文字を 64 シンボルに、短いものは 32 シンボルに分散します。長いほうは長いフェージングやバーストに強く、短いほうは遅延が少なくなります。自動では両方をデコードし、コードワードがきれいなほうを表示します。
+bandwidth	帯域幅
+centre	中心
+characters	文字数
+codeword quality	コードワード品質
+interleave	インターリーブ
+no callsigns yet	コールサインはまだありません
+start the receiver to read the band	受信機を開始してバンドを読み取ります
+synchronising	同期中
+unclear	不明瞭

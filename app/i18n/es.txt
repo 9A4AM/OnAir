@@ -3066,3 +3066,22 @@ Input	Entrada
 start the receiver to see beacons	inicie el receptor para ver balizas
 The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	La señal de prueba repite cada 3 segundos cinco balizas inventadas (las reales envían cada 50 segundos): una EPIRB, una PLB, una ELT, una baliza de usuario marítimo y una EPIRB en el hemisferio sur.
 Distress beacons, 406 MHz	Balizas de socorro, 406 MHz
+%.0f Hz above the dial (%.3f kHz)	%.0f Hz sobre el dial (%.3f kHz)
+Interleave	Entrelazado
+Line	Línea
+Long	Largo
+MT63 comes in three widths, 500, 1000 and 2000 Hz (5, 10 and 20 characters per second). Automatic looks for all three.	MT63 existe en tres anchos, 500, 1000 y 2000 Hz (5, 10 y 20 caracteres por segundo). Automático busca los tres.
+Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way	Reproducir la banda lateral (dial + 200 Hz a 3,8 kHz) en la tarjeta de sonido; la decodificación es la misma en ambos casos
+Robust chat, 14.1095 MHz	Chat robusto, 14,1095 MHz
+Short	Corto
+The 64 carriers: the level of each, relative to the strongest	Las 64 portadoras: el nivel de cada una, relativo a la más fuerte
+The long interleave spreads every character over 64 symbols, the short one over 32: the long one survives longer fades and bursts, the short one has less delay. Automatic decodes both and shows the one with clean codewords.	El entrelazado largo reparte cada carácter en 64 símbolos y el corto en 32: el largo resiste desvanecimientos y ráfagas más largos, el corto tiene menos retardo. Automático decodifica ambos y muestra el de palabras de código limpias.
+bandwidth	ancho de banda
+centre	centro
+characters	caracteres
+codeword quality	calidad de la palabra de código
+interleave	entrelazado
+no callsigns yet	aún no hay indicativos
+start the receiver to read the band	inicia el receptor para leer la banda
+synchronising	sincronizando
+unclear	poco claros

@@ -115,6 +115,7 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("wisun", "Wi-SUN", 86, "makeWisunSynth", kOpt, kUnv),
         mk("eczas", "e-Czas 225 kHz", 87, "makeEczasSynth", kOpt, kUnv),
         mk("wmbus", "Wireless M-Bus", 88, "makeWmbusSynth", kOpt, kUnv),
+        mk("mt63", "MT63", 97, "makeMt63Synth", kOpt, kUnv),
         mk("vorils", "VOR / ILS", 32, "makeVorSynth", kOpt, kUnv),
         mk("m17", "M17", 33, "makeM17Synth", kOpt, kUnv),
         mk("dstar", "D-STAR", 35, "makeDstarSynth", kOpt, kUnv),

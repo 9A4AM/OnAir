@@ -3049,3 +3049,22 @@ Input	Entrada
 start the receiver to see beacons	inicie o recetor para ver radiobalizas
 The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	O sinal de teste repete de 3 em 3 segundos cinco radiobalizas inventadas (as reais enviam de 50 em 50 segundos): uma EPIRB, uma PLB, uma ELT, uma radiobaliza marítima de utilizador e uma EPIRB no hemisfério sul.
 Distress beacons, 406 MHz	Radiobalizas de emergência, 406 MHz
+%.0f Hz above the dial (%.3f kHz)	%.0f Hz acima do dial (%.3f kHz)
+Interleave	Entrelaçamento
+Line	Linha
+Long	Longo
+MT63 comes in three widths, 500, 1000 and 2000 Hz (5, 10 and 20 characters per second). Automatic looks for all three.	O MT63 existe em três larguras, 500, 1000 e 2000 Hz (5, 10 e 20 caracteres por segundo). Automático procura as três.
+Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way	Reproduzir a banda lateral (dial + 200 Hz a 3,8 kHz) na placa de som; a descodificação é a mesma nos dois casos
+Robust chat, 14.1095 MHz	Chat robusto, 14,1095 MHz
+Short	Curto
+The 64 carriers: the level of each, relative to the strongest	As 64 portadoras: o nível de cada uma, relativo à mais forte
+The long interleave spreads every character over 64 symbols, the short one over 32: the long one survives longer fades and bursts, the short one has less delay. Automatic decodes both and shows the one with clean codewords.	O entrelaçamento longo espalha cada carácter por 64 símbolos e o curto por 32: o longo aguenta desvanecimentos e rajadas mais longos, o curto tem menos atraso. Automático descodifica ambos e mostra o de palavras de código limpas.
+bandwidth	largura de banda
+centre	centro
+characters	caracteres
+codeword quality	qualidade da palavra de código
+interleave	entrelaçamento
+no callsigns yet	ainda sem indicativos
+start the receiver to read the band	inicie o receptor para ler a banda
+synchronising	a sincronizar
+unclear	pouco claros

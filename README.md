@@ -88,7 +88,7 @@ OnAir is a receiver first. It can also send test signals through a transmit-capa
 | **Pagers** | 3 | POCSAG, FLEX, Multitone |
 | **IoT and sensors** | 13 | ISM sensors, LoRaWAN, Meshtastic, MeshCore, Bluetooth LE, Zigbee, Wi-Fi, Wi-SUN, Wireless M-Bus, DECT, ANT+ |
 | **Weather and science** | 6 | Radiosondes, SAME alerts, time signals, ionospheric sounders, radio astronomy |
-| **Amateur** | 27 | FT8, FT4, WSPR, JS8Call, RTTY, PSK, SSTV, FreeDV, APRS, LoRa APRS, MeshCom and more |
+| **Amateur** | 28 | FT8, FT4, WSPR, JS8Call, RTTY, PSK, MT63, SSTV, FreeDV, APRS, LoRa APRS, MeshCom and more |
 | **HF utility** | 4 | ALE, beacons, Datawell buoys, CODAR |
 | **Tools** | 4 | General receiver, spectrum analyser, spectrum explorer, signal workbench; also a gain optimiser, a direction finder, a pass planner and a remote-control API |
 
@@ -245,6 +245,7 @@ No radio? Open an IQ recording through the *IQ recording file* source (cs8, cu8,
 ### Amateur: digital
 
 - **WSJT family:** FT8, FT4, FT2, WSPR (with an optional spot upload to wsprnet.org), JT65, JT9, Q65, FST4 / FST4W, MSK144, and **JS8Call**.
+- **MT63** (500 / 1000 / 2000 Hz, short and long interleave found automatically, 64 carriers with Walsh-Hadamard coded characters; [details](docs/mt63.md)).
 - **Keyboard modes:** PSK31 / 63, RTTY, CW (every signal in a 14 kHz window), Olivia, Contestia, MFSK, THOR, DominoEX, Hellschreiber. Picture modes: **SSTV** and **HamDRM** (EasyPal).
 
 ### Amateur: voice and packet

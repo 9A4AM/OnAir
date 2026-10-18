@@ -3066,3 +3066,22 @@ Input	Wejście
 start the receiver to see beacons	uruchom odbiornik, aby zobaczyć radiopławy
 The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	Sygnał testowy co 3 sekundy powtarza pięć zmyślonych radiopław (prawdziwe nadają co 50 sekund): EPIRB, PLB, ELT, radiopławę użytkownika morskiego i EPIRB na półkuli południowej.
 Distress beacons, 406 MHz	Radiopławy ratunkowe, 406 MHz
+%.0f Hz above the dial (%.3f kHz)	%.0f Hz powyżej dial (%.3f kHz)
+Interleave	Przeplot
+Line	Wiersz
+Long	Długi
+MT63 comes in three widths, 500, 1000 and 2000 Hz (5, 10 and 20 characters per second). Automatic looks for all three.	MT63 występuje w trzech szerokościach: 500, 1000 i 2000 Hz (5, 10 i 20 znaków na sekundę). Automatyczny szuka wszystkich trzech.
+Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way	Odtwarzaj wstęgę boczną (dial + 200 Hz do 3,8 kHz) na karcie dźwiękowej; dekodowanie jest takie samo w obu przypadkach
+Robust chat, 14.1095 MHz	Odporny czat, 14,1095 MHz
+Short	Krótki
+The 64 carriers: the level of each, relative to the strongest	64 nośne: poziom każdej względem najsilniejszej
+The long interleave spreads every character over 64 symbols, the short one over 32: the long one survives longer fades and bursts, the short one has less delay. Automatic decodes both and shows the one with clean codewords.	Długi przeplot rozkłada każdy znak na 64 symbole, krótki na 32: długi znosi dłuższe zaniki i impulsy zakłóceń, krótki ma mniejsze opóźnienie. Automatyczny dekoduje oba i pokazuje ten z czystymi słowami kodowymi.
+bandwidth	szerokość pasma
+centre	środek
+characters	znaki
+codeword quality	jakość słowa kodowego
+interleave	przeplot
+no callsigns yet	jeszcze brak znaków wywoławczych
+start the receiver to read the band	uruchom odbiornik, aby czytać pasmo
+synchronising	synchronizacja
+unclear	niewyraźne
