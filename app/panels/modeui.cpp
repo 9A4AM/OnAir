@@ -178,7 +178,7 @@ const ModeUi* modeUi(int family) {
     case 95: return &kMt63Ui;
     case 98: return &kZwaveUi;
     case 104: return &kMscatterUi;
-    case 105: return &kSatbeaconUi;
+    case 107: return &kSatbeaconUi;
     case 56: return &kRidUi;
     case 59: return &kMeteorUi;
     case 57: return &kNrUi;

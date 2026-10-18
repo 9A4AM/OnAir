@@ -500,7 +500,7 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 94: return makeSarsatSynth(cfg, sampleRate);
     case 97: return makeMt63Synth(cfg, sampleRate);
     case 106: return makeMscatterSynth(cfg, sampleRate);
-    case 107: return makeSatbeaconSynth(cfg, sampleRate);
+    case 109: return makeSatbeaconSynth(cfg, sampleRate);
     case 58: return makeRidSynth(cfg, sampleRate);
     case 61: return makeMeteorSynth(cfg, sampleRate);
     case 59: return makeNrSynth(cfg, sampleRate);
@@ -594,7 +594,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 93: return sarsatSummary(t.sarsat);
     case 96: return mt63Summary(t.mt63);
     case 105: return msSummary(t.mscatter);
-    case 106: return sbSummary(t.satbeacon);
+    case 108: return sbSummary(t.satbeacon);
     case 57: return ridSummary(t.rid);
     case 60: return meteorSummary(t.meteor);
     case 58: return nrSummary(t.nr);

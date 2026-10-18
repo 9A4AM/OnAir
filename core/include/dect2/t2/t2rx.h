@@ -191,7 +191,7 @@ struct RxTelemetry {
     Mt63Telemetry mt63;       // valid when standard == 96 (MT63)
     EczasTelemetry eczas;     // valid when standard == 86 (e-Czas, 225 kHz Poland)
     MsTelemetry mscatter;     // valid when standard == 105 (meteor scatter)
-    SbTelemetry satbeacon;    // valid when standard == 106 (satellite beacon)
+    SbTelemetry satbeacon;    // valid when standard == 108 (satellite beacon)
     HfbTelemetry hfb;         // valid when standard == 68 (HF beacons)
     WbTelemetry wb;           // valid when standard == 74 (Signal workbench)
     DatawellTelemetry datawell;   // valid when standard == 75 (Datawell buoy HF link)

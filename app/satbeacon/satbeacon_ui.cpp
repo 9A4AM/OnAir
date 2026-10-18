@@ -20,7 +20,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.rx.standard == 106; }
+bool live(const App& a) { return a.rx.standard == 108; }
 
 void kvRow(const App& a, const char* k, const char* fmt, ...) {
     ImGui::TextDisabled("%s", k); kvColumn(130 * gUi);

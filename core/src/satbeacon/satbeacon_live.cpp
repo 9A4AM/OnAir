@@ -114,7 +114,7 @@ void SatbeaconLiveReceiver::feed(const cf32* x, size_t n) {
 
 ModeTuning satbeaconTuning() {
     ModeTuning t;
-    t.stdMode = 107; t.id = "satbeacon"; t.name = "Satellite beacon";
+    t.stdMode = 109; t.id = "satbeacon"; t.name = "Satellite beacon";
     t.minMhz = 1000; t.maxMhz = 20000; t.defMhz = 11705.250;
     t.sampleRate = 2e6;
     t.basebandHz = 0;

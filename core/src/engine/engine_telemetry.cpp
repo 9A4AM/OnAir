@@ -289,7 +289,7 @@ int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
     case 93: return pollStd(rxSar_, 93, t, seqs[87], &RxTelemetry::sarsat);
     case 96: return pollStd(rxMt63_, 96, t, seqs[88], &RxTelemetry::mt63);
     case 105: return pollStd(rxMs_, 105, t, seqs[101], &RxTelemetry::mscatter);
-    case 106: return pollStd(rxSb_, 106, t, seqs[102], &RxTelemetry::satbeacon);
+    case 108: return pollStd(rxSb_, 108, t, seqs[102], &RxTelemetry::satbeacon);
     default: return -1;
     }
 }
