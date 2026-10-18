@@ -3023,3 +3023,46 @@ DCS polarity (N or I) follows the deviation sign of the receiver; the same wavef
 Tone decoders	トーンデコーダー
 The test signal repeats every 40 s: CTCSS 123.0 Hz under speech-like noise, DCS D023N, DTMF 159#, a ZVEI1 call 12345, SELCAL AM-CP and a two-tone page.	テスト信号は40秒ごとに繰り返されます。音声に似た雑音の下のCTCSS 123.0 Hz、DCS D023N、DTMF 159#、ZVEI1呼び出し12345、SELCAL AM-CP、2トーン呼び出し。
 CTCSS, DCS, DTMF, selcall	CTCSS・DCS・DTMF・選択呼出
+# COSPAS-SARSAT 406 MHz
+A 406 MHz distress beacon (EPIRB on a boat, ELT in an aircraft, PLB carried by a person) sends a burst of about half a second every 50 seconds: an unmodulated carrier, then 112 or 144 bits at 400 bit/s. The message holds a 15 digit hex ID that is unique to the beacon, the country, the kind of beacon, and often a position (rounded to 15 minutes in a short message, to 4 seconds in a long one). Two BCH checks protect the message; up to three damaged bits in the first field are repaired.\n\nOnAir only receives. Test beacons and self-test bursts are marked. If you think you heard a real one, tell the rescue coordination centre of your country; do not rely on this program for safety.	406 MHz 遭難ビーコン(船のEPIRB、航空機のELT、個人が携行するPLB)は、約50秒ごとに約0.5秒のバーストを送信します。無変調の搬送波に続いて、400 bit/sで112または144ビットが送られます。メッセージには、ビーコン固有の15桁の16進ID、国、ビーコンの種類、多くの場合位置(短いメッセージでは15分単位、長いメッセージでは4秒単位に丸め)が含まれます。2つのBCHチェックがメッセージを保護し、最初のフィールドの最大3ビットの誤りが修復されます。\n\nOnAirは受信のみを行います。テストビーコンと自己テストのバーストには印が付きます。本物を受信したと思われる場合は、お住まいの国の救助調整センターに連絡してください。安全のためにこのプログラムに頼らないでください。
+EPIRB (boat)	EPIRB(船)
+ELT (aircraft)	ELT(航空機)
+PLB (person)	PLB(個人)
+Ship security	船舶保安
+Test	テスト
+What a 406 MHz beacon sends	406 MHz ビーコンが送る内容
+Hex ID	16進ID
+ (self-test burst)	(自己テストバースト)
+Protocol	プロトコル
+Identification	識別
+Precision	精度
+about 4 seconds of arc	約4秒角
+15 minutes of arc (short message)	15分角(短いメッセージ)
+Homing 121.5 MHz	ホーミング 121.5 MHz
+no	いいえ
+long, 144 bits	長い、144ビット
+short, 112 bits	短い、112ビット
+Check bits	チェックビット
+both good	両方正常
+first good, second failed	最初は正常、2番目は失敗
+first good	最初は正常
+bits repaired	ビット修復
+no beacon decoded yet; a beacon sends a burst about every 50 seconds	デコードされたビーコンはまだありません。ビーコンは約50秒ごとにバーストを送ります
+Checks	チェック
+fit	全体表示
+no decoded beacon carries a position yet	位置を持つデコード済みビーコンはまだありません
+blue EPIRB, orange ELT, green PLB, grey test; a short message is rounded to 15 minutes of arc	青 EPIRB、橙 ELT、緑 PLB、灰 テスト。短いメッセージは15分角に丸められます
+nothing decoded yet	まだデコードされたものはありません
+Raw bits	生ビット
+tune to 406.028 MHz and start the receiver	406.028 MHz に合わせて受信機を開始してください
+Receive only. A real beacon means somebody may be in danger: tell the rescue centre; do not rely on this program for safety.	受信専用です。本物のビーコンは誰かが危険な状態にある可能性を意味します。救助センターに連絡してください。安全のためにこのプログラムに頼らないでください。
+no input	入力なし
+beacon decoded lately	最近ビーコンをデコード
+Bursts	バースト
+heard	受信
+failed the checks	チェック不合格
+Last burst	直近のバースト
+Input	入力
+start the receiver to see beacons	ビーコンを見るには受信機を開始してください
+The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	テスト信号は、架空のビーコン5つ(EPIRB、PLB、ELT、海上ユーザービーコン、南半球のEPIRB)を3秒ごとに繰り返します(本物は50秒ごと)。
+Distress beacons, 406 MHz	遭難ビーコン、406 MHz

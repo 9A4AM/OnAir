@@ -3023,3 +3023,46 @@ DCS polarity (N or I) follows the deviation sign of the receiver; the same wavef
 Tone decoders	Tonų dekoderiai
 The test signal repeats every 40 s: CTCSS 123.0 Hz under speech-like noise, DCS D023N, DTMF 159#, a ZVEI1 call 12345, SELCAL AM-CP and a two-tone page.	Bandomasis signalas kartojasi kas 40 s: CTCSS 123,0 Hz po į kalbą panašiu triukšmu, DCS D023N, DTMF 159#, ZVEI1 iškvietimas 12345, SELCAL AM-CP ir dviejų tonų iškvietimas.
 CTCSS, DCS, DTMF, selcall	CTCSS, DCS, DTMF, selektyvus iškvietimas
+# COSPAS-SARSAT 406 MHz
+A 406 MHz distress beacon (EPIRB on a boat, ELT in an aircraft, PLB carried by a person) sends a burst of about half a second every 50 seconds: an unmodulated carrier, then 112 or 144 bits at 400 bit/s. The message holds a 15 digit hex ID that is unique to the beacon, the country, the kind of beacon, and often a position (rounded to 15 minutes in a short message, to 4 seconds in a long one). Two BCH checks protect the message; up to three damaged bits in the first field are repaired.\n\nOnAir only receives. Test beacons and self-test bursts are marked. If you think you heard a real one, tell the rescue coordination centre of your country; do not rely on this program for safety.	406 MHz avarinis švyturėlis (EPIRB laive, ELT orlaivyje, PLB asmens) maždaug kas 50 sekundžių siunčia apie pusės sekundės trukmės impulsą: nemoduliuotą nešlį, po to 112 arba 144 bitus 400 bit/s greičiu. Pranešime yra 15 skaitmenų šešioliktainis ID, vienintelis šiam švyturėliui, šalis, švyturėlio rūšis ir dažnai padėtis (trumpame pranešime suapvalinta iki 15 minučių, ilgame iki 4 sekundžių). Pranešimą saugo du BCH patikrinimai; iki trijų sugadintų pirmo lauko bitų pataisoma.\n\nOnAir tik priima. Bandomieji švyturėliai ir savitikros impulsai pažymimi. Jei manote išgirdę tikrą, praneškite savo šalies gelbėjimo koordinavimo centrui; savo saugumu nepasikliaukite šia programa.
+EPIRB (boat)	EPIRB (laivas)
+ELT (aircraft)	ELT (orlaivis)
+PLB (person)	PLB (asmuo)
+Ship security	Laivo apsauga
+Test	Bandymas
+What a 406 MHz beacon sends	Ką siunčia 406 MHz švyturėlis
+Hex ID	Šešiolikainis ID
+ (self-test burst)	 (savitikros impulsas)
+Protocol	Protokolas
+Identification	Identifikavimas
+Precision	Tikslumas
+about 4 seconds of arc	apie 4 lanko sekundes
+15 minutes of arc (short message)	15 lanko minučių (trumpas pranešimas)
+Homing 121.5 MHz	Pelengavimas 121,5 MHz
+no	ne
+long, 144 bits	ilgas, 144 bitai
+short, 112 bits	trumpas, 112 bitų
+Check bits	Tikrinimo bitai
+both good	abu geri
+first good, second failed	pirmas geras, antras nepavyko
+first good	pirmas geras
+bits repaired	bitų pataisyta
+no beacon decoded yet; a beacon sends a burst about every 50 seconds	dar nėra iššifruoto švyturėlio; švyturėlis siunčia impulsą maždaug kas 50 sekundžių
+Checks	Patikrinimai
+fit	tilpti
+no decoded beacon carries a position yet	joks iššifruotas švyturėlis dar neturi padėties
+blue EPIRB, orange ELT, green PLB, grey test; a short message is rounded to 15 minutes of arc	mėlyna EPIRB, oranžinė ELT, žalia PLB, pilka bandymas; trumpas pranešimas suapvalintas iki 15 lanko minučių
+nothing decoded yet	dar nieko neiššifruota
+Raw bits	Neapdoroti bitai
+tune to 406.028 MHz and start the receiver	sureguliuokite 406,028 MHz ir paleiskite imtuvą
+Receive only. A real beacon means somebody may be in danger: tell the rescue centre; do not rely on this program for safety.	Tik priėmimas. Tikras švyturėlis reiškia, kad kažkas gali būti pavojuje: praneškite gelbėjimo centrui; savo saugumu nepasikliaukite šia programa.
+no input	nėra įvesties
+beacon decoded lately	neseniai iššifruotas švyturėlis
+Bursts	Impulsai
+heard	išgirsta
+failed the checks	nepraėjo patikrinimų
+Last burst	Paskutinis impulsas
+Input	Įvestis
+start the receiver to see beacons	paleiskite imtuvą, kad matytumėte švyturėlius
+The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	Bandomasis signalas kas 3 sekundes kartoja penkis išgalvotus švyturėlius (tikri siunčia kas 50 sekundžių): EPIRB, PLB, ELT, jūrų naudotojo švyturėlį ir EPIRB pietiniame pusrutulyje.
+Distress beacons, 406 MHz	Avariniai švyturėliai, 406 MHz

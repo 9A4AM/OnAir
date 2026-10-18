@@ -3023,3 +3023,46 @@ DCS polarity (N or I) follows the deviation sign of the receiver; the same wavef
 Tone decoders	Tonendecoders
 The test signal repeats every 40 s: CTCSS 123.0 Hz under speech-like noise, DCS D023N, DTMF 159#, a ZVEI1 call 12345, SELCAL AM-CP and a two-tone page.	Het testsignaal herhaalt zich elke 40 s: CTCSS 123,0 Hz onder spraakachtige ruis, DCS D023N, DTMF 159#, een ZVEI1-oproep 12345, SELCAL AM-CP en een tweetoonsoproep.
 CTCSS, DCS, DTMF, selcall	CTCSS, DCS, DTMF, selectieve oproep
+# COSPAS-SARSAT 406 MHz
+A 406 MHz distress beacon (EPIRB on a boat, ELT in an aircraft, PLB carried by a person) sends a burst of about half a second every 50 seconds: an unmodulated carrier, then 112 or 144 bits at 400 bit/s. The message holds a 15 digit hex ID that is unique to the beacon, the country, the kind of beacon, and often a position (rounded to 15 minutes in a short message, to 4 seconds in a long one). Two BCH checks protect the message; up to three damaged bits in the first field are repaired.\n\nOnAir only receives. Test beacons and self-test bursts are marked. If you think you heard a real one, tell the rescue coordination centre of your country; do not rely on this program for safety.	Een 406 MHz-noodbaken (EPIRB op een boot, ELT in een vliegtuig, PLB bij een persoon) zendt ongeveer elke 50 seconden een burst van een halve seconde uit: een ongemoduleerde draaggolf, daarna 112 of 144 bits met 400 bit/s. Het bericht bevat een hex-ID van 15 cijfers dat uniek is voor de baken, het land, het soort baken en vaak een positie (in een kort bericht afgerond op 15 minuten, in een lang op 4 seconden). Twee BCH-controles beschermen het bericht; tot drie beschadigde bits in het eerste veld worden hersteld.\n\nOnAir ontvangt alleen. Testbakens en zelftestbursts zijn gemarkeerd. Denkt u een echte te hebben gehoord, meld dit dan bij het reddingscoördinatiecentrum van uw land; vertrouw voor uw veiligheid niet op dit programma.
+EPIRB (boat)	EPIRB (boot)
+ELT (aircraft)	ELT (vliegtuig)
+PLB (person)	PLB (persoon)
+Ship security	Scheepsbeveiliging
+Test	Test
+What a 406 MHz beacon sends	Wat een 406 MHz-baken zendt
+Hex ID	Hex-ID
+ (self-test burst)	 (zelftestburst)
+Protocol	Protocol
+Identification	Identificatie
+Precision	Nauwkeurigheid
+about 4 seconds of arc	ongeveer 4 boogseconden
+15 minutes of arc (short message)	15 boogminuten (kort bericht)
+Homing 121.5 MHz	Peilzender 121,5 MHz
+no	nee
+long, 144 bits	lang, 144 bits
+short, 112 bits	kort, 112 bits
+Check bits	Controlebits
+both good	beide goed
+first good, second failed	eerste goed, tweede mislukt
+first good	eerste goed
+bits repaired	bits hersteld
+no beacon decoded yet; a beacon sends a burst about every 50 seconds	nog geen baken gedecodeerd; een baken zendt ongeveer elke 50 seconden een burst
+Checks	Controles
+fit	passend
+no decoded beacon carries a position yet	nog geen gedecodeerd baken heeft een positie
+blue EPIRB, orange ELT, green PLB, grey test; a short message is rounded to 15 minutes of arc	blauw EPIRB, oranje ELT, groen PLB, grijs test; een kort bericht is afgerond op 15 boogminuten
+nothing decoded yet	nog niets gedecodeerd
+Raw bits	Ruwe bits
+tune to 406.028 MHz and start the receiver	stem af op 406,028 MHz en start de ontvanger
+Receive only. A real beacon means somebody may be in danger: tell the rescue centre; do not rely on this program for safety.	Alleen ontvangen. Een echte baken betekent dat iemand mogelijk in gevaar is: meld het bij het reddingscentrum; vertrouw voor uw veiligheid niet op dit programma.
+no input	geen ingang
+beacon decoded lately	baken onlangs gedecodeerd
+Bursts	Bursts
+heard	gehoord
+failed the checks	controles niet doorstaan
+Last burst	Laatste burst
+Input	Ingang
+start the receiver to see beacons	start de ontvanger om bakens te zien
+The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	Het testsignaal herhaalt elke 3 seconden vijf verzonnen bakens (echte zenden elke 50 seconden): een EPIRB, een PLB, een ELT, een maritieme gebruikersbaken en een EPIRB op het zuidelijk halfrond.
+Distress beacons, 406 MHz	Noodbakens, 406 MHz

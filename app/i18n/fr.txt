@@ -3023,3 +3023,46 @@ DCS polarity (N or I) follows the deviation sign of the receiver; the same wavef
 Tone decoders	Décodeurs de tonalités
 The test signal repeats every 40 s: CTCSS 123.0 Hz under speech-like noise, DCS D023N, DTMF 159#, a ZVEI1 call 12345, SELCAL AM-CP and a two-tone page.	Le signal d'essai se répète toutes les 40 s : CTCSS 123,0 Hz sous un bruit semblable à la voix, DCS D023N, DTMF 159#, un appel ZVEI1 12345, SELCAL AM-CP et un appel à deux tons.
 CTCSS, DCS, DTMF, selcall	CTCSS, DCS, DTMF, appel sélectif
+# COSPAS-SARSAT 406 MHz
+A 406 MHz distress beacon (EPIRB on a boat, ELT in an aircraft, PLB carried by a person) sends a burst of about half a second every 50 seconds: an unmodulated carrier, then 112 or 144 bits at 400 bit/s. The message holds a 15 digit hex ID that is unique to the beacon, the country, the kind of beacon, and often a position (rounded to 15 minutes in a short message, to 4 seconds in a long one). Two BCH checks protect the message; up to three damaged bits in the first field are repaired.\n\nOnAir only receives. Test beacons and self-test bursts are marked. If you think you heard a real one, tell the rescue coordination centre of your country; do not rely on this program for safety.	Une balise de détresse 406 MHz (EPIRB sur un bateau, ELT dans un aéronef, PLB portée par une personne) émet une salve d'une demi-seconde environ toutes les 50 secondes : une porteuse non modulée, puis 112 ou 144 bits à 400 bit/s. Le message contient un identifiant hexadécimal de 15 chiffres propre à la balise, le pays, le type de balise et souvent une position (arrondie à 15 minutes dans un message court, à 4 secondes dans un message long). Deux contrôles BCH protègent le message ; jusqu'à trois bits endommagés du premier champ sont réparés.\n\nOnAir reçoit seulement. Les balises d'essai et les salves d'autotest sont signalées. Si vous pensez en avoir entendu une vraie, prévenez le centre de coordination de sauvetage de votre pays ; ne vous fiez pas à ce programme pour votre sécurité.
+EPIRB (boat)	EPIRB (bateau)
+ELT (aircraft)	ELT (aéronef)
+PLB (person)	PLB (personne)
+Ship security	Sûreté du navire
+Test	Test
+What a 406 MHz beacon sends	Ce que transmet une balise 406 MHz
+Hex ID	ID hexa
+ (self-test burst)	 (salve d'autotest)
+Protocol	Protocole
+Identification	Identification
+Precision	Précision
+about 4 seconds of arc	environ 4 secondes d'arc
+15 minutes of arc (short message)	15 minutes d'arc (message court)
+Homing 121.5 MHz	Radioralliement 121,5 MHz
+no	non
+long, 144 bits	long, 144 bits
+short, 112 bits	court, 112 bits
+Check bits	Bits de contrôle
+both good	les deux bons
+first good, second failed	premier bon, second échoué
+first good	premier bon
+bits repaired	bits réparés
+no beacon decoded yet; a beacon sends a burst about every 50 seconds	aucune balise décodée pour l'instant ; une balise émet une salve environ toutes les 50 secondes
+Checks	Contrôles
+fit	ajuster
+no decoded beacon carries a position yet	aucune balise décodée ne porte encore de position
+blue EPIRB, orange ELT, green PLB, grey test; a short message is rounded to 15 minutes of arc	bleu EPIRB, orange ELT, vert PLB, gris test ; un message court est arrondi à 15 minutes d'arc
+nothing decoded yet	rien de décodé pour l'instant
+Raw bits	Bits bruts
+tune to 406.028 MHz and start the receiver	réglez sur 406,028 MHz et démarrez le récepteur
+Receive only. A real beacon means somebody may be in danger: tell the rescue centre; do not rely on this program for safety.	Réception seule. Une vraie balise signifie que quelqu'un est peut-être en danger : prévenez le centre de sauvetage ; ne vous fiez pas à ce programme pour votre sécurité.
+no input	pas d'entrée
+beacon decoded lately	balise décodée récemment
+Bursts	Salves
+heard	entendues
+failed the checks	contrôles échoués
+Last burst	Dernière salve
+Input	Entrée
+start the receiver to see beacons	démarrez le récepteur pour voir les balises
+The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	Le signal d'essai répète toutes les 3 secondes cinq balises fictives (les vraies émettent toutes les 50 secondes) : une EPIRB, une PLB, une ELT, une balise d'usager maritime et une EPIRB dans l'hémisphère sud.
+Distress beacons, 406 MHz	Balises de détresse, 406 MHz

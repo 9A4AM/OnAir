@@ -3006,3 +3006,46 @@ DCS polarity (N or I) follows the deviation sign of the receiver; the same wavef
 Tone decoders	Decodificatori di toni
 The test signal repeats every 40 s: CTCSS 123.0 Hz under speech-like noise, DCS D023N, DTMF 159#, a ZVEI1 call 12345, SELCAL AM-CP and a two-tone page.	Il segnale di prova si ripete ogni 40 s: CTCSS 123,0 Hz sotto un rumore simile al parlato, DCS D023N, DTMF 159#, una chiamata ZVEI1 12345, SELCAL AM-CP e una chiamata a due toni.
 CTCSS, DCS, DTMF, selcall	CTCSS, DCS, DTMF, chiamata selettiva
+# COSPAS-SARSAT 406 MHz
+A 406 MHz distress beacon (EPIRB on a boat, ELT in an aircraft, PLB carried by a person) sends a burst of about half a second every 50 seconds: an unmodulated carrier, then 112 or 144 bits at 400 bit/s. The message holds a 15 digit hex ID that is unique to the beacon, the country, the kind of beacon, and often a position (rounded to 15 minutes in a short message, to 4 seconds in a long one). Two BCH checks protect the message; up to three damaged bits in the first field are repaired.\n\nOnAir only receives. Test beacons and self-test bursts are marked. If you think you heard a real one, tell the rescue coordination centre of your country; do not rely on this program for safety.	Un radiofaro di emergenza a 406 MHz (EPIRB su una barca, ELT in un aeromobile, PLB portato da una persona) invia circa ogni 50 secondi un burst di mezzo secondo: una portante non modulata, poi 112 o 144 bit a 400 bit/s. Il messaggio contiene un ID esadecimale di 15 cifre unico per il radiofaro, il paese, il tipo di radiofaro e spesso una posizione (arrotondata a 15 minuti in un messaggio corto, a 4 secondi in uno lungo). Due controlli BCH proteggono il messaggio; fino a tre bit danneggiati del primo campo vengono riparati.\n\nOnAir riceve soltanto. I radiofari di prova e i burst di autotest sono segnalati. Se pensate di averne sentito uno vero, avvisate il centro di coordinamento del soccorso del vostro paese; non fate affidamento su questo programma per la vostra sicurezza.
+EPIRB (boat)	EPIRB (barca)
+ELT (aircraft)	ELT (aeromobile)
+PLB (person)	PLB (persona)
+Ship security	Sicurezza della nave
+Test	Test
+What a 406 MHz beacon sends	Cosa invia un radiofaro a 406 MHz
+Hex ID	ID esadecimale
+ (self-test burst)	 (burst di autotest)
+Protocol	Protocollo
+Identification	Identificazione
+Precision	Precisione
+about 4 seconds of arc	circa 4 secondi d'arco
+15 minutes of arc (short message)	15 minuti d'arco (messaggio corto)
+Homing 121.5 MHz	Radioguida 121,5 MHz
+no	no
+long, 144 bits	lungo, 144 bit
+short, 112 bits	corto, 112 bit
+Check bits	Bit di controllo
+both good	entrambi buoni
+first good, second failed	il primo buono, il secondo fallito
+first good	il primo buono
+bits repaired	bit riparati
+no beacon decoded yet; a beacon sends a burst about every 50 seconds	nessun radiofaro decodificato finora; un radiofaro invia un burst circa ogni 50 secondi
+Checks	Controlli
+fit	adatta
+no decoded beacon carries a position yet	nessun radiofaro decodificato porta ancora una posizione
+blue EPIRB, orange ELT, green PLB, grey test; a short message is rounded to 15 minutes of arc	blu EPIRB, arancione ELT, verde PLB, grigio test; un messaggio corto è arrotondato a 15 minuti d'arco
+nothing decoded yet	ancora nulla di decodificato
+Raw bits	Bit grezzi
+tune to 406.028 MHz and start the receiver	sintonizzare su 406,028 MHz e avviare il ricevitore
+Receive only. A real beacon means somebody may be in danger: tell the rescue centre; do not rely on this program for safety.	Solo ricezione. Un vero radiofaro significa che qualcuno può essere in pericolo: avvisate il centro di soccorso; non fate affidamento su questo programma per la vostra sicurezza.
+no input	nessun ingresso
+beacon decoded lately	radiofaro decodificato di recente
+Bursts	Burst
+heard	sentiti
+failed the checks	controlli non superati
+Last burst	Ultimo burst
+Input	Ingresso
+start the receiver to see beacons	avviare il ricevitore per vedere i radiofari
+The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	Il segnale di prova ripete ogni 3 secondi cinque radiofari inventati (quelli veri inviano ogni 50 secondi): un EPIRB, un PLB, un ELT, un radiofaro marittimo d'utente e un EPIRB nell'emisfero australe.
+Distress beacons, 406 MHz	Radiofari di emergenza, 406 MHz

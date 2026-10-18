@@ -284,6 +284,7 @@ int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
     case 86: return pollStd(rxEcz_, 86, t, seqs[80], &RxTelemetry::eczas);
     case 87: return pollStd(rxWmb_, 87, t, seqs[81], &RxTelemetry::wmbus);
     case 90: return pollStd(rxTones_, 90, t, seqs[85], &RxTelemetry::tones);
+    case 93: return pollStd(rxSar_, 93, t, seqs[87], &RxTelemetry::sarsat);
     default: return -1;
     }
 }

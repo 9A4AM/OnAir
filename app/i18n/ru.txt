@@ -3006,3 +3006,46 @@ DCS polarity (N or I) follows the deviation sign of the receiver; the same wavef
 Tone decoders	Декодеры тонов
 The test signal repeats every 40 s: CTCSS 123.0 Hz under speech-like noise, DCS D023N, DTMF 159#, a ZVEI1 call 12345, SELCAL AM-CP and a two-tone page.	Тестовый сигнал повторяется каждые 40 с: CTCSS 123,0 Гц под речеподобным шумом, DCS D023N, DTMF 159#, вызов ZVEI1 12345, SELCAL AM-CP и двухтоновый вызов.
 CTCSS, DCS, DTMF, selcall	CTCSS, DCS, DTMF, избирательный вызов
+# COSPAS-SARSAT 406 MHz
+A 406 MHz distress beacon (EPIRB on a boat, ELT in an aircraft, PLB carried by a person) sends a burst of about half a second every 50 seconds: an unmodulated carrier, then 112 or 144 bits at 400 bit/s. The message holds a 15 digit hex ID that is unique to the beacon, the country, the kind of beacon, and often a position (rounded to 15 minutes in a short message, to 4 seconds in a long one). Two BCH checks protect the message; up to three damaged bits in the first field are repaired.\n\nOnAir only receives. Test beacons and self-test bursts are marked. If you think you heard a real one, tell the rescue coordination centre of your country; do not rely on this program for safety.	Аварийный радиомаяк 406 МГц (EPIRB на судне, ELT в самолёте, PLB у человека) примерно каждые 50 секунд передаёт всплеск длительностью около полусекунды: немодулированную несущую, затем 112 или 144 бита со скоростью 400 бит/с. Сообщение содержит 15-значный шестнадцатеричный идентификатор, уникальный для маяка, страну, тип маяка и часто положение (в коротком сообщении округлено до 15 минут, в длинном до 4 секунд). Сообщение защищено двумя проверками BCH; до трёх повреждённых битов первого поля исправляются.\n\nOnAir только принимает. Тестовые маяки и всплески самотестирования помечены. Если вы думаете, что услышали настоящий, сообщите в спасательный координационный центр вашей страны; не полагайтесь на эту программу в вопросах безопасности.
+EPIRB (boat)	EPIRB (судно)
+ELT (aircraft)	ELT (самолёт)
+PLB (person)	PLB (человек)
+Ship security	Охрана судна
+Test	Тест
+What a 406 MHz beacon sends	Что передаёт маяк 406 МГц
+Hex ID	Hex-ID
+ (self-test burst)	 (всплеск самотеста)
+Protocol	Протокол
+Identification	Идентификация
+Precision	Точность
+about 4 seconds of arc	около 4 угловых секунд
+15 minutes of arc (short message)	15 угловых минут (короткое сообщение)
+Homing 121.5 MHz	Радиопеленг 121,5 МГц
+no	нет
+long, 144 bits	длинное, 144 бита
+short, 112 bits	короткое, 112 бит
+Check bits	Контрольные биты
+both good	обе верны
+first good, second failed	первая верна, вторая не прошла
+first good	первая верна
+bits repaired	бит исправлено
+no beacon decoded yet; a beacon sends a burst about every 50 seconds	ни один маяк пока не декодирован; маяк передаёт всплеск примерно раз в 50 секунд
+Checks	Проверки
+fit	вписать
+no decoded beacon carries a position yet	ни один декодированный маяк пока не содержит положения
+blue EPIRB, orange ELT, green PLB, grey test; a short message is rounded to 15 minutes of arc	синий EPIRB, оранжевый ELT, зелёный PLB, серый тест; короткое сообщение округлено до 15 угловых минут
+nothing decoded yet	пока ничего не декодировано
+Raw bits	Сырые биты
+tune to 406.028 MHz and start the receiver	настройтесь на 406,028 МГц и запустите приёмник
+Receive only. A real beacon means somebody may be in danger: tell the rescue centre; do not rely on this program for safety.	Только приём. Настоящий маяк означает, что кто-то может быть в опасности: сообщите в спасательный центр; не полагайтесь на эту программу в вопросах безопасности.
+no input	нет входа
+beacon decoded lately	маяк недавно декодирован
+Bursts	Всплески
+heard	услышано
+failed the checks	не прошли проверку
+Last burst	Последний всплеск
+Input	Вход
+start the receiver to see beacons	запустите приёмник, чтобы увидеть маяки
+The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	Тестовый сигнал каждые 3 секунды повторяет пять выдуманных маяков (настоящие передают каждые 50 секунд): EPIRB, PLB, ELT, морской пользовательский маяк и EPIRB в южном полушарии.
+Distress beacons, 406 MHz	Аварийные маяки, 406 МГц

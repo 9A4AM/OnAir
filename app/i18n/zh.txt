@@ -3023,3 +3023,46 @@ DCS polarity (N or I) follows the deviation sign of the receiver; the same wavef
 Tone decoders	音调解码器
 The test signal repeats every 40 s: CTCSS 123.0 Hz under speech-like noise, DCS D023N, DTMF 159#, a ZVEI1 call 12345, SELCAL AM-CP and a two-tone page.	测试信号每40秒重复一次：类语音噪声下的CTCSS 123.0 Hz、DCS D023N、DTMF 159#、ZVEI1呼叫12345、SELCAL AM-CP和一次双音呼叫。
 CTCSS, DCS, DTMF, selcall	CTCSS、DCS、DTMF、选呼
+# COSPAS-SARSAT 406 MHz
+A 406 MHz distress beacon (EPIRB on a boat, ELT in an aircraft, PLB carried by a person) sends a burst of about half a second every 50 seconds: an unmodulated carrier, then 112 or 144 bits at 400 bit/s. The message holds a 15 digit hex ID that is unique to the beacon, the country, the kind of beacon, and often a position (rounded to 15 minutes in a short message, to 4 seconds in a long one). Two BCH checks protect the message; up to three damaged bits in the first field are repaired.\n\nOnAir only receives. Test beacons and self-test bursts are marked. If you think you heard a real one, tell the rescue coordination centre of your country; do not rely on this program for safety.	406 MHz 遇险信标(船上的 EPIRB、飞机上的 ELT、个人携带的 PLB)大约每 50 秒发送一次约半秒的突发:先是未调制的载波,然后以 400 bit/s 发送 112 或 144 比特。报文包含信标独有的 15 位十六进制 ID、国家、信标类型,通常还有位置(短报文取整到 15 分,长报文取整到 4 秒)。报文由两个 BCH 校验保护;第一字段中最多三个损坏的比特会被修复。\n\nOnAir 只接收。测试信标和自检突发会被标出。如果您认为听到了真正的信标,请通知您所在国家的救援协调中心;请勿依赖本程序来保障安全。
+EPIRB (boat)	EPIRB(船)
+ELT (aircraft)	ELT(飞机)
+PLB (person)	PLB(个人)
+Ship security	船舶保安
+Test	测试
+What a 406 MHz beacon sends	406 MHz 信标发送什么
+Hex ID	十六进制 ID
+ (self-test burst)	 (自检突发)
+Protocol	协议
+Identification	标识
+Precision	精度
+about 4 seconds of arc	约 4 角秒
+15 minutes of arc (short message)	15 角分(短报文)
+Homing 121.5 MHz	归航 121.5 MHz
+no	否
+long, 144 bits	长,144 比特
+short, 112 bits	短,112 比特
+Check bits	校验位
+both good	两个都正确
+first good, second failed	第一个正确,第二个失败
+first good	第一个正确
+bits repaired	比特已修复
+no beacon decoded yet; a beacon sends a burst about every 50 seconds	尚未解码到信标;信标大约每 50 秒发送一次突发
+Checks	校验
+fit	适应
+no decoded beacon carries a position yet	目前没有已解码的信标带有位置
+blue EPIRB, orange ELT, green PLB, grey test; a short message is rounded to 15 minutes of arc	蓝色 EPIRB,橙色 ELT,绿色 PLB,灰色 测试;短报文取整到 15 角分
+nothing decoded yet	尚未解码任何内容
+Raw bits	原始比特
+tune to 406.028 MHz and start the receiver	调谐到 406.028 MHz 并启动接收机
+Receive only. A real beacon means somebody may be in danger: tell the rescue centre; do not rely on this program for safety.	仅接收。真正的信标意味着可能有人处于危险中:请通知救援中心;请勿依赖本程序来保障安全。
+no input	无输入
+beacon decoded lately	最近解码到信标
+Bursts	突发
+heard	已听到
+failed the checks	未通过校验
+Last burst	最近的突发
+Input	输入
+start the receiver to see beacons	启动接收机以查看信标
+The test signal repeats five made-up beacons every 3 seconds (real ones send every 50 seconds): an EPIRB, a PLB, an ELT, a maritime user beacon and an EPIRB in the southern hemisphere.	测试信号每 3 秒重复五个虚构的信标(真实信标每 50 秒发送一次):一个 EPIRB、一个 PLB、一个 ELT、一个海事用户信标和一个南半球的 EPIRB。
+Distress beacons, 406 MHz	遇险信标,406 MHz
