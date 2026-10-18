@@ -1,5 +1,4 @@
-// C ABI of the Rust protocol crate rust/onair_proto (written by hand: cbindgen is not available offline). Only included when the crate is
-// built (DECT2_RUST_PROTO). Every function takes (pointer, length) pairs and caller-owned output buffers; functions that write return the
+// C ABI of the Rust protocol crate rust/onair_proto (written by hand: cbindgen is not available offline). Every function takes (pointer, length) pairs and caller-owned output buffers; functions that write return the
 // number of elements written, or SIZE_MAX when the output buffer is too small. Bits are one per byte, in transmission order.
 #pragma once
 #include <stdbool.h>

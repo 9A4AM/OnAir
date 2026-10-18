@@ -11,5 +11,5 @@ Stays in C++ (`core/src/pager/pager_proto.cpp`, built in every build): the gener
 `encodeWord`), the `PocsagParser` message assembler (its bit list grows without a bound, so it stays a C++ vector; the per-word decision is `pocsagClassify` in Rust), and the
 demodulator / receiver. `core/src/pager/pager_proto_rs.cpp` is the Rust-backed implementation of the rest of `dect2/pager/pager_proto.h`.
 
-C ABI: `src/ffi.rs`, header `core/include/dect2/rs/pager.h`, symbols prefixed `onair_pager_`. Differential test: `tests/pager/test_pager_proto_rs.cpp` (about 3.8 M
+C ABI: `src/ffi.rs`, header `core/include/dect2/rs/pager.h`, symbols prefixed `onair_pager_`. Golden-vector test: `tests/pager/test_pager_proto_rs.cpp` (about 3.8 M
 comparisons), fuzz target `fuzz_pager_proto`. Status and conventions: ../README.md.

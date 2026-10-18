@@ -19,6 +19,6 @@ Stays in C++: the ensemble, service and label tables with the FIG 2 segment stor
 data group, dynamic label and slide show assembly (`DabPadDecoder`, image decoding with FFmpeg), the SPI service information XML, the JML object parser (it inflates), the packet data unit reassembly, the FIG analyser text
 decoder (`dab_fig*.cpp`, 1200 lines of etisnoop-style text for the analyser panel) and the DAB generator.
 
-`dab_proto.h` is the C++ / Rust boundary (namespace `dect2::dabp`); `dab_proto.cpp` keeps the C++ under `#ifndef DECT2_RUST_DAB`, `dab_proto_rs.cpp` is the Rust-backed twin. Differential test:
-`tests/dab/test_dab_proto_rs.cpp` (15 M comparisons at the default 200000 iterations per family), fuzz target `fuzz_dab_proto`. C ABI: `src/ffi.rs`, header `core/include/dect2/rs/dab.h`, symbols prefixed `onair_dab_`.
+`dab_proto.h` is the C++ / Rust boundary (namespace `dect2::dabp`); `dab_proto_rs.cpp` implements it (the C++ copy is deleted). Golden-vector test:
+`tests/dab/test_dab_proto_rs.cpp` (about 15 M results hashed at the default 200000 iterations per family), fuzz target `fuzz_dab_proto`. C ABI: `src/ffi.rs`, header `core/include/dect2/rs/dab.h`, symbols prefixed `onair_dab_`.
 Status and conventions: ../README.md.

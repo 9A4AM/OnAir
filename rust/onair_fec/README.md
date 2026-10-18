@@ -44,7 +44,6 @@ SIMD bodies of `dect2/dsp/simd.h`), the SSE2 / AVX2 Viterbi (x86: the portable R
 Viterbi / Reed-Solomon copies of other modes (DMR, P25, NXDN, D-STAR, VDL2 are in their own crates already; the remaining small Viterbi decoders of WiFi, HaLow, M17, TETRA, GNSS,
 cellular, DRM live in their mode files with their own puncturing).
 
-C ABI: `src/ffi.rs`, header `core/include/dect2/rs/fec.h`, symbols prefixed `onair_fec_`. C++ side: `core/src/fec/fec_proto.cpp` (the original code, under `#ifndef DECT2_RUST_FEC`, the Viterbi under
-`#if !defined(DECT2_RUST_FEC) || !defined(__aarch64__)`), `core/src/fec/fec_proto_rs.cpp` (Rust-backed twin). Differential test `tests/fec/test_fec_proto_rs.cpp`
-(1.0 M comparisons at 100000 inputs per family, plus the real DVB-T2 tables and the C ABI misuse cases), fuzz target `fuzz_fec_proto`, benchmark `bench_fec_proto`.
+C ABI: `src/ffi.rs`, header `core/include/dect2/rs/fec.h`, symbols prefixed `onair_fec_`. C++ side: `core/src/fec/fec_proto.cpp` (the Viterbi decoder only, `#if !defined(ONAIR_RUST_VITERBI) || !defined(__aarch64__)`), `core/src/fec/fec_proto_rs.cpp` (everything else). Golden-vector test `tests/fec/test_fec_proto_rs.cpp`
+(100000 inputs per family, plus the real DVB-T2 tables, the Rust Viterbi kernel against the C++ one on aarch64 and the C ABI misuse cases), fuzz target `fuzz_fec_proto`.
 Status and conventions: ../README.md.

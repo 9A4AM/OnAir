@@ -10,4 +10,4 @@ formula (a unit test checks it). `getBits` / `setBits` / `toHex` stay in `core/s
 `dect2/adsb/adsb_msg.h`. UAT, the encoder / generator, tracker and register stay in C++.
 
 C ABI: `src/ffi.rs`, header `core/include/dect2/rs/adsb.h` (the structs `OnairAdsbMsg` / `OnairAdsbCommB` mirror the Rust `repr(C)` structs, sizes are checked at start-up).
-Differential test: `tests/adsb/test_adsb_proto_rs.cpp` (about 5.6 M comparisons), fuzz target `fuzz_adsb_proto`. Status and conventions: ../README.md.
+Golden-vector test: `tests/adsb/test_adsb_proto_rs.cpp` (about 5.6 M results hashed), fuzz target `fuzz_adsb_proto`. Status and conventions: ../README.md.

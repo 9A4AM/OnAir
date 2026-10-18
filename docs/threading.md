@@ -7,7 +7,7 @@ Survey of how threads are used, the shared framework (`core/include/dect2/common
 | Thread | Created by | Produces / consumes | When it is behind |
 |---|---|---|---|
 | source / reader (one per radio: `source_*.cpp`, `hackrf_usb.cpp`, `native_common.h`) | the source on start | USB / socket / file reader writes cf32 into the `IqRing` | the ring counts `dropped`; the reader never waits for the analysis thread |
-| `IqRing` (`common/ring.h`) | - | lock-free SPSC ring of cf32: the reader writes, the analysis thread reads; sequence-locked "last write" stamp for the loss detector | drops the new samples |
+| `IqRing` (`common/ring.h`; the C++ one by default, `-DDECT2_RUST_RING=ON` swaps in the Rust ring `rust/onair_ring`, both stay and `tests/common/test_ring_rs.cpp` compares them) | - | lock-free SPSC ring of cf32: the reader writes, the analysis thread reads; sequence-locked "last write" stamp for the loss detector | drops the new samples |
 | analysis thread (`Engine::analysisLoop`, `onair-analysis`) | `Engine::start` | ring -> active receiver `feed()`; Realtime QoS. Contract (`engine/engine.h`): it never waits for the interface, results are polled | the ring drops |
 | spectrum thread (`Engine::spectrumLoop`, `onair-spectrum`) | `Engine::start` | gets a copy of each block from `feedSpectrum` (queue of 6, extra blocks skipped), runs the analyser | skips blocks; **never slows the decoder** (already off the decode path) |
 | secondary receivers rx2..rx4 (`Engine::secondaryLoop`, `onair-rxN`) | `Engine::startSecondary` | own ring, own shifter + resampler, own receiver; Background QoS | own ring drops |

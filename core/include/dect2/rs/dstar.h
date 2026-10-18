@@ -1,5 +1,5 @@
 // C ABI of the Rust crate rust/onair_dstar (D-STAR DV frame layer). Written by hand; the Rust test rust/onair/tests/headers.rs checks it against ffi.rs.
-// Only meaningful when DECT2_RUST_DSTAR is defined (see rust/README.md). Bits are one per byte, bytes go on the air least significant bit first.
+// Bits are one per byte, bytes go on the air least significant bit first.
 #pragma once
 #include <stdbool.h>
 #include <stddef.h>

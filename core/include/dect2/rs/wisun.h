@@ -1,5 +1,5 @@
 // C ABI of the Rust crate rust/onair_wisun (Wi-SUN FAN / IEEE 802.15.4g SUN FSK frame layers). Written by hand; the Rust test rust/onair/tests/headers.rs checks it
-// against ffi.rs. Only meaningful when DECT2_RUST_WISUN is defined (see rust/README.md). Flags are 0 / 1 bytes; text is a length plus bytes (no NUL).
+// against ffi.rs. Flags are 0 / 1 bytes; text is a length plus bytes (no NUL).
 #pragma once
 #include <stdbool.h>
 #include <stddef.h>

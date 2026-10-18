@@ -17,9 +17,8 @@ defaults (-1). `unsafe` only in `ffi.rs`, which also holds `cfn`: the C library 
 
 Stays in C++ (`core/src/mesh/`): AES-CTR (Meshtastic), AES-ECB / HMAC-SHA256 / Ed25519 (MeshCore) and the channel tables with their lock (they need keys; the Rust side only parses what they hand
 over), the LoRa PHY (`mesh_lora_*`), receiver, generator and report, the packet builders, the region / preset / LoRa settings tables (`meshtasticSlotHz`, `meshcoreDefaults`, `lorawanPresets`, ...), and the
-APRS information field parser (`aprs::parse`, itself Rust through onair_ax25). The seven C++ files keep their code under `#ifndef DECT2_RUST_MESH`; `mesh_proto_rs.cpp`, `mesh_proto_lora_rs.cpp` and
-`mesh_pb_rs.cpp` are the Rust-backed twins (`mesh_rs_util.h`: record to std::string conversions, layout check at start-up).
+APRS information field parser (`aprs::parse`, itself Rust through onair_ax25). The C++ parsing code is deleted from the C++ files (they keep the key-dependent parts, builders and settings tables); `mesh_proto_rs.cpp`, `mesh_proto_lora_rs.cpp` and
+`mesh_pb_rs.cpp` are the Rust-backed implementations (`mesh_rs_util.h`: record to std::string conversions, layout check at start-up).
 
-C ABI: `src/ffi.rs`, header `core/include/dect2/rs/mesh.h`, symbols prefixed `onair_mesh_`. Differential test `tests/mesh/test_mesh_proto_rs.cpp` + `rs_part2_mesh.cpp` against a frozen copy of the
-seven files in `dect2_mesh_ref` (`cmake/gen_mesh_ref.cmake`): 100000 inputs per family by default, 200000 verified (protobuf, Meshtastic packets of every port with default and user keys, MeshCore adverts / group / direct / TRACE /
-random, LoRaWAN, LoRa APRS, MeshCom) plus the name helpers: 5.2 M comparisons at 200000; fuzz target `fuzz_mesh_proto`. Status and conventions: ../README.md.
+C ABI: `src/ffi.rs`, header `core/include/dect2/rs/mesh.h`, symbols prefixed `onair_mesh_`. Golden-vector test: `tests/mesh/test_mesh_proto_rs.cpp` + `rs_part2_mesh.cpp` (digest recorded from the C++ the Rust code replaced): 100000 inputs per family by default, 200000 verified (protobuf, Meshtastic packets of every port with default and user keys, MeshCore adverts / group / direct / TRACE /
+random, LoRaWAN, LoRa APRS, MeshCom) plus the name helpers: 5.2 M results hashed at 200000; fuzz target `fuzz_mesh_proto`. Status and conventions: ../README.md.

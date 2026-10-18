@@ -13,8 +13,7 @@ Modules: `bits` (bit writer / reader), `codes` (short codes, RS, CRCs; tables bu
 Stays in C++: the demodulator, sync search on the matched filter output, slot tracking, calibration and call logic (`dmr_link.cpp`, `dmr_rx.cpp`, `dmr_eval.cpp`), the generator and the
 radio / vocoder glue (`dmr_gen.cpp`, mbelib stays untouched), the plain bit helpers `putBits` / `getBits` / `bytesToBits` / `bitsToBytes` / `popcount32`, the sync word table `kSyncWords`, the three burst
 slicers (`burstCentre`, `burstDataPayload`, `burstVoicePayload`: vector copies), `be24` / `putBe24`, and `talkerAliasPdus` (builds the test signal's alias PDUs). `dmr_fec_rs.cpp` and
-`dmr_proto_rs.cpp` are the Rust-backed implementations of `dect2/dmr/dmr_fec.h` and `dmr_proto.h`; the C++ stays in both files under `#ifndef DECT2_RUST_DMR`.
+`dmr_proto_rs.cpp` are the Rust-backed implementations of `dect2/dmr/dmr_fec.h` and `dmr_proto.h`; `dmr_fec.cpp` and `dmr_proto.cpp` keep only the bit helpers, the sync word table, the burst slicers and the talker alias PDU builder.
 `dmr_fec.cpp` is compiled with `-ffp-contract=off` (the trellis metric adds squares) so the Rust and C++ builds agree bit for bit.
 
-C ABI: `src/ffi.rs`, header `core/include/dect2/rs/dmr.h`, symbols prefixed `onair_dmr_`. Differential test: `tests/dmr/test_dmr_proto_rs.cpp` (two generated reference copies, the proto one
-built on the fec one; about 9.9 M comparisons at the default 200000 iterations per family), fuzz target `fuzz_dmr_proto`. Status and conventions: ../README.md.
+C ABI: `src/ffi.rs`, header `core/include/dect2/rs/dmr.h`, symbols prefixed `onair_dmr_`. Golden-vector test: `tests/dmr/test_dmr_proto_rs.cpp` (digest recorded from the C++ it replaced), fuzz target `fuzz_dmr_proto`. Status and conventions: ../README.md.

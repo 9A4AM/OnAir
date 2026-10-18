@@ -9,4 +9,4 @@ Opt-in: `-DDECT2_RUST_RING=ON` makes `IqRing` the Rust one (default OFF). Not po
 contract across the C ABI, so they stay in C++.
 
 Tests: `cargo test -p onair_ring` (model comparison, wrapped counters, threaded stress, exhaustive interleavings of a step model);
-`test_ring_rs` (ctest `common_ring_rs`): differential C++ vs Rust, two-thread stress; `test_ring_rs --bench`: ns/op.
+`test_ring_rs` (ctest `common_ring_rs`): C++ ring vs Rust ring (both stay, the Rust one is opt-in), two-thread stress; `test_ring_rs --bench`: ns/op.

@@ -1,5 +1,5 @@
 // C ABI of the Rust crate rust/onair_mesh (LoRa mesh packet layers: Meshtastic, MeshCore, LoRaWAN, LoRa APRS, MeshCom). Written by hand; the Rust test
-// rust/onair/tests/headers.rs checks it against ffi.rs. Only meaningful when DECT2_RUST_MESH is defined (see rust/README.md).
+// rust/onair/tests/headers.rs checks it against ffi.rs.
 // Text in the records is a length plus bytes (no NUL), cut when too long; payloads are LoRa frames of at most 255 bytes. Text writers return the length written or
 // SIZE_MAX when the buffer is too small. Flags are 0 / 1 bytes. "Not in this packet" numbers keep the C++ defaults (-1).
 #pragma once

@@ -1,5 +1,5 @@
 // C ABI of the Rust crate rust/onair_tetra (TETRA network information: the broadcasts every cell sends to all terminals). Written by hand; the Rust
-// test rust/onair/tests/headers.rs checks it against ffi.rs. Only meaningful when DECT2_RUST_TETRA is defined (see rust/README.md).
+// test rust/onair/tests/headers.rs checks it against ffi.rs.
 // Bits are one per byte (0 / 1). No voice, no call or short data content and no subscriber address is read by any function.
 #pragma once
 #include <stdbool.h>

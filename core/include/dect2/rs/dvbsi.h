@@ -1,5 +1,5 @@
 // C ABI of the Rust crate rust/onair_dvbsi (broadcast text character sets, DVB teletext, DVB subtitles). Written by hand; the Rust test rust/onair/tests/headers.rs
-// checks it against ffi.rs. Only meaningful when DECT2_RUST_DVBSI is defined (see rust/README.md). Text functions write UTF-8 into a caller buffer and return the
+// checks it against ffi.rs. Text functions write UTF-8 into a caller buffer and return the
 // length, SIZE_MAX when it is too small. Record arrays are (pointer, capacity); parsers return / report the number found, counted past the capacity.
 #pragma once
 #include <stdbool.h>

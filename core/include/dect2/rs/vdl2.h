@@ -1,5 +1,5 @@
 // C ABI of the Rust crate rust/onair_vdl2 (VDL Mode 2 link layers). Written by hand; the Rust test rust/onair/tests/headers.rs checks it against ffi.rs.
-// Only meaningful when DECT2_RUST_VDL2 is defined (see rust/README.md). Bits are one per byte; flags are 0 / 1 bytes; text is a length plus bytes (no NUL).
+// Bits are one per byte; flags are 0 / 1 bytes; text is a length plus bytes (no NUL).
 #pragma once
 #include <stdbool.h>
 #include <stddef.h>

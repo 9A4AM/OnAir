@@ -1,5 +1,5 @@
 // C ABI of the Rust crate rust/onair_nxdn (NXDN frame layer). Written by hand; the Rust test rust/onair/tests/headers.rs checks it against ffi.rs.
-// Only meaningful when DECT2_RUST_NXDN is defined (see rust/README.md). Bits are one per byte. Names are static NUL-terminated strings.
+// Bits are one per byte. Names are static NUL-terminated strings.
 #pragma once
 #include <stdbool.h>
 #include <stddef.h>

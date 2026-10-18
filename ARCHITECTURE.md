@@ -44,6 +44,33 @@ Threads: the analysis thread runs the receiver (it must never wait for the inter
 | `packaging/` | icons, Windows installer script and toolchain file, Linux resources |
 | `third_party/` | Dear ImGui and miniaudio, with their licences |
 
+## Rust protocol layers
+
+The frame, packet and file-format layers listed below are written in Rust (the workspace `rust/`, one static library `libonair_rs.a`; `rust/README.md` is the guide) and the C++ they replaced is deleted: Rust is required to build (`cmake/OnairRust.cmake` stops with an error without cargo). The public C++ headers did not change, so callers do not know the difference; the functions of each header are implemented in the `<name>_rs.cpp` next to it, which calls the C ABI (`core/include/dect2/rs/<module>.h`). What is still C++ in those folders is receivers, demodulators, generators, trackers, key-dependent code and state (class stores, caches, locks).
+
+| Module (crate) | C++ header and Rust-backed implementation | Still C++ in that folder |
+|---|---|---|
+| AIS (`onair_proto`) | `ais/ais_proto.h`, `ais_proto_rs.cpp` | generator side (`ais_proto.cpp`), receiver |
+| ADS-B (`onair_adsb`) | `adsb/adsb_msg.h`, `adsb_msg_rs.cpp` | bit helpers (`adsb_msg.cpp`), generator, tracker, register |
+| ACARS (`onair_acars`) | `acars/acars_proto.h`, `acars_proto_rs.cpp` | `acarsBuildFrame`, receiver |
+| SAME (`onair_same`) | `same/same_proto.h`, `same_proto_rs.cpp` | county table and file loader |
+| POCSAG / FLEX (`onair_pager`) | `pager/pager_proto.h`, `pager_proto_rs.cpp` | generators, POCSAG message assembler |
+| AX.25 / APRS (`onair_ax25`) | `packet/packet_ax25.h`, `packet_aprs.h`, `packet_ax25_rs.cpp`, `packet_aprs_rs.cpp` | frame builder and transmit helpers |
+| DMR (`onair_dmr`) | `dmr/dmr_fec.h`, `dmr_proto.h`, `dmr_fec_rs.cpp`, `dmr_proto_rs.cpp` | bit helpers, sync table, burst slicers, alias PDU builder |
+| P25, NXDN, D-STAR (`onair_p25`, `onair_nxdn`, `onair_dstar`) | `<mode>/<mode>_proto.h`, `<mode>_proto_rs.cpp` | sync tables, receivers, generators, vocoder glue |
+| TETRA (`onair_tetra`) | `tetra/tetra_pdu.h`, `tetra_pdu_rs.cpp` | encoders and generator PDUs |
+| VDL2, HFDL (`onair_vdl2`, `onair_hfdl`) | `vdl2/vdl2_proto.h`, `hfdl/hfdl_proto.h`, `*_rs.cpp` | burst / PDU builders for the test signal, ACARS readers, demodulators |
+| Mesh (`onair_mesh`) | `mesh/mesh_proto.h`, `mesh_pb.h`, `mesh_proto_rs.cpp`, `mesh_proto_lora_rs.cpp`, `mesh_pb_rs.cpp` | crypto, builders, settings tables, LoRa PHY |
+| Wi-SUN (`onair_wisun`) | `wisun/wisun_proto.h`, `wisun_proto_rs.cpp` | channel plans, MPDU builder, receiver |
+| UAT (`onair_uat`) | `uat/uat_decode_c.h`, `uat_decode_rs.cpp` | dump978 display functions (`uat_decode.c`), FEC, receiver |
+| MPEG-TS (`onair_ts`) | `tv/ts_proto.h`, `ts_proto_rs.cpp` | demux state, EPG store (`ts.cpp`) |
+| DVB service information (`onair_dvbsi`) | `common/text_charset.h`, `tv/dvb_text.h`, `teletext.h`, `dvbsub.h`, `*_rs.cpp` | decoder classes, iconv wrapper |
+| DAB, DRM data (`onair_dab`, `onair_drm`) | `dab/dab_proto.h`, `drm/drm_proto.h`, `*_rs.cpp` | the decoder classes with their state |
+| FEC (`onair_fec`) | `fec/fec_proto.h`, `fec_proto_rs.cpp` | the K = 7 Viterbi decoder (`fec_proto.cpp`): the C++ NEON / SSE2 / AVX2 one is the faster one |
+| Files, network (`onair_files`, `onair_net`) | `files/files_proto.h`, `net/net_proto.h`, `*_rs.cpp` | file access, sockets, threads, state |
+
+Two implementations stay on purpose, both opt-in with the C++ one as the default: the ring buffer (`-DDECT2_RUST_RING=ON`, `common/ring.h` keeps both) and the Android USB drivers (`-DDECT2_RUST_USB=ON`), plus the Rust NEON Viterbi kernel (`-DDECT2_RUST_VITERBI=ON`, about 4% slower than the C++ one). Each Rust-backed layer has a golden-vector test, `tests/<mode>/test_<mode>_proto_rs.cpp` (a digest of a seeded run, recorded from the C++ it replaced, helper `tests/common/golden.h`), and a seeded mutation run `fuzz_<mode>_proto` for the sanitizer builds.
+
 ## The app
 
 `app/app.h` holds the `App` struct (all interface state) and the list of panels. `main.cpp` has the frame loop (the window and fonts are in `main_window.cpp`, start-up and the developer flags in `main_start.cpp`, the classic layout in `ui/draw_ui.cpp` and `ui/main_tabs.cpp`). The panels are grouped: `toolbar.cpp` with `toolbar_source.cpp`, `toolbar_rig.cpp`, `statusbar.cpp` (top bar, source options, the network and Hamlib rig windows, status bar), `mode_table.cpp` (the one-row-per-mode table) and `mode_select.cpp` (the mode selector), `ui_common.h` (helpers several screens share), `plots.cpp`, `plot.cpp` (our own plotting library on ImGui's draw lists: axes, lines, dots, bars, images, heat maps, panning and zooming), `analysis_tabs.cpp` (receiver analysis tabs), `tv.cpp` (player and guide), `scan_outputs.cpp`, `antenna.cpp`, `dab_ui.cpp`, `fm_ui.cpp`, `ui2.cpp`, `ui2_theme.cpp`, `ui2_widgets.cpp`, `ui2_shell.cpp`, `ui2_faces.cpp` (the new interface: palettes, small widgets, menu bar and top bar, and the Panel / Sidebar / Scope / Tiles layouts; the classic shell stays in `ui/draw_ui.cpp` and is one click away under View), `wizard.cpp` (first-run tour), and `widgets.cpp` (small shared pieces). Drawing goes through `gfx.h` (Metal on macOS, OpenGL elsewhere), and `platform.h` hides file dialogs and settings storage per operating system.

@@ -20,6 +20,6 @@ and in Rust): the audio super frame parser refuses a higher protected part that 
 Stays in C++: the demodulator and channel coding (`drm_rx.cpp`, `drm_fec.cpp`, `drm_defs.cpp`, OFDM / pilots), the generators and builders (`drm_gen*.cpp`, `facBuild`, `sdcEntity*`, `TextEncoder`, `aacSuperFrameBuild`), the AAC / xHE-AAC
 decoders, the text message assembly, the data service state with MOT slide show / website / TPEG handling (`DrmDataService`), and the Journaline objects (they inflate).
 
-`drm_proto.h` is the C++ / Rust boundary (namespace `dect2::drmp`, the records are those of `drm_msg.h`); `drm_proto.cpp` keeps the C++ under `#ifndef DECT2_RUST_DRM`, `drm_proto_rs.cpp` is the Rust-backed twin.
-Differential test: `tests/drm/test_drm_proto_rs.cpp` (13 M comparisons at the default 200000 iterations per family), fuzz target `fuzz_drm_proto`. C ABI: `src/ffi.rs`, header `core/include/dect2/rs/drm.h`, symbols prefixed
+`drm_proto.h` is the C++ / Rust boundary (namespace `dect2::drmp`, the records are those of `drm_msg.h`); `drm_proto_rs.cpp` implements it (the C++ copy is deleted).
+Golden-vector test: `tests/drm/test_drm_proto_rs.cpp` (13 M results hashed at the default 200000 iterations per family), fuzz target `fuzz_drm_proto`. C ABI: `src/ffi.rs`, header `core/include/dect2/rs/drm.h`, symbols prefixed
 `onair_drm_`. Status and conventions: ../README.md.

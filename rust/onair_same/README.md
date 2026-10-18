@@ -7,5 +7,5 @@ Modules: `parse` (header, trim), `locate` (tables, location text), `time`, `coun
 no panics, `unsafe` only in `ffi.rs`. The user's county table (state with a mutex) stays in `core/src/same/same_proto.cpp`; `same_proto_rs.cpp` is the Rust-backed
 implementation of the rest of `dect2/same/same_proto.h`.
 
-C ABI: `src/ffi.rs`, header `core/include/dect2/rs/same.h`, symbols prefixed `onair_same_`. Differential test: `tests/same/test_same_proto_rs.cpp` (about 2.3 M comparisons),
+C ABI: `src/ffi.rs`, header `core/include/dect2/rs/same.h`, symbols prefixed `onair_same_`. Golden-vector test: `tests/same/test_same_proto_rs.cpp` (about 2.3 M results hashed),
 fuzz target `fuzz_same_proto`. Status and conventions: ../README.md.

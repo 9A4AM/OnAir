@@ -1,5 +1,4 @@
 // C ABI of the Rust crate rust/onair_ax25 (AX.25 / APRS). Written by hand; the Rust test rust/onair/tests/headers.rs checks it against ffi.rs.
-// Only meaningful when DECT2_RUST_AX25 is defined (see rust/README.md).
 #pragma once
 #include <stdbool.h>
 #include <stddef.h>

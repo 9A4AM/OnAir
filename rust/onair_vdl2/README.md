@@ -18,7 +18,7 @@ parity count to 0..6 (the reference is undefined outside), the burst gatherer ha
 
 Stays in C++ (`core/src/vdl2/`): the demodulator, receiver and tracker, the test signal builders (`vdl2BurstBits`, `vdl2HdlcBits`, `vdl2Frame`, the ACARS / X.25 / XID information builders), and the ACARS reader
 `vdl2ReadAcars` (ARINC 618 block, ADS-C, position text, FANS-1/A CPDLC IMIs: it uses the ACARS and aero code); the Rust frame decoder reports where an ACARS block starts (`acars_at`) and the C++ continues
-there. `vdl2_proto.cpp` keeps the C++ under `#ifndef DECT2_RUST_VDL2`; `vdl2_proto_rs.cpp` is the Rust-backed twin (layout check at start-up).
+there. The C++ of the converted functions is deleted; `vdl2_proto_rs.cpp` is the Rust-backed implementation (layout check at start-up).
 
-C ABI: `src/ffi.rs`, header `core/include/dect2/rs/vdl2.h`, symbols prefixed `onair_vdl2_`. Differential test `tests/vdl2/test_vdl2_proto_rs.cpp` against a frozen copy of `vdl2_proto.cpp` (all 2^25 header words,
-every burst length, 200000 Reed-Solomon decodes with errors and erasures, 50000 burst bodies, 200000 HDLC streams, 200000 frames: 36 M comparisons), fuzz target `fuzz_vdl2_proto`. Status and conventions: ../README.md.
+C ABI: `src/ffi.rs`, header `core/include/dect2/rs/vdl2.h`, symbols prefixed `onair_vdl2_`. Golden-vector test: `tests/vdl2/test_vdl2_proto_rs.cpp` (digest recorded from the C++ it replaced) (all 2^25 header words,
+every burst length, 200000 Reed-Solomon decodes with errors and erasures, 50000 burst bodies, 200000 HDLC streams, 200000 frames: 36 M results hashed), fuzz target `fuzz_vdl2_proto`. Status and conventions: ../README.md.

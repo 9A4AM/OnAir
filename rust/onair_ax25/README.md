@@ -13,5 +13,5 @@ signal and the generator) and the demodulator / receiver. `HdlcRx` itself is a t
 `packet_aprs_rs.cpp` are the Rust-backed implementations of the rest of `dect2/packet/packet_ax25.h` and `packet_aprs.h`. `packet_aprs.cpp` is compiled with
 `-ffp-contract=off -fno-builtin-sin -fno-builtin-cos` (see ../README.md, floating point). The LoRa APRS text in `core/src/mesh/mesh_proto_aprs.cpp` belongs to the mesh module.
 
-C ABI: `src/ffi.rs`, header `core/include/dect2/rs/ax25.h`, symbols prefixed `onair_ax25_` (APRS: `onair_ax25_aprs_`). Differential test: `tests/packet/test_packet_proto_rs.cpp` (about
-54 M comparisons), fuzz target `fuzz_packet_proto`. Status and conventions: ../README.md.
+C ABI: `src/ffi.rs`, header `core/include/dect2/rs/ax25.h`, symbols prefixed `onair_ax25_` (APRS: `onair_ax25_aprs_`). Golden-vector test: `tests/packet/test_packet_proto_rs.cpp` (about
+54 M results hashed), fuzz target `fuzz_packet_proto`. Status and conventions: ../README.md.

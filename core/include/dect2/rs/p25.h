@@ -1,5 +1,5 @@
 // C ABI of the Rust crate rust/onair_p25 (P25 Phase 1 frame layer). Written by hand; the Rust test rust/onair/tests/headers.rs checks it against ffi.rs.
-// Only meaningful when DECT2_RUST_P25 is defined (see rust/README.md). Bits are one per byte, first bit on the air first; hexbits are 6-bit values.
+// Bits are one per byte, first bit on the air first; hexbits are 6-bit values.
 // Names are static NUL-terminated strings. Functions with fixed-size arrays take exactly that many elements.
 #pragma once
 #include <stdbool.h>

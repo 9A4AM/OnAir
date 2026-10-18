@@ -2,8 +2,7 @@
 
 The pure protocol layers of the network code, over byte buffers: no sockets, no threads, no allocation (callers pass (pointer, length) buffers; results are ranges of the input or of
 a caller-owned arena). Sockets, connections, locks and the radio drivers stay in C++ (`core/src/net/remote_api.cpp`, `core/src/source/source_{rtltcp,spyserver,sdrpp}.cpp`,
-`core/src/net/netradio.cpp`); they call the functions of `core/include/dect2/net/net_proto.h`, which is implemented in C++ (`core/src/net/net_proto.cpp`) or, with
-`DECT2_RUST_NET`, by this crate through `core/src/net/net_proto_rs.cpp`.
+`core/src/net/netradio.cpp`); they call the functions of `core/include/dect2/net/net_proto.h`, which is implemented by this crate through `core/src/net/net_proto_rs.cpp`.
 
 * `hash.rs`: SHA-1 (RFC 3174) and base64 (RFC 4648), only for the WebSocket handshake (`Sec-WebSocket-Accept`, RFC 6455 section 4.2.2): the key is no secret, so neither
   needs to be constant time or collision resistant.
@@ -26,6 +25,5 @@ Licences: all of this is a translation of OnAir's own C++ (SHA-1 and base64 were
 implemented from the public protocol descriptions, no code of those projects is copied, so no third party notice is needed. Anything ported from elsewhere in future must keep its
 notice here and in the THIRD_PARTY notes.
 
-Verification: `tests/net/test_net_proto_rs.cpp` (differential against the frozen C++ copy, double for double: 100000 inputs per family, ONAIR_DIFF_ITERS to change; 34 M checks at
-1 M inputs, 0 mismatches), `fuzz_net_proto` (seeded mutations for the sanitizer build, also a libFuzzer target), Rust unit tests with known vectors.
+Verification: `tests/net/test_net_proto_rs.cpp` (golden-vector test: a digest of 100000 inputs per family, recorded from the C++ it replaced, ONAIR_DIFF_ITERS to change; plus the C ABI with null pointers and short arrays), `fuzz_net_proto` (seeded mutations for the sanitizer build, also a libFuzzer target), Rust unit tests with known vectors.
 Status and conventions: ../README.md.

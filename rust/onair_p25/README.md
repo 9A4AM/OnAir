@@ -8,8 +8,7 @@ words (message indicator, algorithm, key id, manufacturer, talkgroup), the data 
 Modules: `gf` (GF(64) tables at compile time), `rs`, `nid` (codewords through two 256-entry tables: the code is linear), `golay`, `trellis` (also the CRC), `msg`, `imbe`; `unsafe` only in `ffi.rs`. No allocation.
 
 Stays in C++: the demodulator, frame sync search, status symbol handling and call state (`p25_rx.cpp`), the generator (`p25_gen.cpp`), the sync table `kSync` and the IMBE vocoder glue (`p25_imbe.cpp`, mbelib is not touched: the voice
-bits are only de-interleaved here). `p25_proto_rs.cpp` is the Rust-backed implementation of `dect2/p25/p25_proto.h` (`p25_proto.cpp` keeps the C++ under `#ifndef DECT2_RUST_P25`). `p25_proto.cpp` is compiled with
-`-ffp-contract=off` (the trellis metric adds squares) so the Rust and C++ builds agree bit for bit. Reed-Solomon symbols must be in 0..63 (the C++ reference indexes its log table with them).
+bits are only de-interleaved here). `p25_proto_rs.cpp` is the Rust-backed implementation of `dect2/p25/p25_proto.h` (`p25_proto.cpp` keeps only the sync table). Reed-Solomon symbols must be in 0..63 (the C++ it replaced indexed its log table with them).
 
-C ABI: `src/ffi.rs`, header `core/include/dect2/rs/p25.h`, symbols prefixed `onair_p25_`. Differential test: `tests/p25/test_p25_proto_rs.cpp` (4.4 M comparisons at the default 200000 iterations per family, NID decode 100000),
+C ABI: `src/ffi.rs`, header `core/include/dect2/rs/p25.h`, symbols prefixed `onair_p25_`. Golden-vector test: `tests/p25/test_p25_proto_rs.cpp` (4.4 M results hashed at the default 200000 iterations per family, NID decode 100000),
 fuzz target `fuzz_p25_proto`. Status and conventions: ../README.md.

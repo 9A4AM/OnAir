@@ -1,5 +1,5 @@
 // C ABI of the Rust crate rust/onair_net (network protocol layers). Written by hand; the Rust test rust/onair/tests/headers.rs checks it against ffi.rs.
-// Only meaningful when DECT2_RUST_NET is defined (see rust/README.md). Text writers return the length the text has (also when the buffer was too short: nothing is
+// Text writers return the length the text has (also when the buffer was too short: nothing is
 // written past it); (size_t)-1 marks a failure. Null pointers are empty input / failure.
 #pragma once
 #include <stdbool.h>

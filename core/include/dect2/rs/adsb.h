@@ -1,5 +1,5 @@
 // C ABI of the Rust crate rust/onair_adsb (ADS-B / Mode S message layer). Written by hand; the Rust test rust/onair/tests/headers.rs checks it against ffi.rs.
-// Only meaningful when DECT2_RUST_ADSB is defined (see rust/README.md). Out parameters are written only when the function returns true. Strings
+// Out parameters are written only when the function returns true. Strings
 // returned as `const uint8_t*` are static and NUL-terminated ("" when none).
 #pragma once
 #include <stdbool.h>

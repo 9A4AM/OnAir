@@ -14,14 +14,14 @@ cmake --build build -j "$(getconf _NPROCESSORS_ONLN)"   # one job per core (a ba
 ctest --test-dir build
 ```
 
-See the README for the packages each system needs, and `ARCHITECTURE.md` for how the code is organised. Windows can be built natively with MSYS2 (UCRT64, `tools/package/make_windows.sh`) or cross-compiled from macOS or Linux (`tools/package/make_windows_cross.sh`).
+Rust is required (cargo and rustc 1.70 or newer; `rustup target add <triple>` for a cross build): the protocol, FEC, file and network layers listed in `ARCHITECTURE.md` are Rust and have no C++ twin. See the README for the packages each system needs, and `ARCHITECTURE.md` for how the code is organised. Windows can be built natively with MSYS2 (UCRT64, `tools/package/make_windows.sh`) or cross-compiled from macOS or Linux (`tools/package/make_windows_cross.sh`).
 
 ## Pull requests
 
 - Keep a change focused, and explain **why** in the description. Small pull requests get reviewed faster.
 - The build must pass on every system in the CI (Linux x86-64 and arm64, macOS Apple silicon and Intel, Windows). Keep system-specific code behind `#ifdef __APPLE__` / `_WIN32` and in the platform files.
 - Add or extend a test when you change the receiver, the error correction or the player logic. The generators in the library make most tests possible without a radio.
-- Do not change the decoded output of the receiver unless that is the point of the change. The tests compare it.
+- Do not change the decoded output of the receiver unless that is the point of the change. The tests compare it. The Rust-backed layers have golden-vector tests (`tests/<mode>/test_<mode>_proto_rs.cpp`): when a change of a Rust function changes the digest on purpose, update the value in the test and say why in the commit message. Do not leave a replaced C++ implementation behind an `#ifdef`; delete it (`rust/README.md` says how to add a module).
 - Match the style around you: short comments that say why, no large reformatting of lines you did not change.
 - Say how you tested it, and on which system and radio.
 

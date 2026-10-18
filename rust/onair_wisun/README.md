@@ -13,8 +13,8 @@ Results are flat `repr(C)` records; text is length plus bytes (the IE list holds
 also holds `cfn` (the C library `snprintf("%.3f")` for explicit channel plan frequencies). The name functions return pointers to static NUL-terminated text.
 
 Stays in C++ (`core/src/wisun/`): the FSK demodulator, frame sync, receiver, generator and engine glue, the band and channel plan tables and `channelOf` / `channelUsable`, the MPDU builder (`buildMpdu`), `addFcs`,
-and the text helpers `srcText` / `dstText` / `euiText` / `frameTypeName` that call the 2.4 GHz mode (`zigbee::`). `wisun_proto.cpp` keeps the C++ under `#ifndef DECT2_RUST_WISUN`; `wisun_proto_rs.cpp` is the
-Rust-backed twin (layout check at start-up).
+and the text helpers `srcText` / `dstText` / `euiText` / `frameTypeName` that call the 2.4 GHz mode (`zigbee::`). The C++ of the converted functions is deleted; `wisun_proto_rs.cpp` is the
+Rust-backed implementation (layout check at start-up).
 
-C ABI: `src/ffi.rs`, header `core/include/dect2/rs/wisun.h`, symbols prefixed `onair_wisun_`. Differential test `tests/wisun/test_wisun_proto_rs.cpp` against a frozen copy of `wisun_proto.cpp` (every PHR value, whitening
-past the 2048 octet wrap, FCS, names, 200000 schedule texts, 200000 frames built / random-structured / mutated: 1.1 M comparisons), fuzz target `fuzz_wisun_proto`. Status and conventions: ../README.md.
+C ABI: `src/ffi.rs`, header `core/include/dect2/rs/wisun.h`, symbols prefixed `onair_wisun_`. Golden-vector test: `tests/wisun/test_wisun_proto_rs.cpp` (digest recorded from the C++ it replaced) (every PHR value, whitening
+past the 2048 octet wrap, FCS, names, 200000 schedule texts, 200000 frames built / random-structured / mutated: 1.1 M results hashed), fuzz target `fuzz_wisun_proto`. Status and conventions: ../README.md.

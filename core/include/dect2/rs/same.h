@@ -1,5 +1,5 @@
 // C ABI of the Rust crate rust/onair_same (SAME / EAS). Written by hand; the Rust test rust/onair/tests/headers.rs checks it against ffi.rs.
-// Only meaningful when DECT2_RUST_SAME is defined (see rust/README.md). Strings returned as `const uint8_t*` are static, NUL-terminated ("" when unknown).
+// Strings returned as `const uint8_t*` are static, NUL-terminated ("" when unknown).
 #pragma once
 #include <stdbool.h>
 #include <stddef.h>

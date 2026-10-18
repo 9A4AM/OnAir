@@ -9,7 +9,7 @@ Modules: `lich` (scrambler, LICH), `crc`, `chan` (coded channels, fixed buffers,
 
 Stays in C++: the demodulator, frame sync search, level calibration (floating point DSP), the SACCH superframe assembly and call state in `core/src/nxdn/nxdn_rx.cpp`, the
 generator (`nxdn_gen.cpp`), the sync word table `kFsw` (data used by the receiver) and the mbelib vocoder (`nxdn_ambe.cpp`): the voice bits are only re-ordered here.
-`core/src/nxdn/nxdn_proto_rs.cpp` is the Rust-backed implementation of `dect2/nxdn/nxdn_proto.h` (`nxdn_proto.cpp` keeps the C++ under `#ifndef DECT2_RUST_NXDN`).
+`core/src/nxdn/nxdn_proto_rs.cpp` is the Rust-backed implementation of `dect2/nxdn/nxdn_proto.h` (`nxdn_proto.cpp` keeps only the sync word table).
 
-C ABI: `src/ffi.rs`, header `core/include/dect2/rs/nxdn.h`, symbols prefixed `onair_nxdn_`. Differential test: `tests/nxdn/test_nxdn_proto_rs.cpp` (2.5 M comparisons at the default
+C ABI: `src/ffi.rs`, header `core/include/dect2/rs/nxdn.h`, symbols prefixed `onair_nxdn_`. Golden-vector test: `tests/nxdn/test_nxdn_proto_rs.cpp` (2.5 M results hashed at the default
 200000 iterations per family, soft values include NaN and infinity), fuzz target `fuzz_nxdn_proto`. Status and conventions: ../README.md.

@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         auto next = [&]() { return i + 1 < argc ? argv[++i] : (char*)""; };
-        if (a == "--version") { printf("dect2cli (OnAir)\nAIS frame layer: %s\n", dect2::ais::protoImplementation()); return 0; }   // which implementation is compiled in (DECT2_RUST)
+        if (a == "--version") { printf("dect2cli (OnAir)\nAIS frame layer: %s\n", dect2::ais::protoImplementation()); return 0; }   // always the Rust crate now
         else if (a == "--hackrf") haveDev = true;
         else if (a == "--radio") { const std::string kv = next(); const auto eq = kv.find('='); if (eq != std::string::npos) tune.radio[kv.substr(0, eq)] = kv.substr(eq + 1); }   // a setting of the radio, e.g. --radio iqformat=cs8 (PlutoSDR with Tezuka), --radio ppm=-3
         else if (a == "--atv-fm") atvFm = true;

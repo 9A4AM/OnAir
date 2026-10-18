@@ -1,5 +1,5 @@
 // C ABI of the Rust crate rust/onair_drm (DRM signalling and data service parsing). Written by hand; the Rust test rust/onair/tests/headers.rs checks it against
-// ffi.rs. Only meaningful when DECT2_RUST_DRM is defined (see rust/README.md). Bits are one per byte (0 or 1), most significant first. Names are written into a
+// ffi.rs. Bits are one per byte (0 or 1), most significant first. Names are written into a
 // caller buffer and the length returned. The record layouts are checked at start-up with onair_drm_struct_sizes().
 #pragma once
 #include <stdbool.h>

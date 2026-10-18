@@ -1,5 +1,5 @@
 // C ABI of the Rust crate rust/onair_uat (UAT 978 MHz message layer, RTCA DO-282B). Written by hand; the Rust test rust/onair/tests/headers.rs checks it against ffi.rs.
-// Only meaningful when DECT2_RUST_UAT is defined (see rust/README.md). Flags are 0 / 1 bytes; the structs are plain C (no bit fields).
+// Flags are 0 / 1 bytes; the structs are plain C (no bit fields).
 #pragma once
 #include <stdbool.h>
 #include <stddef.h>

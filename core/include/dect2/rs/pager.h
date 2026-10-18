@@ -1,5 +1,5 @@
 // C ABI of the Rust crate rust/onair_pager (POCSAG/FLEX). Written by hand; the Rust test rust/onair/tests/headers.rs checks it against ffi.rs.
-// Only meaningful when DECT2_RUST_PAGER is defined (see rust/README.md). Bits are one per byte, first transmitted bit first.
+// Bits are one per byte, first transmitted bit first.
 #pragma once
 #include <stdbool.h>
 #include <stddef.h>

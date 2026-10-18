@@ -1,5 +1,5 @@
 // C ABI of the Rust crate rust/onair_dmr (DMR frame layer). Written by hand; the Rust test rust/onair/tests/headers.rs checks it against ffi.rs.
-// Only meaningful when DECT2_RUST_DMR is defined (see rust/README.md). Bits are one per byte, first bit on the air first; "bitsN" arrays are exactly N bytes.
+// Bits are one per byte, first bit on the air first; "bitsN" arrays are exactly N bytes.
 // Text functions return the length written, or SIZE_MAX when the buffer is too small. Names are static NUL-terminated strings.
 #pragma once
 #include <stdbool.h>

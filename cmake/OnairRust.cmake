@@ -11,7 +11,7 @@
 #
 # Results: ONAIR_RUST_ACTIVE (always TRUE), ONAIR_RUST_<MODULE> (TRUE for every converted module and for the opt-in ones that are ON),
 # ONAIR_RUST_MODULES, the imported target onair_rs and the custom target onair_rs_cargo.
-# C++ side: call onair_rust_use(<target>) on every target that compiles or links a converted module; it links onair_rs.
+# C++ side: call onair_rust_use(<target>) on every target that compiles or links a converted module; it links onair_rs (and defines DECT2_RUST_USB when that opt-in is ON).
 set(DECT2_RUST_RING "OFF" CACHE STRING "Opt-in: the Rust implementation of the RING module (IqRing): ON or OFF")
 set(DECT2_RUST_USB "OFF" CACHE STRING "Opt-in: the Rust Android USB drivers: ON or OFF")
 set(ONAIR_RUST_ALL_MODULES PROTO ADSB ACARS SAME PAGER AX25 DMR P25 NXDN DSTAR TETRA VDL2 HFDL MESH WISUN UAT TS DVBSI DAB DRM FILES NET ENGINE FEC USB RING)
@@ -30,9 +30,9 @@ foreach(_m ${ONAIR_RUST_ALL_MODULES})
 endforeach()
 
 function(onair_rust_use target)
-  foreach(_m ${ONAIR_RUST_MODULES})
-    target_compile_definitions(${target} PRIVATE DECT2_RUST_${_m})
-  endforeach()
+  if(ONAIR_RUST_USB)
+    target_compile_definitions(${target} PRIVATE DECT2_RUST_USB)   # the opt-in Android USB drivers (core/src/source/source_rtlsdr.cpp, rtl_fd_shim.h)
+  endif()
   target_link_libraries(${target} PRIVATE onair_rs)
 endfunction()
 

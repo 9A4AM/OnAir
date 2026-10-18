@@ -15,7 +15,7 @@ Behaviour fixed on the way (identically in the C++ reference `ts_proto.cpp` and 
 network name, NIT LCN list, the present / following name of an EIT); text spans are cut at the section end.
 
 Stays in C++: `TsDemux` / `ServiceFilter` state and orchestration (`ts.cpp`), `dvbText` and iconv, the recorder and output (`ts_record.cpp`, `tsout.cpp`). `ts_proto_rs.cpp` is the Rust-backed
-implementation of `dect2/tv/ts_proto.h` (`ts_proto.cpp` keeps the C++ under `#ifndef DECT2_RUST_TS`).
+implementation of `dect2/tv/ts_proto.h` (the C++ copy is deleted).
 
-C ABI: `src/ffi.rs`, header `core/include/dect2/rs/ts.h`, symbols prefixed `onair_ts_`. Differential test: `tests/ts/test_ts_proto_rs.cpp` (5.5 M comparisons at the default 200000 iterations per
+C ABI: `src/ffi.rs`, header `core/include/dect2/rs/ts.h`, symbols prefixed `onair_ts_`. Golden-vector test: `tests/ts/test_ts_proto_rs.cpp` (5.5 M results hashed at the default 200000 iterations per
 family), fuzz target `fuzz_ts_proto`. Status and conventions: ../README.md.

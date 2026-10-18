@@ -30,6 +30,5 @@ The file system work (finding the data file next to a `.sigmf-meta`, file sizes,
 (`mbtiles.h` keeps the loops and the page cache), the struct-walking encoder of the results (`pack` / `unpack` templates), the channel list rows (`Row`, merge, GitHub issue text), SGP4 and
 pass prediction, the `settings` / ImGui ini files of the app (they are written and read by the GUI library and the app preference code, not by `core`), the channel list `fmtFreq` formatting.
 
-C ABI: `src/ffi.rs`, header `core/include/dect2/rs/files.h`, symbols prefixed `onair_files_`. C++ side: `core/src/files/files_proto.cpp` (the original code, `#ifndef DECT2_RUST_FILES`) and
-`core/src/files/files_proto_rs.cpp` (the Rust-backed twin; record layouts are checked at start-up). Differential test `tests/files/test_files_proto_rs.cpp` (233 M comparisons at 100000
+C ABI: `src/ffi.rs`, header `core/include/dect2/rs/files.h`, symbols prefixed `onair_files_`. C++ side: `core/src/files/files_proto_rs.cpp` (record layouts are checked at start-up; the C++ it replaced is deleted). Golden-vector test `tests/files/test_files_proto_rs.cpp` (100000
 inputs per family, plus the C ABI with null pointers and short arrays), fuzz target `fuzz_files_proto`. Status and conventions: ../README.md.

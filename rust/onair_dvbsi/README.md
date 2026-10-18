@@ -14,9 +14,9 @@ The DVB service information layer: broadcast character sets and the data decoder
 `unsafe` only in `ffi.rs`; no allocation (bounded writers into caller buffers, plain `repr(C)` records into caller arrays).
 
 Stays in C++: the page store of `TeletextDecoder` (which page a row belongs to, serial transmission, completion, the 4096 page bound), the region / CLUT / object state and display queue of `DvbSubDecoder`,
-PES reassembly from transport packets, and the iconv wrapper. The decoder classes call the layer through `teletext.h` / `dvbsub.h` (`ttxDecodeUnit`, `ttxPesUnits`, `dvbSubParse*`, ...); the C++ versions stay in
-`teletext.cpp`, `dvbsub.cpp`, `text_charset.cpp`, `dvb_text.cpp` under `#ifndef DECT2_RUST_DVBSI` and the Rust-backed twins are `teletext_rs.cpp`, `dvbsub_rs.cpp`, `text_charset_rs.cpp`, `dvb_text_rs.cpp`.
+PES reassembly from transport packets, and the iconv wrapper. The decoder classes call the layer through `teletext.h` / `dvbsub.h` (`ttxDecodeUnit`, `ttxPesUnits`, `dvbSubParse*`, ...); the Rust-backed implementations are
+`teletext_rs.cpp`, `dvbsub_rs.cpp`, `text_charset_rs.cpp`, `dvb_text_rs.cpp` (the C++ copies are deleted; `teletext.cpp`, `dvbsub.cpp`, `text_charset.cpp`, `dvb_text.cpp` keep the decoder classes, `appendUtf8` and the iconv wrapper).
 
-C ABI: `src/ffi.rs`, header `core/include/dect2/rs/dvbsi.h`, symbols prefixed `onair_dvbsi_`. Differential test: `tests/dvbsi/test_dvbsi_proto_rs.cpp` (about 6 M comparisons at the default 200000 iterations per
+C ABI: `src/ffi.rs`, header `core/include/dect2/rs/dvbsi.h`, symbols prefixed `onair_dvbsi_`. Golden-vector test: `tests/dvbsi/test_dvbsi_proto_rs.cpp` (about 6 M results hashed at the default 200000 iterations per
 family; the whole `TeletextDecoder` and `DvbSubDecoder` classes are compared end to end on random PES streams), fuzz target `fuzz_dvbsi_proto`. `dvbsub.cpp` is compiled with `-ffp-contract=off`
 (the YCrCb conversion). Status and conventions: ../README.md.

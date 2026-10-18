@@ -6,7 +6,7 @@ the ground station table with frequency masks, and the PDU parser (SPDU squitter
 system table; aircraft positions). The ACARS block of an HFNPDU is only located here (`acars_at`); the C++ wrapper decodes it with the ACARS and aero code.
 
 Stays in C++ (`core/src/hfdl/`): the PSK maps (they use libm sin/cos/atan2), the burst and PDU builders for the test signal, the ACARS reader, the demodulator, the receiver.
-The C++ of the converted functions is kept under `#ifndef DECT2_RUST_HFDL` in `hfdl_proto.cpp` and is the frozen reference of `tests/hfdl/test_hfdl_proto_rs.cpp`.
+The C++ of the converted functions is deleted; `tests/hfdl/test_hfdl_proto_rs.cpp` is the golden-vector test.
 
 No allocation: the Viterbi survivors and the interleaver scratch are caller buffers; text goes through `onair_common::text::Buf` with the C library `snprintf` for the
 `%.4f` / `%.3f` digits (so they equal the C++). Everything compared is integer, byte or text; the only floats are the Viterbi metrics (plain adds, same order, no FMA).

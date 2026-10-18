@@ -11,7 +11,7 @@ and the C++ wrapper reproduces that. No allocation: fixed arrays (the Viterbi de
 
 Stays in C++: the demodulator, frame / bit sync search, slow data assembly and call state (`dstar_rx.cpp`), the generator (`dstar_gen.cpp`), the sync pattern tables (`kFrameSync`, `kDataSync`, `kEndPattern`, `kSlowScramble`:
 data the receiver uses) and the AMBE vocoder glue (`dstar_ambe.cpp`, mbelib untouched: the voice bits are only re-ordered here). `dstar_proto_rs.cpp` is the Rust-backed implementation of
-`dect2/dstar/dstar_proto.h` (`dstar_proto.cpp` keeps the C++ under `#ifndef DECT2_RUST_DSTAR`).
+`dect2/dstar/dstar_proto.h` (`dstar_proto.cpp` keeps only the sync tables).
 
-C ABI: `src/ffi.rs`, header `core/include/dect2/rs/dstar.h`, symbols prefixed `onair_dstar_`. Differential test: `tests/dstar/test_dstar_proto_rs.cpp` (2.4 M comparisons at the default 200000 iterations
+C ABI: `src/ffi.rs`, header `core/include/dect2/rs/dstar.h`, symbols prefixed `onair_dstar_`. Golden-vector test: `tests/dstar/test_dstar_proto_rs.cpp` (2.4 M results hashed at the default 200000 iterations
 per family; about 50000 NMEA and 40000 D-PRS lines parse, the rest are rejected the same way), fuzz target `fuzz_dstar_proto`. Status and conventions: ../README.md.

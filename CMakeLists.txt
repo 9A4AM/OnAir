@@ -143,31 +143,20 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${ONAIR_ROOT}/dat
 target_sources(dect2core PRIVATE core/src/airports/airports.cpp)
 target_sources(dect2core PRIVATE core/src/sweep/station_health.cpp)   # station and antenna health report (docs/STATION_HEALTH.md)
 # The modes added after FM (DVB-S/S2, DTMB, analog TV, DMR, DRM, ADS-B): every core/src/<mode>/*.cpp belongs to its mode, so a mode can add files without editing this list
-set(DECT2_MODES dvbs dtmb atv dmr drm adsb gnss dab sonde ais marine acars inmc aero iridium mesh hdr cdr pager packet hfdig airband vdl2 ism vor ils m17 cell cw dstar hfdl nxdn gsmr psk js8 specx wb specan dvbc dpmr orbcomm uplink tetra tetrapol ale mac astro p25 ble iono qo100 wifi general time rid meteor nr cubesat ccsds goes globalstar vdes hrpt zigbee flarm hfbeacon dji nbiot halow codar datawell same multitone loraraw ant dect elektro ndb lbj eczas vdl4 uat wisun)
-target_sources(dect2core PRIVATE core/src/tv/ts_proto_rs.cpp core/src/common/text_charset_rs.cpp core/src/tv/dvb_text.cpp core/src/tv/dvb_text_rs.cpp core/src/tv/teletext_rs.cpp core/src/tv/dvbsub_rs.cpp core/src/tv/epg.cpp core/src/tv/subtitle_export.cpp core/src/tv/recorder.cpp core/src/tv/timeshift.cpp core/src/tv/playback.cpp)   # MPEG-TS parsing layer (C++ or the Rust crate onair_ts) and the TV recorder (guide, schedule, timeshift, playback) (C++ or the Rust crate onair_ts)
 set(DECT2_MODES selfcal dvbs dtmb atv dmr drm adsb gnss dab sonde ais marine acars inmc aero iridium mesh hdr cdr pager packet hfdig airband vdl2 ism vor ils m17 cell cw dstar hfdl nxdn gsmr psk js8 specx wb specan dvbc dpmr orbcomm uplink tetra tetrapol ale mac astro p25 ble iono qo100 wifi general time rid meteor nr cubesat ccsds goes globalstar vdes hrpt zigbee flarm hfbeacon dji nbiot halow codar datawell same multitone loraraw ant dect elektro ndb lbj eczas vdl4 uat wisun)
-target_sources(dect2core PRIVATE core/src/tv/ts_proto_rs.cpp core/src/common/text_charset_rs.cpp core/src/tv/dvb_text.cpp core/src/tv/dvb_text_rs.cpp core/src/tv/teletext_rs.cpp core/src/tv/dvbsub_rs.cpp)   # MPEG-TS parsing layer (C++ or the Rust crate onair_ts)
-target_sources(dect2core PRIVATE core/src/fec/fec_proto.cpp core/src/fec/fec_proto_rs.cpp)   # Reed-Solomon (DVB-T, ATSC, DAB) and DVB-T2 BCH (C++ or the Rust crate onair_fec)
+target_sources(dect2core PRIVATE core/src/tv/ts_proto_rs.cpp core/src/common/text_charset_rs.cpp core/src/tv/dvb_text.cpp core/src/tv/dvb_text_rs.cpp core/src/tv/teletext_rs.cpp core/src/tv/dvbsub_rs.cpp core/src/tv/epg.cpp core/src/tv/subtitle_export.cpp core/src/tv/recorder.cpp core/src/tv/timeshift.cpp core/src/tv/playback.cpp)   # MPEG-TS parsing layer (C++ or the Rust crate onair_ts) and the TV recorder (guide, schedule, timeshift, playback) (C++ or the Rust crate onair_ts)
+target_sources(dect2core PRIVATE core/src/fec/fec_proto.cpp core/src/fec/fec_proto_rs.cpp)   # Reed-Solomon (DVB-T, ATSC, DAB), DVB-T2 BCH and the LDPC tables (the Rust crate onair_fec), the K = 7 Viterbi decoder (C++)
 target_sources(dect2core PRIVATE core/src/files/files_proto_rs.cpp)   # CSV, SigMF, WAV, TLE, SQLite pages, results container (the Rust crate onair_files)
 target_sources(dect2core PRIVATE core/src/net/net_proto_rs.cpp)   # remote API HTTP / WebSocket text, rtl_tcp, SpyServer, SDR++ server and network radio list parsing (the Rust crate onair_net)
-set_source_files_properties(core/src/hfdl/hfdl_proto.cpp core/src/hfdl/hfdl_proto_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off")   # Viterbi / coordinate arithmetic identical in the C++ and Rust builds
 option(DECT2_RUST_VITERBI "Use the Rust NEON Viterbi decoder of onair_fec on aarch64 (about 4% slower than the C++ NEON one, so off by default)" OFF)
-if(DECT2_RUST_VITERBI AND ONAIR_RUST_FEC)
+if(DECT2_RUST_VITERBI)
   target_compile_definitions(dect2core PRIVATE ONAIR_RUST_VITERBI)
 endif()
 if(ONAIR_RUST_RING)
   target_compile_definitions(dect2core PUBLIC DECT2_RUST_RING)   # ring.h is included by the app and the tests too: every user must see the same IqRing
 endif()
-onair_rust_use(dect2core)   # -DDECT2_RUST_<MODULE> for every active module (core/src/ais/ais_proto.cpp leaves the covered functions to ais_proto_rs.cpp) and links onair_rs
-# adsb_msg.cpp and the APRS parser (and the reference copies the Rust differential test builds) is compiled without fused multiply-add and without the sin+cos -> sincos rewrite:
-# clang and gcc do both by default (arm64, macOS), Rust never does, and the two builds (DECT2_RUST ON and OFF) should give the same numbers bit for bit
-set_source_files_properties(core/src/tv/dvbsub.cpp core/src/tv/dvbsub_rs.cpp core/src/adsb/adsb_msg.cpp core/src/tetra/tetra_pdu.cpp core/src/tetra/tetra_pdu_rs.cpp core/src/packet/packet_aprs_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
-target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp core/src/df/df.cpp core/src/df/source.cpp core/src/df/position.cpp core/src/df/rfcam.cpp)
-target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/geo/pass_sched.cpp core/src/geo/doppler_fit.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp core/src/df/df.cpp core/src/df/source.cpp core/src/df/position.cpp)
-target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/geo/pass_sched.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/engine/sig_known.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp)
-target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/geo/doppler_fit.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp core/src/df/df.cpp core/src/df/source.cpp core/src/df/position.cpp)
-target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp core/src/df/df.cpp core/src/df/source.cpp core/src/df/position.cpp core/src/radar/passive.cpp core/src/rfi/rfi.cpp)
-target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/engine/sig_known.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp)
+onair_rust_use(dect2core)   # links the Rust library onair_rs
+target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp core/src/df/df.cpp core/src/df/source.cpp core/src/df/position.cpp core/src/df/rfcam.cpp core/src/geo/pass_sched.cpp core/src/geo/doppler_fit.cpp core/src/engine/sig_known.cpp core/src/radar/passive.cpp core/src/rfi/rfi.cpp)
 target_sources(dect2core PRIVATE core/src/net/remote_api.cpp core/src/results/rx_json.cpp core/src/source/gain_opt.cpp core/src/mesh/mesh_report.cpp core/src/source/rotator.cpp)   # remote-control API server, telemetry JSON, gain optimiser, mesh report text, antenna rotator
 # TLS for the remote-control API (headless server): OpenSSL, off by default so the packages need no extra library (docs/headless-server.md)
 option(DECT2_WITH_TLS "Serve the remote-control API over HTTPS / wss (links OpenSSL)" OFF)
@@ -821,7 +810,7 @@ if(DECT2_BUILD_TESTS)
   find_package(Threads REQUIRED)
   target_link_libraries(test_common_threads PRIVATE Threads::Threads)
   add_test(NAME common_threads COMMAND test_common_threads)
-  if(ONAIR_RUST_ACTIVE)   # the Rust ring against the C++ ring: differential, stress, benchmark (links only the Rust archive, not the core)
+  if(ONAIR_RUST_ACTIVE)   # the Rust ring against the C++ ring (both stay: the Rust one is opt-in with -DDECT2_RUST_RING=ON): differential, stress, benchmark (links only the Rust archive, not the core)
     add_executable(test_ring_rs tests/common/test_ring_rs.cpp)
     target_include_directories(test_ring_rs PRIVATE core/include)
     target_compile_definitions(test_ring_rs PRIVATE DECT2_RING_BOTH)
