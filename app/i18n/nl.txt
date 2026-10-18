@@ -1252,6 +1252,13 @@ Right	Rechts
 Left + right	Links + rechts
 IF centre	MF-midden
 Swap sideband	Zijband omkeren
+Audio range	Audiobereik
+Show the sound card's whole audio range, 0 Hz to half the sample rate, across the spectrum, with the frequency scale in audio Hz from the dial. Off: the IF centre in the middle (the decoders always get it there).	Toont het hele audiobereik van de geluidskaart, 0 Hz tot de helft van de samplefrequentie, in het spectrum, met de schaal in audio-Hz vanaf de afstemfrequentie. Uit: het IF-midden in het midden (de decoders krijgen het altijd daar).
+Find centre	Midden zoeken
+Sets the IF centre to the middle of the strongest signal on the screen (a fax or FSK signal: halfway between its tones).	Zet het IF-midden op het midden van het sterkste signaal op het scherm (een fax- of FSK-signaal: halverwege tussen de tonen).
+Clipping: lower the input level	Clipping: verlaag het ingangsniveau
+Left and right are identical: this is audio, not I/Q.	Links en rechts zijn identiek: dit is audio, geen I/Q.
+Use Real (mono)	Reëel (mono) gebruiken
 Remove DC	DC verwijderen
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	Voor WebSDR, een virtuele audiokabel (VAC) of de luidspreker-, lijn- of MF-uitgang van een radio naar de computer. Geen vervanging voor een SDR als je megahertz bandbreedte nodig hebt. Het frequentieveld is de afstemming die de decoder moet aannemen (de radiofrequentie van het MF-midden); de geluidskaart wordt niet afgestemd.
 I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q stereo: links is I, rechts is Q (HDSDR / WebSDR VAC). USB-audio: reële audio naar analytische IQ voor FT8, RTTY, CW, SSB van een luidsprekeraftakking of de audio van een ontvanger. LSB-audio: hetzelfde, gespiegeld. Reëel (mono): reële samples (een LF-aftakking, een MF zoals 12 kHz) analytisch gemaakt, met de zijbandschakelaar hieronder.

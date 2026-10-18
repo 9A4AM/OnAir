@@ -32,6 +32,7 @@ namespace dect2 {
 
 bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOptions& file) {
     stop();
+    noTuneOffset_ = dev.kind == DeviceInfo::Audio;   // a sound card has no radio to tune off the DC spike: the signal is where the IF centre puts it (0 Hz)
     ring_.clear();
     ring_.resetDropped();
     radioMissing_ = 0; radioMissEvents_ = 0; cpuDropEvents_ = 0; ringDroppedSeen_ = 0;
@@ -163,7 +164,7 @@ void Engine::configureTvReceivers(const DeviceInfo& dev, const TuneSettings& tun
 void Engine::placeNarrowReceivers(const DeviceInfo& dev, const TuneSettings& tune) {
     {   // a narrow channel sits tuneOffsetHz away from the radio's centre (a file holds the channel as recorded: no offset)
         const ModeTuning* mto = modeTuning(stdMode_.load());
-        const double o = mto && dev.kind != DeviceInfo::File ? -mto->tuneOffsetHz : 0.0;
+        const double o = mto && dev.kind != DeviceInfo::File && dev.kind != DeviceInfo::Audio ? -mto->tuneOffsetHz : 0.0;
         for (int wm : {10, 32, 34, 39, 46, 51, 24, 25}) wide_.configure(wm, rate_, o);
         wide_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : tune.centerHz);   // the logs of a whole-span decoder keep their rows' frequencies over a retune
         rxSonde_.setSignalOffset(o);

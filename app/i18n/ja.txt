@@ -1252,6 +1252,13 @@ Right	右
 Left + right	左 + 右
 IF centre	IF中心
 Swap sideband	サイドバンドを反転
+Audio range	オーディオ範囲
+Show the sound card's whole audio range, 0 Hz to half the sample rate, across the spectrum, with the frequency scale in audio Hz from the dial. Off: the IF centre in the middle (the decoders always get it there).	サウンドカードのオーディオ範囲全体(0 Hz からサンプルレートの半分まで)をスペクトルに表示し、目盛りはダイヤル周波数からのオーディオ Hz になります。オフ:IF 中心を中央に表示します(デコーダーには常にそこで渡されます)。
+Find centre	中心を検出
+Sets the IF centre to the middle of the strongest signal on the screen (a fax or FSK signal: halfway between its tones).	IF 中心を画面で最も強い信号の中心に設定します(FAX や FSK 信号:2 つのトーンの中間)。
+Clipping: lower the input level	クリッピング:入力レベルを下げてください
+Left and right are identical: this is audio, not I/Q.	左右が同一です。これは I/Q ではなくオーディオです。
+Use Real (mono)	実数(モノラル)を使用
 Remove DC	DCを除去
 For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	WebSDR、仮想オーディオケーブル（VAC）、またはラジオのスピーカー・ライン・IF出力をコンピューターへ。メガヘルツの帯域が必要な場合はSDRの代わりにはなりません。周波数欄はデコーダーが想定するダイヤル（IF中心の無線周波数）で、サウンドカードは同調されません。
 I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Qステレオ：左がI、右がQ（HDSDR / WebSDR VAC）。USBオーディオ：スピーカー出力や受信機の音声からのFT8、RTTY、CW、SSB向けに、実数音声を解析的IQへ。LSBオーディオ：同じで反転。実数（モノ）：実数サンプル（AF出力や12 kHzなどのIF）を解析的にし、下のサイドバンドスイッチを使います。

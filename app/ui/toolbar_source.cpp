@@ -348,6 +348,18 @@ void applyAudioSettings(App& a) {
     r["audio_dc"] = a.audioDc ? "1" : "0";
     r["audio_gain_db"] = std::to_string(a.audioGainDb);
     r["audio_rate"] = std::to_string(a.audioRate);
+    a.engine.setSpectrumShiftHz(-audioViewOffsetHz(a));   // the audio-range view moves only the picture
+}
+
+double audioViewOffsetHz(const App& a) {
+    if (a.devices.empty() || a.devIdx < 0 || a.devIdx >= (int)a.devices.size() || !a.devices[a.devIdx].isAudio() || !a.audioAfView) return 0;
+    TuneSettings t;
+    auto& r = t.radio;
+    r["audio_iq"] = std::to_string(a.audioIqMode);
+    r["audio_if_hz"] = std::to_string(a.audioIfHz);
+    r["audio_invert"] = a.audioInvert ? "1" : "0";
+    r["audio_rate"] = std::to_string(a.audioRate);
+    return audioAfViewOffsetHz(audioIfConfigOf(t));
 }
 
 // a sound-card source: the I/Q mode (stereo IQ, USB, LSB, real mono) with its help, then the IF / AF options
@@ -379,6 +391,29 @@ static void audioSourceOptions(App& a, bool running) {
     if (ImGui::InputDouble("##aif", &a.audioIfHz, 0, 0, "%.0f Hz")) { a.audioIfHz = std::max(-96000.0, std::min(96000.0, a.audioIfHz)); changed(); }
     if (ImGui::IsItemHovered()) {
         wrapTooltip(380 * gUi, tr("The audio frequency of the signal's centre in the sound card, for example 12000 for a radio's 12 kHz IF output, or 0 for plain audio. It is shifted down to 0 Hz, so the decoder sees the signal at the dial frequency above."));
+    }
+    if (a.audioIqMode != 0) {   // the audio range across the screen, and the IF centre found from the signal
+        flowNext();
+        if (ImGui::Checkbox(tr("Audio range"), &a.audioAfView)) changed();
+        if (ImGui::IsItemHovered()) wrapTooltip(380 * gUi, tr("Show the sound card's whole audio range, 0 Hz to half the sample rate, across the spectrum, with the frequency scale in audio Hz from the dial. Off: the IF centre in the middle (the decoders always get it there)."));
+        if (running) {
+            flowNext();
+            if (ImGui::SmallButton(tr("Find centre"))) {
+                TuneSettings t;
+                t.radio["audio_iq"] = std::to_string(a.audioIqMode);
+                t.radio["audio_if_hz"] = std::to_string(a.audioIfHz);
+                t.radio["audio_invert"] = a.audioInvert ? "1" : "0";
+                t.radio["audio_rate"] = std::to_string(a.audioRate);
+                const AudioIfConfig cfg = audioIfConfigOf(t);
+                double c = 0, w = 0;
+                if (!a.spec.dbfs.empty() && audioDetectCentre(a.spec.dbfs.data(), (int)a.spec.dbfs.size(), a.engine.sampleRate(), audioViewOffsetHz(a), cfg, c, w)) {
+                    a.audioIfHz = std::floor(c + 0.5);
+                    changed();
+                    a.engine.log("sound card: signal " + std::to_string((int)w) + " Hz wide, centre at " + std::to_string((int)a.audioIfHz) + " Hz");
+                } else a.engine.log("sound card: no signal stands out of the noise");
+            }
+            if (ImGui::IsItemHovered()) wrapTooltip(380 * gUi, tr("Sets the IF centre to the middle of the strongest signal on the screen (a fax or FSK signal: halfway between its tones)."));
+        }
     }
     flowNext();
     if (ImGui::Checkbox(tr("Swap sideband"), &a.audioInvert)) changed();
@@ -413,7 +448,14 @@ static void audioSourceOptions(App& a, bool running) {
         ImGui::ProgressBar(std::min(1.f, lv), ImVec2(70 * gUi, 0), "");
         ImGui::PopStyleColor();
         ImGui::SameLine();
-        ImGui::TextDisabled("%s", tr("Level"));
+        if (audioSourceClipping()) ImGui::TextColored(ImVec4(0.95f, 0.35f, 0.3f, 1), "%s", tr("Clipping: lower the input level"));
+        else ImGui::TextDisabled("%s", tr("Level"));
+        if (a.audioIqMode == 0 && audioSourceLayoutHint() == 1) {   // the same signal on both channels is audio, not an I/Q pair
+            flowNext();
+            ImGui::TextColored(ImVec4(0.95f, 0.72f, 0.3f, 1), "%s", tr("Left and right are identical: this is audio, not I/Q."));
+            ImGui::SameLine();
+            if (ImGui::SmallButton(tr("Use Real (mono)"))) { a.audioIqMode = 3; a.audioChan = 2; changed(); }
+        }
     }
     flowEnd();
 }

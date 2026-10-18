@@ -245,6 +245,9 @@ public:
     AudioMonitor& monitor() { return monitor_; }
     void setMonitorOffsetHz(double hz) { monitorOffsetHz_ = hz; }
     bool latestRx2(RxTelemetry& out, uint64_t lastSeq);   // the second mode's report (as latestRx)
+    // Display only: the spectrum is mixed by hz (the samples the decoders get are not touched). A sound card showing the audio range 0..Nyquist uses it.
+    void setSpectrumShiftHz(double hz) { specShiftHz_ = hz; }
+    double spectrumShiftHz() const { return specShiftHz_.load(); }
     double captureCentreHz() const;   // the frequency at the centre of the samples the receivers get
     // The modes that can run second: narrow channels that neither retune the radio, nor make a transport stream, picture or player sound
     static bool secondaryAllowed(int stdMode);
@@ -735,6 +738,9 @@ private:
     std::atomic<bool> radioLost_{false};
     TuneSettings hwTune(const TuneSettings& t) const;      // radioTune() through the converter (converter.h): what the radio itself is tuned to
     mutable std::atomic<bool> convSwap_{false};            // the converter mirrors the spectrum: ingest() swaps I and Q
+    std::atomic<double> specShiftHz_{0};
+    double specPhase_ = 0;                                // the spectrum thread's mixer
+    std::atomic<bool> noTuneOffset_{false};               // a sound card or a recording: the channel is where it was recorded, the mode's tuneOffsetHz does not apply
     TuneSettings radioTune(const TuneSettings& t) const;  // what the radio is tuned to: the user's frequency plus the mode's tuneOffsetHz
     mutable std::mutex tuneMu_;                 // lastDev_ / lastTune_: what to reopen the radio with
     DeviceInfo lastDev_;
