@@ -142,7 +142,7 @@ struct DeviceInfo {
     // Transmit (TxSink below). canTransmit: OnAir has a transmit path for this radio (HackRF, PlutoSDR, SoapySDR radios that have a TX channel);
     // every other radio is receive-only here. The ranges are the radio's own TX scale (0 = not known until the radio has been opened); OnAir
     // adds no limit of its own to the frequency or the level. txFullDuplex: the radio can receive while it transmits, through the same open
-    // handle (none yet: OnAir stops the receiver when a transmission starts).
+    // handle (native PlutoSDR; incompatible shared clock/filter settings are refused by the driver).
     bool canTransmit = false;
     bool txFullDuplex = false;
     int txChannels = 1;                    // transmit outputs (LimeSDR-USB, bladeRF 2.0, USRP: more than one). 0: not known until the radio has been opened
