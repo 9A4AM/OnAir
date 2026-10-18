@@ -3,6 +3,7 @@
 #pragma once
 #include "imgui.h"
 #include <cmath>
+#include <cstdlib>
 #include <functional>
 
 namespace adsbmap {
@@ -38,6 +39,9 @@ public:
     FullScope(const FullScope&) = delete;
     FullScope& operator=(const FullScope&) = delete;
 };
+inline int devView(int dflt) { const char* e = std::getenv("ONAIR_VIEW"); return e ? std::atoi(e) : dflt; }   // dev: open a screen on view N (screenshots)
+bool fullActive();                             // the full-screen screen is being drawn now
+void fullCorner(ImVec2 p0, ImVec2 size);       // a full-screen button in the top right corner of a map-sized rectangle, for the maps without the tile controls (cursor is left where it was)
 bool fullDraw(const void* owner, int family, ImVec2 disp);   // draw_ui.cpp, each frame: the full-screen screen over the whole window; false when not full
 bool online();                                 // tiles are fetched from the tile server (the "online map" switch)
 void shutdown();                               // stop the downloader; delete this session's tiles unless they are kept

@@ -20,7 +20,7 @@ constexpr int kNb = 22;
 const int kScanBands[kNb] = {78, 77, 28, 20, 8, 3, 1, 7, 38, 40, 41, 79, 48, 5, 2, 25, 12, 71, 66, 34, 39, 50};
 
 struct State {
-    int view = 0;                 // 0 cells, 1 beams, 2 map, 3 log
+    int view = adsbmap::devView(0);   // 0 cells, 1 beams, 2 map, 3 log
     int sel = -1;
     bool bands[kNb] = {true, false, true, true};   // n78, n28, n20
     bool custom = false;          // a custom range instead of (with) the bands
@@ -203,6 +203,7 @@ void mapView(App& a) {
     if (!S.fitted && haveRx) { S.map.lat = rLat; S.map.lon = rLon; S.map.zoom = 12; S.fitted = true; }
     const ImVec2 p0 = ImGui::GetCursorScreenPos();
     adsbmap::draw(S.map, sz);
+    adsbmap::fullCorner(p0, sz);
     ImDrawList* dl = ImGui::GetWindowDrawList();
     dl->PushClipRect(p0, ImVec2(p0.x + sz.x, p0.y + sz.y), true);
     if (haveRx) {

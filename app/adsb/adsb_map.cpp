@@ -661,6 +661,27 @@ bool gFullOn = false, gFullFamilyKnown = false;
 const void* gFullOwner = nullptr;
 std::function<void()> gFullBody;
 int gFullFamily = 0;
+void fullToggle();
+
+void fullToggle() {
+    if (gFullOn) gFullOn = false;
+    else if (gFullCtx.body) { gFullOn = true; gFullOwner = gFullCtx.owner; gFullBody = gFullCtx.body; gFullFamilyKnown = false; }
+}
+}  // namespace
+
+bool fullActive() { return gFullOn; }
+
+void fullCorner(ImVec2 p0, ImVec2 size) {
+    if (!gFullCtx.body && !gFullOn) return;
+    const ImVec2 keep = ImGui::GetCursorScreenPos();
+    const float w = ImGui::CalcTextSize(gFullOn ? tr("Exit full screen") : tr("Full screen")).x + 2 * ImGui::GetStyle().FramePadding.x;
+    ImGui::SetCursorScreenPos(ImVec2(p0.x + size.x - w - 8 * gUi, p0.y + 8 * gUi));
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.06f, 0.07f, 0.08f, 0.85f));
+    static bool autoFull = std::getenv("ONAIR_MAP_FULL") != nullptr;   // dev: see tileControls()
+    const bool autoHit = autoFull && !gFullOn && (autoFull = false, true);
+    if (fullButton(gFullOn, "screen") || autoHit) fullToggle();
+    ImGui::PopStyleColor();
+    ImGui::SetCursorScreenPos(keep);
 }
 
 void tileControls(const char* privacy, bool fullBtn) {
@@ -688,8 +709,7 @@ void tileControls(const char* privacy, bool fullBtn) {
         static bool autoFull = std::getenv("ONAIR_MAP_FULL") != nullptr;   // dev: screenshots of the full-screen view (--shot) enter it by themselves
         const bool autoHit = autoFull && !gFullOn && (autoFull = false, true);
         if (fullButton(gFullOn, "screen") || autoHit) {
-            if (gFullOn) gFullOn = false;
-            else { gFullOn = true; gFullOwner = gFullCtx.owner; gFullBody = gFullCtx.body; gFullFamilyKnown = false; }
+            fullToggle();
         }
         ImGui::PopStyleColor();
     }
