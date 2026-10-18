@@ -1,4 +1,4 @@
-// Step 3 of the transmit panel: preview and send. A live spectrum and waterfall of the IQ (the planned signal while idle, the IQ really going to the radio
+// The preview block of the transmit panel. A live spectrum and waterfall of the IQ (the planned signal while idle, the IQ really going to the radio
 // while it runs), an IQ scatter, peak / RMS meters in dBFS with a clipping lamp, the occupied bandwidth and the sample rate, the Start / Stop and Carrier-tune
 // buttons, the emergency "STOP ALL" and the log.
 #include "tx_state.h"
@@ -107,10 +107,9 @@ std::string hzText(double hz) {
 
 namespace txui {
 
-// Step 3: Preview and send
+// The preview: spectrum and waterfall of what is sent, the levels, carrier tune, stop all and the log
 void stepSend(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxModeSpec* mode, bool running) {
-    sectionTitle(3, tr("Preview and send"), running ? (s.sessionDry ? tr("test running") : tr("on the air")) : "");
-    if (!mode) { ImGui::TextDisabled("%s", tr("Choose a signal in step 1.")); return; }
+    if (!mode) { ImGui::TextDisabled("%s", tr("Choose a signal in the list.")); return; }
 
     const PreviewData& pv = previewFor(s, *mode, radio);
     const double fc = (running && s.freqSent > 0 ? s.freqSent : s.freqMhz * 1e6) / 1e6;

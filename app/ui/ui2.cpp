@@ -232,8 +232,8 @@ void drawShell2(App& a, ImVec2 disp) {
     txViewSwitch(a);   // RX / TX, top left
     ImGui::SetCursorPosX(0);
     const float sbH = ImGui::GetFrameHeight() + 8 * gUi;
-    if (txViewFlag()) {   // the guided transmit panel has its own signal list and status header: no top bar and no side list
-    } else if (!face) topBar(a, disp);
+    if (txViewFlag()) txTopBar(a, disp);   // the transmit view has its own top bar (the same frequency digits) and no side list
+    else if (!face) topBar(a, disp);
     const float bodyH = ImGui::GetContentRegionAvail().y - sbH;
     if (txViewFlag()) {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10 * gUi, 6 * gUi));

@@ -404,6 +404,36 @@ void freqdbTabToggle(App& a) {
     plat::prefs().setB("freqTab", a.freqTab);
 }
 
+// The transmitter's band presets: the known frequencies of one mode (the list row `m`), favourites first. Returns true and sets mhz when one is picked.
+bool freqdbPickMhz(const ModeDef& m, float width, double& mhz) {
+    load();
+    static std::string cachedMode;
+    static std::vector<size_t> cache;
+    static size_t cachedSize = 0;
+    const std::string mode = memoryModeKey(m);
+    if (mode != cachedMode || cachedSize != u.all.size()) {
+        cachedMode = mode; cachedSize = u.all.size();
+        cache = dect2::freqForMode(u.all, mode);
+    }
+    if (cache.empty()) return false;
+    bool picked = false;
+    ImGui::SetNextItemWidth(width);
+    if (ImGui::BeginCombo("##txfreqknown", tr("Presets"), ImGuiComboFlags_HeightLarge)) {
+        std::vector<size_t> order = cache;
+        std::stable_sort(order.begin(), order.end(), [&](size_t x, size_t y) { return u.fav.count(dect2::freqKey(u.all[x])) > u.fav.count(dect2::freqKey(u.all[y])); });
+        for (size_t i : order) {
+            const FreqEntry& e = u.all[i];
+            char l[200];
+            snprintf(l, sizeof l, "%s%s MHz  %s###%zu", u.fav.count(dect2::freqKey(e)) ? "* " : "", dect2::memoryFreqMhzText(e.hz).c_str(), e.name.c_str(), i);
+            if (ImGui::Selectable(l)) { mhz = (double)e.hz / 1e6; picked = true; }
+            if (ImGui::IsItemHovered() && !e.notes.empty()) wrapTooltip(340 * gUi, e.notes.c_str());
+        }
+        ImGui::EndCombo();
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Well-known frequencies of this signal: pick one to set the transmit frequency"));
+    return picked;
+}
+
 // The Tuner panel's drop-down: the known frequencies of the mode on screen (favourites first). Picking one tunes to it, the mode stays.
 void freqdbKnownCombo(App& a, float width) {
     load();

@@ -81,7 +81,7 @@ void ensureTxMode(App& a, TxUi& s) {
 
 // the mode chosen for transmitting: its options and frequency start from the receiver's when it is the receiver's own mode
 void chooseMode(App& a, TxUi& s, const TxModeSpec& m) {
-    if (s.modeId != m.id) previewDrop();
+    if (s.modeId != m.id) { previewDrop(); s.presetName[0] = 0; }
     s.modeId = m.id;
     s.bwIdx = 0;
     const TxModeSpec* rm = rxMode(a);
@@ -216,6 +216,7 @@ TxRequest makeReq(const TxUi& s, const TxModeSpec& mode, bool carrier) {
         if (s.svcSrc[i] == 2) { p.liveCamera = true; p.camera = s.svcCam[i]; }
         r.mux.push_back(std::move(p));
     }
+    paramsApply(s, r);
     return r;
 }
 
@@ -386,6 +387,8 @@ bool txModeHighlighted(const ModeDef& m) {
 void txDevOpen(App& a, const char* modeId, bool dryRun) {
     TxUi& s = ui();
     s.view = true;
+    if (getenv("DECT2_TXLINK")) s.linkRx = true;   // dev: the transmit frequency follows the receiver
+    if (getenv("DECT2_TXADV")) s.advOpen = true;   // dev: the Advanced block starts open
     if (getenv("DECT2_TXPOP")) s.popped = true;   // dev: the panel starts in its own window
     if (!modeId || !*modeId) return;
     const TxModeSpec* t = txModeById(modeId);

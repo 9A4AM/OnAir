@@ -414,17 +414,6 @@ void payloadPanel(TxUi& s, const TxModeSpec& mode, bool running) {
         ImGui::InputText(tr("Station name (PS)"), s.name, sizeof s.name);
         ImGui::InputText(tr("Radio text (RT)"), s.text, sizeof s.text);
         ImGui::InputInt(tr("RDS PI"), &s.rdsPi, 1, 16, ImGuiInputTextFlags_CharsHexadecimal);
-        if (s.deviationHz <= 0) s.deviationHz = 75000;
-        { float d = (float)s.deviationHz; if (ImGui::SliderFloat(tr("Deviation (Hz)"), &d, 20000, 90000, "%.0f")) s.deviationHz = d; }
-        {
-            const char* pe[] = {"50 µs", "75 µs"};
-            const int pei = s.preemphUs >= 70 ? 1 : 0;
-            if (ImGui::BeginCombo(tr("Pre-emphasis"), pe[pei])) {
-                if (ImGui::Selectable("50 µs", pei == 0)) s.preemphUs = 50;
-                if (ImGui::Selectable("75 µs", pei == 1)) s.preemphUs = 75;
-                ImGui::EndCombo();
-            }
-        }
         audioSourceRow(s, running);
         break;
     case TxPayloadKind::VoiceAir:
@@ -455,7 +444,7 @@ void payloadPanel(TxUi& s, const TxModeSpec& mode, bool running) {
             ImGui::EndCombo();
         }
         if (s.variant == 1) tvFilePanel(s, mode, running);
-        else { s.kind = 2; audioSourceRow(s, running); }
+        else audioSourceRow(s, running);
         break;
     }
     case TxPayloadKind::Marine:

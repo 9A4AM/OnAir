@@ -927,6 +927,20 @@ bool TxSession::start(std::unique_ptr<TxSink> sink, const TxRequest& r, const Tx
     return true;
 }
 
+// the output stage every mode shares (out.* keys): a trim in dB, a fade-in over the first samples so that the key-up does not click, and an I / Q swap that mirrors the spectrum
+void txOutputStage(const TxRequest& r, cf32* x, size_t n, uint64_t firstSample, double rateHz) {
+    const float trim = (float)std::pow(10.0, r.o("out.trimDb", 0) / 20.0);
+    const uint64_t ramp = (uint64_t)std::max(0.0, r.o("out.rampMs", 0) * 1e-3 * rateHz);
+    const bool swapIq = r.o("out.swapIq", 0) > 0.5;
+    if (trim == 1.f && !ramp && !swapIq) return;
+    for (size_t i = 0; i < n; i++) {
+        float g = trim;
+        if (firstSample + i < ramp) g *= (float)(firstSample + i) / (float)ramp;
+        const cf32 v = x[i] * g;
+        x[i] = swapIq ? cf32(v.imag(), v.real()) : v;
+    }
+}
+
 void TxSession::generatorLoop() {
     const uint64_t limit = req_.loop ? ~0ull : (uint64_t)(std::max(0.1, req_.onceSeconds) * rate_);
     uint64_t made = 0;
@@ -940,6 +954,7 @@ void TxSession::generatorLoop() {
             }
             blk.resize(n);
             gen_->generate(blk.data(), n);
+            txOutputStage(req_, blk.data(), n, made, rate_);
             size_t lim = 0;
             txSoftLimit(blk.data(), n, &lim);   // never above full scale, never NaN, at the last step before the radio
             const TxLevel lv = txMeasure(blk.data(), n);

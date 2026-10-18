@@ -1,6 +1,6 @@
-// Step 2 of the transmit panel: the radio, the frequency (with the radio's own range as information), the output level, the signal's own options and the
-// "Test (dry run, no RF)" switch. Nothing here limits a value: a frequency or level outside the radio's range is sent to the driver as typed, with a note.
-// While a transmission runs only the frequency and the level can be changed, and "Apply" retunes the running radio.
+// The Basic block of the transmit panel: the radio and the test switch, the output level, what to send (the signal's own options) and, folded below, the
+// Advanced block (tx_params.cpp). The frequency is in the top bar, like the receiver's. Nothing here limits a value: a frequency or level outside the radio's
+// range is sent to the driver as typed, with a note. While a transmission runs only the frequency and the level can be changed, and "Apply" retunes the radio.
 #include "tx_state.h"
 #include "../ui/icons.h"
 #include <algorithm>
@@ -50,15 +50,12 @@ void radioRow(App& a, TxUi& s, const DeviceInfo*& radio, bool running) {
     }
 }
 
-// frequency field + the radio's range as a hint + the offset
-void frequencyRow(TxUi& s, const DeviceInfo* radio) {
-    ImGui::SetNextItemWidth(160 * gUi);
-    ImGui::InputDouble(tr("Frequency (MHz)"), &s.freqMhz, 0.0, 0.0, "%.6f");
-    if (radio) {
-        const std::string r = rangeText(radio->minFreqHz, radio->maxFreqHz);
-        if (!r.empty()) { ImGui::SameLine(); ImGui::TextDisabled(tr("radio range %s"), r.c_str()); }
-    }
-    if (radio && !s.dryRun) {
+// the radio's own range as information (never a block) for the frequency in the top bar
+void rangeNote(TxUi& s, const DeviceInfo* radio) {
+    if (!radio) return;
+    const std::string r = rangeText(radio->minFreqHz, radio->maxFreqHz);
+    if (!r.empty()) ImGui::TextDisabled(tr("radio range %s"), r.c_str());
+    if (!s.dryRun) {
         const std::string note = txRangeInfo(*radio, s.freqMhz * 1e6);
         if (!note.empty()) banner(Note::Info, note.c_str());
     }
@@ -102,15 +99,13 @@ void levelRow(TxUi& s, const DeviceInfo* radio) {
 
 namespace txui {
 
-// Step 2: Settings
+// The Basic block: radio, level, what to send; then Advanced (folded)
 void stepSettings(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxModeSpec* mode, bool running) {
-    sectionTitle(2, tr("Settings"), s.dryRun ? tr("test, no RF") : radio ? radio->name.c_str() : "");
-    if (!mode) { ImGui::TextDisabled("%s", tr("Choose a signal in step 1.")); return; }
-
+    if (!mode) { ImGui::TextDisabled("%s", tr("Choose a signal in the list.")); return; }
     ImGui::BeginDisabled(running);
     if (ImGui::Checkbox(tr("Test (dry run, no RF)"), &s.dryRun)) plat::basePrefs().setB("tx.dryRun", s.dryRun);
     ImGui::EndDisabled();
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels below show what would go out."));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels show what would go out."));
 
     radioRow(a, s, radio, running);
     if (conflict && !s.dryRun) {
@@ -118,10 +113,9 @@ void stepSettings(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const 
         snprintf(b, sizeof b, tr("%s is in use by RX %d, and this radio cannot receive and transmit at the same time. Choose another radio for transmitting, or stop that receiver first."), radio->name.c_str(), conflict);
         banner(Note::Warn, b);
     }
-
-    frequencyRow(s, radio);
+    rangeNote(s, radio);
     levelRow(s, radio);
-    if (running) {   // a running radio can be retuned: the fields above are live
+    if (running) {   // a running radio can be retuned: the frequency and the level are live
         const bool differs = std::fabs(s.freqMhz - s.appliedMhz) > 1e-9 || std::fabs(s.gainDb - s.appliedGain) > 1e-3f;
         ImGui::BeginDisabled(!differs);
         if (ImGui::Button(tr("Apply frequency and level now"))) {
@@ -133,23 +127,8 @@ void stepSettings(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const 
         ImGui::EndDisabled();
     }
 
+    ImGui::Spacing();
     ImGui::BeginDisabled(running);
-    if (ImGui::TreeNode(tr("Offset, repeat and timing"))) {
-        ImGui::SetNextItemWidth(140 * gUi);
-        if (ImGui::InputDouble(tr("Offset (MHz)"), &s.offsetMhz, 0.0, 0.0, "%.6f")) plat::basePrefs().setD("tx.offsetMhz", s.offsetMhz);
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("This is added to the frequency sent to the radio, for a radio that radiates off frequency."));
-        if (s.offsetMhz != 0) { ImGui::SameLine(); ImGui::TextDisabled(tr("radio is told %.6f MHz"), s.freqMhz + s.offsetMhz); }
-        ImGui::Checkbox(tr("Repeat until stopped"), &s.loop);
-        if (!s.loop) {
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(80 * gUi);
-            ImGui::InputInt(tr("seconds"), &s.onceSeconds);
-            s.onceSeconds = std::max(1, std::min(3600, s.onceSeconds));
-        }
-        ImGui::TreePop();
-    }
-
-    ImGui::SeparatorText(mode->name);
     payloadPanel(s, *mode, running);
     if (const ModeUi* mu = modeUi(familyOf(*mode)); mu && mu->synth && !isVoiceId(mode->id ? mode->id : "") && !isFtxId(mode->id ? mode->id : "") && std::string(mode->id) != "rtty" && std::string(mode->id) != "atv") {
         if (ImGui::TreeNode(tr("Receiver-style options (demo signal)"))) {
@@ -163,6 +142,14 @@ void stepSettings(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const 
         }
     }
     ImGui::EndDisabled();
+
+    ImGui::Spacing();
+    ImGui::SetNextItemOpen(s.advOpen, ImGuiCond_Appearing);
+    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(1, 1, 1, 0.045f));
+    s.advOpen = ImGui::CollapsingHeader(tr("Advanced"));
+    ImGui::PopStyleColor();
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Every setting of this signal: modulation, audio, filters, output and timing. The defaults are sensible; open this only to change them."));
+    if (s.advOpen) advancedPanel(s, *mode, running);
 }
 
 } // namespace txui

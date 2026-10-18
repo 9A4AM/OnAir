@@ -188,11 +188,12 @@ bool loadWav(const std::string& path, std::vector<float>& pcm, double& rate) {
 
 class FmWrap : public ModeSynth {
 public:
-    FmWrap(FmGenConfig c, double rate) : rate_(rate), g_(c) {}
+    FmWrap(FmGenConfig c, double rate, float level) : rate_(rate), level_(level), g_(c) {}
     double sampleRate() const override { return rate_; }
-    void generate(cf32* out, size_t n) override { g_.generate(out, n, 0.3f); }
+    void generate(cf32* out, size_t n) override { g_.generate(out, n, level_); }
 private:
     double rate_;
+    float level_;
     FmGenerator g_;
 };
 
@@ -717,6 +718,7 @@ std::unique_ptr<ModeSynth> makeTxPayloadSynth(const TxModeSpec& m, const TxReque
     if (m.stdMode == 7 || m.stdMode == 28 || m.stdMode == 55 || r.analogVoice) {
         if (m.stdMode != 7) return makeTxVoiceSynth(m, r, rate);
         FmGenConfig g;
+        float fmOutLevel = 0.3f;
         g.rate = rate;
         g.cnrDb = 200;
         g.leftHz = r.toneHz > 0 ? r.toneHz : 1000;
@@ -724,13 +726,26 @@ std::unique_ptr<ModeSynth> makeTxPayloadSynth(const TxModeSpec& m, const TxReque
         g.preemphUs = r.preemphUs > 0 ? r.preemphUs : 50;
         g.deviationHz = r.deviationHz > 0 ? r.deviationHz : 75000;
         g.pi = r.rdsPi ? r.rdsPi : 0x4A21;
+        // the advanced parameters (bfm.* keys of the panel): stereo and the pilot, the RDS, the programme type and flags, the test tones and the output level
+        g.stereo = r.o("bfm.stereo", 1) > 0.5;
+        g.pilotPct = r.o("bfm.pilotPct", 9);
+        g.rds = r.o("bfm.rds", 1) > 0.5;
+        g.rdsDevKhz = r.o("bfm.rdsDevKhz", 2);
+        g.pty = (int)r.o("bfm.pty", 10);
+        g.tp = r.o("bfm.tp", 1) > 0.5;
+        g.ta = r.o("bfm.ta", 0) > 0.5;
+        g.music = r.o("bfm.music", 1) > 0.5;
+        g.leftAmp = (float)r.o("bfm.leftAmp", 0.5);
+        g.rightAmp = (float)r.o("bfm.rightAmp", 0.5);
+        if (r.o("bfm.rightHz", 0) > 0) g.rightHz = r.o("bfm.rightHz", 0);
+        fmOutLevel = (float)r.o("bfm.level", 0.3);
         if (!r.name.empty()) { g.ps = r.name; if (g.ps.size() < 8) g.ps.append(8 - g.ps.size(), ' '); if (g.ps.size() > 8) g.ps.resize(8); }
         if (!r.text.empty()) g.rt = r.text;
         if (r.pullAudio) {
             auto pull = r.pullAudio;
             g.pull48k = [pull](float* st, int n) { if (pull) pull(st, n); else memset(st, 0, (size_t)n * 2 * sizeof(float)); };
         }
-        return std::make_unique<FmWrap>(g, rate);
+        return std::make_unique<FmWrap>(g, rate, fmOutLevel);
     }
 
     // Imagery / scene generators have no custom-string path: analog NFM of mic/file when asked, else the demo.
