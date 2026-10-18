@@ -1,4 +1,4 @@
-// Seeded mutation run of the DAB data layers (the Rust ones under DECT2_RUST_DAB), meant for DECT2_SANITIZE=ON: every FIG / MOT / PAD / Journaline / packet
+// Seeded mutation run of the DAB data layers, meant for DECT2_SANITIZE=ON: every FIG / MOT / PAD / Journaline / packet
 // parser must never crash or hang on any bytes at any length (the input is copied to an exactly sized heap block). Also the MotDecoder and DabPadDecoder classes
 // are fed the same bytes. Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/dab/dab_proto.h"

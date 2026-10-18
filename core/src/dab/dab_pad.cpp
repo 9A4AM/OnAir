@@ -66,7 +66,7 @@ void DabPadDecoder::reset() {
     spiLogos_.clear(); images_.clear(); imageOrder_.clear(); logos_.clear(); logoSeq_ = 0;
 }
 
-// The split of a PAD into F-PAD, X-PAD and application subfields is dab_proto (Rust with DECT2_RUST_DAB); the decoder keeps what the subfields assemble into.
+// The split of a PAD into F-PAD, X-PAD and application subfields is dab_proto (Rust); the decoder keeps what the subfields assemble into.
 void DabPadDecoder::accessUnit(const uint8_t* au, int n) {
     dabp::PadBytes pb;
     if (!dabp::padFromAu(au, n < 0 ? 0 : (size_t)n, pb)) return;   // the data stream element (id_syn_ele 4) comes first when there is PAD

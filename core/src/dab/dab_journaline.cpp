@@ -140,7 +140,7 @@ uint16_t be16(const uint8_t* p) { return (uint16_t)dect2::endian::loadBe16(p); }
 
 } // namespace
 
-// The framing checks (data group, TOC block, user application data, packet headers) are dab_proto (Rust with DECT2_RUST_DAB).
+// The framing checks (data group, TOC block, user application data, packet headers) are dab_proto (Rust).
 bool jlDataGroup(const uint8_t* d, size_t n, int& type, const uint8_t*& field, size_t& fieldLen, bool* crcBad) {
     if (crcBad) *crcBad = false;
     const dabp::JlGroup g = dabp::jlDataGroup(d, n);

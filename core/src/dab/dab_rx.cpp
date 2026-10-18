@@ -405,7 +405,7 @@ struct DabReceiver::Impl {
         DabFigRecord r;
         r.type = type;
         r.data.assign(d, d + len);
-        const dabp::FigHead fh = dabp::figHead(type, d, (size_t)len);   // the FIG header flags (dab_proto: Rust with DECT2_RUST_DAB)
+        const dabp::FigHead fh = dabp::figHead(type, d, (size_t)len);   // the FIG header flags (dab_proto: Rust)
         r.cn = fh.cn; r.oe = fh.oe; r.pd = fh.pd; r.ext = fh.ext;
         std::string key;
         key += (char)type;

@@ -1327,29 +1327,7 @@ if(DECT2_BUILD_TESTS)
   onair_rust_golden_tests(p25)
   onair_rust_golden_tests(tetra ${ONAIR_ROOT}/core/include/dect2/tetra)
   onair_rust_golden_tests(drm)
-  # DAB: dab_proto.cpp with a generated reference copy; its caption text goes through a reference copy of text_charset.cpp too (the C++ one, not the Rust one)
-  if(ONAIR_RUST_DAB)
-    set(_dir ${CMAKE_BINARY_DIR}/dab_ref)
-    add_custom_command(OUTPUT ${_dir}/text_charset_ref.h ${_dir}/text_charset_ref.cpp
-      COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${_dir} -DNAME=text_charset -DHDR=dect2/common/text_charset.h -DCPP=common/text_charset.cpp -DDEF=DECT2_RUST_DVBSI
-              "-DFROM=namespace dect2::text {" "-DTO=namespace dect2::text_ref {" "-DEXTRA=" -P ${ONAIR_ROOT}/cmake/gen_rs_ref.cmake
-      DEPENDS core/include/dect2/common/text_charset.h core/src/common/text_charset.cpp cmake/gen_rs_ref.cmake VERBATIM)
-    add_custom_command(OUTPUT ${_dir}/dab_proto_ref.h ${_dir}/dab_proto_ref.cpp
-      COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${_dir} -DNAME=dab_proto -DHDR=dect2/dab/dab_proto.h -DCPP=dab/dab_proto.cpp -DDEF=DECT2_RUST_DAB
-              "-DFROM=namespace dect2::dabp {" "-DTO=namespace dect2::dabp_ref {" "-DEXTRA=" "-DCPP_REPL=namespace textns = dect2::text=>namespace textns = dect2::text_ref@@#include \"dect2/common/text_charset.h\"=>#include \"text_charset_ref.h\"" -P ${ONAIR_ROOT}/cmake/gen_rs_ref.cmake
-      DEPENDS core/include/dect2/dab/dab_proto.h core/src/dab/dab_proto.cpp cmake/gen_rs_ref.cmake VERBATIM)
-    set(_srcs core/src/dab/dab_proto.cpp core/src/dab/dab_proto_rs.cpp)
-    set_source_files_properties(${_srcs} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_DAB)
-    add_executable(test_dab_proto_rs tests/dab/test_dab_proto_rs.cpp ${_dir}/dab_proto_ref.cpp ${_dir}/text_charset_ref.cpp ${_srcs})
-    target_include_directories(test_dab_proto_rs PRIVATE core/include ${_dir})
-    target_link_libraries(test_dab_proto_rs PRIVATE onair_rs)
-    add_test(NAME dab_proto_rs COMMAND test_dab_proto_rs)
-    add_executable(fuzz_dab_proto tests/dab/fuzz_dab_proto.cpp ${_srcs})
-    target_include_directories(fuzz_dab_proto PRIVATE core/include)
-    target_compile_definitions(fuzz_dab_proto PRIVATE DECT2_RUST_DAB)
-    target_link_libraries(fuzz_dab_proto PRIVATE onair_rs)
-    add_test(NAME fuzz_dab_proto COMMAND fuzz_dab_proto)
-  endif()
+  onair_rust_golden_tests(dab)
   function(onair_link_iconv tgt)   # dvb_text.cpp calls iconv: libiconv on macOS, a separate library on some systems, built into glibc elsewhere
     if(APPLE)
       target_link_libraries(${tgt} PRIVATE iconv)

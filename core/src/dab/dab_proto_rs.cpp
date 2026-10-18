@@ -1,7 +1,6 @@
-// dab_proto.h on top of the Rust crate rust/onair_dab (DECT2_RUST_DAB): record arrays sized from the input length (every record needs a few bytes of input;
+// dab_proto.h on top of the Rust crate rust/onair_dab: record arrays sized from the input length (every record needs a few bytes of input;
 // the lists that overlapping descriptors of corrupt data could lengthen are not among them), turned into the vector / string forms of the header.
-// Negative or zero lengths are 0 bytes. Empty when the crate is not built.
-#ifdef DECT2_RUST_DAB
+// Negative or zero lengths are 0 bytes.
 #include "dect2/dab/dab_proto.h"
 #include "dect2/rs/dab.h"
 #include <algorithm>
@@ -295,4 +294,3 @@ DrmPacket drmPacket(const uint8_t* p, size_t n) {
 }
 
 } // namespace dect2::dabp
-#endif

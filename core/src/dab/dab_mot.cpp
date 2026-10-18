@@ -23,7 +23,7 @@ dabp::MotTime priv(const MotTime& t) {
 }
 } // namespace
 
-// The parsing of MOT times, headers, data groups and directories is dab_proto (Rust with DECT2_RUST_DAB); this file keeps the objects and the reassembly.
+// The parsing of MOT times, headers, data groups and directories is dab_proto (Rust); this file keeps the objects and the reassembly.
 size_t motParseTime(const uint8_t* d, size_t n, MotTime& t) {
     dabp::MotTime c;
     const size_t used = dabp::motParseTime(d, n, c);
