@@ -6,6 +6,10 @@
 #include <cstring>
 #include <string>
 
+#ifndef ESHUTDOWN
+#define ESHUTDOWN 108   // not defined by MinGW (usbfs is Linux-only, the value is only compared)
+#endif
+
 namespace dect2 {
 
 // libusb error codes (the Rust protocol layer reports these)

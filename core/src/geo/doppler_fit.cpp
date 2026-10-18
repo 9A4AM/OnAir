@@ -212,9 +212,9 @@ bool fitDopplerOrbit(const Tle& tle, const Observer& obs, double nominalHz, cons
 
 void formatTle(const Tle& t, std::string& l1, std::string& l2) {
     // epoch: year and day of year from the UTC Julian date
-    const double unix = jdToUnix(t.epochJd);
-    long days = (long)std::floor(unix / 86400.0);
-    const double frac = unix / 86400.0 - days;
+    const double unixSec = jdToUnix(t.epochJd);
+    long days = (long)std::floor(unixSec / 86400.0);
+    const double frac = unixSec / 86400.0 - days;
     // civil year from days since 1970-01-01
     long z = days + 719468; const long era = (z >= 0 ? z : z - 146096) / 146097; const long doe = z - era * 146097;
     const long yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365; long y = yoe + era * 400;
