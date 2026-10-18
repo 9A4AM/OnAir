@@ -1,10 +1,12 @@
 // HFDL screens: the message log with a filter and a detail pane (ACARS text), a map of the ground stations and the aircraft positions,
-// the aircraft, the ground stations with their status, and the channel list with its activity. Band presets in the tuner.
+// the aircraft, the ground stations with their status, the channel list with its activity, and the range plot (furthest position report
+// per bearing from the receiver). Band presets in the tuner.
 #include "../adsb/adsb_map.h"
 #include "app.h"
 #include "map/pos_predict.h"
 #include "map/derived_kin.h"
 #include "state/results_export.h"
+#include "map/rangeplot_ui.h"
 #include "dect2/hfdl/hfdl_proto.h"
 #include "dect2/hfdl/hfdl_tel.h"
 #include <algorithm>
@@ -18,7 +20,7 @@ namespace {
 
 struct State {
     bool loaded = false;
-    int viewMode = 0;                    // 0 messages, 1 map, 2 aircraft, 3 ground stations, 4 channels
+    int viewMode = 0;                    // 0 messages, 1 map, 2 aircraft, 3 ground stations, 4 channels, 5 range
     char fAir[24] = "";
     char fText[32] = "";
     int fKind = 0;                       // 0 all, 1 ACARS, 2 squitters, 3 positions, 4 logon / link
@@ -28,6 +30,8 @@ struct State {
     adsbmap::View map;
     bool mapFollow = true;
     uint32_t selAir = 0;
+    RangeView range;                     // the receiver-range plot (Range view)
+    std::unordered_map<uint32_t, double> rangeFedT;   // per aircraft: the position report already counted in it
 };
 State S;
 
@@ -45,7 +49,8 @@ void loadState() {
     snprintf(S.chans, sizeof S.chans, "%s", d.getS("hfdlChans", "").c_str());
     S.map.zoom = (int)d.getI("hfdlZoom", 2);
     S.map.lat = 40; S.map.lon = -30;
-    if (const char* e = getenv("DECT2_HFDL_VIEW")) S.viewMode = std::max(0, std::min(4, atoi(e)));   // dev: open on a view (screenshots)
+    S.range.plot.configure(5.0, 0.0, 20040.0);   // HF reaches anywhere: the sanity limit is half way round the Earth, not the VHF 1000 km
+    if (const char* e = getenv("DECT2_HFDL_VIEW")) S.viewMode = std::max(0, std::min(5, atoi(e)));   // dev: open on a view (screenshots)
 }
 
 std::string lower(std::string s) { for (auto& c : s) c = (char)std::tolower((unsigned char)c); return s; }
@@ -81,6 +86,24 @@ std::string airName(const dect2::HfdlAircraft& c) {
     if (!c.flight.empty()) s += " " + c.flight;
     return s;
 }
+// ranges in the ADS-B screen's unit (aviation: nm, metric: km), from the receiver position
+bool metric() { return plat::prefs().getI("adsbUnits", 0) == 1; }
+double unitPerKm() { return metric() ? 1.0 : 0.5399568; }
+const char* distUnit() { return metric() ? "km" : "nm"; }
+bool rangeOf(double lat, double lon, double& km, double& brg) {
+    if (!receiverLocationSet()) return false;
+    double rl, ro; receiverLocation(rl, ro);
+    dect2::RangePlot::bearingDistance(rl, ro, lat, lon, brg, km);
+    return std::isfinite(km);
+}
+std::string rangeText(const dect2::HfdlAircraft& c, bool bearing = true) {
+    double km, brg;
+    if (!c.hasPos || !rangeOf(c.lat, c.lon, km, brg)) return "-";
+    char b[48];
+    if (bearing) snprintf(b, sizeof b, "%.0f %s at %.0f deg", km * unitPerKm(), distUnit(), brg); else snprintf(b, sizeof b, "%.0f %s", km * unitPerKm(), distUnit());
+    return b;
+}
+
 const dect2::HfdlAircraft* findAir(const dect2::HfdlTelemetry& t, uint32_t key) { for (const auto& c : t.aircraft) if (c.key == key) return &c; return nullptr; }
 
 std::string khzList(const std::vector<int>& k) {
@@ -114,9 +137,25 @@ void feedEstimates(const dect2::HfdlTelemetry& t) {
     gPred.hub.purge(t.nowSec, 6 * 3600);
 }
 
+// each new position report once into the range plot (the telemetry repeats the last one until the next arrives)
+void feedRange(const dect2::HfdlTelemetry& t) {
+    if (!receiverLocationSet()) return;
+    double rl, ro; receiverLocation(rl, ro);
+    if (std::fabs(rl - S.range.refLat) > 1e-4 || std::fabs(ro - S.range.refLon) > 1e-4) S.rangeFedT.clear();
+    rangeSetStation(S.range, rl, ro);
+    for (const auto& c : t.aircraft) {
+        if (!c.hasPos) continue;
+        double& last = S.rangeFedT[c.key];
+        if (last == c.posTime) continue;
+        last = c.posTime;
+        rangeFeed(S.range, c.lat, c.lon);
+    }
+}
+
 void tick(App& a) {
     feedEstimates(a.rx.hfdl);
     loadState();
+    if (live(a)) feedRange(a.rx.hfdl);
     if (!a.engine.running()) { S.pushedChans[0] = '\x01'; S.pushedChans[1] = 0; return; }
     if (std::strcmp(S.pushedChans, S.chans) != 0) {
         std::vector<double> hz;
@@ -228,6 +267,7 @@ void mapCanvas(App& a, ImVec2 size) {
         auto add = [&](double la, double lo) { la0 = std::min(la0, la); la1 = std::max(la1, la); lo0 = std::min(lo0, lo); lo1 = std::max(lo1, lo); n++; };
         for (const auto& c : t.aircraft) if (c.hasPos) add(c.lat, c.lon);
         for (const auto& g : t.stations) if (g.hasPos && g.heardDirect) add(g.lat, g.lon);
+        if (n && receiverLocationSet()) { double rl, ro; receiverLocation(rl, ro); add(rl, ro); }
         if (n) {
             S.map.lat = (la0 + la1) / 2; S.map.lon = (lo0 + lo1) / 2;
             const double span = std::max(5.0, std::max(lo1 - lo0, (la1 - la0) * 1.4));
@@ -280,6 +320,13 @@ void mapCanvas(App& a, ImVec2 size) {
         }
     }
     if (clicked) S.selAir = hit;
+    double rl, ro; receiverLocation(rl, ro);
+    const ImVec2 h = adsbmap::project(rl, ro);   // the receiver: a ringed dot, as on the main map
+    if (const dect2::HfdlAircraft* sc = on ? findAir(t, S.selAir) : nullptr; sc && sc->hasPos && receiverLocationSet())
+        dl->AddLine(h, adsbmap::project(sc->lat, sc->lon), IM_COL32(110, 210, 230, 110), 1.f * gUi);   // the range line to the picked aircraft
+    dl->AddCircleFilled(h, 4 * gUi, IM_COL32(110, 210, 230, 255));
+    dl->AddCircle(h, 8 * gUi, IM_COL32(110, 210, 230, 220), 24, 1.5f * gUi);
+    dl->AddText(ImVec2(h.x + 10 * gUi, h.y - 7 * gUi), IM_COL32(110, 210, 230, 255), receiverLocationSet() ? "me" : "me (placeholder: set it in View > Map)");
     dl->PopClipRect();
     ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + 8 * gUi));
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.06f, 0.07f, 0.08f, 0.85f));
@@ -288,6 +335,9 @@ void mapCanvas(App& a, ImVec2 size) {
     if (ImGui::Button("-", ImVec2(26 * gUi, 0))) { S.map.zoom = std::max(adsbmap::kMinZoom, S.map.zoom - 1); S.mapFollow = false; }
     ImGui::SameLine(0, 6 * gUi);
     if (ImGui::Button("fit")) S.mapFollow = true;
+    ImGui::SameLine(0, 6 * gUi);
+    if (ImGui::Button("me")) { S.map.lat = rl; S.map.lon = ro; S.mapFollow = false; }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Centre the map on my location");
     ImGui::PopStyleColor();
     ImGui::SameLine(0, 6 * gUi);
     gPred.controls();
@@ -315,7 +365,8 @@ void mapSide(App& a) {
         for (const auto& x : t.aircraft) {
             if (!x.hasPos) continue;
             char id[16]; snprintf(id, sizeof id, "##hp%d", ++n);
-            const std::string row = airName(x) + "  " + ago(t.nowSec, x.posTime) + " ago" + id;
+            const std::string rg = rangeText(x, false);
+            const std::string row = airName(x) + "  " + (rg == "-" ? "" : rg + "  ") + ago(t.nowSec, x.posTime) + " ago" + id;
             if (ImGui::Selectable(row.c_str(), false)) S.selAir = x.key;
         }
         return;
@@ -334,6 +385,7 @@ void mapSide(App& a) {
             if (!L.note.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", L.note.c_str()); ImGui::PopTextWrapPos(); }
         }
     }
+    if (c->hasPos) kv("range", "%s%s", rangeText(*c).c_str(), receiverLocationSet() ? "" : " (set my location in View > Map)");
     if (!c->posKind.empty()) kv("source", "%s, %s ago", c->posKind.c_str(), ago(t.nowSec, c->posTime).c_str());
     kv("station", "%s%s", gsLabel(c->gsId).c_str(), c->loggedOn ? ", logged on" : "");
     kv("messages", "%u, last %s ago on %.0f kHz", c->messages, ago(t.nowSec, c->lastHeardSec).c_str(), c->freqHz / 1e3);
@@ -368,11 +420,12 @@ void aircraftView(const App& a) {
         resexp::saveButton(x, "hfdl_aircraft", note, "svhfair");
         if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
     }
-    if (!ImGui::BeginTable("##hfair", 10, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
+    if (!ImGui::BeginTable("##hfair", 11, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
     ImGui::TableSetupColumn("ICAO"); ImGui::TableSetupColumn("Reg"); ImGui::TableSetupColumn("Flight"); ImGui::TableSetupColumn("Station");
     ImGui::TableSetupColumn("Msgs"); ImGui::TableSetupColumn("kHz"); ImGui::TableSetupColumn("Last heard"); ImGui::TableSetupColumn("Position");
     ImGui::TableSetupColumn("Speed"); ImGui::TableSetupColumn("Track");
+    ImGui::TableSetupColumn("Range");
     ImGui::TableHeadersRow();
     if (live(a))
         for (const auto& c : t.aircraft) {
@@ -388,6 +441,7 @@ void aircraftView(const App& a) {
             const derivedkin::Info k = c.hasPos ? kinOf(c, t.nowSec) : derivedkin::Info();
             ImGui::TableNextColumn(); ImGui::TextUnformatted(derivedkin::gsText(k.v).c_str()); if (ImGui::IsItemHovered() && !derivedkin::explain(k).empty()) ImGui::SetTooltip("%s", derivedkin::explain(k).c_str());
             ImGui::TableNextColumn(); ImGui::TextUnformatted(derivedkin::trackText(k.v).c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(rangeText(c).c_str());
         }
     ImGui::EndTable();
 }
@@ -455,12 +509,13 @@ void channelView(const App& a) {
 
 void tab(App& a) {
     loadState();
-    subNav("hfdlv", S.viewMode, {"Messages", "Map", "Aircraft", "Ground stations", "Channels"});
+    subNav("hfdlv", S.viewMode, {"Messages", "Map", "Aircraft", "Ground stations", "Channels", tr("Range")});
     if (S.viewMode == 0) messageView(a);
     else if (S.viewMode == 1) mapView(a);
     else if (S.viewMode == 2) aircraftView(a);
     else if (S.viewMode == 3) stationView(a);
-    else channelView(a);
+    else if (S.viewMode == 4) channelView(a);
+    else rangeView(S.range, ImGui::GetContentRegionAvail(), unitPerKm(), distUnit(), "hfdl", receiverLocationSet());
 }
 
 void list(App& a) {
@@ -497,6 +552,8 @@ void receiver(App& a) {
     kv("by rate", "300: %llu  600: %llu  1200: %llu  1800: %llu", (unsigned long long)t.byRate[0], (unsigned long long)t.byRate[1], (unsigned long long)t.byRate[2], (unsigned long long)t.byRate[3]);
     kv("last burst", "%+.1f Hz from the channel, SNR %.1f dB", t.cfoHz, t.snrDb);
     kv("positions", "%llu", (unsigned long long)t.positionsTotal);
+    const double maxKm = receiverLocationSet() ? S.range.plot.overallMaxKm(rangeNow()) : 0;
+    if (maxKm > 0) kv("farthest", "%.0f %s at %.0f deg", maxKm * unitPerKm(), distUnit(), S.range.plot.farthestAzDeg(rangeNow()));
 }
 
 void status(App& a) {

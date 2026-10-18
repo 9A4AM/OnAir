@@ -431,6 +431,17 @@ template <class T> void PlotLine(const char*, const T* xs, const T* ys, int n, c
         if (!std::isfinite(x) || !std::isfinite(y)) { flush(); continue; }   // a gap in the data is a gap in the line
         const ImVec2 p(px(x), py(y));
         if (s.Marker != Marker_None) drawMarker(p, s.Marker, s.MarkerSize * gStyle.Scale, uf, ImGui::ColorConvertFloat4ToU32(pick(s.MarkerLineColor.w >= 0 ? s.MarkerLineColor : col)));
+        // ImGui joins two segments along the mean of their normals: where the line doubles back (the up-and-down of a decimated spectrum
+        // on a steep edge) the two normals nearly cancel and the stroke there collapses to nothing or juts out far. So a step of no length
+        // is left out, and at a turn of more than 90 degrees the line is ended and a new one started from the same point.
+        if (!pts.empty()) {
+            const ImVec2 d2(p.x - pts.back().x, p.y - pts.back().y);
+            if (d2.x * d2.x + d2.y * d2.y < 1e-4f) continue;
+            if (pts.size() >= 2) {
+                const ImVec2 d1(pts.back().x - pts[pts.size() - 2].x, pts.back().y - pts[pts.size() - 2].y);
+                if (d1.x * d2.x + d1.y * d2.y < 0) { const ImVec2 q = pts.back(); flush(); pts.push_back(q); }
+            }
+        }
         pts.push_back(p);
     }
     flush();

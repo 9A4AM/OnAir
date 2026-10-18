@@ -882,6 +882,7 @@ static void radioSettingsChecks(const char* dir, const char* ext) {
             t.radio["gainmode"] = "fast_attack"; t.gainDb = 50;
             CHECK(src->retune(t, e) && st("pluto.phy:voltage0.gain_control_mode=fast_attack") == 1 && st("pluto.phy:voltage0.hardwaregain") == 30, "Pluto fast attack: gain written %.0f", st("pluto.phy:voltage0.hardwaregain"));
             // 2.048 Msps (DAB): below the converter's 2.083 Msps, so through its decimating FIR (the converter at twice the rate), off again for another rate
+            t.radio["lowratefir"] = "1";   // the exact hardware rate is an explicit RX-only option
             t.sampleRate = 2.048e6;
             CHECK(src->retune(t, e) && st("pluto.phy:voltage0.sampling_frequency") == 2.048e6 && st("pluto.phy:voltage0.filter_fir_en") == 1 && st("pluto.firLoads") == 1 && st("pluto.phy.firTaps") == 16,
                   "Pluto 2.048 Msps: rate %.0f, FIR en %.0f, loads %.0f, taps %.0f (%s)", st("pluto.phy:voltage0.sampling_frequency"), st("pluto.phy:voltage0.filter_fir_en"), st("pluto.firLoads"), st("pluto.phy.firTaps"), e.c_str());

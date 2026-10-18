@@ -694,6 +694,7 @@ std::unique_ptr<TxGenerator> makeTxGenerator(const TxModeSpec& m, const TxReques
 }
 
 double txRequestRate(const TxModeSpec& m, const TxRequest& r, const TxRateLimits& lim) {
+    if (r.tune.sampleRate != 0) return r.tune.sampleRate;
     double rate = m.stdMode == 0 ? nativeRateHz(r.bandwidthMhz > 0 ? r.bandwidthMhz : 8) : m.nominalRateHz;
     if (m.stdMode == 6) rate = std::max(rate, (r.synth.isdbtBwMhz >= 7 ? r.synth.isdbtBwMhz : 6) * 1e6 * 1.34);
     if (lim.minHz > 0 && rate < lim.minHz) rate = lim.minHz;
@@ -805,6 +806,24 @@ std::unique_ptr<TxSink> makeNullTxSink() { return std::make_unique<NullTxSink>()
 namespace {
 constexpr size_t kBlock = 1 << 15;
 std::string mhzText(double hz) { char b[48]; snprintf(b, sizeof b, "%.6f MHz", hz / 1e6); return b; }
+std::string manualRateProblem(const TxModeSpec& m, const TxRequest& r, const TxRateLimits& lim) {
+    const double rate = r.tune.sampleRate;
+    if (rate == 0) return {};
+    if (!std::isfinite(rate) || rate <= 0) return "TX sample rate must be a finite positive number, or 0 for automatic";
+    char b[256];
+    if ((lim.minHz > 0 && rate < lim.minHz) || (lim.maxHz > 0 && rate > lim.maxHz)) {
+        snprintf(b, sizeof b, "requested TX rate %.6g Msps is outside the radio's range (minimum %.6g, maximum %.6g Msps; 0 means unknown)", rate / 1e6, lim.minHz / 1e6, lim.maxHz / 1e6);
+        return b;
+    }
+    double minimum = m.minRateHz;
+    if (m.stdMode == 0) minimum = std::max(minimum, (r.bandwidthMhz > 0 ? r.bandwidthMhz : 8) * 1e6);
+    if (m.stdMode == 6) minimum = std::max(minimum, (r.synth.isdbtBwMhz >= 7 ? r.synth.isdbtBwMhz : 6) * 1e6);
+    if (!r.carrierTune && rate < minimum) {
+        snprintf(b, sizeof b, "%s needs at least %.6g Msps; requested TX rate is %.6g Msps", m.name, minimum / 1e6, rate / 1e6);
+        return b;
+    }
+    return {};
+}
 }
 
 void TxSession::note(const std::string& s) {
@@ -864,10 +883,19 @@ bool TxSession::start(std::unique_ptr<TxSink> sink, const TxRequest& r, const Tx
         std::lock_guard<std::mutex> lk(rtMu_);
         rtPending_ = false; rtDone_ = false;
     }
+    const std::string rateProblem = manualRateProblem(*mode, r, lim);
+    if (!rateProblem.empty()) { err = rateProblem; note("could not start: " + err); sink_.reset(); return false; }
     TxTune t = r.tune;
     t.sampleRate = txRequestRate(*mode, r, lim);
     if (!sink_->open(t, err)) { note("could not start: " + err); sink_.reset(); return false; }
     rate_ = sink_->sampleRate() > 0 ? sink_->sampleRate() : t.sampleRate;
+    // Allow small hardware rounding, but never silently replace a manual Fs with
+    // a different clock (for example the faster rate of an already-running RX).
+    if (r.tune.sampleRate != 0 && std::fabs(rate_ - t.sampleRate) > std::max(1.0, t.sampleRate * 1e-4)) {
+        char b[256];
+        snprintf(b, sizeof b, "the radio runs at %.6g Msps, not the requested TX rate %.6g Msps; select a supported rate (if RX shares this radio, use its rate)", rate_ / 1e6, t.sampleRate / 1e6);
+        err = b; note("could not start: " + err); sink_->close(); sink_.reset(); return false;
+    }
     if (txModeNeedsAudio(*mode, req_) && !req_.carrierTune) {
         audio_ = std::make_unique<AudioIn>();
         AudioIn::Kind k = AudioIn::Tone;

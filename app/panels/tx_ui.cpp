@@ -167,6 +167,7 @@ TxRequest makeReq(const TxUi& s, const TxModeSpec& mode, bool carrier) {
     r.onceSeconds = s.onceSeconds;
     r.tune.centerHz = s.freqMhz * 1e6;
     r.tune.offsetHz = s.offsetMhz * 1e6;
+    r.tune.sampleRate = s.autoSampleRate ? 0 : s.sampleRateMsps * 1e6;
     r.tune.gainDb = s.gainDb;
     r.tune.ampOn = s.ampOn;
     r.tune.channel = s.txCh < 0 ? 0 : s.txCh;
@@ -228,6 +229,10 @@ bool canStart(App&, TxUi& s, const DeviceInfo* radio, int conflict, const TxMode
 bool startTx(App& a, TxUi& s, const DeviceInfo* radio, const TxModeSpec* mode, bool carrier) {
     s.error.clear();
     s.info.clear();
+    if (!s.autoSampleRate && (!std::isfinite(s.sampleRateMsps) || s.sampleRateMsps <= 0)) {
+        s.error = tr("Manual TX sample rate must be greater than zero.");
+        return false;
+    }
     if (!s.dryRun && !plat::basePrefs().getB("txNoticeAccepted", false)) { s.askNotice = true; return false; }
     std::string err;
     TxRequest req = makeReq(s, *mode, carrier);

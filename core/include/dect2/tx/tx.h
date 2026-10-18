@@ -117,7 +117,7 @@ struct TxRequest {
     std::string modeId;
     SynthConfig synth;
     double bandwidthMhz = 8;       // DVB-T2 / DVB-T channel width
-    TxTune tune;                   // frequency, gain, ... (sampleRate is chosen by the session)
+    TxTune tune;                   // frequency, gain, ...; sampleRate: 0 = automatic, positive = operator-requested TX Fs
     bool loop = true;              // true: until stopped; false: one pass of onceSeconds, then it stops by itself
     double onceSeconds = 10;
     std::string callsign;          // FT8, APRS, D-STAR, M17, …
@@ -179,7 +179,8 @@ struct TxRateLimits { double minHz = 0, maxHz = 0; };
 // at that rate or the options are invalid. The synthetic-signal impairments of r.synth are turned off. Empty payload fields fall back to the mode's demo signal.
 std::unique_ptr<TxGenerator> makeTxGenerator(const TxModeSpec& mode, const TxRequest& r, double rateHz, std::string& err);
 
-// The sample rate to ask the radio for: the mode's own, kept within the radio's limits
+// The sample rate to ask the radio for: explicit tune.sampleRate, or the mode's own kept within the radio's limits.
+// Explicit requests are not clamped; TxSession rejects invalid or unsupported rates before opening the sink.
 double txRequestRate(const TxModeSpec& mode, const TxRequest& r, const TxRateLimits& lim);
 
 // The transmitter's radio. It is independent of the receivers: a radio a receiver (Engine) has open is refused here, in plain words, unless it is
