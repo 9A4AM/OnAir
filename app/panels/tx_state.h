@@ -1,17 +1,28 @@
-// Shared state and entry points of the transmit panel (the guided panel): one TxUi, the request builder, the start / stop calls and the step drawers.
-// Files: tx_ui.cpp (state, start / stop, the RX / TX switch), tx_payload_ui.cpp (the signal's own options), tx_panel.cpp (header, layout, shortcuts),
-// tx_step_signal.cpp (step 1), tx_step_settings.cpp (step 2), tx_step_send.cpp + tx_preview.cpp (step 3).
+// Shared state and entry points of the transmit panel: one TxUi, the request builder, the start / stop calls and the block drawers.
+// Files: tx_ui.cpp (state, start / stop, the RX / TX switch), tx_payload_ui.cpp (the signal's own options), tx_panel.cpp (top bar, layout, shortcuts),
+// tx_step_signal.cpp (the signal list), tx_step_settings.cpp (Basic), tx_params.cpp (the table of advanced parameters, presets), tx_step_send.cpp + tx_preview.cpp (preview).
 #pragma once
 #include "../app.h"
 #include "dect2/tx/tx.h"
 #include <atomic>
 #include <future>
+#include <map>
 #include <string>
 #include <vector>
 
 namespace txui {
 
 using namespace dect2;
+
+// One advanced parameter (tx_params.cpp has the table): where it sits in the panel, what it is called, its range and default, and where its value goes
+enum class Sec { Modulation, Audio, Filters, Output, Timing };
+enum class PType { Float, Int, Bool, Choice };
+enum class Bind { Opt, ToneHz, Deviation, Preemph, Kind, Variant };   // Opt: TxRequest::opt[key]; the others are the request's own fields
+struct PDef {
+    const char* key = ""; Sec sec = Sec::Modulation; PType type = PType::Float; const char* label = ""; const char* tip = "";
+    double def = 0, lo = 0, hi = 1; const char* fmt = "%.2f"; const char* when = nullptr; Bind bind = Bind::Opt;
+    std::vector<const char*> choices; double base = 0;   // Choice: the value sent is base + the chosen index
+};
 
 struct TxUi {
     TxSession session;
@@ -64,6 +75,15 @@ struct TxUi {
     std::vector<Recent> recent;              // the last signals sent (newest first), saved in the settings
     bool devAutoStart = false;               // dev flag --txdry: start the test (no RF) at the first frame
     float meterPeak = 0, meterRms = 0;       // smoothed meters of what is shown
+    // the advanced parameters of the chosen signal
+    std::vector<PDef> params;                // its table
+    std::string paramsKey, pvMode;           // what the table was built for; the signal the values belong to
+    std::map<std::string, double> pv;        // the values by key
+    char presetName[32] = {}, presetNew[32] = {};
+    bool advOpen = false;                    // the Advanced block is open
+    bool linkRx = false;                     // the transmit frequency follows the receiver's
+    bool pttHold = false;                    // voice: transmit only while the PTT button is held
+    bool pttDown = false;
 };
 
 TxUi& ui();                                            // the one transmit state
@@ -81,6 +101,11 @@ void saveStr(const char* key, const char* v);        // one text into the settin
 void saveRecent(const TxUi& s);                        // writes the recent list
 void pushRecent(TxUi& s, const std::string& id, double mhz, float gain);
 TxRequest makeReq(const TxUi& s, const TxModeSpec& mode, bool carrier);
+// the advanced parameters (tx_params.cpp)
+const std::vector<PDef>& paramsFor(TxUi& s, const TxModeSpec& m);
+void paramsEnter(TxUi& s, const TxModeSpec& m);        // the mode was chosen: defaults, then the values it had last time
+void paramsApply(const TxUi& s, TxRequest& r);         // the values into the request
+void advancedPanel(TxUi& s, const TxModeSpec& mode, bool running);
 bool isVoiceId(const std::string& id);
 bool isFtxId(const std::string& id);
 bool isKbdId(const std::string& id);
@@ -92,14 +117,13 @@ bool startTx(App& a, TxUi& s, const DeviceInfo* radio, const TxModeSpec* mode, b
 void stopTx(App& a, TxUi& s, const char* why);         // stops, gives the radio back, logs why
 void txNoticePopup(TxUi& s);                           // the one-time notice before the first transmission
 
-// the guided panel (tx_panel.cpp) and its three steps
+// the panel (tx_panel.cpp): the top bar is txTopBar (app.h); the body has the signal list, the Basic block with Advanced folded, and the preview
 enum class Note { Info, Warn, Error };
 void banner(Note kind, const char* text);              // an inline message box (no popup)
-void sectionTitle(int number, const char* title, const char* summary);   // "1  Signal" with the chosen value on the right
-void stepSignal(App& a, TxUi& s, bool running);        // tx_step_signal.cpp
-void stepSettings(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxModeSpec* mode, bool running);   // tx_step_settings.cpp
-void stepSend(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxModeSpec* mode, bool running);       // tx_step_send.cpp
-void drawStatusHeader(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxModeSpec* mode);              // tx_panel.cpp
+void stepSignal(App& a, TxUi& s, bool running, float listH);                                                         // tx_step_signal.cpp: the signal list
+void stepSettings(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxModeSpec* mode, bool running);   // tx_step_settings.cpp: Basic + Advanced
+void stepSend(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxModeSpec* mode, bool running);       // tx_step_send.cpp + tx_preview.cpp: the preview
+void drawStatusHeader(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxModeSpec* mode);              // tx_panel.cpp: state word and the big button
 
 // the preview of what will be sent (tx_preview.cpp): IQ of the planned signal made on a worker thread, or the running session's tap
 struct PreviewData { std::vector<cf32> iq; double rateHz = 0; std::string error; bool ready = false, busy = false; };

@@ -716,6 +716,8 @@ void memoryWindow(App& a);                         // memory_ui.cpp: the Memory 
 void freqdbWindow(App& a);                          // freqdb_ui.cpp: the Frequencies window (a.freqOpen), the Ctrl+Shift+F key, every frame
 void freqdbTabItem(App& a);                         // freqdb_ui.cpp: the "Frequencies" tab when it is switched on (inside the main tab bar)
 void freqdbTabToggle(App& a);
+struct ModeDef;
+bool freqdbPickMhz(const ModeDef& m, float width, double& mhz);   // freqdb_ui.cpp: the transmitter's band presets of one mode-list row; true when one is picked
 void freqdbKnownCombo(App& a, float width);         // freqdb_ui.cpp: the Tuner panel's "Known frequencies" drop-down for the mode on screen
 void memoryTabItem(App& a);                        // memory_ui.cpp: the "Memory" tab when View > Memory as a tab is on (inside the main tab bar)
 int memorySelfTest(App& a);                        // memory_selftest.cpp: --memory-selftest, the recall checked on a hidden run (exit code = failures)
@@ -858,6 +860,7 @@ struct ModeDef;
 bool& txViewFlag();                // the RX / TX switch: true = TX view (never saved: the program opens in RX view)
 void txViewSwitch(App& a);         // the slider at the top left of both interfaces
 void txDevOpen(App& a, const char* modeId, bool dryRun);   // dev flags --tx / --txdry <mode id>: open the TX view on a signal, optionally with the test (no RF) running
+void txTopBar(App& a, ImVec2 disp);   // tx_panel.cpp: the top bar of the TX view (run button, frequency digits, link to RX, presets, output meter, level)
 void txPanel(App& a);              // the guided transmit panel (tx_panel.cpp): status header, 1 Signal, 2 Settings, 3 Preview and send; fills the main area in TX view
 void txSelectMode(App& a, int family, const char* subId);
 bool txModeHighlighted(const ModeDef& m);

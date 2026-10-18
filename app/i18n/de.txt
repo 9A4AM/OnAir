@@ -33,7 +33,6 @@ Default input	Default input
 Destination	Destination
 Destination / ID	Destination / ID
 Destination ID	Destination ID
-Deviation (Hz)	Deviation (Hz)
 Device ID	Device ID
 Dial frequency the decoder should assume (the sound card is not tuned)	Wählfrequenz, die der Decoder annehmen soll (die Soundkarte wird nicht abgestimmt)
 DVB standard	DVB standard
@@ -1187,24 +1186,17 @@ signal time	Signalzeit
 Apply frequency and level now	Frequenz und Pegel jetzt übernehmen
 Bring it back here	Hierher zurückholen
 Carrier tune (hold)	Trägerabstimmung (halten)
-Choose a radio in step 2, or switch on the test (no RF).	Wähle in Schritt 2 ein Funkgerät oder schalte den Test (kein HF) ein.
-Choose a signal in step 1	Wähle in Schritt 1 ein Signal
-Choose a signal in step 1.	Wähle in Schritt 1 ein Signal.
 Clipping	Übersteuerung
 Idle	Bereit
 No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list. The test below needs no radio.	Es wurde kein sendefähiges Funkgerät gefunden. Schließe eines an (HackRF, PlutoSDR oder ein SoapySDR-Gerät mit Sender) und aktualisiere die Liste. Der Test unten braucht kein Funkgerät.
 Nothing matches this search.	Nichts passt zur Suche.
 Occupied bandwidth	Belegte Bandbreite
-Offset (MHz)	Versatz (MHz)
-Offset, repeat and timing	Versatz, Wiederholung und Dauer
 Output level (dB)	Ausgangspegel (dB)
 Peak	Spitze
 Pop out into a window of its own	In ein eigenes Fenster auslagern
 Preparing	Vorbereitung
-Preview and send	Vorschau und Senden
 RMS	Effektivwert
 Recent	Zuletzt
-Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels below show what would go out.	Lässt den Signalgenerator mit der Abtastrate des Funkgeräts ins Leere laufen: Kein Funkgerät wird geöffnet, nichts wird gesendet. Spektrum und Pegel unten zeigen, was gesendet würde.
 STOP	STOPP
 STOP ALL	ALLES STOPPEN
 Sample rate	Abtastrate
@@ -1230,11 +1222,8 @@ at full scale: the limiter will round the peaks	Vollaussteuerung: Der Begrenzer 
 making the preview...	Vorschau wird erstellt...
 none chosen	keins gewählt
 none: the signal fits	keine: das Signal passt
-on the air	auf Sendung
 radio range %s	Funkgerät-Bereich %s
 test (no RF)	Test (kein HF)
-test running	Test läuft
-test, no RF	Test, kein HF
 the limiter is working: %.2f%% of samples (lower the level)	Der Begrenzer arbeitet: %.2f%% der Samples (Pegel senken)
 25 kHz	25 kHz
 12.5 kHz	12.5 kHz
@@ -2782,3 +2771,125 @@ strong neighbour: front gain limited	starker Nachbar: Eingangsverstärkung begre
 decoder locked: gain frozen	Decoder eingerastet: Verstärkung eingefroren
 at the end of the gain range	am Ende des Verstärkungsbereichs
 holding the level	Pegel wird gehalten
+# transmit panel: top bar, Basic / Advanced, per-signal parameters
+0 is the normal suppressed carrier. A little carrier helps a receiver lock on; the top of the range is as strong as the loudest audio.	0 ist der normale unterdrückte Träger. Ein wenig Träger hilft dem Empfänger beim Einrasten; das obere Ende des Bereichs ist so stark wie das lauteste Audio.
+A second tone added to the first (0 = off). Two tones make a two-tone linearity test.	Ein zweiter Ton, der zum ersten addiert wird (0 = aus). Zwei Töne ergeben einen Zweiton-Linearitätstest.
+A sub-audible tone that opens a receiver's squelch (0 = off). 67 to 254.1 Hz.	Ein unhörbarer Ton, der die Rauschsperre eines Empfängers öffnet (0 = aus). 67 bis 254,1 Hz.
+AM (carrier and sidebands)	AM (Träger und Seitenbänder)
+AM sends the carrier and both sidebands. Double sideband with suppressed carrier sends only the sidebands.	AM sendet den Träger und beide Seitenbänder. Doppelseitenband mit unterdrücktem Träger sendet nur die Seitenbänder.
+Audio above this level is turned down.	Audio oberhalb dieses Pegels wird abgesenkt.
+Audio frequency	Audiofrequenz
+Boosts the high notes before sending (0 = off).	Hebt vor dem Senden die hohen Töne an (0 = aus).
+Boosts the high notes before sending. 50 µs in Europe and most of the world, 75 µs in the Americas.	Hebt vor dem Senden die hohen Töne an. 50 µs in Europa und dem Großteil der Welt, 75 µs in Amerika.
+CTCSS level	CTCSS-Pegel
+CTCSS tone	CTCSS-Ton
+Carrier injection	Trägerzumischung
+Carrier level	Trägerpegel
+Choose a radio below, or switch on the test (no RF).	Wähle unten ein Funkgerät oder schalte den Test ein (ohne HF).
+Choose a signal in the list.	Wähle in der Liste ein Signal.
+Cuts the audio above this pitch, which sets how wide the signal is (0 = off).	Schneidet das Audio oberhalb dieser Tonhöhe ab und bestimmt damit die Signalbreite (0 = aus).
+DSB (suppressed carrier)	DSB (unterdrückter Träger)
+Default: %s	Standard: %s
+Deviation	Hub
+Esc = stop	Esc = Stopp
+Evens out loud and quiet speech so the signal stays strong without over-modulating.	Gleicht laute und leise Sprache aus, damit das Signal stark bleibt, ohne zu übersteuern.
+Every setting of this signal: modulation, audio, filters, output and timing. The defaults are sensible; open this only to change them.	Alle Einstellungen dieses Signals: Modulation, Audio, Filter, Ausgang und Zeitverhalten. Die Voreinstellungen sind sinnvoll; öffne dies nur, um sie zu ändern.
+Filters	Filter
+Follow the receiver	Dem Empfänger folgen
+Frequency offset	Frequenzversatz
+Gain added after the compressor.	Verstärkung, die nach dem Kompressor hinzukommt.
+Gain applied to the whole signal just before the radio. Lower it when the meter shows clipping; the radio's own gain is set above.	Verstärkung des gesamten Signals direkt vor dem Funkgerät. Senke sie, wenn die Anzeige Übersteuerung zeigt; die eigene Verstärkung des Funkgeräts wird oben eingestellt.
+HOLD TO TRANSMIT	ZUM SENDEN GEDRÜCKT HALTEN
+High-pass (low cut)	Hochpass (Tiefenschnitt)
+How far the RDS subcarrier deviates the carrier.	Wie weit der RDS-Hilfsträger den Träger auslenkt.
+How far the audio swings the frequency. 2.5 kHz is a 12.5 kHz channel, 5 kHz a 25 kHz channel.	Wie weit das Audio die Frequenz auslenkt. 2,5 kHz gehören zu einem 12,5-kHz-Kanal, 5 kHz zu einem 25-kHz-Kanal.
+How far the audio swings the frequency. Broadcast FM uses 75 kHz.	Wie weit das Audio die Frequenz auslenkt. UKW-Rundfunk verwendet 75 kHz.
+How far the audio swings the signal. Full modulation is at 100 percent; more than that over-modulates and distorts.	Wie weit das Audio das Signal aussteuert. Volle Modulation liegt bei 100 Prozent; mehr übersteuert und verzerrt.
+How fast the compressor lets go after a loud passage.	Wie schnell der Kompressor nach einer lauten Passage wieder loslässt.
+How long the VOX stays open after the sound stops.	Wie lange das VOX nach dem Ende des Tons geöffnet bleibt.
+How loud the audio must be to open the VOX.	Wie laut das Audio sein muss, damit das VOX öffnet.
+How loud the test tone is, as a share of full audio.	Wie laut der Testton ist, als Anteil des vollen Audiopegels.
+How strongly audio above the threshold is turned down; 20 is close to a hard limiter.	Wie stark Audio oberhalb der Schwelle abgesenkt wird; 20 entspricht fast einem harten Begrenzer.
+Key-up fade-in	Einblenden beim Tastendruck
+Left level	Pegel links
+Left test tone	Testton links
+Low-pass (audio bandwidth)	Tiefpass (Audiobandbreite)
+Lower sideband (LSB)	Unteres Seitenband (LSB)
+Make-up gain	Ausgleichsverstärkung
+Mirror the spectrum	Spektrum spiegeln
+Modulation depth	Modulationsgrad
+Music (not speech)	Musik (keine Sprache)
+Name for a new preset	Name für eine neue Voreinstellung
+No presets saved for this signal yet.	Für dieses Signal sind noch keine Voreinstellungen gespeichert.
+Output	Ausgang
+Output level	Ausgangspegel
+Output trim	Ausgangsabgleich
+Peak level	Spitzenpegel
+Pilot level	Pilotpegel
+Pitch	Tonhöhe
+Presets	Voreinstellungen
+Preview	Vorschau
+Programme type	Programmtyp
+Push to talk (hold the button)	Sprechtaste (Taste gedrückt halten)
+Puts every setting below back to its default.	Setzt jede Einstellung unten auf ihren Standardwert zurück.
+RDS	RDS
+RDS level	RDS-Pegel
+RF level	HF-Pegel
+RX %.6f MHz	RX %.6f MHz
+Ratio	Verhältnis
+Release	Rücklaufzeit
+Removes rumble and hum below this pitch (0 = off).	Entfernt Dröhnen und Brummen unterhalb dieser Tonhöhe (0 = aus).
+Reset to default	Auf Standard zurücksetzen
+Right level	Pegel rechts
+Right test tone	Testton rechts
+Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels show what would go out.	Lässt den Signalgenerator mit der Abtastrate des Funkgeräts ins Leere laufen: Es wird kein Funkgerät geöffnet und nichts gesendet. Spektrum und Pegel zeigen, was gesendet würde.
+Save preset	Voreinstellung speichern
+Saves the settings below, the frequency and the level under this name.	Speichert die Einstellungen unten, die Frequenz und den Pegel unter diesem Namen.
+Second test tone	Zweiter Testton
+Sends the 19 kHz pilot and the stereo difference signal.	Sendet den 19-kHz-Pilotton und das Stereo-Differenzsignal.
+Sends the station name, radio text and programme type on a 57 kHz subcarrier.	Sendet Sendername, Radiotext und Programmtyp auf einem 57-kHz-Hilfsträger.
+Speech compressor	Sprachkompressor
+Start transmitting	Senden starten
+Stereo	Stereo
+Stop transmitting	Senden beenden
+Swaps I and Q so the signal is turned over: an upper sideband becomes a lower one. For a radio or mixer that inverts.	Vertauscht I und Q, sodass das Signal gedreht wird: Aus einem oberen wird ein unteres Seitenband. Für ein Funkgerät oder einen Mischer, der invertiert.
+TRANSMITTING (release to stop)	SENDET (zum Beenden loslassen)
+TX = RX	TX = RX
+TX independent	TX unabhängig
+Test tone	Testton
+Test tone level	Testtonpegel
+The 19 kHz stereo pilot, as a share of the full deviation.	Der 19-kHz-Stereopilot als Anteil des vollen Hubs.
+The RDS flag for a station that carries traffic announcements.	Das RDS-Kennzeichen für einen Sender mit Verkehrsdurchsagen.
+The RDS flag for music instead of speech.	Das RDS-Kennzeichen für Musik statt Sprache.
+The RDS flag that a traffic announcement is on the air.	Das RDS-Kennzeichen, dass gerade eine Verkehrsdurchsage läuft.
+The RDS programme type code (0 to 31; 10 is pop music).	Der RDS-Programmtypcode (0 bis 31; 10 ist Popmusik).
+The largest signal as a share of full scale.	Das größte Signal als Anteil des Vollausschlags.
+The left test tone, as a share of full audio.	Der linke Testton als Anteil des vollen Audiopegels.
+The pitch of the Morse tone, as an offset above the dial frequency.	Die Tonhöhe des Morsetons als Versatz über der Dialfrequenz.
+The pitch of the test tone, used when the audio input is the test tone.	Die Tonhöhe des Testtons, verwendet, wenn der Audioeingang der Testton ist.
+The pitch on the left channel, used when the audio input is the test tone.	Die Tonhöhe auf dem linken Kanal, verwendet, wenn der Audioeingang der Testton ist.
+The pitch on the right channel (0 = three times the left).	Die Tonhöhe auf dem rechten Kanal (0 = dreimal so hoch wie links).
+The radio's output level. Start low.	Der Ausgangspegel des Funkgeräts. Beginne niedrig.
+The right test tone, as a share of full audio.	Der rechte Testton als Anteil des vollen Audiopegels.
+The signal fades in over this time after Start, so the key-up does not click.	Das Signal wird nach dem Start über diese Zeit eingeblendet, damit das Einschalten nicht knackt.
+The signal goes out only while there is sound on the audio input.	Das Signal wird nur gesendet, solange am Audioeingang Ton anliegt.
+The signal goes out only while you hold the button down.	Das Signal wird nur gesendet, solange du die Taste gedrückt hältst.
+The size of the carrier as a share of full scale. At a depth of 85 percent the peaks reach about full scale.	Die Größe des Trägers als Anteil des Vollausschlags. Bei einem Modulationsgrad von 85 Prozent erreichen die Spitzen etwa den Vollausschlag.
+The size of the signal as a share of full scale.	Die Größe des Signals als Anteil des Vollausschlags.
+The tone's share of the deviation.	Der Anteil des Tons am Hub.
+The transmit frequency follows the receiver's. Typing a different one here unlinks them. Click to unlink.	Die Sendefrequenz folgt der des Empfängers. Gibst du hier eine andere ein, werden beide getrennt. Klicken zum Trennen.
+The transmit frequency is its own. The receiver is on %.6f MHz. Click to make the transmitter follow it.	Die Sendefrequenz ist eigenständig. Der Empfänger steht auf %.6f MHz. Klicken, damit der Sender ihr folgt.
+Threshold	Schwelle
+Timing	Zeitverhalten
+Traffic announcement now	Verkehrsdurchsage jetzt
+Traffic programme	Verkehrsfunk
+Upper sideband (USB)	Oberes Seitenband (USB)
+VOX (transmit on voice)	VOX (Senden bei Sprache)
+VOX hang time	VOX-Nachlaufzeit
+VOX threshold	VOX-Schwelle
+Well-known frequencies of this signal: pick one to set the transmit frequency	Bekannte Frequenzen dieses Signals: Wähle eine, um die Sendefrequenz zu setzen
+Where the middle of the signal sits in the audio passband, as an offset above the dial frequency.	Wo die Mitte des Signals im Audiobereich liegt, als Versatz über der Dialfrequenz.
+Where the signal sits in the audio passband, as an offset above the dial frequency.	Wo das Signal im Audiobereich liegt, als Versatz über der Dialfrequenz.
+Which sideband is sent.	Welches Seitenband gesendet wird.
+follows the receiver	folgt dem Empfänger
+on	an

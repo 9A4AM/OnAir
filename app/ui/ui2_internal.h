@@ -38,7 +38,8 @@ void beginPane(const char* id, ImVec2 size, bool autoH = false);
 void endPane();
 extern bool gFreqHovered;
 float freqDigits(App& a, float fontSize = 30.f);
-bool runButton(bool running, float size);
+float freqDigitsFor(App& a, double& mhz, const std::function<void(double)>& tune, float fontSize = 30.f);   // the readout for another frequency (TX)
+bool runButton(bool running, float size, const char* tip = nullptr);
 bool section(const char* title, bool openByDefault = true);
 void levelMeter(App& a, float x, float y, float w);
 void volumeControl(App& a, float w);

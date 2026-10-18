@@ -1,4 +1,4 @@
-// Step 1 of the transmit panel: choose the signal. A searchable list of every signal OnAir can send, grouped like the receiver's mode list (same headings,
+// The signal list of the transmit panel: choose the signal. A searchable list of every signal OnAir can send, grouped like the receiver's mode list (same headings,
 // colours and one-line descriptions), a small icon per group, the chosen one highlighted; and the last signals sent as one-click buttons.
 #include "tx_state.h"
 #include "../ui/icons.h"
@@ -62,10 +62,9 @@ bool signalRow(const ModeDef& m, const TxModeSpec& t, bool sel, ImU32 gcol) {
 
 namespace txui {
 
-// Step 1: Signal
-void stepSignal(App& a, TxUi& s, bool running) {
+// The signal list; `listH` is the height of the list itself (0: what is left)
+void stepSignal(App& a, TxUi& s, bool running, float listH) {
     const TxModeSpec* cur = txModeById(s.modeId);
-    sectionTitle(1, tr("Signal"), cur ? cur->name : tr("none chosen"));
     ImGui::BeginDisabled(running);
 
     if (!s.recent.empty()) {   // the last signals: one click brings back the signal, frequency and level
@@ -96,8 +95,8 @@ void stepSignal(App& a, TxUi& s, bool running) {
 
     ImGui::SetNextItemWidth(-1);
     ImGui::InputTextWithHint("##txsearch", tr("Search signals..."), s.search, sizeof s.search);
-    const float listH = std::max(140.f * gUi, std::min(300.f * gUi, ImGui::GetContentRegionAvail().y * 0.5f));
-    if (ImGui::BeginChild("##txsignals", ImVec2(0, listH), ImGuiChildFlags_Borders)) {
+    if (listH <= 0) listH = std::max(120.f * gUi, ImGui::GetContentRegionAvail().y - 4 * gUi);
+    if (ImGui::BeginChild("##txsignals", ImVec2(0, listH), ImGuiChildFlags_None)) {
         int shown = 0;
         const char* seen[200];
         int nseen = 0;

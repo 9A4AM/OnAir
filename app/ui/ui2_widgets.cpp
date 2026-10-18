@@ -1,6 +1,7 @@
 // The new interface: small widgets used by every layout (bordered panes, flat buttons and links, the big frequency
 // digits, the run button, section headings, meters, splitters, tiles and the faceplate modules).
 // Split from ui2.cpp; the shared declarations are in ui2_internal.h.
+#include <functional>
 #include "ui2_internal.h"
 
 using namespace ui2;
@@ -85,15 +86,12 @@ bool textLink(const char* label) {
 // and a double click opens a box to type the whole frequency.
 bool gFreqHovered = false;   // last frame: the mouse was over the digits (the 1-9 mode keys stay off then)
 
-float freqDigits(App& a, float fontSize) {
+float freqDigitsImpl(App& a, double& mhzRef, double lo, double hi, const std::function<void(double)>& tune, float fontSize) {
     static int kbIdx = -1;               // the digit the keyboard works on after typing or left/right (-1: the one under the mouse)
     static ImVec2 kbMouse;               // where the mouse was then: moving it gives the digit back to the mouse
     static double preClickMhz = 0;       // the frequency before the first click of a double click, which the double click undoes
     static char typed[32] = "";
-    const bool fm = a.fmMode, dab = a.dabMode;
-    const ModeTuning* mt = a.family >= 6 ? modeTuning(a.family + 2) : nullptr;
-    const double lo = mt ? mt->minMhz : 0.001, hi = dect2::kMaxTuneMhz;
-    long long hz = (long long)std::llround(a.freqMhz * 1e6);
+    long long hz = (long long)std::llround(mhzRef * 1e6);
     constexpr int kD = 13;   // thirteen digits: up to 1000 GHz (10^12 Hz)
     char buf[24];
     snprintf(buf, sizeof buf, "%013lld", hz);
@@ -119,7 +117,7 @@ float freqDigits(App& a, float fontSize) {
         const bool upper = ImGui::GetIO().MousePos.y < p0.y + ch * 0.5f;
         if (hov) hovIdx = i;
         if (hov && ImGui::IsMouseDoubleClicked(0)) dbl = true;
-        else if (ImGui::IsItemClicked(0)) { preClickMhz = a.freqMhz; delta = upper ? place : -place; }
+        else if (ImGui::IsItemClicked(0)) { preClickMhz = mhzRef; delta = upper ? place : -place; }
         if (hov && ImGui::GetIO().MouseWheel != 0) {
             // a mouse wheel notch is 1.0 (one step of this digit); a trackpad sends many small values, which add up to a step each time they reach 1
             static float wheelAcc = 0;
@@ -167,8 +165,8 @@ float freqDigits(App& a, float fontSize) {
         }
     }
     if (dbl) {
-        if (std::fabs(preClickMhz - a.freqMhz) > 1e-9 && preClickMhz > 0) tuneFreq(a, preClickMhz);   // undo the first click's step
-        snprintf(typed, sizeof typed, "%.6f", preClickMhz > 0 ? preClickMhz : a.freqMhz);
+        if (std::fabs(preClickMhz - mhzRef) > 1e-9 && preClickMhz > 0) tune(preClickMhz);   // undo the first click's step
+        snprintf(typed, sizeof typed, "%.6f", preClickMhz > 0 ? preClickMhz : mhzRef);
         ImGui::OpenPopup("##freqtype");
     }
     if (ImGui::BeginPopup("##freqtype")) {
@@ -180,7 +178,7 @@ float freqDigits(App& a, float fontSize) {
         if (enter || ImGui::Button(tr("Tune"))) {
             char* e = nullptr;
             const double v = strtod(typed, &e);
-            if (e != typed && v > 0) tuneFreq(a, std::min(hi, std::max(lo, v)));
+            if (e != typed && v > 0) tune(std::min(hi, std::max(lo, v)));
             ImGui::CloseCurrentPopup();
         }
         if (ImGui::IsKeyPressed(ImGuiKey_Escape)) ImGui::CloseCurrentPopup();
@@ -188,13 +186,23 @@ float freqDigits(App& a, float fontSize) {
     }
     if (delta) {
         const double mhz = std::min(hi, std::max(lo, (double)(hz + delta) / 1e6));
-        if (std::fabs(mhz - a.freqMhz) > 1e-9) tuneFreq(a, mhz);
+        if (std::fabs(mhz - mhzRef) > 1e-9) tune(mhz);
     }
     return endX;
 }
 
+float freqDigits(App& a, float fontSize) {
+    const ModeTuning* mt = a.family >= 6 ? modeTuning(a.family + 2) : nullptr;
+    return freqDigitsImpl(a, a.freqMhz, mt ? mt->minMhz : 0.001, dect2::kMaxTuneMhz, [&a](double v) { tuneFreq(a, v); }, fontSize);
+}
+
+// the same readout for any frequency (the transmitter's): `tune` gets every change
+float freqDigitsFor(App& a, double& mhz, const std::function<void(double)>& tune, float fontSize) {
+    return freqDigitsImpl(a, mhz, 0.001, dect2::kMaxTuneMhz, tune, fontSize);
+}
+
 // a start / stop button drawn as a play triangle or a stop square
-bool runButton(bool running, float size) {
+bool runButton(bool running, float size, const char* tip) {
     const bool clicked = ImGui::InvisibleButton("##run", ImVec2(size, size));
     const bool hov = ImGui::IsItemHovered();
     const ImVec2 p0 = ImGui::GetItemRectMin(), p1 = ImGui::GetItemRectMax();
@@ -204,7 +212,7 @@ bool runButton(bool running, float size) {
     const float m = size * 0.28f;
     if (running) dl->AddRectFilled(ImVec2(p0.x + m, p0.y + m), ImVec2(p1.x - m, p1.y - m), u32(pal::badRed()));
     else dl->AddTriangleFilled(ImVec2(p0.x + m + 2 * gUi, p0.y + m), ImVec2(p0.x + m + 2 * gUi, p1.y - m), ImVec2(p1.x - m + 1 * gUi, (p0.y + p1.y) * 0.5f), u32(pal::okGreen()));
-    if (hov) ImGui::SetTooltip(tr("%s (space)"), tr(running ? "Stop the receiver" : "Start the receiver"));
+    if (hov) ImGui::SetTooltip(tr("%s (space)"), tip ? tip : tr(running ? "Stop the receiver" : "Start the receiver"));
     return clicked;
 }
 

@@ -33,7 +33,6 @@ Default input	Default input
 Destination	Destination
 Destination / ID	Destination / ID
 Destination ID	Destination ID
-Deviation (Hz)	Deviation (Hz)
 Device ID	Device ID
 Dial frequency the decoder should assume (the sound card is not tuned)	解码器应假定的刻度频率（声卡不会调谐）
 DVB standard	DVB standard
@@ -1187,24 +1186,17 @@ signal time	信号时间
 Apply frequency and level now	立即应用频率和电平
 Bring it back here	放回此处
 Carrier tune (hold)	载波调谐(按住)
-Choose a radio in step 2, or switch on the test (no RF).	请在第2步选择电台,或开启测试(无射频)。
-Choose a signal in step 1	请在第1步选择信号
-Choose a signal in step 1.	请在第1步选择信号。
 Clipping	削波
 Idle	空闲
 No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list. The test below needs no radio.	未找到可发射的电台。请连接一台(HackRF、PlutoSDR 或带发射机的 SoapySDR 电台)并刷新列表。下面的测试不需要电台。
 Nothing matches this search.	没有匹配的结果。
 Occupied bandwidth	占用带宽
-Offset (MHz)	偏移 (MHz)
-Offset, repeat and timing	偏移、重复和时长
 Output level (dB)	输出电平 (dB)
 Peak	峰值
 Pop out into a window of its own	弹出为独立窗口
 Preparing	准备中
-Preview and send	预览并发送
 RMS	有效值
 Recent	最近
-Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels below show what would go out.	以电台的采样率让信号发生器空转:不打开电台,也不发送任何内容。下方的频谱和电平显示将会发出的内容。
 STOP	停止
 STOP ALL	全部停止
 Sample rate	采样率
@@ -1230,11 +1222,8 @@ at full scale: the limiter will round the peaks	满量程:限幅器会圆滑峰�
 making the preview...	正在生成预览...
 none chosen	未选择
 none: the signal fits	无:信号正常
-on the air	发射中
 radio range %s	电台范围 %s
 test (no RF)	测试(无射频)
-test running	测试运行中
-test, no RF	测试,无射频
 the limiter is working: %.2f%% of samples (lower the level)	限幅器正在工作:%.2f%% 的采样(请降低电平)
 25 kHz	25 kHz
 12.5 kHz	12.5 kHz
@@ -2782,3 +2771,125 @@ strong neighbour: front gain limited	邻近强信号:限制前端增益
 decoder locked: gain frozen	解码器已锁定:增益冻结
 at the end of the gain range	已到增益范围的尽头
 holding the level	保持当前电平
+# transmit panel: top bar, Basic / Advanced, per-signal parameters
+0 is the normal suppressed carrier. A little carrier helps a receiver lock on; the top of the range is as strong as the loudest audio.	0 为通常的抑制载波。加入少量载波可帮助接收机锁定；范围上限与最响的音频一样强。
+A second tone added to the first (0 = off). Two tones make a two-tone linearity test.	叠加在第一个音调上的第二个音调（0 = 关闭）。两个音调构成双音线性度测试。
+A sub-audible tone that opens a receiver's squelch (0 = off). 67 to 254.1 Hz.	可打开接收机静噪的亚音频音（0 = 关闭）。67 至 254.1 Hz。
+AM (carrier and sidebands)	AM（载波和边带）
+AM sends the carrier and both sidebands. Double sideband with suppressed carrier sends only the sidebands.	AM 发送载波和两个边带。抑制载波的双边带只发送边带。
+Audio above this level is turned down.	高于此电平的音频会被压低。
+Audio frequency	音频频率
+Boosts the high notes before sending (0 = off).	发送前提升高音（0 = 关闭）。
+Boosts the high notes before sending. 50 µs in Europe and most of the world, 75 µs in the Americas.	发送前提升高音。欧洲和世界大部分地区为 50 µs，美洲为 75 µs。
+CTCSS level	CTCSS 电平
+CTCSS tone	CTCSS 音
+Carrier injection	载波注入
+Carrier level	载波电平
+Choose a radio below, or switch on the test (no RF).	请在下方选择一台电台，或开启测试（无射频）。
+Choose a signal in the list.	请在列表中选择一个信号。
+Cuts the audio above this pitch, which sets how wide the signal is (0 = off).	截去高于此音高的音频，由此决定信号宽度（0 = 关闭）。
+DSB (suppressed carrier)	DSB（抑制载波）
+Default: %s	默认值：%s
+Deviation	频偏
+Esc = stop	Esc = 停止
+Evens out loud and quiet speech so the signal stays strong without over-modulating.	均衡大声和小声的语音，使信号保持强劲而不过调制。
+Every setting of this signal: modulation, audio, filters, output and timing. The defaults are sensible; open this only to change them.	此信号的全部设置：调制、音频、滤波器、输出和时序。默认值已很合理；仅在需要更改时展开。
+Filters	滤波器
+Follow the receiver	跟随接收机
+Frequency offset	频率偏移
+Gain added after the compressor.	压缩器之后增加的增益。
+Gain applied to the whole signal just before the radio. Lower it when the meter shows clipping; the radio's own gain is set above.	在电台之前对整个信号施加的增益。当电平表显示削波时请调低；电台自身的增益在上方设置。
+HOLD TO TRANSMIT	按住即发送
+High-pass (low cut)	高通（低切）
+How far the RDS subcarrier deviates the carrier.	RDS 副载波使载波偏移的幅度。
+How far the audio swings the frequency. 2.5 kHz is a 12.5 kHz channel, 5 kHz a 25 kHz channel.	音频使频率摆动的幅度。2.5 kHz 对应 12.5 kHz 信道，5 kHz 对应 25 kHz 信道。
+How far the audio swings the frequency. Broadcast FM uses 75 kHz.	音频使频率摆动的幅度。广播调频使用 75 kHz。
+How far the audio swings the signal. Full modulation is at 100 percent; more than that over-modulates and distorts.	音频对信号的调制幅度。满调制为百分之一百；超过则过调制并失真。
+How fast the compressor lets go after a loud passage.	响亮段落之后压缩器恢复的速度。
+How long the VOX stays open after the sound stops.	声音停止后 VOX 保持开启的时间。
+How loud the audio must be to open the VOX.	音频需要多响才能打开 VOX。
+How loud the test tone is, as a share of full audio.	测试音的响度，占满音频的比例。
+How strongly audio above the threshold is turned down; 20 is close to a hard limiter.	高于阈值的音频被压低的程度；20 接近硬限幅器。
+Key-up fade-in	发射启动渐入
+Left level	左声道电平
+Left test tone	左声道测试音
+Low-pass (audio bandwidth)	低通（音频带宽）
+Lower sideband (LSB)	下边带（LSB）
+Make-up gain	补偿增益
+Mirror the spectrum	镜像频谱
+Modulation depth	调制深度
+Music (not speech)	音乐（非语音）
+Name for a new preset	新预设的名称
+No presets saved for this signal yet.	此信号尚无已保存的预设。
+Output	输出
+Output level	输出电平
+Output trim	输出微调
+Peak level	峰值电平
+Pilot level	导频电平
+Pitch	音高
+Presets	预设
+Preview	预览
+Programme type	节目类型
+Push to talk (hold the button)	按键通话（按住按钮）
+Puts every setting below back to its default.	将下方所有设置恢复为默认值。
+RDS	RDS
+RDS level	RDS 电平
+RF level	射频电平
+RX %.6f MHz	RX %.6f MHz
+Ratio	比率
+Release	释放时间
+Removes rumble and hum below this pitch (0 = off).	去除低于此音高的轰鸣和嗡嗡声（0 = 关闭）。
+Reset to default	恢复默认值
+Right level	右声道电平
+Right test tone	右声道测试音
+Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels show what would go out.	以电台的采样率运行信号发生器但不输出：不会打开电台，也不会发送任何内容。频谱和电平显示将要发出的内容。
+Save preset	保存预设
+Saves the settings below, the frequency and the level under this name.	以此名称保存下方的设置、频率和电平。
+Second test tone	第二测试音
+Sends the 19 kHz pilot and the stereo difference signal.	发送 19 kHz 导频和立体声差信号。
+Sends the station name, radio text and programme type on a 57 kHz subcarrier.	在 57 kHz 副载波上发送电台名称、广播文字和节目类型。
+Speech compressor	语音压缩器
+Start transmitting	开始发射
+Stereo	立体声
+Stop transmitting	停止发射
+Swaps I and Q so the signal is turned over: an upper sideband becomes a lower one. For a radio or mixer that inverts.	交换 I 和 Q，使信号翻转：上边带变为下边带。适用于会反转的电台或混频器。
+TRANSMITTING (release to stop)	发射中（松开即停止）
+TX = RX	TX = RX
+TX independent	TX 独立
+Test tone	测试音
+Test tone level	测试音电平
+The 19 kHz stereo pilot, as a share of the full deviation.	19 kHz 立体声导频，占全频偏的比例。
+The RDS flag for a station that carries traffic announcements.	表示电台播送交通信息的 RDS 标志。
+The RDS flag for music instead of speech.	表示音乐而非语音的 RDS 标志。
+The RDS flag that a traffic announcement is on the air.	表示正在播出交通信息的 RDS 标志。
+The RDS programme type code (0 to 31; 10 is pop music).	RDS 节目类型代码（0 至 31；10 为流行音乐）。
+The largest signal as a share of full scale.	最大信号占满量程的比例。
+The left test tone, as a share of full audio.	左声道测试音，占满音频的比例。
+The pitch of the Morse tone, as an offset above the dial frequency.	摩尔斯音的音高，相对拨号频率的偏移。
+The pitch of the test tone, used when the audio input is the test tone.	测试音的音高，在音频输入为测试音时使用。
+The pitch on the left channel, used when the audio input is the test tone.	左声道的音高，在音频输入为测试音时使用。
+The pitch on the right channel (0 = three times the left).	右声道的音高（0 = 左声道的三倍）。
+The radio's output level. Start low.	电台的输出电平。请从低处开始。
+The right test tone, as a share of full audio.	右声道测试音，占满音频的比例。
+The signal fades in over this time after Start, so the key-up does not click.	启动后信号在此时间内渐入，避免启动时出现爆音。
+The signal goes out only while there is sound on the audio input.	仅当音频输入有声音时才发出信号。
+The signal goes out only while you hold the button down.	仅在按住按钮期间发出信号。
+The size of the carrier as a share of full scale. At a depth of 85 percent the peaks reach about full scale.	载波大小占满量程的比例。调制深度为百分之八十五时，峰值接近满量程。
+The size of the signal as a share of full scale.	信号大小占满量程的比例。
+The tone's share of the deviation.	该音占频偏的比例。
+The transmit frequency follows the receiver's. Typing a different one here unlinks them. Click to unlink.	发射频率跟随接收机。在此输入不同的频率会解除联动。点击可解除联动。
+The transmit frequency is its own. The receiver is on %.6f MHz. Click to make the transmitter follow it.	发射频率是独立的。接收机在 %.6f MHz。点击可让发射机跟随接收机。
+Threshold	阈值
+Timing	时序
+Traffic announcement now	正在播送交通信息
+Traffic programme	交通节目
+Upper sideband (USB)	上边带（USB）
+VOX (transmit on voice)	VOX（声控发射）
+VOX hang time	VOX 保持时间
+VOX threshold	VOX 阈值
+Well-known frequencies of this signal: pick one to set the transmit frequency	此信号的常见频率：选择一个即可设为发射频率
+Where the middle of the signal sits in the audio passband, as an offset above the dial frequency.	信号中心在音频通带内的位置，相对拨号频率的偏移。
+Where the signal sits in the audio passband, as an offset above the dial frequency.	信号在音频通带内的位置，相对拨号频率的偏移。
+Which sideband is sent.	发送哪一个边带。
+follows the receiver	跟随接收机
+on	开

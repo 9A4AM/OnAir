@@ -1,7 +1,8 @@
-// The guided transmit panel: a status header (Idle / Preparing / Transmitting with a pulsing red dot and the elapsed time) and the one Start / Stop button,
-// then three steps: 1 Signal, 2 Settings, 3 Preview and send. Wide windows put steps 1-2 on the left and step 3 on the right; a narrow window (or the pop-out
+// The transmit panel, in the receiver's own style: a top bar with the run button and the big frequency digits (the same widget as the receiver's), then three
+// panes: the signal list, the Basic block (state, radio, level, what to send, with Advanced folded below it) and the preview. A narrow window (or the pop-out
 // window) stacks them in one scrolling column. Space starts / stops and Esc stops when no text box has the keyboard. Nothing starts by itself.
 #include "tx_state.h"
+#include "../ui/ui2_internal.h"
 #include "../ui/icons.h"
 #include <algorithm>
 #include <cmath>
@@ -11,41 +12,23 @@ using namespace txui;
 
 namespace txui {
 
-// An inline message box with an icon and wrapped text in the colour of its kind (never a popup)
+// An inline message: a bar in the colour of its kind on the left and wrapped text (never a popup)
 void banner(Note kind, const char* text) {
-    const ImVec4 col = kind == Note::Error ? kRed : kind == Note::Warn ? pal::warnAmber() : pal::accent();
-    const Ic ic = kind == Note::Error ? Ic::Warning : kind == Note::Warn ? Ic::Warning : Ic::Info;
-    const float pad = 6 * gUi, iw = 18 * gUi;
+    const ImVec4 col = kind == Note::Error ? kRed : kind == Note::Warn ? pal::warnAmber() : ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled);
+    const float pad = 6 * gUi, bar = 3 * gUi;
     const float w = ImGui::GetContentRegionAvail().x;
     const ImVec2 p0 = ImGui::GetCursorScreenPos();
-    const ImVec2 ts = ImGui::CalcTextSize(text, nullptr, false, std::max(40.f, w - 2 * pad - iw - 4 * gUi));
-    const float h = std::max(ts.y, iw) + 2 * pad;
+    const ImVec2 ts = ImGui::CalcTextSize(text, nullptr, false, std::max(40.f, w - 2 * pad - bar));
+    const float h = ts.y + 2 * pad;
     ImDrawList* dl = ImGui::GetWindowDrawList();
-    ImVec4 bg = col; bg.w = 0.16f;
-    dl->AddRectFilled(p0, ImVec2(p0.x + w, p0.y + h), ImGui::GetColorU32(bg), 5 * gUi);
-    dl->AddRect(p0, ImVec2(p0.x + w, p0.y + h), ImGui::GetColorU32(ImVec4(col.x, col.y, col.z, 0.7f)), 5 * gUi);
-    icons::draw(ic, ImVec2(p0.x + pad + iw * 0.5f, p0.y + pad + iw * 0.5f), iw * 0.9f, ImGui::GetColorU32(col), dl);
-    ImGui::SetCursorScreenPos(ImVec2(p0.x + pad + iw + 4 * gUi, p0.y + pad));
+    ImVec4 bg = col; bg.w = kind == Note::Info ? 0.07f : 0.14f;
+    dl->AddRectFilled(p0, ImVec2(p0.x + w, p0.y + h), ImGui::GetColorU32(bg));
+    dl->AddRectFilled(p0, ImVec2(p0.x + bar, p0.y + h), ImGui::GetColorU32(col));
+    ImGui::SetCursorScreenPos(ImVec2(p0.x + bar + pad, p0.y + pad));
     ImGui::PushTextWrapPos(p0.x + w - pad - ImGui::GetWindowPos().x + ImGui::GetScrollX());
     ImGui::TextUnformatted(text);
     ImGui::PopTextWrapPos();
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + h + 4 * gUi));
-}
-
-// "1  Signal" in the heading colour with a round number badge, and the current choice dimmed on the same line
-void sectionTitle(int number, const char* title, const char* summary) {
-    const ImVec2 p = ImGui::GetCursorScreenPos();
-    const float r = ImGui::GetFrameHeight() * 0.42f;
-    ImDrawList* dl = ImGui::GetWindowDrawList();
-    dl->AddCircleFilled(ImVec2(p.x + r, p.y + ImGui::GetFrameHeight() * 0.5f), r, ImGui::GetColorU32(pal::accent(0.9f)));
-    char n[8];
-    snprintf(n, sizeof n, "%d", number);
-    const ImVec2 ns = ImGui::CalcTextSize(n);
-    dl->AddText(ImVec2(p.x + r - ns.x * 0.5f, p.y + ImGui::GetFrameHeight() * 0.5f - ns.y * 0.5f), IM_COL32(15, 20, 25, 255), n);
-    ImGui::SetCursorScreenPos(ImVec2(p.x + 2 * r + 8 * gUi, p.y));
-    ImGui::AlignTextToFramePadding();
-    ImGui::TextColored(pal::heading(), "%s", title);
-    if (summary && *summary) { ImGui::SameLine(0, 12 * gUi); ImGui::TextDisabled("%s", summary); }
 }
 
 } // namespace txui
@@ -72,19 +55,18 @@ std::string elapsedText(double sec) {
     return b;
 }
 
-// the Start / Stop button of the header: one button, accent when it starts and red when it stops
-bool primaryButton(bool running, bool enabled, float w) {
-    const float h = ImGui::GetFrameHeight() * 1.6f;
-    const char* lab = running ? tr("STOP") : tr("START TRANSMITTING");
-    ImGui::BeginDisabled(!enabled && !running);
-    if (running) {
+// the big button: accent when it starts, red when it stops
+bool bigButton(const char* lab, bool stop, bool enabled, float w) {
+    const float h = ImGui::GetFrameHeight() * 1.7f;
+    ImGui::BeginDisabled(!enabled);
+    if (stop) {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.10f, 0.10f, 1));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.90f, 0.15f, 0.15f, 1));
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 1));
     } else {
         ImGui::PushStyleColor(ImGuiCol_Button, pal::accent(0.85f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, pal::accent(1.f));
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.05f, 0.08f, 0.1f, 1));
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.05f, 0.07f, 0.09f, 1));
     }
     const bool hit = ImGui::Button(lab, ImVec2(w, h));
     ImGui::PopStyleColor(3);
@@ -95,58 +77,71 @@ bool primaryButton(bool running, bool enabled, float w) {
 // Space / Esc: only when no text box wants the keyboard
 void shortcuts(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxModeSpec* mode) {
     ImGuiIO& io = ImGui::GetIO();
-    if (io.WantTextInput || ImGui::IsPopupOpen("##txnotice")) return;
+    if (io.WantTextInput || ImGui::IsPopupOpen("##txnotice") || ImGui::IsPopupOpen("##freqtype")) return;
     const bool running = s.session.running();
     if (ImGui::IsKeyPressed(ImGuiKey_Escape, false) && (running || s.pendingStart)) stopTx(a, s, "(Esc)");
-    else if (ImGui::IsKeyPressed(ImGuiKey_Space, false)) {
+    else if (ImGui::IsKeyPressed(ImGuiKey_Space, false) && !s.pttHold) {
         if (running) stopTx(a, s, "(Space)");
         else if (canStart(a, s, radio, conflict, mode)) s.pendingStart = true;
     }
 }
 
-// the panel body: header, messages, steps. `inWindow`: drawn in the pop-out window
-void body(App& a, bool inWindow) {
-    TxUi& s = ui();
+int gBarFrame = -1;   // the frame the TX top bar was drawn in (the new interface); other interfaces get a one-row bar
+struct Ctx { const TxModeSpec* mode; const DeviceInfo* radio; int conflict; };
+Ctx frameCtx(App& a, TxUi& s) {
     ensureTxMode(a, s);
     loadPayloadPrefs(s);
-    const bool running = s.session.running();
-    const TxModeSpec* mode = txModeById(s.modeId);
-    int conflict = 0;
-    const DeviceInfo* radio = bindRadio(a, s, conflict);
-    // Start was pressed last frame: the header showed "Preparing", now the radio is opened (it can take a moment)
-    if (s.pendingStart && !running) { s.pendingStart = false; if (mode && canStart(a, s, radio, conflict, mode)) startTx(a, s, radio, mode, false); }
-    if (s.pendingCarrier && !running) { s.pendingCarrier = false; if (mode && canStart(a, s, radio, conflict, mode)) startTx(a, s, radio, mode, true); }
-    if (s.devAutoStart && mode && !running) { s.devAutoStart = false; s.dryRun = true; s.pendingStart = true; }   // dev flag --txdry (no RF)
-    shortcuts(a, s, radio, conflict, mode);
+    Ctx c{txModeById(s.modeId), nullptr, 0};
+    c.radio = bindRadio(a, s, c.conflict);
+    if (c.mode && s.pvMode != s.modeId) paramsEnter(s, *c.mode);
+    if (s.linkRx && !s.session.running()) s.freqMhz = a.freqMhz;
+    return c;
+}
 
-    drawStatusHeader(a, s, radio, conflict, mode);
-    if (!s.error.empty()) banner(Note::Error, s.error.c_str());
-    if (!s.info.empty()) banner(Note::Info, s.info.c_str());
-    if (const std::string st = s.session.stats().error; running == false && s.session.stats().failed && !st.empty() && st != s.error) banner(Note::Error, st.c_str());
-    ImGui::TextDisabled("%s", tr("Space = start / stop     Esc = stop"));
-    ImGui::Spacing();
+// the panel body: state and big button, messages, then the panes. `inWindow`: drawn in the pop-out window
+void body(App& a, bool inWindow) {
+    TxUi& s = ui();
+    const Ctx c = frameCtx(a, s);
+    const bool running = s.session.running();
+    // Start was pressed last frame: the state showed "Preparing", now the radio is opened (it can take a moment)
+    if (s.pendingStart && !running) { s.pendingStart = false; if (c.mode && canStart(a, s, c.radio, c.conflict, c.mode)) startTx(a, s, c.radio, c.mode, false); }
+    if (s.pendingCarrier && !running) { s.pendingCarrier = false; if (c.mode && canStart(a, s, c.radio, c.conflict, c.mode)) startTx(a, s, c.radio, c.mode, true); }
+    if (s.devAutoStart && c.mode && !running) { s.devAutoStart = false; s.dryRun = true; s.pendingStart = true; }   // dev flag --txdry (no RF)
+    shortcuts(a, s, c.radio, c.conflict, c.mode);
 
     const float availW = ImGui::GetContentRegionAvail().x;
     const bool wide = availW > 900 * gUi && !inWindow;
+    const float gap = 4 * gUi;
+    auto basic = [&] {
+        drawStatusHeader(a, s, c.radio, c.conflict, c.mode);
+        if (!s.error.empty()) banner(Note::Error, s.error.c_str());
+        if (!s.info.empty()) banner(Note::Info, s.info.c_str());
+        if (const std::string st = s.session.stats().error; running == false && s.session.stats().failed && !st.empty() && st != s.error) banner(Note::Error, st.c_str());
+        stepSettings(a, s, c.radio, c.conflict, c.mode, running);
+    };
     if (wide) {
         const float h = ImGui::GetContentRegionAvail().y;
-        const float leftW = std::max(400 * gUi, availW * 0.46f);
-        ImGui::BeginChild("##txleft", ImVec2(leftW, h), false);
-        stepSignal(a, s, running);
-        ImGui::Spacing();
-        stepSettings(a, s, radio, conflict, mode, running);
-        ImGui::EndChild();
-        ImGui::SameLine();
-        ImGui::BeginChild("##txrightcol", ImVec2(0, h), false);
-        stepSend(a, s, radio, conflict, mode, running);
-        ImGui::EndChild();
+        const float sigW = std::max(230.f * gUi, std::min(300.f * gUi, availW * 0.22f));
+        const float prevW = std::max(340.f * gUi, std::min(560.f * gUi, availW * 0.36f));
+        ui2::beginPane("##txsig", ImVec2(sigW, h));
+        stepSignal(a, s, running, 0);
+        ui2::endPane();
+        ImGui::SameLine(0, gap);
+        ui2::beginPane("##txbasic", ImVec2(availW - sigW - prevW - 2 * gap, h));
+        basic();
+        ui2::endPane();
+        ImGui::SameLine(0, gap);
+        ui2::beginPane("##txprev", ImVec2(0, h));
+        stepSend(a, s, c.radio, c.conflict, c.mode, running);
+        ui2::endPane();
     } else {
         ImGui::BeginChild("##txcol", ImVec2(0, 0), false);
-        stepSignal(a, s, running);
+        basic();
         ImGui::Spacing();
-        stepSettings(a, s, radio, conflict, mode, running);
+        std::string sig = std::string(tr("Signal")) + ": " + (c.mode ? c.mode->name : tr("none chosen")) + "###txsigsec";
+        if (ImGui::CollapsingHeader(sig.c_str(), c.mode ? 0 : ImGuiTreeNodeFlags_DefaultOpen)) stepSignal(a, s, running, 280 * gUi);
         ImGui::Spacing();
-        stepSend(a, s, radio, conflict, mode, running);
+        if (ImGui::CollapsingHeader(tr("Preview"), ImGuiTreeNodeFlags_DefaultOpen)) stepSend(a, s, c.radio, c.conflict, c.mode, running);
         ImGui::EndChild();
     }
     txNoticePopup(s);
@@ -156,53 +151,183 @@ void body(App& a, bool inWindow) {
 
 namespace txui {
 
-// The status header: dot, big status word, elapsed time, signal and frequency, and the Start / Stop button
+// State word and the big button. In a voice signal "Push to talk" turns the button into one that transmits only while it is held.
 void drawStatusHeader(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxModeSpec* mode) {
     const State st = stateOf(s);
     const bool running = s.session.running();
     const float w = ImGui::GetContentRegionAvail().x;
-    const bool narrow = w < 520 * gUi;
-    const float btnW = narrow ? w : std::min(260 * gUi, w * 0.35f);
-    const float h = ImGui::GetFrameHeight() * 1.9f;
-    const ImVec2 p0 = ImGui::GetCursorScreenPos();
-    ImDrawList* dl = ImGui::GetWindowDrawList();
     const char* word = st == State::Idle ? tr("Idle") : st == State::Preparing ? tr("Preparing") : st == State::Test ? tr("Test (no RF)") : st == State::Carrier ? tr("Carrier tune") : tr("Transmitting");
-    ImVec4 col = st == State::Idle ? ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled) : st == State::Preparing ? pal::warnAmber() : st == State::Test ? pal::accent() : kRed;
+    const ImVec4 col = st == State::Idle ? ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled) : st == State::Preparing ? pal::warnAmber() : st == State::Test ? pal::accent() : kRed;
     const bool live = st == State::Transmitting || st == State::Carrier;
     const float pulse = live ? 0.5f + 0.5f * (float)std::sin(ImGui::GetTime() * 5.0) : 1.f;
-    const float r = h * 0.2f;
-    const ImVec2 dc(p0.x + r + 4 * gUi, p0.y + h * 0.5f);
+    const ImVec2 p0 = ImGui::GetCursorScreenPos();
+    const float fh = ImGui::GetFrameHeight(), r = fh * 0.28f;
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const ImVec2 dc(p0.x + r + 2 * gUi, p0.y + fh * 0.5f);
     if (live) dl->AddCircleFilled(dc, r * (1.5f + 0.5f * pulse), ImGui::GetColorU32(ImVec4(col.x, col.y, col.z, 0.25f * pulse)));
-    dl->AddCircleFilled(dc, r * (live ? 0.8f + 0.2f * pulse : 0.8f), ImGui::GetColorU32(col));
-    ImGui::SetCursorScreenPos(ImVec2(p0.x + 2 * r + 16 * gUi, p0.y));
-    ImGui::PushFont(nullptr, ImGui::GetFontSize() * 1.6f);
+    dl->AddCircleFilled(dc, r, ImGui::GetColorU32(col));
+    ImGui::SetCursorScreenPos(ImVec2(p0.x + 2 * r + 12 * gUi, p0.y));
     ImGui::AlignTextToFramePadding();
     ImGui::TextColored(col, "%s", word);
-    ImGui::PopFont();
-    if (running) {
-        ImGui::SameLine(0, 14 * gUi);
-        ImGui::PushFont(a.mono, 0);
-        ImGui::Text("%s", elapsedText(ImGui::GetTime() - s.startedAt).c_str());
-        ImGui::PopFont();
-    }
-    ImGui::SetCursorScreenPos(ImVec2(p0.x + 2 * r + 16 * gUi, p0.y + h * 0.62f));
-    if (running) ImGui::TextDisabled("%s   %.6f MHz   %.2f Msps   %s", s.modeName.c_str(), s.freqSent / 1e6, s.session.stats().rateHz / 1e6, s.radioName.c_str());
-    else if (mode) ImGui::TextDisabled("%s   %.6f MHz", mode->name, s.freqMhz);
-    else ImGui::TextDisabled("%s", tr("Choose a signal in step 1"));
-    // the button: to the right of the status when there is room, below it when the window is narrow
-    if (narrow) ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + h + 4 * gUi));
-    else ImGui::SetCursorScreenPos(ImVec2(p0.x + w - btnW, p0.y + (h - ImGui::GetFrameHeight() * 1.6f) * 0.5f));
-    if (primaryButton(running || s.pendingStart, canStart(a, s, radio, conflict, mode), btnW)) {
+    if (running) { ImGui::SameLine(0, 12 * gUi); ImGui::PushFont(a.mono, 0); ImGui::Text("%s", elapsedText(ImGui::GetTime() - s.startedAt).c_str()); ImGui::PopFont(); }
+    if (mode) { ImGui::SameLine(0, 12 * gUi); ImGui::TextDisabled("%s  %.6f MHz", mode->name, running ? s.freqSent / 1e6 : s.freqMhz); }
+
+    const bool can = canStart(a, s, radio, conflict, mode);
+    const bool voice = mode && (isVoiceId(mode->id ? mode->id : "") || s.analogVoice);
+    if (voice && s.pttHold) {   // push to talk: down starts, up stops (one button id throughout, so the hold survives the start)
+        const bool on = running || s.pendingStart;
+        ImGui::BeginDisabled(!can && !on);
+        if (on) {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.10f, 0.10f, 1));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.75f, 0.10f, 0.10f, 1));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 1));
+        } else {
+            ImGui::PushStyleColor(ImGuiCol_Button, pal::accent(0.85f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, pal::accent(1.f));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.05f, 0.07f, 0.09f, 1));
+        }
+        std::string lab = std::string(on ? tr("TRANSMITTING (release to stop)") : tr("HOLD TO TRANSMIT")) + "##ptt";
+        ImGui::Button(lab.c_str(), ImVec2(w, ImGui::GetFrameHeight() * 1.7f));
+        ImGui::PopStyleColor(3);
+        const bool down = ImGui::IsItemActive();
+        ImGui::EndDisabled();
+        if (down && !s.pttDown && !running) s.pendingStart = true;
+        if (!down && s.pttDown) stopTx(a, s, "(push to talk released)");
+        s.pttDown = down;
+    } else if (bigButton(running || s.pendingStart ? tr("STOP") : tr("START TRANSMITTING"), running || s.pendingStart, can || running || s.pendingStart, w)) {
         if (running || s.pendingStart) stopTx(a, s, "by the user");
         else s.pendingStart = true;
     }
-    if (!running && !canStart(a, s, radio, conflict, mode) && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-        ImGui::SetTooltip("%s", mode ? tr("Choose a radio in step 2, or switch on the test (no RF).") : tr("Choose a signal in step 1."));
-    ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + h + (narrow ? ImGui::GetFrameHeight() * 1.6f + 8 * gUi : 4 * gUi)));
-    ImGui::Separator();
+    if (!running && !can && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        ImGui::SetTooltip("%s", mode ? tr("Choose a radio below, or switch on the test (no RF).") : tr("Choose a signal in the list."));
+    if (voice) {
+        ImGui::BeginDisabled(running);
+        ImGui::Checkbox(tr("Push to talk (hold the button)"), &s.pttHold);
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("The signal goes out only while you hold the button down."));
+    }
+    ImGui::TextDisabled("%s", s.pttHold && voice ? tr("Esc = stop") : tr("Space = start / stop     Esc = stop"));
+    ImGui::Spacing();
 }
 
 } // namespace txui
+
+// The top bar of the TX view: the same bar as the receiver's. The run button, the frequency digits (the receiver's widget), whether the transmit frequency
+// is linked to the receiver's, the band presets, the signal and the radio, and on the right the output meter and the level.
+void txTopBar(App& a, ImVec2 disp) {
+    using namespace ui2;
+    TxUi& s = ui();
+    gBarFrame = ImGui::GetFrameCount();
+    const Ctx c = frameCtx(a, s);
+    const bool running = s.session.running();
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, kRail);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8 * gUi, 4 * gUi));
+    ImGui::BeginChild("##txtop", ImVec2(0, 50 * gUi), ImGuiChildFlags_AlwaysUseWindowPadding, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+    ImGui::PopStyleVar();
+    {
+        const ImVec2 o = ImGui::GetCursorScreenPos();
+        const float W = ImGui::GetContentRegionAvail().x;
+        const bool can = canStart(a, s, c.radio, c.conflict, c.mode);
+        ImGui::BeginDisabled(!can && !running && !s.pendingStart);
+        if (runButton(running || s.pendingStart, 40 * gUi, running || s.pendingStart ? tr("Stop transmitting") : tr("Start transmitting")) && !(s.pttHold)) {
+            if (running || s.pendingStart) stopTx(a, s, "by the user"); else s.pendingStart = true;
+        }
+        ImGui::EndDisabled();
+        ImGui::SetCursorScreenPos(ImVec2(o.x + 58 * gUi, o.y));
+        const float digitsEnd = freqDigitsFor(a, s.freqMhz, [&s](double v) { s.freqMhz = v; s.linkRx = false; });
+
+        // linked or independent, and the band presets
+        float x = digitsEnd + 14 * gUi;
+        ImGui::SetCursorScreenPos(ImVec2(x, o.y + 2 * gUi));
+        bool clicked = false;
+        ImGui::BeginDisabled(running);
+        ImGui::PushID("txlink");
+        chip(s.linkRx ? tr("TX = RX") : tr("TX independent"), s.linkRx, clicked);
+        ImGui::PopID();
+        ImGui::EndDisabled();
+        if (clicked) { s.linkRx = !s.linkRx; if (s.linkRx) s.freqMhz = a.freqMhz; }
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+            if (s.linkRx) ImGui::SetTooltip("%s", tr("The transmit frequency follows the receiver's. Typing a different one here unlinks them. Click to unlink."));
+            else ImGui::SetTooltip(tr("The transmit frequency is its own. The receiver is on %.6f MHz. Click to make the transmitter follow it."), a.freqMhz);
+        }
+        x = ImGui::GetItemRectMax().x + 8 * gUi;
+        if (c.mode) {
+            for (const auto& m : allModes()) {
+                if (txModeForList(m.family, m.subId, s.dvbVariant) != c.mode) continue;
+                ImGui::SetCursorScreenPos(ImVec2(x, o.y + 2 * gUi));
+                double mhz = 0;
+                ImGui::BeginDisabled(running);
+                if (freqdbPickMhz(m, 96 * gUi, mhz)) { s.freqMhz = mhz; s.linkRx = false; }
+                ImGui::EndDisabled();
+                x = ImGui::GetItemRectMax().x + 8 * gUi;
+                break;
+            }
+        }
+        ImGui::SetCursorScreenPos(ImVec2(x, o.y + 22 * gUi));
+        if (!s.linkRx) ImGui::TextDisabled(tr("RX %.6f MHz"), a.freqMhz);
+        else ImGui::TextDisabled("%s", tr("follows the receiver"));
+
+        // right: the output meter and the level
+        const float lvW = 230 * gUi, mW = 200 * gUi;
+        const float lvX = o.x + W - lvW, mX = lvX - mW - 18 * gUi;
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        dl->AddLine(ImVec2(lvX - 9 * gUi, o.y + 4 * gUi), ImVec2(lvX - 9 * gUi, o.y + 38 * gUi), IM_COL32(255, 255, 255, 28));
+        dl->AddLine(ImVec2(mX - 9 * gUi, o.y + 4 * gUi), ImVec2(mX - 9 * gUi, o.y + 38 * gUi), IM_COL32(255, 255, 255, 28));
+        if (mX > x + 160 * gUi) {
+            const float db = s.meterPeak > 1e-6f ? 20.f * std::log10(s.meterPeak) : -120.f;
+            const int n = 22, lit = (int)std::lround(std::min(1.f, std::max(0.f, (db + 60.f) / 60.f)) * n);
+            const float sw = (mW - (n - 1) * 2 * gUi) / n, sy = o.y + 20 * gUi, sh = 12 * gUi;
+            char lv[32];
+            snprintf(lv, sizeof lv, db > -100 ? "%.1f dBFS" : "-", db);
+            dl->AddText(ImVec2(mX, o.y), u32(kDim), tr("Output level"));
+            dl->AddText(ImVec2(mX + mW - ImGui::CalcTextSize(lv).x, o.y), u32(kText), lv);
+            for (int k = 0; k < n; k++) {
+                const bool on = k < lit, hot = k >= n - 2;
+                const ImU32 col = on ? (hot ? u32(pal::badRed()) : k >= n - 5 ? u32(pal::warnAmber()) : u32(ImVec4(0.62f, 0.70f, 0.64f, 1))) : u32(ImVec4(0.25f, 0.26f, 0.27f, 1));
+                dl->AddRectFilled(ImVec2(mX + k * (sw + 2 * gUi), sy), ImVec2(mX + k * (sw + 2 * gUi) + sw, sy + sh), col);
+            }
+        }
+        // the level: the radio's own gain scale
+        ImGui::SetCursorScreenPos(ImVec2(lvX, o.y + 8 * gUi));
+        const DeviceInfo* radio = c.radio;
+        const bool hasRange = radio && radio->txGainMaxDb > radio->txGainMinDb;
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextDisabled("%s", tr("Level"));
+        ImGui::SameLine(0, 8 * gUi);
+        ImGui::SetNextItemWidth(lvW - 52 * gUi);
+        if (hasRange) {
+            if (!s.gainSet || s.gainDb < radio->txGainMinDb - 1e-3 || s.gainDb > radio->txGainMaxDb + 1e-3) { s.gainDb = (float)radio->txGainMinDb; s.gainSet = true; }
+            ImGui::SliderFloat("##txlvl", &s.gainDb, (float)radio->txGainMinDb, (float)radio->txGainMaxDb, "%.1f dB");
+        } else ImGui::InputFloat("##txlvl", &s.gainDb, 0, 0, "%.1f dB");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("The radio's output level. Start low."));
+    }
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+    ImGui::GetWindowDrawList()->AddLine(ImVec2(ImGui::GetWindowPos().x, ImGui::GetCursorScreenPos().y), ImVec2(ImGui::GetWindowPos().x + disp.x, ImGui::GetCursorScreenPos().y), u32(kEdge));
+}
+
+// The classic and touch interfaces have no top bar of their own for the TX view: one row with the frequency, the link to the receiver and the presets
+void fallbackBar(App& a) {
+    TxUi& s = ui();
+    const Ctx c = frameCtx(a, s);
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("%s", tr("FREQ"));
+    ImGui::SameLine(0, 5 * gUi);
+    ImGui::SetNextItemWidth(150 * gUi);
+    if (ImGui::InputDouble("##txfreqc", &s.freqMhz, 0, 0, "%.6f MHz")) s.linkRx = false;
+    ImGui::SameLine(0, 10 * gUi);
+    bool link = s.linkRx;
+    if (ImGui::Checkbox(tr("Follow the receiver"), &link)) { s.linkRx = link; if (link) s.freqMhz = a.freqMhz; }
+    if (!s.linkRx) { ImGui::SameLine(0, 8 * gUi); ImGui::TextDisabled(tr("RX %.6f MHz"), a.freqMhz); }
+    if (c.mode) for (const auto& m : allModes()) {
+        if (txModeForList(m.family, m.subId, s.dvbVariant) != c.mode) continue;
+        double mhz = 0;
+        ImGui::SameLine(0, 10 * gUi);
+        if (freqdbPickMhz(m, 96 * gUi, mhz)) { s.freqMhz = mhz; s.linkRx = false; }
+        break;
+    }
+    ImGui::Separator();
+}
 
 // The Transmit panel in the main area; "Pop out" moves it to a floating window of its own (the main area then says so)
 void txPanel(App& a) {
@@ -214,12 +339,14 @@ void txPanel(App& a) {
         ImGui::SetNextWindowSize(ImVec2(560 * gUi, 720 * gUi), ImGuiCond_FirstUseEver);
         bool open = true;
         if (ImGui::Begin(tr("Transmit##txpop"), &open, ImGuiWindowFlags_NoSavedSettings)) {
+            if (gBarFrame != ImGui::GetFrameCount()) fallbackBar(a);
             body(a, true);
         }
         ImGui::End();
         if (!open) s.popped = false;
         return;
     }
+    if (gBarFrame != ImGui::GetFrameCount()) fallbackBar(a);
     const ImVec2 tp = ImGui::GetCursorScreenPos();
     body(a, false);
     // the pop-out button sits in the top right corner of the panel
