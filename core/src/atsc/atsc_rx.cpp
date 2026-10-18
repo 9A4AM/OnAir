@@ -33,6 +33,47 @@ DECT2_SIMD_BODY void pfbBlockBody(const float* taps, int J, int NPH, const float
     const int T = 2 * J;
     size_t k = k0;
 #if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
+    // Four outputs per pass: sixteen independent chains, and the horizontal sums of the four outputs are folded together with pairwise adds
+    // (one vector of four results per row) instead of a reduction per output. The sums are in a different order than in the loop below, a few ulp.
+    for (; k + 4 <= k1; k += 4) {
+        const float *tp[4], *pr[4], *pi_[4];
+        for (int u = 0; u < 4; u++) {
+            const double pos = pos0 + (double)(k + (size_t)u) * step;
+            int64_t i0 = (int64_t)std::floor(pos);
+            int phi = (int)((pos - (double)i0) * NPH + 0.5);
+            if (phi >= NPH) { phi = 0; i0++; }
+            tp[u] = &taps[(size_t)phi * T];
+            const size_t b0 = (size_t)(i0 - base - J + 1);
+            pr[u] = &re[b0]; pi_[u] = &im[b0];
+        }
+        float32x4_t ar[4], ai[4], br[4], bi[4];
+        for (int u = 0; u < 4; u++) ar[u] = ai[u] = br[u] = bi[u] = vdupq_n_f32(0);
+        int j = 0;
+        for (; j + 8 <= T; j += 8)
+            for (int u = 0; u < 4; u++) {
+                const float32x4_t t4 = vld1q_f32(tp[u] + j), u4 = vld1q_f32(tp[u] + j + 4);
+                ar[u] = vfmaq_f32(ar[u], vld1q_f32(pr[u] + j), t4);
+                ai[u] = vfmaq_f32(ai[u], vld1q_f32(pi_[u] + j), t4);
+                br[u] = vfmaq_f32(br[u], vld1q_f32(pr[u] + j + 4), u4);
+                bi[u] = vfmaq_f32(bi[u], vld1q_f32(pi_[u] + j + 4), u4);
+            }
+        for (; j + 4 <= T; j += 4)
+            for (int u = 0; u < 4; u++) {
+                const float32x4_t t4 = vld1q_f32(tp[u] + j);
+                ar[u] = vfmaq_f32(ar[u], vld1q_f32(pr[u] + j), t4);
+                ai[u] = vfmaq_f32(ai[u], vld1q_f32(pi_[u] + j), t4);
+            }
+        float32x4_t sr[4], si[4];
+        for (int u = 0; u < 4; u++) { sr[u] = vaddq_f32(ar[u], br[u]); si[u] = vaddq_f32(ai[u], bi[u]); }
+        float32x4_t rr = vpaddq_f32(vpaddq_f32(sr[0], sr[1]), vpaddq_f32(sr[2], sr[3]));
+        float32x4_t ri = vpaddq_f32(vpaddq_f32(si[0], si[1]), vpaddq_f32(si[2], si[3]));
+        for (int jj = j; jj < T; jj++) {   // taps left over when 2 * J is not a multiple of four
+            float tr[4], ti[4];
+            for (int u = 0; u < 4; u++) { tr[u] = pr[u][jj] * tp[u][jj]; ti[u] = pi_[u][jj] * tp[u][jj]; }
+            rr = vaddq_f32(rr, vld1q_f32(tr)); ri = vaddq_f32(ri, vld1q_f32(ti));
+        }
+        vst1q_f32(outRe + k, rr); vst1q_f32(outIm + k, ri);
+    }
     // Two outputs per pass: each is exactly the arithmetic of the loop below, but their eight chains of multiply-adds are independent, so the
     // four-cycle latency of one output's chain is hidden behind the other's (a single output is latency-bound, not load-bound).
     for (; k + 2 <= k1; k += 2) {
@@ -458,6 +499,24 @@ struct Core {
             for (int a = 1; a < 5; a++) { Pr[a] = Pr[a - 1] * r4r - Pi[a - 1] * r4i; Pi[a] = Pr[a - 1] * r4i + Pi[a - 1] * r4r; }
             const float* xr = &pfRe[k];
             const float* xi = &pfIm[k];
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
+            // the sixteen samples as four vectors (lane b, vector a): same arithmetic as the scalar version, the pilot sums added in a different order
+            float sr, si;
+            {
+                const float32x4_t rr = vld1q_f32(Rr), ri = vld1q_f32(Ri);
+                float32x4_t accR = vdupq_n_f32(0), accI = vdupq_n_f32(0);
+                for (int a = 0; a < 4; a++) {
+                    const float32x4_t pr = vfmsq_f32(vmulq_n_f32(rr, Pr[a]), ri, vdupq_n_f32(Pi[a]));
+                    const float32x4_t pi = vfmaq_f32(vmulq_n_f32(rr, Pi[a]), ri, vdupq_n_f32(Pr[a]));
+                    const float32x4_t x_r = vld1q_f32(xr + 4 * a), x_i = vld1q_f32(xi + 4 * a);
+                    const float32x4_t zr = vfmsq_f32(vmulq_f32(x_r, pr), x_i, pi), zi = vfmaq_f32(vmulq_f32(x_r, pi), x_i, pr);
+                    vst1q_f32(&dchunk[k + 4 * a], zr);
+                    const float32x4_t w = vld1q_f32(pfw + 4 * a);
+                    accR = vfmaq_f32(accR, w, zr); accI = vfmaq_f32(accI, w, zi);
+                }
+                sr = pfbN * pf.real() + vaddvq_f32(accR); si = pfbN * pf.imag() + vaddvq_f32(accI);
+            }
+#else
             float zr[kPllN], zi[kPllN];
             for (int a = 0; a < 4; a++)
                 for (int b = 0; b < 4; b++) {
@@ -467,6 +526,7 @@ struct Core {
                 }
             float sr = pfbN * pf.real(), si = pfbN * pf.imag();
             for (int i = 0; i < kPllN; i++) { sr += pfw[i] * zr[i]; si += pfw[i] * zi[i]; dchunk[k + i] = zr[i]; }
+#endif
             pf = cf32(sr, si);
             ph = cf32(Pr[4], Pi[4]);
             pllUpdate();
