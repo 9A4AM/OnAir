@@ -28,6 +28,65 @@ airspy_info
 - gain is the linearity gain, 0 to 21
 - 10 Msps needs a decent CPU, a 2-core laptop couldn't keep up with live ATSC
 
+# SDRplay RSPduo
+
+OnAir talks directly to the [SDRplay Hardware API](https://sdrplay.com/hardware-api/), which supplies IQ samples. Install API 3.x
+(tested with 3.15), then restart OnAir. **SDRconnect is a separate application**: installing it alone does not install the Hardware API
+OnAir needs. SDRconnect's [WebSocket API](https://sdrplay.com/websocket-api/) is not used by this driver. Close other programs using the
+RSPduo before starting it in OnAir.
+
+The radio list offers **Tuner 1** (SMA), **Tuner 2** (SMA), and **Tuner 1 Hi-Z**. Pick the socket with the antenna. Both SMA inputs cover
+1 kHz to 2 GHz; Hi-Z covers 1 kHz to 30 MHz. The gain slider uses the appropriate LNA table for that input. Antenna power is offered
+only on Tuner 2; leave it off unless the connected equipment needs it.
+
+- Single-tuner mode, one input at a time. Simultaneous dual-tuner operation, diversity, and master/slave sharing with another application
+  are not implemented. Multiple OnAir receivers cannot claim the same physical RSPduo at once.
+- Output sample rates: 62.5 kS/s to 10 MS/s, using the API's decimation below 2 MS/s. A rate change stops and restarts the stream.
+  API 3.15 rejects 10.66 MS/s on the tested device; requests above 10 MS/s are capped with a note about the actual rate.
+- Frequency, gain, PPM correction, and RF/MW and DAB notch filters can change while receiving. Failed starts and rate-change restarts
+  return the API error instead of reporting a running receiver with no samples.
+
+Hardware validation on Windows x64 with API 3.15 (2026-10-17): all three inputs streamed across 62.5 kS/s, 250 kS/s, 1, 2, 4, 8 and
+10 MS/s, including a 10.66 MS/s request capped to 10 MS/s. Frequency/gain sweeps covered 1 kHz to 2 GHz on SMA and 1 kHz to 30 MHz on
+Hi-Z, plus PPM/notch changes and repeated stop/start cycles. No ring-buffer drops or nonfinite samples occurred in those checks.
+Only Tuner 1 SMA had an antenna. In the Windows app it received FM at 100.2 MHz with carrier lock and RDS decoding (TRT), including
+changes between 2, 4, 8 and 10 MS/s. These checks establish streaming and reception, not calibrated sensitivity or RF accuracy.
+The 120-second FM run produced 121 seconds of 48 kHz stereo WAV audio (the station was mono), with carrier lock in all 78 telemetry
+reports, 1,359 decoded RDS groups, no reported sample drops, and no clipped PCM samples. Live GUI broadcast audio was also confirmed
+by listening after explicitly selecting Tuner 1. Physical USB unplug/replug recovered automatically in the running GUI, with broadcast
+audio returning and carrier/RDS lock restored.
+
+Build with `-DDECT2_BUILD_TESTS=ON`, then run `ctest --test-dir <build> -R '^sdrplay$' --output-on-failure` for the hardware-independent
+regression. It covers all inputs, tuner-B-only parameters/callbacks, Hi-Z gain states, bias-tee routing, low/high rates, failed Init,
+vendor error details, startup/rate-restart timeouts, and reconnecting with settings changed while unplugged. The `native_lifecycle`
+test checks that a rejected rate configuration releases the device without starting another stream, and that a fresh start still works.
+
+The Windows and Linux GUI builds passed. Targeted SDRplay, FM, rate-choice and setup-help regressions passed on both platforms;
+Linux's no-bias native test also passed. The broader Linux native test has four failures involving Airspy HF+ and RTL-SDR; the same
+four failures were reproduced with the original driver and test sources at commit `6d4fc539`.
+
+The opt-in hardware tool uses OnAir's production source and keeps antenna power off:
+
+```sh
+sdrplay_probe --port 0 --freq 100200000 --gain 40 --secs 3 --matrix
+sdrplay_probe --port 1 --freq 100200000 --gain 40 --secs 3 --matrix
+sdrplay_probe --port 2 --freq 7100000 --gain 40 --secs 3 --matrix
+dect2cli --standard fm --freq 100.2 --gain 40 --secs 120 --wav rspduo-fm.wav
+```
+
+Frequencies are examples: use a local station for the FM reception test. The matrix also exercises maximum gain and can report
+overloads from strong local signals. Bias-tee switching is checked with the fake API; its physical output voltage was not measured.
+macOS and Linux hardware reception have not been tested on this device.
+
+To launch the GUI directly on a particular input, pass its exact source-list name (replace the serial with yours):
+
+```sh
+OnAir --device "SDRplay RSPduo YOUR_SERIAL Tuner 1 (native, experimental)" --fm --freq 100.2
+```
+
+`--device` starts that source and leaves the receiver stopped if it is absent. Bare `--autostart` is a developer option that starts
+the synthetic test signal; its FM test tones are not a received station, even when a broadcast frequency is displayed.
+
 # Fobos SDR (RigExpert)
 
 Not tested on a radio yet: the driver was written against RigExpert's library source and checked with a stand-in for the library
@@ -156,7 +215,7 @@ A slider at the top left of the interface (new and classic) switches between **R
 transmitter is independent of the receivers, like in SDRangel: it has its **own radio choice** (any radio that can transmit) and its own mode, so a receiver
 keeps receiving while you transmit. Example: a HackRF Pro transmits while an RTL-SDR v4 is a receiver and decodes it. Switching the view starts and stops nothing.
 
-A radio is never used by both a receiver and the transmitter unless it is genuinely full duplex (`DeviceInfo::txFullDuplex`; none is today). The claim is
+A radio is never used by both a receiver and the transmitter unless it is genuinely full duplex (`DeviceInfo::txFullDuplex`; the native PlutoSDR path). The claim is
 made through `device_claims.h` (the transmitter holds its radio as `kTxClaimOwner`): a radio a receiver has open is marked "in use by RX n" in the TX radio list
 and cannot be started, with a sentence saying it cannot receive and transmit at the same time; the receivers' radio lists mark the transmitter's radio in the
 same way. Nothing is stopped silently.
@@ -177,11 +236,31 @@ same USB id 1d50:6089 (the code lists it in `kPids`, and `boardName(5)` reads "H
 | Radio | Path | Notes |
 |---|---|---|
 | HackRF One / Pro (OnAir's own USB driver) | `UsbHackrfTx` | 2 to 20 Msps, TX VGA 0 to 47 dB, the +14 dB amplifier is a switch |
-| PlutoSDR (libiio) | `PlutoTx` | 2.1 Msps and up, TX attenuation -89.75 to 0 dB |
+| PlutoSDR (libiio) | `PlutoTx` | 2.1 Msps and up, TX attenuation -89.75 to 0 dB; simultaneous RX/TX under the conditions below |
 | Any SoapySDR radio with a TX channel (LimeSDR, bladeRF, USRP, ...) | `SoapyTx` (`writeStream`) | known after the radio has been opened once, or by its driver name |
 
 Every other radio (RTL-SDR, Airspy, RX888, SDRplay, Fobos, ... receive-only; the native LimeSDR / bladeRF / USRP drivers are receive-only, use their SoapySDR module to transmit) reports `canTransmit = false`.
-No radio is marked full duplex here, so the transmitter and a receiver always need two different radios (a radio is shared only through the claim above).
+**TX sample rate:** the Transmit panel has an **Auto / Manual** selector. Manual exposes **TX Fs (Msps)**: enter the hardware IQ rate (for example 4.000000),
+not the symbol rate. Stop transmitting before changing it. Invalid manual rates are refused rather than clamped; a materially different hardware readback is
+also refused before IQ is sent. For a shared radio, set RX and manual TX to the same hardware rate. Auto keeps the previous mode/device-based selection.
+
+**PlutoSDR simultaneous RX/TX (native libiio 0.x path):** select the same radio entry for the receiver and transmitter. They share one libiio context and the
+AD936x clock. The second direction uses the running direction's sample rate when it is high enough; requesting a higher rate is refused before changing the
+clock. Stop the other direction to raise the rate. RX and TX keep independent frequencies and gains, and stopping one leaves the other running. The shared
+reference clock is restored only when the last direction closes; while TX runs, RX ppm adjustments use the RX LO instead of changing that clock.
+
+The firmware must report FDD mode and simultaneous operation requires CS16. Low-rate RX requests such as 2.048 Msps DAB use at least 2.1 Msps in hardware
+by default (or the running TX rate); the receiver resamples in software. This lets either direction start first without loading a shared low-rate FIR.
+The optional **Low-rate FIR (RX only)** setting restores the exact 2.048 Msps hardware rate for receive-only operation. Disable it and restart RX before
+starting TX; a Tezuka CS8 receiver also needs CS16 selected before TX can join. RX and TX must use the same device entry/URI; opening one physical radio through different IP aliases or through
+USB and IP at the same time is not coordinated. This does not add full duplex to the SoapySDR path or sample-synchronous RX/TX timestamps. The host link and
+radio must sustain both sample streams; the single-direction USB rate above is not a full-duplex throughput guarantee.
+A physical disconnect may invalidate the shared context: stop TX before expecting RX to recover from that loss. A transient RX buffer error can reconnect independently while the context remains usable.
+
+`pluto_duplex` tests both startup orders, shared rates/ppm, independent shutdown, concurrent startup/shutdown, configuration conflicts, failures and RX reconnect with TX active against a
+fake libiio, on Windows as well as POSIX. Automated tests do not establish RF performance or maximum duplex throughput.
+Operator hardware testing used a Zynq-7100 with an AD9361 board through the Pluto/libiio driver over Gigabit Ethernet: RX and TX each at 2.1 Msps ran stably for approximately two hours. Higher rates encountered link-bandwidth limitations. This does not establish stock ADALM-Pluto USB throughput.
+Other radios still need separate devices for RX and TX.
 
 **Modes that can transmit** (the table is `txModes()` in `core/src/tx.cpp`; deny-list, not allow-list). Every engine mode that has a generator is offered except pointless / jammer / impersonation cases. No frequency limit is applied here. Empty payload fields fall back to the demo signal; the Transmit panel has a real payload UI on every row (callsign, grid, text, IDs, file, microphone as that mode fits).
 

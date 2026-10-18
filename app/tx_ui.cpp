@@ -58,6 +58,8 @@ struct TxUi {
     SynthConfig synth;                       // the mode's own signal options (the same fields as the receiver's built-in test signal)
     int bwIdx = 0;                           // DVB-T2 / DVB-T channel width: 8, 7, 6, 5 MHz
     double freqMhz = 0;                      // typed by the user, any value; pre-filled from the receiver when the mode is chosen
+    bool autoSampleRate = true;
+    double sampleRateMsps = 4;
     double offsetMhz = 0;                    // added only to the frequency sent to the radio; the typed frequency stays freqMhz
     float gainDb = 0;
     bool gainSet = false, ampOn = false, loop = true;
@@ -175,6 +177,7 @@ TxRequest makeReq(const TxUi& s, const TxModeSpec& mode, bool carrier) {
     r.onceSeconds = s.onceSeconds;
     r.tune.centerHz = s.freqMhz * 1e6;
     r.tune.offsetHz = s.offsetMhz * 1e6;
+    r.tune.sampleRate = s.autoSampleRate ? 0 : s.sampleRateMsps * 1e6;
     r.tune.gainDb = s.gainDb;
     r.tune.ampOn = s.ampOn;
     r.tune.channel = s.txCh < 0 ? 0 : s.txCh;
@@ -779,6 +782,10 @@ void payloadPanel(TxUi& s, const TxModeSpec& mode, bool running) {
 
 bool startTx(App& a, TxUi& s, const DeviceInfo* radio, const TxModeSpec* mode, bool carrier) {
     s.error.clear();
+    if (!s.autoSampleRate && (!std::isfinite(s.sampleRateMsps) || s.sampleRateMsps <= 0)) {
+        s.error = tr("Manual TX sample rate must be greater than zero.");
+        return false;
+    }
     if (!plat::basePrefs().getB("txNoticeAccepted", false)) { s.askNotice = true; return false; }
     std::string err;
     TxRequest req = makeReq(s, *mode, carrier);
@@ -980,6 +987,23 @@ void txBar(App& a) {
         ImGui::SetNextItemWidth(70 * gUi);
         ImGui::InputInt(tr("seconds"), &s.onceSeconds);
         s.onceSeconds = std::max(1, std::min(3600, s.onceSeconds));
+    }
+    ImGui::NewLine();
+    ImGui::SetNextItemWidth(100 * gUi);
+    if (ImGui::BeginCombo(tr("TX sample rate"), s.autoSampleRate ? tr("Auto") : tr("Manual"))) {
+        if (ImGui::Selectable(tr("Auto"), s.autoSampleRate)) s.autoSampleRate = true;
+        if (ImGui::Selectable(tr("Manual"), !s.autoSampleRate)) s.autoSampleRate = false;
+        ImGui::EndCombo();
+    }
+    if (!s.autoSampleRate) {
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(140 * gUi);
+        ImGui::InputDouble(tr("TX Fs (Msps)"), &s.sampleRateMsps, 0, 0, "%.6f");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it."));
+    } else if (radio && mode) {
+        ImGui::SameLine();
+        const TxRequest r = makeReq(s, *mode, false);
+        ImGui::TextDisabled(tr("Requested: %.3f Msps"), txRequestRate(*mode, r, TxRateLimits{radio->txMinRateHz, radio->txMaxRateHz}) / 1e6);
     }
     ImGui::EndDisabled();
 

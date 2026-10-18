@@ -145,7 +145,7 @@ Start the receiver	启动接收机
 Stop the receiver	停止接收机
 %s (space)	%s（空格键）
 Start the receiver first	请先启动接收机
-Stop the receiver to switch mode	停止接收机后才能切换模式
+Click to switch mode and restart receiver automatically	点击切换模式，接收机将自动重启
 Start	开始
 Stop	停止
 Receiving	正在接收
@@ -1121,3 +1121,9 @@ Documentation	文档
 Troubleshooting	故障排除
 Voice codecs (mbelib)	语音编解码器 (mbelib)
 Website	网站
+
+TX sample rate	发射采样率
+TX Fs (Msps)	TX Fs（Msps）
+Requested: %.3f Msps	请求速率：%.3f Msps
+Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	请求的发射 IQ 采样率。共用同一设备收发时，请将两侧的硬件采样率设为相同值。修改前请先停止发射。
+Manual TX sample rate must be greater than zero.	手动发射采样率必须大于零。
