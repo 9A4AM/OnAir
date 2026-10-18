@@ -333,7 +333,7 @@ function screen3(c,src,o){ const pos=o.pos||[0,0,0], w=o.w||1600, h=o.h||w*9/16,
 const SCR=mk(), scrx=SCR.getContext('2d');
 function blurred(c,px,fn){ if(px<.4){ fn(c); return; } scrx.setTransform(1,0,0,1,0,0); scrx.clearRect(0,0,W,H); fn(scrx); c.save(); c.filter=`blur(${px.toFixed(1)}px)`; c.drawImage(SCR,0,0); c.restore(); }
 // textures: footage frames with the programme drawn in, rendered into small canvases
-const TEXL=[0,1,2,3].map(()=>mk(1280,720)), TEXS=[...Array(14)].map(()=>mk(640,360));
+const TEXL=[0,1,2,3].map(()=>mk(1920,1080)), TEXS=[...Array(14)].map(()=>mk(960,540));
 function tex(buf,fn){ const x=buf.getContext('2d'); x.setTransform(1,0,0,1,0,0); x.fillStyle='#0b0c0e'; x.fillRect(0,0,buf.width,buf.height); x.save(); x.scale(buf.width/W,buf.height/H); fn(x); x.restore(); return buf; }
 function texClip(buf,clip,t,cm){ return tex(buf,x=>{ if(cm) foot(x,c3(clip,t),cm,cc=>{ if(clip==='dvbt_tv') prog3(cc,t+30); }); else { const im=img(c3(clip,t)); if(im) x.drawImage(im,0,0,W,H); if(clip==='dvbt_tv') prog3(x,t+30); } }); }
 // background: near-black with a slow accent glow and out-of-focus specks
