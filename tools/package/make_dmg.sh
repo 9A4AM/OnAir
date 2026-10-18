@@ -94,8 +94,11 @@ for root in /opt/homebrew/opt /usr/local/opt; do
 done
 # the app is signed ad hoc (no developer certificate): macOS shows a one-time "unidentified developer" prompt on first launch
 python3 tools/package/scrub_paths.py "$APP"   # no build-machine paths in the shipped files (before signing)
-for f in "$APP"/Contents/Frameworks/*.dylib "$APP"/Contents/Frameworks/SoapySDR/modules0.8/*; do [ -L "$f" ] || [ ! -f "$f" ] || codesign --force -s - "$f" >/dev/null 2>&1; done
-codesign --force --deep -s - "$APP" >/dev/null 2>&1
+for f in "$APP"/Contents/Frameworks/*.dylib "$APP"/Contents/Frameworks/SoapySDR/modules0.8/*; do
+  if [ -L "$f" ] || [ ! -f "$f" ]; then continue; fi
+  codesign --force -s - "$f" || echo "warning: could not sign $f"
+done
+codesign --force --deep -s - "$APP" || { echo "Signing the app failed"; codesign -dvvv "$APP" 2>&1 | head -20; exit 1; }
 STAGE=$BUILD/dmg
 rm -rf $STAGE && mkdir -p $STAGE
 cp -R "$APP" $STAGE/

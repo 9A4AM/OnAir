@@ -249,8 +249,11 @@ target_compile_definitions(onair-server PRIVATE ONAIR_SERVER_VERSION="${PROJECT_
 option(DECT2_BUILD_PLUGIN_EXAMPLES "Build the example plugins of sdk/examples" ON)
 if(DECT2_BUILD_PLUGIN_EXAMPLES)
   include(sdk/cmake/OnAirPlugin.cmake)
+  set(ONAIR_PLUGIN_TARGETS "")
   foreach(_pl tone-detector burst-counter log-to-file)
     add_subdirectory(sdk/examples/${_pl})
+    get_property(_pl_targets DIRECTORY sdk/examples/${_pl} PROPERTY BUILDSYSTEM_TARGETS)
+    list(APPEND ONAIR_PLUGIN_TARGETS ${_pl_targets})
   endforeach()
 endif()
 
@@ -1542,6 +1545,9 @@ if(DECT2_BUILD_APP AND NOT APPLE)
     install(PROGRAMS $<TARGET_FILE:dect2scan> DESTINATION ${CMAKE_INSTALL_BINDIR} RENAME onair-scan)
   endif()
   # the plugin helper process and the example plugins (docs/plugins.md); the program looks in ../lib/onair/ of its own folder
+  if(TARGET dect2)
+    add_dependencies(dect2 onair-plugin-host ${ONAIR_PLUGIN_TARGETS})   # the packages build --target dect2 and install the plug-in helper and the examples next to it
+  endif()
   install(PROGRAMS $<TARGET_FILE:onair-plugin-host> DESTINATION ${CMAKE_INSTALL_LIBDIR}/onair)
   if(DECT2_BUILD_PLUGIN_EXAMPLES)
     install(DIRECTORY ${CMAKE_BINARY_DIR}/plugins/ DESTINATION ${CMAKE_INSTALL_LIBDIR}/onair/plugins USE_SOURCE_PERMISSIONS)
