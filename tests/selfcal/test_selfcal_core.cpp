@@ -1,4 +1,5 @@
 // Self-calibration: synthetic references at known clock errors (+-50 ppm) must come back within 0.2 ppm; the stores, the combiner, the wizard.
+#include "../common/tmp_path.h"
 #include "dect2/selfcal/selfcal.h"
 #include <algorithm>
 #include <cmath>
@@ -113,7 +114,7 @@ int main() {
         CHECK(!s.drift("OTHER", 3600, d), "drift needs points");
         double v = 0;
         CHECK(s.value("RTL0001", v) && std::fabs(v - 10.2) < 1e-6, "value while warming %.4f", v);
-        const std::string path = "/tmp/selfcal_test_store.tsv";
+        const std::string path = tmpPath("selfcal_test_store.tsv");
         CHECK(s.save(path), "save");
         Store t;
         CHECK(t.load(path) && t.size() == 11, "load %zu", t.size());

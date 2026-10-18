@@ -506,9 +506,8 @@ void testEngine() {
         Event p("pager.message"); p.at(kT0, "POCSAG", 152e6); p.str("text", "FIRE, \"big\"\nnow").num("address", 42);
         r.eng.process(p);
         CHECK(r.sink.calls.size() == 3 && r.sink.calls[0].first == "notify" && r.sink.calls[1].first == "sound" && r.sink.calls[2].first == "record_iq", "actions in order; log is done by the engine");
-        std::ifstream f(dir / "pager-alerts.csv");
-        std::stringstream ss; ss << f.rdbuf();
-        const std::string csv = ss.str();
+        std::string csv;
+        { std::ifstream f(dir / "pager-alerts.csv"); std::stringstream ss; ss << f.rdbuf(); csv = ss.str(); }   // closed before the folder is removed (Windows)
         CHECK(csv.find("time,rule,type,mode,freq_mhz,fields\n") == 0 && csv.find("2026-10-17T10:15:00Z,Multi,pager.message,POCSAG,152.0000,") != std::string::npos, "csv header and row: %s", csv.c_str());
         CHECK(csv.find("\"address=42; text=FIRE, \"\"big\"\"\nnow\"") != std::string::npos, "csv quoting of the field list: %s", csv.c_str());
         r.sink.fail = true;

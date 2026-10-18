@@ -1,4 +1,5 @@
 // Band survey: synthetic sweeps with an always-on carrier, a burst that comes and goes, and a quiet gap; diff between two surveys.
+#include "../common/tmp_path.h"
 #include "dect2/sweep/survey.h"
 #include <cmath>
 #include <cstdio>
@@ -47,12 +48,12 @@ int main() {
     CHECK(std::fabs(d.floorChangeDb - 3.0f) < 0.1f, "floor change %.2f", d.floorChangeDb);
     // save / load round trip
     std::string err;
-    const std::string f = "/tmp/test_survey.bin";
+    const std::string f = tmpPath("test_survey.bin");
     CHECK(a.save(f, err), "save %s", err.c_str());
     Survey c; CHECK(c.load(f, err), "load %s", err.c_str());
     CHECK(c.rows() == a.rows() && c.bins() == a.bins() && c.persistent(0.5).size() == 1 && c.lastTime() == a.lastTime(), "round trip");
     remove(f.c_str());
-    CHECK(!c.load("/tmp/does_not_exist_survey", err), "missing file");
+    CHECK(!c.load(tmpPath("does_not_exist_survey"), err), "missing file");
     // a sweep of a coarser grid lands on the same bins; one outside the range is refused
     Sweep coarse = make(3e9, false, 102.0e6, rng); coarse.binHz = 20e3; coarse.db.resize(500); coarse.floorDb.resize(500);
     CHECK(a.add(coarse), "coarse sweep added");
@@ -65,8 +66,8 @@ int main() {
     CHECK(m.rows() <= 40 && m.persistent(0.5).size() == 1, "cap: rows %zu", m.rows());
     auto img = a.heatmap(200, 50);
     CHECK(img.size() == 200 * 50 * 4 && img[3] == 255, "heatmap");
-    CHECK(a.exportOccupancyCsv("/tmp/test_survey.csv", err) && a.exportSignalsCsv("/tmp/test_survey_sig.csv", 0.5, err), "csv");
-    remove("/tmp/test_survey.csv"); remove("/tmp/test_survey_sig.csv");
+    CHECK(a.exportOccupancyCsv(tmpPath("test_survey.csv"), err) && a.exportSignalsCsv(tmpPath("test_survey_sig.csv"), 0.5, err), "csv");
+    remove(tmpPath("test_survey.csv")); remove(tmpPath("test_survey_sig.csv"));
     printf(fails ? "survey: %d FAILED\n" : "survey: all ok\n", fails);
     return fails ? 1 : 0;
 }

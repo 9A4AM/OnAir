@@ -5,6 +5,7 @@
 #include "dect2/packet/packet_ax25.h"
 #include "dect2/packet/packet_aprs.h"
 #include "../common/golden.h"
+#include "../common/ordered.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -100,7 +101,7 @@ static void testHdlc(long iters) {
         for (int k = 0; k < nf; k++) {
             const A::Frame rf = randFrame(true);
             const std::vector<uint8_t> fb = A::buildFrame(rf);
-            const std::vector<uint8_t> hb2 = A::hdlcBits(fb, 1 + (int)(g() % 6), 1 + (int)(g() % 3));
+            const std::vector<uint8_t> hb2 = ORD_CALL(A::hdlcBits, fb, 1 + (int)(g() % 6), 1 + (int)(g() % 3));   // ORD_*: draws in a fixed order (arguments and operands are not evaluated in one)
             bits.insert(bits.end(), hb2.begin(), hb2.end());
             if (g() % 3 == 0) for (int q = (int)(g() % 40); q > 0; q--) bits.push_back((uint8_t)(g() & 1));
         }
@@ -144,8 +145,8 @@ static std::string mutateInfo(std::string s) {
         switch (g() % 6) {
         case 0: if (!s.empty()) s[g() % s.size()] = alpha[g() % (sizeof alpha - 1)]; break;
         case 1: if (!s.empty()) s[g() % s.size()] = (char)g(); break;
-        case 2: if (!s.empty()) s.erase(g() % s.size(), 1 + g() % 3); break;
-        case 3: s.insert(g() % (s.size() + 1), 1, alpha[g() % (sizeof alpha - 1)]); break;
+        case 2: if (!s.empty()) ORD_CALL(s.erase, g() % s.size(), 1 + g() % 3); break;
+        case 3: ORD_CALL(s.insert, g() % (s.size() + 1), 1, alpha[g() % (sizeof alpha - 1)]); break;
         case 4: s.resize(g() % (s.size() + 1)); break;
         default: s += rnd(alpha, g() % 12); break;
         }
@@ -156,7 +157,7 @@ static std::string mutateInfo(std::string s) {
 static std::string randDest() {
     switch (g() % 5) {
     case 0: return "APRS";
-    case 1: return rnd("0123456789ABCDEFGHIJKLPQRSTUVWXYZ", 6) + (g() % 2 ? "-7" : "");
+    case 1: return ORD_CAT(rnd("0123456789ABCDEFGHIJKLPQRSTUVWXYZ", 6), (g() % 2 ? "-7" : ""));
     case 2: return "S32U6T";
     case 3: return rnd("0123456789KLPZ", 6);
     default: return rnd("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-", g() % 9);
@@ -179,7 +180,8 @@ static void testAprs(long iters) {
     static const double special[] = {0.0, -0.0, 25.2, -25.2, 90.0, -180.0, 179.99999, 1e-9, -1e-9, 0.00005, 0.00015, 1234.56789, -1e6, 1e15, NAN, INFINITY, -INFINITY};
     for (double v : special) dig.add(PA::fmtLat(v), PA::fmtLon(v));
     for (long i = 0; i < iters; i++) {
-        double v = ((double)g() / 4294967296.0 - 0.5) * (g() % 2 ? 360.0 : 4.0);
+        const double frac = (double)g() / 4294967296.0 - 0.5;
+        double v = frac * (g() % 2 ? 360.0 : 4.0);
         dig.add(PA::fmtLat(v), PA::fmtLon(v));
     }
 }
