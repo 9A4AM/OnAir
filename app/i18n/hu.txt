@@ -3175,3 +3175,17 @@ Ping	Ping
 with interference bursts	zavarimpulzusokkal
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	A tesztjel egy 420 Hz-re a középtől lévő jeladó szimulált meteorvisszhangokkal: rövid alulsűrűek és néhány hosszú túlsűrű.
 Beacon echoes, 143.050 MHz	Jeladó-visszhangok, 143,050 MHz
+Voice inversion: undo a simple voice scrambler	Hanginverzió: egyszerű hangkódolás visszafejtése
+Voice inversion	Hanginverzió
+Frequency inversion only mirrors the sound of a voice; it is not encryption. In many countries it may be illegal to listen to private communications. You are responsible for what you listen to and for following the law where you are. Encrypted traffic is never touched.	A frekvenciainverzió csak tükrözi a hang spektrumát; nem titkosítás. Sok országban illegális lehet a magánjellegű kommunikáció hallgatása. Te felelsz azért, amit hallgatsz, és hogy betartod a helyi törvényeket. A titkosított forgalomhoz soha nem nyúl.
+I understand and accept	Értem és elfogadom
+Descramble the sound you hear. The decoders always get the untouched sound.	Visszafejti a hallott hangot. A dekóderek mindig az érintetlen hangot kapják.
+Simple	Egyszerű
+Split-band	Osztott sáv
+Split at	Osztás itt
+Band from	Sáv:
+Listens for 5 seconds, then tries the carrier (or split) frequencies and picks the one that sounds most like speech. Works best while someone is talking.	5 másodpercig hallgat, majd kipróbálja a vivő- (vagy osztási) frekvenciákat, és azt választja, amelyik a leginkább beszédre hasonlít. Akkor működik a legjobban, ha valaki beszél.
+Found %.0f Hz (match %.0f %%)	Találat: %.0f Hz (egyezés %.0f %%)
+Nothing speech-like found. Try again while someone is talking.	Nem találtam beszédszerűt. Próbáld újra, amikor valaki beszél.
+Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	Nem titkosítás: csak tükrözi a hangot. A titkosított forgalomhoz soha nem nyúl.
+No sound reached the descrambler: tune a voice signal first.	Nem érkezett hang a visszafejtőhöz: előbb hangolj be egy beszédjelet.

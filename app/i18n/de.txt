@@ -3189,3 +3189,17 @@ Ping	Ping
 with interference bursts	mit Störimpulsen
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Das Testsignal ist eine Bake 420 Hz neben der Mitte mit simulierten Meteorechos: kurze unterdichte und einige lange überdichte.
 Beacon echoes, 143.050 MHz	Bakenechos, 143,050 MHz
+Voice inversion: undo a simple voice scrambler	Sprachinversion: einfachen Sprachverwürfler rückgängig machen
+Voice inversion	Sprachinversion
+Frequency inversion only mirrors the sound of a voice; it is not encryption. In many countries it may be illegal to listen to private communications. You are responsible for what you listen to and for following the law where you are. Encrypted traffic is never touched.	Die Frequenzinversion spiegelt nur den Klang einer Stimme; sie ist keine Verschlüsselung. In vielen Ländern kann es verboten sein, private Kommunikation mitzuhören. Sie sind selbst dafür verantwortlich, was Sie hören und dass Sie sich an das Gesetz an Ihrem Ort halten. Verschlüsselter Verkehr wird nie angetastet.
+I understand and accept	Ich verstehe und akzeptiere
+Descramble the sound you hear. The decoders always get the untouched sound.	Entwürfelt den Klang, den Sie hören. Die Decoder bekommen immer den unveränderten Klang.
+Simple	Einfach
+Split-band	Geteiltes Band
+Split at	Teilen bei
+Band from	Band von
+Listens for 5 seconds, then tries the carrier (or split) frequencies and picks the one that sounds most like speech. Works best while someone is talking.	Hört 5 Sekunden zu, probiert dann die Träger- (oder Teil-)Frequenzen aus und wählt die, die am meisten nach Sprache klingt. Funktioniert am besten, während jemand spricht.
+Found %.0f Hz (match %.0f %%)	%.0f Hz gefunden (Übereinstimmung %.0f %%)
+Nothing speech-like found. Try again while someone is talking.	Nichts Sprachähnliches gefunden. Versuchen Sie es erneut, während jemand spricht.
+Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	Keine Verschlüsselung: Der Klang wird nur gespiegelt. Verschlüsselter Verkehr wird nie angetastet.
+No sound reached the descrambler: tune a voice signal first.	Kein Ton erreichte den Entwürfler: Stellen Sie zuerst ein Sprachsignal ein.

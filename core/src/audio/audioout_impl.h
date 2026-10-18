@@ -4,6 +4,7 @@
 #include "dect2/audio/audioout.h"
 #include "dect2/audio/audiolevel.h"
 #include "dect2/audio/audio_cleanup.h"
+#include "dect2/audio/voice_inversion.h"
 #include <atomic>
 #include <string>
 #include <vector>
@@ -23,6 +24,8 @@ struct AudioOut::Impl {
     AudioLeveler leveler;             // render thread only
     AudioCleanup cleanup;             // the writer's thread (write()), prepared in start(); follows AudioCleanupConfig::global()
     float cleanBuf[AudioCleanup::kMaxChunk * 2];
+    VoiceInversion vinv;              // before the cleanup chain (write() thread); off by default, follows VoiceInversionConfig::global()
+    float invBuf[VoiceInversion::kMaxChunk * 2];
     std::atomic<bool> muted{false};
     std::atomic<int> underruns{0};
     std::atomic<int> startThreshold{14400};

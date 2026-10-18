@@ -3189,3 +3189,17 @@ Ping	Ping
 with interference bursts	met stoorpulsen
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Het testsignaal is een baken 420 Hz naast het midden met gesimuleerde meteorenechoën: korte onderdichte en enkele lange overdichte.
 Beacon echoes, 143.050 MHz	Bakenechoën, 143,050 MHz
+Voice inversion: undo a simple voice scrambler	Stem-inversie: een eenvoudige stemvervormer ongedaan maken
+Voice inversion	Stem-inversie
+Frequency inversion only mirrors the sound of a voice; it is not encryption. In many countries it may be illegal to listen to private communications. You are responsible for what you listen to and for following the law where you are. Encrypted traffic is never touched.	Frequentie-inversie spiegelt alleen het geluid van een stem; het is geen versleuteling. In veel landen kan het illegaal zijn om privécommunicatie af te luisteren. Jij bent verantwoordelijk voor wat je beluistert en voor het naleven van de wet waar je bent. Versleuteld verkeer wordt nooit aangeraakt.
+I understand and accept	Ik begrijp het en ga akkoord
+Descramble the sound you hear. The decoders always get the untouched sound.	Herstelt het geluid dat je hoort. De decoders krijgen altijd het onaangeroerde geluid.
+Simple	Eenvoudig
+Split-band	Gesplitste band
+Split at	Splitsen bij
+Band from	Band van
+Listens for 5 seconds, then tries the carrier (or split) frequencies and picks the one that sounds most like speech. Works best while someone is talking.	Luistert 5 seconden, probeert dan de draaggolf- (of splits-)frequenties en kiest die welke het meest op spraak lijkt. Werkt het best terwijl iemand praat.
+Found %.0f Hz (match %.0f %%)	%.0f Hz gevonden (overeenkomst %.0f %%)
+Nothing speech-like found. Try again while someone is talking.	Niets gevonden dat op spraak lijkt. Probeer opnieuw terwijl iemand praat.
+Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	Geen versleuteling: het geluid wordt alleen gespiegeld. Versleuteld verkeer wordt nooit aangeraakt.
+No sound reached the descrambler: tune a voice signal first.	Er kwam geen geluid bij de descrambler: stem eerst af op een spraaksignaal.

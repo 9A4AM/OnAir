@@ -3172,3 +3172,17 @@ Ping	Пинг
 with interference bursts	с импульсными помехами
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Тестовый сигнал - маяк на 420 Гц от центра с имитацией метеорного эха: короткие недоплотные и несколько долгих сверхплотных.
 Beacon echoes, 143.050 MHz	Эхо маяка, 143,050 МГц
+Voice inversion: undo a simple voice scrambler	Инверсия голоса: отмена простого скремблера речи
+Voice inversion	Инверсия голоса
+Frequency inversion only mirrors the sound of a voice; it is not encryption. In many countries it may be illegal to listen to private communications. You are responsible for what you listen to and for following the law where you are. Encrypted traffic is never touched.	Инверсия частот лишь зеркально отражает звук голоса; это не шифрование. Во многих странах прослушивание частных переговоров может быть незаконным. Вы сами отвечаете за то, что слушаете, и за соблюдение закона в вашей стране. Зашифрованный трафик никогда не затрагивается.
+I understand and accept	Я понимаю и принимаю
+Descramble the sound you hear. The decoders always get the untouched sound.	Расшифровывает звук, который вы слышите. Декодеры всегда получают нетронутый звук.
+Simple	Простая
+Split-band	Раздельная полоса
+Split at	Разделить на
+Band from	Полоса от
+Listens for 5 seconds, then tries the carrier (or split) frequencies and picks the one that sounds most like speech. Works best while someone is talking.	Слушает 5 секунд, затем перебирает частоты несущей (или разделения) и выбирает ту, что больше всего похожа на речь. Лучше всего работает, пока кто-то говорит.
+Found %.0f Hz (match %.0f %%)	Найдено %.0f Гц (совпадение %.0f %%)
+Nothing speech-like found. Try again while someone is talking.	Ничего похожего на речь не найдено. Повторите, пока кто-то говорит.
+Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	Это не шифрование: звук только отражается зеркально. Зашифрованный трафик никогда не затрагивается.
+No sound reached the descrambler: tune a voice signal first.	Звук не дошёл до дескремблера: сначала настройтесь на голосовой сигнал.

@@ -3172,3 +3172,17 @@ Ping	Ping
 with interference bursts	com rajadas de interferência
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	O sinal de teste é um farol a 420 Hz do centro com ecos de meteoros simulados: curtos subdensos e alguns longos sobredensos.
 Beacon echoes, 143.050 MHz	Ecos do farol, 143,050 MHz
+Voice inversion: undo a simple voice scrambler	Inversão de voz: desfazer um codificador de voz simples
+Voice inversion	Inversão de voz
+Frequency inversion only mirrors the sound of a voice; it is not encryption. In many countries it may be illegal to listen to private communications. You are responsible for what you listen to and for following the law where you are. Encrypted traffic is never touched.	A inversão de frequência apenas espelha o som de uma voz; não é criptografia. Em muitos países pode ser ilegal ouvir comunicações privadas. Você é responsável pelo que ouve e por cumprir a lei onde estiver. O tráfego criptografado nunca é tocado.
+I understand and accept	Entendo e aceito
+Descramble the sound you hear. The decoders always get the untouched sound.	Decodifica o som que você ouve. Os decodificadores sempre recebem o som intacto.
+Simple	Simples
+Split-band	Banda dividida
+Split at	Dividir em
+Band from	Banda de
+Listens for 5 seconds, then tries the carrier (or split) frequencies and picks the one that sounds most like speech. Works best while someone is talking.	Escuta por 5 segundos, depois testa as frequências de portadora (ou de divisão) e escolhe a que soa mais como fala. Funciona melhor enquanto alguém fala.
+Found %.0f Hz (match %.0f %%)	Encontrado %.0f Hz (correspondência %.0f %%)
+Nothing speech-like found. Try again while someone is talking.	Nada parecido com fala encontrado. Tente de novo enquanto alguém fala.
+Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	Não é criptografia: o som apenas é espelhado. O tráfego criptografado nunca é tocado.
+No sound reached the descrambler: tune a voice signal first.	Nenhum som chegou ao decodificador: sintonize primeiro um sinal de voz.
