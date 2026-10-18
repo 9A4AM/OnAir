@@ -2949,3 +2949,24 @@ Radius (km)	Raio (km)
 Deepest zoom	Zoom máximo
 The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	O zoom é reduzido sozinho para a área ficar em 4000 blocos no máximo (a política de blocos do OpenStreetMap não permite downloads em massa).
 Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Dados de mapa (c) colaboradores do OpenStreetMap. Elementos de satélites: CelesTrak. Aeroportos: OurAirports (domínio público). Detalhes: Ajuda > Créditos.
+# Wireless M-Bus
+start the receiver to see the meters	inicie o receptor para ver os contadores
+Maker	Fabricante
+Last reading	Última leitura
+encrypted payload	dados cifrados
+no meter heard yet: most meters send every few seconds to a few minutes	ainda não se ouviu nenhum contador: a maioria emite a cada poucos segundos ou minutos
+type	tipo
+status	estado
+The payload of this meter is encrypted (AES). It is listed but never decoded.	Os dados deste contador estão cifrados (AES). Ele aparece na lista, mas nunca é decifrado.
+Meter	Contador
+no frame yet	ainda sem tramas
+CRC failures	erros de CRC
+No Wireless M-Bus channel lies inside this capture. Tune to 868.625 MHz with 2 Msps (S1, T1, C1, R2) or to 169.4375 MHz (N1).	Nenhum canal Wireless M-Bus cai dentro desta captura. Sintonize 868,625 MHz com 2 Msps (S1, T1, C1, R2) ou 169,4375 MHz (N1).
+strongest channel	canal mais forte
+last frame at the chip slicer	última trama no slicer de chips
+The demodulated frequency of the last frame, one point per chip: +-1 is the nominal deviation of the mode.	A frequência demodulada da última trama, um ponto por chip: +-1 é o desvio nominal do modo.
+Meters	Contadores
+meters	contadores
+868 MHz: S1 868.3, T1 and C1 868.95, R2 868.03 - 868.15 MHz; 169 MHz: N1 169.40625 - 169.46875 MHz. Encrypted payloads are never decoded.	868 MHz: S1 868,3, T1 e C1 868,95, R2 868,03 - 868,15 MHz; 169 MHz: N1 169,40625 - 169,46875 MHz. Dados cifrados nunca são decodificados.
+The test signal sends six simulated meters (S1, T1, C1 in both formats, R2) on the 868 MHz channels, one with an encrypted payload.	O sinal de teste emite seis contadores simulados (S1, T1, C1 nos dois formatos, R2) nos canais de 868 MHz, um com dados cifrados.
+Meters, 868 / 169 MHz	Contadores, 868 / 169 MHz

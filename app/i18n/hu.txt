@@ -2952,3 +2952,24 @@ Radius (km)	Sugár (km)
 Deepest zoom	Legnagyobb nagyítás
 The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	A nagyítás magától csökken, hogy a terület legfeljebb 4000 csempe legyen (az OpenStreetMap csempeszabályzata tiltja a tömeges letöltést).
 Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Térképadatok (c) az OpenStreetMap közreműködői. Műholdpályaadatok: CelesTrak. Repterek: OurAirports (közkincs). Részletek: Súgó > Köszönetnyilvánítás.
+# Wireless M-Bus
+start the receiver to see the meters	indítsd el a vevőt a mérők megjelenítéséhez
+Maker	Gyártó
+Last reading	Utolsó leolvasás
+encrypted payload	titkosított adatok
+no meter heard yet: most meters send every few seconds to a few minutes	még nem hallatszik mérő: a legtöbb néhány másodpercenként vagy percenként ad
+type	típus
+status	állapot
+The payload of this meter is encrypted (AES). It is listed but never decoded.	Ennek a mérőnek az adatai titkosítottak (AES). Szerepel a listán, de soha nem fejtjük vissza.
+Meter	Mérő
+no frame yet	még nincs keret
+CRC failures	CRC-hibák
+No Wireless M-Bus channel lies inside this capture. Tune to 868.625 MHz with 2 Msps (S1, T1, C1, R2) or to 169.4375 MHz (N1).	Egyetlen Wireless M-Bus csatorna sem esik ebbe a felvételbe. Hangolj 868,625 MHz-re 2 Msps-szel (S1, T1, C1, R2) vagy 169,4375 MHz-re (N1).
+strongest channel	legerősebb csatorna
+last frame at the chip slicer	az utolsó keret a chip-szeletelőnél
+The demodulated frequency of the last frame, one point per chip: +-1 is the nominal deviation of the mode.	Az utolsó keret demodulált frekvenciája, chipenként egy pont: a +-1 a mód névleges frekvenciamenete.
+Meters	Mérők
+meters	mérő
+868 MHz: S1 868.3, T1 and C1 868.95, R2 868.03 - 868.15 MHz; 169 MHz: N1 169.40625 - 169.46875 MHz. Encrypted payloads are never decoded.	868 MHz: S1 868,3, T1 és C1 868,95, R2 868,03 - 868,15 MHz; 169 MHz: N1 169,40625 - 169,46875 MHz. A titkosított adatokat soha nem dekódoljuk.
+The test signal sends six simulated meters (S1, T1, C1 in both formats, R2) on the 868 MHz channels, one with an encrypted payload.	A tesztjel hat szimulált mérőt ad (S1, T1, C1 mindkét formátumban, R2) a 868 MHz-es csatornákon, az egyik titkosított adatokkal.
+Meters, 868 / 169 MHz	Mérők, 868 / 169 MHz

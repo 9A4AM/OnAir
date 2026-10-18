@@ -2966,3 +2966,24 @@ Radius (km)	半径 (km)
 Deepest zoom	最大ズーム
 The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	範囲が4000タイル以内に収まるよう、ズームは自動的に下げられます（OpenStreetMapのタイル利用ポリシーは大量ダウンロードを認めていません）。
 Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	地図データ (c) OpenStreetMap contributors。衛星の軌道要素: CelesTrak。空港: OurAirports（パブリックドメイン）。詳細: ヘルプ > クレジット。
+# Wireless M-Bus
+start the receiver to see the meters	受信を開始するとメーターが表示されます
+Maker	メーカー
+Last reading	最新の検針値
+encrypted payload	暗号化されたペイロード
+no meter heard yet: most meters send every few seconds to a few minutes	まだメーターを受信していません。多くは数秒から数分おきに送信します
+type	種類
+status	状態
+The payload of this meter is encrypted (AES). It is listed but never decoded.	このメーターのペイロードは暗号化されています (AES)。一覧には表示しますが、復号はしません。
+Meter	メーター
+no frame yet	まだフレームなし
+CRC failures	CRCエラー
+No Wireless M-Bus channel lies inside this capture. Tune to 868.625 MHz with 2 Msps (S1, T1, C1, R2) or to 169.4375 MHz (N1).	この受信範囲に Wireless M-Bus のチャンネルがありません。868.625 MHz (2 Msps、S1・T1・C1・R2) または 169.4375 MHz (N1) に合わせてください。
+strongest channel	最も強いチャンネル
+last frame at the chip slicer	チップスライサでの最後のフレーム
+The demodulated frequency of the last frame, one point per chip: +-1 is the nominal deviation of the mode.	最後のフレームの復調周波数 (チップごとに1点)。±1 はそのモードの公称偏移です。
+Meters	メーター
+meters	メーター
+868 MHz: S1 868.3, T1 and C1 868.95, R2 868.03 - 868.15 MHz; 169 MHz: N1 169.40625 - 169.46875 MHz. Encrypted payloads are never decoded.	868 MHz: S1 868.3、T1 と C1 868.95、R2 868.03 - 868.15 MHz。169 MHz: N1 169.40625 - 169.46875 MHz。暗号化されたペイロードは復号しません。
+The test signal sends six simulated meters (S1, T1, C1 in both formats, R2) on the 868 MHz channels, one with an encrypted payload.	テスト信号は、868 MHz のチャンネルで6台の模擬メーター (S1、T1、両方式の C1、R2) を送信します。1台は暗号化ペイロードです。
+Meters, 868 / 169 MHz	メーター、868 / 169 MHz

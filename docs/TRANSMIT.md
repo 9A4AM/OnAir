@@ -93,6 +93,7 @@ This list is taken from the tables in `core/src/tx/tx.cpp` (`txModes()`).
 | uat | UAT 978 | 85 | makeUatSynth |
 | wisun | Wi-SUN | 86 | makeWisunSynth |
 | eczas | e-Czas 225 kHz | 87 | makeEczasSynth |
+| wmbus | Wireless M-Bus | 88 | makeWmbusSynth |
 | vorils | VOR / ILS | 32 | makeVorSynth |
 | m17 | M17 | 33 | makeM17Synth |
 | dstar | D-STAR | 35 | makeDstarSynth |

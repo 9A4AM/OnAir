@@ -2966,3 +2966,24 @@ Radius (km)	Straal (km)
 Deepest zoom	Diepste zoom
 The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	De zoom wordt vanzelf verlaagd zodat het gebied binnen 4000 tegels blijft (het tegelbeleid van OpenStreetMap staat bulkdownloads niet toe).
 Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Kaartgegevens (c) OpenStreetMap-bijdragers. Satellietelementen: CelesTrak. Luchthavens: OurAirports (publiek domein). Details: Help > Credits.
+# Wireless M-Bus
+start the receiver to see the meters	start de ontvanger om de meters te zien
+Maker	Fabrikant
+Last reading	Laatste meterstand
+encrypted payload	versleutelde gegevens
+no meter heard yet: most meters send every few seconds to a few minutes	nog geen meter gehoord: de meeste sturen om de paar seconden tot minuten
+type	type
+status	status
+The payload of this meter is encrypted (AES). It is listed but never decoded.	De gegevens van deze meter zijn versleuteld (AES). Hij staat in de lijst, maar wordt nooit ontsleuteld.
+Meter	Meter
+no frame yet	nog geen frame
+CRC failures	CRC-fouten
+No Wireless M-Bus channel lies inside this capture. Tune to 868.625 MHz with 2 Msps (S1, T1, C1, R2) or to 169.4375 MHz (N1).	Er valt geen Wireless M-Bus-kanaal binnen deze opname. Stem af op 868,625 MHz met 2 Msps (S1, T1, C1, R2) of op 169,4375 MHz (N1).
+strongest channel	sterkste kanaal
+last frame at the chip slicer	laatste frame bij de chipslicer
+The demodulated frequency of the last frame, one point per chip: +-1 is the nominal deviation of the mode.	De gedemoduleerde frequentie van het laatste frame, één punt per chip: +-1 is de nominale zwaai van de modus.
+Meters	Meters
+meters	meters
+868 MHz: S1 868.3, T1 and C1 868.95, R2 868.03 - 868.15 MHz; 169 MHz: N1 169.40625 - 169.46875 MHz. Encrypted payloads are never decoded.	868 MHz: S1 868,3, T1 en C1 868,95, R2 868,03 - 868,15 MHz; 169 MHz: N1 169,40625 - 169,46875 MHz. Versleutelde gegevens worden nooit gedecodeerd.
+The test signal sends six simulated meters (S1, T1, C1 in both formats, R2) on the 868 MHz channels, one with an encrypted payload.	Het testsignaal stuurt zes gesimuleerde meters (S1, T1, C1 in beide formaten, R2) op de 868-MHz-kanalen, één met versleutelde gegevens.
+Meters, 868 / 169 MHz	Meters, 868 / 169 MHz
