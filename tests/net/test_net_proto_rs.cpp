@@ -8,20 +8,13 @@
 // C++ layer the Rust code replaced.
 #include "dect2/net/net_proto.h"
 #include "../common/golden.h"
-#ifdef GOLDEN_REF   // transient, used once to record the digest from the C++ reference copy
-#include "net_proto_ref.h"
-#endif
 #include "dect2/rs/net.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <random>
-#ifdef GOLDEN_REF
-namespace A = dect2::netp_ref;
-#else
 namespace A = dect2::netp;
-#endif
 
 static golden::Digest dig;
 static long abiFails = 0;
@@ -450,5 +443,5 @@ int main() {
     radiosFamily(iters);
     abiMisuse();
     if (abiFails) return 1;
-    return golden::check("net_proto_rs", dig, 0x0ull, !getenv("ONAIR_DIFF_ITERS"));
+    return golden::check("net_proto_rs", dig, 0x6aefc1430ae8b818ull, !getenv("ONAIR_DIFF_ITERS"));
 }

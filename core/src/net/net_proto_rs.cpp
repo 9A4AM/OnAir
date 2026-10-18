@@ -1,5 +1,4 @@
-// net_proto.h on top of the Rust crate rust/onair_net (DECT2_RUST_NET): thin wrappers over the C ABI of core/include/dect2/rs/net.h. Empty when the crate is not built.
-#ifdef DECT2_RUST_NET
+// net_proto.h on top of the Rust crate rust/onair_net: thin wrappers over the C ABI of core/include/dect2/rs/net.h.
 #include "dect2/net/net_proto.h"
 #include "dect2/rs/net.h"
 #include <algorithm>
@@ -267,4 +266,3 @@ std::string radioDefaultHost(uint32_t t) { return text([&](uint8_t* b, size_t n)
 int radioPort(uint32_t t, int port) { return onair_net_radio_port(t, port); }
 
 } // namespace dect2::netp
-#endif // DECT2_RUST_NET

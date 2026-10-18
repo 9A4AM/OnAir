@@ -1,4 +1,4 @@
-// Seeded mutation run of the network protocol layers (the Rust ones under DECT2_RUST_NET), meant for DECT2_SANITIZE=ON: every parser must never crash or hang on any bytes
+// Seeded mutation run of the network protocol layers, meant for DECT2_SANITIZE=ON: every parser must never crash or hang on any bytes
 // (WebSocket frames, request heads, flat JSON, URL text, rtl_tcp / SpyServer / SDR++ messages, the menu draw list, the radio list text). Buffers are exact-size heap
 // blocks so a sanitizer sees a read or write past the end. Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/net/net_proto.h"
