@@ -184,6 +184,7 @@ static void floatingWindows(App& a, ImVec2 disp) {
     stationHealthWindow(a);
     memoryWindow(a);
     freqdbWindow(a);
+    packsWindow(a);
     // the "add a radio" windows: here, not with the source controls, so they open whichever layout is up and from the setup wizard too
     netRadioWindow(a);
     kiwiFindWindow(a);

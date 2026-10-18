@@ -88,6 +88,7 @@ void parseDevFlags(App& app, int argc, char** argv, DevOpts& o) {
         if (std::string(argv[i]) == "--rfi") app.rfiOpen = true;
         if (std::string(argv[i]) == "--images") app.galleryOpen = true;   // dev: open View > Images
         if (std::string(argv[i]) == "--hamlib") app.hamlibAddOpen = true;   // dev: open the Add Hamlib rig window
+        if (std::string(argv[i]) == "--packs") app.packsOpen = true;   // dev: open View > Data packs
         if (std::string(argv[i]) == "--map") app.mapOpen = true;   // dev: open View > Map
         if (std::string(argv[i]) == "--memory-selftest") o.memSelfTest = true;
         if (std::string(argv[i]) == "--memdev" && i + 1 < argc) memoryDev(atoi(argv[++i]));   // dev: 1 the Store current dialog, 2 the quick list as a window

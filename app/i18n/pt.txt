@@ -2686,3 +2686,30 @@ Watch for these	Vigiar estes
 Lists	Listas
 Watchlists...	Listas de vigilância...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Alertas quando aeronaves, navios, indicativos, frequências ou palavras da lista são ouvidos: notificação, som, ntfy, Telegram ou webhook
+Data packs	Pacotes de dados
+Data packs...	Pacotes de dados...
+Download map tiles, satellite elements and airports once, to work without internet	Baixe uma vez blocos de mapa, elementos de satélites e aeroportos para trabalhar sem internet
+Map tiles	Blocos de mapa
+Transmitters	Transmissores
+Downloaded: 	Baixado: 
+Stopped: 	Parado: 
+ (start it again to continue)	 (inicie de novo para continuar)
+%ld tiles, zoom %d to %d	%ld blocos, zoom %d a %d
+Pack	Pacote
+Size	Tamanho
+Last updated	Última atualização
+Action	Ação
+not downloaded	não baixado
+Update	Atualizar
+Starts the download now. Files that are already there and correct are kept.	Inicia o download agora. Os ficheiros que já existem e estão corretos são mantidos.
+Check	Verificar
+Checks every file against the checksum recorded at the download	Verifica cada ficheiro com a soma de verificação guardada no download
+Deleted: 	Eliminado: 
+Credit: 	Crédito: 
+Download data once and use it without internet. Nothing is downloaded until you click Download on a pack.	Baixe os dados uma vez e use-os sem internet. Nada é baixado até clicar em Baixar num pacote.
+Free disk space: %s	Espaço livre em disco: %s
+Map tiles around a position	Blocos de mapa em torno de uma posição
+Radius (km)	Raio (km)
+Deepest zoom	Zoom máximo
+The zoom is lowered by itself so the area stays within 4000 tiles (the OpenStreetMap tile policy does not allow bulk downloads).	O zoom é reduzido sozinho para a área ficar em 4000 blocos no máximo (a política de blocos do OpenStreetMap não permite downloads em massa).
+Map data (c) OpenStreetMap contributors. Satellite elements: CelesTrak. Airports: OurAirports (public domain). Details: Help > Credits.	Dados de mapa (c) colaboradores do OpenStreetMap. Elementos de satélites: CelesTrak. Aeroportos: OurAirports (domínio público). Detalhes: Ajuda > Créditos.
