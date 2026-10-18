@@ -3186,3 +3186,31 @@ could not write %s	не удалось записать %s
 %d symbols fixed, one rebuilt from the check character	исправлено символов: %d, один восстановлен по контрольному символу
 %d symbols taken from the second copy	символов из второй копии: %d
 In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	В списке судов запись DSC distress оповещает о каждом вызове бедствия DSC, а MMSI — об этой станции.
+#  DSC bands, scan, ship table, map
+DSC scanner	Сканер DSC
+Distress and safety (MF/HF)	Бедствие и безопасность (MF/HF)
+Worldwide calling	Всемирный вызов
+Series A calling	Вызов серии A
+Series B calling	Вызов серии B
+VHF channel 70	Канал 70 VHF
+Scan these channels with this radio	Сканировать эти каналы этим приёмником
+Steps the radio through the channels: the distress channels are visited more often, and a locked decoder or a call keeps the radio on its channel.	Переключает приёмник по каналам: каналы бедствия проверяются чаще, а захваченный декодер или вызов удерживает приёмник на канале.
+Decode the chosen MF/HF channels in the same capture	Декодировать выбранные каналы MF/HF из того же захвата
+Decodes every chosen channel that lies inside the radio's bandwidth at the same time (channels in a group are 0.5 kHz apart, the distress channels are MHz apart). Needs a sample rate of 250 kHz or more.	Одновременно декодирует все выбранные каналы, попадающие в полосу приёмника (каналы в группе разнесены на 0,5 кГц, каналы бедствия – на МГц). Нужна частота дискретизации от 250 кГц.
+scanning:	сканирование:
+extra channels:	дополнительные каналы:
+none inside the capture	нет в пределах захвата
+Ship and coast station names	Названия судов и береговых станций
+entries; ship names, call signs and types are learned from AIS (static data), and your own list can be imported.	записей; названия, позывные и типы судов берутся из AIS (статические данные), можно импортировать и свой список.
+Import list	Импорт списка
+%d records read	прочитано записей: %d
+A TSV or CSV file: MMSI, name, call sign, type, country, location. A header row (mmsi, name, callsign, type, country, station, location, lat, lon) may reorder the columns; lat and lon place coast stations on the map.	Файл TSV или CSV: MMSI, название, позывной, тип, страна, место. Строка заголовка (mmsi, name, callsign, type, country, station, location, lat, lon) может менять порядок столбцов; lat и lon ставят береговые станции на карту.
+Export list	Экспорт списка
+There is no bundled coast station list: no openly licensed one is available, so bring your own file.	Списка береговых станций в комплекте нет: списка с открытой лицензией не существует, используйте свой файл.
+Marine bands	Морские диапазоны
+A click tunes the radio and opens the mode for it.	Щелчок настраивает приёмник и открывает нужный режим.
+Protocols	Протоколы
+distress only	только бедствие
+positions	позиции
+Export KML	Экспорт KML
+Export GPX	Экспорт GPX

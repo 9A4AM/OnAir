@@ -3203,3 +3203,31 @@ could not write %s	kon %s niet schrijven
 %d symbols fixed, one rebuilt from the check character	%d symbolen hersteld, één opnieuw opgebouwd uit het controleteken
 %d symbols taken from the second copy	%d symbolen uit de tweede kopie genomen
 In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	In een scheepslijst waarschuwt de invoer DSC distress bij elke DSC-noodoproep; een MMSI waarschuwt voor dat station.
+#  DSC bands, scan, ship table, map
+DSC scanner	DSC-scanner
+Distress and safety (MF/HF)	Nood en veiligheid (MF/HF)
+Worldwide calling	Wereldwijd oproepen
+Series A calling	Oproep serie A
+Series B calling	Oproep serie B
+VHF channel 70	VHF-kanaal 70
+Scan these channels with this radio	Deze kanalen met deze radio aflopen
+Steps the radio through the channels: the distress channels are visited more often, and a locked decoder or a call keeps the radio on its channel.	Stapt de radio langs de kanalen: noodkanalen vaker, en een vergrendelde decoder of een oproep houdt de radio op zijn kanaal.
+Decode the chosen MF/HF channels in the same capture	De gekozen MF/HF-kanalen in dezelfde opname decoderen
+Decodes every chosen channel that lies inside the radio's bandwidth at the same time (channels in a group are 0.5 kHz apart, the distress channels are MHz apart). Needs a sample rate of 250 kHz or more.	Decodeert alle gekozen kanalen binnen de bandbreedte van de radio tegelijk (kanalen in een groep liggen 0,5 kHz uit elkaar, de noodkanalen MHz). Vereist een samplerate van 250 kHz of meer.
+scanning:	scannen:
+extra channels:	extra kanalen:
+none inside the capture	geen binnen de opname
+Ship and coast station names	Namen van schepen en kuststations
+entries; ship names, call signs and types are learned from AIS (static data), and your own list can be imported.	items; scheepsnamen, roepletters en types worden geleerd uit AIS (statische gegevens) en je kunt een eigen lijst importeren.
+Import list	Lijst importeren
+%d records read	%d records gelezen
+A TSV or CSV file: MMSI, name, call sign, type, country, location. A header row (mmsi, name, callsign, type, country, station, location, lat, lon) may reorder the columns; lat and lon place coast stations on the map.	Een TSV- of CSV-bestand: MMSI, naam, roepletters, type, land, plaats. Een kopregel (mmsi, name, callsign, type, country, station, location, lat, lon) kan de kolommen herordenen; lat en lon zetten kuststations op de kaart.
+Export list	Lijst exporteren
+There is no bundled coast station list: no openly licensed one is available, so bring your own file.	Er is geen meegeleverde kuststationlijst: er bestaat er geen met een open licentie, dus breng je eigen bestand mee.
+Marine bands	Maritieme banden
+A click tunes the radio and opens the mode for it.	Een klik stemt de radio af en opent de bijbehorende modus.
+Protocols	Protocollen
+distress only	alleen nood
+positions	posities
+Export KML	KML exporteren
+Export GPX	GPX exporteren

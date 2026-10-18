@@ -3203,3 +3203,31 @@ could not write %s	无法写入 %s
 %d symbols fixed, one rebuilt from the check character	已修正 %d 个符号,其中一个由校验字符重建
 %d symbols taken from the second copy	%d 个符号取自第二份副本
 In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	在船舶列表中,条目 DSC distress 会在每次 DSC 遇险呼叫时提醒;MMSI 则对该电台提醒。
+#  DSC bands, scan, ship table, map
+DSC scanner	DSC 扫描器
+Distress and safety (MF/HF)	遇险与安全 (MF/HF)
+Worldwide calling	全球呼叫
+Series A calling	A 系列呼叫
+Series B calling	B 系列呼叫
+VHF channel 70	VHF 70 频道
+Scan these channels with this radio	用此接收机扫描这些频道
+Steps the radio through the channels: the distress channels are visited more often, and a locked decoder or a call keeps the radio on its channel.	让接收机依次扫描各频道:遇险频道更常被访问,解码器锁定或有呼叫时停留在该频道。
+Decode the chosen MF/HF channels in the same capture	在同一采集中解码所选的 MF/HF 频道
+Decodes every chosen channel that lies inside the radio's bandwidth at the same time (channels in a group are 0.5 kHz apart, the distress channels are MHz apart). Needs a sample rate of 250 kHz or more.	同时解码位于接收机带宽内的所有所选频道(同组频道相隔 0.5 kHz,遇险频道相隔数 MHz)。需要 250 kHz 以上的采样率。
+scanning:	扫描中:
+extra channels:	附加频道:
+none inside the capture	采集范围内没有
+Ship and coast station names	船舶与海岸电台名称
+entries; ship names, call signs and types are learned from AIS (static data), and your own list can be imported.	条目;船名、呼号和类型从 AIS(静态数据)中学习,也可导入你自己的列表。
+Import list	导入列表
+%d records read	已读取 %d 条记录
+A TSV or CSV file: MMSI, name, call sign, type, country, location. A header row (mmsi, name, callsign, type, country, station, location, lat, lon) may reorder the columns; lat and lon place coast stations on the map.	TSV 或 CSV 文件:MMSI、名称、呼号、类型、国家、地点。标题行(mmsi, name, callsign, type, country, station, location, lat, lon)可重排列;lat 和 lon 会把海岸电台放到地图上。
+Export list	导出列表
+There is no bundled coast station list: no openly licensed one is available, so bring your own file.	未内置海岸电台列表:没有开放许可的来源,请自备文件。
+Marine bands	海事频段
+A click tunes the radio and opens the mode for it.	点击即可调谐接收机并打开相应模式。
+Protocols	协议
+distress only	仅遇险
+positions	位置
+Export KML	导出 KML
+Export GPX	导出 GPX

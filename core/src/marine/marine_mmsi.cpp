@@ -1,6 +1,10 @@
 #include "dect2/marine/marine_mmsi.h"
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 
 namespace dect2 {
 namespace marine {
@@ -98,33 +102,156 @@ MmsiInfo mmsiInfo(const std::string& m) {
     return r;
 }
 
-int MmsiNames::load(const std::string& text) {
+namespace {
+std::string trimS(std::string v) {
+    size_t a = 0, b = v.size();
+    while (a < b && (v[a] == ' ' || v[a] == '\t' || v[a] == '\r' || v[a] == '"')) a++;
+    while (b > a && (v[b - 1] == ' ' || v[b - 1] == '\t' || v[b - 1] == '\r' || v[b - 1] == '"')) b--;
+    return v.substr(a, b - a);
+}
+std::vector<std::string> splitRow(const std::string& line, char d) {
+    std::vector<std::string> r;
+    std::string cur;
+    bool q = false;
+    for (char c : line) {
+        if (c == '"') q = !q;
+        else if (c == d && !q) { r.push_back(trimS(cur)); cur.clear(); }
+        else cur += c;
+    }
+    r.push_back(trimS(cur));
+    return r;
+}
+bool nineDigits(const std::string& s) {
+    if (s.size() != 9) return false;
+    for (char c : s) if (c < '0' || c > '9') return false;
+    return true;
+}
+std::string lowerS(std::string v) { for (char& c : v) c = (char)tolower((unsigned char)c); return v; }
+bool numberOf(const std::string& s, double& v) {
+    if (s.empty()) return false;
+    char* e = nullptr;
+    v = strtod(s.c_str(), &e);
+    return e && *e == 0;
+}
+} // namespace
+
+int ShipDb::importText(const std::string& text) {
     int n = 0;
-    size_t p = 0;
-    while (p < text.size()) {
+    std::vector<std::string> lines;
+    for (size_t p = 0; p < text.size();) {
         size_t e = text.find('\n', p);
         if (e == std::string::npos) e = text.size();
-        std::string line = text.substr(p, e - p);
+        std::string l = text.substr(p, e - p);
         p = e + 1;
-        while (!line.empty() && (line.back() == '\r' || line.back() == ' ')) line.pop_back();
-        if (line.empty() || line[0] == '#') continue;
-        size_t s = line.find_first_of("\t,;");
-        if (s != 9) continue;
-        bool ok = true;
-        for (size_t i = 0; i < 9; i++) if (line[i] < '0' || line[i] > '9') ok = false;
-        std::string nm = line.substr(s + 1);
-        while (!nm.empty() && (nm[0] == ' ' || nm[0] == '\t')) nm.erase(0, 1);
-        if (!ok || nm.empty()) continue;
-        m_[line.substr(0, 9)] = nm;
+        if (!l.empty() && l[0] == '\xEF') l.erase(0, 3);       // byte order mark
+        if (trimS(l).empty() || trimS(l)[0] == '#') continue;
+        lines.push_back(l);
+    }
+    if (lines.empty()) return 0;
+    const std::string& f = lines[0];
+    const char d = f.find('\t') != std::string::npos ? '\t' : f.find(';') != std::string::npos ? ';' : ',';
+    // columns: indexes of mmsi, name, callsign, type, country, station, location, lat, lon
+    int col[9] = {0, 1, 2, 3, 4, -1, 5, -1, -1};
+    size_t first = 0;
+    const auto head = splitRow(lines[0], d);
+    if (!nineDigits(trimS(head[0]))) {
+        first = 1;
+        for (int& c : col) c = -1;
+        for (size_t i = 0; i < head.size(); i++) {
+            const std::string h = lowerS(head[i]);
+            if (h == "mmsi") col[0] = (int)i;
+            else if (h == "name" || h == "shipname" || h == "ship name" || h == "vessel") col[1] = (int)i;
+            else if (h == "callsign" || h == "call sign" || h == "call") col[2] = (int)i;
+            else if (h == "type" || h == "shiptype" || h == "ship type") col[3] = (int)i;
+            else if (h == "country" || h == "flag") col[4] = (int)i;
+            else if (h == "station" || h == "coast station" || h == "coast") col[5] = (int)i;
+            else if (h == "location" || h == "place" || h == "city") col[6] = (int)i;
+            else if (h == "lat" || h == "latitude") col[7] = (int)i;
+            else if (h == "lon" || h == "lng" || h == "longitude") col[8] = (int)i;
+        }
+        if (col[0] < 0) return 0;
+    }
+    std::lock_guard<std::mutex> lk(mu_);
+    for (size_t li = first; li < lines.size(); li++) {
+        const auto c = splitRow(lines[li], d);
+        auto at = [&](int k) { return k >= 0 && (size_t)k < c.size() ? c[(size_t)k] : std::string(); };
+        const std::string mmsi = at(col[0]);
+        if (!nineDigits(mmsi)) continue;
+        ShipRec r;
+        auto it = m_.find(mmsi);
+        if (it != m_.end()) r = it->second;
+        r.mmsi = mmsi;
+        auto set = [&](std::string& dst, int k) { const std::string v = at(k); if (!v.empty()) dst = v.substr(0, 60); };
+        set(r.name, col[1]); set(r.callsign, col[2]); set(r.type, col[3]); set(r.country, col[4]); set(r.station, col[5]); set(r.location, col[6]);
+        double la, lo;
+        if (numberOf(at(col[7]), la) && numberOf(at(col[8]), lo) && std::fabs(la) <= 90 && std::fabs(lo) <= 180) { r.hasPos = true; r.lat = la; r.lon = lo; }
+        r.source = 1;
+        m_[mmsi] = r;
         n++;
     }
+    if (n) { ver_++; dirty_ = true; }
     return n;
 }
 
-std::string MmsiNames::name(const std::string& mmsi) const {
-    auto it = m_.find(mmsi);
-    return it == m_.end() ? std::string() : it->second;
+std::string ShipDb::exportTsv() const {
+    std::lock_guard<std::mutex> lk(mu_);
+    std::vector<const ShipRec*> v;
+    for (const auto& kv : m_) v.push_back(&kv.second);
+    std::sort(v.begin(), v.end(), [](const ShipRec* a, const ShipRec* b) { return a->mmsi < b->mmsi; });
+    std::string o = "mmsi\tname\tcallsign\ttype\tcountry\tstation\tlocation\tlat\tlon\n";
+    char b[48];
+    for (const ShipRec* r : v) {
+        std::string la, lo;
+        if (r->hasPos) { snprintf(b, sizeof b, "%.5f", r->lat); la = b; snprintf(b, sizeof b, "%.5f", r->lon); lo = b; }
+        auto clean = [](std::string s) { for (char& c : s) if (c == '\t' || c == '\n' || c == '\r') c = ' '; return s; };
+        o += r->mmsi + "\t" + clean(r->name) + "\t" + clean(r->callsign) + "\t" + clean(r->type) + "\t" + clean(r->country) + "\t" + clean(r->station) + "\t" + clean(r->location) + "\t" + la + "\t" + lo + "\n";
+    }
+    return o;
 }
+
+void ShipDb::learn(const std::string& mmsi, const std::string& name, const std::string& callsign, const std::string& type) {
+    if (!nineDigits(mmsi) || (name.empty() && callsign.empty() && type.empty())) return;
+    std::lock_guard<std::mutex> lk(mu_);
+    ShipRec& r = m_[mmsi];
+    const ShipRec before = r;
+    r.mmsi = mmsi;
+    auto upd = [&](std::string& dst, const std::string& v) { if (!v.empty() && (r.source == 0 || dst.empty())) dst = v; };
+    upd(r.name, name); upd(r.callsign, callsign); upd(r.type, type);
+    if (r.country.empty()) r.country = mmsiInfo(mmsi).country;
+    if (before.name != r.name || before.callsign != r.callsign || before.type != r.type || before.country != r.country) { ver_++; dirty_ = true; }
+}
+
+bool ShipDb::find(const std::string& mmsi, ShipRec& out) const {
+    std::lock_guard<std::mutex> lk(mu_);
+    auto it = m_.find(mmsi);
+    if (it == m_.end()) return false;
+    out = it->second;
+    return true;
+}
+
+std::string ShipDb::name(const std::string& mmsi) const {
+    std::lock_guard<std::mutex> lk(mu_);
+    auto it = m_.find(mmsi);
+    if (it == m_.end()) return "";
+    const ShipRec& r = it->second;
+    std::string n = !r.name.empty() ? r.name : r.station;
+    if (!r.location.empty() && !n.empty() && n.find(r.location) == std::string::npos) n += ", " + r.location;
+    return n;
+}
+
+std::vector<ShipRec> ShipDb::positioned() const {
+    std::lock_guard<std::mutex> lk(mu_);
+    std::vector<ShipRec> v;
+    for (const auto& kv : m_) if (kv.second.hasPos) v.push_back(kv.second);
+    std::sort(v.begin(), v.end(), [](const ShipRec& a, const ShipRec& b) { return a.mmsi < b.mmsi; });
+    return v;
+}
+
+size_t ShipDb::size() const { std::lock_guard<std::mutex> lk(mu_); return m_.size(); }
+uint64_t ShipDb::version() const { std::lock_guard<std::mutex> lk(mu_); return ver_; }
+bool ShipDb::takeDirty() { std::lock_guard<std::mutex> lk(mu_); const bool d = dirty_; dirty_ = false; return d; }
+void ShipDb::clear() { std::lock_guard<std::mutex> lk(mu_); m_.clear(); ver_++; dirty_ = true; }
+ShipDb& ShipDb::global() { static ShipDb g; return g; }
 
 } // namespace marine
 } // namespace dect2

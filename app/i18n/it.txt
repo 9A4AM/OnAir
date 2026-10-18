@@ -3186,3 +3186,31 @@ could not write %s	impossibile scrivere %s
 %d symbols fixed, one rebuilt from the check character	%d simboli corretti, uno ricostruito con il carattere di controllo
 %d symbols taken from the second copy	%d simboli presi dalla seconda copia
 In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	In un elenco di navi, la voce DSC distress avvisa a ogni chiamata di soccorso DSC; un MMSI avvisa per quella stazione.
+#  DSC bands, scan, ship table, map
+DSC scanner	Scanner DSC
+Distress and safety (MF/HF)	Soccorso e sicurezza (MF/HF)
+Worldwide calling	Chiamata mondiale
+Series A calling	Chiamata serie A
+Series B calling	Chiamata serie B
+VHF channel 70	Canale 70 VHF
+Scan these channels with this radio	Scansiona questi canali con questa radio
+Steps the radio through the channels: the distress channels are visited more often, and a locked decoder or a call keeps the radio on its channel.	Fa scorrere la radio sui canali: quelli di soccorso sono visitati più spesso, e un decodificatore agganciato o una chiamata tiene la radio sul suo canale.
+Decode the chosen MF/HF channels in the same capture	Decodifica i canali MF/HF scelti nella stessa acquisizione
+Decodes every chosen channel that lies inside the radio's bandwidth at the same time (channels in a group are 0.5 kHz apart, the distress channels are MHz apart). Needs a sample rate of 250 kHz or more.	Decodifica contemporaneamente ogni canale scelto che rientra nella banda della radio (i canali di un gruppo distano 0,5 kHz, quelli di soccorso diversi MHz). Richiede una frequenza di campionamento di almeno 250 kHz.
+scanning:	scansione:
+extra channels:	canali aggiuntivi:
+none inside the capture	nessuno nell'acquisizione
+Ship and coast station names	Nomi di navi e stazioni costiere
+entries; ship names, call signs and types are learned from AIS (static data), and your own list can be imported.	voci; nomi, nominativi e tipi delle navi sono appresi dall'AIS (dati statici) e si può importare una lista propria.
+Import list	Importa elenco
+%d records read	%d record letti
+A TSV or CSV file: MMSI, name, call sign, type, country, location. A header row (mmsi, name, callsign, type, country, station, location, lat, lon) may reorder the columns; lat and lon place coast stations on the map.	Un file TSV o CSV: MMSI, nome, nominativo, tipo, paese, luogo. Una riga di intestazione (mmsi, name, callsign, type, country, station, location, lat, lon) può riordinare le colonne; lat e lon collocano le stazioni costiere sulla mappa.
+Export list	Esporta elenco
+There is no bundled coast station list: no openly licensed one is available, so bring your own file.	Non c'è un elenco di stazioni costiere incluso: non ne esiste uno con licenza aperta, quindi porta il tuo file.
+Marine bands	Bande marittime
+A click tunes the radio and opens the mode for it.	Un clic sintonizza la radio e apre la modalità corrispondente.
+Protocols	Protocolli
+distress only	solo soccorso
+positions	posizioni
+Export KML	Esporta KML
+Export GPX	Esporta GPX

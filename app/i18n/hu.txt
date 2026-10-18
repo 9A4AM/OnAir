@@ -3189,3 +3189,31 @@ could not write %s	nem sikerült írni: %s
 %d symbols fixed, one rebuilt from the check character	%d szimbólum javítva, egy az ellenőrző karakterből helyreállítva
 %d symbols taken from the second copy	%d szimbólum a második másolatból
 In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	Hajólistában a DSC distress bejegyzés minden DSC vészhívásnál riaszt; egy MMSI az adott állomásnál.
+#  DSC bands, scan, ship table, map
+DSC scanner	DSC-szkenner
+Distress and safety (MF/HF)	Vész és biztonság (MF/HF)
+Worldwide calling	Világszintű hívás
+Series A calling	A sorozatú hívás
+Series B calling	B sorozatú hívás
+VHF channel 70	70-es VHF csatorna
+Scan these channels with this radio	Ezeknek a csatornáknak a pásztázása ezzel a rádióval
+Steps the radio through the channels: the distress channels are visited more often, and a locked decoder or a call keeps the radio on its channel.	Végigléptet a csatornákon: a vészcsatornákat gyakrabban látogatja, a rögzült dekóder vagy egy hívás a csatornán tartja a rádiót.
+Decode the chosen MF/HF channels in the same capture	A kiválasztott MF/HF csatornák dekódolása ugyanabból a felvételből
+Decodes every chosen channel that lies inside the radio's bandwidth at the same time (channels in a group are 0.5 kHz apart, the distress channels are MHz apart). Needs a sample rate of 250 kHz or more.	Egyszerre dekódolja a rádió sávján belül eső minden kiválasztott csatornát (egy csoport csatornái 0,5 kHz-re vannak, a vészcsatornák MHz-ekre). Legalább 250 kHz mintavételi frekvencia kell.
+scanning:	pásztázás:
+extra channels:	további csatornák:
+none inside the capture	nincs a felvételen belül
+Ship and coast station names	Hajók és parti állomások nevei
+entries; ship names, call signs and types are learned from AIS (static data), and your own list can be imported.	bejegyzés; a hajónevek, hívójelek és típusok az AIS-ből (statikus adatok) tanulódnak, saját lista is importálható.
+Import list	Lista importálása
+%d records read	%d rekord beolvasva
+A TSV or CSV file: MMSI, name, call sign, type, country, location. A header row (mmsi, name, callsign, type, country, station, location, lat, lon) may reorder the columns; lat and lon place coast stations on the map.	TSV vagy CSV fájl: MMSI, név, hívójel, típus, ország, hely. Egy fejléc (mmsi, name, callsign, type, country, station, location, lat, lon) átrendezheti az oszlopokat; a lat és lon a parti állomásokat a térképre teszi.
+Export list	Lista exportálása
+There is no bundled coast station list: no openly licensed one is available, so bring your own file.	Nincs mellékelt parti állomás lista: nyílt licencű nem érhető el, hozza a saját fájlját.
+Marine bands	Tengerészeti sávok
+A click tunes the radio and opens the mode for it.	Egy kattintás ráhangolja a rádiót és megnyitja a hozzá tartozó módot.
+Protocols	Protokollok
+distress only	csak vészhívás
+positions	pozíciók
+Export KML	KML exportálása
+Export GPX	GPX exportálása

@@ -60,6 +60,7 @@ struct DscCall {
     int repaired = 0;                // symbols taken from the second copy or rebuilt with the check character
     bool recovered = false;          // one or more unreadable symbols were rebuilt with the check character
     std::string fromName, toName;    // from the user's MMSI name table (filled by the UI)
+    double freqHz = 0;               // the carrier it was heard on (0 = unknown)
 };
 
 struct MarineFaxInfo {
@@ -90,6 +91,8 @@ struct MarineTelemetry {
     int serviceActive = 0;       // what the receiver has heard last: 0 nothing, 1 NAVTEX, 2 DSC (MF/HF), 3 fax, 4 DSC (VHF)
     bool navtexLocked = false, dscLocked = false;
     bool dscVhfActive = false;
+    struct ParInfo { double hz = 0; bool fsk = false, locked = false; uint32_t calls = 0; };
+    std::vector<ParInfo> parallel;           // extra DSC channels monitored inside the same capture
     // signal
     double toneHighHz = 0, toneLowHz = 0;   // FSK tones measured relative to the carrier (0 Hz = the tuned frequency); 0 when no FSK signal
     double shiftHz = 0;                      // measured shift

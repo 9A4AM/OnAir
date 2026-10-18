@@ -3203,3 +3203,31 @@ could not write %s	%s に書き込めませんでした
 %d symbols fixed, one rebuilt from the check character	%d シンボルを修正、1つはチェック文字から復元
 %d symbols taken from the second copy	%d シンボルを2番目のコピーから採用
 In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	船舶リストでは、項目 DSC distress がすべてのDSC遭難呼び出しで通知し、MMSI はその局で通知します。
+#  DSC bands, scan, ship table, map
+DSC scanner	DSCスキャナー
+Distress and safety (MF/HF)	遭難・安全 (MF/HF)
+Worldwide calling	世界共通の呼出
+Series A calling	シリーズA呼出
+Series B calling	シリーズB呼出
+VHF channel 70	VHF 70チャンネル
+Scan these channels with this radio	この無線機でこれらのチャンネルをスキャン
+Steps the radio through the channels: the distress channels are visited more often, and a locked decoder or a call keeps the radio on its channel.	無線機をチャンネル順に切り替えます。遭難チャンネルは頻繁に巡回し、デコーダーがロックした間や呼び出しの間はそのチャンネルに留まります。
+Decode the chosen MF/HF channels in the same capture	選択したMF/HFチャンネルを同じ受信帯域で同時にデコード
+Decodes every chosen channel that lies inside the radio's bandwidth at the same time (channels in a group are 0.5 kHz apart, the distress channels are MHz apart). Needs a sample rate of 250 kHz or more.	無線機の帯域内にある選択チャンネルをすべて同時にデコードします(同じグループのチャンネルは0.5 kHz間隔、遭難チャンネルは数MHz離れています)。サンプルレートは250 kHz以上が必要です。
+scanning:	スキャン中:
+extra channels:	追加チャンネル:
+none inside the capture	帯域内になし
+Ship and coast station names	船舶・海岸局の名前
+entries; ship names, call signs and types are learned from AIS (static data), and your own list can be imported.	件。船名・コールサイン・種類はAIS(静的データ)から学習され、独自のリストも取り込めます。
+Import list	リストを取り込む
+%d records read	%d 件を読み込みました
+A TSV or CSV file: MMSI, name, call sign, type, country, location. A header row (mmsi, name, callsign, type, country, station, location, lat, lon) may reorder the columns; lat and lon place coast stations on the map.	TSV または CSV ファイル:MMSI、名前、コールサイン、種類、国、場所。ヘッダー行(mmsi, name, callsign, type, country, station, location, lat, lon)で列の順序を変えられ、lat と lon で海岸局を地図に表示します。
+Export list	リストを書き出す
+There is no bundled coast station list: no openly licensed one is available, so bring your own file.	同梱の海岸局リストはありません。オープンライセンスのものがないため、ご自身のファイルを取り込んでください。
+Marine bands	海上バンド
+A click tunes the radio and opens the mode for it.	クリックすると無線機を同調し、対応するモードを開きます。
+Protocols	プロトコル
+distress only	遭難のみ
+positions	位置
+Export KML	KMLを書き出す
+Export GPX	GPXを書き出す

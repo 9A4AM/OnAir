@@ -70,8 +70,8 @@ int main() {
         a = mmsiInfo("23212~456"); CHECK(a.partial && a.mid == 232, "partial");
         a = mmsiInfo("2~2123456"); CHECK(a.partial && a.country.empty(), "partial mid");
         a = mmsiInfo("12"); CHECK(a.kind == MmsiKind::Unknown, "short");
-        MmsiNames nm;
-        CHECK(nm.load("# c\n232123456\tMV Example\r\n002320064,Solent Coastguard\nbad\n232123456;Renamed\n") == 3 && nm.name("232123456") == "Renamed" && nm.name("002320064") == "Solent Coastguard" && nm.name("1") == "", "names");
+        ShipDb nm;
+        CHECK(nm.importText("# c\n232123456\tMV Example\r\n002320064\tSolent Coastguard\nbad\n232123456\tRenamed\n") == 3 && nm.name("232123456") == "Renamed" && nm.name("002320064") == "Solent Coastguard" && nm.name("1") == "", "names");
     }
     const auto distress = dscBuildDistress("232123456", 103, 50.85, -1.3, 12, 34, 109);
     const auto indiv = dscBuildIndividual("002320064", 100, "232123456", 118, 126, -1, -1);
