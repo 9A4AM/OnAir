@@ -4,10 +4,11 @@
 #include "dect2/tx.h"
 #include <filesystem>
 #include <functional>
+#include <iostream>
 using namespace dect2;
 namespace fs = std::filesystem;
 static int failures = 0;
-#define CHECK(c, fmt, ...) do { if (!(c)) { printf("FAIL: " fmt "\n" __VA_OPT__(,) __VA_ARGS__); ++failures; } } while (0)
+#define CHECK(c, message) do { if (!(c)) { std::cerr << "FAIL: " << message << '\n'; ++failures; } } while (0)
 static double (*state)(const char*) = nullptr;
 static void (*set)(const char*, double) = nullptr;
 static double st(const char* key) { return std::max(0.0, state(key)); }
@@ -74,7 +75,7 @@ int main(int argc, char** argv) {
     TxTune t; t.centerHz = 145e6; t.sampleRate = 2.1e6; t.gainDb = -60; t.radio["ppm"] = "10";
     const std::vector<cf32> samples(1 << 15, cf32(0.25f, -0.125f));
     std::string err;
-    auto send = [&] { err.clear(); CHECK(tx->write(samples.data(), samples.size(), err), "TX writes: %s", err.c_str()); };
+    auto send = [&] { err.clear(); CHECK(tx->write(samples.data(), samples.size(), err), "TX writes: " << err); };
     auto noLeaks = [&] {
         CHECK(st("pluto.contextOpens") == st("pluto.contextCloses"), "last direction closes context");
         CHECK(st("pluto.rxBufferOpens") == st("pluto.rxBufferCloses"), "RX buffers released");
@@ -82,17 +83,17 @@ int main(int argc, char** argv) {
         CHECK(st("pluto.closeWithBuffers") == 0 && st("pluto.duplicateBuffers") == 0, "no live buffer loses its context");
     };
     // RX first: use its faster clock, do not program the sample rate a second time.
-    CHECK(rx->start(r, ring, err), "RX first: %s", err.c_str());
+    CHECK(rx->start(r, ring, err), "RX first: " << err);
     receive(ring);
     const double opens = st("pluto.contextOpens"), rates = st("pluto.rateWrites");
-    CHECK(tx->open(t, err), "TX joins RX: %s", err.c_str());
+    CHECK(tx->open(t, err), "TX joins RX: " << err);
     CHECK(tx->sampleRate() == 4e6 && st("pluto.contextOpens") == opens && st("pluto.rateWrites") == rates, "TX adopts RX rate and context");
     CHECK(st("pluto.phy:altvoltage1.frequency") == t.centerHz, "TX does not apply RX's shared ppm twice");
     send(); receive(ring);
     // Live retune can change LO/gain/ppm without moving the shared reference clock.
     r.centerHz += 1e6; r.gainDb = 25; r.radio["ppm"] = "20";
     const double xoWrites = st("pluto.xoWrites");
-    CHECK(rx->retune(r, err), "RX tunes during TX: %s", err.c_str());
+    CHECK(rx->retune(r, err), "RX tunes during TX: " << err);
     CHECK(st("pluto.xoWrites") == xoWrites, "live ppm does not change TX's clock");
     CHECK(std::abs(st("pluto.phy:altvoltage0.frequency") - ppmCorrectedHz(r.centerHz, 20) * (1.0 + 10e-6)) < 1, "RX residual ppm uses its LO");
     send(); receive(ring);
@@ -108,7 +109,7 @@ int main(int argc, char** argv) {
     receive(ring); send();
     bad = r; bad.sampleRate = 2.048e6;
     const double firWrites = st("pluto.firWrites");
-    CHECK(rx->retune(bad, err), "low-rate RX uses TX's clock: %s", err.c_str());
+    CHECK(rx->retune(bad, err), "low-rate RX uses TX's clock: " << err);
     CHECK(rx->sampleRate() == 4e6 && st("pluto.firWrites") == firWrites && st("pluto.rateWrites") == rates,
           "low-rate request never loads a FIR or changes TX's clock");
     bad.radio["lowratefir"] = "1";
@@ -132,26 +133,26 @@ int main(int argc, char** argv) {
     tx->close(); tx->close();
     CHECK(st("pluto.contextCloses") == closes && st("pluto.rx:voltage0.enabled") == 1, "TX stop retains RX context and channels");
     receive(ring);
-    CHECK(tx->open(t, err), "TX restarts alongside RX: %s", err.c_str());
+    CHECK(tx->open(t, err), "TX restarts alongside RX: " << err);
     rx->stop(); rx->stop();
     CHECK(st("pluto.contextCloses") == closes && st("pluto.tx:voltage0.enabled") == 1, "RX stop retains TX context and channels");
     CHECK(st("pluto.phy.xo_correction") == 40000400, "RX stop leaves shared clock unchanged while TX runs");
     send(); tx->close();
     CHECK(st("pluto.phy.xo_correction") == 40000000, "last close restores clock"); noLeaks();
     // TX first: RX can adopt its higher clock without writing shared configuration.
-    t.sampleRate = 4e6; CHECK(tx->open(t, err), "TX first: %s", err.c_str());
+    t.sampleRate = 4e6; CHECK(tx->open(t, err), "TX first: " << err);
     r.sampleRate = 2.048e6; r.radio["ppm"] = "10";
     const double txRates = st("pluto.rateWrites"), txXo = st("pluto.xoWrites");
-    CHECK(rx->start(r, ring, err), "RX joins TX: %s", err.c_str());
+    CHECK(rx->start(r, ring, err), "RX joins TX: " << err);
     CHECK(rx->sampleRate() == 4e6 && st("pluto.rateWrites") == txRates && st("pluto.xoWrites") == txXo, "RX adopts TX rate and preserves clock");
     receive(ring); send(); rx->stop(); send(); tx->close(); noLeaks();
     // The default low-rate RX must also allow TX to join, without a FIR or a clock change.
     t.sampleRate = 2.1e6; r.sampleRate = 2.048e6;
     const double beforeFir = st("pluto.firWrites");
-    CHECK(rx->start(r, ring, err), "default low-rate RX starts: %s", err.c_str());
+    CHECK(rx->start(r, ring, err), "default low-rate RX starts: " << err);
     CHECK(rx->sampleRate() == 2.1e6 && st("pluto.firWrites") == beforeFir, "RX defaults to a duplex-compatible clock");
     const double beforeJoin = st("pluto.rateWrites");
-    CHECK(tx->open(t, err), "TX joins default 2.048 Msps RX: %s", err.c_str());
+    CHECK(tx->open(t, err), "TX joins default 2.048 Msps RX: " << err);
     CHECK(tx->sampleRate() == 2.1e6 && st("pluto.rateWrites") == beforeJoin, "TX preserves the RX clock");
     receive(ring); send(); rx->stop(); tx->close(); noLeaks();
     // Reproduce the reported startup failure with TX already running at the minimum rate.
@@ -160,14 +161,14 @@ int main(int argc, char** argv) {
     CHECK(!rx->start(r, ring, err) && err.find("disable Low-rate FIR") != std::string::npos,
           "explicit RX-only FIR cannot join TX");
     send(); r.radio.erase("lowratefir");
-    CHECK(rx->start(r, ring, err), "2.048 Msps RX joins 2.1 Msps TX: %s", err.c_str());
+    CHECK(rx->start(r, ring, err), "2.048 Msps RX joins 2.1 Msps TX: " << err);
     CHECK(rx->sampleRate() == 2.1e6 && st("pluto.firWrites") == beforeFir, "RX uses the minimum TX clock without a FIR");
     receive(ring); send(); rx->stop(); tx->close(); noLeaks();
     t.sampleRate = 4e6;
     // Startup failures release only the failing direction, and a subsequent start works.
     r.sampleRate = 4e6; CHECK(rx->start(r, ring, err), "RX for failed TX");
     for (const char* fault : {"pluto.failTxBuffer", "pluto.failTxFrequency", "pluto.tdd", "pluto.ensmUnreadable"}) {
-        set(fault, 1); CHECK(!tx->open(t, err), "TX failure injected: %s", fault);
+        set(fault, 1); CHECK(!tx->open(t, err), "TX failure injected: " << fault);
         tx->close(); receive(ring); set(fault, 0);
     }
     t.sampleRate = 8e6; CHECK(!tx->open(t, err), "TX cannot raise active RX rate"); receive(ring);
@@ -204,7 +205,7 @@ int main(int argc, char** argv) {
     bool changed = true; std::string changeErr;
     std::thread changer([&] { changed = rx->retune(bad, changeErr); });
     CHECK(waitFor([&] { return st("pluto.cancelWaiting") == 1; }), "RX paused between preflight and configure");
-    CHECK(tx->open(t, err), "TX starts during RX retune: %s", err.c_str());
+    CHECK(tx->open(t, err), "TX starts during RX retune: " << err);
     const double raceRates = st("pluto.rateWrites");
     changer.join(); set("pluto.cancelDelayMs", 0);
     CHECK(!changed && st("pluto.rateWrites") == raceRates, "racing retune refuses to change TX clock");
@@ -219,7 +220,7 @@ int main(int argc, char** argv) {
         std::thread rt([&] { rendezvous(); rxOk = rx->start(r, ring, rxErr); });
         std::thread tt([&] { rendezvous(); txOk = tx->open(t, txErr); });
         rt.join(); tt.join();
-        CHECK(rxOk && txOk, "concurrent starts: RX %s, TX %s", rxErr.c_str(), txErr.c_str());
+        CHECK(rxOk && txOk, "concurrent starts: RX " << rxErr << ", TX " << txErr);
         receive(ring); send();
         std::thread rs([&] { rx->stop(); });
         std::thread ts([&] { tx->close(); });
@@ -232,7 +233,7 @@ int main(int argc, char** argv) {
         TxRequest request; request.modeId = "dab"; request.tune = t; request.tune.sampleRate = 4e6;
         request.loop = false; request.onceSeconds = 0.1;
         TxSession session;
-        CHECK(session.start(native::makePlutoTx(d), request, {2.1e6, 61.44e6}, err), "manual 4 Msps TX joins 4 Msps RX: %s", err.c_str());
+        CHECK(session.start(native::makePlutoTx(d), request, {2.1e6, 61.44e6}, err), "manual 4 Msps TX joins 4 Msps RX: " << err);
         CHECK(waitFor([&] { return !session.running(); }, 5000), "manual TX session completes");
         CHECK(session.stats().finished && session.stats().rateHz == 4e6, "manual Fs drives the generator and sink");
         session.stop(); receive(ring); rx->stop(); noLeaks();
@@ -240,7 +241,7 @@ int main(int argc, char** argv) {
         CHECK(rx->start(r, ring, err), "RX for conflicting manual TX Fs");
         const double pushed = st("pluto.txPushes"), written = st("pluto.rateWrites");
         CHECK(!session.start(native::makePlutoTx(d), request, {2.1e6, 61.44e6}, err) && err.find("not the requested TX rate") != std::string::npos,
-              "manual 4 Msps cannot silently become RX's 8 Msps: %s", err.c_str());
+              "manual 4 Msps cannot silently become RX's 8 Msps: " << err);
         CHECK(st("pluto.txPushes") == pushed && st("pluto.rateWrites") == written, "manual conflict sends no IQ and preserves RX clock");
         receive(ring); session.stop(); rx->stop(); noLeaks();
     }
