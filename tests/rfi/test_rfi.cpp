@@ -1,5 +1,6 @@
 // Interference hunter: spur and comb finding, classification (switching supply, LED lamp, powerline, clock / oscillator leak), the monitor
 // (baseline, new-interference alerts, floor rise, clearing, no false alarms), the walk meter and logs, and the NMEA parser. Synthetic sweeps only.
+#include "../common/tmp_path.h"
 #include "dect2/rfi/rfi.h"
 #include <cmath>
 #include <cstdio>
@@ -163,9 +164,9 @@ static void testMonitor() {
     }
     // exports
     std::string err;
-    CHECK(m.exportLogCsv("/tmp/rfi_test_log.csv", err), "log csv %s", err.c_str());
-    CHECK(m.exportFloorCsv("/tmp/rfi_test_floor.csv", err), "floor csv");
-    std::remove("/tmp/rfi_test_log.csv"); std::remove("/tmp/rfi_test_floor.csv");
+    CHECK(m.exportLogCsv(tmpPath("rfi_test_log.csv"), err), "log csv %s", err.c_str());
+    CHECK(m.exportFloorCsv(tmpPath("rfi_test_floor.csv"), err), "floor csv");
+    std::remove(tmpPath("rfi_test_log.csv")); std::remove(tmpPath("rfi_test_floor.csv"));
     // degenerate input
     Sweep e;
     CHECK(m.add(e).empty(), "empty sweep ignored");
@@ -257,15 +258,15 @@ static void testWalk() {
     w.add(simulateSweep(quiet, 200), nullptr, nullptr);
     CHECK(w.readings().size() == n + 1 && !w.readings().back().hasPos, "reading without a position");
     std::string err;
-    CHECK(w.exportCsv("/tmp/rfi_walk.csv", err), "walk csv");
-    CHECK(w.exportGpx("/tmp/rfi_walk.gpx", err), "walk gpx");
-    std::ifstream f("/tmp/rfi_walk.csv"); std::stringstream ss; ss << f.rdbuf();
+    CHECK(w.exportCsv(tmpPath("rfi_walk.csv"), err), "walk csv");
+    CHECK(w.exportGpx(tmpPath("rfi_walk.gpx"), err), "walk gpx");
+    std::ifstream f(tmpPath("rfi_walk.csv")); std::stringstream ss; ss << f.rdbuf();
     int lines = 0; for (char c : ss.str()) if (c == '\n') lines++;
     CHECK((size_t)lines == n + 2, "csv lines %d vs %zu", lines, n + 2);
-    std::ifstream g("/tmp/rfi_walk.gpx"); std::stringstream gs; gs << g.rdbuf();
+    std::ifstream g(tmpPath("rfi_walk.gpx")); std::stringstream gs; gs << g.rdbuf();
     size_t wpt = 0, pos = 0; while ((pos = gs.str().find("<wpt ", pos)) != std::string::npos) { wpt++; pos++; }
     CHECK(wpt == n, "gpx waypoints %zu vs %zu", wpt, n);
-    std::remove("/tmp/rfi_walk.csv"); std::remove("/tmp/rfi_walk.gpx");
+    std::remove(tmpPath("rfi_walk.csv")); std::remove(tmpPath("rfi_walk.gpx"));
     w.clear();
     CHECK(w.readings().empty() && w.loudest() == -1, "cleared");
 }

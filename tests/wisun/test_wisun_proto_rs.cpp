@@ -5,6 +5,7 @@
 // doubles rounded to 1e-6) compared with the one recorded from the C++ layers the Rust code replaced.
 #include "dect2/wisun/wisun_proto.h"
 #include "../common/golden.h"
+#include "../common/ordered.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -16,6 +17,7 @@ static golden::Digest dig;
 static std::mt19937 g(2468);
 static uint32_t r32() { return g(); }
 static uint8_t rb() { return (uint8_t)g(); }
+static uint64_t r64() { const uint64_t hi = (uint64_t)r32() << 32; return hi | r32(); }   // (two draws in one expression would be evaluated in an unspecified order)
 
 static void addSched(const A::Schedule& a) {
     dig.add(a.present, a.bcastIntervalMs, a.bsi, a.dwellMs, a.clockDrift, a.timingAccuracy, a.chPlan, a.chFunction, a.excluded, a.regDomain);
@@ -37,7 +39,7 @@ static std::vector<uint8_t> mutate(std::vector<uint8_t> v) {
         case 0: v[g() % v.size()] = rb(); break;
         case 1: v[g() % v.size()] ^= (uint8_t)(1u << (g() % 8)); break;
         case 2: v.erase(v.begin() + (long)(g() % v.size())); break;
-        case 3: v.insert(v.begin() + (long)(g() % (v.size() + 1)), rb()); break;
+        case 3: ORD_CALL(v.insert, v.begin() + (long)(g() % (v.size() + 1)), rb()); break;   // ORD_*: draws in a fixed order (arguments and operands are not evaluated in one)
         default: v.resize(g() % (v.size() + 1)); break;
         }
     }
@@ -193,9 +195,9 @@ int main() {
         if (mode < 4) {
             A::Build b;
             b.utt = (int)(g() % 12); b.secured = g() % 4 == 0; b.keyIndex = (int)(g() % 5); b.frameCounter = r32(); b.seq = g() % 2 ? -1 : (int)(g() % 256);
-            b.src = g() % 4 ? ((uint64_t)r32() << 32 | r32()) : 0; b.dst = g() % 2 ? ((uint64_t)r32() << 32 | r32()) : 0;
+            b.src = g() % 4 ? r64() : 0; b.dst = g() % 2 ? r64() : 0;
             b.srcPanPresent = g() % 2; b.pan = (uint16_t)g(); b.ackReq = g() % 2; b.ufsi = r32() & 0xFFFFFF; b.bt = g() % 2; b.bsn = (int)(g() % 65536); b.bio = r32() & 0xFFFFFF;
-            b.rslDbm = g() % 2 ? -999 : (int)(g() % 100) - 120; b.ea = g() % 2 ? 0 : ((uint64_t)r32() << 32 | r32()); b.lbc = g() % 3 == 0; b.lfnBcastMs = r32() & 0xFFFFFF;
+            b.rslDbm = g() % 2 ? -999 : (int)(g() % 100) - 120; b.ea = g() % 2 ? 0 : r64(); b.lbc = g() % 3 == 0; b.lfnBcastMs = r32() & 0xFFFFFF;
             for (A::Schedule* s : {&b.us, &b.bs}) {
                 s->present = g() % 2;
                 s->bcastIntervalMs = r32() % 100000; s->bsi = (int)(g() % 65536); s->dwellMs = (int)(g() % 256); s->clockDrift = (int)(g() % 256); s->timingAccuracy = (int)(g() % 256);

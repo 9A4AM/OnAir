@@ -111,7 +111,7 @@ int main() {
         CHECK(ts.open(c) && !fs::exists(dir / "ts_00000007.seg") && fs::exists(dir / "notes.txt"), "stale segments only");
         ts.close();
         // unwritable folder
-        DiskTimeshift bad; TimeshiftConfig b; b.dir = "/proc/nonexistent/x";
+        DiskTimeshift bad; TimeshiftConfig b; b.dir = (dir / "notes.txt" / "x").string();   // below a plain file: cannot be created anywhere
         CHECK(!bad.open(b), "bad folder");
     }
     {   // ---- file source

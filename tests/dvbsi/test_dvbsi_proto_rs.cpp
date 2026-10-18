@@ -8,6 +8,7 @@
 #include "dect2/tv/dvbsub.h"
 #include "dect2/tv/teletext.h"
 #include "../common/golden.h"
+#include "../common/ordered.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -23,6 +24,7 @@ static std::mt19937 g(777);
 static uint32_t r32() { return g(); }
 using Buf = std::vector<uint8_t>;
 static void rnd(Buf& b, size_t n) { for (size_t i = 0; i < n; i++) b.push_back((uint8_t)r32()); }
+static uint32_t orOf(uint32_t a, uint32_t b) { return a | b; }   // with ORD_CALL: both parts draw, and the operands of | are not evaluated in a fixed order
 static void put(Buf& b, std::initializer_list<int> v) { for (int x : v) b.push_back((uint8_t)x); }
 static void cat(Buf& a, const Buf& b) { a.insert(a.end(), b.begin(), b.end()); }
 
@@ -135,8 +137,8 @@ static void testTeletext() {
         dig.add(A::ttxHamming2418(w));
         if (A::ttxHamming2418(w) >= 0) rsStat[2]++;
         // data units
-        const Buf u = (r32() % 4 == 0) ? [&] { Buf x; rnd(x, 44); return x; }() : teletextUnit((int)(r32() % 9), r32() % 3 == 0 ? 0 : r32() % 4 == 0 ? 27 : (int)(r32() % 32), false, 0);
-        const Buf hu = teletextUnit((int)(r32() % 9), 0, true, (int)(r32() % 100));
+        const Buf u = (r32() % 4 == 0) ? [&] { Buf x; rnd(x, 44); return x; }() : ORD_CALL(teletextUnit, (int)(r32() % 9), r32() % 3 == 0 ? 0 : r32() % 4 == 0 ? 27 : (int)(r32() % 32), false, 0);   // ORD_*: draws in a fixed order (arguments and operands are not evaluated in one)
+        const Buf hu = ORD_CALL(teletextUnit, (int)(r32() % 9), 0, true, (int)(r32() % 100));
         for (const Buf* x : {&u, &hu}) {
             exact(*x, [&](const uint8_t* p, size_t) {
                 const A::TtxUnit a = A::ttxDecodeUnit(p);
@@ -146,7 +148,7 @@ static void testTeletext() {
         }
         // PES walk
         std::vector<Buf> units; const int nu = (int)(r32() % 4);
-        for (int k = 0; k < nu; k++) units.push_back(r32() % 3 ? teletextUnit((int)(r32() % 9), (int)(r32() % 30), r32() % 3 == 0, (int)(r32() % 100)) : Buf(44, (uint8_t)r32()));
+        for (int k = 0; k < nu; k++) units.push_back(r32() % 3 ? ORD_CALL(teletextUnit, (int)(r32() % 9), (int)(r32() % 30), r32() % 3 == 0, (int)(r32() % 100)) : Buf(44, (uint8_t)r32()));
         Buf pes = teletextPes(units);
         if (r32() % 4 == 0) pes.resize(r32() % (pes.size() + 1));
         exact(pes, [&](const uint8_t* p, size_t n) {
@@ -182,7 +184,7 @@ static void testTeletext() {
             if (r32() % 3) units.push_back(teletextUnit(mag, 0, true, pg));
             const int nr = (int)(r32() % 8);
             for (int q = 0; q < nr; q++) units.push_back(teletextUnit(mag, r32() % 5 == 0 ? 27 : (int)(1 + r32() % 24), false, 0));
-            if (r32() % 5 == 0) units.push_back(teletextUnit((int)(r32() % 8), 0, true, (int)(r32() % 100)));
+            if (r32() % 5 == 0) units.push_back(ORD_CALL(teletextUnit, (int)(r32() % 8), 0, true, (int)(r32() % 100)));
             Buf pes = teletextPes(units);
             if (r32() % 10 == 0) pes.resize(r32() % (pes.size() + 1));
             da.feedPes(pes.data(), pes.size());
@@ -218,15 +220,15 @@ static Buf pixelBlock() {   // sub-blocks of pixel data: random code strings, ma
     return f;
 }
 static Buf segment(int type, int page, const Buf& d) { Buf s{0x0F, (uint8_t)type, (uint8_t)(page >> 8), (uint8_t)page, (uint8_t)(d.size() >> 8), (uint8_t)d.size()}; cat(s, d); return s; }
-static Buf pageSeg() { Buf d{(uint8_t)(r32() % 40), (uint8_t)(((r32() % 16) << 4) | ((r32() % 4) << 2))}; const int n = (int)(r32() % 4); for (int i = 0; i < n; i++) put(d, {(int)(r32() % 3), 0, (int)(r32() % 2), (int)(r32() & 0xFF), 0, (int)(r32() % 20)}); if (r32() % 8 == 0) rnd(d, r32() % 5); return d; }
+static Buf pageSeg() { Buf d{(uint8_t)(r32() % 40), (uint8_t)ORD_CALL(orOf, (r32() % 16) << 4, (r32() % 4) << 2)}; const int n = (int)(r32() % 4); for (int i = 0; i < n; i++) put(d, {(int)(r32() % 3), 0, (int)(r32() % 2), (int)(r32() & 0xFF), 0, (int)(r32() % 20)}); if (r32() % 8 == 0) rnd(d, r32() % 5); return d; }
 static Buf regionSeg() {
-    Buf d{(uint8_t)(r32() % 3), (uint8_t)(((r32() % 16) << 4) | ((r32() % 2) << 3)), 0, (uint8_t)(1 + r32() % 40), 0, (uint8_t)(1 + r32() % 20), (uint8_t)(((r32() % 4) << 2)), (uint8_t)(r32() % 3), (uint8_t)r32(), (uint8_t)r32()};
+    Buf d{(uint8_t)(r32() % 3), (uint8_t)ORD_CALL(orOf, (r32() % 16) << 4, (r32() % 2) << 3), 0, (uint8_t)(1 + r32() % 40), 0, (uint8_t)(1 + r32() % 20), (uint8_t)(((r32() % 4) << 2)), (uint8_t)(r32() % 3), (uint8_t)r32(), (uint8_t)r32()};
     if (r32() % 12 == 0) { d[2] = (uint8_t)r32(); d[4] = (uint8_t)r32(); }
     const int n = (int)(r32() % 4);
-    for (int i = 0; i < n; i++) { put(d, {0, (int)(r32() % 3), (int)((r32() % 3) << 6 | (r32() % 3)), (int)(r32() % 30), 0, (int)(r32() % 10)}); if ((d[d.size() - 4] >> 6) != 0 && (d[d.size() - 4] >> 6) != 3) rnd(d, 2); }
+    for (int i = 0; i < n; i++) { put(d, {0, (int)(r32() % 3), (int)ORD_CALL(orOf, (r32() % 3) << 6, r32() % 3), (int)(r32() % 30), 0, (int)(r32() % 10)}); if ((d[d.size() - 4] >> 6) != 0 && (d[d.size() - 4] >> 6) != 3) rnd(d, 2); }
     return d;
 }
-static Buf clutSeg() { Buf d{(uint8_t)(r32() % 3), (uint8_t)(r32() % 16 << 4)}; const int n = (int)(r32() % 8); for (int i = 0; i < n; i++) { const bool full = r32() % 2; put(d, {(int)(r32() % 20), (int)((r32() % 8) << 5 | (r32() % 2 ? 0x1 : 0) * full | 0)}); if (full) { d[d.size() - 1] |= 1; rnd(d, 4); } else rnd(d, 2); } return d; }
+static Buf clutSeg() { Buf d{(uint8_t)(r32() % 3), (uint8_t)(r32() % 16 << 4)}; const int n = (int)(r32() % 8); for (int i = 0; i < n; i++) { const bool full = r32() % 2; put(d, {(int)(r32() % 20), (int)ORD_CALL(orOf, (r32() % 8) << 5, (r32() % 2 ? 0x1 : 0) * full)}); if (full) { d[d.size() - 1] |= 1; rnd(d, 4); } else rnd(d, 2); } return d; }
 static Buf objectSeg() { Buf top = pixelBlock(), bot = r32() % 3 ? pixelBlock() : Buf(); Buf d{0, (uint8_t)(r32() % 3), (uint8_t)(r32() % 8 ? 0 : (r32() % 4) << 2), (uint8_t)(top.size() >> 8), (uint8_t)top.size(), (uint8_t)(bot.size() >> 8), (uint8_t)bot.size()}; cat(d, top); cat(d, bot); return d; }
 static Buf subtitlePes(int page) {
     Buf p; put(p, {0, 0, 1, 0xBD, 0, 0, 0x80, r32() % 4 ? 0x80 : 0x00, 5}); p.push_back((uint8_t)(0x21 | ((r32() % 8) << 1))); rnd(p, 4); p[p.size() - 4] &= 0xFE; p[p.size() - 2] |= 1;
