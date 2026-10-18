@@ -115,7 +115,7 @@ let NEED=null; const LOADED=new Map(), PENDING=new Map();
 function img(src){ const im=LOADED.get(src); if(im) return im; if(NEED) NEED.add(src); return null; }
 function loadImg(src){ if(PENDING.has(src)) return PENDING.get(src); const p=new Promise(res=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>res(null); i.src=src; }); PENDING.set(src,p); return p; }
 async function ensure(srcs){ await Promise.all([...srcs].map(async s=>{ const i=await loadImg(s); PENDING.delete(s); if(i) LOADED.set(s,i); }));
-  if(LOADED.size>260){ const ks=[...LOADED.keys()]; for(let k=0;k<LOADED.size-200;k++) LOADED.delete(ks[k]); } }
+  if(LOADED.size>170){ const ks=[...LOADED.keys()]; for(let k=0;k<LOADED.size-120;k++) LOADED.delete(ks[k]); } }
 // ---- footage camera: the frame point (cx,cy) is centred on screen and magnified z times
 function camMix(a,b,k){ return {cx:lerp(a.cx,b.cx,k),cy:lerp(a.cy,b.cy,k),z:lerp(a.z,b.z,k)}; }
 function camFix(cm){ const hw=W/(2*cm.z), hh=H/(2*cm.z); return {cx:clamp(cm.cx,hw,W-hw),cy:clamp(cm.cy,hh,H-hh),z:cm.z}; }
