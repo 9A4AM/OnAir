@@ -337,9 +337,16 @@ struct HfdlReceiver::Impl {
         const auto& pre = hfdlPreambleRef(m1);
         std::vector<int8_t> scr;
         hfdlScramblerSigns(R.blocks * kHfdlDataLen, scr);
-        // equaliser
+        // equaliser; a burst the equaliser cannot decode (weak signal: 25 taps adapt to the noise) is tried again with the gain and phase tracker alone
+        std::vector<HfdlMessage> msgs;
+        bool ok = false;
+        double sig2 = 1, preErr = 0;
+        for (int mode = 0; mode < 3 && !ok; mode++) {   // 0: equaliser, 1: gain / phase tracker with decisions, no equaliser, 2: known symbols only (weak signals)
+        const int eqOn = mode == 0 ? 1 : 0;
         const int Nf = 2 * kL + 1;
         std::vector<cf32> w((size_t)Nf, cf32(0, 0)), b((size_t)kNb, cf32(0, 0)), dp((size_t)kNb, cf32(0, 0));
+        w[(size_t)kL] = std::conj(h) / (std::norm(h) + 1e-30f);
+        w.assign((size_t)Nf, cf32(0, 0)); b.assign((size_t)kNb, cf32(0, 0)); dp.assign((size_t)kNb, cf32(0, 0));
         w[(size_t)kL] = std::conj(h) / (std::norm(h) + 1e-30f);
         float theta = 0;
         double errKnown = 0; int nKnown = 0;
@@ -363,24 +370,64 @@ struct HfdlReceiver::Impl {
             if (known) { errKnown += std::norm(e); nKnown++; }
             const cf32 E = e * std::conj(rr);
             const float g = mu / nrm;
-            for (int q = 0; q < Nf; q++) w[(size_t)q] += g * E * std::conj(v[q]);
-            for (int q = 0; q < kNb; q++) b[(size_t)q] += g * E * std::conj(dp[(size_t)q]);
+            if (eqOn) {
+                for (int q = 0; q < Nf; q++) w[(size_t)q] += g * E * std::conj(v[q]);
+                for (int q = 0; q < kNb; q++) b[(size_t)q] += g * E * std::conj(dp[(size_t)q]);
+            }
             theta += 0.03f * (z * std::conj(d)).imag() / (std::norm(d) + 1e-9f);
             for (int q = kNb - 1; q > 0; q--) dp[(size_t)q] = dp[(size_t)q - 1];
             dp[0] = d;
             return z;
         };
+        std::vector<cf32> dataSym((size_t)(R.blocks * kHfdlDataLen));
+        std::vector<double> probeErr((size_t)R.blocks + 1);
+        if (mode == 2) {
+            // Known symbols only: the complex gain is measured on the last 9 T probes of the preamble and on the probe after every block,
+            // interpolated linearly across the data between them. Decisions on a signal at about 0 dB per symbol are wrong too often for the
+            // decision-directed loops above to hold the phase; the 15-symbol probes (a third of the burst) are always right.
+            const int nb = R.blocks;
+            std::vector<cf32> g((size_t)nb + 1);
+            std::vector<double> ctr((size_t)nb + 1);
+            auto at = [&](int i) { return u[(size_t)(uoff + 2 * i)]; };
+            { cf32 a(0, 0); const int i0 = kHfdlPreLen - kHfdlTrain * kHfdlTLen; for (int i = i0; i < kHfdlPreLen; i++) a += at(i) * pre[(size_t)i]; g[0] = a / (float)(kHfdlPreLen - i0); ctr[0] = 0.5 * (i0 + kHfdlPreLen); }
+            for (int b2 = 0; b2 < nb; b2++) {
+                const int i0 = kHfdlPreLen + b2 * kHfdlBlockLen + kHfdlDataLen;
+                cf32 a(0, 0);
+                for (int q = 0; q < kHfdlTLen; q++) a += at(i0 + q) * (float)kHfdlT[q];
+                g[(size_t)b2 + 1] = a / (float)kHfdlTLen; ctr[(size_t)b2 + 1] = i0 + 0.5 * kHfdlTLen;
+            }
+            auto gainAt = [&](double i) {
+                size_t k2 = 0;
+                while (k2 + 2 < g.size() && i > ctr[k2 + 1]) k2++;
+                const float f = (float)((i - ctr[k2]) / (ctr[k2 + 1] - ctr[k2]));
+                return g[k2] * (1 - f) + g[k2 + 1] * f;
+            };
+            double eAll = 0; int nAll = 0;
+            probeErr[0] = 1;
+            int di2 = 0;
+            for (int b2 = 0; b2 < nb; b2++) {
+                const int i0 = kHfdlPreLen + b2 * kHfdlBlockLen;
+                for (int q = 0; q < kHfdlDataLen; q++, di2++) {
+                    const cf32 gi = gainAt(i0 + q);
+                    dataSym[(size_t)di2] = at(i0 + q) * std::conj(gi) / (std::norm(gi) + 1e-12f) * (float)scr[(size_t)di2];
+                }
+                double e = 0;
+                for (int q = 0; q < kHfdlTLen; q++) { const cf32 gi = gainAt(i0 + kHfdlDataLen + q); e += std::norm(at(i0 + kHfdlDataLen + q) * std::conj(gi) / (std::norm(gi) + 1e-12f) - cf32((float)kHfdlT[q], 0)); }
+                probeErr[(size_t)b2 + 1] = e / kHfdlTLen; eAll += e; nAll += kHfdlTLen;
+            }
+            preErr = probeErr.size() > 1 ? probeErr[1] : 1;
+            probeErr[0] = probeErr.size() > 1 ? probeErr[1] : 1;
+            sig2 = std::max(1e-4, eAll / std::max(1, nAll));
+        } else {
         for (int pass = 0; pass < 2; pass++) {
             std::fill(dp.begin(), dp.end(), cf32(0, 0));
             theta = 0;
             errKnown = 0; nKnown = 0;
             for (int i = 0; i < kHfdlPreLen; i++) run(i, true, cf32(pre[(size_t)i], 0), pass == 0 ? 0.25f : 0.1f, 0);
         }
-        const double preErr = errKnown / std::max(1, nKnown);
+        preErr = errKnown / std::max(1, nKnown);
         errKnown = 0; nKnown = 0;
         const float muD = 0.15f, muP = 0.5f;      // normalised LMS steps on decisions and on the probes
-        std::vector<cf32> dataSym((size_t)(R.blocks * kHfdlDataLen));
-        std::vector<double> probeErr((size_t)R.blocks + 1);
         probeErr[0] = preErr;
         int i = kHfdlPreLen, di = 0;
         for (int blk = 0; blk < R.blocks; blk++) {
@@ -389,7 +436,8 @@ struct HfdlReceiver::Impl {
             for (int q = 0; q < kHfdlTLen; q++, i++) run(i, true, cf32((float)kHfdlT[q], 0), muP, 0);
             probeErr[(size_t)blk + 1] = (errKnown - e0) / std::max(1, nKnown - n0);
         }
-        const double sig2 = std::max(1e-4, errKnown / std::max(1, nKnown));
+        sig2 = std::max(1e-4, errKnown / std::max(1, nKnown));
+        }
         // each block weighted by the error on the probes beside it (a fade makes its bits less sure)
         for (size_t s = 0; s < dataSym.size(); s++) {
             const size_t blk = s / kHfdlDataLen;
@@ -397,8 +445,9 @@ struct HfdlReceiver::Impl {
             hfdlSoftBits(R.bitsPerSym, dataSym[s], (float)(1.0 / e), &soft[s * (size_t)R.bitsPerSym]);
         }
         const std::vector<uint8_t> pdu = hfdlDecodeSoft(m1, soft);
-        std::vector<HfdlMessage> msgs;
-        const bool ok = hfdlParsePdu(pdu.data(), pdu.size(), msgs);
+        msgs.clear();
+        ok = hfdlParsePdu(pdu.data(), pdu.size(), msgs);
+        }
         const double tStart = (double)(t0) / kFs - kHfdlPrekey / kHfdlBaud;
         const float snr = (float)(-10 * std::log10(sig2));
         const float lvl = (float)(10 * std::log10(pw + 1e-20));
