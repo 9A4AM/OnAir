@@ -2,6 +2,7 @@
 // symbol clock off, noise and other input rates; the picture strips must come back exactly as the strip coder makes them (the lossy
 // step is only the coder's). Automatic modulation finds QPSK. Noise alone gives nothing. No real recording was available.
 #include "dect2/meteor/meteor_rx.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/meteor/meteor_tel.h"
 #include "dect2/meteor/meteor_gen.h"
 #include "dect2/meteor/meteor_proto.h"
@@ -154,9 +155,9 @@ int main(int argc, char** argv) {
         MeteorGenerator gen(g);
         MeteorReceiver rx; rx.configure(1e6);
         std::vector<cf32> buf(65536);
-        std::mt19937 rng(3); std::normal_distribution<float> nd(0, 0.05f);
+        std::mt19937 rng(3); dect2::normal_distribution<float> nd(0, 0.05f);
         MeteorTelemetry t; uint64_t seq = 0;
-        for (int i = 0; i < 60; i++) { for (auto& v : buf) v = cf32(nd(rng), nd(rng)); rx.feed(buf.data(), buf.size()); if (rx.telemetry(t, seq)) seq = t.seq; }
+        for (int i = 0; i < 60; i++) { for (auto& v : buf) v = cf32{nd(rng), nd(rng)}; rx.feed(buf.data(), buf.size()); if (rx.telemetry(t, seq)) seq = t.seq; }
         CHECK(t.blocksOk == 0 && (!t.image || t.image->rows == 0), "noise: %llu frames", (unsigned long long)t.blocksOk);
     }
     printf(fails ? "FAILED (%d)\n" : "all passed\n", fails);

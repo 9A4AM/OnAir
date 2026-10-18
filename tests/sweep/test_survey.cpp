@@ -1,5 +1,6 @@
 // Band survey: synthetic sweeps with an always-on carrier, a burst that comes and goes, and a quiet gap; diff between two surveys.
 #include "../common/tmp_path.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/sweep/survey.h"
 #include <cmath>
 #include <cstdio>
@@ -12,7 +13,7 @@ static int fails = 0;
 static Sweep make(double t, bool burst, double carrierHz, std::mt19937& rng, double floorOff = 0) {
     Sweep s; s.startHz = 100e6; s.binHz = 10e3; s.timeSec = t;
     const size_t n = 1000;   // 100.00 .. 109.99 MHz
-    std::normal_distribution<float> g(0.f, 0.8f);
+    dect2::normal_distribution<float> g(0.f, 0.8f);
     s.db.resize(n); s.floorDb.assign(n, (float)(-90 + floorOff));
     for (size_t i = 0; i < n; i++) s.db[i] = (float)(-90 + floorOff) + g(rng);
     auto put = [&](double hz, float up) { const size_t i = (size_t)std::llround((hz - s.startHz) / s.binHz); for (int k = -1; k <= 1; k++) s.db[i + k] = (float)(-90 + floorOff) + up; };

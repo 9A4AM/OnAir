@@ -1,6 +1,7 @@
 // DTMB LDPC on the GPU (GpuLdpc::decodeQc) against the CPU decoder: the same words, the same result (ok flag, iteration count, information bits),
 // then the whole channel decoder with the GPU against the CPU: the same transport stream. Skipped when this machine has no GPU kernel for it.
 #include "dect2/dtmb/dtmb_chain.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dtmb/dtmb_gen.h"
 #include "dect2/dtmb/dtmb_map.h"
 #include "dect2/dsp/gpu_ldpc.h"
@@ -29,7 +30,7 @@ static std::vector<uint8_t> streamOf(const Profile& p, double snrDb, int frames,
     std::vector<float> var((size_t)kDataSymbols, (float)std::pow(10.0, -snrDb / 10.0));
     MixedFft fft(kBody);
     std::mt19937 rng(21);
-    std::normal_distribution<float> nd;
+    dect2::normal_distribution<float> nd;
     const float sd = (float)std::sqrt(std::pow(10.0, -snrDb / 10.0) / 2.0);
     std::vector<uint8_t> out;
     auto cb = [&](const uint8_t* pk, size_t n, double) { out.insert(out.end(), pk, pk + n * 188); };
@@ -39,7 +40,7 @@ static std::vector<uint8_t> streamOf(const Profile& p, double snrDb, int frames,
         fft.forward(bins.data());
         for (auto& b : bins) b *= 1.f / std::sqrt((float)kBody);
         splitBody(bins.data(), si.data(), data.data());
-        for (auto& d : data) d += cf32(sd * nd(rng), sd * nd(rng));
+        for (auto& d : data) d += cf32{sd * nd(rng), sd * nd(rng)};
         chain.pushFrame(data.data(), var.data());
         chain.poll(cb);
     }
@@ -53,7 +54,7 @@ int main() {
     if (!g.qcAvailable()) { printf("dtmb_gpu: SKIPPED (no GPU kernel for DTMB on this machine: %s)\n", g.available() ? "backend has no table-driven kernel" : "no GPU"); return 0; }
     printf("GPU: %s\n", g.deviceName());
     std::mt19937 rng(11);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
 
     // ---- words: clean, noisy around the threshold (some decode, some fail, some stop early), mostly erased
     const int nb = 150;

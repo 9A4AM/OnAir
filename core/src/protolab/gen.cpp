@@ -1,6 +1,7 @@
 // Protocol lab: generators of test signals with known structure, to check the auto-detection (and for the "Demo signal" button).
 // None of these is a real protocol; they have the typical shape of the things people reverse-engineer.
 #include "dect2/protolab/protolab.h"
+#include "dect2/common/stable_random.h"
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -39,11 +40,11 @@ void crcAppend(std::vector<uint8_t>& v, const CrcModel& m, size_t from, bool be)
 
 std::vector<cf> generateTestSignal(TestProto proto, const GenOptions& o, std::vector<std::vector<uint8_t>>* payloadsOut) {
     std::mt19937 rng(o.seed);
-    std::normal_distribution<float> gauss(0.f, 1.f);
+    dect2::normal_distribution<float> gauss(0.f, 1.f);
     const double pi = 3.14159265358979323846;
     const double sigma = std::sqrt(std::pow(10.0, -o.snrDb / 10.0) / 2.0);
     std::vector<cf> out;
-    auto noise = [&](size_t n) { for (size_t i = 0; i < n; i++) out.emplace_back((float)(sigma * gauss(rng)), (float)(sigma * gauss(rng))); };
+    auto noise = [&](size_t n) { for (size_t i = 0; i < n; i++) { const float nr = (float)(sigma * gauss(rng)); const float ni = (float)(sigma * gauss(rng)); out.emplace_back(nr, ni); } };   // draws in a fixed order: call arguments are not evaluated in one
     noise((size_t)(o.fs * 0.008));
     if (payloadsOut) payloadsOut->clear();
 
@@ -57,7 +58,7 @@ std::vector<cf> generateTestSignal(TestProto proto, const GenOptions& o, std::ve
         const size_t base = out.size();
         for (size_t i = 0; i < f.size(); i++) {
             ph += 2 * pi * ((double)f[i] * dev + o.cfoHz) / o.fs;
-            out.emplace_back((float)std::cos(ph) + (float)(sigma * gauss(rng)), (float)std::sin(ph) + (float)(sigma * gauss(rng)));
+            { const float nr = (float)(sigma * gauss(rng)); const float ni = (float)(sigma * gauss(rng)); out.emplace_back((float)std::cos(ph) + nr, (float)std::sin(ph) + ni); }
         }
         (void)base;
     };
@@ -70,7 +71,7 @@ std::vector<cf> generateTestSignal(TestProto proto, const GenOptions& o, std::ve
         double ph = 0;
         for (size_t i = 0; i < a.size(); i++) {
             ph += 2 * pi * o.cfoHz / o.fs;
-            out.emplace_back(a[i] * (float)std::cos(ph) + (float)(sigma * gauss(rng)), a[i] * (float)std::sin(ph) + (float)(sigma * gauss(rng)));
+            { const float nr = (float)(sigma * gauss(rng)); const float ni = (float)(sigma * gauss(rng)); out.emplace_back(a[i] * (float)std::cos(ph) + nr, a[i] * (float)std::sin(ph) + ni); }
         }
     };
     auto bitsFrom = [](const std::vector<uint8_t>& bytes) { return bytesToBits(bytes, false); };

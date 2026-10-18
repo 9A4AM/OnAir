@@ -336,7 +336,7 @@ static std::string radioList() {
     const int n = (int)(r32() % 6);
     for (int i = 0; i < n; i++) {
         if (i) s += r32() % 20 ? ";" : ";;";
-        s += pick(keys, 10) + std::string(r32() % 25 ? "," : "") + pick(hosts, 14) + (r32() % 25 ? "," : "") + pick(ports, 12);
+        s += ORD_CAT(pick(keys, 10), (r32() % 25 ? "," : ""), pick(hosts, 14), (r32() % 25 ? "," : ""), pick(ports, 12));
         if (r32() % 3 == 0) s += "," + (r32() % 2 ? std::string("driver=mirisdr,serial=1") : rtext("ab=,;x ", 8));
     }
     return s;

@@ -7,6 +7,8 @@
 //   test_specx_idmatrix --quick    SNR 20 dB, 1 trial, no frequency: for tuning
 //   test_specx_idmatrix --mode id  only the cases whose label contains id; --v prints every case
 #include "dect2/bandplan/bandplan.h"
+#include "../common/ci_slack.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/channels/freq_db.h"
 #include "dect2/engine/mode_synth.h"
 #include "dect2/engine/mode_tuning.h"
@@ -112,7 +114,7 @@ bool render(Case& c, size_t n, std::vector<cf32>& out, std::string& why) {
     return true;
 }
 
-struct Rng { std::mt19937 g; explicit Rng(uint32_t s) : g(s) {} double u(double a, double b) { return std::uniform_real_distribution<double>(a, b)(g); } double n() { return std::normal_distribution<double>(0, 1)(g); } };
+struct Rng { std::mt19937 g; explicit Rng(uint32_t s) : g(s) {} double u(double a, double b) { return dect2::uniform_real_distribution<double>(a, b)(g); } double n() { return dect2::normal_distribution<double>(0, 1)(g); } };
 
 // The signal the identifier is asked about is the strongest one in the clean render (a few generators put theirs off the centre, or send several
 // channels). It is moved by a random frequency, noise is added so that the SNR is that signal's average power over its width, and the click
@@ -392,7 +394,7 @@ int main(int argc, char** argv) {
     CHECK(rej[2] >= rejN[2] - 1, "two unrelated tones answered \"unknown\" %d of %d times", rej[2], rejN[2]);
     CHECK(rej[1] >= rejN[1] / 2, "band-limited noise answered \"unknown\" %d of %d times", rej[1], rejN[1]);
     // speed: the target is 200 ms; the test allows a slow CI machine
-    CHECK(nMs && sumMs / nMs < 150, "identify() took %.0f ms on average, the target is 100 and the limit here 150", nMs ? sumMs / nMs : 0.0);
-    CHECK(maxMs < 500, "identify() took %.0f ms at worst, the target is 200 and the limit here 500", maxMs);
+    CHECK(nMs && sumMs / nMs < 150 * ciSlack(), "identify() took %.0f ms on average, the target is 100 and the limit here 150", nMs ? sumMs / nMs : 0.0);
+    CHECK(maxMs < 500 * ciSlack(), "identify() took %.0f ms at worst, the target is 200 and the limit here 500", maxMs);
     return testSummary("specx_idmatrix");
 }

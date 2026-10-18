@@ -6,6 +6,7 @@
 // SYNTHETIC ONLY (our own encoder and decoder agree, no real DJI capture was available): the LTE turbo encoder and rate matching details (tail-bit mapping,
 // sub-block interleaver, rv 0), the scrambler seed convention, the QPSK orientation, the QPP parameters (43, 88), the field scales (altitude 0.01 m).
 #include "dect2/dji/dji_proto.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dsp/fftutil.h"
 #include <cmath>
 #include <cstdio>
@@ -75,7 +76,7 @@ int main() {
     // turbo code on a Gaussian channel: BPSK at Es/N0 = -2 dB per transmitted bit (the code rate is 0.2)
     {
         std::mt19937 rng(5);
-        std::normal_distribution<float> nd(0.f, 1.f);
+        dect2::normal_distribution<float> nd(0.f, 1.f);
         int ok = 0;
         const int trials = 12;
         for (int t = 0; t < trials; t++) {
@@ -102,7 +103,7 @@ int main() {
     // a burst at 15.36 Msps: noise, offsets (carrier offset up to 3 subcarriers and a bit, timing), nine and eight symbols
     {
         std::mt19937 rng(11);
-        std::normal_distribution<float> nd(0.f, 1.f);
+        dect2::normal_distribution<float> nd(0.f, 1.f);
         struct Case { double snr, cfo; int pad; bool first; int variant; } cases[] = {
             {20, 0, 300, true, 0}, {12, 23456, 417, true, 0}, {12, -41234, 250, true, 0}, {8, 8000, 333, true, 0}, {12, 15000, 300, false, 0}, {12, -7000, 500, true, 1}};
         for (const Case& c : cases) {
@@ -113,7 +114,7 @@ int main() {
             const float sigma = std::sqrt(0.5f / std::pow(10.f, (float)c.snr / 10));
             for (size_t n = 0; n < x.size(); n++) {
                 const double ph = 2 * 3.14159265358979 * c.cfo * (double)n / kFs;
-                x[n] = x[n] * cf32((float)std::cos(ph), (float)std::sin(ph)) + sigma * cf32(nd(rng), nd(rng));
+                x[n] = x[n] * cf32((float)std::cos(ph), (float)std::sin(ph)) + sigma * cf32{nd(rng), nd(rng)};
             }
             const BurstResult r = receiveBurst(x);
             printf("  pad %d timing %d snr %4.1f cfo %8.0f: zc %.2f %.2f cfo %8.0f snr %.1f crc %d variant %d rot %d\n", c.pad, r.timing, c.snr, c.cfo, r.zc1, r.zc2, r.cfoHz, r.snrDb, r.crcOk, r.variant, r.rotation);
@@ -125,7 +126,7 @@ int main() {
         int zc = 0;
         for (int t = 0; t < 10; t++) {
             std::vector<cf32> x(12000);
-            for (auto& v : x) v = cf32(nd(rng), nd(rng));
+            for (auto& v : x) v = cf32{nd(rng), nd(rng)};
             zc += receiveBurst(x).zc;
         }
         CHECK(zc == 0, "%d ZC detections in noise", zc);
@@ -148,7 +149,7 @@ int main() {
                 for (int i = 0; i < cpLen(s); i++) x[at + (size_t)i] = f[(size_t)(kFft - cpLen(s) + i)] * 0.04f;
                 for (int i = 0; i < kFft; i++) x[at + (size_t)cpLen(s) + (size_t)i] = f[(size_t)i] * 0.04f;
             }
-            for (auto& v : x) v += 0.02f * cf32(nd(rng), nd(rng));
+            for (auto& v : x) v += 0.02f * cf32{nd(rng), nd(rng)};
             const BurstResult r = receiveBurst(x);
             CHECK(!r.zc && !r.crcOk, "an OFDM burst without the ZC symbols was taken for DroneID (zc %.2f %.2f)", r.zc1, r.zc2);
         }

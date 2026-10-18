@@ -1,6 +1,7 @@
 // DotBatch (app/gfx/plot_batch.h) must produce exactly the geometry of one AddCircleFilled(p, r, col, 8) per dot, in every chunk size,
 // for several radii and colours: the constellations must look the same as before the batching.
 #include "../../app/gfx/plot_batch.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -18,12 +19,12 @@ int main() {
     sd.SetCircleTessellationMaxError(0.3f);
     sd.CurveTessellationTol = 1.25f;
     std::mt19937 rng(3);
-    std::uniform_real_distribution<float> pos(-20.f, 600.f);
+    dect2::uniform_real_distribution<float> pos(-20.f, 600.f);
     for (float r : {1.5f, 2.24f, 3.0f, 5.5f})
         for (ImU32 col : {IM_COL32(40, 200, 120, 255), IM_COL32(255, 255, 255, 100)})
             for (int n : {1, 7, 5000, 9000}) {   // 9000 dots of 16 vertices: more than one reservation
                 std::vector<ImVec2> pts((size_t)n);
-                for (auto& p : pts) p = ImVec2(pos(rng), pos(rng));
+                for (auto& p : pts) p = ImVec2{pos(rng), pos(rng)};
                 ImDrawList ref(&sd), bat(&sd);
                 for (ImDrawList* d : {&ref, &bat}) { d->_ResetForNewFrame(); d->PushClipRectFullScreen(); }
                 for (const ImVec2& p : pts) ref.AddCircleFilled(p, r, col, 8);

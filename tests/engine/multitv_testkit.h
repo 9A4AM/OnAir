@@ -3,6 +3,7 @@
 // offset, and the channels are added with noise. Streamed, so a capture of seconds at 28 Msps needs no memory.
 #pragma once
 #include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dsp/exact_resampler.h"
 #include "dect2/t2/t2.h"
 #include "dect2/t2/t2gen.h"
@@ -103,8 +104,8 @@ public:
         out.assign(n, cf32(0, 0));
         std::vector<cf32> t;
         for (auto& s : src_) { s->pull(n, t); for (size_t i = 0; i < n; i++) out[i] += t[i]; }
-        std::normal_distribution<float> nd(0.f, sigma_);
-        for (auto& v : out) { v += cf32(nd(rng_), nd(rng_)); v *= 0.15f; }   // headroom: the sum of three OFDM signals peaks high
+        dect2::normal_distribution<float> nd(0.f, sigma_);
+        for (auto& v : out) { v += cf32{nd(rng_), nd(rng_)}; v *= 0.15f; }   // headroom: the sum of three OFDM signals peaks high
     }
     double rate() const { return rate_; }
 

@@ -3,6 +3,7 @@
 // station and the receiver, and joined late: no start tone (part way into the phasing), or no start tone and no phasing at all
 // (half way down the picture, where only the picture repeating line after line says where the lines are).
 #include "dect2/marine/marine_rx.h"
+#include "dect2/common/stable_random.h"
 #include "../data/marine/fax/fax_util.h"
 #include <cmath>
 #include <complex>
@@ -62,7 +63,7 @@ Result receive(const std::vector<std::complex<float>>& u, double dialHz, int ser
     rx.setService(service);
     rx.setFrequencyHz(dialHz);
     std::mt19937 rng(11);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     double pw = 0;
     for (size_t i = 0; i < u.size(); i += 7) pw += std::norm(u[i]);
     pw /= (double)(u.size() / 7);
@@ -84,7 +85,7 @@ Result receive(const std::vector<std::complex<float>>& u, double dialHz, int ser
             const std::complex<float> v = u[k] + fr * (u[k + 1] - u[k]);
             const std::complex<float> lo((float)std::cos(ph), (float)std::sin(ph));
             ph += dph; if (ph > kPi) ph -= 2 * kPi; else if (ph < -kPi) ph += 2 * kPi;
-            buf[i] = amp * v * lo + cf32(sigma * g(rng), sigma * g(rng));
+            buf[i] = amp * v * lo + cf32{sigma * g(rng), sigma * g(rng)};
         }
         rx.feed(buf.data(), n);
         done += n;

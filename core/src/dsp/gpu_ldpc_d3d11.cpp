@@ -6,6 +6,7 @@
 // kernel this one never leaves its loops early. It runs a few iterations per dispatch (a block that has converged does no more work),
 // the CPU then looks at which blocks are still unfinished and launches only those again.
 #include "dect2/dsp/gpu_ldpc.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/t2/t2fec.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -477,7 +478,7 @@ bool GpuLdpc::selfTest() {
     const LdpcCode& c = ldpcFor(f);
     const int n = c.n(), k = c.k(), nb = 4;
     std::mt19937 rng(12345);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     const double sigma = 0.55;
     std::vector<float> llr((size_t)nb * n);
     std::vector<std::vector<uint8_t>> cw((size_t)nb);

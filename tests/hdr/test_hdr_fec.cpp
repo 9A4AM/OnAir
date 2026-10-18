@@ -3,6 +3,7 @@
 // the interleaver tables (every position used once; the AM block layout of 1012s figure 10-2), and the Layer 2 pieces (SIS, PDU, HDLC,
 // ID3, SIG, LOT) through the decoder. Quick and silent.
 #include "dect2/hdr/hdr_fec.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/hdr/hdr_gen.h"
 #include "dect2/hdr/hdr_l2.h"
 #include <cmath>
@@ -63,7 +64,7 @@ static void testConv() {
         std::vector<uint8_t> d((size_t)cs.n), e((size_t)cs.n * 3), dec((size_t)cs.n);
         for (auto& x : d) x = rng() & 1;
         convEncode(*cs.c, d.data(), d.size(), e.data());
-        std::normal_distribution<float> nd(0.f, std::pow(10.f, -cs.snr / 20.f));
+        dect2::normal_distribution<float> nd(0.f, std::pow(10.f, -cs.snr / 20.f));
         std::vector<float> soft(e.size());
         for (size_t i = 0; i < e.size(); i++) soft[i] = cs.pat[i % (size_t)cs.plen] ? (e[i] ? 1.f : -1.f) + nd(rng) : 0.f;
         Viterbi v;

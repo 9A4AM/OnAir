@@ -121,6 +121,7 @@ void IqRecorder::push(const cf32* x, size_t n) {
     }
     {
         std::lock_guard<std::mutex> lk(mu_);
+        if (stopReq_ || !active_.load()) return;   // stop() came while this block was converted: the writer is gone, it would be counted but never written
         if (qBytes_ + blk.size() > kQueueBytes) { dropped_ += n; return; }   // the disk is too slow: leave this block out
         qBytes_ += blk.size();
         bytes_ += blk.size();

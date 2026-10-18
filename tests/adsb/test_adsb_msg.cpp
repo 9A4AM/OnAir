@@ -2,6 +2,7 @@
 // Examples: "The 1090 Megahertz Riddle" (Junzi Sun, https://mode-s.org/1090mhz, chapters ADS-B 1-8 and Mode S 2, 3, 6, 7) unless a comment says otherwise.
 // The expected numbers below are the ones printed there; a hex string that does not give a zero CRC would show up as a failure here first.
 #include "dect2/adsb/adsb_msg.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/adsb/adsb_encode.h"
 #include <cmath>
 #include <cstdio>
@@ -121,7 +122,7 @@ static void testNl() {
 
 static void testCprRoundTrip() {
     std::mt19937 rng(7);
-    std::uniform_real_distribution<double> la(-85, 85), lo(-180, 180);
+    dect2::uniform_real_distribution<double> la(-85, 85), lo(-180, 180);
     int bad = 0, total = 0;
     for (int i = 0; i < 20000; i++) {
         const double lat = la(rng), lon = lo(rng);
@@ -370,7 +371,7 @@ static void testCommBWeather() {
 
     // the older registers keep their own frames: random plausible 4,0 / 5,0 / 6,0 are never taken for a new register
     std::mt19937 rng(11);
-    auto U = [&](double a, double b) { return std::uniform_real_distribution<double>(a, b)(rng); };
+    auto U = [&](double a, double b) { return dect2::uniform_real_distribution<double>(a, b)(rng); };
     auto isNew = [](int b) { return b == 0x10 || b == 0x17 || b == 0x30 || b == 0x44 || b == 0x45; };
     int stolen = 0, own[3] = {};
     const int n = 3000;

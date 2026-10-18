@@ -1,6 +1,7 @@
 // Analog TV receiver: generator -> receiver on clean and simulated signals. The picture is compared with the card the generator drew, the sound
 // with the tone it sent, the timing with the standard.
 #include "dect2/atv/atv_testkit.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -148,10 +149,10 @@ int main() {
         rx.setSilent(true);
         rx.configure(10e6);
         std::mt19937 rng(5);
-        std::normal_distribution<float> g(0.f, 0.08f);
+        dect2::normal_distribution<float> g(0.f, 0.08f);
         std::vector<cf32> x(65536);
         for (int k = 0; k < 20; k++) {
-            for (auto& s : x) s = cf32(g(rng), g(rng));
+            for (auto& s : x) s = cf32{g(rng), g(rng)};
             rx.feed(x.data(), x.size());
         }
         AtvTelemetry t;
@@ -160,7 +161,7 @@ int main() {
         CHECK(t.state == 0 && !t.dataValid && rx.frame(fs) == nullptr, "noise gives state %d", t.state);
         // a carrier without anything on it is not a television signal either
         for (int k = 0; k < 20; k++) {
-            for (size_t i = 0; i < x.size(); i++) x[i] = cf32(g(rng), g(rng)) + 0.2f * cf32((float)std::cos(2 * M_PI * 1.0e6 * ((double)k * x.size() + i) / 10e6), (float)std::sin(2 * M_PI * 1.0e6 * ((double)k * x.size() + i) / 10e6));
+            for (size_t i = 0; i < x.size(); i++) x[i] = cf32{g(rng), g(rng)} + 0.2f * cf32((float)std::cos(2 * M_PI * 1.0e6 * ((double)k * x.size() + i) / 10e6), (float)std::sin(2 * M_PI * 1.0e6 * ((double)k * x.size() + i) / 10e6));
             rx.feed(x.data(), x.size());
         }
         rx.telemetry(t, 0);

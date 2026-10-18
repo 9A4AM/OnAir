@@ -1,5 +1,6 @@
 // DECT test signal (see dect_gen.h).
 #include "dect2/dect/dect_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dect/dect_rx.h"
 #include <cmath>
 #include <complex>
@@ -16,7 +17,7 @@ constexpr double kDev = 288000.0;
 struct DectGenerator::Impl {
     DectGenConfig c;
     std::mt19937 rng;
-    std::normal_distribution<float> nd{0.f, 1.f};
+    dect2::normal_distribution<float> nd{0.f, 1.f};
     size_t frameLen = 0, pos = 0;
     uint64_t frameNo = 0;
     std::vector<std::complex<float>> frame;
@@ -95,7 +96,7 @@ struct DectGenerator::Impl {
             phase += w; if (phase > kPi) phase -= 2 * kPi; else if (phase < -kPi) phase += 2 * kPi;
             v *= m;
             const float ns = (float)(sigma / std::sqrt(2.0));
-            out[i] = cf32(v.real() + ns * nd(rng), v.imag() + ns * nd(rng));
+            out[i] = cf32{v.real() + ns * nd(rng), v.imag() + ns * nd(rng)};
             if (++pos >= frameLen) { pos = 0; frameNo++; buildFrame(); }
         }
     }

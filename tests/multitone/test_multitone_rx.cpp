@@ -3,6 +3,7 @@
 // baud rate at 512 / 1200 / 2400, both polarities, a carrier error of +-2 kHz, low SNR, other sample rates, noise alone (nothing logged), a
 // standard POCSAG batch (its sync word is flagged), a plain tone and noise through the FSK slicer, and the results file.
 #include "dect2/multitone/multitone_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/multitone/multitone_rx.h"
 #include "dect2/multitone/multitone_tel.h"
 #include <cmath>
@@ -141,7 +142,7 @@ int main() {
     {   // the slicer on things that are not FSK: a plain tone and noise
         std::vector<float> tone(96000), noise(96000);
         std::mt19937 rng(5);
-        std::normal_distribution<float> nd(0.f, 0.3f);
+        dect2::normal_distribution<float> nd(0.f, 0.3f);
         for (size_t i = 0; i < tone.size(); i++) { tone[i] = 0.4f * (float)std::sin(2 * 3.14159265 * 600.0 * (double)i / 48000.0); noise[i] = nd(rng); }
         CHECK(!multitone::sliceFsk(tone, 48000).found, "a plain tone read as FSK");
         CHECK(!multitone::sliceFsk(noise, 48000).found, "noise read as FSK");

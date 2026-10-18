@@ -1,6 +1,7 @@
 // DMR codes against known answers: the worked idle message of TS 102 361-1 annex D, the generator matrices of annex B, and values taken from
 // bursts that were captured off the air (published as test vectors by the ok-dmrlib project, https://github.com/OK-DMR/ok-dmrlib).
 #include "dect2/dmr/dmr_fec.h"
+#include "dect2/common/stable_random.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -365,7 +366,7 @@ static void testTrellis() {
         CHECK(e == 0 && !memcmp(out, d.data(), 18), "trellis decode of %s: %d", t.data, e);
         // noise: add Gaussian values to the amplitudes; the soft decoder should survive an error vector that would break hard decisions
         std::mt19937 rng(9);
-        std::normal_distribution<float> nd(0.f, 0.55f);
+        dect2::normal_distribution<float> nd(0.f, 0.55f);
         int ok = 0;
         for (int trial = 0; trial < 50; trial++) {
             float s2[98];

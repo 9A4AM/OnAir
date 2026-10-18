@@ -1,6 +1,7 @@
 // ATSC 3.0 data path without time interleaving: baseband packets are scrambled, protected (BICM), multiplexed into the data cells of a
 // subframe (one non-dispersed and one dispersed PLP), sent through a channel with an echo and noise, and recovered.
 #include "dect2/atsc3/atsc3_bb.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/atsc3/atsc3_bicm.h"
 #include "dect2/atsc3/atsc3_cellmux.h"
 #include <cmath>
@@ -20,7 +21,7 @@ int main() {
     CHECK(plpCellIndex(d, 0) == 100 && plpCellIndex(d, 3) == 103 && plpCellIndex(d, 4) == 150 && plpCellIndex(d, 7) == 153 && plpCellIndex(d, 8) == 200 && plpCellIndex(d, 9) == 201, "subslice indices");
 
     std::mt19937 rng(31);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     SubframeParams s;
     s.fftSize = 8192; s.guard = 512; s.spPattern = 4; s.spBoost = 2; s.cred = 0;   // SP6_2
     s.freqInterleaver = true; s.sbsFirst = true; s.sbsLast = true; s.sbsNullCells = 10; s.numSymbols = 40; s.fiOffset = 1;
@@ -62,7 +63,7 @@ int main() {
     for (size_t i = 0; i < tx.size(); i++) sig += std::norm(rx[i]);
     sig /= tx.size();
     float sigma = (float)std::sqrt(sig / std::pow(10.0, 27.0 / 10.0) / 2.0);
-    for (auto& v : rx) v += cf32(g(rng), g(rng)) * sigma;
+    for (auto& v : rx) v += cf32{g(rng), g(rng)} * sigma;
 
     std::vector<cf32> got;
     std::vector<float> nvs;

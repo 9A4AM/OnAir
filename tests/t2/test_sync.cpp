@@ -1,5 +1,6 @@
 // Sync test: generator -> impairments -> T2Receiver. Verifies P1/S1/S2, GI, CFO and frame length detection.
 #include "dect2/t2/t2gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/t2/t2rx.h"
 #include <cmath>
 #include <cstdio>
@@ -20,7 +21,7 @@ static bool run(const Case& c, bool verbose) {
     T2Receiver rx;
     rx.configure(fn, 8);
     std::mt19937 rng(7);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     double nsig = std::pow(10.0, -c.snr / 20.0) / std::sqrt(2.0);
     double ph = 0, dph = 2 * M_PI * c.cfo / fn;
     std::vector<cf32> frame, stream;
@@ -49,7 +50,7 @@ static bool run(const Case& c, bool verbose) {
     for (auto& v : z) {
         v *= cf32((float)std::cos(ph), (float)std::sin(ph));
         ph += dph;
-        v += cf32(nd(rng), nd(rng)) * (float)nsig;
+        v += cf32{nd(rng), nd(rng)} * (float)nsig;
     }
     RxTelemetry t;
     uint64_t seq = 0;
@@ -103,7 +104,7 @@ static bool runNegative(bool blankP1, bool verbose) {
     const double fn = nativeRateHz(8);
     rx.configure(fn, 8);
     std::mt19937 rng(11);
-    std::normal_distribution<float> nd(0.f, 0.05f);
+    dect2::normal_distribution<float> nd(0.f, 0.05f);
     std::vector<cf32> frame, z;
     for (int f = 0; f < 6; f++) {
         gen.nextFrame(frame);
@@ -111,7 +112,7 @@ static bool runNegative(bool blankP1, bool verbose) {
         else for (auto& v : frame) v = 0;
         z.insert(z.end(), frame.begin(), frame.end());
     }
-    for (auto& v : z) v += cf32(nd(rng), nd(rng));
+    for (auto& v : z) v += cf32{nd(rng), nd(rng)};
     for (size_t i = 0; i < z.size(); i += 65536) rx.feed(z.data() + i, std::min<size_t>(65536, z.size() - i));
     RxTelemetry t;
     rx.telemetry(t, 0);
@@ -152,10 +153,10 @@ static P1Run runP1(int s2, int dataSyms, double snr, double cfo, double sroPpm, 
         z.push_back(stream[i0] * (float)(1 - fr) + stream[i0 + 1] * (float)fr);
     }
     std::mt19937 rng(23);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     const double nsig = std::pow(10.0, -snr / 20.0) / std::sqrt(2.0), dph = 2 * M_PI * cfo / fn;
     double ph = 0;
-    for (auto& v : z) { v = v * cf32((float)std::cos(ph), (float)std::sin(ph)) + cf32(nd(rng), nd(rng)) * (float)nsig; ph += dph; }
+    for (auto& v : z) { v = v * cf32((float)std::cos(ph), (float)std::sin(ph)) + cf32{nd(rng), nd(rng)} * (float)nsig; ph += dph; }
     setGateOff(gateOff);   // the receiver reads it when it is configured
     T2Receiver rx;
     rx.configure(fn, 8);

@@ -13,7 +13,7 @@
 #include <random>
 namespace A = dect2::adsb;
 
-static golden::Digest dig;
+static golden::Dual dig;
 
 static std::mt19937_64 g(20261016);
 
@@ -297,5 +297,5 @@ int main() {
     printf("  Comm-B inference results:");
     for (auto& kv : found) printf(" %02x:%ld", kv.first, kv.second);
     printf("\n");
-    return golden::check("adsb_proto_rs", dig, 0xccbaa93e37f1e80dull, !it);
+    return golden::checkDual("adsb_proto_rs", dig, 0xccbaa93e37f1e80dull, 0x486a022706e9ea78ull, !it);
 }

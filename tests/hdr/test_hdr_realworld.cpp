@@ -2,6 +2,7 @@
 // clean signal: 50 ppm tuning errors (+-5.4 kHz in band II; AM: a few hundred Hz), +-100 ppm sample clocks, swapped I/Q, NaN samples, a USB
 // drop, and one combined case per band (worst offset, +80 ppm, an echo and 8-bit clipping).
 #include "dect2/hdr/hdr_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/hdr/hdr_rx.h"
 #include "../common/impair.h"
 #include "../common/jobs.h"
@@ -97,8 +98,8 @@ int main() {
         auto x = clean(0, fmSecs);
         std::vector<cf32> z(x.size());
         std::mt19937 rng(9);
-        std::normal_distribution<float> g(0.f, 1.f);
-        for (auto& v : z) v = cf32(g(rng), g(rng));
+        dect2::normal_distribution<float> g(0.f, 1.f);
+        for (auto& v : z) v = cf32{g(rng), g(rng)};
         z = band(z, 125000, 205000);
         const auto up = band(x, 129000, 199000);
         double pj = 0, ps = 0;

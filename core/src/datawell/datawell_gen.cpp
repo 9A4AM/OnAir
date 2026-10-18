@@ -1,5 +1,6 @@
 // Datawell buoy HF link test signal (datawell_gen.h): HXV vectors built from the documented layout (2FSK), our own test frames (4FSK).
 #include "dect2/datawell/datawell_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/datawell/datawell_frames.h"
 #include "dect2/datawell/datawell_hxv.h"
 #include "dect2/datawell/datawell_rx.h"
@@ -64,7 +65,7 @@ constexpr double kNoiseC = 0.12;   // noise rms per component
 struct DatawellGenerator::Impl {
     DatawellGenConfig c;
     std::mt19937 rng;
-    std::normal_distribution<double> nd{0.0, 1.0};
+    dect2::normal_distribution<double> nd{0.0, 1.0};
     double amp = 0, phase = 0, cphase = 0;
     uint64_t g = 0;
     double symPos = 0;            // position inside the symbol, in symbols

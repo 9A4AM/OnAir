@@ -1,5 +1,6 @@
 // Self-calibration: synthetic references at known clock errors (+-50 ppm) must come back within 0.2 ppm; the stores, the combiner, the wizard.
 #include "../common/tmp_path.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/selfcal/selfcal.h"
 #include <algorithm>
 #include <cmath>
@@ -16,7 +17,7 @@ static Estimate cwRun(double fs, double ctr, double fnom, double ppm, double snr
     const double fb = fnom / (1 + ppm * 1e-6) - ctr;
     ToneMeter m(fs, fnom - ctr, ctr, 100);
     std::mt19937 g(seed);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     const double ns = std::sqrt(std::pow(10.0, -snrDb / 10.0) / 2.0);   // per component, noise power in the whole band against a unit carrier
     const size_t total = (size_t)(sec * fs), chunk = 65536;
     std::vector<std::complex<float>> b(chunk);
@@ -36,7 +37,7 @@ static Estimate fmRun(double fs, double ppm, double sec, unsigned seed, double o
     FmPilotMeter m(fs);
     LiveCal lc(LiveCal::FmStation, 98.1e6);
     std::mt19937 g(seed);
-    std::normal_distribution<float> nd(0.f, 0.02f);
+    dect2::normal_distribution<float> nd(0.f, 0.02f);
     const size_t total = (size_t)(sec * fs), chunk = 48000;
     std::vector<std::complex<float>> b(chunk);
     double ph = 0;

@@ -1,5 +1,6 @@
 // Finding the bootstrap in a continuous signal with a carrier frequency offset, and the guard interval offset estimator.
 #include "dect2/atsc3/atsc3_sync.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -12,7 +13,7 @@ static int fails = 0;
 
 int main() {
     std::mt19937 rng(101);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     Bootstrap bs;
     bs.minorVersion = 0; bs.eaWakeUp = 1; bs.minTimeToNext = 4; bs.systemBandwidth = 0; bs.bsrCoefficient = 8; bs.preambleStructure = 11;
     auto sig = generateBootstrap(bs);
@@ -22,7 +23,7 @@ int main() {
     for (auto& cs : cases) {
         std::vector<cf32> x(120000);
         double sg = std::sqrt(std::pow(10.0, -cs.snr / 10.0) / 2.0);
-        for (auto& v : x) v = cf32(g(rng), g(rng)) * (float)sg;
+        for (auto& v : x) v = cf32{g(rng), g(rng)} * (float)sg;
         for (size_t i = 0; i < sig.size(); i++) x[cs.offset + i] += sig[i];
         // the carrier offset: the whole signal is shifted by cfo
         for (size_t i = 0; i < x.size(); i++) x[i] *= cf32((float)std::cos(2 * M_PI * cs.cfo * i / kBootstrapRate), (float)std::sin(2 * M_PI * cs.cfo * i / kBootstrapRate));
@@ -42,7 +43,7 @@ int main() {
     // nothing but noise
     {
         std::vector<cf32> x(100000);
-        for (auto& v : x) v = cf32(g(rng), g(rng));
+        for (auto& v : x) v = cf32{g(rng), g(rng)};
         auto r = findBootstrap(x.data(), x.size());
         CHECK(!r.found || !r.det.valid, "noise only: no bootstrap");
     }
@@ -52,7 +53,7 @@ int main() {
         std::vector<cf32> x;
         for (int s = 0; s < 6; s++) {
             std::vector<cf32> u(fft);
-            for (auto& v : u) v = cf32(g(rng), g(rng));
+            for (auto& v : u) v = cf32{g(rng), g(rng)};
             for (int i = 0; i < guard; i++) x.push_back(u[fft - guard + i]);
             for (int i = 0; i < fft; i++) x.push_back(u[i]);
         }

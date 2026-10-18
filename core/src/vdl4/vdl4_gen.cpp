@@ -1,5 +1,6 @@
 // VDL Mode 4 test signal: see vdl4_gen.h.
 #include "dect2/vdl4/vdl4_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/vdl4/vdl4_proto.h"
 #include "dect2/vdl4/vdl4_rx.h"
 #include "dect2/dsp/gen_util.h"
@@ -56,7 +57,7 @@ private:
             Ev e;
             e.t = t0 + i * 0.4;
             e.ch = i % (int)ch_.size();
-            e.car = std::uniform_real_distribution<double>(-150, 150)(rng_);
+            e.car = dect2::uniform_real_distribution<double>(-150, 150)(rng_);
             e.amp = 0.08;
             const uint32_t id = 0x4ca2b1u + (uint32_t)i;
             e.bits = vdl4SynthBurstBits((i & 1) == 0, id, 1, 51.4 + 0.02 * i, -0.5 + 0.02 * i, 35000, "VDL4 TEST");

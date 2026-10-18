@@ -1,6 +1,7 @@
 // JS8 protocol: the CRC-12 frame, the (174,87) code (every parity check holds, decoding through noise and bit errors), the tones and
 // Costas arrays of the three submodes, callsign / grid / 50-bit call packing, heartbeat, CQ, directed, data frames, a whole message.
 #include "dect2/js8/js8_proto.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -26,7 +27,7 @@ int main() {
     CHECK(bad == 0, "%d parity checks fail", bad);
     // through noise: BPSK-like soft values, SNR low enough to flip some bits
     for (int trial = 0; trial < 20; trial++) {
-        std::normal_distribution<float> nd(0.f, 0.65f);
+        dect2::normal_distribution<float> nd(0.f, 0.65f);
         float llr[174];
         int flipped = 0;
         for (int i = 0; i < 174; i++) { const float v = (cw[i] ? 1.f : -1.f) + nd(rng); if ((v > 0) != (cw[i] != 0)) flipped++; llr[i] = 2 * v / (0.65f * 0.65f); }

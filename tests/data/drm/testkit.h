@@ -4,6 +4,7 @@
 // Signals are produced in chunks, so a few seconds at 20 Msps never sit in memory.
 #pragma once
 #include "dect2/drm/drm_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/drm/drm_aacenc.h"
 #include "dect2/drm/drm_msg.h"
 #include "dect2/drm/drm_rx.h"
@@ -89,7 +90,7 @@ inline Gen withImpulses(Gen g, size_t period, size_t len, double rmsLevel, uint3
     auto rng = std::make_shared<std::mt19937>(seed);
     return [g, period, len, rmsLevel, pos, rng](cf32* o, size_t n) {
         g(o, n);
-        std::normal_distribution<float> nd(0.f, (float)(rmsLevel / std::sqrt(2.0)));
+        dect2::normal_distribution<float> nd(0.f, (float)(rmsLevel / std::sqrt(2.0)));
         for (size_t i = 0; i < n; i++, (*pos)++) if ((*pos) % period < len) o[i] += cf32(nd(*rng), nd(*rng));
     };
 }

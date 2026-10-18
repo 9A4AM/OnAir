@@ -1,6 +1,7 @@
 // Helpers shared by the fax tests: audio from the test source with impairments, decoding, and comparison with the chart.
 #pragma once
 #include "dect2/marine/marine_fax.h"
+#include "dect2/common/stable_random.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -72,7 +73,7 @@ inline std::vector<float> makeAudio(const Opts& o) {
     src.generate(a.data(), n);
     if (o.mistuneHz != 0) a = hilbertShift(a, o.rate, o.mistuneHz);
     std::mt19937 rng(o.noiseSeed);
-    std::normal_distribution<double> g(0, 1);
+    dect2::normal_distribution<double> g(0, 1);
     if (o.fadeDepth > 0)
         for (size_t i = 0; i < a.size(); i++) a[i] *= static_cast<float>(1.0 + o.fadeDepth * std::sin(2 * M_PI * o.fadeHz * i / o.rate));
     if (o.gain != 1.0) for (float& v : a) v *= static_cast<float>(o.gain);

@@ -1,5 +1,6 @@
 // HFDL test signal (hfdl_gen.h)
 #include "dect2/hfdl/hfdl_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dsp/rrc.h"
 #include "dect2/dsp/portable_rng.h"
 #include <algorithm>
@@ -107,7 +108,7 @@ struct HfdlTraffic::Impl {
     explicit Impl(const HfdlGenOptions& op) : o(op), rng(op.seed) {
         static const char* regs[] = {"N123UA", "G-VIIA", "C-FIUA", "EI-DUO", "D-AIMA", "A6-EUA", "JA736J", "VH-OQA", "B-LRA", "TF-FIA", "PH-BHA", "9V-SKA"};
         static const char* fls[] = {"UA0901", "BA0117", "AC0848", "EI0105", "LH0400", "EK0201", "JL0006", "QF0011", "CX0888", "FI0615", "KL0641", "SQ0026"};
-        std::uniform_real_distribution<double> U(0, 1);
+        dect2::uniform_real_distribution<double> U(0, 1);
         for (int i = 0; i < std::max(1, o.aircraft); i++) {
             Air a;
             a.icao = 0xA00000u + (uint32_t)(rng() % 0x5FFFF) + (uint32_t)i * 0x1000u;
@@ -197,8 +198,8 @@ public:
     }
     double sampleRate() const override { return rate_; }
     void generate(cf32* out, size_t n) override {
-        std::normal_distribution<float> g(0.f, (float)sigma_);
-        for (size_t i = 0; i < n; i++) out[i] = sigma_ > 0 ? cf32(g(noise_), g(noise_)) : cf32(0, 0);
+        dect2::normal_distribution<float> g(0.f, (float)sigma_);
+        for (size_t i = 0; i < n; i++) out[i] = sigma_ > 0 ? cf32{g(noise_), g(noise_)} : cf32(0, 0);
         const double tEnd = (double)(pos_ + (int64_t)n) / fsEff_ + 0.05;
         while (nextB_.t < tEnd) {
             HfdlWave w = hfdlMakeWave(nextB_.m1, nextB_.pdu, o_.paths, (uint32_t)(seedN_++));

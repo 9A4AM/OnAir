@@ -1,5 +1,6 @@
 // DVB-S/S2 test signal, see dvbs_gen.h.
 #include "dect2/dvbs/dvbs_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/tv/demo_ts.h"
 #include "dvbs_simd.h"
 #include "dvbs_vlsnr.h"
@@ -20,8 +21,8 @@ const std::vector<cf32>& noiseTable() {
     static const std::vector<cf32> t = [] {
         std::vector<cf32> v(1 << 20);
         std::mt19937 rng(20240607);
-        std::normal_distribution<float> nd(0.f, dect2::math::k1OverSqrt2f);
-        for (auto& x : v) x = cf32(nd(rng), nd(rng));
+        dect2::normal_distribution<float> nd(0.f, dect2::math::k1OverSqrt2f);
+        for (auto& x : v) x = cf32{nd(rng), nd(rng)};
         return v;
     }();
     return t;
@@ -41,7 +42,7 @@ PhaseNoise::PhaseNoise(int mask, double rate, uint32_t seed) {
     const int lg = 20, M = 1 << lg;
     std::vector<float> re(M, 0.f), im(M, 0.f);
     std::mt19937 rng(seed * 2654435761u + 17u);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     const double df = rate / M;
     double var = 0;
     for (int k = 1; k < M / 2; k++) {

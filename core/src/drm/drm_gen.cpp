@@ -1,5 +1,6 @@
 // DRM test signal: DRM30 transmitter (modes A to D), DRM+ (mode E), the channels of Annex B.1, and the synthetic source.
 #include "dect2/drm/drm_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/drm/drm_fec.h"
 #include "dect2/drm/drm_fft.h"
 #include "dect2/dsp/exact_resampler.h"
@@ -459,7 +460,7 @@ public:
         return v;
     }
 private:
-    cf32 gauss() { std::normal_distribution<float> nd(0.f, dect2::math::k1OverSqrt2f); return cf32(nd(rng_), nd(rng_)); }
+    cf32 gauss() { dect2::normal_distribution<float> nd(0.f, dect2::math::k1OverSqrt2f); return cf32{nd(rng_), nd(rng_)}; }
     cf32 step() {
         noise_[(size_t)head_] = gauss();
         head_ = (head_ + 1) % (int)noise_.size();
@@ -637,8 +638,8 @@ private:
             }
         }
         if (noiseVar_ > 0) {
-            std::normal_distribution<float> nd(0.f, (float)std::sqrt(noiseVar_ / 2));
-            for (auto& v : s) v += cf32(nd(rng_), nd(rng_));
+            dect2::normal_distribution<float> nd(0.f, (float)std::sqrt(noiseVar_ / 2));
+            for (auto& v : s) v += cf32{nd(rng_), nd(rng_)};
         }
         std::vector<cf32> u;
         if (br_ != 192000) up_.process(s.data(), s.size(), u);

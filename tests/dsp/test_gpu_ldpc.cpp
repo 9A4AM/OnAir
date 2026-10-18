@@ -1,5 +1,6 @@
 // Validates the Metal LDPC decoder against the CPU decoder on noisy codewords (all normal-frame rates), and times both.
 #include "dect2/dsp/gpu_ldpc.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/t2/t2fec.h"
 #include <chrono>
 #include <cmath>
@@ -21,7 +22,7 @@ int main() {
         const int n = c.n(), k = c.k(), nb = 64;
         static const double snrDb[6] = {1.5, 3.5, 4.5, 5.5, 6.5, 7.5}; // a little above each rate's threshold
         double sigma = std::pow(10.0, -snrDb[rate] / 20.0) * 0.9; // BPSK sigma
-        std::normal_distribution<float> nd(0, 1);
+        dect2::normal_distribution<float> nd(0, 1);
         std::vector<float> llr((size_t)nb * n);
         std::vector<std::vector<uint8_t>> cw(nb);
         for (int b = 0; b < nb; b++) {

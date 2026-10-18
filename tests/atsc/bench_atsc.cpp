@@ -4,6 +4,7 @@
 // SNR is the data power over the noise power in the 5.38 MHz Nyquist band, the way the generator defines it.
 //   bench_atsc [from to step] [fields]
 #include "dect2/atsc/atsc.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/atsc/atsc_gen.h"
 #include "dect2/atsc/atsc_rx.h"
 #include "dect2/dvbt/dvbt_gen.h"
@@ -41,7 +42,7 @@ int main(int argc, char** argv) {
             atsc::FieldEncoder enc; atsc::FieldDecoder dec;
             auto src = dvbt::testTsSource();
             std::mt19937 rng(11);
-            std::normal_distribution<float> nd(0.f, (float)std::sqrt(21.0 / std::pow(10.0, snr / 10.0)));
+            dect2::normal_distribution<float> nd(0.f, (float)std::sqrt(21.0 / std::pow(10.0, snr / 10.0)));
             std::vector<uint8_t> ts(312 * 188), syms((size_t)atsc::kFieldSyms), out(312 * 188);
             std::vector<float> lv((size_t)atsc::kFieldSyms);
             long pk = 0, bad = 0;
@@ -75,7 +76,7 @@ int main(int argc, char** argv) {
     if (argc > 1 && std::string(argv[1]) == "hybrid") {   // bench_atsc hybrid var fields: the receiver's noise-free levels plus our own Gaussian noise
         const double var = atof(argv[2]); const int fields = atoi(argv[3]);
         const auto lv = levelsFor(99, fields);
-        std::mt19937 rng(5); std::normal_distribution<float> nd(0.f, (float)std::sqrt(var));
+        std::mt19937 rng(5); dect2::normal_distribution<float> nd(0.f, (float)std::sqrt(var));
         atsc::FieldDecoder fd; long pk = 0, bad = 0; std::vector<uint8_t> out(312 * 188);
         for (size_t f = 0; f < lv.size(); f++) {
             std::vector<float> v(lv[f]); for (auto& x : v) x += nd(rng);
@@ -249,7 +250,7 @@ int main(int argc, char** argv) {
             auto src = dvbt::testTsSource();
             std::mt19937 rng(7);
             const double sigma = std::sqrt(21.0 / std::pow(10.0, snr / 10.0));
-            std::normal_distribution<float> nd(0.f, (float)sigma);
+            dect2::normal_distribution<float> nd(0.f, (float)sigma);
             std::vector<uint8_t> ts(312 * 188), syms((size_t)atsc::kFieldSyms), out(312 * 188);
             std::vector<float> lv((size_t)atsc::kFieldSyms);
             for (int f = 0; f < fields + 4; f++) {

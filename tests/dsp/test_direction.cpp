@@ -1,5 +1,6 @@
 // Direction finder: drive the wizard with simulated antennas and check where it ends up.
 #include "dect2/dsp/direction.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -23,7 +24,7 @@ struct Sim {
         return std::max(-frontBack, -12.0 * (dev / (beamwidth / 2)) * (dev / (beamwidth / 2)));
     }
     DirSample sample(double h) const {
-        std::normal_distribution<double> nd(0, jitter);
+        dect2::normal_distribution<double> nd(0, jitter);
         const double snr = snr0 + gainDb(h) + nd(rng);
         DirSample s;
         const double req = 16.5;

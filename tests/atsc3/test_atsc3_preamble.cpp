@@ -1,6 +1,7 @@
 // ATSC 3.0, the front of a frame: bootstrap found in noise, then the Preamble (L1-Basic and L1-Detail across several OFDM symbols)
 // decoded through a channel with an echo.
 #include "dect2/atsc3/atsc3_preamble.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -19,7 +20,7 @@ static L1DetailPlp plp(int id) {
 
 int main() {
     std::mt19937 rng(21);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     struct Case { int ps; int symbols; int mode; int plps; double snr; bool echo; } cases[] = {
         {0, 1, 2, 2, 25, false},    // 8K, one Preamble symbol, L1-Basic mode 1
         {0, 3, 3, 6, 25, true},     // three Preamble symbols
@@ -49,7 +50,7 @@ int main() {
         auto boot = generateBootstrap(bs);
         std::vector<cf32> bx(boot.size() + 30000);
         double sb = std::sqrt(std::pow(10.0, -cs.snr / 10.0) / 2.0);
-        for (auto& v : bx) v = cf32(g(rng), g(rng)) * (float)sb;
+        for (auto& v : bx) v = cf32{g(rng), g(rng)} * (float)sb;
         for (size_t i = 0; i < boot.size(); i++) bx[7000 + i] += boot[i];
         auto det = detectBootstrap(bx.data(), bx.size());
         CHECK(det.found && det.valid && det.info == bs && det.start == 7000, "bootstrap");
@@ -59,7 +60,7 @@ int main() {
         for (size_t i = 0; i < pre.size(); i++) rx[i] += pre[i];
         if (cs.echo) for (size_t i = 0; i + 25 < pre.size(); i++) rx[i + 25] += pre[i] * cf32(0.22f, -0.12f);
         double sp = std::sqrt(std::pow(10.0, -cs.snr / 10.0) / 2.0);
-        for (auto& v : rx) v += cf32(g(rng), g(rng)) * (float)sp;
+        for (auto& v : rx) v += cf32{g(rng), g(rng)} * (float)sp;
         auto res = decodePreamble(rx.data(), rx.size(), det.info);
         snprintf(m, sizeof m, "L1-Basic (ps %d)", cs.ps);
         CHECK(res.basicOk, m);

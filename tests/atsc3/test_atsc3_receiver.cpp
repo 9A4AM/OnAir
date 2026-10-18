@@ -3,6 +3,7 @@
 //   -> a channel with an echo and noise -> frame decoder -> ALP -> IP -> LLS and ROUTE -> remuxer -> transport stream.
 // The result is read back with libavformat. Needs the fragmented test files: test_atsc3_receiver <video.mp4> <audio.mp4>
 #include "atsc3_sim.h"
+#include "dect2/common/stable_random.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -40,7 +41,7 @@ int main(int argc, char** argv) {
     std::thread reader([&] { uint8_t buf[8192]; for (;;) { int k = rx.readTs(buf, sizeof buf); if (k <= 0) break; ts.insert(ts.end(), buf, buf + k); } });
 
     std::mt19937 rng(5);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     int frames = 0, decoded = 0;
     for (size_t i = 0; i < bbs.size(); i += perFrame) {
         FramePlp fp = plp;
@@ -55,7 +56,7 @@ int main(int argc, char** argv) {
         for (size_t s = 0; s < tx.size(); s++) sig += std::norm(r[s]);
         sig /= tx.size();
         float sigma = (float)std::sqrt(sig / std::pow(10.0, 26.0 / 10.0) / 2.0);
-        for (auto& v : r) v += cf32(g(rng), g(rng)) * sigma;
+        for (auto& v : r) v += cf32{g(rng), g(rng)} * sigma;
         decoded += rx.pushFrame(r.data(), r.size(), fs.bs);
         frames++;
     }

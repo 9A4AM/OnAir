@@ -2,6 +2,7 @@
 // each with two or three cells 3-10 dB apart, synchronised (one site's sectors, and two cells of the same NID2) or not (other sites).
 // Every cell must be listed, the ones 6 dB or less under the strongest with their MIB; noise alone must list nothing.
 #include "dect2/cell/cell_dsp.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/cell/cell_gen.h"
 #include "dect2/cell/cell_lte.h"
 #include "dect2/cell/cell_rx.h"
@@ -93,8 +94,8 @@ int main() {
     {   // noise alone through the whole receiver (spectrum, raster probe, search): nothing
         std::vector<cf32> n(x.size());
         std::mt19937 rng(5);
-        std::normal_distribution<float> nd(0.f, 0.1f);
-        for (auto& v : n) v = cf32(nd(rng), nd(rng));
+        dect2::normal_distribution<float> nd(0.f, 0.1f);
+        for (auto& v : n) v = cf32{nd(rng), nd(rng)};
         const CellTelemetry tn = run(n);
         CHECK(tn.cells.empty(), "noise only listed %zu cells", tn.cells.size());
     }

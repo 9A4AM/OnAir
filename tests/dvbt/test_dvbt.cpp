@@ -1,5 +1,6 @@
 // DVB-T: Reed-Solomon, TPS, Viterbi and the whole coding chain (TS -> cells -> noise -> TS) for several modes.
 #include "dect2/dvbt/dvbt_fec.h"
+#include "dect2/common/stable_random.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -84,7 +85,7 @@ static bool chain(const Params& p, double esn0Db, int symbols, double* decodeSec
     FecDecoder dec;
     dec.configure(p);
     const double sigma2 = std::pow(10.0, -esn0Db / 10.0) / 2.0; // per real dimension, unit-power constellation
-    std::normal_distribution<float> nd(0, 1);
+    dect2::normal_distribution<float> nd(0, 1);
     std::vector<cf32> cells, inter(N), noisy(N);
     std::vector<float> n0(N, (float)sigma2);
     const auto& H = symbolPermutation(p.mode);
@@ -94,7 +95,7 @@ static bool chain(const Params& p, double esn0Db, int symbols, double* decodeSec
         mapSymbol(w, p.mod, p.hier, cells);
         const int si = s % 68;
         if (si % 2) for (int q = 0; q < N; q++) inter[q] = cells[H[q]]; else for (int q = 0; q < N; q++) inter[H[q]] = cells[q];
-        for (int q = 0; q < N; q++) noisy[q] = inter[q] + cf32(nd(rng), nd(rng)) * (float)std::sqrt(sigma2);
+        for (int q = 0; q < N; q++) noisy[q] = inter[q] + cf32{nd(rng), nd(rng)} * (float)std::sqrt(sigma2);
         dec.pushSymbol(noisy.data(), n0.data(), si);
     }
     if (decodeSecs) *decodeSecs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();

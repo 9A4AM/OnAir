@@ -18,7 +18,15 @@ namespace A = dect2;
 namespace AT = dect2::text;
 namespace DV = dect2::dvbsi;
 
-static golden::Digest dig;
+// Two digests of the same run. `all` also takes what dvbText() makes of the tables that need the system's iconv (GB 2312, Big5, ISO 8859-x): glibc,
+// libiconv and macOS give different text for invalid input, so that part is compared only on macOS, where it was recorded. `portable` leaves it out
+// and is compared everywhere.
+struct DualDigest {
+    golden::Digest all, portable;
+    template <class... T> void add(const T&... v) { all.add(v...); portable.add(v...); }
+    void bytes(const void* p, size_t n) { all.bytes(p, n); portable.bytes(p, n); }
+    void addIconv(const std::string& s) { all.add(s); }
+} dig;
 static long rsStat[16];
 static std::mt19937 g(777);
 static uint32_t r32() { return g(); }
@@ -82,12 +90,12 @@ static void testText() {
         exact(t, [&](const uint8_t* p, size_t n) {
             for (bool gb : {false, true}) {
                 const std::string a = DV::dvbText(p, (int)n, gb);
-                dig.add(a);
+                dig.addIconv(a);
                 if (!a.empty()) rsStat[1]++;
             }
         });
     }
-    dig.add(DV::dvbText(nullptr, -3, false));
+    dig.addIconv(DV::dvbText(nullptr, -3, false));
 }
 
 // ---- teletext --------------------------------------------------------------------------------------------------------------------------------------------
@@ -345,5 +353,10 @@ int main() {
     testSubs();
     printf("dvbsi proto: non-empty text %ld %ld, 2418 ok %ld, units %ld %ld %ld, pes %ld, decoder pages %ld, sub pes %ld page %ld region %ld clut %ld object %ld, decoder displays with regions %ld\n",
            rsStat[0], rsStat[1], rsStat[2], rsStat[3], rsStat[4], rsStat[5], rsStat[6], rsStat[7], rsStat[8], rsStat[9], rsStat[10], rsStat[11], rsStat[12], rsStat[13]);
-    return golden::check("dvbsi_proto_rs", dig, 0xa5a3b122daa88e30ull, !getenv("ONAIR_DIFF_ITERS"));
+    const bool def = !getenv("ONAIR_DIFF_ITERS");
+    int rc = golden::check("dvbsi_proto_rs (without iconv text)", dig.portable, 0xb59f514d9ea18de6ull, def);
+#ifdef __APPLE__
+    rc |= golden::check("dvbsi_proto_rs", dig.all, 0xa5a3b122daa88e30ull, def);
+#endif
+    return rc;
 }

@@ -1,5 +1,6 @@
 // Meteor-M LRPT test signal (see meteor_gen.h).
 #include "dect2/meteor/meteor_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dsp/rrc.h"
 #include "dect2/meteor/meteor_proto.h"
 #include "dect2/meteor/meteor_rx.h"
@@ -50,7 +51,7 @@ struct MeteorGenerator::Impl {
     std::vector<float> tab;
     double scale = 1, sigma = 0;
     std::mt19937 rng;
-    std::normal_distribution<float> nd{0.f, 1.f};
+    dect2::normal_distribution<float> nd{0.f, 1.f};
     std::complex<double> rot{1, 0}, rstep{1, 0}, dstep{1, 0};
 
     explicit Impl(const MeteorGenConfig& cfg) : c(cfg), rng(cfg.seed) {
@@ -154,7 +155,7 @@ struct MeteorGenerator::Impl {
             rot *= rstep;
             rstep *= dstep;
             if ((outN & 4095) == 0) { rot /= std::abs(rot); rstep /= std::abs(rstep); }
-            if (sigma > 0) s += std::complex<double>(sigma * nd(rng), sigma * nd(rng));
+            if (sigma > 0) s += std::complex<double>{sigma * nd(rng), sigma * nd(rng)};
             out[i] = cf32((float)s.real(), (float)s.imag());
         }
     }

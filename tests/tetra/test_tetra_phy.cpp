@@ -1,6 +1,7 @@
 // TETRA physical layer and PDUs: channel coding round trips with errors, Reed-Muller, the PDU layouts, and one carrier of the test
 // signal decoded at 4 samples per symbol.
 #include "dect2/tetra/tetra_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/tetra/tetra_phy.h"
 #include "dect2/tetra/tetra_pdu.h"
 #include "dect2/tetra/tetra_rx.h"
@@ -13,7 +14,7 @@ using namespace dect2::tetra;
 #include "../common/test_util.h"
 
 static std::vector<float> toLlr(const Bits& b, std::mt19937& g, double flipRate) {
-    std::uniform_real_distribution<double> u(0, 1);
+    dect2::uniform_real_distribution<double> u(0, 1);
     std::vector<float> l(b.size());
     for (size_t i = 0; i < b.size(); i++) { int v = b[i]; if (u(g) < flipRate) v ^= 1; l[i] = v ? 1.f : -1.f; }
     return l;
@@ -122,10 +123,10 @@ int main() {
         Modulator mod;
         std::vector<cf32> x;
         for (uint32_t a = 0; a < 72 * 2 + 40; a++) mod.push(cellSlot(c, c.startSlot + a), x);
-        std::normal_distribution<float> nd(0, 1);
+        dect2::normal_distribution<float> nd(0, 1);
         const float sg = snr >= 99 ? 0.f : (float)std::sqrt((tetra::kRate / 25e3) / std::pow(10.0, snr / 10) / 2);
         const double w = 2 * M_PI * 700 / tetra::kRate;
-        for (size_t i = 0; i < x.size(); i++) x[i] = x[i] * cf32((float)std::cos(w * i), (float)std::sin(w * i)) + cf32(sg * nd(g), sg * nd(g));
+        for (size_t i = 0; i < x.size(); i++) x[i] = x[i] * cf32((float)std::cos(w * i), (float)std::sin(w * i)) + cf32{sg * nd(g), sg * nd(g)};
         const CarrierDecode d = decodeCarrier(x.data(), x.size());
         printf("  72 kHz, SNR %.0f: tetra %d synced %d syncs %d cfo %.0f Hz snr %.1f dB slots %d ok %d bad %d traffic %d\n", snr, d.tetra, d.synced, d.syncs, d.cfoHz, d.snrDb, d.slots, d.blocksOk, d.blocksBad, d.trafficSlots);
         CHECK(d.synced && d.sync.mcc == 1 && d.sync.mnc == 1 && d.sync.colourCode == 5, "BSCH");

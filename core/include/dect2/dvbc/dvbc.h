@@ -3,6 +3,7 @@
 // The outer code (energy dispersal, Reed-Solomon (204,188), Forney interleaver I = 12) is the one of DVB-T (dvbt.h) and is shared with it.
 #pragma once
 #include <algorithm>
+#include "dect2/common/stable_random.h"
 #include "dect2/common/ring.h"
 #include <cmath>
 #include <cstdint>
@@ -137,7 +138,7 @@ private:
     double ph_ = 0, dph_ = 0;
     float noise_ = 0, scale_ = 1;
     std::mt19937 rng_;
-    std::normal_distribution<float> nd_{0.f, 1.f};
+    dect2::normal_distribution<float> nd_{0.f, 1.f};
     uint64_t packets_ = 0;
 };
 

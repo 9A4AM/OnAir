@@ -83,7 +83,7 @@ static Bits mkBlock(int kind) {
         const auto n = rndNwrk<A::NwrkBroadcast>();
         const int cellsel = kind == 3 ? (int)(g() % 4) : 0; const uint32_t mseed = g();
         Bits b = A::macBroadcastResource(A::mleNwrkBroadcast(n), len, cellsel, mseed);
-        if (kind == 2) { const Bits more = A::macBroadcastResource(A::mleNwrkBroadcast(rndNwrk<A::NwrkBroadcast>()), len, 0, g()); b.insert(b.begin() + 16, more.begin(), more.begin() + 40); }
+        if (kind == 2) { const auto n2 = rndNwrk<A::NwrkBroadcast>(); const uint32_t seed2 = g(); const Bits more = A::macBroadcastResource(A::mleNwrkBroadcast(n2), len, 0, seed2); b.insert(b.begin() + 16, more.begin(), more.begin() + 40); }
         return b;
     }
     case 4: return A::macNullPdu(len);

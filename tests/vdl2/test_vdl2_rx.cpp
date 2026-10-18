@@ -3,6 +3,7 @@
 // channel, a strong neighbour 25 kHz away, and noise only. Every frame sent is looked for among the frames decoded (by source,
 // destination and time), and nothing may be decoded that was not sent.
 #include "dect2/vdl2/vdl2_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/vdl2/vdl2_proto.h"
 #include "dect2/vdl2/vdl2_rx.h"
 #include "../common/impair.h"
@@ -23,8 +24,8 @@ static double sigmaFor(double esn0, double rate = kRate) { return std::sqrt(kAmp
 
 static void addNoise(std::vector<cf32>& x, double esn0, uint32_t seed, double rate = kRate) {
     std::mt19937 r(seed);
-    std::normal_distribution<float> g(0.f, (float)sigmaFor(esn0, rate));
-    for (auto& v : x) v += cf32(g(r), g(r));
+    dect2::normal_distribution<float> g(0.f, (float)sigmaFor(esn0, rate));
+    for (auto& v : x) v += cf32{g(r), g(r)};
 }
 
 static void addBurst(Clip& c, const Vdl2Frames& fr, double t, double f, double levelDb, double carOff, double phase = 0.7) {

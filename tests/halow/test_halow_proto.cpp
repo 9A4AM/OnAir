@@ -1,6 +1,7 @@
 // Wi-Fi HaLow (802.11ah) pieces: the tone layouts, preamble sequences, SIG field and its CRC-4, scrambler, convolutional code and Viterbi decoder,
 // the PPDU length, S1G beacon building and parsing (SSID, compressed SSID, security, S1G Operation), channel plans.
 #include "dect2/halow/halow_proto.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/wifi/wifi_proto.h"
 #include <cmath>
 #include <cstdio>
@@ -82,7 +83,7 @@ int main() {
         std::vector<float> llr(coded.size());
         for (size_t i = 0; i < coded.size(); i++) llr[i] = coded[i] ? 1.f : -1.f;
         CHECK(viterbi(llr) == bits, "clean decode");
-        std::normal_distribution<float> nd(0.f, 0.8f);
+        dect2::normal_distribution<float> nd(0.f, 0.8f);
         for (auto& v : llr) v += nd(rng);
         const auto dec = viterbi(llr);
         int err = 0;

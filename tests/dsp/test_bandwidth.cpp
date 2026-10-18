@@ -1,5 +1,6 @@
 // Bandwidth detection from modelled spectra: flat-top OFDM with ripple (multipath), noise, a DC spike, deep fades and neighbours.
 #include "dect2/dsp/bandwidth.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -14,7 +15,7 @@ static std::mt19937 rng(5);
 static std::vector<float> spectrum(double fsMhz, double bw, double snrDb, bool neighbours, bool fades, double offsetMhz = 0) {
     const int n = 4096;
     std::vector<float> d(n);
-    std::normal_distribution<double> nd(0, 0.8);
+    dect2::normal_distribution<double> nd(0, 0.8);
     const double occ = 0.952 * bw, floorDb = -90;
     for (int i = 0; i < n; i++) {
         const double f = ((double)i / n - 0.5) * fsMhz;
@@ -51,7 +52,7 @@ int main() {
     fails += bad;
     {   // noise only: nothing to report
         BandwidthDetector det;
-        std::normal_distribution<double> nd(-90, 0.8);
+        dect2::normal_distribution<double> nd(-90, 0.8);
         for (int k = 0; k < 15; k++) { std::vector<float> d(4096); for (auto& x : d) x = (float)nd(rng); det.add(d, 20); }
         CHECK(!det.estimate().valid && det.estimate().noFloor, "noise reported as a signal");
     }

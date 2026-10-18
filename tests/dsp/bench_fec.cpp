@@ -1,4 +1,5 @@
 #include "dect2/dsp/gpu_ldpc.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/t2/t2fec.h"
 #include <chrono>
 #include <cmath>
@@ -17,7 +18,7 @@ int main(int argc, char** argv) {
     FecDims d = fecDims(f);
     const LdpcCode& ldpc = ldpcFor(f); const BchCode& bch = bchFor(f);
     const auto& map = bitInterleaverMap(f);
-    std::mt19937 rng(9); std::normal_distribution<float> nd(0.f, 1.f);
+    std::mt19937 rng(9); dect2::normal_distribution<float> nd(0.f, 1.f);
     const int blocks = 64, cells = d.cellsPerBlock, bps = d.bitsPerCell;
     std::vector<std::vector<float>> llrs(blocks);
     std::vector<std::vector<uint8_t>> msgs(blocks);
@@ -30,7 +31,7 @@ int main(int argc, char** argv) {
         std::vector<cf32> tx; qamMapBlock(f, lab, tx);
         float n0 = std::pow(10.f, -snr / 10.f) / 2.f;
         std::vector<float> nn(cells, n0);
-        for (auto& v : tx) v += cf32(nd(rng), nd(rng)) * std::sqrt(n0);
+        for (auto& v : tx) v += cf32{nd(rng), nd(rng)} * std::sqrt(n0);
         std::vector<float> ll((size_t)cells * bps); llrs[b].resize(d.nLdpc);
         auto t0 = std::chrono::steady_clock::now();
         qamDemapBlock(f, tx.data(), nn.data(), cells, ll.data());

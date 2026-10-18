@@ -1,6 +1,7 @@
 // dect2::window::besselI0 against the original private copies (each with its own term count / early-exit tolerance),
 // compared bit-exactly on random arguments from 0 to 80 plus edge values.
 #include "dect2/common/window.h"
+#include "dect2/common/stable_random.h"
 #include <cstdio>
 #include <cstring>
 #include <random>
@@ -11,7 +12,7 @@ static bool same(double a, double b) { return !memcmp(&a, &b, sizeof a); }
 
 int main() {
     std::mt19937_64 r(3);
-    std::uniform_real_distribution<double> u(0, 80);
+    dect2::uniform_real_distribution<double> u(0, 80);
     for (int it = 0; it < 20000; it++) {
         double x = it < 6 ? (it == 0 ? 0.0 : it == 1 ? 1e-9 : it == 2 ? 1.0 : it == 3 ? 100.0 : it == 4 ? -3.5 : 700.0) : u(r);
         { double s = 1, t = 1; for (int k = 1; k < 40; k++) { t *= (x / (2.0 * k)) * (x / (2.0 * k)); s += t; } CHECK(same(s, window::besselI0(x, 40, 0.0)), "40 plain x=%g", x); }

@@ -1,5 +1,6 @@
 // NB-IoT test signal (nbiot_gen.h, nbiot_phy.h).
 #include "dect2/nbiot/nbiot_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/cell/cell_dsp.h"
 #include "dect2/source/source.h"
 #include "../cell/cell_lte_int.h"
@@ -216,7 +217,7 @@ public:
     double sampleRate() const override { return out_; }
     void generate(cf32* o, size_t n) override {
         size_t done = 0;
-        std::normal_distribution<float> nd(0.f, 1.f);
+        dect2::normal_distribution<float> nd(0.f, 1.f);
         const int H = rs_->halfLen();
         while (done < n) {
             if (pos_ + H + 2 >= (double)buf_.size()) { more(); continue; }
@@ -230,7 +231,7 @@ public:
         for (size_t i = 0; i < n; i++) {
             o[i] *= cf32((float)std::cos(ph_), (float)std::sin(ph_));
             ph_ = std::fmod(ph_ + w, 2 * M_PI);
-            if (noise_ > 0) o[i] += cf32(noise_ * nd(rng_), noise_ * nd(rng_));
+            if (noise_ > 0) o[i] += cf32{noise_ * nd(rng_), noise_ * nd(rng_)};
         }
     }
 

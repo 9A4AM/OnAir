@@ -1,6 +1,7 @@
 // Meteor-M LRPT layers: convolutional code and Viterbi, the sync word as other decoders know it, the CCSDS PN, Reed-Solomon (255,223)
 // dual basis, CADU round trip with errors, M_PDU packet reassembly across VCDUs and a lost VCDU, the MSU-MR JPEG-like strip coder.
 #include "dect2/meteor/meteor_proto.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/meteor/meteor_gen.h"
 #include <cmath>
 #include <cstdio>
@@ -24,7 +25,7 @@ int main() {
         for (auto& b : in) b = rng() & 1;
         ConvEncoder e;
         Viterbi27 v;
-        std::normal_distribution<float> nd(0, 0.7f);
+        dect2::normal_distribution<float> nd(0, 0.7f);
         int raw = 0;
         for (uint8_t b : in) {
             uint8_t a, c;

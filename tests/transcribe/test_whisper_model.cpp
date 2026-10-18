@@ -1,6 +1,7 @@
 // The real speech engine on generated audio (needs a model: DECT2_WHISPER_MODEL=/path/ggml-tiny.en.bin; without it the test is skipped and passes).
 // 1. Silence and noise must not come out as text (no hallucination reaches the store). 2. The real-time factor on a generated speech-like signal.
 #include "dect2/transcribe/transcriber.h"
+#include "dect2/common/stable_random.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -70,7 +71,7 @@ int main() {
         for (size_t i = 0; i < a.size(); i += 160) { now += 20; tr.feed(src, a.data() + i, std::min<size_t>(160, a.size() - i), 8000, now); }
     };
     std::mt19937 g(5);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     // silence with a little noise: never opens
     { std::vector<float> a(8000 * 20); for (auto& x : a) x = 0.001f * nd(g); feed(a); }
     // loud broadband noise (a squelch that is open on static): opens, goes to the engine, must not come out as text

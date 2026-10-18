@@ -1,6 +1,7 @@
 // Start and stop tone detection: tone frequencies of fldigi wefax.cxx (300 Hz IOC 576, 675 Hz IOC 288, 450 Hz stop),
 // mistuning of +-50 Hz, noise, dropouts, and no false alarms on noise or speech-like audio.
 #include "../data/marine/fax/fax_util.h"
+#include "dect2/common/stable_random.h"
 using namespace faxt;
 
 static const double fs = 12000;
@@ -12,12 +13,12 @@ static void tone(std::vector<float>& a, double f, double secs, double amp = 0.5,
 }
 static void silence(std::vector<float>& a, double secs) { a.insert(a.end(), static_cast<size_t>(secs * fs), 0.f); }
 static void noise(std::vector<float>& a, double secs, double sigma, std::mt19937& rng) {
-    std::normal_distribution<double> g(0, sigma);
+    dect2::normal_distribution<double> g(0, sigma);
     for (size_t i = 0, n = static_cast<size_t>(secs * fs); i < n; i++) a.push_back(static_cast<float>(g(rng)));
 }
 static void addNoise(std::vector<float>& a, double sigma, uint32_t seed) {
     std::mt19937 rng(seed);
-    std::normal_distribution<double> g(0, sigma);
+    dect2::normal_distribution<double> g(0, sigma);
     for (float& v : a) v += static_cast<float>(g(rng));
 }
 

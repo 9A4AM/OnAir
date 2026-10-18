@@ -3,6 +3,7 @@
 // transit / rise / set at Boston; IAU standard solar apex in galactic coordinates l = 56.1, b = +22.8), Gaussian fit accuracy, the l-v map
 // with a flat rotation curve, FITS round trip, session and CSV text.
 #include "dect2/astro/hline.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -14,7 +15,7 @@ static double gauss(double x, double a, double c, double s) { const double d = (
 
 int main() {
     std::mt19937_64 rng(7);
-    std::normal_distribution<double> nd(0, 1);
+    dect2::normal_distribution<double> nd(0, 1);
 
     // ---- Y-factor: Trx 60 K, hot 300 K, cold 77 K, gain 2 units / K
     {

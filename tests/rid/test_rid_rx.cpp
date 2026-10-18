@@ -1,6 +1,7 @@
 // Drone Remote ID receiver end to end (rid_gen.h, rid_rx.h): Open Drone ID in BLE advertising and in Wi-Fi beacons through the BLE and
 // Wi-Fi demodulators, each alone and both in one 20 MHz band at 2432 MHz, a carrier offset with noise, a file (no centre), and noise alone.
 #include "dect2/rid/rid_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/rid/rid_proto.h"
 #include "dect2/rid/rid_rx.h"
 #include "dect2/rid/rid_tel.h"
@@ -104,9 +105,9 @@ int main() {
         r.configure(20e6);
         r.setCenterHz(2432e6);
         std::mt19937 rng(5);
-        std::normal_distribution<float> nd(0.f, 0.05f);
+        dect2::normal_distribution<float> nd(0.f, 0.05f);
         std::vector<cf32> buf(65536);
-        for (int k = 0; k < 120; k++) { for (auto& v : buf) v = cf32(nd(rng), nd(rng)); r.feed(buf.data(), buf.size()); }
+        for (int k = 0; k < 120; k++) { for (auto& v : buf) v = cf32{nd(rng), nd(rng)}; r.feed(buf.data(), buf.size()); }
         RidTelemetry t;
         r.telemetry(t, 0);
         CHECK(t.drones.empty() && t.blocksOk == 0 && t.state == 0 && t.log.empty(), "noise: %zu drones, %llu messages", t.drones.size(), (unsigned long long)t.blocksOk);

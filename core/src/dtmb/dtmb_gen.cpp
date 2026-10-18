@@ -1,5 +1,6 @@
 // DTMB test signal (see dtmb_gen.h).
 #include "dect2/dtmb/dtmb_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/tv/demo_ts.h"
 #include <algorithm>
 #include <cmath>
@@ -68,9 +69,9 @@ Signal::Signal(const SignalConfig& cfg, FrameTx::TsSource ts) : cfg_(cfg), tx_(c
     gain_ = (float)(cfg.rms / std::sqrt(power + nPow));
     if (nPow > 0) {
         std::mt19937 rng(cfg.seed * 2654435761u + 17u);
-        std::normal_distribution<float> nd(0.f, 1.f);
+        dect2::normal_distribution<float> nd(0.f, 1.f);
         pool_.resize(kPool);
-        for (auto& v : pool_) v = cf32(nd(rng), nd(rng));
+        for (auto& v : pool_) v = cf32{nd(rng), nd(rng)};
     }
     rnd_ = cfg.seed * 747796405u + 2891336453u;
     if (!rnd_) rnd_ = 1;

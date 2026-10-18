@@ -490,6 +490,15 @@ struct RemoteApiServer::Impl {
                         rejected++;
                         const std::string r = "HTTP/1.1 503 Service Unavailable\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
                         ioSendAll(k, r.data(), r.size());
+                        // Closing with the client's request still unread resets the connection on Windows, and the reset throws the answer away:
+                        // end our side, read what the client sent (briefly), then close
+#ifdef _WIN32
+                        ::shutdown(k, SD_SEND);
+#else
+                        ::shutdown(k, SHUT_WR);
+#endif
+                        sockRecvTimeout(k, 200);
+                        { char drain[2048]; for (int n = 0; n < 8 && sockRecv(k, drain, sizeof drain) > 0; n++) {} }
                         sockClose(k);
                     } else {
                         auto cn = std::make_unique<Conn>();

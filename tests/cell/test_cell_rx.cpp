@@ -2,6 +2,7 @@
 // +-20 ppm, low SNR, multipath, the input starting inside a frame, the radio's own sample rate, every bandwidth and port count, two cells
 // on one carrier, noise only. The system information must read back exactly as sent; nothing else (paging) may come out.
 #include "dect2/cell/cell_asn.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/cell/cell_dsp.h"
 #include "dect2/cell/cell_gen.h"
 #include "dect2/cell/cell_lte.h"
@@ -148,8 +149,8 @@ int main(int argc, char** argv) {
     {   // noise only, and a block too short to hold a frame
         std::vector<cf32> x(base.size());
         std::mt19937 rng(12);
-        std::normal_distribution<float> nd(0.f, 0.1f);
-        for (auto& v : x) v = cf32(nd(rng), nd(rng));
+        dect2::normal_distribution<float> nd(0.f, 0.1f);
+        for (auto& v : x) v = cf32{nd(rng), nd(rng)};
         LteSearchOpts o;
         CHECK(lteSearchDecode(x.data(), x.size(), fs, 0, o).empty(), "noise only gave a cell");
         CHECK(lteSearchDecode(base.data(), 20000, fs, 0, o).empty(), "a short block");

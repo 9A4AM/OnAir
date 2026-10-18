@@ -1,6 +1,7 @@
 // PSK31 protocol pieces: the varicode table (no "00" inside a code, every code different, round trip of all 128 characters, a bad code),
 // the K = 5 convolutional code and its Viterbi decoder (clean, with soft noise, with hard bit errors), the QPSK phase mapping.
 #include "dect2/psk/psk_varicode.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -54,7 +55,7 @@ int main() {
         in.insert(in.end(), 60, 0);
         psk::ConvEncoder enc;
         psk::Viterbi vit;
-        std::normal_distribution<float> nd(0.f, trial == 0 ? 0.f : 0.55f);
+        dect2::normal_distribution<float> nd(0.f, trial == 0 ? 0.f : 0.55f);
         std::vector<uint8_t> out;
         int flipped = 0;
         for (size_t i = 0; i < in.size(); i++) {

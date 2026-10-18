@@ -1,5 +1,6 @@
 // MixedFft against a direct DFT, round trips, and speed at the DTMB size.
 #include "dect2/dtmb/dtmb_fft.h"
+#include "dect2/common/stable_random.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -13,11 +14,11 @@ static int failures = 0;
 
 int main() {
     std::mt19937 rng(3);
-    std::normal_distribution<float> nd;
+    dect2::normal_distribution<float> nd;
     for (int n : {1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 15, 21, 35, 36, 49, 60, 105, 140, 210, 315, 420, 540, 945, 1260, 3780}) {
         MixedFft f(n);
         std::vector<cf32> x((size_t)n), y((size_t)n), ref((size_t)n);
-        for (auto& v : x) v = cf32(nd(rng), nd(rng));
+        for (auto& v : x) v = cf32{nd(rng), nd(rng)};
         y = x;
         f.forward(y.data());
         double err = 0, pw = 0;
@@ -41,7 +42,7 @@ int main() {
     {
         MixedFft f(3780);
         std::vector<cf32> x(3780);
-        for (auto& v : x) v = cf32(nd(rng), nd(rng));
+        for (auto& v : x) v = cf32{nd(rng), nd(rng)};
         const auto t0 = std::chrono::steady_clock::now();
         for (int i = 0; i < 2000; i++) { f.forward(x.data()); f.inverse(x.data()); for (auto& v : x) v *= 1.f / 3780.f; }
         const double dt = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count() / 4000;

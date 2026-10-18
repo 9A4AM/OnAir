@@ -1,4 +1,5 @@
 #include "dect2/wb/wb_gen.h"
+#include "dect2/common/stable_random.h"
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -37,8 +38,8 @@ std::vector<float> rrcTaps(double alpha, double sps, int spanSyms) {
 
 void addNoise(std::vector<cf32>& x, double power, uint32_t seed) {
     std::mt19937 rng(seed * 7919u + 13u);
-    std::normal_distribution<float> nd(0.f, (float)std::sqrt(power / 2));
-    for (cf32& v : x) v += cf32(nd(rng), nd(rng));
+    dect2::normal_distribution<float> nd(0.f, (float)std::sqrt(power / 2));
+    for (cf32& v : x) v += cf32{nd(rng), nd(rng)};
 }
 
 GenResult generate(const GenSpec& g) {

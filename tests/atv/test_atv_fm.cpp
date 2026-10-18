@@ -2,6 +2,7 @@
 // receiver in FM mode. What the synthetic signal cannot say is which end of the swing real transmitters call the sync tip, the deviation and the
 // pre-emphasis: the receiver finds the polarity itself, the rest does not matter to it; a real recording is the check for those.
 #include "dect2/atv/atv_testkit.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dsp/exact_resampler.h"
 #include <cmath>
 #include <cstdio>
@@ -45,7 +46,7 @@ std::vector<cf32> fmSignal(double secs, const FmOptions& o) {
     rs.configure(AtvGenerator::kInternalRate, o.rate);
     rs.process(in.data(), in.size(), v);
     std::mt19937 rng(7);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     const double amp = 0.3, nPow = amp * amp / std::pow(10.0, o.cnrDb / 10) * (o.rate / 17e6);
     const float ns = (float)std::sqrt(nPow / 2);
     std::vector<cf32> out(v.size());
@@ -56,7 +57,7 @@ std::vector<cf32> fmSignal(double secs, const FmOptions& o) {
         ph += 2 * M_PI * f / o.rate;
         if (ph > M_PI) ph -= 2 * M_PI; else if (ph < -M_PI) ph += 2 * M_PI;
         auto q = [](float x) { return std::round(std::min(127.f, std::max(-128.f, x * 128.f))) / 128.f; };
-        out[i] = cf32(q((float)(amp * std::cos(ph)) + ns * nd(rng)), q((float)(amp * std::sin(ph)) + ns * nd(rng)));
+        out[i] = cf32{q((float)(amp * std::cos(ph)) + ns * nd(rng)), q((float)(amp * std::sin(ph)) + ns * nd(rng))};
     }
     return out;
 }
@@ -178,9 +179,9 @@ int main() {
     { FmOptions o; o.acTauMs = 2; check("AC coupled, 2 ms", o, 4.0, 2500, 0.45); }
     // only noise: no picture, and no trouble
     {
-        std::mt19937 rng(3); std::normal_distribution<float> nd(0.f, 0.15f);
+        std::mt19937 rng(3); dect2::normal_distribution<float> nd(0.f, 0.15f);
         std::vector<cf32> x((size_t)(20e6 * 2));
-        for (auto& s : x) s = cf32(nd(rng), nd(rng));
+        for (auto& s : x) s = cf32{nd(rng), nd(rng)};
         const Result r = decode(x, 20e6);
         CHECK(r.tel.state != 2 && !r.tel.dataValid, "noise decoded as a picture (state %d)", r.tel.state);
     }

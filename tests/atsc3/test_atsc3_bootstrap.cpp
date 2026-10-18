@@ -1,5 +1,6 @@
 // ATSC 3.0 bootstrap: the generated signal is found in noise at an unknown position and every signalled field is read back.
 #include "dect2/atsc3/atsc3_bootstrap.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -14,10 +15,10 @@ static bool run(const Bootstrap& b, long offset, double snrDb, unsigned seed) {
     auto sig = generateBootstrap(b);
     size_t n = sig.size() + 40000;
     std::mt19937 rng(seed);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     double sigma = std::pow(10.0, -snrDb / 20.0) / std::sqrt(2.0);
     std::vector<cf32> x(n);
-    for (auto& v : x) v = cf32(g(rng), g(rng)) * (float)sigma;
+    for (auto& v : x) v = cf32{g(rng), g(rng)} * (float)sigma;
     cf32 rot(std::cos(0.7f), std::sin(0.7f));   // unknown carrier phase
     for (size_t i = 0; i < sig.size(); i++) x[offset + i] += sig[i] * rot;
     auto d = detectBootstrap(x.data(), n);

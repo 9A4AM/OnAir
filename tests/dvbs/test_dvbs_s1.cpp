@@ -2,6 +2,7 @@
 // convolutional interleaver (I = 12), convolutional code (171,133 octal) with puncturing, QPSK mapping. The generator's symbols must be the model's
 // symbols exactly. Then the receiver's building blocks: sync byte search, rate search, code rate and puncture phase on symbols with noise and a rotation.
 #include "dect2/dvbs/dvbs_tx.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dvbt/dvbt.h"
 #include "../../core/src/dvbs/dvbs_s1.h"
 #include <cstdio>
@@ -143,12 +144,12 @@ int main() {
         auto tx = makeDvbsTx(cfg, [&](uint8_t* p) { memset(p, 0, 188); p[0] = 0x47; p[1] = 0; p[2] = 0x30; p[3] = 0x10 | (n & 15); p[4] = (uint8_t)(n >> 8); p[5] = (uint8_t)n; n++; });
         std::vector<cf32> sym(40000 + 1234);
         tx->generate(sym.data(), sym.size());
-        std::normal_distribution<float> nd(0.f, 1.f);
+        dect2::normal_distribution<float> nd(0.f, 1.f);
         static const double esn0[5] = {5.0, 7.3, 8.6, 10.0, 11.0};                // about 2 dB above the threshold of each rate
         const float s = (float)std::sqrt(std::pow(10.0, -esn0[rate] / 10.0) / 2.0);
         std::vector<cf32> y(sym.size() - 1234);
         for (size_t i = 0; i < y.size(); i++) {
-            const cf32 z = sym[i + 1234] + cf32(nd(rng), nd(rng)) * s;      // starts in the middle of the puncturing period
+            const cf32 z = sym[i + 1234] + cf32{nd(rng), nd(rng)} * s;      // starts in the middle of the puncturing period
             y[i] = s1Variant(z, 3);                                         // conjugate and +90 degrees
         }
         const S1Hypothesis h = s1Search(y.data(), y.size());

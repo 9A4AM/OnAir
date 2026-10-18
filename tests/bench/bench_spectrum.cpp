@@ -2,6 +2,7 @@
 // Feeds synthetic IQ (a few tones plus noise) in 64k-sample pieces like the engine does and takes a frame 30 times per signal second,
 // like the display does. Usage: bench_spectrum [seconds_of_signal=2]. Prints one line per rate and size; no pass/fail.
 #include "dect2/dsp/spectrum.h"
+#include "dect2/common/stable_random.h"
 #include <ctime>
 #include <cmath>
 #include <cstdio>
@@ -15,14 +16,14 @@ int main(int argc, char** argv) {
     const double rates[] = {2e6, 10e6, 20e6};
     const size_t sizes[] = {1024, 4096, 16384, 65536};
     std::mt19937 rng(1);
-    std::normal_distribution<float> nd(0.f, 0.02f);
+    dect2::normal_distribution<float> nd(0.f, 0.02f);
     const size_t N = 1 << 20;   // one second of the slowest rate, replayed
     std::vector<cf32> sig(N);
     for (size_t i = 0; i < N; i++) {
         const float t = (float)i;
         const float a = 0.3f * std::cos(0.05f * t) + 0.15f * std::cos(0.7f * t);
         const float b = 0.3f * std::sin(0.05f * t) + 0.15f * std::sin(0.7f * t);
-        sig[i] = cf32(a + nd(rng), b + nd(rng));
+        sig[i] = cf32{a + nd(rng), b + nd(rng)};
     }
     printf("%-8s %-8s %-14s\n", "Msps", "fft", "cpu_s/signal_s");
     double chk = 0;

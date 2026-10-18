@@ -3,6 +3,7 @@
 // tests/test_dmr_field.cpp: other sample rates, direct mode, dropouts, level steps, adjacent channels, impulse noise, reset.
 // Everything is compared with what the generator says it sent (dmr_eval.h).
 #include "dect2/dmr/dmr_eval.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dmr/dmr_gen.h"
 #include "dect2/dmr/dmr_rx.h"
 #include <atomic>
@@ -221,14 +222,14 @@ int main(int argc, char** argv) {
     // ---- 6. no signal: nothing may be reported, and the CPU stays low
     {
         std::mt19937 rng(8);
-        std::normal_distribution<float> nd(0.f, 0.15f);
+        dect2::normal_distribution<float> nd(0.f, 0.15f);
         DmrReceiver rx;
         rx.setSilent(true);
         rx.configure(2.4e6);
         std::vector<cf32> buf(65536);
         double cpu = 0;
         for (int blk = 0; blk < 150; blk++) {         // 4 s
-            for (auto& v : buf) v = cf32(std::round(nd(rng) * 128) / 128, std::round(nd(rng) * 128) / 128);
+            for (auto& v : buf) v = cf32{std::round(nd(rng) * 128) / 128, std::round(nd(rng) * 128) / 128};
             const auto t0 = std::chrono::steady_clock::now();
             rx.feed(buf.data(), buf.size());
             cpu += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();

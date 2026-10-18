@@ -1,5 +1,6 @@
 // HF ALE test signal (see ale_gen.h).
 #include "dect2/ale/ale_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/ale/ale_proto.h"
 #include "dect2/ale/ale_rx.h"
 #include "dect2/dsp/gen_util.h"
@@ -76,7 +77,7 @@ struct AleGenerator::Impl {
     AleGenConfig cfg;
     genutil::NoiseSource noise;
     std::mt19937 rng;
-    std::uniform_real_distribution<double> uni{0.0, 1.0};
+    dect2::uniform_real_distribution<double> uni{0.0, 1.0};
     std::vector<Tx> tx;
     double amp = 0, ph = 0, period = 0;
     int64_t n = 0;

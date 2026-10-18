@@ -1,6 +1,7 @@
 // Live transcription without a speech engine: the callsign reader (phonetic and telephony cases), the segmenter, the transcriber with a fake
 // backend (queue overflow, hallucination filters, linking), the store (search, filters, exports, file and retention) and the model list.
 #include "dect2/transcribe/callsign.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/transcribe/models.h"
 #include "dect2/transcribe/segmenter.h"
 #include "dect2/transcribe/transcriber.h"
@@ -63,7 +64,7 @@ static void callsigns() {
 static std::vector<float> audio(double sec, float amp, unsigned seed = 1, int rate = 8000) {
     std::vector<float> v((size_t)(sec * rate));
     std::mt19937 g(seed);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     for (size_t i = 0; i < v.size(); i++) {
         const double t = (double)i / rate;
         const double env = 0.55 + 0.45 * std::sin(2 * M_PI * 4 * t);

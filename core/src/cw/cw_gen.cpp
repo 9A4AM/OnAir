@@ -1,5 +1,6 @@
 // CW (Morse) test signal (see cw_gen.h).
 #include "dect2/cw/cw_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/cw/cw_morse.h"
 #include "dect2/cw/cw_rx.h"
 #include "dect2/dsp/gen_util.h"
@@ -65,7 +66,7 @@ struct CwGenerator::Impl {
     void newSending(Sig& g) {
         g.dur = cwKeying(g.s.text, g.s.wpm, g.s.farnsworthWpm, g.s.dashRatio);
         if (g.s.jitter > 0) {
-            std::normal_distribution<double> nd(0.0, g.s.jitter);
+            dect2::normal_distribution<double> nd(0.0, g.s.jitter);
             for (double& v : g.dur) v *= std::max(0.4, std::min(1.6, 1 + nd(g.rng)));
         }
         g.idx = 0;

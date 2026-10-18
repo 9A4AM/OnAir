@@ -1,6 +1,7 @@
 // ATSC 3.0 L1-Detail: the syntax of A/322 Table 9.8 (pack, unpack, CRC) and the protection chain for FEC modes 1 to 7, including
 // segmentation into several coded blocks.
 #include "dect2/atsc3/atsc3_l1.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -75,7 +76,7 @@ int main() {
 
     // protection of random content for every FEC mode, including multi-block sizes
     std::mt19937 rng(9);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     struct T { int mode; int bytes; double snr; } tests[] = {
         {1, 60, -3}, {1, 180, -3}, {1, 400, -3}, {2, 120, 4}, {2, 500, 4}, {3, 120, 12}, {3, 900, 12}, {4, 150, 18}, {5, 200, 24}, {6, 250, 30}, {7, 300, 34}};
     for (auto& t : tests) {
@@ -89,7 +90,7 @@ int main() {
         for (auto& c : cells) pw += std::norm(c);
         pw /= cells.size();
         float sigma = (float)std::sqrt(std::pow(10.0, -t.snr / 10.0) / 2.0);
-        for (auto& c : cells) c += cf32(g(rng), g(rng)) * sigma;
+        for (auto& c : cells) c += cf32{g(rng), g(rng)} * sigma;
         std::vector<uint8_t> out;
         int it = 0;
         bool dec = decodeL1Detail(cells.data(), (int)cells.size(), 2 * sigma * sigma, t.mode, t.bytes, out, &it);
@@ -102,7 +103,7 @@ int main() {
         int mode = 3;
         auto cells = encodeL1Detail(bits, mode);
         float sigma = (float)std::sqrt(std::pow(10.0, -14.0 / 10.0) / 2.0);
-        for (auto& c : cells) c += cf32(g(rng), g(rng)) * sigma;
+        for (auto& c : cells) c += cf32{g(rng), g(rng)} * sigma;
         std::vector<uint8_t> out;
         bool dec = decodeL1Detail(cells.data(), (int)cells.size(), 2 * sigma * sigma, mode, size, out);
         L1Detail v;

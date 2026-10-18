@@ -2,6 +2,7 @@
 // generator -> receiver round trips for a spread of them (8APSK to 256APSK, normal and short frames) through noise and a carrier offset, where every
 // transport stream packet has to arrive intact and no frame may fail the BCH decoder.
 #include "dect2/dvbs/dvbs_s2.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dvbs/dvbs_testkit.h"
 #include <algorithm>
 #include <cmath>
@@ -167,8 +168,8 @@ int main() {
             s2MapBits(il.data(), (int)il.size(), mod, r, sym.data());
             const double esn0 = s2QefEsN0(mod, r, sh) + 1.5;
             const float sigma2 = (float)(0.5 * std::pow(10.0, -esn0 / 10.0));
-            std::normal_distribution<float> nd(0.f, std::sqrt(sigma2));
-            for (auto& s : sym) s += cf32(nd(rng), nd(rng));
+            dect2::normal_distribution<float> nd(0.f, std::sqrt(sigma2));
+            for (auto& s : sym) s += cf32{nd(rng), nd(rng)};
             std::vector<float> llr((size_t)d.xfecSymbols * d.bitsPerSym), dl((size_t)d.nldpc);
             s2Demap(sym.data(), d.xfecSymbols, mod, r, sigma2, llr.data());
             s2BitDeinterleaveLlr(llr.data(), d.nldpc, mod, r, dl.data());

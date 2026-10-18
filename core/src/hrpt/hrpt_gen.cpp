@@ -1,5 +1,6 @@
 // HRPT / AHRPT test signal (see hrpt_gen.h).
 #include "dect2/hrpt/hrpt_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dsp/rrc.h"
 #include "dect2/hrpt/hrpt_proto.h"
 #include "dect2/hrpt/hrpt_rx.h"
@@ -46,7 +47,7 @@ struct HrptGenerator::Impl {
     std::vector<float> tab;
     double scale = 1, sigma = 0;
     std::mt19937 rng;
-    std::normal_distribution<float> nd{0.f, 1.f};
+    dect2::normal_distribution<float> nd{0.f, 1.f};
     std::complex<double> rot{1, 0}, rstep{1, 0};
     uint32_t noaaMs = 36000000;
 
@@ -161,7 +162,7 @@ struct HrptGenerator::Impl {
                 rot /= std::abs(rot);
                 if (c.driftHzPerS != 0) rstep = std::polar(1.0, 2 * kPi * (c.cfoHz + c.driftHzPerS * (double)outN / c.rate) / c.rate);
             }
-            if (sigma > 0) s += std::complex<double>(sigma * nd(rng), sigma * nd(rng));
+            if (sigma > 0) s += std::complex<double>{sigma * nd(rng), sigma * nd(rng)};
             out[i] = cf32((float)s.real(), (float)s.imag());
         }
     }

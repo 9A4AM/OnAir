@@ -1,5 +1,6 @@
 // The portable DSP kernels (FFT, filters, window, small BLAS) against textbook implementations.
 #include "dect2/dsp/dsp_compat.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -12,7 +13,7 @@ static int fails = 0;
 
 int main() {
     std::mt19937 rng(2);
-    std::normal_distribution<float> nd(0, 1);
+    dect2::normal_distribution<float> nd(0, 1);
     // FFT vs the DFT definition, forward and inverse, several sizes
     for (int lg = 1; lg <= 12; lg++) {
         const int n = 1 << lg;

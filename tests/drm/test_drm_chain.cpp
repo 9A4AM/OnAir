@@ -1,6 +1,7 @@
 // DRM transmitter and back end without the synchronisation: the transmitter's baseband is cut into symbols at the exact positions, transformed, and
 // the cells go to the back end (FAC, SDC, time deinterleaver, multilevel decoder). Checks the structure of the signal and the formats.
 #include "dect2/drm/drm_dec.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/drm/drm_fft.h"
 #include "dect2/drm/drm_gen.h"
 #include <cmath>
@@ -33,8 +34,8 @@ static Result run(const DrmTxConfig& cfg, int superFrames, double noiseDb = 200)
     auto L = layout(cfg.mode, cfg.occupancy);
     if (noiseDb < 100) {   // white noise at the given SNR per sample (signal power 1)
         std::mt19937 rng(5);
-        std::normal_distribution<float> nd(0.f, (float)std::sqrt(std::pow(10.0, -noiseDb / 10.0) / 2));
-        for (auto& v : sig) v += cf32(nd(rng), nd(rng));
+        dect2::normal_distribution<float> nd(0.f, (float)std::sqrt(std::pow(10.0, -noiseDb / 10.0) / 2));
+        for (auto& v : sig) v += cf32{nd(rng), nd(rng)};
     }
     DrmFft fft(N);
     DrmBackend be;

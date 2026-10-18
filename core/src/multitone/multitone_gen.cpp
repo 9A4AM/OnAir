@@ -1,5 +1,6 @@
 // Multitone paging test signal (see multitone_gen.h).
 #include "dect2/multitone/multitone_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/multitone/multitone_rx.h"
 #include "dect2/pager/pager_proto.h"
 #include <cmath>
@@ -32,7 +33,7 @@ struct MultitoneGenerator::Impl {
     std::vector<float> aud;      // one cycle of audio (deviation as a fraction of the carrier's: Hz)
     std::vector<uint8_t> on;     // carrier on
     std::mt19937 rng;
-    std::normal_distribution<float> nd{0.f, 1.f};
+    dect2::normal_distribution<float> nd{0.f, 1.f};
     uint64_t n = 0;
     double phase = 0, carPhase = 0;
     double noiseSigma = 0;
@@ -114,7 +115,7 @@ struct MultitoneGenerator::Impl {
                 if (phase > kPi) phase -= 2 * kPi; else if (phase < -kPi) phase += 2 * kPi;
                 s = cf32(kAmp * (float)std::cos(phase), kAmp * (float)std::sin(phase));
             }
-            out[i] = s + cf32((float)noiseSigma * nd(rng), (float)noiseSigma * nd(rng));
+            out[i] = s + cf32{(float)noiseSigma * nd(rng), (float)noiseSigma * nd(rng)};
         }
     }
 };

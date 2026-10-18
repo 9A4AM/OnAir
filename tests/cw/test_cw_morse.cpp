@@ -1,6 +1,7 @@
 // CW code table, callsign pattern and timing decoder: perfect keying from 5 to 50 WPM, Farnsworth spacing, hand keying (jitter, heavy
 // dashes), a change of speed, noise spikes and drop-outs.
 #include "dect2/cw/cw_morse.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/cw/cw_gen.h"
 #include <cmath>
 #include <cstdio>
@@ -22,7 +23,7 @@ static std::string trim(std::string s) {
 
 // the durations (seconds) through the timing decoder; jitter added when asked
 static std::string decode(const std::vector<double>& d, cw::Timing& tm, std::mt19937* rng = nullptr, double jitter = 0) {
-    std::normal_distribution<double> nd(0, 1);
+    dect2::normal_distribution<double> nd(0, 1);
     std::string out;
     for (size_t i = 0; i < d.size(); i++) {
         double ms = d[i] * 1000;
@@ -111,7 +112,7 @@ int main() {
         // which could start another replay, and that recursion ran a Windows thread (1 MB stack) out after a few seconds on 40 m
         auto noise = [] {
             std::mt19937 rng(7);
-            std::uniform_real_distribution<double> d(1, 400);
+            dect2::uniform_real_distribution<double> d(1, 400);
             for (int run = 0; run < 40; run++) {
                 cw::Timing tm;
                 for (int i = 0; i < 20000; i++) {

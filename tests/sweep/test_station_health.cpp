@@ -1,5 +1,6 @@
 // Station health report on a fake radio: broadcast-like blocks and tones in white noise, an ADC that clips, a clock that is off by a known ppm.
 #include "dect2/sweep/station_health.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -16,7 +17,7 @@ public:
     std::vector<Block> blocks;
     bool retune(double hz, std::string&) override { fc_ = hz; return true; }
     size_t capture(cf32* out, size_t n) override {
-        std::normal_distribution<float> g(0.f, (float)std::sqrt(sigma2 / 2));
+        dect2::normal_distribution<float> g(0.f, (float)std::sqrt(sigma2 / 2));
         for (size_t i = 0; i < n; i++, t_++) {
             float re = g(rng_), im = g(rng_);
             for (auto& b : blocks) {

@@ -1,6 +1,7 @@
 // Whole-span decoding: the carrier finder on synthetic carriers (offsets, levels, appearing and vanishing, the cap, adjacent channels) and the
 // DMR bank on several generated DMR carriers at once (different levels, offsets of +-1 kHz, one that appears late).
 #include "dect2/dsp/carrierfind.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dmr/dmr_gen.h"
 #include "dect2/engine/wide_modes.h"
 #include "dect2/t2/t2rx.h"
@@ -20,7 +21,7 @@ static const double kFs = 2.4e6;
 // narrowband carrier: a tone with 4-level FSK-like wobble (so it is not a pure line), at amplitude amp, plus nothing else
 struct Tone { double hz, amp; bool on = true; double ph = 0, mph = 0; };
 static void synth(std::vector<Tone>& tones, std::mt19937& rng, std::vector<cf32>& out, size_t n, double noiseRms) {
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     out.assign(n, cf32(0, 0));
     for (auto& t : tones) {
         if (!t.on) continue;
@@ -30,7 +31,7 @@ static void synth(std::vector<Tone>& tones, std::mt19937& rng, std::vector<cf32>
             out[i] += cf32((float)(t.amp * std::cos(t.ph)), (float)(t.amp * std::sin(t.ph)));
         }
     }
-    for (size_t i = 0; i < n; i++) out[i] += cf32(nd(rng), nd(rng)) * (float)(noiseRms * 0.7071);
+    for (size_t i = 0; i < n; i++) out[i] += cf32{nd(rng), nd(rng)} * (float)(noiseRms * 0.7071);
 }
 static void run(CarrierFinder& f, std::vector<Tone>& tones, std::mt19937& rng, double secs, double noise = 0.003) {
     std::vector<cf32> b;

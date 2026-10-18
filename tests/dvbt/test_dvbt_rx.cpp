@@ -1,5 +1,6 @@
 // End-to-end DVB-T: generator -> channel impairments -> receiver, checking lock, TPS and transport stream recovery.
 #include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dvbt/dvbt_rx.h"
 #include "dect2/t2/t2.h"
 #include "../common/jobs.h"
@@ -83,7 +84,7 @@ static Result run(const dvbt::Params& p, int frames, double snrDb, double cfoHz,
         }
     });
     std::mt19937 rng(5);
-    std::normal_distribution<float> nd(0, 1);
+    dect2::normal_distribution<float> nd(0, 1);
     const double sigma = std::pow(10.0, -snrDb / 20.0) / std::sqrt(2.0);
     std::vector<cf32> sym, delay((size_t)std::max(1, echoDelay), cf32(0, 0));
     size_t dpos = 0;
@@ -95,7 +96,7 @@ static Result run(const dvbt::Params& p, int frames, double snrDb, double cfoHz,
     for (int s = 0; s < symbolsTotal; s++) { gen.nextSymbol(sym); tx.insert(tx.end(), sym.begin(), sym.end()); }
     // some lead-in of noise
     std::vector<cf32> outv;
-    for (int i = 0; i < 40000; i++) outv.push_back(cf32(nd(rng), nd(rng)) * (float)sigma);
+    for (int i = 0; i < 40000; i++) outv.push_back(cf32{nd(rng), nd(rng)} * (float)sigma);
     double pos = 1;
     bool slipped = false;
     const double step = 1.0 + sroPpm * 1e-6;
@@ -106,11 +107,11 @@ static Result run(const dvbt::Params& p, int frames, double snrDb, double cfoHz,
         if (echoDb > 0) { const cf32 e = delay[dpos % delay.size()]; delay[dpos % delay.size()] = v; v += e * (float)std::pow(10.0, -echoDb / 20.0); dpos++; }
         phase += dph;
         v *= cf32((float)std::cos(phase), (float)std::sin(phase));
-        v += cf32(nd(rng), nd(rng)) * (float)sigma + dc;
+        v += cf32{nd(rng), nd(rng)} * (float)sigma + dc;
         if (slipSamples > 0 && !slipped && (double)(outv.size() - 40000) / fn >= burstAtSec) { slipped = true; pos += slipSamples; continue; }
         if (burstMs > 0) {
             const double tNow = (double)(outv.size() - 40000) / fn;
-            if (tNow >= burstAtSec && tNow < burstAtSec + burstMs / 1e3) v += cf32(nd(rng), nd(rng)) * (float)(std::pow(10.0, -burstSnrDb / 20.0) / std::sqrt(2.0));
+            if (tNow >= burstAtSec && tNow < burstAtSec + burstMs / 1e3) v += cf32{nd(rng), nd(rng)} * (float)(std::pow(10.0, -burstSnrDb / 20.0) / std::sqrt(2.0));
         }
         outv.push_back(v);
     }

@@ -1,6 +1,7 @@
 // A complete frame: Preamble with L1 and a subframe with two PLPs (different FEC and constellation), through a channel with an echo and noise,
 // decoded back to the baseband packets. Frequency interleaving, boundary symbols with null cells, 8K, 16K and 32K FFT sizes.
 #include "dect2/atsc3/atsc3_frame.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/atsc3/atsc3_bb.h"
 #include <cmath>
 #include <cstdio>
@@ -14,7 +15,7 @@ static int fails = 0;
 
 int main() {
     std::mt19937 rng(91);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     struct Case { int ps, fft, guard, sp, symbols, preSyms; int fec1, mod1, cod1, n1, fec2, mod2, cod2, n2; int nulls; double snr; } cases[] = {
         {0, 0, 1, 4, 30, 1, 0, 2, 6, 6, 2, 0, 3, 4, 20, 26},      // 8K: BCH 16K 64QAM 8/15, CRC 16K QPSK 5/15
         {30, 0, 3, 5, 24, 2, 1, 3, 9, 3, 4, 1, 5, 6, 0, 30},      // 8K GI 512 SP6_4, 64K 256QAM 11/15 and 16K 16QAM, two Preamble symbols
@@ -56,7 +57,7 @@ int main() {
         for (size_t i = 0; i < tx.size(); i++) sig += std::norm(rx[i]);
         sig /= tx.size();
         float sigma = (float)std::sqrt(sig / std::pow(10.0, cs.snr / 10.0) / 2.0);
-        for (auto& v : rx) v += cf32(g(rng), g(rng)) * sigma;
+        for (auto& v : rx) v += cf32{g(rng), g(rng)} * sigma;
         auto fr = decodeFrame(rx.data(), rx.size(), fs.bs);
         snprintf(m, sizeof m, "frame decoded (ps %d)", cs.ps);
         CHECK(fr.ok && fr.plps.size() == 2, m);

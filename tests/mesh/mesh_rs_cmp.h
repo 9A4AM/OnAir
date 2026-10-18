@@ -12,7 +12,7 @@
 
 namespace A = dect2;
 
-extern golden::Digest dig;
+extern golden::Dual dig;
 extern std::mt19937 g;
 
 inline uint32_t r32() { return g(); }

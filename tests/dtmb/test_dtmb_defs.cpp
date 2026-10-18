@@ -1,5 +1,6 @@
 // DTMB tables against what the standard (as quoted by other implementations) and the codes' own properties say.
 #include "dect2/dtmb/dtmb_defs.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dtmb/dtmb_ldpc.h"
 #include "dect2/dtmb/dtmb_map.h"
 #include <random>
@@ -232,8 +233,8 @@ int main() {
             std::vector<cf32> sym(n);
             mapSymbols(m, bits.data(), n, sym.data());
             std::vector<float> var(n, 0.05f), llrB(n * (size_t)bps), llrS(bps);
-            std::normal_distribution<float> nd(0.f, 0.05f);
-            for (auto& s : sym) s += cf32(nd(rng), nd(rng));
+            dect2::normal_distribution<float> nd(0.f, 0.05f);
+            for (auto& s : sym) s += cf32{nd(rng), nd(rng)};
             demapBlock(m, sym.data(), var.data(), n, llrB.data());
             int wrong = 0, differ = 0;
             for (size_t i = 0; i < n; i++) {

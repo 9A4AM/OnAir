@@ -1,6 +1,7 @@
 // e-Czas through the engine (setStandard(87)): the synthetic source plays the 225 kHz test signal at the computer's clock and the receiver reports
 // through latestRx() with a clock offset; then a recording (IQ file, looped) is played, which has no clock to compare. No sound.
 #include "dect2/eczas/eczas_gen.h"
+#include "../common/tmp_path.h"
 #include "dect2/eczas/eczas_live.h"
 #include "dect2/eczas/eczas_tel.h"
 #include "dect2/engine/engine.h"
@@ -50,7 +51,7 @@ int main() {
         e.stop();
     }
     {   // a recording: IQ at 48 ksps with the carrier on the centre (a file holds the channel as recorded, no offset), looped; no clock to compare
-        const std::string path = "/tmp/eczas_engine_test.cf32";
+        const std::string path = tmpPath("eczas_engine_test.cf32");
         {
             EczasGenConfig gc;
             gc.rate = 48000; gc.dialOffsetHz = 0.0; gc.snrDb = 30; gc.startUtc = 1786640400; gc.timeSlotStride = 2;
@@ -78,7 +79,7 @@ int main() {
         std::remove(path.c_str());
     }
     {   // a recording of a receiver's audio (8 kHz, the carrier a 1 kHz tone, I = audio, Q = 0), as a stereo WAV plays: "Audio, not IQ"
-        const std::string path = "/tmp/eczas_engine_test_audio.cf32";
+        const std::string path = tmpPath("eczas_engine_test_audio.cf32");
         {
             EczasGenConfig gc;
             gc.rate = 8000; gc.dialOffsetHz = 1000; gc.snrDb = 30; gc.startUtc = 1786640400; gc.timeSlotStride = 2;

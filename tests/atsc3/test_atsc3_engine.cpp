@@ -1,6 +1,7 @@
 // ATSC 3.0 through the engine, as the GUI uses it: an IQ recording (a few frames made here) is opened as a file source with the ATSC 3.0
 // standard selected; the engine must lock, find the service, and its transport stream analysis must see a video and an audio stream.
 #include "atsc3_sim.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/atsc3/atsc3_sync.h"
 #include "dect2/engine/engine.h"
 #include <chrono>
@@ -31,7 +32,7 @@ int main(int argc, char** argv) {
     const double frameRate = postBootstrapRate(fs.bs);
     const double period = 0.118;
     std::mt19937 rng(3);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     std::vector<cf32> wave((size_t)(0.02 * radio), cf32(0, 0));
     for (size_t i = 0; i < st.bb.size(); i += 8) {
         FramePlp fp = plp;
@@ -52,7 +53,7 @@ int main(int argc, char** argv) {
         std::ofstream o(path, std::ios::binary);
         std::vector<int8_t> b8;
         for (size_t i = 0; i < wave.size(); i++) {
-            cf32 v = wave[i] * cf32((float)std::cos(2 * M_PI * 3100.0 * i / radio), (float)std::sin(2 * M_PI * 3100.0 * i / radio)) + cf32(g(rng), g(rng)) * sigma;
+            cf32 v = wave[i] * cf32((float)std::cos(2 * M_PI * 3100.0 * i / radio), (float)std::sin(2 * M_PI * 3100.0 * i / radio)) + cf32{g(rng), g(rng)} * sigma;
             b8.push_back((int8_t)std::max(-127.f, std::min(127.f, std::round(v.real() * 22.f))));
             b8.push_back((int8_t)std::max(-127.f, std::min(127.f, std::round(v.imag() * 22.f))));
         }

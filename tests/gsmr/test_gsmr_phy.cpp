@@ -1,6 +1,7 @@
 // GSM-R physical layer: the convolutional code, the FIRE code, the 4-burst interleaver, the SCH, the System Information messages,
 // and GMSK bursts through the equaliser (noise, echo, small frequency error, timing offset).
 #include "dect2/gsmr/gsmr_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/gsmr/gsmr_phy.h"
 #include "dect2/gsmr/gsmr_si.h"
 #include <cmath>
@@ -14,7 +15,7 @@ using namespace dect2::gsmr;
 
 static Bits randBits(std::mt19937& r, size_t n) { Bits b(n); for (auto& v : b) v = r() & 1; return b; }
 static std::vector<float> llrOf(const Bits& b, float a, std::mt19937& r, float sigma) {
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     std::vector<float> l(b.size());
     for (size_t i = 0; i < b.size(); i++) l[i] = (b[i] ? -a : a) + sigma * nd(r);
     return l;
@@ -229,9 +230,9 @@ int main() {
     // GMSK: the FCCH is a tone a quarter of the symbol rate above the carrier
     {
         std::vector<cf32> x;
-        std::normal_distribution<float> nd(0.f, 1.f);
+        dect2::normal_distribution<float> nd(0.f, 1.f);
         auto add = [&](const std::vector<cf32>& v) { x.insert(x.end(), v.begin(), v.end()); };
-        auto noise = [&](size_t n) { std::vector<cf32> v(n); for (auto& c : v) c = cf32(0.1f * nd(rng), 0.1f * nd(rng)); add(v); };
+        auto noise = [&](size_t n) { std::vector<cf32> v(n); for (auto& c : v) c = cf32{0.1f * nd(rng), 0.1f * nd(rng)}; add(v); };
         noise(3000);
         const size_t start = x.size() + 2 * kSps;   // symbol 0 of the burst
         add(gmskBurst(fcchBurst(), kSps));
@@ -265,10 +266,10 @@ int main() {
                 if (cs.echo > 0 && at + i + kSps < x.size()) x[at + i + kSps] += cs.echo * cf32(std::cos(1.1f), std::sin(1.1f)) * g[i];
             }
             const float sigma = (float)std::sqrt(std::pow(10.0, -cs.snrDb / 10) / 2);
-            std::normal_distribution<float> nd(0.f, 1.f);
+            dect2::normal_distribution<float> nd(0.f, 1.f);
             for (size_t i = 0; i < x.size(); i++) {
                 const double ph = 2 * M_PI * cs.cfo / kStreamRate * (double)i;
-                x[i] = x[i] * cf32((float)std::cos(ph), (float)std::sin(ph)) + cf32(sigma * nd(rng), sigma * nd(rng));
+                x[i] = x[i] * cf32((float)std::cos(ph), (float)std::sin(ph)) + cf32{sigma * nd(rng), sigma * nd(rng)};
             }
             // symbol 0 of the burst is two symbols into the array
             const double sym0 = (double)(at + 2 * kSps);

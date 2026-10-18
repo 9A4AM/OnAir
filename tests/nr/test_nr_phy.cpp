@@ -1,6 +1,7 @@
 // 5G NR cells physical layer: the polar code (construction against 38.212, an independent encoder, list decoding with puncturing,
 // shortening and repetition), PSS / SSS / DMRS sequences, the PBCH payload and the whole PBCH chain, the sync raster.
 #include "dect2/nr/nr_phy.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -22,7 +23,7 @@ static Bits refTransform(const Bits& u) {
 
 static void polarRoundTrip(int A, int E, float snrDb, int trials, std::mt19937& rng, const char* what) {
     const PolarCode pc = polarCode(A + 24, E, 9, true);
-    std::normal_distribution<float> nd(0, 1);
+    dect2::normal_distribution<float> nd(0, 1);
     const float sigma = std::pow(10.f, -snrDb / 20.f);
     int ok = 0;
     for (int t = 0; t < trials; t++) {
@@ -119,7 +120,7 @@ int main() {
     }
     // ---- the whole PBCH chain, every SSB index, Lmax 8 and 4, with noise
     {
-        std::normal_distribution<float> nd(0, 1);
+        dect2::normal_distribution<float> nd(0, 1);
         int ok = 0, n = 0;
         for (int lmax : {8, 4})
             for (int i = 0; i < lmax; i++)

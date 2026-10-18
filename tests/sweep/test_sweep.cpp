@@ -1,5 +1,6 @@
 // Sweep scanner against a fake radio: known tones in white noise, a settling transient after every retune.
 #include "dect2/sweep/sweep.h"
+#include "dect2/common/stable_random.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -19,7 +20,7 @@ public:
     size_t retunes = 0;
     bool retune(double hz, std::string&) override { fc_ = hz; transient_ = (size_t)(settleSec * rate); retunes++; return true; }
     size_t capture(cf32* out, size_t n) override {
-        std::normal_distribution<float> g(0.f, (float)std::sqrt(sigma2 / 2));
+        dect2::normal_distribution<float> g(0.f, (float)std::sqrt(sigma2 / 2));
         for (size_t i = 0; i < n; i++, t_++) {
             float re = g(rng_), im = g(rng_);
             for (auto& tn : tones) {

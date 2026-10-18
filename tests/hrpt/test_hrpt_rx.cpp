@@ -3,6 +3,7 @@
 // phases (the QPSK phase ambiguity), at 8 Msps and near the lowest rate. Every picture line that comes back must equal the test line
 // its on-board time names, pixel for pixel. Noise alone gives nothing.
 #include "dect2/hrpt/hrpt_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/hrpt/hrpt_proto.h"
 #include "dect2/hrpt/hrpt_rx.h"
 #include "dect2/hrpt/hrpt_tel.h"
@@ -98,12 +99,12 @@ int main() {
         rx.configure(8e6);
         rx.setVariant(v);
         std::mt19937 rng(1);
-        std::normal_distribution<float> n(0.f, 0.2f);
+        dect2::normal_distribution<float> n(0.f, 0.2f);
         std::vector<cf32> buf(65536);
         HrptTelemetry t;
         uint64_t seq = 0;
         for (int k = 0; k < 60; k++) {
-            for (auto& x : buf) x = cf32(n(rng), n(rng));
+            for (auto& x : buf) x = cf32{n(rng), n(rng)};
             rx.feed(buf.data(), buf.size());
             if (rx.telemetry(t, seq)) seq = t.seq;
         }
