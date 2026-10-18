@@ -4,6 +4,7 @@
 // an IQ recording (the same as Record IQ) until LOS. TLEs are downloaded from Celestrak or Keplerpass on request, or pasted.
 #include "../app.h"
 #include "gallery.h"
+#include "../adsb/adsb_map.h"
 #include "dect2/geo/passes.h"
 #include "dect2/geo/doppler_fit.h"
 #include "dect2/geo/pass_sched.h"
@@ -860,8 +861,12 @@ void schedControls() {
 }
 
 void window(App& a) {
-    ImGui::SetNextWindowSize(ImVec2(820 * gUi, 560 * gUi), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin(trw("Passes"), &a.passesOpen)) { ImGui::End(); return; }
+    static bool full = false;   // the window over the whole display (the shared full-screen button; Esc leaves)
+    { static bool af = std::getenv("ONAIR_MAP_FULL") != nullptr; if (af) { af = false; full = true; } }   // dev: --shot enters full screen
+    if (full && !ImGui::GetIO().WantTextInput && !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && ImGui::IsKeyPressed(ImGuiKey_Escape, false)) full = false;
+    if (full) { ImGui::SetNextWindowPos(ImVec2(0, 0)); ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize); }
+    else ImGui::SetNextWindowSize(ImVec2(820 * gUi, 560 * gUi), ImGuiCond_FirstUseEver);
+    if (!ImGui::Begin(trw("Passes"), &a.passesOpen, full ? ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse : 0)) { ImGui::End(); return; }
     {   // where the receiver is
         ImGui::AlignTextToFramePadding();
         ImGui::TextDisabled("%s", tr("Receiver position"));
@@ -869,6 +874,8 @@ void window(App& a) {
         receiverPositionFields(a);
         if (!receiverLocationSet()) { ImGui::SameLine(); ImGui::TextColored(pal::warnAmber(), "%s", tr("not set: the times are for a placeholder position")); }
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("The same position as the ADS-B antenna position"));
+        ImGui::SameLine();
+        if (adsbmap::fullButton(full, "screen")) full = !full;
     }
     tleSection(a);
     dopplerSection(a);
@@ -885,7 +892,7 @@ void window(App& a) {
     }
     schedControls();
     compute(a);
-    const float plotW = 250 * gUi;
+    const float plotW = full ? std::max(250 * gUi, ImGui::GetContentRegionAvail().x * 0.42f) : 250 * gUi;
     const double now = nowSec();
     // the table of passes
     ImGui::BeginChild("##passlist", ImVec2(std::max(200.f, ImGui::GetContentRegionAvail().x - plotW - 8 * gUi), 0));

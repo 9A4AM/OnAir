@@ -28,7 +28,7 @@ const int kScanBands[kNb] = {20, 8, 3, 1, 7, 28, 32, 38, 40, 41, 42, 43, 2, 4, 5
 
 struct Pos { double lat, lon; };
 struct State {
-    int view = 0;                 // 0 cells, 1 sites, 2 neighbours, 3 operators, 4 map, 5 log
+    int view = adsbmap::devView(0);   // 0 cells, 1 sites, 2 neighbours, 3 operators, 4 map, 5 log
     int sel = -1;                 // selected cell (index in cells)
     bool bands[kNb] = {true, true, true, true, true};   // B20, B8, B3, B1, B7
     std::set<int> extraBands;     // other table bands picked in the "Other bands" popup
@@ -414,6 +414,7 @@ void mapView(App& a) {
     }
     const ImVec2 p0 = ImGui::GetCursorScreenPos();
     adsbmap::draw(S.map, sz);
+    adsbmap::fullCorner(p0, sz);
     ImDrawList* dl = ImGui::GetWindowDrawList();
     dl->PushClipRect(p0, ImVec2(p0.x + sz.x, p0.y + sz.y), true);
     if (haveRx) {

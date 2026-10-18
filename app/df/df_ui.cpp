@@ -5,6 +5,7 @@
 #include "../app.h"
 #include "../ui/scale.h"
 #include "rfcam_ui.h"
+#include "../adsb/adsb_map.h"
 #include "dect2/df/df.h"
 #include "dect2/df/position.h"
 #include "dect2/df/source.h"
@@ -252,9 +253,12 @@ void polarPlot(float size) {
     }
 }
 
+bool gFull = false;   // the window over the whole display (the shared full-screen button; Esc leaves)
+
 // local map: east/north around the receiver, the bearing lines, the captured lines and the fix with its ellipse
 void localMap(App& a, float w, float h) {
     ImVec2 p0 = ImGui::GetCursorScreenPos();
+    ImGui::SetNextItemAllowOverlap();
     ImGui::InvisibleButton("##dfmap", ImVec2(w, h));
     ImDrawList* dl = ImGui::GetWindowDrawList();
     dl->AddRectFilled(p0, ImVec2(p0.x + w, p0.y + h), IM_COL32(18, 20, 22, 255));
@@ -330,8 +334,11 @@ void fixSection(App& a) {
 
 void window(App& a) {
     load();
-    ImGui::SetNextWindowSize(ImVec2(900 * gUi, 640 * gUi), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin(trw("Direction finder"), &a.dfOpen)) { ImGui::End(); return; }
+    { static bool af = std::getenv("ONAIR_MAP_FULL") != nullptr; if (af) { af = false; gFull = true; } }   // dev: --shot enters full screen
+    if (gFull && !ImGui::GetIO().WantTextInput && !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && ImGui::IsKeyPressed(ImGuiKey_Escape, false)) gFull = false;
+    if (gFull) { ImGui::SetNextWindowPos(ImVec2(0, 0)); ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize); }
+    else ImGui::SetNextWindowSize(ImVec2(900 * gUi, 640 * gUi), ImGuiCond_FirstUseEver);
+    if (!ImGui::Begin(trw("Direction finder"), &a.dfOpen, gFull ? ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse : 0)) { ImGui::End(); return; }
     const double hz = tunedHz(a);
     bool ch = false;
     {   // source and frequency
@@ -369,7 +376,15 @@ void window(App& a) {
         ImGui::SameLine(12 * gUi); ImGui::Text("%s %.0f %%", tr("Confidence"), conf * 100);
         if (S.src != SrcJson) ImGui::TextDisabled(tr("Sidelobe %.0f dB, coherence %.2f"), S.res.psldB, S.res.coherence);
     } else ImGui::TextDisabled("%s", tr("Waiting for a bearing."));
-    localMap(a, plotW - 8 * gUi, 200 * gUi);
+    {
+        const ImVec2 mp = ImGui::GetCursorScreenPos();
+        const ImVec2 ms(plotW - 8 * gUi, gFull ? std::max(200 * gUi, ImGui::GetContentRegionAvail().y - 8 * gUi) : 200 * gUi);
+        localMap(a, ms.x, ms.y);
+        const ImVec2 keep = ImGui::GetCursorScreenPos();   // the shared full-screen button in the map's corner
+        ImGui::SetCursorScreenPos(ImVec2(mp.x + ms.x - ImGui::CalcTextSize(gFull ? tr("Exit full screen") : tr("Full screen")).x - 2 * ImGui::GetStyle().FramePadding.x - 8 * gUi, mp.y + 8 * gUi));
+        if (adsbmap::fullButton(gFull, "screen")) gFull = !gFull;
+        ImGui::SetCursorScreenPos(keep);
+    }
     ImGui::EndChild();
     ImGui::SameLine();
     ImGui::BeginChild("##dfright", ImVec2(0, 0), false);

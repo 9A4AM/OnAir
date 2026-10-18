@@ -2893,3 +2893,10 @@ Where the signal sits in the audio passband, as an offset above the dial frequen
 Which sideband is sent.	Która wstęga boczna jest nadawana.
 follows the receiver	podąża za odbiornikiem
 on	włączone
+# full screen on every map
+Full screen	Pełny ekran
+Exit full screen	Wyjdź z pełnego ekranu
+Back to the normal layout (Esc)	Powrót do normalnego układu (Esc)
+The map fills the whole window (Esc to leave)	Mapa wypełnia całe okno (Esc, aby wyjść)
+The radar fills the whole window (Esc to leave)	Radar wypełnia całe okno (Esc, aby wyjść)
+This screen fills the whole window (Esc to leave)	Ten ekran wypełnia całe okno (Esc, aby wyjść)

@@ -2893,3 +2893,10 @@ Where the signal sits in the audio passband, as an offset above the dial frequen
 Which sideband is sent.	Kuri šoninė juosta siunčiama.
 follows the receiver	seka imtuvą
 on	įjungta
+# full screen on every map
+Full screen	Visas ekranas
+Exit full screen	Išeiti iš viso ekrano
+Back to the normal layout (Esc)	Atgal į įprastą išdėstymą (Esc)
+The map fills the whole window (Esc to leave)	Žemėlapis užpildo visą langą (Esc – išeiti)
+The radar fills the whole window (Esc to leave)	Radaras užpildo visą langą (Esc – išeiti)
+This screen fills the whole window (Esc to leave)	Šis ekranas užpildo visą langą (Esc – išeiti)
