@@ -794,7 +794,7 @@ static void tsTablesView(App& a, int view) {
     } else if (view == 6) {   // carousels
         if (!ts.carousels || ts.carousels->empty()) none("no DSM-CC carousel found");
         else {
-            if (ImGui::Button("Save files")) { const std::string dir = plat::dataDir() + "/carousels"; g_carouselSaved = std::to_string(a.engine.saveCarouselFiles(dir)) + " files saved to " + dir; }
+            if (ImGui::Button("Save files")) { const std::string dir = plat::dataDir() + "/carousels"; g_carouselSaved = std::to_string(a.engine.saveCarouselFiles(dir)) + " files saved to " + dir + "  (open index.html there for a gallery)"; }
             if (!g_carouselSaved.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", g_carouselSaved.c_str()); }
             for (const auto& c : *ts.carousels) {
                 ImGui::TextColored(pal::accent(), "PID 0x%04X  %s  %zu modules, %.0f of %.0f KB, %zu files   (DSI %llu, DII %llu, DDB %llu)", c.pid, c.objectCarousel ? (c.gatewayKnown ? "object carousel" : "object carousel (gateway not yet received)") : "data carousel", c.modules.size(), (double)c.bytesDone / 1024, (double)c.bytesTotal / 1024, c.files.size(), (unsigned long long)c.dsi, (unsigned long long)c.dii, (unsigned long long)c.ddb);
@@ -816,13 +816,39 @@ static void tsTablesView(App& a, int view) {
             ImGui::TextColored(pal::accent(), "private PIDs");
             for (const auto& p : ts.data->pids) ImGui::Text("  0x%04X  %s  (%llu packets)", p.pid, p.kind.c_str(), (unsigned long long)p.packets);
         }
+    } else if (view == 8) {   // DVB-RCS / RCS2 signalling
+        if (!ts.rcs) none("no DVB-RCS signalling found (an interactive network's outbound declares it with RCS content descriptors in its PMT)");
+        else {
+            const RcsView& r = *ts.rcs;
+            ImGui::TextColored(pal::accent(), "INTERACTIVE NETWORK  %s  (id %d)", r.networkName.empty() ? "(no name)" : r.networkName.c_str(), r.networkId);
+            for (const auto& f : r.forward) {
+                static const char* stds[] = {"DVB-S", "DVB-S2 CCM", "DVB-S2 ACM", "DVB-S2X"};
+                static const char* pols[] = {"H", "V", "left", "right"};
+                ImGui::Text("forward link: satellite %d beam %d NCC %d  %.5f GHz %s  %.1f deg  %s  %.3f Msym/s%s", f.satelliteId, f.beamId, f.nccId, f.frequencyHz / 1e9, pols[f.polarization & 3], f.orbitalDeg, stds[f.standard & 3], f.symbolRate / 1e6, f.isi >= 0 ? (" ISI " + std::to_string(f.isi)).c_str() : "");
+            }
+            for (const auto& l : r.returns) ImGui::Text("return link: satellite %d beam %d gateway %d  superframe %d  offset %+.1f kHz", l.satelliteId, l.beamId, l.gatewayId, l.superframeId, l.txOffsetHz / 1e3);
+            if (r.haveNcr) ImGui::Text("NCR on PID 0x%04X: %llu packets%s%s", r.ncr.pid, (unsigned long long)r.ncr.packets, r.ncr.intervalS > 0 ? (", every " + std::to_string((int)std::round(r.ncr.intervalS * 1000)) + " ms").c_str() : "", r.ncr.havePpm ? (", clock " + std::to_string(r.ncr.ppm).substr(0, 6) + " ppm").c_str() : "");
+            for (const auto& s : r.superframes) ImGui::Text("superframe %d: centre %.4f GHz, %.2f ms, %zu frames", s.id, s.centreHz / 1e9, s.durationS * 1e3, s.frames.size());
+            for (const auto& f : r.frameTypes) { ImGui::Text("frame type %d: %.2f ms, %d timeslots, %zu groups", f.id, f.durationS * 1e3, f.timeslots, f.groups.size()); }
+            for (const auto& t : r.timeslots) ImGui::Text("timeslot type %d: %.0f Bd, %s %s%s, %s", t.id, t.symbolRate, rcsModulationName(t.modulation), rcsRateName(t.codeRate), t.turbo ? " turbo" : "", rcsPayloadName(t.payload));
+            ImGui::Text("TBTP: %llu assignments to %zu terminals;  CMT: %llu entries for %zu;  TIM: %llu unicast to %zu terminals", (unsigned long long)r.tbtpAssignments, r.tbtpLogons, (unsigned long long)r.cmtEntries, r.cmtLogons, (unsigned long long)r.timUnicast, r.timMacs);
+            if (r.timStatus >= 0) { std::string fl; for (const auto& x : rcsTimFlags(r.timStatus)) fl += (fl.empty() ? "" : ", ") + x; ImGui::Text("TIM status 0x%02X%s%s", r.timStatus, fl.empty() ? "" : ": ", fl.c_str()); }
+            ImGui::Spacing();
+            ImGui::TextColored(pal::accent(), "SIGNALLING TABLES");
+            for (const auto& kv : r.tables) {
+                const RcsTableTally& t = kv.second;
+                ImGui::Text("  0x%02X %-28s PID 0x%04X  %llu sections, %llu bytes%s%s", kv.first, rcsTableName(kv.first), t.pid, (unsigned long long)t.sections, (unsigned long long)t.bytes,
+                            t.sections >= 3 ? (", every " + std::to_string((int)std::round((t.lastS - t.firstS) / (double)(t.sections - 1) * 1000)) + " ms").c_str() : "", t.crcBad ? ", CRC errors" : "");
+            }
+            for (const auto& m : r.declaredMissing) ImGui::TextDisabled("  declared on PID 0x%04X, not sent: %s", m.first, rcsTableName(m.second));
+        }
     }
     ImGui::PopFont();
 }
 
 static int g_tsView = 0;
 void tsTab(App& a) {
-    subNav("tsv", g_tsView, {"PIDs", "Networks", "Other services", "Bouquets", "Time", "Conditional access", "Carousels", "Data"});
+    subNav("tsv", g_tsView, {"PIDs", "Networks", "Other services", "Bouquets", "Time", "Conditional access", "Carousels", "Data", "Interactive"});
     if (g_tsView == 0) tsPidsView(a);
     else tsTablesView(a, g_tsView);
 }

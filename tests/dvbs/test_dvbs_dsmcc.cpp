@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <iterator>
 #include <sys/stat.h>
 using namespace dect2;
 #include "../common/test_util.h"
@@ -65,6 +66,11 @@ int main() {
             std::system(("rm -rf " + dir).c_str());
             mkdir(dir.c_str(), 0755);
             CHECK(d.extractTo(dir) == files.size(), "files saved");
+            {
+                std::ifstream gi(dir + "/index.html");
+                std::string g((std::istreambuf_iterator<char>(gi)), std::istreambuf_iterator<char>());
+                CHECK(g.find("<h1>Carousel files</h1>") != std::string::npos && g.find("PID 0x") != std::string::npos, "gallery index written");
+            }
             std::ifstream f(dir + "/pid_0300/img/logo.png", std::ios::binary);
             std::vector<uint8_t> got2((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
             CHECK(got2 == files[1].data, "a saved file holds the data");

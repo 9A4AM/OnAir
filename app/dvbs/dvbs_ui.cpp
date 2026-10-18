@@ -48,6 +48,26 @@ const char* stdName(int s) { return s == 1 ? "DVB-S" : s == 2 ? "DVB-S2" : s == 
 std::string fmt(const char* f, double v) { char b[48]; snprintf(b, sizeof b, f, v); return b; }
 std::string cnt(uint64_t v) { return std::to_string((unsigned long long)v); }
 
+// Eb/N0 per information bit: Es/N0 less 10 log10 of the bits a symbol carries (modulation times code rate; DVB-S also times 188/204 for the Reed-Solomon code)
+bool ebN0(const DvbsTelemetry& t, double& out) {
+    int bps = 0;
+    const std::string& m = t.modulationName;
+    if (m.find("BPSK") != std::string::npos) bps = 1;
+    else if (m.find("QPSK") != std::string::npos) bps = 2;
+    else if (m.find("8PSK") != std::string::npos) bps = 3;
+    else if (m.find("256APSK") != std::string::npos) bps = 8;
+    else if (m.find("128APSK") != std::string::npos) bps = 7;
+    else if (m.find("64APSK") != std::string::npos) bps = 6;
+    else if (m.find("32APSK") != std::string::npos) bps = 5;
+    else if (m.find("16APSK") != std::string::npos) bps = 4;
+    int a = 0, b = 0;
+    if (!bps || sscanf(t.codeRate.c_str(), "%d/%d", &a, &b) != 2 || a <= 0 || b <= 0) return false;
+    double r = (double)a / b;
+    if (t.standard == 1) r *= 188.0 / 204.0;
+    out = t.snrDb - 10.0 * std::log10(bps * r);
+    return true;
+}
+
 // How far the Es/N0 is above the quasi error free point of table 13 of EN 302 307-1 (DVB-S2) or tables 20a and 20c of EN 302 307-2 (DVB-S2X).
 // False when it cannot be said.
 bool margin(const DvbsTelemetry& t, double& m) {
@@ -142,6 +162,8 @@ void statusRows(App& a, const DvbsTelemetry& t, bool on, bool run, bool standalo
     flowBreak();
     if (t.lockCarrier) {
         ro("Es/N0", fmt("%.1f dB", t.snrDb));
+        double eb;
+        if (ebN0(t, eb)) ro("Eb/N0", fmt("%.1f dB", eb));
         double m;
         if (margin(t, m)) ro("Margin", fmt("%+.1f dB", m), m >= 1.0 ? pal::okGreen() : m >= 0 ? pal::accent() : pal::badRed());
         if (standalone) ro("Offset", fmt("%+.0f kHz", t.cfoHz / 1e3));
@@ -292,6 +314,72 @@ void streamsSection(App& a, const DvbsTelemetry& t) {
         }
         ImGui::PopFont();
         ImGui::EndTable();
+    }
+}
+
+// ---------------------------------------------------------------------------------------------- survey of the carriers, symbol file
+// A wide capture can hold many carriers: the list shows every one found in the spectrum; "Decode" makes the receiver work on that one. The symbol file is for other tools.
+bool g_symDumpOn = false;
+
+void carriersSection(App& a, const DvbsTelemetry& t) {
+    if (t.carriers.empty() && !g_symDumpOn && t.symbolDumpPath.empty()) return;
+    ImGui::Spacing();
+    ImGui::TextColored(pal::accent(), "CARRIERS IN THE SPECTRUM");
+    if (t.carriers.size() > 1 || t.carrierPicked) {
+        if (ImGui::BeginTable("##dvbscarriers", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX)) {
+            ImGui::TableSetupColumn("offset"); ImGui::TableSetupColumn("symbol rate"); ImGui::TableSetupColumn("roll-off"); ImGui::TableSetupColumn("level"); ImGui::TableSetupColumn("C/N"); ImGui::TableSetupColumn("");
+            ImGui::TableHeadersRow();
+            ImGui::PushFont(a.mono, 0);
+            int id = 0;
+            for (const auto& c : t.carriers) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::Text("%+.3f MHz", c.centerHz / 1e6);
+                ImGui::TableNextColumn(); ImGui::Text("%.3f Msym/s", c.rateHz / 1e6);
+                ImGui::TableNextColumn(); if (c.rollOff > 0) ImGui::Text("%.2f", c.rollOff); else ImGui::TextUnformatted("-");
+                ImGui::TableNextColumn(); ImGui::Text("%.1f dB", c.levelDb);
+                ImGui::TableNextColumn(); ImGui::Text("%.1f dB", c.snrDb);
+                ImGui::TableNextColumn();
+                ImGui::PushID(id++);
+                if (c.selected) ImGui::TextColored(pal::accent(), "decoding");
+                else if (ImGui::SmallButton("Decode")) a.engine.dvbs().selectCarrier(true, c.centerHz);
+                ImGui::PopID();
+            }
+            ImGui::PopFont();
+            ImGui::EndTable();
+        }
+        if (t.carrierPicked && ImGui::SmallButton("Back to the carrier nearest the centre")) a.engine.dvbs().selectCarrier(false, 0);
+    }
+    bool on = g_symDumpOn;
+    if (ImGui::Checkbox("Write the symbols to a file", &on)) {
+        g_symDumpOn = on;
+        a.engine.dvbs().setSymbolDump(on ? plat::dataDir() + "/dvbs_symbols.cf32" : std::string());
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Every recovered symbol (after timing and carrier recovery) as interleaved float32 I/Q, up to 512 MB, to dvbs_symbols.cf32 in the data folder. Open it in GNU Radio, inspectrum or numpy to look at an unknown modulation.");
+    if (!t.symbolDumpPath.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s  %.1f Msym", t.symbolDumpPath.c_str(), (double)t.symbolDumpCount / 1e6); }
+}
+
+// ---------------------------------------------------------------------------------------------- carrier identification (DVB-CID, ETSI TS 103 129)
+bool g_cidOn = false;
+
+void cidSection(App& a, const DvbsTelemetry& t) {
+    if (!live(a) || !t.lockSpectrum) return;
+    ImGui::Spacing();
+    ImGui::TextColored(pal::accent(), "CARRIER ID (DVB-CID)");
+    bool on = g_cidOn;
+    if (ImGui::Checkbox("Look for the carrier identification signal", &on)) { g_cidOn = on; a.engine.dvbs().setCidSearch(on); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "A low-level spread-spectrum signal under the carrier that names the uplink modulator (TS 103 129). It needs a long observation (a frame lasts 36 s at 112 kchip/s) and a steady signal; it uses some processing.");
+    if (!t.cid.on) return;
+    const DvbsCid& c = t.cid;
+    if (!c.acquired && !c.haveGuid) { ImGui::TextDisabled("searching (up to a few minutes)"); return; }
+    ImGui::Text("%s  %+.0f Hz from the carrier centre, %.1f dB per bit, %llu bits, %llu frames%s", c.acquired ? "tracking" : "lost", c.offsetHz, c.snrDb, (unsigned long long)c.bits, (unsigned long long)c.frames, c.badFrames ? (", " + std::to_string(c.badFrames) + " not decoded").c_str() : "");
+    if (c.haveGuid) {
+        ImGui::PushFont(a.mono, 0);
+        ImGui::Text("unique identifier  %s", c.guid.c_str());
+        if (!c.mac.empty()) ImGui::Text("MAC address        %s", c.mac.c_str());
+        if (c.havePosition) ImGui::Text("position           %.4f, %.4f", c.latitude, c.longitude);
+        if (!c.telephone.empty()) ImGui::Text("telephone          %s", c.telephone.c_str());
+        if (!c.text.empty()) ImGui::Text("text               %s", c.text.c_str());
+        ImGui::PopFont();
     }
 }
 
@@ -503,6 +591,8 @@ void receiver(App& a) {
         for (size_t i = 0; i < rows; i++) { ImGui::TableNextRow(); cell(L, i); cell(R, i); }
         ImGui::EndTable();
     }
+    carriersSection(a, t);
+    cidSection(a, t);
     streamsSection(a, t);
     ipSection(a, t);
     ImGui::Spacing();

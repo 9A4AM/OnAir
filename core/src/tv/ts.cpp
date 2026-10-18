@@ -70,6 +70,7 @@ void TsDemux::feed(const uint8_t* p) {
         st.lastCc = cc;
         st.resync = false;
     } else if (afc == 2) st.resync = false;
+    rcs_.packet(p, streamClock_);
     if (afc & 1) { dsmcc_.packet(p); data_.packet(p); }   // carousels, AIT, SCTE-35, EBU data: clear payloads only (scrambled ones are skipped inside)
     if (!(afc & 1) || scr) return;
     const int off = hd.payloadOff;
@@ -279,6 +280,7 @@ TsSnapshot TsDemux::snapshot() const {
     sn.muxKbps = muxKbps_; sn.nullKbps = nullKbps_;
     sn.utcNow = tdtUnix_ ? tdtUnix_ + (int64_t)(streamClock_ - tdtAt_) : 0;
     { auto ci = dsmcc_.info(); if (!ci.empty()) sn.carousels = std::make_shared<const std::vector<DsmccCarouselInfo>>(std::move(ci)); TsDataSnapshot ds = data_.snapshot(); if (!ds.empty()) sn.data = std::make_shared<const TsDataSnapshot>(std::move(ds)); }
+    if (rcs_.active()) sn.rcs = std::make_shared<const RcsView>(rcs_.view());
     { SiSnapshot si = si_.snapshot(); if (!si.empty()) sn.si = std::make_shared<const SiSnapshot>(std::move(si)); }
     std::map<int, std::string> label;
     for (auto& kv : services_) {

@@ -2,6 +2,7 @@
 #include "dect2/dvbs/dvbs_rx.h"
 #include "dect2/dvbs/dvbs_s2.h"
 #include "dect2/dvbs/dvbs_ip.h"
+#include "dect2/dvbs/dvbs_cid.h"
 #include "dvbs_carrier.h"
 #include "dvbs_front.h"
 #include "dvbs_s1.h"
@@ -105,7 +106,21 @@ struct DvbsReceiver::Impl {
     enum Mode { kSearch = 0, kHunt = 1, kS1 = 2, kS2 = 3 };
 
     // ---- settings from other threads
-    std::atomic<double> manualRs{0}, rollHint{0};
+    std::atomic<double> manualRs{0}, rollHint{0}, pickHz{0};
+    std::atomic<bool> pickOn{false};
+    std::mutex carMu, dumpMu, cidMu;
+    std::atomic<bool> cidOn{false};
+    std::atomic<double> hostCfo{0};
+    std::unique_ptr<dvbcid::Tap> cidTap;
+    std::unique_ptr<dvbcid::Rx> cidRx;
+    double cidChipRate = 0;
+    std::vector<cf32> cidBuf;
+    std::vector<dvbcid::Frame> cidFrames;
+    DvbsCid cidTel;
+    FILE* dumpF = nullptr;
+    std::string dumpPath;
+    uint64_t dumpCount = 0;
+    std::vector<DvbsCarrier> carriers;
     std::atomic<int> stdHint{0}, isiSel{-1}, plCode{-1}, computeMode{2};
     ComputeChoice s1Compute{&ComputeChoice::viterbiUsable, false};                  // DVB-S: where the Viterbi decoder runs
     std::atomic<bool> s1OnGpu{false};
@@ -230,12 +245,63 @@ struct DvbsReceiver::Impl {
         merHist.clear();
         rateMark = 0; ratePackets = 0; netBitrate = 0;
         psdDb.clear();
+        { std::lock_guard<std::mutex> lk(cidMu); cidTap.reset(); cidRx.reset(); cidChipRate = 0; cidTel = DvbsCid(); }
+    }
+
+    // the carrier identification signal: the input mixed to the host carrier's centre and resampled to 8 samples per chip
+    void cidFeed(const cf32* x, size_t n) {
+        if (!cidOn.load() || mode == kSearch) return;
+        const double chip = dvbcid::chipRate(front.config().symbolRate);
+        std::lock_guard<std::mutex> lk(cidMu);
+        if (!cidRx || cidChipRate != chip) {
+            cidTap = std::make_unique<dvbcid::Tap>(fs, chip);
+            cidRx = std::make_unique<dvbcid::Rx>(chip, true);
+            cidChipRate = chip;
+            cidTel = DvbsCid();
+        }
+        if (!cidTap->usable()) return;
+        cidBuf.clear();
+        cidTap->process(x, n, hostCfo.load(), cidBuf);
+        if (cidBuf.empty()) return;
+        cidFrames.clear();
+        cidRx->push(cidBuf.data(), cidBuf.size(), cidFrames);
+        const dvbcid::Stats s = cidRx->stats();
+        DvbsCid& c = cidTel;
+        c.on = true; c.acquired = s.acquired; c.offsetHz = s.offsetHz; c.snrDb = s.snrDb; c.bits = s.bits; c.frames = s.frames; c.badFrames = s.badFrames; c.clockPpm = s.clockPpm;
+        if (s.report.haveGuid) { c.haveGuid = true; c.guid = dvbcid::guidText(s.report.guid); c.mac = dvbcid::guidMac(s.report.guid); }
+        double la = 0, lo = 0;
+        if (s.report.latitude(la) && s.report.longitude(lo)) { c.havePosition = true; c.latitude = la; c.longitude = lo; }
+        c.telephone = s.report.telephone(); c.text = s.report.userText();
+        for (const auto& f : cidFrames) log("carrier ID " + dvbcid::guidText(f.guid));
+    }
+
+    void surveyUpdate() {
+        std::vector<SpectrumResult> all = spec.analyseAll(16);
+        std::vector<DvbsCarrier> v;
+        float top = -1e9f;
+        for (const auto& r : all) top = std::max(top, r.plateauDb);
+        for (const auto& r : all) {
+            // leftovers of the blanking next to a real carrier, and noise humps, are not carriers
+            if (r.snrDb < 3.f || r.fitRms > 2.5f) continue;
+            bool shadow = false;
+            for (const auto& o : all)
+                if (&o != &r && o.plateauDb > r.plateauDb + 6.f && std::fabs(o.centerHz - r.centerHz) < 0.75 * (o.rateHz + r.rateHz)) shadow = true;
+            if (shadow) continue;
+            DvbsCarrier c;
+            c.centerHz = r.centerHz; c.rateHz = r.rateHz; c.rollOff = r.rollOff; c.snrDb = r.snrDb; c.levelDb = r.plateauDb - top;
+            c.selected = specRes.valid && std::fabs(r.centerHz - specRes.centerHz) < 1.0;
+            v.push_back(c);
+        }
+        std::lock_guard<std::mutex> lk(carMu);
+        carriers.swap(v);
     }
 
     // ------------------------------------------------------------------------ search: spectrum -> front end
     void doSearch() {
         if (spec.segments() < 48) return;
+        spec.setPick(pickOn.load(), pickHz.load());
         specRes = spec.analyse();
+        surveyUpdate();
         spec.display(psdDb, 512);
         const double manual = manualRs.load();
         const bool carrier = specRes.valid && specRes.zscore >= 8.f && specRes.fitRms < 2.5f;
@@ -291,6 +357,10 @@ struct DvbsReceiver::Impl {
             sfWasLocked = lk; sfWasPilots = pl;
         }
         if (sym.empty()) return;
+        {
+            std::lock_guard<std::mutex> lk(dumpMu);
+            if (dumpF && dumpCount < 64ull * 1024 * 1024) { fwrite(sym.data(), sizeof(cf32), sym.size(), dumpF); dumpCount += sym.size(); }
+        }
         symTotal += sym.size();
         rateNow = front.symbolRateNow();
         if (!timingNarrow && symTotal > 40000) { front.timer().setLoop(0.004, 0.707); timingNarrow = true; }
@@ -588,6 +658,10 @@ struct DvbsReceiver::Impl {
         t.standard = mode == kS1 ? 1 : mode == kS2 ? 2 : 0;
         t.symbolRate = mode == kSearch ? (specRes.valid ? specRes.rateHz : 0) : front.symbolRateNow();
         t.symbolRateManual = manualRs.load() > 0;
+        { std::lock_guard<std::mutex> lk(carMu); t.carriers = carriers; }
+        { std::lock_guard<std::mutex> lk(dumpMu); t.symbolDumpPath = dumpPath; t.symbolDumpCount = dumpCount; }
+        t.carrierPicked = pickOn.load(); t.carrierPickHz = pickHz.load();
+        { std::lock_guard<std::mutex> lk(cidMu); t.cid = cidTel; t.cid.on = cidOn.load(); }
         t.symbolRateSpectrum = specRes.valid ? specRes.rateHz : 0;
         t.symbolRateLoop = mode == kSearch ? 0 : front.symbolRateNow();
         t.spectrumSnrDb = specRes.valid ? specRes.snrDb : 0;
@@ -705,6 +779,7 @@ struct DvbsReceiver::Impl {
         merHist.push_back(t.merDb);
         if (merHist.size() > 120) merHist.erase(merHist.begin());
         t.merHistory = merHist;
+        if (mode != kSearch && std::isfinite(t.cfoHz)) hostCfo = t.cfoHz;   // where the carrier identification signal's tap centres
         {
             std::lock_guard<std::mutex> lk(tmu);
             seq++;
@@ -720,6 +795,7 @@ DvbsReceiver::~DvbsReceiver() {
     // the threads use the members of Impl: stop them while those are all alive
     p_->s1th.stop();
     p_->s2.stop();
+    setSymbolDump(std::string());
 }
 
 void DvbsReceiver::configure(double inputRateHz) {
@@ -739,6 +815,18 @@ void DvbsReceiver::resetNow() {
 }
 void DvbsReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->cbMu); p_->logCb = std::move(cb); }
 void DvbsReceiver::setPacketCallback(std::function<void(const uint8_t*, size_t, double)> cb) { std::lock_guard<std::mutex> lk(p_->cbMu); p_->pktCb = std::move(cb); }
+void DvbsReceiver::setSymbolDump(const std::string& path) {
+    std::lock_guard<std::mutex> lk(p_->dumpMu);
+    if (p_->dumpF) { fclose(p_->dumpF); p_->dumpF = nullptr; }
+    p_->dumpPath.clear(); p_->dumpCount = 0;
+    if (path.empty()) return;
+    p_->dumpF = fopen(path.c_str(), "wb");
+    if (p_->dumpF) p_->dumpPath = path;
+}
+void DvbsReceiver::setCidSearch(bool on) { p_->cidOn = on; if (!on) { std::lock_guard<std::mutex> lk(p_->cidMu); p_->cidTap.reset(); p_->cidRx.reset(); p_->cidChipRate = 0; p_->cidTel = DvbsCid(); } }
+void DvbsReceiver::selectCarrier(bool on, double offsetHz) {
+    if (on != p_->pickOn.load() || (on && offsetHz != p_->pickHz.load())) { p_->pickHz = offsetHz; p_->pickOn = on; p_->restartReq = true; }
+}
 void DvbsReceiver::setSymbolRate(double hz) { if (hz != p_->manualRs.load()) { p_->manualRs = hz; p_->restartReq = true; } }
 void DvbsReceiver::setStandardHint(int s) { if (s != p_->stdHint.load()) { p_->stdHint = s; p_->restartReq = true; } }
 void DvbsReceiver::setRollOff(double r) { if (r != p_->rollHint.load()) { p_->rollHint = r; p_->restartReq = true; } }
@@ -820,10 +908,13 @@ void DvbsReceiver::feed(const cf32* x, size_t n) {
         if (I.mode != Impl::kSearch) std::vector<cf32>().swap(I.raw);
     }
     else I.runFront(x, n);
+    I.cidFeed(x, n);
     if (I.inputCount >= I.reportAt) {
         I.reportAt = I.inputCount + (uint64_t)(0.25 * I.fs);
         if (I.mode != Impl::kSearch && I.spec.segments() >= 8) {
+            I.spec.setPick(I.pickOn.load(), I.pickHz.load());
             I.specRes = I.spec.analyse();
+            I.surveyUpdate();
             I.spec.display(I.psdDb, 512);
             I.spec.reset();
         }

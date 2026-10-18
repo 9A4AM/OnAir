@@ -393,11 +393,32 @@ static bool mkdirs(const std::string& path) {
     return stat(path.c_str(), &st) == 0;
 }
 
+static std::string htmlEsc(const std::string& s) {
+    std::string o;
+    for (char c : s) {
+        if (c == '&') o += "&amp;"; else if (c == '<') o += "&lt;"; else if (c == '>') o += "&gt;"; else if (c == '"') o += "&quot;"; else o += c;
+    }
+    return o;
+}
+
+static std::string lowerExt(const std::string& p) {
+    const size_t d = p.find_last_of('.');
+    std::string e = d == std::string::npos ? std::string() : p.substr(d + 1);
+    for (char& c : e) if (c >= 'A' && c <= 'Z') c = (char)(c + 32);
+    return e;
+}
+
+// Saves the complete files under dir/pid_XXXX/ and an index.html next to them: images are shown, text is previewed (the first 2 KB, escaped), everything else is linked
+// with its size. Nothing is run or decoded. Only plain bytes of the carousels are written (scrambled sections never get this far).
 size_t DsmccDemux::extractTo(const std::string& dir, size_t maxBytes) const {
     size_t n = 0;
+    std::string html = "<!doctype html><meta charset=utf-8><title>Carousel files</title><style>body{font:14px sans-serif;margin:16px}"
+                       ".f{display:inline-block;vertical-align:top;margin:6px;padding:8px;border:1px solid #888;max-width:340px}"
+                       "img{max-width:320px;max-height:240px;display:block}pre{white-space:pre-wrap;max-height:160px;overflow:auto;font-size:12px}</style><h1>Carousel files</h1>";
     for (const auto& kv : files(maxBytes)) {
         char sub[32];
         snprintf(sub, sizeof sub, "pid_%04X", kv.first);
+        html += std::string("<h2>PID 0x") + (sub + 4) + "</h2>";
         for (const DsmccFile& f : kv.second) {
             const std::string rel = dsmccSafePath(f.path);
             const std::string full = dir + "/" + sub + "/" + rel;
@@ -407,8 +428,18 @@ size_t DsmccDemux::extractTo(const std::string& dir, size_t maxBytes) const {
             if (!o) continue;
             o.write((const char*)f.data.data(), (std::streamsize)f.data.size());
             n++;
+            const std::string href = std::string(sub) + "/" + htmlEsc(rel), e = lowerExt(rel);
+            html += "<div class=f><a href=\"" + href + "\">" + htmlEsc(f.path) + "</a> (" + std::to_string(f.data.size()) + " bytes)";
+            if (e == "png" || e == "jpg" || e == "jpeg" || e == "gif" || e == "bmp" || e == "svg" || e == "webp") html += "<img src=\"" + href + "\">";
+            else if (e == "txt" || e == "xml" || e == "html" || e == "htm" || e == "css" || e == "js" || e == "json" || e == "ait" || e == "xhtml" || e == "csv" || e == "srt") {
+                std::string t((const char*)f.data.data(), std::min<size_t>(f.data.size(), 2048));
+                for (char& c : t) if ((unsigned char)c < 9 || ((unsigned char)c > 13 && (unsigned char)c < 32)) c = '.';
+                html += "<pre>" + htmlEsc(t) + "</pre>";
+            }
+            html += "</div>";
         }
     }
+    if (n) { std::ofstream o(dir + "/index.html", std::ios::binary); o << html; }
     return n;
 }
 

@@ -16,7 +16,7 @@ Chunks: 1 GSE, IP, PCAP and the IP view; 2 MPE and ULE; 3 ACM, VCM, multistream,
 | DecSAT capability | OnAir | Chunk / reason |
 |---|---|---|
 | DVB-S2 PL demodulation, frame lock, MODCOD per frame | done (`core/src/dvbs`) | |
-| Carrier recovery, Es/N0 (MER), Eb/N0 | done (MER, Es/N0); Eb/N0 partial | 5: show Eb/N0 |
+| Carrier recovery, Es/N0 (MER), Eb/N0 | done (Eb/N0 per information bit shown beside Es/N0) | |
 | DVB-S (EN 300 421): code rate, rotation, inversion found blind; Viterbi, RS | done | |
 | LDPC + BCH, all 21 S2 and 31 S2X codes, BBHEADER | done | |
 | S2X PLS table, all 55 normal/short MODCODs, 2+4+2 8APSK to 256APSK | done | |
@@ -30,7 +30,7 @@ Chunks: 1 GSE, IP, PCAP and the IP view; 2 MPE and ULE; 3 ACM, VCM, multistream,
 | S2X superframing (Annex E): start sequence, format, formats 0 and 1 | added (ported; formats 2 to 7 are named only), with a phase correction over the removed symbols that DecSAT's stage does not have | 3 |
 | Modulator (DVB-S/S2/S2X, HackRF TX / IQ file) | done (`dvbs_tx.cpp`, TX framework) | 3: GSE and IP test signals |
 | Waterfall, zoom, pan; carrier detection over a whole span | done (the app's spectrum views; the DVB-S/S2 mode takes one carrier) | |
-| VFOs: many carriers decoded at once from one wide capture, survey of every carrier | skipped (partly done): DVB-T has multi-channel (`multitv`); a general VFO bank would be a new architecture for one mode | 5: reconsider after the rest |
+| VFOs: many carriers decoded at once from one wide capture, survey of every carrier | added: the Receiver tab lists every carrier found in the spectrum (offset, symbol rate, roll-off, level, C/N) and "Decode" makes the receiver work on that one; decoding several at once is not done (one receiver per input) | 5 |
 | IQ file replay (cs8, cu8, cs16, cs24, cf32, WAV from SDR#/HDSDR/SDRuno/SDR++) | done (files with rate and format in the name or header) | |
 | Live HackRF One 2-20 MS/s (pure Rust USB), LNB LO, input-level warning | done (HackRF over USB, LNB help, AGC) | |
 | IQ recorder | done | |
@@ -68,7 +68,7 @@ Chunks: 1 GSE, IP, PCAP and the IP view; 2 MPE and ULE; 3 ACM, VCM, multistream,
 | ULE (RFC 4326) to IP | added (not in DecSAT: written from the RFC; a PID is taken up after three valid SNDUs) | 2 |
 | Multicast MPEG-TS in UDP/RTP found, analysed and played | added: found by the sync bytes, in UDP or behind an RTP header, analysed by a TS demultiplexer per flow (services, scrambling flag); playing in the app's player is not wired (the stream can be saved as a PCAP and replayed) | 5 |
 | Multicast audio: SAP/SDP names, RTP AAC/Opus, now-playing | added: SAP announcements with their SDP (names, media, codecs), RTP streams found from their sequence numbers (payload type, codec from the announcement, loss, rate); audio is not decoded (codecs are user-installed add-ons here) | 5 |
-| DVB-RCS signalling (EN 301 790 / 545-2: NCR, TIM, SCT/FCT/TBTP) | missing | 3 or 5: public specs, the tables can be read from the sections of a stream |
+| DVB-RCS signalling (EN 301 790 / 545-2: NCR, TIM, SCT/FCT/TCT/TBTP/CMT, RMT) | added: TS analysis tab "Interactive" (forward and return links, superframes, frame and timeslot types, NCR interval and clock error, TIM status, tables declared but not sent) | 5 |
 | A hub's private burst plan / inroute signalling (Newtec D1h, worked out from a capture) | skipped (no verified spec/capture): no public specification, DecSAT derived it from one recording; we have none to check against |
 | Return pools and TDMA/MF-TDMA burst demodulation | skipped (no verified spec/capture): needs the VFO front end and burst demodulators found from live recordings |
 
@@ -77,10 +77,10 @@ Chunks: 1 GSE, IP, PCAP and the IP view; 2 MPE and ULE; 3 ACM, VCM, multistream,
 | DecSAT capability | OnAir | Chunk / reason |
 |---|---|---|
 | Satellite beacons: carrier, drift, C/N0, PCM/PSK/PM telemetry, IRIG 106 and CCSDS frames, counter, major frame map, word plot, pointing tone | added earlier in this branch (TV sat beacon decoder: carrier, subcarrier, bi-phase, frames, counter, checksum, decoded view, export); CCSDS Reed-Solomon, randomiser, layout search and TM/AOS headers added; K=7 under the symbols, the word plot and the pointing tone still planned | 5 |
-| Carrier ID (DVB-CID, TS 103 129) | missing | 5 (public spec; DecSAT has no recording of one) |
+| Carrier ID (DVB-CID, TS 103 129) | added: framing, BCH, scrambler and fields after DecSAT; receiver of our own (FFT acquisition, early/late tracking, half-bit frequency, four copies combined); Receiver tab "Carrier ID" (off by default); tested on synthetic signals with offset and clock error, no live recording | 5 |
 | TPC 2964 (IESS-315), Comtech TPC 7/8, Q-Flex FastLink, K=7 Viterbi SCPC, IBS/IESS-309 with apt-X, E1 and G.728 voice, Comtech CDM modem types, radar feeds (ASTERIX, RCMS), IS-19 DAMA | skipped (no verified spec/capture): professional VSAT and SCPC links with vendor framings, mostly worked out from live captures; they need DecSAT's blind carrier front end and recordings we do not have. Voice codecs would also be user-installed add-ons here |
-| Generic PSK/APSK/QAM to symbols | skipped: a generic symbol dump, not part of the receivers here; the protocol lab (`core/src/protolab`) covers analysis of unknown signals |
-| Survey of every carrier in a span | skipped with the VFO bank |
+| Generic PSK/APSK/QAM to symbols | added: "Write the symbols to a file" in the Receiver tab (float32 I/Q after timing and carrier recovery, up to 512 MB) | 5 |
+| Survey of every carrier in a span | added with the carrier list above | |
 
 ## Apps, tools and project
 
@@ -88,6 +88,6 @@ Chunks: 1 GSE, IP, PCAP and the IP view; 2 MPE and ULE; 3 ACM, VCM, multistream,
 |---|---|---|
 | GUI (waterfall, VFOs, cards) | done (own GUI) | |
 | CLI `decsat decode` / `modcods` | done (`dect2cli`) | 1: `--ip-pcap` |
-| Signal gallery HTML | skipped: documentation of its own signals | |
+| Signal gallery HTML | skipped: documentation of its own signals; the viewer of extracted carousel files is added (Carousels > Save files writes index.html with previews) | |
 | Opus and xaac (AAC SBR/PS) libraries | skipped: multicast audio needs patented codecs as user-installed add-ons, see docs/CODECS.md | |
 | Tests (golden vectors from recordings, synthetic signals) | done in kind: synthetic and loopback tests per feature; golden vectors that do not need a recording | each chunk |

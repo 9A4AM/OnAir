@@ -2,6 +2,7 @@
 #pragma once
 #include "dect2/tv/dsmcc.h"
 #include "dect2/tv/si_tables.h"
+#include "dect2/tv/rcs.h"
 #include "dect2/tv/ts_data.h"
 #include <cstdint>
 #include <map>
@@ -73,6 +74,7 @@ struct TsSnapshot {
     int64_t utcNow = 0;      // current UTC from the TDT (advanced with the stream), 0 until one has been received
     std::shared_ptr<const std::vector<DsmccCarouselInfo>> carousels;   // DSM-CC data and object carousels found on private PIDs (clear data only)
     std::shared_ptr<const TsDataSnapshot> data;   // AIT applications, SCTE-35 cues, EBU data, labelled private PIDs
+    std::shared_ptr<const RcsView> rcs;   // DVB-RCS/RCS2 signalling of an interactive network (RMT, SCT, FCT, TCT, TBTP, CMT, TIM, NCR)
     std::shared_ptr<const SiSnapshot> si;   // the other service information of the stream: transponder lists, bouquets, other transport streams, time offsets, CAT
 };
 
@@ -103,6 +105,7 @@ private:
     void parseTdt(const uint8_t* s, int len);
     SiCollector si_;
     DsmccDemux dsmcc_;
+    RcsRx rcs_;
     TsDataScan data_;
     std::map<int, PidState> pids_;
     std::map<int, SectionBuf> sec_;

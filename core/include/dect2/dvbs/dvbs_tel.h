@@ -63,6 +63,32 @@ struct DvbsStream {
     double bps = 0;                  // useful bit rate (DFL)
 };
 
+// One carrier in the survey of the input spectrum
+struct DvbsCarrier {
+    double centerHz = 0;     // offset from the centre of the input
+    double rateHz = 0;       // symbol rate from the -3 dB width
+    double rollOff = 0;      // 0: not measured
+    float snrDb = 0;         // plateau over the noise floor
+    float levelDb = 0;       // plateau level relative to the strongest carrier (0 dB = strongest)
+    bool selected = false;   // the receiver works on this one
+};
+
+// DVB-CID: the carrier identification signal under the host carrier (ETSI TS 103 129)
+struct DvbsCid {
+    bool on = false;            // looking for it
+    bool acquired = false;
+    double offsetHz = 0;        // against the host carrier's centre
+    float snrDb = 0;            // despread, per bit
+    uint64_t bits = 0, frames = 0, badFrames = 0;
+    double clockPpm = 0;
+    bool haveGuid = false;
+    std::string guid;           // "CC:XX:...:XX"
+    std::string mac;            // the MAC address the identifier encapsulates, if it does
+    bool havePosition = false;
+    double latitude = 0, longitude = 0;
+    std::string telephone, text;
+};
+
 struct DvbsTelemetry {
     // ---- the part every mode has: the engine copies it into RxTelemetry; keep these members and what they mean
     uint64_t seq = 0;            // grows with every report and never restarts (not even after reset())
@@ -131,6 +157,12 @@ struct DvbsTelemetry {
     DvbsIpTel ip;                            // IP data in the stream
     std::string superframe;                  // the super-frames found (Annex E): format, pilots, count; empty when none
     std::vector<DvbsStream> streams;         // the input streams of a DVB-S2 carrier
+    DvbsCid cid;                             // carrier identification, when looked for
+    std::vector<DvbsCarrier> carriers;       // every carrier seen in the spectrum (survey), by frequency
+    std::string symbolDumpPath;              // the symbol file being written (empty: none)
+    uint64_t symbolDumpCount = 0;            // symbols written
+    bool carrierPicked = false;              // the user chose a carrier from the survey
+    double carrierPickHz = 0;                // ... at this offset
 };
 
 // One line for the command line and the log
