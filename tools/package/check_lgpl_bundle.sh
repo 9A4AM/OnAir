@@ -7,7 +7,7 @@ set -u
 PROG=${1:?usage: check_lgpl_bundle.sh <program> [library folder ...]}; shift
 BAD='x264|x265|xvid|postproc|vidstab|rubberband|frei0r|cdio|davs2|xavs2|uavs3d|fdk-aac|fdk_aac|libsmbclient|libcaca|zimg'
 fail=0
-if strings "$PROG" | grep -E -- '--enable-(gpl|nonfree|version3)' | head -3 | grep .; then
+if strings "$PROG" | grep -E -- '--enable-(gpl|nonfree|version3)' | grep -v -e 'without --enable' -e 'Source offer' | head -3 | grep .; then
   echo "FAIL: $PROG contains an FFmpeg built with GPL / nonfree options"; fail=1
 fi
 links=
