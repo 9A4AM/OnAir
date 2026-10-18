@@ -434,12 +434,15 @@ static void menuBarRight(App& a) {
         updW = std::max(updW, ImGui::CalcTextSize(updLbl).x + btnPad);
         const float clearW = ImGui::CalcTextSize(tr("Clear all##clearall")).x + btnPad;
         const float supportW = ImGui::CalcTextSize(tr("Support")).x + btnPad;
-        const float rightReserve = updW + 6.f * gUi + clearW + 12.f * gUi + supportW + 4.f * gUi;
+        const float creditsW = ImGui::CalcTextSize(tr("Credits")).x + btnPad;
+        const float rightReserve = updW + 6.f * gUi + clearW + 12.f * gUi + supportW + 4.f * gUi + creditsW + 4.f * gUi;
         const char* credit = tr("by: Kristijonas Adomaitis, made with help from the community");
         const float cw = ImGui::CalcTextSize(credit).x + btnPad;
-        const float x = ImGui::GetWindowWidth() - rightReserve - cw - supportW - 12.f * gUi;
-        if (x > ImGui::GetCursorPosX() + 20 * gUi) {   // only when the menu bar has room for it
-            ImGui::SameLine(x);
+        const float xBtn = ImGui::GetWindowWidth() - rightReserve;   // Credits and Support sit just left of the version label
+        const float xBy = xBtn - cw - 12.f * gUi;
+        const float minX = ImGui::GetCursorPosX() + 20 * gUi;
+        if (xBy > minX) {   // the 'by' text goes first when the menu bar is narrow
+            ImGui::SameLine(xBy);
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1, 1, 1, 0.04f));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1, 1, 1, 0.08f));
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.08f));
@@ -449,6 +452,10 @@ static void menuBarRight(App& a) {
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(4);
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Thank you to everyone who reported bugs, sent recordings and opened pull requests."));
+        }
+        if (xBtn > minX) {
+            ImGui::SameLine(xBtn);
+            if (ImGui::SmallButton(tr("Credits"))) { a.creditsOpen = true; a.creditsTab = 0; }
             ImGui::SameLine();
             supportButton();
         }
