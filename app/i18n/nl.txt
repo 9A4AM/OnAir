@@ -3203,3 +3203,5 @@ Found %.0f Hz (match %.0f %%)	%.0f Hz gevonden (overeenkomst %.0f %%)
 Nothing speech-like found. Try again while someone is talking.	Niets gevonden dat op spraak lijkt. Probeer opnieuw terwijl iemand praat.
 Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	Geen versleuteling: het geluid wordt alleen gespiegeld. Versleuteld verkeer wordt nooit aangeraakt.
 No sound reached the descrambler: tune a voice signal first.	Er kwam geen geluid bij de descrambler: stem eerst af op een spraaksignaal.
+Baseband filter	Basisbandfilter
+Custom filter	Eigen filter

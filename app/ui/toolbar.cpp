@@ -6,6 +6,7 @@
 #include "dect2/engine/rate_choice.h"
 #include "dect2/source/antenna_ports.h"
 #include "dect2/hdr/hdr_rx.h"
+#include "dect2/dsp/baseband_filter.h"
 #include "dect2/source/hamlib_link.h"
 #include "dect2/source/iq_file.h"
 #include <algorithm>
@@ -351,6 +352,63 @@ static void toolbarStandard(App& a, bool vertical) {
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Which broadcast standard to decode.\nAuto alternates between DVB-T2 and DVB-T until one locks."));
 }
 
+
+// ---- the baseband filter of the receiver families that have one (dsp/baseband_filter.h): a button and its pop-up, the same for every mode ----
+namespace {
+struct BbfDef { const char* key; double bw, trans, fs; };   // the mode's own bandwidth and transition (for the plot and the slider hints), a rate to draw at
+const BbfDef kBbfDefs[] = {{"hfdl", 3400, 2000, 28800}, {"acars", 7200, 1500, 25000}, {"vdl2", 15000, 4000, 80000}, {"airband", 16000, 4000, 48000}, {"ais", 22500, 7500, 48000},
+                           {"pager", 20000, 4000, 96000}, {"packet", 8000, 4000, 96000}, {"cw", 100, 80, 1000}, {"general", 3000, 600, 48000}, {"hfdig", 3000, 600, 48000}};
+const char* const kBbfAll[] = {"hfdl", "acars", "vdl2", "airband", "ais", "pager", "packet", "cw", "general", "hfdig"};
+void bbfSyncImpl() {   // once: the saved filters into the registry the modes read when they design theirs
+    static bool done = false;
+    if (done) return;
+    done = true;
+    for (const char* k : kBbfAll) dect2::bbf::set(k, dect2::bbf::fromString(plat::prefs().getS((std::string("bbf.") + k).c_str(), "")));
+}
+void bbfWidget(App& a, const char* key) {
+    (void)a;
+    const BbfDef* def = nullptr;
+    for (const auto& d : kBbfDefs) if (!std::strcmp(d.key, key)) def = &d;
+    if (!def) return;
+    using namespace dect2;
+    BasebandFilterCfg c = bbf::get(key);
+    ImGui::TextDisabled("%s", tr("Baseband filter")); ImGui::SameLine();
+    if (ImGui::SmallButton(c.enabled ? "custom##bbf" : "standard##bbf")) ImGui::OpenPopup("bbfpop");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "The channel filter of this mode: bandwidth, shape, transition width. Standard is the filter as shipped.\nA change reaches HFDL at once, the other modes the next time they start.");
+    if (!ImGui::BeginPopup("bbfpop")) return;
+    bool ch = false;
+    ch |= ImGui::Checkbox(tr("Custom filter"), &c.enabled);
+    if (c.enabled) {
+        ImGui::SetNextItemWidth(170 * gUi);
+        if (ImGui::BeginCombo("##bbfpre", "presets")) {
+            for (const auto& p : bbf::presets()) if ((!std::strcmp(p.mode, key) || !*p.mode) && ImGui::Selectable(p.name)) { c = p.cfg; ch = true; }
+            ImGui::EndCombo();
+        }
+        float bw = (float)c.bwHz, tr2 = (float)c.transHz, ce = (float)c.centreHz;
+        ImGui::SetNextItemWidth(170 * gUi);
+        if (ImGui::SliderFloat("##bbfbw", &bw, 0, (float)(def->bw * 3), bw > 0 ? "%.0f Hz wide" : "own width")) { c.bwHz = bw; ch = true; }
+        ImGui::SetNextItemWidth(170 * gUi);
+        if (ImGui::SliderFloat("##bbftr", &tr2, 0, (float)(def->trans * 3), tr2 > 0 ? "%.0f Hz transition" : "own transition")) { c.transHz = tr2; ch = true; }
+        if (!std::strcmp(key, "hfdl")) {
+            ImGui::SetNextItemWidth(170 * gUi);
+            if (ImGui::SliderFloat("##bbfce", &ce, -1000, 1000, "%+.0f Hz centre")) { c.centreHz = ce; ch = true; }
+        }
+        int sh = (int)c.shape;
+        static const char* shapes[] = {"Blackman", "Kaiser", "Blackman-Harris", "Hann", "Butterworth"};
+        ImGui::SetNextItemWidth(170 * gUi);
+        if (ImGui::Combo("##bbfsh", &sh, shapes, 5)) { c.shape = (BbShape)sh; ch = true; }
+        const BbDesign d = bbf::design(c, def->bw, def->trans, def->fs, 5, 1001);
+        float y[128];
+        const double span = std::max(def->bw, c.bwHz) * 1.5;
+        for (int i = 0; i < 128; i++) y[i] = (float)std::max(-80.0, bbf::responseDb(d, def->fs, -span + 2 * span * i / 127));
+        ImGui::PlotLines("##bbfplot", y, 128, 0, "response, 0 .. -80 dB", -80.f, 5.f, ImVec2(240 * gUi, 70 * gUi));
+    }
+    if (ch) { bbf::set(key, c); plat::prefs().setS((std::string("bbf.") + key).c_str(), bbf::toString(c).c_str()); }
+    ImGui::EndPopup();
+}
+} // namespace
+void bbfSyncPrefs() { bbfSyncImpl(); }
+
 void toolbarParts(App& a, int mask, bool vertical) {
     bool running = a.engine.running();
     bool retune = false;
@@ -384,6 +442,7 @@ void toolbarParts(App& a, int mask, bool vertical) {
         if (!vertical) vSeparator();
         mu->decoder(a, retune);
     }
+    if (mask & TbDecoder) { bbfSyncImpl(); if (const char* bk = dect2::bbf::keyForFamily(a.family); *bk) { if (!vertical) vSeparator(); bbfWidget(a, bk); } }
     if (!vertical) flowEnd();
 
     if (running && a.devices[a.devIdx].kind == DeviceInfo::Hamlib) hamlibFollowRig(a);   // the rig's knob moves the frequency box

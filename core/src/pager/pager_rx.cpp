@@ -5,6 +5,7 @@
 // The first that finds its pattern locks on (in either polarity) and reads the transmission; the symbol timing follows the data. The protocol layers
 // are in pager_proto.cpp.
 #include "dect2/pager/pager_rx.h"
+#include "dect2/dsp/baseband_filter.h"
 #include "dect2/automation/engine.h"
 #include "dect2/results/results_io.h"
 #include "dect2/dmr/dmr_dsp.h"
@@ -205,8 +206,8 @@ struct PagerReceiver::Impl {
             if (!rsPass) rs.reset();
             // 25 kHz channel: +-10 kHz. 12.5 kHz channel: +-6.5 kHz (the pager deviation is 4.5 kHz, so the signal fits and a neighbour
             // 12.5 kHz away, whose nearer edge is at 6.5 kHz, is cut hard instead of reaching the discriminator)
-            if (narrow.load()) fin.design(dmr::lowpassTaps(6500.0, 9500.0, kMidRate, 60, 9), 2);
-            else fin.design(dmr::lowpassTaps(10000.0, 14000.0, kMidRate, 60, 9), 2);
+            if (narrow.load()) fin.design(bbf::overrideTaps("pager", dmr::lowpassTaps(6500.0, 9500.0, kMidRate, 60, 9), kMidRate, 16000.0), 2);
+            else fin.design(bbf::overrideTaps("pager", dmr::lowpassTaps(10000.0, 14000.0, kMidRate, 60, 9), kMidRate, 24000.0), 2);
             design();
         }
         (void)off;

@@ -3186,3 +3186,5 @@ Found %.0f Hz (match %.0f %%)	Найдено %.0f Гц (совпадение %.0
 Nothing speech-like found. Try again while someone is talking.	Ничего похожего на речь не найдено. Повторите, пока кто-то говорит.
 Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	Это не шифрование: звук только отражается зеркально. Зашифрованный трафик никогда не затрагивается.
 No sound reached the descrambler: tune a voice signal first.	Звук не дошёл до дескремблера: сначала настройтесь на голосовой сигнал.
+Baseband filter	Фильтр основной полосы
+Custom filter	Свой фильтр

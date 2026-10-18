@@ -3,6 +3,7 @@
 // decimated to 48 kHz (5 samples per bit). A power detector finds the bursts (they are short and stand alone), each one is cut out of a ring of samples
 // and decoded offline by aisDecodeBurst (ais_phy.cpp). The message layer and the station table are here.
 #include "dect2/ais/ais_rx.h"
+#include "dect2/dsp/baseband_filter.h"
 #include "dect2/automation/engine.h"
 #include "dect2/net/feeds.h"
 #include "dect2/ais/ais_phy.h"
@@ -166,7 +167,7 @@ struct AisReceiver::Impl {
             }
         // the channel filters: 96 -> 48 kHz (rejects the other channel), then the channel filter itself
         const std::vector<float> h1 = dmr::lowpassTaps(9500.0, 38000.0, kMidRate, 60, 9);
-        const std::vector<float> h2 = dmr::lowpassTaps(phy.chanPassHz, phy.chanStopHz, kAisWorkRate, 60, 9);
+        const std::vector<float> h2 = bbf::overrideTaps("ais", dmr::lowpassTaps(phy.chanPassHz, phy.chanStopHz, kAisWorkRate, 60, 9), kAisWorkRate, phy.chanPassHz + phy.chanStopHz);
         for (int c = 0; c < 2; c++) { ch[c].dec.design(h1, 2); ch[c].filt.design(h2, 1); }
         // noise bandwidth of both filters together: sum of |H1 H2|^2 df over the 48 kHz of the output
         double acc = 0;

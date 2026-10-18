@@ -3,6 +3,7 @@
 // interface (main.cpp). This file holds the entry point drawShell2() and the Sidebar / Scope / Tiles layouts; the others
 // are in ui2_faces.cpp, the shell in ui2_shell.cpp, the theme in ui2_theme.cpp.
 #include "ui2_internal.h"
+#include "dect2/dsp/baseband_filter.h"
 
 using namespace ui2;
 
@@ -173,7 +174,7 @@ void bodyTiles(App& a, float bodyH, ImVec2 disp) {
     ImGui::Spacing();
     a.tgMin[TgSwitch] = ImGui::GetCursorScreenPos();
     ImGui::TextDisabled("%s", tr("mode")); modeList(a);
-    if (a.family == 0 || a.family == 3 || (modeUi(a.family) && modeUi(a.family)->decoder)) { ImGui::Spacing(); ImGui::TextDisabled("%s", tr("decoder")); toolbarParts(a, TbDecoder, true); }
+    if (a.family == 0 || a.family == 3 || ((modeUi(a.family) && modeUi(a.family)->decoder) || *dect2::bbf::keyForFamily(a.family))) { ImGui::Spacing(); ImGui::TextDisabled("%s", tr("decoder")); toolbarParts(a, TbDecoder, true); }
     endPane();
     const float row2 = ImGui::GetContentRegionAvail().y;
     const float wD = std::floor(W * 0.70f);

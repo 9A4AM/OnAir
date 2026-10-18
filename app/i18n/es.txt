@@ -3203,3 +3203,5 @@ Found %.0f Hz (match %.0f %%)	Encontrado %.0f Hz (coincidencia %.0f %%)
 Nothing speech-like found. Try again while someone is talking.	No se encontró nada parecido a voz. Inténtalo de nuevo mientras alguien habla.
 Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	No es cifrado: solo refleja el sonido. El tráfico cifrado nunca se toca.
 No sound reached the descrambler: tune a voice signal first.	Ningún sonido llegó al descodificador: sintoniza antes una señal de voz.
+Baseband filter	Filtro de banda base
+Custom filter	Filtro personalizado

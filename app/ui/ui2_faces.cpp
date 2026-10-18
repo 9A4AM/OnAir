@@ -2,6 +2,7 @@
 // "Faceplate" variants are instruments in a chassis; Dock and Panel are the two-column ones).
 // Split from ui2.cpp; the shared declarations are in ui2_internal.h.
 #include "ui2_internal.h"
+#include "dect2/dsp/baseband_filter.h"
 
 using namespace ui2;
 
@@ -56,7 +57,7 @@ void bodyFace(App& a, float bodyH, ImVec2 disp) {
         toolbarParts(a, TbTuner, true);
         a.tgMin[TgSwitch] = ImGui::GetCursorScreenPos();
         modeList(a);
-        if (a.family == 0 || a.family == 3 || (modeUi(a.family) && modeUi(a.family)->decoder)) toolbarParts(a, TbDecoder, true);
+        if (a.family == 0 || a.family == 3 || ((modeUi(a.family) && modeUi(a.family)->decoder) || *dect2::bbf::keyForFamily(a.family))) toolbarParts(a, TbDecoder, true);
         endModule();
         const float rest = topH - (cH + 38 * gUi) - modeModH - 9 * gUi;          // what the first two modules leave
         const float listH = std::max(150.f * gUi, rest * 0.64f), logH = std::max(60.f * gUi, rest - listH);

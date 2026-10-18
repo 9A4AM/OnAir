@@ -3189,3 +3189,5 @@ Found %.0f Hz (match %.0f %%)	Találat: %.0f Hz (egyezés %.0f %%)
 Nothing speech-like found. Try again while someone is talking.	Nem találtam beszédszerűt. Próbáld újra, amikor valaki beszél.
 Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	Nem titkosítás: csak tükrözi a hangot. A titkosított forgalomhoz soha nem nyúl.
 No sound reached the descrambler: tune a voice signal first.	Nem érkezett hang a visszafejtőhöz: előbb hangolj be egy beszédjelet.
+Baseband filter	Alapsávi szűrő
+Custom filter	Egyéni szűrő

@@ -3203,3 +3203,5 @@ Found %.0f Hz (match %.0f %%)	找到 %.0f Hz（匹配度 %.0f %%）
 Nothing speech-like found. Try again while someone is talking.	没有找到类似语音的结果。请在有人说话时重试。
 Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	这不是加密：声音只是被镜像翻转。加密的通信绝不会被处理。
 No sound reached the descrambler: tune a voice signal first.	没有声音到达解扰器：请先调谐到语音信号。
+Baseband filter	基带滤波器
+Custom filter	自定义滤波器

@@ -12,6 +12,7 @@
 // from the interface thread.
 #pragma once
 #include "hfdl_tel.h"
+#include "../dsp/baseband_filter.h"
 #include "dect2/engine/mode_tuning.h"
 #include "dect2/common/ring.h"
 #include <functional>
@@ -43,6 +44,7 @@ public:
     bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
 
+    void setBasebandFilter(const BasebandFilterCfg& c);  // the channel filter (default: 3.4 kHz Blackman); a change restarts the channel chains
     void setChannels(const std::vector<double>& dialHz); // empty: every frequency of the station table inside the band
 
 private:

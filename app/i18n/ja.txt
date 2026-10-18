@@ -3203,3 +3203,5 @@ Found %.0f Hz (match %.0f %%)	%.0f Hz を検出（一致度 %.0f %%）
 Nothing speech-like found. Try again while someone is talking.	音声らしいものは見つかりませんでした。誰かが話している間にもう一度試してください。
 Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	暗号化ではありません。音を反転させるだけです。暗号化された通信には一切手を加えません。
 No sound reached the descrambler: tune a voice signal first.	デスクランブラーに音が届きませんでした。先に音声信号に同調してください。
+Baseband filter	ベースバンドフィルター
+Custom filter	カスタムフィルター

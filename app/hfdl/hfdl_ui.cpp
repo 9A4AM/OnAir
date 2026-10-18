@@ -34,6 +34,8 @@ struct State {
     std::unordered_map<uint32_t, double> rangeFedT;   // per aircraft: the position report already counted in it
 };
 State S;
+dect2::BasebandFilterCfg gBbfPushed;
+bool gBbfInit = false;
 
 // the HFDL bands: where several ground stations share a few hundred kHz (centre MHz)
 struct Band { const char* name; double mhz; };
@@ -170,6 +172,7 @@ void tick(App& a) {
         a.engine.hfdl().setChannels(hz);
         std::snprintf(S.pushedChans, sizeof S.pushedChans, "%s", S.chans);
     }
+    { const dect2::BasebandFilterCfg c = dect2::bbf::get("hfdl"); if (!gBbfInit || c != gBbfPushed) { a.engine.hfdl().setBasebandFilter(c); gBbfPushed = c; gBbfInit = true; } }
 }
 
 // ---------------------------------------------------------------- messages

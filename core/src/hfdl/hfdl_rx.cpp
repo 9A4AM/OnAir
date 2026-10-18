@@ -35,21 +35,6 @@ constexpr int kNb = 6;               // feedback taps
 constexpr double kDefCentre = 8.9e6;
 using cd = std::complex<double>;
 
-std::vector<float> lowpass(int taps, double fc, double fs) {
-    std::vector<float> h((size_t)taps);
-    double s = 0;
-    for (int i = 0; i < taps; i++) {
-        const double m = i - (taps - 1) / 2.0;
-        const double x = 2 * fc / fs * m;
-        const double sinc = std::fabs(m) < 1e-9 ? 1.0 : std::sin(M_PI * x) / (M_PI * x);
-        const double w = 0.42 - 0.5 * std::cos(2 * M_PI * i / (taps - 1)) + 0.08 * std::cos(4 * M_PI * i / (taps - 1));
-        h[(size_t)i] = (float)(2 * fc / fs * sinc * w);
-        s += h[(size_t)i];
-    }
-    for (auto& v : h) v = (float)(v / s);
-    return h;
-}
-
 using dect2::dsp::rrc;
 
 cf32 cubicAt(const std::vector<cf32>& x, double pos) {
@@ -94,6 +79,8 @@ struct HfdlReceiver::Impl {
     bool rebuild = true;
     std::vector<Chan> ch;
     std::vector<float> fir, mf;
+    std::vector<cf32> firC;                   // the baseband filter with a centre offset (empty: use fir)
+    BasebandFilterCfg bbf;
     uint64_t nIn = 0;
     uint64_t seq = 0, serial = 0;
     HfdlTelemetry tel;
@@ -122,9 +109,11 @@ struct HfdlReceiver::Impl {
         const int D = std::max(1, (int)std::floor(rate / 28800));
         const double r1 = rate / D;
         const int M = std::max(1, (int)std::floor(r1 / kFs));
-        int taps = (int)std::ceil(4.0 * r1 / 2000) | 1;
-        taps = std::max(31, std::min(301, taps));
-        fir = lowpass(taps, 1700, r1);
+        const BbDesign bd = bbf::design(bbf, 3400, 2000, r1);   // default: 3.4 kHz Blackman, as before
+        fir = bd.h;
+        firC = bd.hc;                       // the delay line runs oldest first: a correlation, so the taps are conjugated to put the pass-band at +centre
+        for (auto& v : firC) v = std::conj(v);
+        const int taps = (int)fir.size();
         mf.clear();
         double s = 0;
         for (int i = -6 * kSps; i <= 6 * kSps; i++) { mf.push_back((float)rrc((double)i / kSps, kHfdlRrcAlpha)); s += mf.back(); }
@@ -166,7 +155,8 @@ struct HfdlReceiver::Impl {
         k.mcnt = 0;
         cf32 acc(0, 0);
         const size_t T = k.fh.size();
-        for (size_t i = 0; i < T; i++) acc += k.fh[(k.fpos + i) % T] * fir[i];
+        if (firC.empty()) for (size_t i = 0; i < T; i++) acc += k.fh[(k.fpos + i) % T] * fir[i];
+        else for (size_t i = 0; i < T; i++) acc += k.fh[(k.fpos + i) % T] * firC[i];
         // cubic interpolation from r2 to 7200 Hz
         k.h2[0] = k.h2[1]; k.h2[1] = k.h2[2]; k.h2[2] = k.h2[3]; k.h2[3] = acc;
         k.n2++;
@@ -347,9 +337,16 @@ struct HfdlReceiver::Impl {
         const auto& pre = hfdlPreambleRef(m1);
         std::vector<int8_t> scr;
         hfdlScramblerSigns(R.blocks * kHfdlDataLen, scr);
-        // equaliser
+        // equaliser; a burst the equaliser cannot decode (weak signal: 25 taps adapt to the noise) is tried again with the gain and phase tracker alone
+        std::vector<HfdlMessage> msgs;
+        bool ok = false;
+        double sig2 = 1, preErr = 0;
+        for (int mode = 0; mode < 3 && !ok; mode++) {   // 0: equaliser, 1: gain / phase tracker with decisions, no equaliser, 2: known symbols only (weak signals)
+        const int eqOn = mode == 0 ? 1 : 0;
         const int Nf = 2 * kL + 1;
         std::vector<cf32> w((size_t)Nf, cf32(0, 0)), b((size_t)kNb, cf32(0, 0)), dp((size_t)kNb, cf32(0, 0));
+        w[(size_t)kL] = std::conj(h) / (std::norm(h) + 1e-30f);
+        w.assign((size_t)Nf, cf32(0, 0)); b.assign((size_t)kNb, cf32(0, 0)); dp.assign((size_t)kNb, cf32(0, 0));
         w[(size_t)kL] = std::conj(h) / (std::norm(h) + 1e-30f);
         float theta = 0;
         double errKnown = 0; int nKnown = 0;
@@ -373,24 +370,92 @@ struct HfdlReceiver::Impl {
             if (known) { errKnown += std::norm(e); nKnown++; }
             const cf32 E = e * std::conj(rr);
             const float g = mu / nrm;
-            for (int q = 0; q < Nf; q++) w[(size_t)q] += g * E * std::conj(v[q]);
-            for (int q = 0; q < kNb; q++) b[(size_t)q] += g * E * std::conj(dp[(size_t)q]);
+            if (eqOn) {
+                for (int q = 0; q < Nf; q++) w[(size_t)q] += g * E * std::conj(v[q]);
+                for (int q = 0; q < kNb; q++) b[(size_t)q] += g * E * std::conj(dp[(size_t)q]);
+            }
             theta += 0.03f * (z * std::conj(d)).imag() / (std::norm(d) + 1e-9f);
             for (int q = kNb - 1; q > 0; q--) dp[(size_t)q] = dp[(size_t)q - 1];
             dp[0] = d;
             return z;
         };
+        std::vector<cf32> dataSym((size_t)(R.blocks * kHfdlDataLen));
+        std::vector<double> probeErr((size_t)R.blocks + 1);
+        if (mode == 2) {
+            // Known symbols only: the complex gain is measured on the last 9 T probes of the preamble and on the probe after every block,
+            // interpolated linearly across the data between them. Decisions on a signal at about 0 dB per symbol are wrong too often for the
+            // decision-directed loops above to hold the phase; the 15-symbol probes (a third of the burst) are always right.
+            const int nb = R.blocks;
+            {   // symbol timing over the burst: a sample clock off by 100 ppm slips a symbol in 10000 and a long burst a quarter of one; the probes of every
+                // block give the offset (correlation at -1 / 0 / +1 half symbols, parabola), a weighted line through them gives offset and drift, and the
+                // symbols are taken again at the corrected times
+                double sw = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
+                for (int b2 = 0; b2 < nb; b2++) {
+                    const int i0 = kHfdlPreLen + b2 * kHfdlBlockLen + kHfdlDataLen;
+                    double c[3];
+                    for (int d = -1; d <= 1; d++) {
+                        cf32 a(0, 0);
+                        for (int q = 0; q < kHfdlTLen; q++) a += u[(size_t)(uoff + 2 * (i0 + q) + d)] * (float)kHfdlT[q];
+                        c[d + 1] = std::abs(a);
+                    }
+                    const double den = c[0] - 2 * c[1] + c[2];
+                    if (den >= 0 || c[1] < c[0] || c[1] < c[2]) continue;
+                    const double tau = 0.25 * (c[0] - c[2]) / den, wgt = c[1] * c[1], x = i0 + 0.5 * kHfdlTLen;
+                    sw += wgt; sx += wgt * x; sy += wgt * tau; sxx += wgt * x * x; sxy += wgt * x * tau;
+                }
+                const double dd = sw * sxx - sx * sx;
+                if (sw > 0 && dd > 1e-9 * sw * sw) {
+                    const double slope = (sw * sxy - sx * sy) / dd, off = (sy - slope * sx) / sw;
+                    if (std::fabs(slope) < 4e-4 && std::fabs(off) < 0.5) {
+                        for (int m = 0; m < nu; m++) {
+                            const double si = (m - uoff) / 2.0;
+                            u[(size_t)m] = cubicAt(k.x, t0 + (si + off + slope * si) * kSps - (double)k.xBase) * std::polar(1.f, (float)(-2 * M_PI * bf * si / kHfdlBaud));
+                        }
+                    }
+                }
+            }
+            std::vector<cf32> g((size_t)nb + 1);
+            std::vector<double> ctr((size_t)nb + 1);
+            auto at = [&](int i) { return u[(size_t)(uoff + 2 * i)]; };
+            { cf32 a(0, 0); const int i0 = kHfdlPreLen - kHfdlTrain * kHfdlTLen; for (int i = i0; i < kHfdlPreLen; i++) a += at(i) * pre[(size_t)i]; g[0] = a / (float)(kHfdlPreLen - i0); ctr[0] = 0.5 * (i0 + kHfdlPreLen); }
+            for (int b2 = 0; b2 < nb; b2++) {
+                const int i0 = kHfdlPreLen + b2 * kHfdlBlockLen + kHfdlDataLen;
+                cf32 a(0, 0);
+                for (int q = 0; q < kHfdlTLen; q++) a += at(i0 + q) * (float)kHfdlT[q];
+                g[(size_t)b2 + 1] = a / (float)kHfdlTLen; ctr[(size_t)b2 + 1] = i0 + 0.5 * kHfdlTLen;
+            }
+            auto gainAt = [&](double i) {
+                size_t k2 = 0;
+                while (k2 + 2 < g.size() && i > ctr[k2 + 1]) k2++;
+                const float f = (float)((i - ctr[k2]) / (ctr[k2 + 1] - ctr[k2]));
+                return g[k2] * (1 - f) + g[k2 + 1] * f;
+            };
+            double eAll = 0; int nAll = 0;
+            probeErr[0] = 1;
+            int di2 = 0;
+            for (int b2 = 0; b2 < nb; b2++) {
+                const int i0 = kHfdlPreLen + b2 * kHfdlBlockLen;
+                for (int q = 0; q < kHfdlDataLen; q++, di2++) {
+                    const cf32 gi = gainAt(i0 + q);
+                    dataSym[(size_t)di2] = at(i0 + q) * std::conj(gi) / (std::norm(gi) + 1e-12f) * (float)scr[(size_t)di2];
+                }
+                double e = 0;
+                for (int q = 0; q < kHfdlTLen; q++) { const cf32 gi = gainAt(i0 + kHfdlDataLen + q); e += std::norm(at(i0 + kHfdlDataLen + q) * std::conj(gi) / (std::norm(gi) + 1e-12f) - cf32((float)kHfdlT[q], 0)); }
+                probeErr[(size_t)b2 + 1] = e / kHfdlTLen; eAll += e; nAll += kHfdlTLen;
+            }
+            preErr = probeErr.size() > 1 ? probeErr[1] : 1;
+            probeErr[0] = probeErr.size() > 1 ? probeErr[1] : 1;
+            sig2 = std::max(1e-4, eAll / std::max(1, nAll));
+        } else {
         for (int pass = 0; pass < 2; pass++) {
             std::fill(dp.begin(), dp.end(), cf32(0, 0));
             theta = 0;
             errKnown = 0; nKnown = 0;
             for (int i = 0; i < kHfdlPreLen; i++) run(i, true, cf32(pre[(size_t)i], 0), pass == 0 ? 0.25f : 0.1f, 0);
         }
-        const double preErr = errKnown / std::max(1, nKnown);
+        preErr = errKnown / std::max(1, nKnown);
         errKnown = 0; nKnown = 0;
         const float muD = 0.15f, muP = 0.5f;      // normalised LMS steps on decisions and on the probes
-        std::vector<cf32> dataSym((size_t)(R.blocks * kHfdlDataLen));
-        std::vector<double> probeErr((size_t)R.blocks + 1);
         probeErr[0] = preErr;
         int i = kHfdlPreLen, di = 0;
         for (int blk = 0; blk < R.blocks; blk++) {
@@ -399,7 +464,8 @@ struct HfdlReceiver::Impl {
             for (int q = 0; q < kHfdlTLen; q++, i++) run(i, true, cf32((float)kHfdlT[q], 0), muP, 0);
             probeErr[(size_t)blk + 1] = (errKnown - e0) / std::max(1, nKnown - n0);
         }
-        const double sig2 = std::max(1e-4, errKnown / std::max(1, nKnown));
+        sig2 = std::max(1e-4, errKnown / std::max(1, nKnown));
+        }
         // each block weighted by the error on the probes beside it (a fade makes its bits less sure)
         for (size_t s = 0; s < dataSym.size(); s++) {
             const size_t blk = s / kHfdlDataLen;
@@ -407,8 +473,9 @@ struct HfdlReceiver::Impl {
             hfdlSoftBits(R.bitsPerSym, dataSym[s], (float)(1.0 / e), &soft[s * (size_t)R.bitsPerSym]);
         }
         const std::vector<uint8_t> pdu = hfdlDecodeSoft(m1, soft);
-        std::vector<HfdlMessage> msgs;
-        const bool ok = hfdlParsePdu(pdu.data(), pdu.size(), msgs);
+        msgs.clear();
+        ok = hfdlParsePdu(pdu.data(), pdu.size(), msgs);
+        }
         const double tStart = (double)(t0) / kFs - kHfdlPrekey / kHfdlBaud;
         const float snr = (float)(-10 * std::log10(sig2));
         const float lvl = (float)(10 * std::log10(pw + 1e-20));
@@ -506,6 +573,7 @@ void HfdlReceiver::setSignalOffset(double hz) { std::lock_guard<std::mutex> lk(p
 void HfdlReceiver::setCenterHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); if (p_->center != hz) { p_->center = hz; p_->rebuild = true; } }
 bool HfdlReceiver::ready() const { return p_->rate >= hfdlTuning().minSampleRate - 1; }
 void HfdlReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->logCb = std::move(cb); }
+void HfdlReceiver::setBasebandFilter(const BasebandFilterCfg& c) { std::lock_guard<std::mutex> lk(p_->mu); if (c != p_->bbf) { p_->bbf = c; p_->rebuild = true; } }
 void HfdlReceiver::setChannels(const std::vector<double>& hz) { std::lock_guard<std::mutex> lk(p_->mu); if (hz != p_->want) { p_->want = hz; p_->rebuild = true; } }
 
 void HfdlReceiver::reset() {

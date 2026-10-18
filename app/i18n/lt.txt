@@ -3203,3 +3203,5 @@ Found %.0f Hz (match %.0f %%)	Rasta %.0f Hz (atitikimas %.0f %%)
 Nothing speech-like found. Try again while someone is talking.	Nerasta nieko, kas primintų kalbą. Bandykite dar kartą, kai kažkas kalbės.
 Not encryption: it only mirrors the sound. Encrypted traffic is never touched.	Tai ne šifravimas: garsas tik atspindimas. Šifruotas srautas niekada neliečiamas.
 No sound reached the descrambler: tune a voice signal first.	Garsas nepasiekė atkūrėjo: pirmiausia suderinkite balso signalą.
+Baseband filter	Bazinės juostos filtras
+Custom filter	Pasirinktinis filtras

@@ -2,6 +2,7 @@
 // mode list and side bar, the status line and the log console).
 // Split from ui2.cpp; the shared declarations are in ui2_internal.h.
 #include "transcribe/transcribe_app.h"
+#include "dect2/dsp/baseband_filter.h"
 #include "ui2_internal.h"
 #include "ui_common.h"
 #ifdef _WIN32
@@ -213,7 +214,7 @@ void sidebar(App& a) {
         ImGui::Unindent(6 * gUi);
         ImGui::Spacing();
     }
-    if ((a.family == 0 || a.family == 3 || (modeUi(a.family) && modeUi(a.family)->decoder)) && section(N_("Decoder"))) {
+    if ((a.family == 0 || a.family == 3 || ((modeUi(a.family) && modeUi(a.family)->decoder) || *dect2::bbf::keyForFamily(a.family))) && section(N_("Decoder"))) {
         ImGui::Indent(6 * gUi);
         toolbarParts(a, TbDecoder, true);
         ImGui::Unindent(6 * gUi);
