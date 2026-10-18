@@ -465,3 +465,16 @@ void freqdbKnownCombo(App& a, float width) {
     }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Well-known frequencies of this mode: pick one to tune to it"));
 }
+
+// the database (built in and the user's own) as labels on the spectrum; a click on one is handled in gfx/autolabel.cpp (the Memory recall)
+void freqdbLabelSource(std::vector<autolabel::Label>& out) {
+    load();
+    for (const FreqEntry& e : u.all) {
+        if (e.name.empty() || e.hz == 0 || e.hz > 12000000000ull) continue;
+        autolabel::Label l;
+        l.mhz = (double)e.hz / 1e6; l.text = e.name; l.mode = e.mode; l.src = autolabel::FreqDb;
+        l.detail = e.category + (e.region.empty() ? "" : "  " + e.region);
+        l.prio = e.user ? 0.5f : 0.f;
+        out.push_back(std::move(l));
+    }
+}

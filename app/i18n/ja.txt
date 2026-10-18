@@ -2900,3 +2900,15 @@ Back to the normal layout (Esc)	通常のレイアウトに戻る (Esc)
 The map fills the whole window (Esc to leave)	地図がウィンドウ全体に広がります (Escで戻る)
 The radar fills the whole window (Esc to leave)	レーダーがウィンドウ全体に広がります (Escで戻る)
 This screen fills the whole window (Esc to leave)	この画面がウィンドウ全体に広がります (Escで戻る)
+Labels	名称
+Names on the spectrum	スペクトラム上の名称
+Station and channel names on the spectrum and the waterfall. A click on a name tunes to it and opens its mode.	スペクトラムとウォーターフォールに局名とチャンネル名を表示します。名称をクリックするとその周波数に同調し、対応するモードを開きます。
+Frequency database	周波数データベース
+FM stations (RDS names)	FM局（RDS名）
+DAB ensembles	DABアンサンブル
+DVB networks and services	DVBネットワークとサービス
+Memories	メモリー
+Names that do not fit are left out. Zoom in to see more of them.	収まらない名称は省略されます。拡大すると表示が増えます。
+Names of the stations and channels on the spectrum: choose which sources are shown	スペクトラム上の局名とチャンネル名：表示する情報源を選びます
+Click to tune here	クリックしてここに同調
+Click to tune here and open its mode	クリックしてここに同調し、モードを開く

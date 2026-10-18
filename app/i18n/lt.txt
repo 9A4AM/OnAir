@@ -2900,3 +2900,15 @@ Back to the normal layout (Esc)	Atgal į įprastą išdėstymą (Esc)
 The map fills the whole window (Esc to leave)	Žemėlapis užpildo visą langą (Esc – išeiti)
 The radar fills the whole window (Esc to leave)	Radaras užpildo visą langą (Esc – išeiti)
 This screen fills the whole window (Esc to leave)	Šis ekranas užpildo visą langą (Esc – išeiti)
+Labels	Pavadinimai
+Names on the spectrum	Pavadinimai spektre
+Station and channel names on the spectrum and the waterfall. A click on a name tunes to it and opens its mode.	Stočių ir kanalų pavadinimai spektre ir krioklyje. Spustelėjus pavadinimą, prisiderinama prie jo ir atidaromas jo režimas.
+Frequency database	Dažnių duomenų bazė
+FM stations (RDS names)	FM stotys (RDS pavadinimai)
+DAB ensembles	DAB ansambliai
+DVB networks and services	DVB tinklai ir paslaugos
+Memories	Atmintys
+Names that do not fit are left out. Zoom in to see more of them.	Netelpantys pavadinimai praleidžiami. Priartink, kad matytum daugiau.
+Names of the stations and channels on the spectrum: choose which sources are shown	Stočių ir kanalų pavadinimai spektre: pasirink, kurie šaltiniai rodomi
+Click to tune here	Spustelėk, kad čia prisiderintum
+Click to tune here and open its mode	Spustelėk, kad čia prisiderintum ir atidarytum režimą

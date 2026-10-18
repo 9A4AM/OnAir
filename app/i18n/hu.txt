@@ -2886,3 +2886,15 @@ Back to the normal layout (Esc)	Vissza a normál elrendezéshez (Esc)
 The map fills the whole window (Esc to leave)	A térkép kitölti az egész ablakot (Esc a kilépéshez)
 The radar fills the whole window (Esc to leave)	A radar kitölti az egész ablakot (Esc a kilépéshez)
 This screen fills the whole window (Esc to leave)	Ez a képernyő kitölti az egész ablakot (Esc a kilépéshez)
+Labels	Nevek
+Names on the spectrum	Nevek a spektrumon
+Station and channel names on the spectrum and the waterfall. A click on a name tunes to it and opens its mode.	Adó- és csatornanevek a spektrumon és a vízesésen. A névre kattintva ráhangol, és megnyitja a hozzá tartozó módot.
+Frequency database	Frekvenciaadatbázis
+FM stations (RDS names)	FM-adók (RDS-nevek)
+DAB ensembles	DAB-multiplexek
+DVB networks and services	DVB-hálózatok és -szolgáltatások
+Memories	Memóriák
+Names that do not fit are left out. Zoom in to see more of them.	A nem elférő nevek kimaradnak. Nagyíts rá, hogy többet láss.
+Names of the stations and channels on the spectrum: choose which sources are shown	Adók és csatornák nevei a spektrumon: válaszd ki, mely források jelenjenek meg
+Click to tune here	Kattints a ráhangoláshoz
+Click to tune here and open its mode	Kattints a ráhangoláshoz és a mód megnyitásához

@@ -2900,3 +2900,15 @@ Back to the normal layout (Esc)	Retour à la disposition normale (Échap)
 The map fills the whole window (Esc to leave)	La carte remplit toute la fenêtre (Échap pour quitter)
 The radar fills the whole window (Esc to leave)	Le radar remplit toute la fenêtre (Échap pour quitter)
 This screen fills the whole window (Esc to leave)	Cet écran remplit toute la fenêtre (Échap pour quitter)
+Labels	Noms
+Names on the spectrum	Noms sur le spectre
+Station and channel names on the spectrum and the waterfall. A click on a name tunes to it and opens its mode.	Noms des stations et des canaux sur le spectre et la cascade. Un clic sur un nom s'y accorde et ouvre son mode.
+Frequency database	Base de données de fréquences
+FM stations (RDS names)	Stations FM (noms RDS)
+DAB ensembles	Ensembles DAB
+DVB networks and services	Réseaux et services DVB
+Memories	Mémoires
+Names that do not fit are left out. Zoom in to see more of them.	Les noms qui ne tiennent pas sont omis. Zoomez pour en voir plus.
+Names of the stations and channels on the spectrum: choose which sources are shown	Noms des stations et des canaux sur le spectre : choisissez les sources affichées
+Click to tune here	Cliquer pour s'accorder ici
+Click to tune here and open its mode	Cliquer pour s'accorder ici et ouvrir son mode

@@ -2900,3 +2900,15 @@ Back to the normal layout (Esc)	Powrót do normalnego układu (Esc)
 The map fills the whole window (Esc to leave)	Mapa wypełnia całe okno (Esc, aby wyjść)
 The radar fills the whole window (Esc to leave)	Radar wypełnia całe okno (Esc, aby wyjść)
 This screen fills the whole window (Esc to leave)	Ten ekran wypełnia całe okno (Esc, aby wyjść)
+Labels	Nazwy
+Names on the spectrum	Nazwy na widmie
+Station and channel names on the spectrum and the waterfall. A click on a name tunes to it and opens its mode.	Nazwy stacji i kanałów na widmie i wodospadzie. Kliknięcie nazwy stroi odbiornik na nią i otwiera jej tryb.
+Frequency database	Baza częstotliwości
+FM stations (RDS names)	Stacje FM (nazwy RDS)
+DAB ensembles	Zespoły DAB
+DVB networks and services	Sieci i usługi DVB
+Memories	Pamięci
+Names that do not fit are left out. Zoom in to see more of them.	Nazwy, które się nie mieszczą, są pomijane. Przybliż, aby zobaczyć więcej.
+Names of the stations and channels on the spectrum: choose which sources are shown	Nazwy stacji i kanałów na widmie: wybierz, które źródła są pokazywane
+Click to tune here	Kliknij, aby tu nastroić
+Click to tune here and open its mode	Kliknij, aby tu nastroić i otworzyć tryb

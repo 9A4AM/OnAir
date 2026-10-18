@@ -2883,3 +2883,15 @@ Back to the normal layout (Esc)	Вернуться к обычному виду 
 The map fills the whole window (Esc to leave)	Карта занимает всё окно (Esc для выхода)
 The radar fills the whole window (Esc to leave)	Радар занимает всё окно (Esc для выхода)
 This screen fills the whole window (Esc to leave)	Этот экран занимает всё окно (Esc для выхода)
+Labels	Названия
+Names on the spectrum	Названия на спектре
+Station and channel names on the spectrum and the waterfall. A click on a name tunes to it and opens its mode.	Названия станций и каналов на спектре и водопаде. Щелчок по названию настраивает приём на него и открывает его режим.
+Frequency database	База данных частот
+FM stations (RDS names)	FM-станции (названия RDS)
+DAB ensembles	Ансамбли DAB
+DVB networks and services	Сети и службы DVB
+Memories	Память
+Names that do not fit are left out. Zoom in to see more of them.	Названия, которые не помещаются, пропускаются. Увеличьте масштаб, чтобы увидеть больше.
+Names of the stations and channels on the spectrum: choose which sources are shown	Названия станций и каналов на спектре: выберите, какие источники показывать
+Click to tune here	Щёлкните, чтобы настроиться сюда
+Click to tune here and open its mode	Щёлкните, чтобы настроиться сюда и открыть режим
