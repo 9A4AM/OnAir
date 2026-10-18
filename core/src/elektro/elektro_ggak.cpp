@@ -1,5 +1,6 @@
 // Elektro-L GGAK demodulator and test generator (elektro_ggak.h).
 #include "dect2/elektro/elektro_ggak.h"
+#include "dect2/dsp/rrc.h"
 #include "dect2/dsp/fftutil.h"
 #include "dect2/dsp/gen_util.h"
 #include "dect2/results/results_io.h"
@@ -17,12 +18,7 @@ using dect2::math::kPi;
 constexpr size_t kHist = 120, kLogMax = 80, kFramesMax = 80;
 constexpr int kAcqFft = 4096, kAcqBlocks = 8;
 
-double rrc(double t, double a) {
-    if (std::fabs(t) < 1e-9) return 1 - a + 4 * a / kPi;
-    if (std::fabs(std::fabs(t) - 1 / (4 * a)) < 1e-9)
-        return a / std::sqrt(2.0) * ((1 + 2 / kPi) * std::sin(kPi / (4 * a)) + (1 - 2 / kPi) * std::cos(kPi / (4 * a)));
-    return (std::sin(kPi * t * (1 - a)) + 4 * a * t * std::cos(kPi * t * (1 + a))) / (kPi * t * (1 - (4 * a * t) * (4 * a * t)));
-}
+using dect2::dsp::rrc;
 
 struct Fir {
     std::vector<float> h;

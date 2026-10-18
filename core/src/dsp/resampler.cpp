@@ -1,4 +1,5 @@
 #include "dect2/dsp/resampler.h"
+#include "dect2/common/window.h"
 #include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
@@ -7,7 +8,7 @@
 
 namespace dect2 {
 
-static double bessel0(double x) { double s = 1, t = 1; for (int k = 1; k < 40; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; } return s; }
+static double bessel0(double x) { return dect2::window::besselI0(x, 40, 0.0); }
 
 bool RationalResampler::configure(double inRate, double outRate, double* relError, double occupiedHz) {
     double target = outRate / inRate;

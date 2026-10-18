@@ -1,5 +1,6 @@
 // HFDL receiver (hfdl_rx.h)
 #include "dect2/hfdl/hfdl_rx.h"
+#include "dect2/dsp/rrc.h"
 #include "dect2/automation/engine.h"
 #include "dect2/common/threadpool.h"
 #include "dect2/results/results_io.h"
@@ -49,11 +50,7 @@ std::vector<float> lowpass(int taps, double fc, double fs) {
     return h;
 }
 
-double rrc(double t, double a) {
-    if (std::fabs(t) < 1e-9) return 1 - a + 4 * a / M_PI;
-    if (std::fabs(std::fabs(t) - 1 / (4 * a)) < 1e-9) return a / std::sqrt(2.0) * ((1 + 2 / M_PI) * std::sin(M_PI / (4 * a)) + (1 - 2 / M_PI) * std::cos(M_PI / (4 * a)));
-    return (std::sin(M_PI * t * (1 - a)) + 4 * a * t * std::cos(M_PI * t * (1 + a))) / (M_PI * t * (1 - 16 * a * a * t * t));
-}
+using dect2::dsp::rrc;
 
 cf32 cubicAt(const std::vector<cf32>& x, double pos) {
     const int i = (int)std::floor(pos);

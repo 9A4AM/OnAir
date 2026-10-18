@@ -1,10 +1,11 @@
 #include "dect2/dsp/clock_correct.h"
+#include "dect2/common/window.h"
 #include <algorithm>
 #include <cmath>
 
 namespace dect2 {
 
-static double bessel0(double x) { double s = 1, t = 1; for (int k = 1; k < 40; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; } return s; }
+static double bessel0(double x) { return dect2::window::besselI0(x, 40, 0.0); }
 
 ClockCorrector::ClockCorrector() {
     // Kaiser-windowed sinc, cut-off at half the rate: the signals it serves fill at most 0.42 of it on each side (a T2 8 MHz channel at

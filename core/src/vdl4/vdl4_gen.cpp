@@ -15,11 +15,6 @@ namespace dect2 {
 namespace {
 using dect2::math::kPi;
 
-double gfskPulse(double tau) {
-    const double sigma = std::sqrt(std::log(2.0)) / (2 * kPi * 0.28);
-    const double k = 1 / (std::sqrt(2.0) * sigma);
-    return 0.5 * (std::erf((tau + 0.5) * k) - std::erf((tau - 0.5) * k));
-}
 
 struct Ev { double t; int ch; std::vector<uint8_t> bits; double car; double amp; bool operator>(const Ev& o) const { return t > o.t; } };
 

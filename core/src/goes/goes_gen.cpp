@@ -1,5 +1,6 @@
 // GOES HRIT test signal (goes_gen.h).
 #include "dect2/goes/goes_gen.h"
+#include "dect2/dsp/rrc.h"
 #include "dect2/goes/goes_rx.h"
 #include "dect2/hfdig/hfdig_hamdrm.h"
 #include "dect2/common/inflate.h"
@@ -48,12 +49,7 @@ std::vector<uint8_t> storedZip(const std::string& name, const std::string& body)
     return z;
 }
 
-double rrc(double t, double a) {
-    if (std::fabs(t) < 1e-9) return 1 - a + 4 * a / kPi;
-    if (a > 0 && std::fabs(std::fabs(t) - 1 / (4 * a)) < 1e-9)
-        return a / std::sqrt(2.0) * ((1 + 2 / kPi) * std::sin(kPi / (4 * a)) + (1 - 2 / kPi) * std::cos(kPi / (4 * a)));
-    return (std::sin(kPi * t * (1 - a)) + 4 * a * t * std::cos(kPi * t * (1 + a))) / (kPi * t * (1 - (4 * a * t) * (4 * a * t)));
-}
+using dect2::dsp::rrc;
 } // namespace
 
 std::vector<uint8_t> goesTestFullDisk(int& w, int& h) {

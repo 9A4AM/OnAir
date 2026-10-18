@@ -13,12 +13,6 @@ namespace dect2 {
 namespace {
 using dect2::math::kPi;
 
-// the frequency pulse of one bit: a rectangle through the Gaussian filter (BT 0.5), in bit units
-double gfskPulse(double tau) {
-    const double sigma = std::sqrt(std::log(2.0)) / (2 * kPi * 0.5);
-    const double k = 1 / (std::sqrt(2.0) * sigma);
-    return 0.5 * (std::erf((tau + 0.5) * k) - std::erf((tau - 0.5) * k));
-}
 } // namespace
 
 struct BleGenerator::Impl {
@@ -52,7 +46,7 @@ struct BleGenerator::Impl {
             const int k0 = (int)std::floor(u);
             for (int k = k0 - 2; k <= k0 + 2; k++) {
                 if (k < 0 || k >= nb) continue;
-                f += (bits[(size_t)k] ? 1.0 : -1.0) * gfskPulse(u - k - 0.5);
+                f += (bits[(size_t)k] ? 1.0 : -1.0) * genutil::gfskPulse(u - k - 0.5, 0.5);
             }
             ph = std::remainder(ph + 2 * kPi * (f * ble::kDevHz + off) / cfg.rate, 2 * kPi);
             q.push_back(cf32((float)(amp * std::cos(ph)), (float)(amp * std::sin(ph))));

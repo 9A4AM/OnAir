@@ -8,6 +8,7 @@
 //    centred on the line boundary), then one white line before the image (tx phasing, ENDPHASING)
 // Not covered: inverted phasing (black pulse on white), colour fax, line rates other than 60/90/100/120/180/240.
 #include "dect2/marine/marine_fax.h"
+#include "dect2/common/window.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -28,15 +29,7 @@ constexpr int kLpmChoices[] = {60, 90, 100, 120, 180, 240};
 constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 using cplx = std::complex<double>;
 
-double bessel0(double x) {                       // modified Bessel function I0, for the Kaiser window
-    double sum = 1, term = 1;
-    for (int k = 1; k < 40; k++) {
-        term *= (x / (2.0 * k)) * (x / (2.0 * k));
-        sum += term;
-        if (term < 1e-12 * sum) break;
-    }
-    return sum;
-}
+double bessel0(double x) { return dect2::window::besselI0(x, 40, 1e-12); }
 
 } // namespace
 

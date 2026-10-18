@@ -1,5 +1,6 @@
 // Front end of one GNSS signal band (see gnss_front.h).
 #include "dect2/gnss/gnss_front.h"
+#include "dect2/common/window.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -8,11 +9,7 @@
 namespace dect2 {
 
 namespace {
-double bessel0(double x) {
-    double s = 1, t = 1;
-    for (int k = 1; k < 40; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; }
-    return s;
-}
+double bessel0(double x) { return dect2::window::besselI0(x, 40, 0.0); }
 constexpr int kMixBlock = 256;
 }
 

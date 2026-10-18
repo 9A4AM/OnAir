@@ -1,5 +1,6 @@
 // HFDL test signal (hfdl_gen.h)
 #include "dect2/hfdl/hfdl_gen.h"
+#include "dect2/dsp/rrc.h"
 #include "dect2/dsp/portable_rng.h"
 #include <algorithm>
 #include <cmath>
@@ -13,11 +14,7 @@ constexpr int kSps = 8;            // samples per symbol of the stored waveform
 constexpr int kSpan = 6;           // pulse half length in symbols
 constexpr int kPulseRes = 128;
 
-double rrc(double t, double a) {   // t in symbols; unit energy per symbol
-    if (std::fabs(t) < 1e-9) return 1 - a + 4 * a / M_PI;
-    if (std::fabs(std::fabs(t) - 1 / (4 * a)) < 1e-9) return a / std::sqrt(2.0) * ((1 + 2 / M_PI) * std::sin(M_PI / (4 * a)) + (1 - 2 / M_PI) * std::cos(M_PI / (4 * a)));
-    return (std::sin(M_PI * t * (1 - a)) + 4 * a * t * std::cos(M_PI * t * (1 + a))) / (M_PI * t * (1 - 16 * a * a * t * t));
-}
+using dect2::dsp::rrc;
 const std::vector<float>& pulse() {
     static std::vector<float> p;
     if (p.empty()) { p.resize(2 * kSpan * kPulseRes + 2); for (size_t i = 0; i < p.size(); i++) p[i] = (float)rrc((double)i / kPulseRes - kSpan, kHfdlRrcAlpha); }

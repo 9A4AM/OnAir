@@ -1,6 +1,7 @@
 // Neural noise remover: see dect2/audio/neural_nr.h. Rate path: x (rate r) -> zero-stuff + Kaiser low-pass to 48 kHz -> 480-sample frames
 // -> RNNoise -> low-pass + decimate back to r -> FIFO primed with one frame's worth of zeros (so a sample comes out for every sample in).
 #include "dect2/audio/neural_nr.h"
+#include "dect2/common/window.h"
 extern "C" {
 #include "rnnoise.h"
 }
@@ -17,11 +18,7 @@ constexpr double kPiD = 3.14159265358979323846;
 constexpr int kHalfWidth = 8;   // resampling filter half-width in samples of the audio rate
 constexpr int kFifo = 4096;     // power of two
 
-double bessel0(double x) {
-    double s = 1, t = 1;
-    for (int k = 1; k < 40; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; }
-    return s;
-}
+double bessel0(double x) { return dect2::window::besselI0(x, 40, 0.0); }
 std::mutex gCreateMu;   // rnnoise builds shared tables the first time a state is made
 }
 

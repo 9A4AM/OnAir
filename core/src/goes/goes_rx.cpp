@@ -1,5 +1,6 @@
 // GOES HRIT receiver (goes_rx.h).
 #include "dect2/goes/goes_rx.h"
+#include "dect2/dsp/rrc.h"
 #include "dect2/results/results_io.h"
 #include "dect2/dsp/fftutil.h"
 #include "dect2/goes/goes_proto.h"
@@ -23,12 +24,7 @@ constexpr int kFrameSyms = 2 * 8 * meteor::kCaduBytes;    // 16384 code symbols 
 constexpr int kSyncFrames = 3;                             // frames the sync search looks over
 constexpr int kAcqFft = 4096, kAcqBlocks = 8;
 
-double rrc(double t, double a) {
-    if (std::fabs(t) < 1e-9) return 1 - a + 4 * a / kPi;
-    if (std::fabs(std::fabs(t) - 1 / (4 * a)) < 1e-9)
-        return a / std::sqrt(2.0) * ((1 + 2 / kPi) * std::sin(kPi / (4 * a)) + (1 - 2 / kPi) * std::cos(kPi / (4 * a)));
-    return (std::sin(kPi * t * (1 - a)) + 4 * a * t * std::cos(kPi * t * (1 + a))) / (kPi * t * (1 - (4 * a * t) * (4 * a * t)));
-}
+using dect2::dsp::rrc;
 
 // complex FIR with the history kept twice over, so every output is one contiguous dot product
 struct Fir {

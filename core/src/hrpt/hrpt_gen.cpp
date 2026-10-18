@@ -1,5 +1,6 @@
 // HRPT / AHRPT test signal (see hrpt_gen.h).
 #include "dect2/hrpt/hrpt_gen.h"
+#include "dect2/dsp/rrc.h"
 #include "dect2/hrpt/hrpt_proto.h"
 #include "dect2/hrpt/hrpt_rx.h"
 #include "dect2/meteor/meteor_proto.h"
@@ -16,12 +17,7 @@ namespace {
 using dect2::math::kPi;
 constexpr int kSpan = 8, kTabRes = 256;
 
-double rrc(double t, double a) {
-    if (std::fabs(t) < 1e-9) return 1 - a + 4 * a / kPi;
-    if (std::fabs(std::fabs(t) - 1 / (4 * a)) < 1e-9)
-        return a / std::sqrt(2.0) * ((1 + 2 / kPi) * std::sin(kPi / (4 * a)) + (1 - 2 / kPi) * std::cos(kPi / (4 * a)));
-    return (std::sin(kPi * t * (1 - a)) + 4 * a * t * std::cos(kPi * t * (1 + a))) / (kPi * t * (1 - 16 * a * a * t * t));
-}
+using dect2::dsp::rrc;
 } // namespace
 
 uint16_t hrptTestPixel(int c, int x, int y) {

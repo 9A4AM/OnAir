@@ -1,4 +1,5 @@
 #include "dect2/wb/wb_dsp.h"
+#include "dect2/common/window.h"
 #include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
@@ -10,11 +11,7 @@ namespace wb {
 namespace {
 using dect2::math::kPi;
 
-double bessel0(double x) {
-    double s = 1, t = 1;
-    for (int k = 1; k < 40; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; if (t < 1e-12 * s) break; }
-    return s;
-}
+double bessel0(double x) { return dect2::window::besselI0(x, 40, 1e-12); }
 } // namespace
 
 const char* windowName(int w) {

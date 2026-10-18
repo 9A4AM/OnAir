@@ -1,5 +1,6 @@
 // Filters of the radiosonde channel (see sonde_chan.h).
 #include "sonde_chan.h"
+#include "dect2/common/window.h"
 #include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cstring>
@@ -8,11 +9,7 @@ namespace dect2 {
 namespace sondedsp {
 
 namespace {
-double bessel0(double x) {
-    double s = 1, t = 1;
-    for (int k = 1; k < 60; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; if (t < 1e-12 * s) break; }
-    return s;
-}
+double bessel0(double x) { return dect2::window::besselI0(x, 60, 1e-12); }
 }
 
 std::vector<float> kaiserLowpass(int taps, double fc, double beta) {

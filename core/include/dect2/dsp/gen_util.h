@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <random>
 #include <vector>
+#include "dect2/common/mathconst.h"
 #if (defined(__ARM_NEON) || defined(__aarch64__)) && !defined(DECT2_NO_SIMD)
 #include <arm_neon.h>
 #elif defined(__SSE2__) && !defined(DECT2_NO_SIMD)
@@ -16,6 +17,14 @@
 
 namespace dect2 {
 namespace genutil {
+
+// The frequency pulse of one bit of Gaussian FSK: a rectangle one bit long through the Gaussian filter of bandwidth-time product `bt` (0.5 for Bluetooth LE and the
+// ANT sensors, 0.28 for VDL Mode 4), `tau` in bit units from the middle of the bit.
+inline double gfskPulse(double tau, double bt) {
+    const double sigma = std::sqrt(std::log(2.0)) / (2 * dect2::math::kPi * bt);
+    const double k = 1 / (std::sqrt(2.0) * sigma);
+    return 0.5 * (std::erf((tau + 0.5) * k) - std::erf((tau - 0.5) * k));
+}
 
 // Gaussian values that are the same with every standard library: std::normal_distribution is not (libc++ and libstdc++
 // give different sequences), so tests tuned on macOS met other noise on Linux. This is libc++'s algorithm (Marsaglia's
