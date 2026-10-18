@@ -3175,3 +3175,41 @@ Ping	Ping
 with interference bursts	zavarimpulzusokkal
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	A tesztjel egy 420 Hz-re a középtől lévő jeladó szimulált meteorvisszhangokkal: rövid alulsűrűek és néhány hosszú túlsűrű.
 Beacon echoes, 143.050 MHz	Jeladó-visszhangok, 143,050 MHz
+# GOES DCS
+Copies the reports as CSV: id, time, platform address, channel, frequency, bit rate, coding, level, data format, parity errors, data.	A jelentéseket CSV-ként másolja: azonosító, idő, platformcím, csatorna, frekvencia, bitsebesség, kódolás, szint, adatformátum, paritáshibák, adatok.
+Appends every report to goes_dcs.csv in the data folder, also when nobody watches the screen.	Minden jelentést hozzáfűz az adatmappa goes_dcs.csv fájljához, akkor is, ha senki sem nézi a képernyőt.
+How far above the noise a carrier line must rise to be followed. Lower finds weaker platforms and more false carriers.	Mennyivel kell a zaj fölé emelkednie egy vivővonalnak, hogy kövessük. Alacsonyabb értéknél gyengébb platformokat és több téves vivőt talál.
+start the receiver to see the reports	indítsa el a vevőt a jelentések megtekintéséhez
+No report yet. Tune the uplink band (401.7 to 402.1 MHz, centre 401.85 MHz) with 0.5 Msps or more: platforms send once every few minutes to once an hour, mostly at set times.	Még nincs jelentés. Hangolja a feltöltési sávot (401,7–402,1 MHz, közép 401,85 MHz) 0,5 Msps vagy nagyobb mintavétellel: a platformok néhány percenként és óránként egyszer között adnak, többnyire rögzített időpontokban.
+Platform	Platform
+Data	Adat
+Manchester	Manchester
+NRZ	NRZ
+address	cím
+BCH check passed after correcting bit errors	A BCH-ellenőrzés a bithibák javítása után sikeres
+BCH check passed	A BCH-ellenőrzés sikeres
+flags	jelzők
+format	formátum
+pseudo-binary B	álbináris B
+ASCII	ASCII
+, no end code (carrier lost)	, nincs záró kód (a vivő elveszett)
+sensor data	szenzoradatok
+text as received	szöveg a vett formában
+start the receiver to see the platforms	indítsa el a vevőt a platformok megtekintéséhez
+platforms heard, the most recent first	hallott platformok, a legutóbbi elöl
+Reports	Jelentések
+Last (UTC)	Utolsó (UTC)
+Latest data	Legutóbbi adatok
+no platform heard yet	még nem hallottunk platformot
+start the receiver to see the band	indítsa el a vevőt a sáv megtekintéséhez
+the captured band, the last few seconds (brighter = stronger over the noise); carriers being followed are marked	a rögzített sáv az utolsó néhány másodpercben (világosabb = erősebb a zaj fölött); a követett vivők meg vannak jelölve
+spectrum now (dB over the local noise)	jelenlegi spektrum (dB a helyi zaj fölött)
+Platforms	Platformok
+reports	jelentés
+carriers	vivők
+receiving	vétel
+locked, waiting for the sync	bekapcsolódott, a szinkronra vár
+The GOES and Meteosat data collection system: river gauges, weather stations, tide gauges and buoys send a short report on a 1.5 kHz channel of 401.7 to 402.1 MHz, at 100, 300 or 1200 bps. The 8-digit hex address names the platform. The receiver tries every bit rate and coding on every carrier it finds.	A GOES és a Meteosat adatgyűjtő rendszere: vízmércék, időjárás-állomások, árapálymérők és bóják rövid jelentést küldenek egy 1,5 kHz-es csatornán a 401,7–402,1 MHz sávban, 100, 300 vagy 1200 bps sebességgel. A 8 jegyű hexadecimális cím nevezi meg a platformot. A vevő minden talált vivőn minden bitsebességet és kódolást kipróbál.
+with a steady carrier on another channel	állandó vivővel egy másik csatornán
+The test signal is three platforms on channels 60, 100 and 140 that each send a short report every 14 to 18 seconds.	A tesztjel három platform a 60., 100. és 140. csatornán, amelyek 14–18 másodpercenként egy rövid jelentést küldenek.
+Platform reports, 401.85 MHz	Platformjelentések, 401,85 MHz

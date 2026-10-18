@@ -3189,3 +3189,41 @@ Ping	Ping
 with interference bursts	met stoorpulsen
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Het testsignaal is een baken 420 Hz naast het midden met gesimuleerde meteorenechoën: korte onderdichte en enkele lange overdichte.
 Beacon echoes, 143.050 MHz	Bakenechoën, 143,050 MHz
+# GOES DCS
+Copies the reports as CSV: id, time, platform address, channel, frequency, bit rate, coding, level, data format, parity errors, data.	Kopieert de rapporten als CSV: id, tijd, platformadres, kanaal, frequentie, bitsnelheid, codering, niveau, gegevensformaat, pariteitsfouten, gegevens.
+Appends every report to goes_dcs.csv in the data folder, also when nobody watches the screen.	Voegt elk rapport toe aan goes_dcs.csv in de gegevensmap, ook als niemand naar het scherm kijkt.
+How far above the noise a carrier line must rise to be followed. Lower finds weaker platforms and more false carriers.	Hoeveel een draaggolflijn boven de ruis moet uitkomen om gevolgd te worden. Lager vindt zwakkere platforms en meer valse draaggolven.
+start the receiver to see the reports	start de ontvanger om de rapporten te zien
+No report yet. Tune the uplink band (401.7 to 402.1 MHz, centre 401.85 MHz) with 0.5 Msps or more: platforms send once every few minutes to once an hour, mostly at set times.	Nog geen rapport. Stem af op de uplinkband (401,7 tot 402,1 MHz, midden 401,85 MHz) met 0,5 Msps of meer: platforms zenden om de paar minuten tot eens per uur, meestal op vaste tijden.
+Platform	Platform
+Data	Gegevens
+Manchester	Manchester
+NRZ	NRZ
+address	adres
+BCH check passed after correcting bit errors	BCH-controle geslaagd na correctie van bitfouten
+BCH check passed	BCH-controle geslaagd
+flags	vlaggen
+format	formaat
+pseudo-binary B	pseudobinair B
+ASCII	ASCII
+, no end code (carrier lost)	, geen eindcode (draaggolf verloren)
+sensor data	sensorgegevens
+text as received	tekst zoals ontvangen
+start the receiver to see the platforms	start de ontvanger om de platforms te zien
+platforms heard, the most recent first	gehoorde platforms, de meest recente eerst
+Reports	Rapporten
+Last (UTC)	Laatst (UTC)
+Latest data	Nieuwste gegevens
+no platform heard yet	nog geen platform gehoord
+start the receiver to see the band	start de ontvanger om de band te zien
+the captured band, the last few seconds (brighter = stronger over the noise); carriers being followed are marked	de opgenomen band van de laatste seconden (helderder = sterker boven de ruis); gevolgde draaggolven zijn gemarkeerd
+spectrum now (dB over the local noise)	spectrum nu (dB boven de lokale ruis)
+Platforms	Platforms
+reports	rapporten
+carriers	draaggolven
+receiving	ontvangen
+locked, waiting for the sync	vergrendeld, wacht op de synchronisatie
+The GOES and Meteosat data collection system: river gauges, weather stations, tide gauges and buoys send a short report on a 1.5 kHz channel of 401.7 to 402.1 MHz, at 100, 300 or 1200 bps. The 8-digit hex address names the platform. The receiver tries every bit rate and coding on every carrier it finds.	Het gegevensverzamelsysteem van GOES en Meteosat: peilschalen, weerstations, getijmeters en boeien sturen een kort rapport op een kanaal van 1,5 kHz tussen 401,7 en 402,1 MHz, met 100, 300 of 1200 bps. Het hexadecimale adres van 8 cijfers noemt het platform. De ontvanger probeert elke bitsnelheid en codering op elke gevonden draaggolf.
+with a steady carrier on another channel	met een vaste draaggolf op een ander kanaal
+The test signal is three platforms on channels 60, 100 and 140 that each send a short report every 14 to 18 seconds.	Het testsignaal bestaat uit drie platforms op de kanalen 60, 100 en 140 die elk om de 14 tot 18 seconden een kort rapport sturen.
+Platform reports, 401.85 MHz	Platformrapporten, 401,85 MHz

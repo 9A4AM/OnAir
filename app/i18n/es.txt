@@ -3189,3 +3189,41 @@ Ping	Ping
 with interference bursts	con ráfagas de interferencia
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	La señal de prueba es una baliza a 420 Hz del centro con ecos de meteoros simulados: cortos subdensos y algunos largos sobredensos.
 Beacon echoes, 143.050 MHz	Ecos de baliza, 143,050 MHz
+# GOES DCS
+Copies the reports as CSV: id, time, platform address, channel, frequency, bit rate, coding, level, data format, parity errors, data.	Copia los informes como CSV: id, hora, dirección de la plataforma, canal, frecuencia, velocidad, codificación, nivel, formato de datos, errores de paridad, datos.
+Appends every report to goes_dcs.csv in the data folder, also when nobody watches the screen.	Añade cada informe a goes_dcs.csv en la carpeta de datos, también cuando nadie mira la pantalla.
+How far above the noise a carrier line must rise to be followed. Lower finds weaker platforms and more false carriers.	Cuánto debe subir una línea portadora sobre el ruido para seguirla. Más bajo encuentra plataformas más débiles y más portadoras falsas.
+start the receiver to see the reports	inicie el receptor para ver los informes
+No report yet. Tune the uplink band (401.7 to 402.1 MHz, centre 401.85 MHz) with 0.5 Msps or more: platforms send once every few minutes to once an hour, mostly at set times.	Aún no hay informes. Sintonice la banda de subida (401,7 a 402,1 MHz, centro 401,85 MHz) con 0,5 Msps o más: las plataformas transmiten de cada pocos minutos a una vez por hora, casi siempre a horas fijas.
+Platform	Plataforma
+Data	Datos
+Manchester	Manchester
+NRZ	NRZ
+address	dirección
+BCH check passed after correcting bit errors	Comprobación BCH superada tras corregir errores de bit
+BCH check passed	Comprobación BCH superada
+flags	indicadores
+format	formato
+pseudo-binary B	pseudobinario B
+ASCII	ASCII
+, no end code (carrier lost)	, sin código de fin (portadora perdida)
+sensor data	datos de sensores
+text as received	texto tal como se recibió
+start the receiver to see the platforms	inicie el receptor para ver las plataformas
+platforms heard, the most recent first	plataformas oídas, las más recientes primero
+Reports	Informes
+Last (UTC)	Último (UTC)
+Latest data	Últimos datos
+no platform heard yet	aún no se ha oído ninguna plataforma
+start the receiver to see the band	inicie el receptor para ver la banda
+the captured band, the last few seconds (brighter = stronger over the noise); carriers being followed are marked	la banda capturada, los últimos segundos (más brillante = más fuerte sobre el ruido); las portadoras seguidas están marcadas
+spectrum now (dB over the local noise)	espectro ahora (dB sobre el ruido local)
+Platforms	Plataformas
+reports	informes
+carriers	portadoras
+receiving	recibiendo
+locked, waiting for the sync	enganchado, esperando la sincronización
+The GOES and Meteosat data collection system: river gauges, weather stations, tide gauges and buoys send a short report on a 1.5 kHz channel of 401.7 to 402.1 MHz, at 100, 300 or 1200 bps. The 8-digit hex address names the platform. The receiver tries every bit rate and coding on every carrier it finds.	El sistema de recolección de datos de GOES y Meteosat: limnígrafos, estaciones meteorológicas, mareógrafos y boyas envían un informe corto en un canal de 1,5 kHz de 401,7 a 402,1 MHz, a 100, 300 o 1200 bps. La dirección hexadecimal de 8 cifras nombra la plataforma. El receptor prueba cada velocidad y codificación en cada portadora que encuentra.
+with a steady carrier on another channel	con una portadora fija en otro canal
+The test signal is three platforms on channels 60, 100 and 140 that each send a short report every 14 to 18 seconds.	La señal de prueba son tres plataformas en los canales 60, 100 y 140 que envían un informe corto cada 14 a 18 segundos.
+Platform reports, 401.85 MHz	Informes de plataformas, 401,85 MHz

@@ -3189,3 +3189,41 @@ Ping	Ping
 with interference bursts	mit Störimpulsen
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Das Testsignal ist eine Bake 420 Hz neben der Mitte mit simulierten Meteorechos: kurze unterdichte und einige lange überdichte.
 Beacon echoes, 143.050 MHz	Bakenechos, 143,050 MHz
+# GOES DCS
+Copies the reports as CSV: id, time, platform address, channel, frequency, bit rate, coding, level, data format, parity errors, data.	Kopiert die Meldungen als CSV: Nr., Zeit, Plattformadresse, Kanal, Frequenz, Bitrate, Kodierung, Pegel, Datenformat, Paritätsfehler, Daten.
+Appends every report to goes_dcs.csv in the data folder, also when nobody watches the screen.	Hängt jede Meldung an goes_dcs.csv im Datenordner an, auch wenn niemand auf den Bildschirm schaut.
+How far above the noise a carrier line must rise to be followed. Lower finds weaker platforms and more false carriers.	Wie weit eine Trägerlinie über dem Rauschen liegen muss, um verfolgt zu werden. Niedriger findet schwächere Plattformen und mehr falsche Träger.
+start the receiver to see the reports	Empfänger starten, um die Meldungen zu sehen
+No report yet. Tune the uplink band (401.7 to 402.1 MHz, centre 401.85 MHz) with 0.5 Msps or more: platforms send once every few minutes to once an hour, mostly at set times.	Noch keine Meldung. Das Uplink-Band (401,7 bis 402,1 MHz, Mitte 401,85 MHz) mit 0,5 Msps oder mehr abstimmen: Plattformen senden alle paar Minuten bis einmal pro Stunde, meist zu festen Zeiten.
+Platform	Plattform
+Data	Daten
+Manchester	Manchester
+NRZ	NRZ
+address	Adresse
+BCH check passed after correcting bit errors	BCH-Prüfung nach Korrektur von Bitfehlern bestanden
+BCH check passed	BCH-Prüfung bestanden
+flags	Flags
+format	Format
+pseudo-binary B	Pseudobinär B
+ASCII	ASCII
+, no end code (carrier lost)	, kein Endecode (Träger verloren)
+sensor data	Sensordaten
+text as received	Text wie empfangen
+start the receiver to see the platforms	Empfänger starten, um die Plattformen zu sehen
+platforms heard, the most recent first	gehörte Plattformen, die jüngste zuerst
+Reports	Meldungen
+Last (UTC)	Zuletzt (UTC)
+Latest data	Neueste Daten
+no platform heard yet	noch keine Plattform gehört
+start the receiver to see the band	Empfänger starten, um das Band zu sehen
+the captured band, the last few seconds (brighter = stronger over the noise); carriers being followed are marked	das aufgenommene Band der letzten Sekunden (heller = stärker über dem Rauschen); verfolgte Träger sind markiert
+spectrum now (dB over the local noise)	Spektrum jetzt (dB über dem lokalen Rauschen)
+Platforms	Plattformen
+reports	Meldungen
+carriers	Träger
+receiving	empfange
+locked, waiting for the sync	eingerastet, warte auf den Sync
+The GOES and Meteosat data collection system: river gauges, weather stations, tide gauges and buoys send a short report on a 1.5 kHz channel of 401.7 to 402.1 MHz, at 100, 300 or 1200 bps. The 8-digit hex address names the platform. The receiver tries every bit rate and coding on every carrier it finds.	Das Datenerfassungssystem von GOES und Meteosat: Pegelmesser, Wetterstationen, Gezeitenpegel und Bojen senden eine kurze Meldung auf einem 1,5-kHz-Kanal von 401,7 bis 402,1 MHz, mit 100, 300 oder 1200 bps. Die 8-stellige Hex-Adresse benennt die Plattform. Der Empfänger probiert auf jedem gefundenen Träger jede Bitrate und Kodierung aus.
+with a steady carrier on another channel	mit einem stetigen Träger auf einem anderen Kanal
+The test signal is three platforms on channels 60, 100 and 140 that each send a short report every 14 to 18 seconds.	Das Testsignal sind drei Plattformen auf den Kanälen 60, 100 und 140, die alle 14 bis 18 Sekunden eine kurze Meldung senden.
+Platform reports, 401.85 MHz	Plattformmeldungen, 401,85 MHz

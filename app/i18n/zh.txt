@@ -3189,3 +3189,41 @@ Ping	Ping
 with interference bursts	含干扰脉冲
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	测试信号是偏离中心 420 Hz 的信标,带有模拟流星回波:短的欠密回波和少量长的过密回波。
 Beacon echoes, 143.050 MHz	信标回波,143.050 MHz
+# GOES DCS
+Copies the reports as CSV: id, time, platform address, channel, frequency, bit rate, coding, level, data format, parity errors, data.	将报告复制为CSV:编号、时间、平台地址、信道、频率、比特率、编码、电平、数据格式、奇偶校验错误、数据。
+Appends every report to goes_dcs.csv in the data folder, also when nobody watches the screen.	把每份报告追加到数据文件夹中的goes_dcs.csv,即使没有人看屏幕也会记录。
+How far above the noise a carrier line must rise to be followed. Lower finds weaker platforms and more false carriers.	载波谱线必须高出噪声多少才会被跟踪。调低可发现更弱的平台,但误报载波也更多。
+start the receiver to see the reports	启动接收机以查看报告
+No report yet. Tune the uplink band (401.7 to 402.1 MHz, centre 401.85 MHz) with 0.5 Msps or more: platforms send once every few minutes to once an hour, mostly at set times.	暂无报告。请以0.5 Msps或更高的采样率调谐上行频段(401.7至402.1 MHz,中心401.85 MHz):平台每隔几分钟到每小时发送一次,多数在固定时刻。
+Platform	平台
+Data	数据
+Manchester	曼彻斯特
+NRZ	NRZ
+address	地址
+BCH check passed after correcting bit errors	纠正比特错误后BCH校验通过
+BCH check passed	BCH校验通过
+flags	标志
+format	格式
+pseudo-binary B	伪二进制B
+ASCII	ASCII
+, no end code (carrier lost)	,没有结束码(载波丢失)
+sensor data	传感器数据
+text as received	按接收原样的文本
+start the receiver to see the platforms	启动接收机以查看平台
+platforms heard, the most recent first	已收到的平台,最新的在前
+Reports	报告
+Last (UTC)	最近(UTC)
+Latest data	最新数据
+no platform heard yet	尚未收到任何平台
+start the receiver to see the band	启动接收机以查看频段
+the captured band, the last few seconds (brighter = stronger over the noise); carriers being followed are marked	最近几秒捕获的频段(越亮 = 比噪声越强);正在跟踪的载波已标出
+spectrum now (dB over the local noise)	当前频谱(高于本地噪声的dB)
+Platforms	平台
+reports	报告
+carriers	载波
+receiving	正在接收
+locked, waiting for the sync	已锁定,等待同步
+The GOES and Meteosat data collection system: river gauges, weather stations, tide gauges and buoys send a short report on a 1.5 kHz channel of 401.7 to 402.1 MHz, at 100, 300 or 1200 bps. The 8-digit hex address names the platform. The receiver tries every bit rate and coding on every carrier it finds.	GOES和Meteosat数据收集系统:水位计、气象站、潮位计和浮标在401.7至402.1 MHz的1.5 kHz信道上以100、300或1200 bps发送简短报告。8位十六进制地址标识平台。接收机会对找到的每个载波尝试所有比特率和编码。
+with a steady carrier on another channel	在另一信道上加入稳定载波
+The test signal is three platforms on channels 60, 100 and 140 that each send a short report every 14 to 18 seconds.	测试信号为信道60、100和140上的三个平台,各自每14至18秒发送一份简短报告。
+Platform reports, 401.85 MHz	平台报告,401.85 MHz
