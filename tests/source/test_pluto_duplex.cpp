@@ -1,7 +1,7 @@
 // Native Pluto RX/TX against fake libiio, including the shared clock and handle.
 // This test never opens a real radio. It also runs on Windows without SoapySDR.
 #include "../../core/src/source/native_common.h"
-#include "dect2/tx.h"
+#include "dect2/tx/tx.h"
 #include <filesystem>
 #include <functional>
 #include <iostream>

@@ -1,6 +1,6 @@
 // Generic TX Fs control: automatic selection, manual validation, hardware readback,
 // and a complete short session into an in-memory sink. No radio is opened.
-#include "dect2/tx.h"
+#include "dect2/tx/tx.h"
 #include <atomic>
 #include <chrono>
 #include <cmath>
