@@ -3189,3 +3189,33 @@ Ping	Ping
 with interference bursts	avec rafales de parasites
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Le signal de test est une balise à 420 Hz du centre avec des échos de météores simulés : des sous-denses courts et quelques surdenses longs.
 Beacon echoes, 143.050 MHz	Échos de balise, 143,050 MHz
+
+# auto subtitles (captions)
+Generating captions from the sound	Création de sous-titres à partir du son
+Captions	Sous-titres
+Save SRT	Enregistrer le SRT
+Save VTT	Enregistrer le VTT
+behind real time (%.1f x): the oldest speech is skipped	en retard sur le temps réel (%.1f x) : la parole la plus ancienne est ignorée
+speed %.2f x real time	vitesse %.2f x temps réel
+music skipped %llu	musique ignorée : %llu
+auto captions	sous-titres auto
+Captions made on your computer from the speech you hear, with the offline speech model (View > Transcripts > Settings). Nothing is sent anywhere.	Sous-titres créés sur votre ordinateur à partir de la parole entendue, avec le modèle vocal hors ligne (Affichage > Transcriptions > Réglages). Rien n'est envoyé.
+Station's own subtitles	Sous-titres propres à la chaîne
+Generated from speech	Générés à partir de la parole
+Both	Les deux
+Generated where the station has none	Générés quand la chaîne n'en a pas
+Auto subtitles (captions)	Sous-titres automatiques (captions)
+Captions from the speech of the sound you hear: FM and AM broadcast, DAB, TV audio, amateur and digital voice. They are made here with the offline speech model, shown on the receiver, and kept only in memory (and in .srt / .vtt files if you save them). Music is skipped. Off until you turn it on.	Sous-titres à partir de la parole du son que vous entendez : radio FM et AM, DAB, son de la télévision, radioamateur et voix numérique. Ils sont créés ici avec le modèle vocal hors ligne, affichés sur le récepteur et gardés seulement en mémoire (et dans des fichiers .srt / .vtt si vous les enregistrez). La musique est ignorée. Désactivé tant que vous ne l'activez pas.
+Make captions	Créer des sous-titres
+TV subtitles	Sous-titres TV
+As spoken	Tel que prononcé
+English translation	Traduction en anglais
+Caption text	Texte des sous-titres
+Tick Translate to English above (multilingual model) to get translated captions.	Cochez Traduire en anglais ci-dessus (modèle multilingue) pour obtenir des sous-titres traduits.
+Caption size, percent	Taille des sous-titres, en pourcentage
+Background, percent	Fond, en pourcentage
+Lines	Lignes
+At the top of the picture	En haut de l'image
+Save .srt and .vtt next to audio recordings	Enregistrer .srt et .vtt à côté des enregistrements audio
+Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time	Sous-titres : %llu morceaux, %llu de musique ignorés, %llu ignorés (trop lent), vitesse %.2f x temps réel
+The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest.	Le moteur vocal est plus lent que le son : utilisez un modèle plus petit ou moins de threads CPU. La parole la plus ancienne est ignorée, jamais la plus récente.

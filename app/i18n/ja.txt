@@ -3189,3 +3189,33 @@ Ping	ピング
 with interference bursts	干渉バースト付き
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	テスト信号は中心から420 Hz離れたビーコンと模擬流星エコーです。短い低密のものと、いくつかの長い過密のものを含みます。
 Beacon echoes, 143.050 MHz	ビーコンエコー、143.050 MHz
+
+# auto subtitles (captions)
+Generating captions from the sound	音声から字幕を作成中
+Captions	字幕
+Save SRT	SRTを保存
+Save VTT	VTTを保存
+behind real time (%.1f x): the oldest speech is skipped	リアルタイムに遅れています(%.1f 倍):最も古い音声をスキップします
+speed %.2f x real time	速度 リアルタイムの %.2f 倍
+music skipped %llu	スキップした音楽:%llu
+auto captions	自動字幕
+Captions made on your computer from the speech you hear, with the offline speech model (View > Transcripts > Settings). Nothing is sent anywhere.	聞こえている音声から、オフラインの音声モデルでお使いのコンピューター上で作られる字幕です(表示 > 文字起こし > 設定)。何も送信されません。
+Station's own subtitles	放送局自身の字幕
+Generated from speech	音声から生成
+Both	両方
+Generated where the station has none	放送局に字幕がないときに生成
+Auto subtitles (captions)	自動字幕(キャプション)
+Captions from the speech of the sound you hear: FM and AM broadcast, DAB, TV audio, amateur and digital voice. They are made here with the offline speech model, shown on the receiver, and kept only in memory (and in .srt / .vtt files if you save them). Music is skipped. Off until you turn it on.	聞こえている音の音声から作る字幕です:FM・AM放送、DAB、テレビの音声、アマチュア無線、デジタル音声。オフラインの音声モデルでここで作られ、受信機に表示され、メモリ内にのみ保持されます(保存した場合は .srt / .vtt ファイルにも)。音楽はスキップされます。オンにするまでオフです。
+Make captions	字幕を作る
+TV subtitles	テレビの字幕
+As spoken	話した言葉のまま
+English translation	英語訳
+Caption text	字幕のテキスト
+Tick Translate to English above (multilingual model) to get translated captions.	翻訳された字幕を得るには、上の「英語に翻訳」にチェックを入れてください(多言語モデルが必要)。
+Caption size, percent	字幕の大きさ(パーセント)
+Background, percent	背景(パーセント)
+Lines	行数
+At the top of the picture	画面の上部
+Save .srt and .vtt next to audio recordings	音声録音の隣に .srt と .vtt を保存する
+Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time	字幕:%llu 区間、音楽スキップ %llu、スキップ %llu(遅すぎ)、速度 リアルタイムの %.2f 倍
+The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest.	音声認識エンジンが音声より遅くなっています。小さいモデルを使うか、CPUスレッドを減らしてください。最も古い音声がスキップされ、最新のものは決してスキップされません。

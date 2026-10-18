@@ -66,6 +66,35 @@ aircraft voice log show the original and the English line together; the detected
 - English-only models ignore the option.
 - **Out of scope:** translation into languages other than English. Nothing is ever sent to a cloud service.
 
+## Auto subtitles (captions for the sound you hear)
+
+Captions made from speech, for the receiver you are listening to: FM and AM broadcast, DAB, DRM, HD Radio, the audio of TV (DVB-T/T2/S/C, ATSC,
+ISDB-T, DTMB, analogue, MAC), amateur voice (SSB/FM, QO-100), and the digital voices (DMR, NXDN, P25, dPMR, M17, D-STAR) when you have installed their
+voice codec. Marine VHF and airband keep their own transcripts (above). **Encrypted traffic is never decoded.** It uses the same offline speech
+engine and model; nothing is sent anywhere, and nothing is written to the transcripts file.
+
+- **Off until you turn it on:** *View > Transcripts > Settings > Auto subtitles (captions) > Make captions*, then tick the modes. In the TV panel
+  and next to the audio controls there is also an **auto captions** tick for the mode you are in.
+- **Where they show:** over the picture for TV modes; in a small caption window (movable, closes = that mode off) for the radio modes. The window
+  has **Save SRT / Save VTT**.
+- **Style:** size (60-250 %), background opacity, 1-4 lines, top or bottom. **Caption text:** as spoken, English translation, or both (the translation
+  is the live translation above and needs a multilingual model).
+- **Language:** the language setting above; **Auto-detect** needs a multilingual model.
+- **Timing:** the speech is cut at pauses, split into sentences, and each sentence is timed on the **audio clock** (samples played, not the wall
+  clock), spread over the speaking time in proportion to its length. A cue shows a few seconds after the words (the latency is the transmission length
+  plus the engine time; pieces are at most 12 s here). Cues never overlap.
+- **Music is skipped:** a piece whose level has no syllable rhythm (steady music, tones, hum) is not sent to the engine (*music skipped* counter).
+  Speech over music still passes. Pieces shorter than 1.5 s are not judged.
+- **CPU guard:** one worker, a queue of 3 pieces; when the engine is slower than the audio the **oldest** speech is skipped, never the newest, the
+  window says *behind real time*, and the translation pass is skipped above 0.8 x. Use a smaller model or fewer CPU threads.
+- **TV: broadcast, generated, both:** *Station's own subtitles* (DVB, teletext; generated ones are never drawn), *Generated from speech*, *Both*
+  (generated ones go to the top so they never cover the station's), or *Generated where the station has none* (default). The station's own subtitles
+  are never overwritten or replaced unless you choose *Generated from speech*.
+- **With recordings:** with **Record audio** running, `name.srt` and `name.vtt` are written next to the recording when it stops (times start at the
+  moment the recording started; for a gated or split recording the times follow the live sound, not the cut file).
+- **Limits:** one receiver's sound at a time (the one set to be heard); captions are as good as the speech model (tiny is fast, small is accurate);
+  burn-in into recorded video is not done.
+
 ## Sharing to the public map (optional)
 
 In the **Server** menu, once sending to the map is on: **Also share transcripts of aircraft radio calls (text becomes public on the map)**, **off by
@@ -86,7 +115,7 @@ contain mistakes. Nothing from marine, amateur or other channels is ever sent.
 
 ## For developers
 
-`core/src/transcribe`: `segmenter` (voice activity, pre-roll and hang, 16 kHz resampler), `transcriber` (queue, workers, hallucination filters),
+`core/src/transcribe`: `segmenter` (voice activity, pre-roll and hang, 16 kHz resampler, music-versus-speech rhythm test), `captions` (sentence cues on the audio clock, SRT/VTT, TV source choice, caption style, eligible modes), `transcriber` (queue, workers, hallucination filters),
 `callsign` (phonetic and telephony reader), `transcript` (store, search, TXT/SRT/JSON/CSV, file with retention), `models` (list, pinned SHA-256,
 downloader), `whisper_backend` (whisper.cpp behind `SpeechBackend`), `audio_tap` (the sound of the non-airband modes). The app side is
 `app/transcribe`. Tests: `test_transcribe` (fake speech backend: segmentation, queue overflow, filters, callsigns, search, exports, files, model list)

@@ -17,6 +17,8 @@ struct VoiceSegment {
     float levelDb = -120;        // mean level of the voiced part before normalising, dBFS
     int64_t startMs = 0;         // wall clock (ms since the Unix epoch) of the start of the voiced part
     bool cut = false;            // ended because it reached the longest length, not because the speaker stopped
+    bool music = false;          // judged to be music or a steady tone, not speech (only when SegmenterOptions::rejectMusic is on)
+    float syllabic = 0, stdDb = 0;   // what the judgement was made of (see speechEnvelopeFeatures)
 };
 
 struct SegmenterOptions {
@@ -25,6 +27,8 @@ struct SegmenterOptions {
     double preRollSec = 0.35, hangSec = 0.7;
     double minSec = 0.5;         // shorter voiced parts are clicks, not speech
     double maxSec = 27;          // the speech engine reads 30 s at a time
+    bool rejectMusic = false;    // mark transmissions whose level has no speech rhythm (music, tones, hum) so the caller can skip them
+    double musicMinSec = 1.5;    // shorter parts are not judged
 };
 
 class VoiceSegmenter {
@@ -51,7 +55,13 @@ private:
     double floorDb_ = -80;
     float lastDb_ = -120;
     int64_t startMs_ = 0;
+    std::vector<float> env_;              // block levels (dB) of the transmission so far, for the music judgement
 };
+
+// Speech has a syllable rhythm: its level (20 ms blocks, dB) rises and falls 2 to 8 times a second by 10 dB or more. Music and tones do not.
+// syllabic: share of the level's variation (0.5..25 Hz) that lies in 2..8 Hz; stdDb: spread of the level. blocks at 50 per second.
+void speechEnvelopeFeatures(const std::vector<float>& envDb, float& syllabic, float& stdDb);
+bool looksLikeSpeech(float syllabic, float stdDb);
 
 // A linear-phase windowed-sinc resampler for a whole buffer (mono). Used by the segmenter; public for the tests.
 std::vector<float> resampleMono(const float* x, size_t n, int inRate, int outRate);

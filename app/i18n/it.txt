@@ -3172,3 +3172,33 @@ Ping	Ping
 with interference bursts	con raffiche di disturbo
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Il segnale di prova è un faro a 420 Hz dal centro con echi meteorici simulati: brevi sottodensi e alcuni lunghi sovradensi.
 Beacon echoes, 143.050 MHz	Echi del faro, 143,050 MHz
+
+# auto subtitles (captions)
+Generating captions from the sound	Creazione dei sottotitoli dal suono
+Captions	Sottotitoli
+Save SRT	Salva SRT
+Save VTT	Salva VTT
+behind real time (%.1f x): the oldest speech is skipped	indietro rispetto al tempo reale (%.1f x): il parlato più vecchio viene saltato
+speed %.2f x real time	velocità %.2f x tempo reale
+music skipped %llu	musica saltata: %llu
+auto captions	sottotitoli automatici
+Captions made on your computer from the speech you hear, with the offline speech model (View > Transcripts > Settings). Nothing is sent anywhere.	Sottotitoli creati sul suo computer dal parlato che ascolta, con il modello vocale offline (Vista > Trascrizioni > Impostazioni). Non viene inviato nulla.
+Station's own subtitles	Sottotitoli propri dell'emittente
+Generated from speech	Generati dal parlato
+Both	Entrambi
+Generated where the station has none	Generati quando l'emittente non ne ha
+Auto subtitles (captions)	Sottotitoli automatici (captions)
+Captions from the speech of the sound you hear: FM and AM broadcast, DAB, TV audio, amateur and digital voice. They are made here with the offline speech model, shown on the receiver, and kept only in memory (and in .srt / .vtt files if you save them). Music is skipped. Off until you turn it on.	Sottotitoli dal parlato del suono che ascolta: radio FM e AM, DAB, audio TV, radioamatori e voce digitale. Vengono creati qui con il modello vocale offline, mostrati sul ricevitore e tenuti solo in memoria (e in file .srt / .vtt se li salva). La musica viene saltata. Disattivato finché non lo attiva.
+Make captions	Crea sottotitoli
+TV subtitles	Sottotitoli TV
+As spoken	Come pronunciato
+English translation	Traduzione in inglese
+Caption text	Testo dei sottotitoli
+Tick Translate to English above (multilingual model) to get translated captions.	Spunti sopra Traduci in inglese (modello multilingue) per avere sottotitoli tradotti.
+Caption size, percent	Dimensione dei sottotitoli, in percentuale
+Background, percent	Sfondo, in percentuale
+Lines	Righe
+At the top of the picture	In alto nell'immagine
+Save .srt and .vtt next to audio recordings	Salva .srt e .vtt accanto alle registrazioni audio
+Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time	Sottotitoli: %llu pezzi, %llu di musica saltati, %llu saltati (troppo lento), velocità %.2f x tempo reale
+The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest.	Il motore vocale è più lento dell'audio: usi un modello più piccolo o meno thread CPU. Il parlato più vecchio viene saltato, mai il più recente.

@@ -3189,3 +3189,33 @@ Ping	Ping
 with interference bursts	mit Störimpulsen
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Das Testsignal ist eine Bake 420 Hz neben der Mitte mit simulierten Meteorechos: kurze unterdichte und einige lange überdichte.
 Beacon echoes, 143.050 MHz	Bakenechos, 143,050 MHz
+
+# auto subtitles (captions)
+Generating captions from the sound	Untertitel aus dem Ton werden erzeugt
+Captions	Untertitel
+Save SRT	SRT speichern
+Save VTT	VTT speichern
+behind real time (%.1f x): the oldest speech is skipped	hinter Echtzeit (%.1f x): die älteste Sprache wird übersprungen
+speed %.2f x real time	Geschwindigkeit %.2f x Echtzeit
+music skipped %llu	Musik übersprungen: %llu
+auto captions	Auto-Untertitel
+Captions made on your computer from the speech you hear, with the offline speech model (View > Transcripts > Settings). Nothing is sent anywhere.	Untertitel, die auf Ihrem Computer aus der gehörten Sprache mit dem Offline-Sprachmodell erzeugt werden (Ansicht > Transkripte > Einstellungen). Es wird nichts gesendet.
+Station's own subtitles	Eigene Untertitel des Senders
+Generated from speech	Aus der Sprache erzeugt
+Both	Beide
+Generated where the station has none	Erzeugt, wenn der Sender keine hat
+Auto subtitles (captions)	Auto-Untertitel (Captions)
+Captions from the speech of the sound you hear: FM and AM broadcast, DAB, TV audio, amateur and digital voice. They are made here with the offline speech model, shown on the receiver, and kept only in memory (and in .srt / .vtt files if you save them). Music is skipped. Off until you turn it on.	Untertitel aus der Sprache des gehörten Tons: UKW- und AM-Rundfunk, DAB, Fernsehton, Amateurfunk und digitaler Sprechfunk. Sie entstehen hier mit dem Offline-Sprachmodell, erscheinen am Empfänger und bleiben nur im Speicher (und in .srt-/.vtt-Dateien, wenn Sie sie speichern). Musik wird übersprungen. Aus, bis Sie es einschalten.
+Make captions	Untertitel erzeugen
+TV subtitles	TV-Untertitel
+As spoken	Wie gesprochen
+English translation	Englische Übersetzung
+Caption text	Untertiteltext
+Tick Translate to English above (multilingual model) to get translated captions.	Haken Sie oben „Ins Englische übersetzen“ an (mehrsprachiges Modell), um übersetzte Untertitel zu erhalten.
+Caption size, percent	Untertitelgröße in Prozent
+Background, percent	Hintergrund in Prozent
+Lines	Zeilen
+At the top of the picture	Oben im Bild
+Save .srt and .vtt next to audio recordings	Beim Speichern von Audioaufnahmen .srt und .vtt daneben ablegen
+Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time	Untertitel: %llu Abschnitte, %llu Musik übersprungen, %llu übersprungen (zu langsam), Geschwindigkeit %.2f x Echtzeit
+The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest.	Die Spracherkennung ist langsamer als der Ton: nehmen Sie ein kleineres Modell oder weniger CPU-Threads. Die älteste Sprache wird übersprungen, nie die neueste.

@@ -3189,3 +3189,33 @@ Ping	Pingas
 with interference bursts	su trukdžių impulsais
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Bandomasis signalas yra švyturys 420 Hz nuo centro su imituotais meteorų aidais: trumpais retais ir keliais ilgais tankiais.
 Beacon echoes, 143.050 MHz	Švyturio aidai, 143,050 MHz
+
+# auto subtitles (captions)
+Generating captions from the sound	Kuriami subtitrai iš garso
+Captions	Subtitrai
+Save SRT	Įrašyti SRT
+Save VTT	Įrašyti VTT
+behind real time (%.1f x): the oldest speech is skipped	atsilieka nuo realaus laiko (%.1f x): seniausia kalba praleidžiama
+speed %.2f x real time	greitis %.2f x realaus laiko
+music skipped %llu	praleista muzikos: %llu
+auto captions	automatiniai subtitrai
+Captions made on your computer from the speech you hear, with the offline speech model (View > Transcripts > Settings). Nothing is sent anywhere.	Subtitrai, sukurti jūsų kompiuteryje iš girdimos kalbos naudojant neprisijungusį kalbos modelį (Rodinys > Transkripcijos > Nustatymai). Niekas nesiunčiama.
+Station's own subtitles	Stoties savi subtitrai
+Generated from speech	Sukurti iš kalbos
+Both	Abu
+Generated where the station has none	Sukurti, kai stotis jų neturi
+Auto subtitles (captions)	Automatiniai subtitrai (captions)
+Captions from the speech of the sound you hear: FM and AM broadcast, DAB, TV audio, amateur and digital voice. They are made here with the offline speech model, shown on the receiver, and kept only in memory (and in .srt / .vtt files if you save them). Music is skipped. Off until you turn it on.	Subtitrai iš girdimo garso kalbos: FM ir AM radijas, DAB, TV garsas, radijo mėgėjai ir skaitmeninis balsas. Jie kuriami čia neprisijungusiu kalbos modeliu, rodomi imtuvo lange ir laikomi tik atmintyje (o jei išsaugosite, ir .srt / .vtt failuose). Muzika praleidžiama. Išjungta, kol neįjungsite.
+Make captions	Kurti subtitrus
+TV subtitles	TV subtitrai
+As spoken	Kaip ištarta
+English translation	Vertimas į anglų kalbą
+Caption text	Subtitrų tekstas
+Tick Translate to English above (multilingual model) to get translated captions.	Pažymėkite aukščiau Versti į anglų kalbą (daugiakalbis modelis), kad gautumėte išverstus subtitrus.
+Caption size, percent	Subtitrų dydis, procentais
+Background, percent	Fonas, procentais
+Lines	Eilutės
+At the top of the picture	Paveikslo viršuje
+Save .srt and .vtt next to audio recordings	Šalia garso įrašų išsaugoti .srt ir .vtt
+Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time	Subtitrai: %llu dalių, %llu muzikos praleista, %llu praleista (per lėta), greitis %.2f x realaus laiko
+The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest.	Kalbos variklis lėtesnis už garsą: naudokite mažesnį modelį arba mažiau procesoriaus gijų. Seniausia kalba praleidžiama, niekada naujausia.

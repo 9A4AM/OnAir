@@ -13,6 +13,7 @@ namespace dect2 {
 struct TranscriptEntry {
     uint64_t id = 0;             // assigned by the store
     int64_t wall = 0;            // Unix seconds when the transmission started
+    int64_t startMs = 0;         // the same in milliseconds (not stored in the file; 0 for entries loaded from it): the captions' audio clock
     double freqHz = 0;           // 0 when not known
     std::string mode;            // "airband", "marine", "audio" (the sound of any other mode)
     std::string channel;         // "118.700 Tower"

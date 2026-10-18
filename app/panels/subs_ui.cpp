@@ -1,6 +1,7 @@
 // Subtitles over the TV picture: DVB subtitles (EN 300 743, core/src/tv/dvbsub.cpp) as a bitmap texture, teletext subtitle pages (EN 300 706)
 // as boxed text, the on/off and language choice, and the character-cell drawing of a teletext page that the Teletext tab shares.
 #include "../app.h"
+#include "../transcribe/transcribe_app.h"
 #include <cmath>
 
 namespace {
@@ -24,6 +25,9 @@ int ttxSubtitlePage(App& a, const SubOpt& o) {
 
 void overlayThunk(void* ctx, ImDrawList* dl, ImVec2 p0, ImVec2 size) {
     App& a = *(App*)ctx;
+    // generated captions (auto subtitles, core/src/transcribe/captions.h): never in place of the station's own ones unless the user chose so
+    tx::captionsOverlay(a, dl, p0, size, !a.subOpts.empty());
+    if (!tx::captionsShowBroadcast()) return;
     if (a.subIdx < 0 || !a.subsOn || a.subIdx >= (int)a.subOpts.size()) return;
     const SubOpt& o = a.subOpts[a.subIdx];
     if (!o.ttx) {

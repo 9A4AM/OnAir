@@ -3189,3 +3189,33 @@ Ping	Ping
 with interference bursts	met stoorpulsen
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Het testsignaal is een baken 420 Hz naast het midden met gesimuleerde meteorenechoën: korte onderdichte en enkele lange overdichte.
 Beacon echoes, 143.050 MHz	Bakenechoën, 143,050 MHz
+
+# auto subtitles (captions)
+Generating captions from the sound	Ondertitels maken van het geluid
+Captions	Ondertitels
+Save SRT	SRT opslaan
+Save VTT	VTT opslaan
+behind real time (%.1f x): the oldest speech is skipped	achter op de realtime (%.1f x): de oudste spraak wordt overgeslagen
+speed %.2f x real time	snelheid %.2f x realtime
+music skipped %llu	muziek overgeslagen: %llu
+auto captions	automatische ondertitels
+Captions made on your computer from the speech you hear, with the offline speech model (View > Transcripts > Settings). Nothing is sent anywhere.	Ondertitels die op uw computer worden gemaakt van de spraak die u hoort, met het offline spraakmodel (Beeld > Transcripties > Instellingen). Er wordt niets verzonden.
+Station's own subtitles	Eigen ondertitels van de zender
+Generated from speech	Gemaakt uit spraak
+Both	Beide
+Generated where the station has none	Gemaakt als de zender er geen heeft
+Auto subtitles (captions)	Automatische ondertitels (captions)
+Captions from the speech of the sound you hear: FM and AM broadcast, DAB, TV audio, amateur and digital voice. They are made here with the offline speech model, shown on the receiver, and kept only in memory (and in .srt / .vtt files if you save them). Music is skipped. Off until you turn it on.	Ondertitels van de spraak in het geluid dat u hoort: FM- en AM-radio, DAB, tv-geluid, amateurradio en digitale spraak. Ze worden hier gemaakt met het offline spraakmodel, getoond op de ontvanger en alleen in het geheugen bewaard (en in .srt- / .vtt-bestanden als u ze opslaat). Muziek wordt overgeslagen. Uit totdat u het aanzet.
+Make captions	Ondertitels maken
+TV subtitles	Tv-ondertitels
+As spoken	Zoals gesproken
+English translation	Engelse vertaling
+Caption text	Tekst van de ondertitels
+Tick Translate to English above (multilingual model) to get translated captions.	Vink hierboven Naar Engels vertalen aan (meertalig model) voor vertaalde ondertitels.
+Caption size, percent	Grootte van de ondertitels, in procenten
+Background, percent	Achtergrond, in procenten
+Lines	Regels
+At the top of the picture	Bovenin het beeld
+Save .srt and .vtt next to audio recordings	Naast audio-opnamen .srt en .vtt opslaan
+Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time	Ondertitels: %llu stukken, %llu muziek overgeslagen, %llu overgeslagen (te traag), snelheid %.2f x realtime
+The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest.	De spraakengine is trager dan het geluid: gebruik een kleiner model of minder CPU-threads. De oudste spraak wordt overgeslagen, nooit de nieuwste.

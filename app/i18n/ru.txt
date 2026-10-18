@@ -3172,3 +3172,33 @@ Ping	Пинг
 with interference bursts	с импульсными помехами
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Тестовый сигнал - маяк на 420 Гц от центра с имитацией метеорного эха: короткие недоплотные и несколько долгих сверхплотных.
 Beacon echoes, 143.050 MHz	Эхо маяка, 143,050 МГц
+
+# auto subtitles (captions)
+Generating captions from the sound	Создание субтитров из звука
+Captions	Субтитры
+Save SRT	Сохранить SRT
+Save VTT	Сохранить VTT
+behind real time (%.1f x): the oldest speech is skipped	отстаёт от реального времени (%.1f x): самая старая речь пропускается
+speed %.2f x real time	скорость %.2f x реального времени
+music skipped %llu	пропущено музыки: %llu
+auto captions	автосубтитры
+Captions made on your computer from the speech you hear, with the offline speech model (View > Transcripts > Settings). Nothing is sent anywhere.	Субтитры создаются на вашем компьютере из слышимой речи офлайн-моделью речи (Вид > Расшифровки > Настройки). Ничего не отправляется.
+Station's own subtitles	Собственные субтитры станции
+Generated from speech	Созданные из речи
+Both	Оба
+Generated where the station has none	Созданные, если у станции их нет
+Auto subtitles (captions)	Автосубтитры (captions)
+Captions from the speech of the sound you hear: FM and AM broadcast, DAB, TV audio, amateur and digital voice. They are made here with the offline speech model, shown on the receiver, and kept only in memory (and in .srt / .vtt files if you save them). Music is skipped. Off until you turn it on.	Субтитры из речи слышимого звука: FM- и AM-радио, DAB, звук телевидения, любительская радиосвязь и цифровая речь. Они создаются здесь офлайн-моделью речи, показываются у приёмника и хранятся только в памяти (и в файлах .srt / .vtt, если вы их сохраните). Музыка пропускается. Выключено, пока вы не включите.
+Make captions	Создавать субтитры
+TV subtitles	Субтитры ТВ
+As spoken	Как сказано
+English translation	Перевод на английский
+Caption text	Текст субтитров
+Tick Translate to English above (multilingual model) to get translated captions.	Отметьте выше «Переводить на английский» (многоязычная модель), чтобы получать переведённые субтитры.
+Caption size, percent	Размер субтитров, в процентах
+Background, percent	Фон, в процентах
+Lines	Строки
+At the top of the picture	Вверху изображения
+Save .srt and .vtt next to audio recordings	Сохранять .srt и .vtt рядом с аудиозаписями
+Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time	Субтитры: %llu фрагментов, пропущено музыки %llu, пропущено %llu (слишком медленно), скорость %.2f x реального времени
+The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest.	Движок речи медленнее звука: возьмите модель поменьше или меньше потоков процессора. Пропускается самая старая речь, но никогда самая новая.

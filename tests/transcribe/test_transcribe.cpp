@@ -1,6 +1,7 @@
 // Live transcription without a speech engine: the callsign reader (phonetic and telephony cases), the segmenter, the transcriber with a fake
 // backend (queue overflow, hallucination filters, linking), the store (search, filters, exports, file and retention) and the model list.
 #include "dect2/transcribe/callsign.h"
+#include "dect2/transcribe/captions.h"
 #include "dect2/common/stable_random.h"
 #include "dect2/transcribe/models.h"
 #include "dect2/transcribe/segmenter.h"
@@ -384,6 +385,115 @@ static void models() {
     fs::remove_all(dir);
 }
 
+// music: a steady chord with a slow tremolo, 8 kHz: no syllable rhythm
+static std::vector<float> music(double sec, float amp, int rate = 8000) {
+    std::vector<float> v((size_t)(sec * rate));
+    const double f[] = {261.6, 329.6, 392.0, 523.3};
+    for (size_t i = 0; i < v.size(); i++) {
+        const double t = (double)i / rate;
+        double x = 0;
+        for (double ff : f) x += std::sin(2 * M_PI * ff * t);
+        v[i] = amp * 0.25f * (float)((0.9 + 0.1 * std::sin(2 * M_PI * 0.5 * t)) * x);
+    }
+    return v;
+}
+
+static void captions() {
+    // sentences
+    auto s = splitSentences("Good evening. This is the news! Are you there? Yes, 3.5 degrees.");
+    CHECK(s.size() == 4 && s[0] == "Good evening." && s[1] == "This is the news!" && s[3] == "Yes, 3.5 degrees.", "sentences (%zu)", s.size());
+    s = splitSentences("one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty", 40);
+    bool shortOk = s.size() >= 3;
+    for (auto& x : s) shortOk = shortOk && x.size() <= 40;
+    CHECK(shortOk, "a long sentence is cut (%zu parts)", s.size());
+    CHECK(splitSentences("").empty() && splitSentences("  ").empty(), "empty");
+    s = splitSentences("Guten Tag. \xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF\xE3\x80\x82");
+    CHECK(s.size() == 2, "CJK stop (%zu)", s.size());
+    // the TV choice
+    CHECK(showBroadcastSubs(CaptionSource::Broadcast) && !showGeneratedSubs(CaptionSource::Broadcast, false), "broadcast only");
+    CHECK(!showBroadcastSubs(CaptionSource::Generated) && showGeneratedSubs(CaptionSource::Generated, true), "generated only");
+    CHECK(showBroadcastSubs(CaptionSource::Both) && showGeneratedSubs(CaptionSource::Both, true), "both");
+    CHECK(showBroadcastSubs(CaptionSource::Auto) && !showGeneratedSubs(CaptionSource::Auto, true) && showGeneratedSubs(CaptionSource::Auto, false), "auto: ours only without the station's");
+    CaptionStyle st; st.sizePct = 9999; st.bgAlpha = -5; st.lines = 0;
+    const CaptionStyle c = st.clamped();
+    CHECK(c.sizePct == 250 && c.bgAlpha == 0 && c.lines == 1, "style clamped");
+    CHECK(captionStandardEligible(5) && captionStandardEligible(0) && captionStandardEligible(25) && !captionStandardEligible(16) && !captionStandardEligible(27) && !captionStandardEligible(46), "eligible standards (no marine, airband, TETRA)");
+    CHECK(cueTimestamp(3723.4567, false) == "01:02:03,457" && cueTimestamp(3.5, true) == "00:00:03.500", "timestamps");
+
+    // music is told from speech
+    float syl = 0, sd = 0;
+    {
+        VoiceSegmenter seg(8000, [] { SegmenterOptions o; o.rejectMusic = true; return o; }());
+        std::vector<VoiceSegment> got;
+        auto feed = [&](const std::vector<float>& a, int64_t& now) { for (size_t i = 0; i < a.size(); i += 160) { now += 20; seg.push(a.data() + i, std::min<size_t>(160, a.size() - i), now, [&](VoiceSegment&& g) { got.push_back(std::move(g)); }); } };
+        int64_t now = 1000000;
+        feed(audio(2.0, 0.f), now); feed(audio(4.0, 0.3f), now); feed(audio(2.0, 0.f), now);
+        CHECK(got.size() == 1 && !got[0].music, "speech-like audio is kept (syllabic %.2f, std %.1f)", got.empty() ? 0.0 : got[0].syllabic, got.empty() ? 0.0 : got[0].stdDb);
+        got.clear();
+        feed(music(6.0, 0.3f), now); feed(audio(2.0, 0.f), now);
+        CHECK(got.size() == 1 && got[0].music, "a steady chord is music (syllabic %.2f, std %.1f)", got.empty() ? 0.0 : got[0].syllabic, got.empty() ? 0.0 : got[0].stdDb);
+        got.clear();
+        std::vector<float> tone(8000 * 6);
+        for (size_t i = 0; i < tone.size(); i++) tone[i] = 0.3f * (float)std::sin(2 * M_PI * 1000 * i / 8000.0);
+        feed(tone, now); feed(audio(2.0, 0.f), now);
+        CHECK(got.size() == 1 && got[0].music, "a tone is not speech");
+        got.clear();
+        feed(audio(1.0, 0.3f), now); feed(audio(2.0, 0.f), now);
+        CHECK(got.size() == 1 && !got[0].music, "a short part is not judged");
+        (void)syl; (void)sd;
+    }
+
+    // the whole pipeline: audio with a clock, speech and music, fake engine, cues on the audio clock
+    TranscriptStore store;
+    Transcriber tr(store);
+    auto fake = std::make_shared<Fake>();
+    fake->multi = true; fake->lang = "de";
+    fake->text = "Guten Abend. Hier sind die Nachrichten. Es regnet in Vilnius.";
+    fake->translated = "Good evening. Here is the news. It is raining in Vilnius.";
+    TranscribeConfig cfg;
+    cfg.enabled = true; cfg.language = "auto"; cfg.translate = true;
+    tr.configure(cfg); tr.setBackend(fake); tr.setSynchronous(true);
+    CaptionTrack track;
+    tr.setOnEntry([&](const TranscriptEntry& e) { track.add(e); });
+    SourceInfo src; src.key = 9; src.mode = "audio"; src.channel = "FM 93.9"; src.domain = "general"; src.rejectMusic = true;
+    int64_t now = 1800000000000LL;
+    auto play = [&](const std::vector<float>& a) {
+        for (size_t i = 0; i < a.size(); i += 160) {
+            const size_t n = std::min<size_t>(160, a.size() - i);
+            now += 20;
+            track.onAudio(n, 8000, now);
+            tr.feed(src, a.data() + i, n, 8000, now);
+        }
+    };
+    play(audio(3.0, 0.f));            // 0..3 s quiet
+    track.markOrigin();               // a recording starts here
+    play(audio(1.0, 0.f));            // 3..4 quiet
+    play(audio(6.0, 0.3f));           // speech from 4 s to 10 s
+    play(audio(2.0, 0.f));
+    CHECK(fake->calls == 2, "speech went to the engine (original + translation: %d calls)", fake->calls.load());
+    play(music(8.0, 0.3f)); play(audio(2.0, 0.f));
+    CHECK(fake->calls == 2 && tr.stats().musicSkipped == 1, "music never reached the engine (calls %d, skipped %llu)", fake->calls.load(), (unsigned long long)tr.stats().musicSkipped);
+    const auto cues = track.cues();
+    CHECK(cues.size() == 3, "three sentences, three cues (%zu)", cues.size());
+    if (cues.size() == 3) {
+        CHECK(cues[0].text == "Guten Abend." && cues[0].translation == "Good evening." && cues[2].translation == "It is raining in Vilnius.", "text and translation per cue");
+        CHECK(cues[0].start > 3.5 && cues[0].start < 4.3, "first cue starts with the speech on the audio clock (%.2f s)", cues[0].start);
+        CHECK(cues[1].start >= cues[0].end - 0.01 && cues[2].start >= cues[1].end - 0.01 && cues[2].end < 10.8, "cues in order, no overlap, inside the speech (%.2f..%.2f)", cues[2].start, cues[2].end);
+        const std::string srt = track.srt(track.origin());
+        CHECK(srt.find("1\n00:00:01,") == 0 && srt.find("Guten Abend.") != std::string::npos && srt.find("\n3\n") != std::string::npos, "SRT rebased to the recording start:\n%s", srt.c_str());
+        const std::string vtt = track.vtt(track.origin(), 0, 2);
+        CHECK(vtt.find("WEBVTT\n\n") == 0 && vtt.find("00:00:0") != std::string::npos && vtt.find("Guten Abend.\nGood evening.") != std::string::npos && vtt.find(" --> ") != std::string::npos, "VTT with both lines:\n%s", vtt.c_str());
+        CHECK(track.srt(0, 0, 1).find("Good evening.") != std::string::npos && track.srt(0, 0, 1).find("Guten") == std::string::npos, "translation only");
+        CHECK(track.srt(100).empty(), "nothing after the end");
+    }
+    // the cues on screen: they arrive after the speech, stay for a few seconds
+    CHECK(track.visible(2).size() <= 2, "at most the asked lines");
+    play(audio(12.0, 0.f));
+    CHECK(track.visible(4).empty(), "old cues leave the screen");
+    track.reset();
+    CHECK(track.size() == 0 && track.clock() == 0, "reset");
+}
+
 int main() {
     callsigns();
     segmenter();
@@ -392,6 +502,7 @@ int main() {
     translation();
     store();
     models();
+    captions();
     if (fails) { printf("%d failures\n", fails); return 1; }
     printf("transcribe: all ok\n");
     return 0;
