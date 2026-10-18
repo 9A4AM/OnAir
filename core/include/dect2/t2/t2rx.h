@@ -80,6 +80,7 @@
 #include "dect2/multitone/multitone_tel.h"
 #include "dect2/loraraw/loraraw_tel.h"
 #include "dect2/wisun/wisun_tel.h"
+#include "dect2/zwave/zwave_tel.h"
 #include "dect2/eczas/eczas_tel.h"
 #include "dect2/wmbus/wmbus_tel.h"
 #include "dect2/tones/tones_tel.h"
@@ -178,6 +179,7 @@ struct RxTelemetry {
     NbiotTelemetry nbiot;     // valid when standard == 70 (NB-IoT cells)
     ZigbeeTelemetry zigbee;   // valid when standard == 66 (Zigbee / 802.15.4)
     LoraRawTelemetry loraraw; // valid when standard == 72 (LoRa raw)
+    ZwaveTelemetry zwave;     // valid when standard == 99 (Z-Wave)
     WisunTelemetry wisun;     // valid when standard == 85 (Wi-SUN FAN)
     WmbusTelemetry wmbus;     // valid when standard == 87 (Wireless M-Bus)
     TonesTelemetry tones;     // valid when standard == 90 (tone decoders: CTCSS, DCS, DTMF, selcall, SELCAL)

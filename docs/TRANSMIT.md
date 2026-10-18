@@ -95,6 +95,7 @@ This list is taken from the tables in `core/src/tx/tx.cpp` (`txModes()`).
 | eczas | e-Czas 225 kHz | 87 | makeEczasSynth |
 | wmbus | Wireless M-Bus | 88 | makeWmbusSynth |
 | mt63 | MT63 | 97 | makeMt63Synth |
+| zwave | Z-Wave | 100 | makeZwaveSynth |
 | vorils | VOR / ILS | 32 | makeVorSynth |
 | m17 | M17 | 33 | makeM17Synth |
 | dstar | D-STAR | 35 | makeDstarSynth |

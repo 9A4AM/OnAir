@@ -101,6 +101,7 @@ astro	--mode astro	Overview|Astronomy|Receiver|History
 ble	--mode ble	Overview|Devices|Receiver|History
 zigbee	--mode zigbee	Overview|Zigbee|Receiver|History
 wisun	--mode wisun	Overview|Wi-SUN|Receiver|History
+zwave	--mode zwave	Overview|Z-Wave|Receiver|History
 eczas	--mode eczas	Overview|e-Czas|Receiver|History
 wmbus	--mode wmbus	Overview|Meters|Receiver|History
 tones	--mode tones	Overview|Tones|Receiver|History

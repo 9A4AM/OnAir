@@ -116,6 +116,7 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("eczas", "e-Czas 225 kHz", 87, "makeEczasSynth", kOpt, kUnv),
         mk("wmbus", "Wireless M-Bus", 88, "makeWmbusSynth", kOpt, kUnv),
         mk("mt63", "MT63", 97, "makeMt63Synth", kOpt, kUnv),
+        mk("zwave", "Z-Wave", 100, "makeZwaveSynth", kOpt, kUnv),
         mk("vorils", "VOR / ILS", 32, "makeVorSynth", kOpt, kUnv),
         mk("m17", "M17", 33, "makeM17Synth", kOpt, kUnv),
         mk("dstar", "D-STAR", 35, "makeDstarSynth", kOpt, kUnv),
@@ -268,7 +269,7 @@ TxPayloadKind txPayloadKind(const std::string& id) {
     if (id == "uplink") return TxPayloadKind::Uplink;
     if (id == "mesh") return TxPayloadKind::Mesh;
     if (id == "mac") return TxPayloadKind::Mac;
-    if (id == "vdl4" || id == "uat" || id == "wisun") return TxPayloadKind::SatScene;   // demo-traffic generators, no custom message
+    if (id == "vdl4" || id == "uat" || id == "wisun" || id == "zwave") return TxPayloadKind::SatScene;   // demo-traffic generators, no custom message
     return TxPayloadKind::SatScene;   // never a generic callsign dump; unknown ids are treated as a test scene
 }
 

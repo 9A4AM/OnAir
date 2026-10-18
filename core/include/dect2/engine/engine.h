@@ -90,6 +90,7 @@
 #include "dect2/multitone/multitone_rx.h"
 #include "dect2/loraraw/loraraw_rx.h"
 #include "dect2/wisun/wisun_rx.h"
+#include "dect2/zwave/zwave_rx.h"
 #include "dect2/eczas/eczas_live.h"
 #include "dect2/wmbus/wmbus_live.h"
 #include "dect2/tones/tones_rx.h"
@@ -385,6 +386,7 @@ public:
     SarsatReceiver& sarsat() { return rxSar_; }   // COSPAS-SARSAT 406 MHz beacons: clear the log (telemetry through latestRx)
     Mt63Receiver& mt63() { return rxMt63_; }   // MT63: bandwidth and interleave (automatic by default), clear the text (telemetry through latestRx)
     EczasLiveReceiver& eczas() { return rxEcz_; }   // e-Czas (225 kHz, Poland): audio input, receiver position, clear the log (telemetry through latestRx)
+    ZwaveReceiver& zwave() { return rxZw_; }   // Z-Wave: region, clear the tables (telemetry through latestRx)
     WisunReceiver& wisun() { return rxWs_; }   // Wi-SUN FAN: region, clear the tables (telemetry through latestRx)
     LoraRawReceiver& loraraw() { return rxLr_; }   // LoRa (raw): settings, clear the frame log (telemetry through latestRx)
     HfbReceiver& hfbeacon() { return rxHfb_; }   // HF beacons: the list, receiver position, ppm, clock offset (telemetry through latestRx)
@@ -642,6 +644,7 @@ private:
     MultitoneReceiver rxMt_;
     LoraRawReceiver rxLr_;
     WisunReceiver rxWs_;
+    ZwaveReceiver rxZw_;
     EczasLiveReceiver rxEcz_;
     WmbusLiveReceiver rxWmb_;
     TonesReceiver rxTones_;
