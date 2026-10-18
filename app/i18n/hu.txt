@@ -3175,3 +3175,21 @@ Ping	Ping
 with interference bursts	zavarimpulzusokkal
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	A tesztjel egy 420 Hz-re a középtől lévő jeladó szimulált meteorvisszhangokkal: rövid alulsűrűek és néhány hosszú túlsűrű.
 Beacon echoes, 143.050 MHz	Jeladó-visszhangok, 143,050 MHz
+# Satellite beacon
+Telemetry	Telemetria
+start the receiver to see the beacon	indítsa el a vevőt a jeladó megtekintéséhez
+No narrow carrier found. Tune so that the beacon lies inside the capture: a Ku-band beacon seen through an LNB is usually within a few hundred kHz of the centre.	Nem található keskeny vivő. Hangoljon úgy, hogy a jeladó a felvételbe essen: az LNB-n át látott Ku-sávú jeladó általában néhány száz kHz-re van a középtől.
+Appends the carrier measurements and every frame to satellite_beacon.csv in the data folder, also when nobody watches the screen.	A vivőméréseket és minden keretet hozzáfűz a adatmappa satellite_beacon.csv fájljához, akkor is, ha senki sem nézi a képernyőt.
+Copies the learned frames as hex lines.	A megtanult kereteket hexa sorokként másolja.
+capture spectrum (dB over the noise): the narrow lines are carriers	a felvétel spektruma (dB a zaj felett): a keskeny vonalak vivők
+phase modulation of the carrier (dB over the floor): the telemetry tones stand out	a vivő fázismodulációja (dB a zajpadló felett): a telemetriahangok kiemelkednek
+No telemetry: the carrier is not phase modulated, or the tones are too weak.	Nincs telemetria: a vivő nincs fázismodulálva, vagy a hangok túl gyengék.
+Errors	Hibák
+template	sablon
+fixed bits	rögzített bitek
+subcarrier	segédvivő
+bit rate	bitsebesség
+other lines	további vonalak
+A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	A műholdas jeladó egy vivő, néha telemetriával fázismodulálva, amellyel a földi állomások a összeköttetést mérik. A vivőt frekvenciában és szintben követi a program; a telemetriát nyers keretekként nyeri vissza, a keretméretet az ismétlődésükből tanulja meg. Egy adott műhold kereteinek szerkezetét nem dekódolja.
+The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	A tesztjel egy a középtől 236 kHz-re lévő, LNB-hez hasonlóan sodródó vivő, felette 545 kHz-cel egy második vivővel, és 4800 bit/s kétfázisú telemetriával egy 48 kHz-es segédvivőn, 256 bájtos keretekben.
+Carrier, drift, telemetry frames	Vivő, sodródás, telemetriakeretek

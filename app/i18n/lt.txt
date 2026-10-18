@@ -3189,3 +3189,21 @@ Ping	Pingas
 with interference bursts	su trukdžių impulsais
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Bandomasis signalas yra švyturys 420 Hz nuo centro su imituotais meteorų aidais: trumpais retais ir keliais ilgais tankiais.
 Beacon echoes, 143.050 MHz	Švyturio aidai, 143,050 MHz
+# Satellite beacon
+Telemetry	Telemetrija
+start the receiver to see the beacon	paleiskite imtuvą, kad pamatytumėte švyturį
+No narrow carrier found. Tune so that the beacon lies inside the capture: a Ku-band beacon seen through an LNB is usually within a few hundred kHz of the centre.	Siauro nešlio nerasta. Suderinkite taip, kad švyturys būtų įraše: Ku juostos švyturys per LNB paprastai būna keli šimtai kHz nuo centro.
+Appends the carrier measurements and every frame to satellite_beacon.csv in the data folder, also when nobody watches the screen.	Prideda nešlio matavimus ir kiekvieną kadrą prie satellite_beacon.csv duomenų aplanke, net kai niekas nežiūri į ekraną.
+Copies the learned frames as hex lines.	Nukopijuoja išmoktus kadrus šešioliktainėmis eilutėmis.
+capture spectrum (dB over the noise): the narrow lines are carriers	įrašo spektras (dB virš triukšmo): siauros linijos yra nešliai
+phase modulation of the carrier (dB over the floor): the telemetry tones stand out	nešlio fazinė moduliacija (dB virš triukšmo lygio): išsiskiria telemetrijos tonai
+No telemetry: the carrier is not phase modulated, or the tones are too weak.	Telemetrijos nėra: nešlys nėra faziškai moduliuotas arba tonai per silpni.
+Errors	Klaidos
+template	šablonas
+fixed bits	pastovūs bitai
+subcarrier	požymio nešlys
+bit rate	bitų sparta
+other lines	kitos linijos
+A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	Palydovinis švyturys yra nešlys, kartais faziškai moduliuotas telemetrija, kurį antžeminės stotys naudoja ryšiui matuoti. Nešlys sekamas pagal dažnį ir lygį; telemetrija atkuriama kaip neapdoroti kadrai, o kadro ilgis išmokstamas iš jų pasikartojimo. Konkretaus palydovo kadrų struktūra nedekoduojama.
+The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	Bandomasis signalas yra nešlys 236 kHz nuo centro, dreifuojantis kaip LNB, su antru nešliu 545 kHz aukščiau ir 4800 bit/s dvifaze telemetrija 48 kHz požymio nešlyje, 256 baitų kadrais.
+Carrier, drift, telemetry frames	Nešlys, dreifas, telemetrijos kadrai

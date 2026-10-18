@@ -233,6 +233,8 @@ void Engine::placeNarrowReceivers(const DeviceInfo& dev, const TuneSettings& tun
         rxMt63_.setSignalOffset(o);
         rxZw_.setDialHz(tune.centerHz);
         rxZw_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);
+        rxSb_.setSignalOffset(o);
+        rxSb_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // for the CSV and the screen
         rxMs_.setSignalOffset(o);
         rxMs_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // for the CSV and the screen
         rxWs_.setDialHz(tune.centerHz);   // a file: where its channels are when it does not say
@@ -449,6 +451,8 @@ void Engine::configureDataReceivers(const DeviceInfo& dev, const TuneSettings& t
     rxEcz_.configure(rate_);
     rxWmb_.configure(rate_);
     rxWmb_.setLogCallback([this](const std::string& s) { log(s); });
+    rxSb_.configure(rate_);
+    rxSb_.setLogCallback([this](const std::string& s) { log(s); });
     rxMs_.configure(rate_);
     rxMs_.setLogCallback([this](const std::string& s) { log(s); });
     rxEcz_.setLogCallback([this](const std::string& s) { log(s); });

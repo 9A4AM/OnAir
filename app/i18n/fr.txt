@@ -3189,3 +3189,21 @@ Ping	Ping
 with interference bursts	avec rafales de parasites
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Le signal de test est une balise à 420 Hz du centre avec des échos de météores simulés : des sous-denses courts et quelques surdenses longs.
 Beacon echoes, 143.050 MHz	Échos de balise, 143,050 MHz
+# Satellite beacon
+Telemetry	Télémétrie
+start the receiver to see the beacon	démarrez le récepteur pour voir la balise
+No narrow carrier found. Tune so that the beacon lies inside the capture: a Ku-band beacon seen through an LNB is usually within a few hundred kHz of the centre.	Aucune porteuse étroite trouvée. Accordez de façon que la balise soit dans la capture : une balise en bande Ku vue à travers un LNB se trouve en général à quelques centaines de kHz du centre.
+Appends the carrier measurements and every frame to satellite_beacon.csv in the data folder, also when nobody watches the screen.	Ajoute les mesures de la porteuse et chaque trame à satellite_beacon.csv dans le dossier de données, même quand personne ne regarde l'écran.
+Copies the learned frames as hex lines.	Copie les trames apprises sous forme de lignes hexadécimales.
+capture spectrum (dB over the noise): the narrow lines are carriers	spectre de la capture (dB au-dessus du bruit) : les raies étroites sont des porteuses
+phase modulation of the carrier (dB over the floor): the telemetry tones stand out	modulation de phase de la porteuse (dB au-dessus du plancher) : les tons de télémétrie ressortent
+No telemetry: the carrier is not phase modulated, or the tones are too weak.	Pas de télémétrie : la porteuse n'est pas modulée en phase ou les tons sont trop faibles.
+Errors	Erreurs
+template	modèle
+fixed bits	bits fixes
+subcarrier	sous-porteuse
+bit rate	débit binaire
+other lines	autres raies
+A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	Une balise de satellite est une porteuse, parfois modulée en phase par de la télémétrie, qui sert aux stations au sol à mesurer la liaison. La porteuse est suivie en fréquence et en niveau ; la télémétrie est récupérée sous forme de trames brutes et la longueur de trame est apprise par leur répétition. La structure des trames d'un satellite donné n'est pas décodée.
+The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	Le signal de test est une porteuse à 236 kHz du centre, dérivant comme un LNB, avec une seconde porteuse 545 kHz au-dessus et une télémétrie biphase de 4800 bit/s sur une sous-porteuse de 48 kHz, en trames de 256 octets.
+Carrier, drift, telemetry frames	Porteuse, dérive, trames de télémétrie

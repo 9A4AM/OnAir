@@ -3189,3 +3189,21 @@ Ping	Ping
 with interference bursts	z impulsami zakłóceń
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Sygnał testowy to nadajnik 420 Hz od środka z symulowanymi echami meteorów: krótkimi podgęstymi i kilkoma długimi nadgęstymi.
 Beacon echoes, 143.050 MHz	Echa nadajnika, 143,050 MHz
+# Satellite beacon
+Telemetry	Telemetria
+start the receiver to see the beacon	uruchom odbiornik, aby zobaczyć nadajnik
+No narrow carrier found. Tune so that the beacon lies inside the capture: a Ku-band beacon seen through an LNB is usually within a few hundred kHz of the centre.	Nie znaleziono wąskiej nośnej. Dostrój tak, aby nadajnik znalazł się w przechwyconym paśmie: nadajnik w paśmie Ku widziany przez LNB leży zwykle kilkaset kHz od środka.
+Appends the carrier measurements and every frame to satellite_beacon.csv in the data folder, also when nobody watches the screen.	Dopisuje pomiary nośnej i każdą ramkę do satellite_beacon.csv w folderze danych, także gdy nikt nie patrzy na ekran.
+Copies the learned frames as hex lines.	Kopiuje poznane ramki jako wiersze szesnastkowe.
+capture spectrum (dB over the noise): the narrow lines are carriers	widmo przechwytu (dB nad szumem): wąskie linie to nośne
+phase modulation of the carrier (dB over the floor): the telemetry tones stand out	modulacja fazy nośnej (dB nad poziomem szumu): tony telemetrii wyraźnie się wyróżniają
+No telemetry: the carrier is not phase modulated, or the tones are too weak.	Brak telemetrii: nośna nie jest modulowana fazowo albo tony są zbyt słabe.
+Errors	Błędy
+template	wzorzec
+fixed bits	stałe bity
+subcarrier	podnośna
+bit rate	przepływność
+other lines	inne linie
+A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	Nadajnik satelitarny (beacon) to nośna, czasem modulowana fazowo telemetrią, której stacje naziemne używają do pomiaru łącza. Nośna jest śledzona pod względem częstotliwości i poziomu; telemetria jest odzyskiwana jako surowe ramki, a długość ramki jest poznawana z ich powtarzania się. Układ ramek konkretnego satelity nie jest dekodowany.
+The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	Sygnał testowy to nośna 236 kHz od środka, dryfująca jak LNB, z drugą nośną 545 kHz wyżej i telemetrią dwufazową 4800 bit/s na podnośnej 48 kHz, w ramkach po 256 bajtów.
+Carrier, drift, telemetry frames	Nośna, dryf, ramki telemetrii

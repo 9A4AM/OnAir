@@ -1,3 +1,6 @@
 
 ## 2026-10-18 FPV video (analog)
 New mode fpv (family 101, active 102, std 103): channel plans, scan, FM video picture via the analog TV decoder, 6.0/6.5 MHz sound, snapshot/recording. Synthetic tests only.
+
+## 2026-10-18 Satellite beacon
+New mode satbeacon (family 105, active 106, std 107, worktree dvbs-028). Built for the owner's capture onair_general_11705.250MHz_2Msps (a Ku-band beacon): carrier at 11705.486 MHz drifting with the LNB, a second CW carrier 545.64 kHz above, the main carrier phase modulated by a 48 kHz subcarrier with 4800 bit/s bi-phase data in 2048-bit frames on the IRIG 106 sync word FAF320 with a counter 0-31 in byte 4 (the format DecSAT describes for Intelsat 19's beacon; recognised from its README, no code taken). First attempt read the stream at byte level (600 baud, 256 "bits"): the frames repeated but were meaningless; the bi-phase chips at 9600/s gave clean frames (all 457 of the 224 s recording, no errors). Lessons: look at the tone phase flips AND the chip-level waveform before choosing a bit rate; the SDR clock is a few ppm off, so a bit clock needs a tracking loop, not a fixed rate. Tests: generator golden frames, chain, impairment sweep, live, engine.

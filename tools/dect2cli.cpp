@@ -46,7 +46,7 @@ static const auto gT0 = std::chrono::steady_clock::now();
 static double secsSinceStart() { return std::chrono::duration<double>(std::chrono::steady_clock::now() - gT0).count(); }
 
 int main(int argc, char** argv) {
-    std::string msLog;
+    std::string msLog, sbLog;
     dect2::crash::install("crash-cli");   // a crash leaves crash-cli.txt next to the log
     if (!dect2::cpuSupportsBuild()) { fprintf(stderr, "this build needs a processor with AVX2 and FMA\n"); return 1; }
     Engine e;
@@ -97,6 +97,7 @@ int main(int argc, char** argv) {
         else if (a == "--bw") tune.bandwidthMhz = atof(next());
         else if (a == "--autobw") autoBw = true;
         else if (a == "--secs") secs = atof(next());
+        else if (a == "--sb-log") sbLog = next();   // with --standard satbeacon: append the carrier measurements and the frames to this CSV file
         else if (a == "--ms-log") msLog = next();   // with --standard mscatter: append every ping to this CSV file
         else if (a == "--play") playSid = atoi(next());
         else if (a == "--serve") servePort = atoi(next());
@@ -221,6 +222,7 @@ int main(int argc, char** argv) {
     e.general().setSilent(true);  // general receiver: no sound from the command line
     e.wifi().clearNetworks();     // Wi-Fi networks: no sound; the network table is printed with each line
     e.flarm().clearResults();
+    if (!sbLog.empty()) e.satbeacon().setLogFile(sbLog);   // satellite beacon: carrier measurements and frames as CSV
     if (!msLog.empty()) e.mscatter().setLogFile(msLog);   // meteor scatter: the pings are appended to a CSV file
     e.hfbeacon().setSilent(true);   // HF beacons: no sound in the command line
     e.dji().clearResults();       // DJI drones: the drones and signals are printed with each line
@@ -410,6 +412,11 @@ int main(int argc, char** argv) {
                 for (const auto& n : t.halow.nets)
                     printf("  halow: %s %-32s ch %3d %6.1f MHz %d MHz MCS %d x%d %-9s %-9s SNR %3.0f dB %6.1f dBFS %s\n", n.bssid.c_str(), n.hasSsid ? n.ssid.c_str() : n.hidden ? "(hidden)" : "(compressed SSID)", n.ccf, n.freqMhz,
                            n.seenWidthMhz, n.mcs, n.nss, n.security.c_str(), n.pre == 0 ? "S1G_SHORT" : n.pre == 1 ? "S1G_LONG" : "S1G_1M", n.snrDb, n.rssi, n.vendor.c_str());
+            if (t.standard == 106) {   // satellite beacon: the carrier, the telemetry, the newest frames
+                const auto& b = t.satbeacon;
+                printf("  beacon: carrier %+.1f Hz, %.1f dB-Hz, drift %+.1f Hz/min, %s; telemetry %d tone(s) at %.0f Hz, %.2f bit/s, frame %d bits, %llu good %llu bad\n", b.cfoHz, (double)b.snrDb, b.driftHzPerMin, b.carrierLocked ? "locked" : "searching", b.tones, b.subcarrierHz, b.baud, b.frameBits, (unsigned long long)b.blocksOk, (unsigned long long)b.blocksBad);
+                for (size_t i = 0; i < b.frames.size() && i < 2; i++) { printf("  frame:"); for (uint8_t x : b.frames[i].bytes) printf(" %02X", x); printf(" (%d errors)\n", b.frames[i].fixedErrors); }
+            }
             if (t.standard == 105)   // meteor scatter: the newest pings
                 for (size_t i = 0; i < t.mscatter.pings.size() && i < 3; i++) {
                     const auto& p = t.mscatter.pings[i];
