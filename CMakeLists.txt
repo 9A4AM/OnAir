@@ -771,7 +771,6 @@ if(DECT2_BUILD_TESTS)
     add_test(NAME tour_logic COMMAND test_tour)
     add_executable(test_autolabel tests/app/test_autolabel.cpp)   # the names on the spectrum: store, merge, stacking, thinning, hit test (app/gfx/autolabel_logic.h)
     add_test(NAME autolabel_logic COMMAND test_autolabel)
-    if(APPLE OR WIN32)   # a hidden window run of the program itself (a renamed copy, its own data and settings folders): applies memories to a receiver and checks its state
     # (not on Windows: the CI runner has no GPU, so the window cannot be created there and the program exits with 1 before the test starts)
     if(APPLE OR (WIN32 AND DECT2_WINDOW_TESTS))   # a hidden window run of the program itself (a renamed copy, its own data and settings folders): applies memories to a receiver and checks its state
       add_test(NAME memory_recall_app COMMAND ${CMAKE_COMMAND} -DBIN=$<TARGET_FILE:dect2> -DDIR=${CMAKE_BINARY_DIR}/memory_recall_test -P ${ONAIR_ROOT}/tests/app/run_memory_recall.cmake)
