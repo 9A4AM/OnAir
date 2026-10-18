@@ -386,6 +386,34 @@ struct HfdlReceiver::Impl {
             // interpolated linearly across the data between them. Decisions on a signal at about 0 dB per symbol are wrong too often for the
             // decision-directed loops above to hold the phase; the 15-symbol probes (a third of the burst) are always right.
             const int nb = R.blocks;
+            {   // symbol timing over the burst: a sample clock off by 100 ppm slips a symbol in 10000 and a long burst a quarter of one; the probes of every
+                // block give the offset (correlation at -1 / 0 / +1 half symbols, parabola), a weighted line through them gives offset and drift, and the
+                // symbols are taken again at the corrected times
+                double sw = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
+                for (int b2 = 0; b2 < nb; b2++) {
+                    const int i0 = kHfdlPreLen + b2 * kHfdlBlockLen + kHfdlDataLen;
+                    double c[3];
+                    for (int d = -1; d <= 1; d++) {
+                        cf32 a(0, 0);
+                        for (int q = 0; q < kHfdlTLen; q++) a += u[(size_t)(uoff + 2 * (i0 + q) + d)] * (float)kHfdlT[q];
+                        c[d + 1] = std::abs(a);
+                    }
+                    const double den = c[0] - 2 * c[1] + c[2];
+                    if (den >= 0 || c[1] < c[0] || c[1] < c[2]) continue;
+                    const double tau = 0.25 * (c[0] - c[2]) / den, wgt = c[1] * c[1], x = i0 + 0.5 * kHfdlTLen;
+                    sw += wgt; sx += wgt * x; sy += wgt * tau; sxx += wgt * x * x; sxy += wgt * x * tau;
+                }
+                const double dd = sw * sxx - sx * sx;
+                if (sw > 0 && dd > 1e-9 * sw * sw) {
+                    const double slope = (sw * sxy - sx * sy) / dd, off = (sy - slope * sx) / sw;
+                    if (std::fabs(slope) < 4e-4 && std::fabs(off) < 0.5) {
+                        for (int m = 0; m < nu; m++) {
+                            const double si = (m - uoff) / 2.0;
+                            u[(size_t)m] = cubicAt(k.x, t0 + (si + off + slope * si) * kSps - (double)k.xBase) * std::polar(1.f, (float)(-2 * M_PI * bf * si / kHfdlBaud));
+                        }
+                    }
+                }
+            }
             std::vector<cf32> g((size_t)nb + 1);
             std::vector<double> ctr((size_t)nb + 1);
             auto at = [&](int i) { return u[(size_t)(uoff + 2 * i)]; };
