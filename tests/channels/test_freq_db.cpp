@@ -46,7 +46,8 @@ static void testData() {
         const double mhz = (double)e.hz / 1e6;
         if (mhz < 0.01 || mhz > 12000) { printf("FAIL: '%s' %.6f MHz is out of range\n", where.c_str(), mhz); fails++; }
         auto b = band.find(e.mode);
-        if (b != band.end() && (mhz < b->second.first || mhz > b->second.second)) { printf("FAIL: '%s' %.6f MHz is outside the %s band\n", where.c_str(), mhz, e.mode.c_str()); fails++; }
+        const bool qoRf = e.name.rfind("QO-100", 0) == 0 && mhz > 10480;   // the QO-100 presets list the RF downlink; the receiver tunes the IF behind the LNB
+        if (b != band.end() && !qoRf && (mhz < b->second.first || mhz > b->second.second)) { printf("FAIL: '%s' %.6f MHz is outside the %s band\n", where.c_str(), mhz, e.mode.c_str()); fails++; }
         if (!seen.insert(freqKey(e)).second) { printf("FAIL: duplicate %s %.6f MHz (%s)\n", e.mode.c_str(), mhz, e.name.c_str()); fails++; }
         bool cat = false;
         for (const std::string& c : freqCategories()) if (c == e.category) cat = true;
@@ -62,6 +63,13 @@ static void testData() {
                           "time", "hfbeacon", "codar", "iridium", "orbcomm", "inmc", "globalstar", "gnss", "ism", "lorawan", "meshtastic", "wifi", "ble", "dji", "rid", "sonde",
                           "dab", "dvb", "atsc", "fm", "airband", "cubesat", "qo100", "ft8", "wspr", "psk", "js8", "sstv", "cw", "general", "meteor", "hrpt", "goes"})
         CHECK(perMode[m] > 0, "no entries for mode %s", m);
+    // QO-100: a "QO-100 NB" preset for every mode used on the narrowband transponder, inside the AMSAT-DL plan, and the DATV ones for DVB-S/S2
+    for (const char* m : {"cw", "ft8", "ft4", "js8", "psk", "rtty", "wspr", "sstv", "freedv", "hamdrm", "packet", "olivia", "contestia", "mfsk", "thor", "dominoex", "hell", "mt63", "general"}) {
+        bool have = false;
+        for (const FreqEntry& e : db) if (e.mode == m && e.name.rfind("QO-100 NB", 0) == 0) { have = true; CHECK(e.hz >= 10489505000ull && e.hz <= 10489990000ull, "QO-100 NB %s preset %.3f MHz is inside the narrowband plan", m, (double)e.hz / 1e6); }
+        CHECK(have, "no QO-100 NB preset for %s", m);
+    }
+    { bool beacon = false, wide = false; for (const FreqEntry& e : db) if (e.mode == "dvbs") { beacon |= e.hz == 10491500000ull; wide |= e.hz == 10495000000ull; } CHECK(beacon && wide, "QO-100 DATV presets for DVB-S/S2"); }
     printf("freq db: %zu entries, %zu modes, %zu bytes in %zu files\n", db.size(), perMode.size(), total, freqDataFileCount());
 }
 

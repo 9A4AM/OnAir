@@ -3189,3 +3189,45 @@ Ping	Ping
 with interference bursts	mit Störimpulsen
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Das Testsignal ist eine Bake 420 Hz neben der Mitte mit simulierten Meteorechos: kurze unterdichte und einige lange überdichte.
 Beacon echoes, 143.050 MHz	Bakenechos, 143,050 MHz
+#  QO-100: the auto decoder and the SSB conversation manager
+ ended	 beendet
+%d channels at most	höchstens %d Kanäle
+%zu SSTV pictures	%zu SSTV-Bilder
+%zu channels, %d dropped	%zu Kanäle, %d aufgegeben
+Auto decoder	Auto-Decoder
+Auto listen	Automatisch hören
+CPU %.0f %%	CPU %.0f %%
+CPU limit %.1f cores	CPU-Grenze %.1f Kerne
+Conversations	Gespräche
+Decode automatically	Automatisch dekodieren
+Decoding	Dekodiert
+Dial MHz	Einstellfrequenz MHz
+Downlink MHz	Downlink MHz
+FT4 on every signal that keys in 7.5 s slots	FT4 auf jedem Signal, das in 7,5-s-Slots tastet
+FT8 on every signal that keys in 15 s slots	FT8 auf jedem Signal, das in 15-s-Slots tastet
+How many decoder channels may run at once; each channel decodes every signal inside 3.4 kHz of audio	Wie viele Dekoderkanäle gleichzeitig laufen dürfen; jeder Kanal dekodiert alle Signale innerhalb von 3,4 kHz Audio
+JS8Call on every signal that keys in 15 s slots	JS8Call auf jedem Signal, das in 15-s-Slots tastet
+List the SSB conversations (the Conversations view); no decoder runs	Die SSB-Gespräche auflisten (Ansicht Gespräche); es läuft kein Dekoder
+Listen follows the loudest or the newest active conversation by itself, switching when it goes quiet or another one is clearly louder	Hören folgt von selbst dem lautesten oder dem neuesten aktiven Gespräch und wechselt, wenn es verstummt oder ein anderes deutlich lauter ist
+Listen is off	Hören ist aus
+Listen is on	Hören ist an
+Listening	Hört zu
+Morse on every keyed carrier	Morsecode auf jedem getasteten Träger
+Mute the audio while only noise is there	Ton stummschalten, solange nur Rauschen da ist
+Open the gallery	Galerie öffnen
+PSK31 / PSK63 on every narrow continuous signal	PSK31 / PSK63 auf jedem schmalen Dauersignal
+RTTY on every wide continuous pair of tones	RTTY auf jedem breiten Dauer-Tonpaar
+Record this conversation to a WAV file in the QO-100 folder of the data folder	Dieses Gespräch in eine WAV-Datei im QO-100-Ordner des Datenordners aufnehmen
+SSB conversations	SSB-Gespräche
+SSTV on every steady signal about 1.3 kHz wide; pictures go to the gallery	SSTV auf jedem gleichmäßigen Signal von etwa 1,3 kHz Breite; Bilder kommen in die Galerie
+Squelch	Rauschsperre
+Start (UTC)	Beginn (UTC)
+Stop following	Nicht mehr folgen
+Tick SSB conversations in the Auto decoder view to list the voice conversations.	SSB-Gespräche in der Ansicht Auto-Decoder ankreuzen, um die Sprechverbindungen aufzulisten.
+Time the decoders use per second of signal, against the limit	Rechenzeit der Dekoder je Sekunde Signal, gemessen an der Grenze
+Tune the listening channel to this conversation (upper sideband, 300 - 3000 Hz) and play it; the dial follows its drift	Den Hörkanal auf dieses Gespräch abstimmen (oberes Seitenband, 300 - 3000 Hz) und abspielen; die Einstellfrequenz folgt seiner Drift
+When the decoders need more than this, the weakest channel is dropped	Brauchen die Dekoder mehr als das, wird der schwächste Kanal aufgegeben
+no SSB conversation heard yet	noch kein SSB-Gespräch gehört
+talking	spricht
+the loudest conversation	das lauteste Gespräch
+the newest conversation	das neueste Gespräch

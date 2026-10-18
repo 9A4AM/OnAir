@@ -1,6 +1,8 @@
 #include "dect2/qo100/qo100_rx.h"
 #include "dect2/qo100/qo100_tel.h"
 #include "dect2/qo100/qo100_dsp.h"
+#include "dect2/qo100/qo100_auto.h"
+#include "dect2/wb/wb_export.h"
 #include "dect2/dmr/dmr_dsp.h"
 #include "dect2/dsp/fftutil.h"
 #include "dect2/marine/marine_dsp.h"
@@ -10,6 +12,9 @@
 #include <atomic>
 #include <cmath>
 #include <cstdio>
+#include <chrono>
+#include <limits>
+#include <map>
 #include <mutex>
 #include <vector>
 
@@ -47,6 +52,64 @@ struct Spec {                         // Hann-windowed power spectrum of blocks 
 };
 
 int pow2AtLeast(double v, int lo, int hi) { int k = lo; while (k < v && k < hi) k <<= 1; return k; }
+
+
+// Upper sideband, 300 .. 3000 Hz above the dial, to 8 kHz audio with a slow AGC: the listening channel, and the recorders of conversations
+struct SsbDemod {
+    marine::Front front;
+    std::vector<cf32> taps, hist;
+    int pos = 0, ph = 0;
+    float env = 0;
+    double off = 1e300, pow = 0; uint64_t cnt = 0;
+    std::vector<cf32> base;
+    void configure(double rate) {
+        front.configure(rate); front.reset(); off = 1e300;
+        const auto lp = dmr::lowpassTaps(1250, 1550, marine::kBaseRate, 60, 9, 801);
+        taps.resize(lp.size());
+        for (size_t k = 0; k < lp.size(); k++) {   // band-pass 300 .. 3000 Hz: the low-pass shifted up to 1650 Hz
+            const double w = 2 * M_PI * 1650.0 * ((double)k - (double)(lp.size() / 2)) / marine::kBaseRate;
+            taps[k] = cf32((float)(lp[k] * std::cos(w)), (float)(lp[k] * std::sin(w)));
+        }
+        hist.assign(2 * taps.size(), cf32(0, 0)); pos = ph = 0; env = 0; pow = 0; cnt = 0;
+    }
+    // appends 8 kHz audio; offHz: where the dial is in the input
+    void feed(const cf32* x, size_t n, double offHz, std::vector<float>& out) {
+        if (offHz != off) { off = offHz; front.setOffsetHz(offHz); }
+        base.clear();
+        front.process(x, n, base);
+        const int T = (int)taps.size();
+        for (const cf32 v : base) {
+            hist[(size_t)pos] = v; hist[(size_t)(pos + T)] = v;
+            if (++pos >= T) pos = 0;
+            if (++ph < 3) continue;
+            ph = 0;
+            const cf32* w = &hist[(size_t)pos];   // oldest first
+            float ar = 0, ai = 0;
+            for (int k = 0; k < T; k++) {
+                const cf32 h = taps[(size_t)(T - 1 - k)], sv = w[k];
+                ar += h.real() * sv.real() - h.imag() * sv.imag();
+                ai += h.real() * sv.imag() + h.imag() * sv.real();
+            }
+            const float m2 = ar * ar + ai * ai;
+            pow += m2; cnt++;
+            const float mag = std::sqrt(m2);
+            env += (mag > env ? 0.01f : 0.0001f) * (mag - env);
+            out.push_back(std::clamp(ar * 0.5f / (env + 1e-9f), -1.f, 1.f));
+        }
+    }
+};
+
+// A conversation being recorded (to a WAV file) and / or handed to speech to text
+struct Recorder {
+    SsbDemod ssb;
+    std::vector<float> pcm, chunk;
+    std::string path;
+    bool file = true;
+    double lastWrite = 0;
+    bool dirty = false;
+};
+
+constexpr double kRecMaxSec = 1800;
 
 } // namespace
 
@@ -97,12 +160,31 @@ struct Qo100Receiver::Impl {
     std::vector<double> wbAcc, wbAvg;
     int wbAccN = 0;
     // SSB
-    marine::Front ssbFront;
-    double ssbOff = 1e300;
-    std::vector<cf32> usbTaps, usbHist;
-    int usbPos = 0, usbPh = 0;
-    float env = 0;
+    SsbDemod ssb;
     double audPow = 0; uint64_t audN = 0; float audioDb = -200;
+    // squelch of the listening channel: a noise floor under the audio power and a gate with a hold
+    double sqFloor = 0, sqAcc = 0; int sqN = 0; bool sqOpen = false; int sqHold = 0;
+    std::atomic<bool> squelch{false};
+    // the narrowband auto decoder and the conversations
+    Qo100Tracker trk;
+    Qo100Conversations convs;
+    Qo100AutoDecoder autod;
+    Decimator abDec;
+    std::vector<cf32> abS;
+    double abRate = 0;
+    std::atomic<unsigned> autoMask{0};
+    std::atomic<int> maxSlotsReq{6}, listenConvReq{0}, autoListenReq{0};
+    std::atomic<float> cpuReq{0.7f};
+    std::atomic<double> gapReq{90};
+    std::atomic<double> startUtcReq{std::numeric_limits<double>::quiet_NaN()};
+    std::atomic<bool> clearReq{false};
+    std::mutex recMu;
+    std::map<int, bool> recWant;
+    std::string recDir;
+    std::function<std::string(const float*, size_t, double)> stt;
+    std::map<int, Recorder> recs;
+    int listenEff = 0, pick = 0;
+    double pickSince = 0;
     // buffers and counters
     std::vector<cf32> mixed, nbS, fs, base;
     std::vector<float> aud;
@@ -140,14 +222,11 @@ struct Qo100Receiver::Impl {
         wbSpec.setup(wbN);
         wbHop = std::max<uint64_t>((uint64_t)wbN, (uint64_t)(rate / 40)); wbSkip = 0;
         wbAcc.clear(); wbAvg.clear(); wbAccN = 0;
-        ssbFront.configure(nbRate); ssbFront.reset(); ssbOff = 1e300;
-        const auto lp = dmr::lowpassTaps(1250, 1550, marine::kBaseRate, 60, 9, 801);
-        usbTaps.resize(lp.size());
-        for (size_t k = 0; k < lp.size(); k++) {   // band-pass 300 .. 3000 Hz: the low-pass shifted up to 1650 Hz
-            const double w = 2 * M_PI * 1650.0 * ((double)k - (double)(lp.size() / 2)) / marine::kBaseRate;
-            usbTaps[k] = cf32((float)(lp[k] * std::cos(w)), (float)(lp[k] * std::sin(w)));
-        }
-        usbHist.assign(2 * usbTaps.size(), cf32(0, 0)); usbPos = usbPh = 0; env = 0;
+        ssb.configure(nbRate);
+        sqFloor = 0; sqAcc = 0; sqN = 0; sqOpen = false; sqHold = 0;
+        abDec.configure(nbRate, 260e3, 520e3); abDec.reset(); abRate = abDec.outRate();
+        autod.reset(); trk.reset(); convs.reset(); recs.clear(); listenEff = pick = 0;
+        if (nbOk) autod.configure(abRate);
         listen.reset();
         inSamples = 0; nextPub = 0; power = 0; nPower = 0;
         ok = rate > 0;
@@ -251,34 +330,140 @@ struct Qo100Receiver::Impl {
             for (int i = 0; i < 2 && fineOn; i++) fineFeed(i, x, n);
         }
         if (listen.on.load()) ssbFeed(x, n);
+        autoFeed(x, n);
     }
 
     void ssbFeed(const cf32* x, size_t n) {
         const double off = dialReq.load() - corr() - kNbCentreHz;
-        if (off != ssbOff) { ssbOff = off; ssbFront.setOffsetHz(off); }
-        base.clear();
-        ssbFront.process(x, n, base);
         aud.clear();
-        const int T = (int)usbTaps.size();
-        for (const cf32 v : base) {
-            usbHist[(size_t)usbPos] = v; usbHist[(size_t)(usbPos + T)] = v;
-            if (++usbPos >= T) usbPos = 0;
-            if (++usbPh < 3) continue;
-            usbPh = 0;
-            const cf32* w = &usbHist[(size_t)usbPos];   // oldest first; the taps are symmetric about the middle in magnitude
-            float ar = 0, ai = 0;
-            for (int k = 0; k < T; k++) {
-                const cf32 h = usbTaps[(size_t)(T - 1 - k)], s = w[k];
-                ar += h.real() * s.real() - h.imag() * s.imag();
-                ai += h.real() * s.imag() + h.imag() * s.real();
+        ssb.feed(x, n, off, aud);
+        audPow += ssb.pow; audN += ssb.cnt; ssb.pow = 0; ssb.cnt = 0;
+        if (squelch.load()) {
+            // blocks of 0.1 s: the audio power against a floor that falls at once and rises slowly (3 % a second)
+            for (float& v : aud) {
+                sqAcc += (double)v * v; 
+                if (++sqN >= 800) {
+                    const double bp = sqAcc / sqN; sqAcc = 0; sqN = 0;
+                    sqFloor = sqFloor <= 0 ? bp : std::min(bp, sqFloor * 1.0003);
+                    if (bp > sqFloor * 4.0 + 1e-9) { sqOpen = true; sqHold = 4; }
+                    else if (sqHold > 0 && bp > sqFloor * 2.5) sqHold = 4;
+                    else if (sqHold > 0) sqHold--;
+                    if (sqHold == 0) sqOpen = false;
+                }
+                if (!sqOpen) v = 0.f;
             }
-            const float m2 = ar * ar + ai * ai;
-            audPow += m2; audN++;
-            const float mag = std::sqrt(m2);
-            env += (mag > env ? 0.01f : 0.0001f) * (mag - env);
-            aud.push_back(std::clamp(ar * 0.5f / (env + 1e-9f), -1.f, 1.f));
         }
         listen.play(aud.data(), aud.size());
+    }
+
+    // the stream of the auto decoder and the recorders
+    void autoFeed(const cf32* x, size_t n) {
+        const bool decoding = (autoMask.load() & ~(unsigned)kQoDecSsb) != 0;
+        bool recording;
+        { std::lock_guard<std::mutex> lk(recMu); recording = !recs.empty(); }
+        if (!decoding && !recording) return;
+        abS.clear();
+        abDec.process(x, n, abS);
+        if (decoding) autod.feed(abS.data(), abS.size());
+        if (recording) recordFeed();
+    }
+
+    void recordFeed() {
+        std::lock_guard<std::mutex> lk(recMu);
+        for (auto& kv : recs) {
+            Recorder& r = kv.second;
+            const Qo100Conversation* c = convs.find(kv.first);
+            if (!c) continue;
+            const double off = c->dialHz - corr() - kNbCentreHz;
+            r.chunk.clear();
+            r.ssb.feed(abS.data(), abS.size(), std::fabs(off - r.ssb.off) > 25 ? off : r.ssb.off, r.chunk);
+            r.ssb.pow = 0; r.ssb.cnt = 0;
+            if (!c->active) continue;
+            if (r.file && r.pcm.size() < (size_t)(kRecMaxSec * 8000)) { r.pcm.insert(r.pcm.end(), r.chunk.begin(), r.chunk.end()); r.dirty = true; }
+            if (stt) {
+                sttBuf[kv.first].insert(sttBuf[kv.first].end(), r.chunk.begin(), r.chunk.end());
+            }
+        }
+    }
+    std::map<int, std::vector<float>> sttBuf;
+
+    void writeRecording(int id, Recorder& r) {
+        if (!r.file || r.pcm.empty() || r.path.empty()) return;
+        std::string err;
+        if (!wb::writeWavMono16(r.path, r.pcm, 8000, err)) log(("QO-100: recording failed: " + err).c_str());
+        r.dirty = false;
+    }
+
+    // conversations: listen following, auto listen, recorders, speech to text (called from publish)
+    void conversationTasks(Qo100AutoTelemetry& at, double now) {
+        const auto& list = convs.list();
+        // auto listen: the loudest active conversation or the newest one, switched only when it has gone quiet or the other one clearly wins
+        const int mode = autoListenReq.load();
+        if (mode == 0) pick = 0;
+        else {
+            const Qo100Conversation* cur = nullptr; const Qo100Conversation* best = nullptr;
+            for (const auto& c : list) {
+                if (c.id == pick) cur = &c;
+                if (!c.active) continue;
+                if (!best || (mode == 1 ? c.levelDb > best->levelDb : c.startSec > best->startSec)) best = &c;
+            }
+            if (!cur || !cur->active) { if (best) { pick = best->id; pickSince = now; } }
+            else if (best && best->id != pick && now - pickSince > 3.0 && (mode == 2 || best->levelDb > cur->levelDb + 6)) { pick = best->id; pickSince = now; }
+        }
+        int want = listenConvReq.load();
+        if (mode != 0 && pick) want = pick;
+        listenEff = want;
+        if (want) {
+            for (const auto& c : list) if (c.id == want && c.dialHz > 0) {
+                if (std::fabs(c.dialHz - dialReq.load()) >= 40 && !(c.active == false && std::fabs(c.dialHz - dialReq.load()) < 400)) dialReq = c.dialHz;
+                break;
+            }
+        }
+        // recorders
+        std::unique_lock<std::mutex> lk(recMu);
+        for (const auto& w : recWant) {
+            if (!w.second || recs.count(w.first)) continue;
+            const Qo100Conversation* c = convs.find(w.first);
+            if (!c) continue;
+            Recorder r;
+            r.ssb.configure(abRate);
+            const auto tt = (std::time_t)c->startUtc; struct tm g {};
+#ifdef _WIN32
+            gmtime_s(&g, &tt);
+#else
+            gmtime_r(&tt, &g);
+#endif
+            char nm[96]; strftime(nm, sizeof nm, "qo100-conv%d-%Y%m%d-%H%M%S.wav", &g);
+            char fn[160]; snprintf(fn, sizeof fn, nm, w.first);
+            r.path = recDir.empty() ? std::string() : recDir + "/" + fn;
+            r.file = !r.path.empty();
+            recs[w.first] = std::move(r);
+        }
+        for (auto it = recs.begin(); it != recs.end();) {
+            const int id = it->first;
+            auto wi = recWant.find(id);
+            const Qo100Conversation* c = convs.find(id);
+            const bool stop = wi == recWant.end() || !wi->second;
+            const bool over = !c || (!c->active && c->lastSec < now - 5 && now - c->lastSec > gapReq.load());
+            if (it->second.dirty && now - it->second.lastWrite > 10) { writeRecording(id, it->second); it->second.lastWrite = now; }
+            if (stop || over) { writeRecording(id, it->second); sttBuf.erase(id); it = recs.erase(it); if (over && wi != recWant.end()) wi->second = false; }
+            else ++it;
+        }
+        // speech to text: 8 s of a conversation's audio at a time (not under the lock: the callback may take a while)
+        lk.unlock();
+        if (stt) for (auto& kv : sttBuf) if (kv.second.size() >= 64000) {
+            const std::string txt = stt(kv.second.data(), kv.second.size(), 8000.0);
+            kv.second.clear();
+            if (!txt.empty()) convs.setSnippet(kv.first, txt);
+        }
+        lk.lock();
+        for (auto& c : at.convs) {
+            c.listening = c.id == want;
+            auto r = recs.find(c.id);
+            c.recording = r != recs.end() && r->second.file;
+            if (r != recs.end()) c.recordPath = r->second.path;
+        }
+        at.listenConv = want; at.autoListen = mode;
     }
 
     void publish() {
@@ -333,6 +518,26 @@ struct Qo100Receiver::Impl {
                 t.beacons[1].snrDb = m - t.nbFloorDb;
                 t.beacons[1].found = km >= 0 && m - t.nbFloorDb >= 8;
                 if (km >= 0) t.beacons[1].rfHz = t.nbF0Hz + km * bin - c;
+            }
+            // the tracker, the conversations and the decoders on the signals
+            {
+                if (clearReq.exchange(false)) autod.clearResults();
+                autod.setEnabled(autoMask.load()); autod.setMaxSlots(maxSlotsReq.load()); autod.setCpuLimit(cpuReq.load());
+                autod.setStartTime(startUtcReq.load());
+                convs.setGapSec(gapReq.load());
+                const double now = tSec();
+                trk.update(t.nb.data(), t.nb.size(), t.nbF0Hz, t.nbBinHz, t.nbFloorDb, now);
+                const double utc = (double)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
+                convs.update(trk.mutableTracks(), now, utc);
+                autod.plan(trk.mutableTracks(), kNbCentreHz, corr(), now);
+                { int id = 0, cls = 0; std::string nm; while (autod.takeIdentified(id, nm, cls)) trk.setIdentified(id, nm, cls); }
+                autod.fill(t.autoDec);
+                t.autoDec.tracks = trk.tracks();
+                t.autoDec.convs = convs.list();
+                conversationTasks(t.autoDec, now);
+                for (auto& s : t.signals) {   // the signal list names what the tracker made of them
+                    for (const auto& k : t.autoDec.tracks) if (std::fabs(k.rfHz - s.rfHz) < std::max(200.0, 0.5 * k.widthHz)) { s.cls = k.cls; s.track = k.id; break; }
+                }
             }
         }
         // wideband spectrum and its DATV carriers
@@ -415,7 +620,10 @@ struct Qo100Receiver::Impl {
 };
 
 Qo100Receiver::Qo100Receiver() : p_(new Impl) {}
-Qo100Receiver::~Qo100Receiver() = default;
+Qo100Receiver::~Qo100Receiver() {
+    std::lock_guard<std::mutex> lk(p_->recMu);
+    for (auto& kv : p_->recs) p_->writeRecording(kv.first, kv.second);
+}
 
 void Qo100Receiver::configure(double r) {
     { std::lock_guard<std::mutex> lk(p_->mu); const uint64_t s = p_->pub.seq; p_->pub = Qo100Telemetry(); p_->pub.seq = s; }
@@ -435,6 +643,18 @@ bool Qo100Receiver::listening() const { return p_->listen.on.load(); }
 void Qo100Receiver::setVolume(float v) { p_->listen.volume = std::clamp(v, 0.f, 1.f); }
 void Qo100Receiver::setMuted(bool m) { p_->listen.muted = m; }
 void Qo100Receiver::setSilent(bool s) { p_->listen.silent = s; }
+void Qo100Receiver::setAutoDecoders(unsigned mask) { p_->autoMask = mask; }
+void Qo100Receiver::setAutoMaxSlots(int n) { p_->maxSlotsReq = n; }
+void Qo100Receiver::setAutoCpuLimit(float c) { p_->cpuReq = c; }
+void Qo100Receiver::setAutoStartTime(double utc) { p_->startUtcReq = utc; }
+void Qo100Receiver::clearAutoResults() { p_->clearReq = true; }
+void Qo100Receiver::setConversationGapSec(double s) { p_->gapReq = s; }
+void Qo100Receiver::setListenConversation(int id) { p_->listenConvReq = id; }
+void Qo100Receiver::setAutoListen(int mode) { p_->autoListenReq = std::clamp(mode, 0, 2); }
+void Qo100Receiver::setSquelch(bool on) { p_->squelch = on; }
+void Qo100Receiver::setRecordConversation(int id, bool on) { std::lock_guard<std::mutex> lk(p_->recMu); p_->recWant[id] = on; }
+void Qo100Receiver::setRecordDir(const std::string& dir) { std::lock_guard<std::mutex> lk(p_->recMu); p_->recDir = dir; }
+void Qo100Receiver::setSpeechToText(std::function<std::string(const float*, size_t, double)> fn) { std::lock_guard<std::mutex> lk(p_->recMu); p_->stt = std::move(fn); }
 void Qo100Receiver::setListenTap(std::function<void(const float* x, size_t n)> cb) { p_->listen.setTap(std::move(cb)); }
 
 void Qo100Receiver::feed(const cf32* x, size_t n) {

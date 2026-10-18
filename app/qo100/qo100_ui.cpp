@@ -4,6 +4,10 @@
 // hand-over to DVB-S/S2, and the drift history. Every frequency shown is the corrected downlink frequency once the beacons are locked.
 #include "app.h"
 #include "state/results_export.h"
+#include "panels/gallery.h"
+#include "i18n/i18n.h"
+#include "dect2/qo100/qo100_auto.h"
+#include "dect2/hfdig/hfdig_sstv.h"
 #include "gfx/gfx.h"
 #include "gfx/plot.h"
 #include "dect2/qo100/qo100_dsp.h"
@@ -14,6 +18,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <ctime>
+#include <filesystem>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -63,6 +70,16 @@ struct State {
     float dragX = 0;
     double dragV0 = 0, dragV1 = 0;
     char dialBuf[40] = "";
+    // the auto decoder and the conversation manager
+    unsigned autoMask = dect2::kQoDecSsb;
+    int maxSlots = 6;
+    float cpuLimit = 0.7f;
+    int autoListen = 0;             // 0 off, 1 loudest, 2 newest
+    bool squelch = true;
+    int listenConv = 0;
+    std::set<int> rec;              // conversations to record
+    std::set<std::string> published;   // SSTV pictures already in the gallery
+    std::string note;
     // the DVB-S/S2 decoder under the wideband view (Engine::setSecondaryDvbs): the carrier clicked, its report, why it was refused
     bool dvbsOn = false, autoPlay = false;
     dect2::Qo100Datv dvbsCarrier;
@@ -92,15 +109,22 @@ void load() {
     S.dialHz = p.getD("qo100Dial", 10489.600e6);
     S.autoCorr = p.getB("qo100AutoCorr", true);
     S.listen = p.getB("qo100Listen", false);
-    S.view = (int)std::clamp(p.getI("qo100View", 0), 0L, 2L);
+    S.view = (int)std::clamp(p.getI("qo100View", 0), 0L, 4L);
+    S.autoMask = (unsigned)p.getI("qo100AutoMask", dect2::kQoDecSsb);
+    S.maxSlots = (int)std::clamp(p.getI("qo100Slots", 6), 1L, 12L);
+    S.cpuLimit = (float)std::clamp(p.getD("qo100Cpu", 0.7), 0.1, 4.0);
+    S.autoListen = (int)std::clamp(p.getI("qo100AutoListen", 0), 0L, 2L);
+    S.squelch = p.getB("qo100Squelch", true);
 }
 void save() {
     auto& p = plat::prefs();
     p.setI("qo100LoPreset", S.loPreset); p.setD("qo100LoCustom", S.customLoMhz); p.setD("qo100Dial", S.dialHz); p.setI("qo100View", S.view);
     p.setB("qo100AutoCorr", S.autoCorr);
+    p.setI("qo100AutoMask", (long)S.autoMask); p.setI("qo100Slots", S.maxSlots); p.setD("qo100Cpu", S.cpuLimit);
+    p.setI("qo100AutoListen", S.autoListen); p.setB("qo100Squelch", S.squelch);
 }
 
-void setDial(double hz) { S.dialHz = std::round(hz / 10) * 10; save(); }
+void setDial(double hz) { S.dialHz = std::round(hz / 10) * 10; S.listenConv = 0; S.autoListen = 0; save(); }   // a dial set by hand ends the following
 
 void tuneRf(App& a, double rfHz) { tuneFreq(a, q::ifOf(rfHz, loHz()) / 1e6); }
 
@@ -227,6 +251,10 @@ void narrowView(App& a, float h) {
         if (!ys.empty()) { plt::Spec s; s.LineColor = pal::accent(); plt::PlotLine("nb", xs.data(), ys.data(), (int)ys.size(), s); }
         const double bx[3] = {q::kLowBeaconHz / 1e6, q::kPskBeaconHz / 1e6, q::kHighBeaconHz / 1e6};
         { plt::Spec s; s.LineColor = ImVec4(1.f, 0.82f, 0.35f, 0.35f); plt::PlotInfLines("beacons", bx, 3, s); }
+        for (const auto& k : t.autoDec.tracks) {
+            if (!k.active || k.cls == dect2::kQoUnknown || k.cls == dect2::kQoBeacon) continue;
+            plt::PlotText(dect2::qo100ClassName(k.cls), k.rfHz / 1e6, S.hi - 6 - 0.0f * k.id);
+        }
         const double dx = S.dialHz / 1e6;
         { plt::Spec s; s.LineColor = ImVec4(0.4f, 0.95f, 0.5f, 0.8f); plt::PlotInfLines("dial", &dx, 1, s); }
         if (!on) plt::PlotText(a.engine.running() ? "waiting for the narrowband transponder" : "Start the receiver", (S.viewLo + S.viewHi) / 2e6, (S.lo + S.hi) / 2);
@@ -412,6 +440,227 @@ void driftView(App& a, float h) {
     }
 }
 
+
+// ---- the auto decoder ---------------------------------------------------------------------------------------------------------------------------
+
+std::string utcText(double utc) {
+    const std::time_t tt = (std::time_t)utc;
+    struct tm g {};
+#ifdef _WIN32
+    gmtime_s(&g, &tt);
+#else
+    gmtime_r(&tt, &g);
+#endif
+    char b[24]; strftime(b, sizeof b, "%H:%M:%S", &g);
+    return b;
+}
+
+std::string decNames(int mask) {
+    std::string o;
+    for (int bit = 1; bit <= 128; bit <<= 1) if (mask & bit) { if (!o.empty()) o += " "; o += dect2::qo100DecoderName(bit); }
+    return o.empty() ? "-" : o;
+}
+
+void autoView(App& a, float h) {
+    const auto& t = T(a);
+    const auto& ad = t.autoDec;
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("%s", tr("Decode automatically"));
+    static const struct { unsigned bit; const char* name; const char* tip; } kDec[] = {
+        {dect2::kQoDecSsb, nullptr, N_("List the SSB conversations (the Conversations view); no decoder runs")},
+        {dect2::kQoDecFt8, "FT8", N_("FT8 on every signal that keys in 15 s slots")},
+        {dect2::kQoDecFt4, "FT4", N_("FT4 on every signal that keys in 7.5 s slots")},
+        {dect2::kQoDecJs8, "JS8", N_("JS8Call on every signal that keys in 15 s slots")},
+        {dect2::kQoDecPsk, "PSK31", N_("PSK31 / PSK63 on every narrow continuous signal")},
+        {dect2::kQoDecCw, "CW", N_("Morse on every keyed carrier")},
+        {dect2::kQoDecSstv, "SSTV", N_("SSTV on every steady signal about 1.3 kHz wide; pictures go to the gallery")},
+        {dect2::kQoDecRtty, "RTTY", N_("RTTY on every wide continuous pair of tones")}};
+    for (const auto& d : kDec) {
+        flowNext(8 * gUi);
+        bool on = (S.autoMask & d.bit) != 0;
+        char id[64]; snprintf(id, sizeof id, "%s##qodec%u", d.name ? d.name : tr("SSB conversations"), d.bit);
+        if (ImGui::Checkbox(id, &on)) { if (on) S.autoMask |= d.bit; else S.autoMask &= ~d.bit; save(); }
+        tip(tr(d.tip));
+    }
+    flowBreak();
+    ImGui::SetNextItemWidth(150 * gUi);
+    char fmt[48]; snprintf(fmt, sizeof fmt, "%s", tr("%d channels at most"));
+    if (ImGui::SliderInt("##qoslots", &S.maxSlots, 1, 12, fmt)) save();
+    tip(tr("How many decoder channels may run at once; each channel decodes every signal inside 3.4 kHz of audio"));
+    flowNext(10 * gUi);
+    ImGui::SetNextItemWidth(150 * gUi);
+    snprintf(fmt, sizeof fmt, "%s", tr("CPU limit %.1f cores"));
+    if (ImGui::SliderFloat("##qocpu", &S.cpuLimit, 0.1f, 4.f, fmt)) save();
+    tip(tr("When the decoders need more than this, the weakest channel is dropped"));
+    flowNext(10 * gUi);
+    {
+        const bool l = live(a);
+        char ov[64]; snprintf(ov, sizeof ov, tr("CPU %.0f %%"), l ? ad.cpuLoad * 100.f : 0.f);
+        const float lim = std::max(0.05f, l && ad.cpuLimit > 0 ? ad.cpuLimit : S.cpuLimit);
+        ImGui::ProgressBar(l ? std::min(1.f, ad.cpuLoad / lim) : 0.f, ImVec2(130 * gUi, 0), ov);
+        tip(tr("Time the decoders use per second of signal, against the limit"));
+    }
+    flowNext(10 * gUi);
+    ImGui::TextDisabled(tr("%zu channels, %d dropped"), ad.slots.size(), ad.dropped);
+    flowEnd();
+    if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? tr("starting") : tr("Start the receiver")); return; }
+    if (!t.nbOk) { ImGui::TextColored(pal::warnAmber(), "the narrowband transponder is outside the radio's band: tune to it (Narrowband only) or raise the sample rate"); return; }
+
+    const float sp = ImGui::GetStyle().ItemSpacing.x;
+    const float lw = std::min((ImGui::GetContentRegionAvail().x - sp) * 0.46f, 560 * gUi);
+    const float bh = std::max(100.f, ImGui::GetContentRegionAvail().y - 4 * gUi);
+    ImGui::BeginChild("##qoautol", ImVec2(lw, bh), ImGuiChildFlags_Borders);
+    ImGui::TextDisabled("%s", tr("Signals found"));
+    if (ImGui::BeginTable("##qotrk", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV)) {
+        ImGui::TableSetupColumn(tr("Downlink MHz")); ImGui::TableSetupColumn(tr("Width")); ImGui::TableSetupColumn("dB"); ImGui::TableSetupColumn(tr("Type")); ImGui::TableSetupColumn(tr("Decoding"));
+        ImGui::TableHeadersRow();
+        int i = 0;
+        for (const auto& k : ad.tracks) {
+            ImGui::PushID(i++);
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            char b[48]; snprintf(b, sizeof b, "%.4f##tk", k.rfHz / 1e6);
+            if (k.active) ImGui::PushStyleColor(ImGuiCol_Text, pal::accent());
+            if (ImGui::Selectable(b, false, ImGuiSelectableFlags_SpanAllColumns)) { setDial(k.cls == dect2::kQoSsb ? k.loHz - 300 : k.rfHz - 700); S.view = 0; }
+            if (k.active) ImGui::PopStyleColor();
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s - %s\n%s", mhz(k.loHz, 4).c_str(), mhz(k.hiHz, 4).c_str(), k.idName.empty() ? "" : k.idName.c_str());
+            ImGui::TableNextColumn(); ImGui::Text("%.0f Hz", k.widthHz);
+            ImGui::TableNextColumn(); ImGui::Text("%.0f", k.snrDb);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(k.cls == dect2::kQoUnknown ? tr("unknown") : dect2::qo100ClassName(k.cls));
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(decNames(k.decMask & ~dect2::kQoDecSsb).c_str());
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+    ImGui::EndChild();
+    ImGui::SameLine();
+    ImGui::BeginChild("##qoautor", ImVec2(0, bh), ImGuiChildFlags_Borders);
+    // FT8 / FT4 / JS8 messages, newest first
+    ImGui::TextDisabled("%s", tr("Decoded messages"));
+    flowNext(10 * gUi);
+    {
+        resexp::Table x; x.cols = {"time", "frequency_hz", "band", "mode", "snr_db", "call", "grid", "message", "prop_mode", "sat_name"};
+        for (const auto& d : ad.decodes)
+            x.add({utcText(d.utc), resexp::num(d.rfHz, 0), "3cm", dect2::qo100DecoderName(d.kind), resexp::num(d.snrDb, 0), d.call, d.grid, d.text, "SAT", "QO-100"}, d.utc);
+        resexp::saveButton(x, "qo100auto", S.note, "svqoa");
+    }
+    flowEnd();
+    if (!S.note.empty()) ImGui::TextDisabled("%s", S.note.c_str());
+    const float mh = std::max(60.f * gUi, ImGui::GetContentRegionAvail().y * 0.4f);
+    if (ImGui::BeginTable("##qodecs", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV, ImVec2(0, mh))) {
+        ImGui::TableSetupColumn("UTC", ImGuiTableColumnFlags_WidthFixed, 62 * gUi); ImGui::TableSetupColumn(tr("Mode"), ImGuiTableColumnFlags_WidthFixed, 46 * gUi);
+        ImGui::TableSetupColumn(tr("Downlink MHz"), ImGuiTableColumnFlags_WidthFixed, 86 * gUi); ImGui::TableSetupColumn("dB", ImGuiTableColumnFlags_WidthFixed, 32 * gUi);
+        ImGui::TableSetupColumn(tr("Message"));
+        ImGui::TableHeadersRow();
+        for (size_t i = ad.decodes.size(); i-- > 0;) {
+            const auto& d = ad.decodes[i];
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(utcText(d.utc).c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(dect2::qo100DecoderName(d.kind));
+            ImGui::TableNextColumn(); ImGui::Text("%.4f", d.rfHz / 1e6);
+            ImGui::TableNextColumn(); ImGui::Text("%.0f", d.snrDb);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(d.text.c_str());
+        }
+        ImGui::EndTable();
+    }
+    // PSK31 / CW / RTTY text
+    ImGui::TextDisabled("%s", tr("Text"));
+    ImGui::BeginChild("##qotxt", ImVec2(0, std::max(40.f * gUi, ImGui::GetContentRegionAvail().y * 0.55f)));
+    if (ad.texts.empty()) ImGui::TextDisabled("%s", tr("nothing decoded yet"));
+    for (const auto& x : ad.texts) {
+        std::string tail = x.text.size() > 240 ? x.text.substr(x.text.size() - 240) : x.text;
+        for (char& c : tail) if (c == '\n' || c == '\r') c = ' ';
+        ImGui::TextColored(pal::accent(), "%s %.4f", dect2::qo100DecoderName(x.kind), x.rfHz / 1e6);
+        ImGui::SameLine(); ImGui::TextWrapped("%s", tail.c_str());
+    }
+    ImGui::EndChild();
+    // SSTV pictures
+    if (!ad.images.empty()) {
+        ImGui::Text(tr("%zu SSTV pictures"), ad.images.size());
+        ImGui::SameLine();
+        if (ImGui::SmallButton(tr("Open the gallery"))) a.galleryOpen = true;
+    }
+    ImGui::EndChild();
+}
+
+// ---- the SSB conversation manager --------------------------------------------------------------------------------------------------------------
+
+void listenConversation(const dect2::Qo100Conversation& c) {
+    setDial(c.dialHz);
+    S.listenConv = c.id;
+    S.listen = true;
+    save();
+}
+
+void convView(App& a, float h) {
+    const auto& t = T(a);
+    const auto& ad = t.autoDec;
+    if (!(S.autoMask & dect2::kQoDecSsb)) {
+        ImGui::PushTextWrapPos(0);
+        ImGui::TextColored(pal::warnAmber(), "%s", tr("Tick SSB conversations in the Auto decoder view to list the voice conversations."));
+        ImGui::PopTextWrapPos();
+    }
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("%s", tr("Auto listen"));
+    flowNext(4 * gUi);
+    ImGui::SetNextItemWidth(170 * gUi);
+    const char* modes[3] = {tr("off"), tr("the loudest conversation"), tr("the newest conversation")};
+    if (ImGui::BeginCombo("##qoal", modes[std::clamp(S.autoListen, 0, 2)])) {
+        for (int i = 0; i < 3; i++) if (ImGui::Selectable(modes[i], S.autoListen == i)) { S.autoListen = i; if (i) { S.listen = true; S.listenConv = 0; } save(); }
+        ImGui::EndCombo();
+    }
+    tip(tr("Listen follows the loudest or the newest active conversation by itself, switching when it goes quiet or another one is clearly louder"));
+    flowNext(10 * gUi);
+    if (ImGui::Checkbox(tr("Squelch"), &S.squelch)) save();
+    tip(tr("Mute the audio while only noise is there"));
+    flowNext(10 * gUi);
+    if (S.listenConv || S.autoListen) {
+        if (ImGui::SmallButton(tr("Stop following"))) { S.listenConv = 0; S.autoListen = 0; save(); }
+        flowNext(6 * gUi);
+    }
+    ImGui::TextDisabled("%s", S.listen ? tr("Listen is on") : tr("Listen is off"));
+    flowEnd();
+    if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? tr("starting") : tr("Start the receiver")); return; }
+    if (ad.convs.empty()) { ImGui::TextDisabled("%s", tr("no SSB conversation heard yet")); return; }
+    if (ImGui::BeginTable("##qoconv", 10, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV, ImVec2(0, std::max(100.f, h - 40 * gUi)))) {
+        ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 26 * gUi);
+        ImGui::TableSetupColumn(tr("Start (UTC)")); ImGui::TableSetupColumn(tr("Length")); ImGui::TableSetupColumn(tr("Dial MHz")); ImGui::TableSetupColumn("dB");
+        ImGui::TableSetupColumn(tr("Drift")); ImGui::TableSetupColumn(tr("Stations")); ImGui::TableSetupColumn(tr("Heard"));
+        ImGui::TableSetupColumn(tr("Listen")); ImGui::TableSetupColumn(tr("Record"));
+        ImGui::TableHeadersRow();
+        for (const auto& c : ad.convs) {
+            ImGui::PushID(c.id);
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::Text("%d", c.id);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(utcText(c.startUtc).c_str());
+            ImGui::TableNextColumn();
+            { const double len = std::max(0.0, c.lastUtc - c.startUtc); ImGui::Text("%d:%02d%s", (int)(len / 60), (int)std::fmod(len, 60.0), c.active ? "" : tr(" ended")); }
+            ImGui::TableNextColumn(); ImGui::Text("%.4f", c.dialHz / 1e6);
+            ImGui::TableNextColumn(); ImGui::Text("%.0f", c.levelDb);
+            ImGui::TableNextColumn(); if (c.driftValid) ImGui::Text("%+.0f Hz/min", c.driftHzPerMin); else ImGui::TextDisabled("-");
+            ImGui::TableNextColumn(); ImGui::Text("%d", c.stations);
+            ImGui::TableNextColumn();
+            if (!c.snippet.empty() || !c.calls.empty()) {
+                std::string calls; for (const auto& s : c.calls) calls += (calls.empty() ? "" : " ") + s;
+                ImGui::TextUnformatted(calls.empty() ? c.snippet.c_str() : calls.c_str());
+                if (ImGui::IsItemHovered() && !c.snippet.empty()) ImGui::SetTooltip("%s", c.snippet.c_str());
+            } else ImGui::TextDisabled("%s", c.active ? tr("talking") : "-");
+            ImGui::TableNextColumn();
+            const bool cur = c.listening || S.listenConv == c.id;
+            if (cur) ImGui::PushStyleColor(ImGuiCol_Button, pal::accent(0.45f));
+            if (ImGui::SmallButton(cur ? tr("Listening") : tr("Listen"))) listenConversation(c);
+            if (cur) ImGui::PopStyleColor();
+            tip(tr("Tune the listening channel to this conversation (upper sideband, 300 - 3000 Hz) and play it; the dial follows its drift"));
+            ImGui::TableNextColumn();
+            bool r = S.rec.count(c.id) != 0;
+            if (ImGui::Checkbox("##rec", &r)) { if (r) S.rec.insert(c.id); else S.rec.erase(c.id); }
+            tip(tr("Record this conversation to a WAV file in the QO-100 folder of the data folder"));
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+}
+
 void listenRow(App& a) {
     listenControls(a, S.listen, "qo100Listen", "qo100", "Play the upper sideband, 300 - 3000 Hz above the dial (corrected frequency), on the sound card");
     flowNext(10 * gUi);
@@ -436,9 +685,22 @@ void tick(App& a) {
     auto& r = a.engine.qo100();
     r.setLo(loHz());
     r.setAutoCorrection(S.autoCorr);
-    r.setDialHz(S.dialHz);
+    if (!S.listenConv && !S.autoListen) r.setDialHz(S.dialHz);   // else the receiver moves it with the conversation
     r.setListen(S.listen);
     r.setVolume(a.volume); r.setMuted(a.muted);
+    r.setAutoDecoders(S.autoMask);
+    r.setAutoMaxSlots(S.maxSlots);
+    r.setAutoCpuLimit(S.cpuLimit);
+    r.setListenConversation(S.listenConv);
+    r.setAutoListen(S.autoListen);
+    r.setSquelch(S.squelch && (S.listenConv || S.autoListen));
+    {
+        static bool dirSet = false;
+        if (!dirSet) { dirSet = true; const std::string d = plat::dataDir() + "/qo100"; std::error_code ec; std::filesystem::create_directories(d, ec); r.setRecordDir(d); }
+        static std::set<int> sent;
+        for (int id : S.rec) if (!sent.count(id)) { r.setRecordConversation(id, true); sent.insert(id); }
+        for (auto it = sent.begin(); it != sent.end();) { if (!S.rec.count(*it)) { r.setRecordConversation(*it, false); it = sent.erase(it); } else ++it; }
+    }
     if (S.dvbsOn) {   // the decoder under the wideband view: its report (it is the engine's second mode), and the first service plays by itself
         if (a.engine.secondaryStandard() == 8) {
             RxTelemetry t2;
@@ -459,6 +721,14 @@ void tick(App& a) {
     const auto& t = T(a);
     if (!live(a) || t.seq == S.lastSeq) return;
     S.lastSeq = t.seq;
+    for (const auto& im : t.autoDec.images) {
+        if (!im || !im->complete || im->width <= 0 || im->rgb.size() < (size_t)im->width * im->height * 3) continue;
+        const std::string key = "qo100-sstv-" + std::to_string((long long)im->unixTime) + "-" + std::to_string(im->id);
+        if (!S.published.insert(key).second) continue;
+        gallery::Meta gm; gm.satellite = "QO-100"; gm.detail = im->mode;
+        gallery::publishRgb(key, "SSTV", (double)im->unixTime, im->width, im->height, im->rgb.data(), gm);
+    }
+    if (S.listenConv || S.autoListen) { const double d = t.dialHz; if (std::fabs(d - S.dialHz) >= 10) { S.dialHz = d; } }   // the dial follows the conversation's drift
     if (!t.nb.empty()) {
         // a steady scale: whole 10 dB steps, moved only when the floor or the held peak really leave it (following every
         // update made the spectrum jump up and down as SSB stations came and went)
@@ -490,12 +760,12 @@ void tab(App& a) {
     ImGui::BeginChild("##lock", ImVec2(0, 2 * ImGui::GetTextLineHeightWithSpacing() + 2 * gUi), ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     lockLine(a);
     ImGui::EndChild();
-    static const char* const kV[] = {"Narrowband", "Wideband", "Drift"};
-    for (int i = 0; i < 3; i++) {
+    const char* const kV[] = {"Narrowband", "Wideband", "Drift", tr("Auto decoder"), tr("Conversations")};
+    for (int i = 0; i < 5; i++) {
         if (i) ImGui::SameLine();
         if (ImGui::RadioButton(kV[i], S.view == i)) { S.view = i; save(); }
     }
-    if (S.view == 0) { ImGui::SameLine(0, 16 * gUi); listenRow(a); }
+    if (S.view == 0 || S.view == 4) { ImGui::SameLine(0, 16 * gUi); listenRow(a); }
     const float h = std::max(120.f, ImGui::GetContentRegionAvail().y - 2);
     if (S.view == 0) narrowView(a, h);
     else if (S.view == 1 && S.dvbsOn) {   // the spectrum stays live above, the decoder of the clicked carrier below
@@ -505,6 +775,8 @@ void tab(App& a) {
         decodePanel(a, ph);
     }
     else if (S.view == 1) wideView(a, h);
+    else if (S.view == 3) autoView(a, h);
+    else if (S.view == 4) convView(a, h);
     else driftView(a, h);
 }
 
@@ -517,7 +789,7 @@ void list(App& a) {
     for (const auto& s : t.signals) {
         static const char* const kB[] = {"CW beacon", "PSK beacon", "CW beacon"};
         char b[96];
-        snprintf(b, sizeof b, "%.4f  %4.0f dB  %s##qs%d", s.rfHz / 1e6, s.snrDb, s.beacon >= 0 ? kB[s.beacon] : s.widthHz > 400 ? "SSB" : "carrier", i++);
+        snprintf(b, sizeof b, "%.4f  %4.0f dB  %s##qs%d", s.rfHz / 1e6, s.snrDb, s.beacon >= 0 ? kB[s.beacon] : s.cls != dect2::kQoUnknown ? dect2::qo100ClassName(s.cls) : s.widthHz > 400 ? "SSB" : "carrier", i++);
         if (ImGui::Selectable(b)) { setDial(s.widthHz > 400 ? s.rfHz - 600 : s.rfHz - 700); S.view = 0; }
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s, %.0f Hz wide\nclick: put the dial on it", mhz(s.rfHz, 6).c_str(), s.widthHz);
     }

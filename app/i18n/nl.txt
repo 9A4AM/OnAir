@@ -3189,3 +3189,45 @@ Ping	Ping
 with interference bursts	met stoorpulsen
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Het testsignaal is een baken 420 Hz naast het midden met gesimuleerde meteorenechoën: korte onderdichte en enkele lange overdichte.
 Beacon echoes, 143.050 MHz	Bakenechoën, 143,050 MHz
+#  QO-100: the auto decoder and the SSB conversation manager
+ ended	 afgelopen
+%d channels at most	hoogstens %d kanalen
+%zu SSTV pictures	%zu SSTV-beelden
+%zu channels, %d dropped	%zu kanalen, %d laten vallen
+Auto decoder	Automatische decoder
+Auto listen	Automatisch luisteren
+CPU %.0f %%	CPU %.0f %%
+CPU limit %.1f cores	CPU-limiet %.1f kernen
+Conversations	Gesprekken
+Decode automatically	Automatisch decoderen
+Decoding	Decoderen
+Dial MHz	Afstemming MHz
+Downlink MHz	Downlink MHz
+FT4 on every signal that keys in 7.5 s slots	FT4 op elk signaal dat in slots van 7,5 s tast
+FT8 on every signal that keys in 15 s slots	FT8 op elk signaal dat in slots van 15 s tast
+How many decoder channels may run at once; each channel decodes every signal inside 3.4 kHz of audio	Hoeveel decoderkanalen tegelijk mogen draaien; elk kanaal decodeert alle signalen binnen 3,4 kHz audio
+JS8Call on every signal that keys in 15 s slots	JS8Call op elk signaal dat in slots van 15 s tast
+List the SSB conversations (the Conversations view); no decoder runs	Toont de SSB-gesprekken (weergave Gesprekken); er draait geen decoder
+Listen follows the loudest or the newest active conversation by itself, switching when it goes quiet or another one is clearly louder	Luisteren volgt zelf het luidste of nieuwste actieve gesprek en schakelt om als het stilvalt of een ander duidelijk luider is
+Listen is off	Luisteren staat uit
+Listen is on	Luisteren staat aan
+Listening	Luistert
+Morse on every keyed carrier	Morse op elke getaste draaggolf
+Mute the audio while only noise is there	Demp het geluid zolang er alleen ruis is
+Open the gallery	Galerij openen
+PSK31 / PSK63 on every narrow continuous signal	PSK31 / PSK63 op elk smal continu signaal
+RTTY on every wide continuous pair of tones	RTTY op elk breed continu tonenpaar
+Record this conversation to a WAV file in the QO-100 folder of the data folder	Dit gesprek opnemen in een WAV-bestand in de QO-100-map van de gegevensmap
+SSB conversations	SSB-gesprekken
+SSTV on every steady signal about 1.3 kHz wide; pictures go to the gallery	SSTV op elk gelijkmatig signaal van ongeveer 1,3 kHz breed; beelden gaan naar de galerij
+Squelch	Squelch
+Start (UTC)	Begin (UTC)
+Stop following	Niet meer volgen
+Tick SSB conversations in the Auto decoder view to list the voice conversations.	Vink SSB-gesprekken aan in de weergave Automatische decoder om de spraakgesprekken te tonen.
+Time the decoders use per second of signal, against the limit	Rekentijd van de decoders per seconde signaal, ten opzichte van de limiet
+Tune the listening channel to this conversation (upper sideband, 300 - 3000 Hz) and play it; the dial follows its drift	Stemt het luisterkanaal af op dit gesprek (bovenste zijband, 300 - 3000 Hz) en speelt het af; de afstemming volgt de drift
+When the decoders need more than this, the weakest channel is dropped	Als de decoders meer nodig hebben dan dit, wordt het zwakste kanaal losgelaten
+no SSB conversation heard yet	nog geen SSB-gesprek gehoord
+talking	praat
+the loudest conversation	het luidste gesprek
+the newest conversation	het nieuwste gesprek

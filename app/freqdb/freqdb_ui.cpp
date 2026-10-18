@@ -99,7 +99,16 @@ std::string currentModeKey(const App& a) {
 bool tuneTo(App& a, const FreqEntry& e, bool withMode) {
     dect2::Memory m = dect2::freqToMemory(e);
     m.bandwidthHz = 0; m.group.clear(); m.tags.clear(); m.notes.clear();
-    if (e.mode == "qo100" && e.hz > 5000000000ull) m.freqHz = (uint64_t)std::llround(dect2::qo100::ifOf((double)e.hz, 9750e6));   // the radio sees the first IF behind the LNB
+    // the radio sees the first IF behind the LNB (the oscillator chosen on the QO-100 screen). A QO-100 preset of another mode (FT8, SSTV, PSK31 ...) is
+    // tuned the same way: the transponder does not invert, so with an LNB whose oscillator is below the downlink (9750 MHz) the sideband stays upper
+    const bool qoRf = e.hz >= 10489000000ull && e.hz <= 10500000000ull && (e.mode == "qo100" || e.name.rfind("QO-100", 0) == 0);
+    if (qoRf) {
+        double lo = 9750e6;
+        int n = 0; const dect2::qo100::LoPreset* pr = dect2::qo100::loPresets(n);
+        const long sel = plat::prefs().getI("qo100LoPreset", 0);
+        lo = sel >= 0 && sel < n ? pr[sel].loHz : plat::prefs().getD("qo100LoCustom", 9750) * 1e6;
+        m.freqHz = (uint64_t)std::llround(dect2::qo100::ifOf((double)e.hz, lo));
+    }
     if (memoryModeIndex(m.mode) < 0) withMode = false;   // a mode this build lacks: the frequency alone
     std::string note;
     if (memoryRecallApp(a, m, withMode, note)) {

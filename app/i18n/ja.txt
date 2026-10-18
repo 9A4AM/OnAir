@@ -3189,3 +3189,45 @@ Ping	ピング
 with interference bursts	干渉バースト付き
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	テスト信号は中心から420 Hz離れたビーコンと模擬流星エコーです。短い低密のものと、いくつかの長い過密のものを含みます。
 Beacon echoes, 143.050 MHz	ビーコンエコー、143.050 MHz
+#  QO-100: the auto decoder and the SSB conversation manager
+ ended	 終了
+%d channels at most	最大 %d チャンネル
+%zu SSTV pictures	SSTV 画像 %zu 枚
+%zu channels, %d dropped	%zu チャンネル、%d 件を破棄
+Auto decoder	自動デコーダー
+Auto listen	自動で聴く
+CPU %.0f %%	CPU %.0f %%
+CPU limit %.1f cores	CPU 上限 %.1f コア
+Conversations	会話
+Decode automatically	自動でデコード
+Decoding	デコード中
+Dial MHz	ダイヤル MHz
+Downlink MHz	ダウンリンク MHz
+FT4 on every signal that keys in 7.5 s slots	7.5 秒スロットでキーイングされるすべての信号に FT4
+FT8 on every signal that keys in 15 s slots	15 秒スロットでキーイングされるすべての信号に FT8
+How many decoder channels may run at once; each channel decodes every signal inside 3.4 kHz of audio	同時に動かせるデコーダーチャンネルの数。各チャンネルは音声 3.4 kHz 内のすべての信号をデコードします
+JS8Call on every signal that keys in 15 s slots	15 秒スロットでキーイングされるすべての信号に JS8Call
+List the SSB conversations (the Conversations view); no decoder runs	SSB の会話を一覧にします(会話ビュー)。デコーダーは動きません
+Listen follows the loudest or the newest active conversation by itself, switching when it goes quiet or another one is clearly louder	聴取は、最も大きい、または最新のアクティブな会話に自動で追従し、その会話が静かになるか、他が明らかに大きくなると切り替わります
+Listen is off	聴取はオフです
+Listen is on	聴取はオンです
+Listening	聴取中
+Morse on every keyed carrier	キーイングされるすべての搬送波にモールス
+Mute the audio while only noise is there	雑音だけのあいだは音を消します
+Open the gallery	ギャラリーを開く
+PSK31 / PSK63 on every narrow continuous signal	連続する狭い信号すべてに PSK31 / PSK63
+RTTY on every wide continuous pair of tones	連続する広いトーン対すべてに RTTY
+Record this conversation to a WAV file in the QO-100 folder of the data folder	この会話を、データフォルダーの QO-100 フォルダーに WAV ファイルとして録音します
+SSB conversations	SSB の会話
+SSTV on every steady signal about 1.3 kHz wide; pictures go to the gallery	幅約 1.3 kHz の安定した信号すべてに SSTV。画像はギャラリーに入ります
+Squelch	スケルチ
+Start (UTC)	開始 (UTC)
+Stop following	追従を止める
+Tick SSB conversations in the Auto decoder view to list the voice conversations.	音声の会話を一覧にするには、自動デコーダービューで「SSB の会話」にチェックを入れてください。
+Time the decoders use per second of signal, against the limit	信号 1 秒あたりにデコーダーが使う時間(上限との比)
+Tune the listening channel to this conversation (upper sideband, 300 - 3000 Hz) and play it; the dial follows its drift	聴取チャンネルをこの会話に合わせ(上側波帯、300 - 3000 Hz)、再生します。ダイヤルはそのドリフトに追従します
+When the decoders need more than this, the weakest channel is dropped	デコーダーがこれより多く必要とすると、最も弱いチャンネルが破棄されます
+no SSB conversation heard yet	SSB の会話はまだ聞こえていません
+talking	送信中
+the loudest conversation	最も大きい会話
+the newest conversation	最新の会話

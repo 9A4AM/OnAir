@@ -3175,3 +3175,45 @@ Ping	Ping
 with interference bursts	zavarimpulzusokkal
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	A tesztjel egy 420 Hz-re a középtől lévő jeladó szimulált meteorvisszhangokkal: rövid alulsűrűek és néhány hosszú túlsűrű.
 Beacon echoes, 143.050 MHz	Jeladó-visszhangok, 143,050 MHz
+#  QO-100: the auto decoder and the SSB conversation manager
+ ended	 vége
+%d channels at most	legfeljebb %d csatorna
+%zu SSTV pictures	%zu SSTV-kép
+%zu channels, %d dropped	%zu csatorna, %d eldobva
+Auto decoder	Automatikus dekóder
+Auto listen	Automatikus hallgatás
+CPU %.0f %%	CPU %.0f %%
+CPU limit %.1f cores	CPU-korlát %.1f mag
+Conversations	Beszélgetések
+Decode automatically	Automatikus dekódolás
+Decoding	Dekódolás
+Dial MHz	Hangolás MHz
+Downlink MHz	Downlink MHz
+FT4 on every signal that keys in 7.5 s slots	FT4 minden 7,5 s-os időszeletben billentyűzött jelen
+FT8 on every signal that keys in 15 s slots	FT8 minden 15 s-os időszeletben billentyűzött jelen
+How many decoder channels may run at once; each channel decodes every signal inside 3.4 kHz of audio	Hány dekódercsatorna futhat egyszerre; minden csatorna a 3,4 kHz-es hangsávon belüli összes jelet dekódolja
+JS8Call on every signal that keys in 15 s slots	JS8Call minden 15 s-os időszeletben billentyűzött jelen
+List the SSB conversations (the Conversations view); no decoder runs	Felsorolja az SSB-beszélgetéseket (Beszélgetések nézet); nem fut dekóder
+Listen follows the loudest or the newest active conversation by itself, switching when it goes quiet or another one is clearly louder	A hallgatás magától követi a leghangosabb vagy a legújabb aktív beszélgetést, és vált, ha elcsendesedik vagy egy másik egyértelműen hangosabb
+Listen is off	A hallgatás ki van kapcsolva
+Listen is on	A hallgatás be van kapcsolva
+Listening	Hallgatja
+Morse on every keyed carrier	Morze minden billentyűzött vivőn
+Mute the audio while only noise is there	Elnémítja a hangot, amíg csak zaj van
+Open the gallery	Galéria megnyitása
+PSK31 / PSK63 on every narrow continuous signal	PSK31 / PSK63 minden keskeny folyamatos jelen
+RTTY on every wide continuous pair of tones	RTTY minden széles folyamatos hangpáron
+Record this conversation to a WAV file in the QO-100 folder of the data folder	A beszélgetés felvétele WAV-fájlba az adatmappa QO-100 mappájába
+SSB conversations	SSB-beszélgetések
+SSTV on every steady signal about 1.3 kHz wide; pictures go to the gallery	SSTV minden egyenletes, kb. 1,3 kHz széles jelen; a képek a galériába kerülnek
+Squelch	Zajzár
+Start (UTC)	Kezdet (UTC)
+Stop following	Követés leállítása
+Tick SSB conversations in the Auto decoder view to list the voice conversations.	Jelölje be az SSB-beszélgetések négyzetet az Automatikus dekóder nézetben a beszélgetések listázásához.
+Time the decoders use per second of signal, against the limit	A dekóderek időigénye jelmásodpercenként, a korláthoz képest
+Tune the listening channel to this conversation (upper sideband, 300 - 3000 Hz) and play it; the dial follows its drift	A hallgatási csatornát erre a beszélgetésre hangolja (felső oldalsáv, 300 - 3000 Hz) és lejátssza; a hangolás követi a sodródását
+When the decoders need more than this, the weakest channel is dropped	Ha a dekóderek ennél többet igényelnek, a leggyengébb csatorna kiesik
+no SSB conversation heard yet	még nem hallatszik SSB-beszélgetés
+talking	beszél
+the loudest conversation	a leghangosabb beszélgetés
+the newest conversation	a legújabb beszélgetés

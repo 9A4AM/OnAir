@@ -3172,3 +3172,45 @@ Ping	Ping
 with interference bursts	con raffiche di disturbo
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Il segnale di prova è un faro a 420 Hz dal centro con echi meteorici simulati: brevi sottodensi e alcuni lunghi sovradensi.
 Beacon echoes, 143.050 MHz	Echi del faro, 143,050 MHz
+#  QO-100: the auto decoder and the SSB conversation manager
+ ended	 conclusa
+%d channels at most	al massimo %d canali
+%zu SSTV pictures	%zu immagini SSTV
+%zu channels, %d dropped	%zu canali, %d scartati
+Auto decoder	Decodificatore automatico
+Auto listen	Ascolto automatico
+CPU %.0f %%	CPU %.0f %%
+CPU limit %.1f cores	Limite CPU %.1f core
+Conversations	Conversazioni
+Decode automatically	Decodifica automaticamente
+Decoding	In decodifica
+Dial MHz	Dial MHz
+Downlink MHz	Downlink MHz
+FT4 on every signal that keys in 7.5 s slots	FT4 su ogni segnale che trasmette in slot da 7,5 s
+FT8 on every signal that keys in 15 s slots	FT8 su ogni segnale che trasmette in slot da 15 s
+How many decoder channels may run at once; each channel decodes every signal inside 3.4 kHz of audio	Quanti canali di decodifica possono funzionare insieme; ogni canale decodifica tutti i segnali entro 3,4 kHz di audio
+JS8Call on every signal that keys in 15 s slots	JS8Call su ogni segnale che trasmette in slot da 15 s
+List the SSB conversations (the Conversations view); no decoder runs	Elenca le conversazioni SSB (vista Conversazioni); nessun decodificatore in funzione
+Listen follows the loudest or the newest active conversation by itself, switching when it goes quiet or another one is clearly louder	L'ascolto segue da solo la conversazione attiva più forte o più recente e cambia quando tace o un'altra è nettamente più forte
+Listen is off	L'ascolto è spento
+Listen is on	L'ascolto è acceso
+Listening	In ascolto
+Morse on every keyed carrier	Morse su ogni portante manipolata
+Mute the audio while only noise is there	Silenzia l'audio finché c'è solo rumore
+Open the gallery	Apri la galleria
+PSK31 / PSK63 on every narrow continuous signal	PSK31 / PSK63 su ogni segnale stretto continuo
+RTTY on every wide continuous pair of tones	RTTY su ogni coppia di toni continua larga
+Record this conversation to a WAV file in the QO-100 folder of the data folder	Registra questa conversazione in un file WAV nella cartella QO-100 della cartella dei dati
+SSB conversations	Conversazioni SSB
+SSTV on every steady signal about 1.3 kHz wide; pictures go to the gallery	SSTV su ogni segnale stabile largo circa 1,3 kHz; le immagini vanno nella galleria
+Squelch	Squelch
+Start (UTC)	Inizio (UTC)
+Stop following	Smetti di seguire
+Tick SSB conversations in the Auto decoder view to list the voice conversations.	Spunta Conversazioni SSB nella vista Decodificatore automatico per elencare le conversazioni vocali.
+Time the decoders use per second of signal, against the limit	Tempo usato dai decodificatori per secondo di segnale, rispetto al limite
+Tune the listening channel to this conversation (upper sideband, 300 - 3000 Hz) and play it; the dial follows its drift	Sintonizza il canale di ascolto su questa conversazione (banda laterale superiore, 300 - 3000 Hz) e la riproduce; il dial segue la sua deriva
+When the decoders need more than this, the weakest channel is dropped	Quando i decodificatori richiedono più di questo, il canale più debole viene scartato
+no SSB conversation heard yet	nessuna conversazione SSB ancora sentita
+talking	parla
+the loudest conversation	la conversazione più forte
+the newest conversation	la conversazione più recente

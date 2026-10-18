@@ -3172,3 +3172,45 @@ Ping	Пинг
 with interference bursts	с импульсными помехами
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Тестовый сигнал - маяк на 420 Гц от центра с имитацией метеорного эха: короткие недоплотные и несколько долгих сверхплотных.
 Beacon echoes, 143.050 MHz	Эхо маяка, 143,050 МГц
+#  QO-100: the auto decoder and the SSB conversation manager
+ ended	 завершён
+%d channels at most	не более %d каналов
+%zu SSTV pictures	Изображений SSTV: %zu
+%zu channels, %d dropped	Каналов: %zu, отброшено: %d
+Auto decoder	Автодекодер
+Auto listen	Автопрослушивание
+CPU %.0f %%	ЦП %.0f %%
+CPU limit %.1f cores	Предел ЦП %.1f ядра
+Conversations	Разговоры
+Decode automatically	Декодировать автоматически
+Decoding	Декодируется
+Dial MHz	Настройка МГц
+Downlink MHz	Downlink МГц
+FT4 on every signal that keys in 7.5 s slots	FT4 на каждом сигнале, манипулируемом слотами по 7,5 с
+FT8 on every signal that keys in 15 s slots	FT8 на каждом сигнале, манипулируемом слотами по 15 с
+How many decoder channels may run at once; each channel decodes every signal inside 3.4 kHz of audio	Сколько каналов декодера может работать одновременно; каждый канал декодирует все сигналы в пределах 3,4 кГц звука
+JS8Call on every signal that keys in 15 s slots	JS8Call на каждом сигнале, манипулируемом слотами по 15 с
+List the SSB conversations (the Conversations view); no decoder runs	Показывает SSB-разговоры (вид «Разговоры»); декодер не запускается
+Listen follows the loudest or the newest active conversation by itself, switching when it goes quiet or another one is clearly louder	Прослушивание само следует за самым громким или самым новым активным разговором и переключается, когда он затихает или другой явно громче
+Listen is off	Прослушивание выключено
+Listen is on	Прослушивание включено
+Listening	Слушаю
+Morse on every keyed carrier	Морзе на каждой манипулируемой несущей
+Mute the audio while only noise is there	Отключает звук, пока слышен только шум
+Open the gallery	Открыть галерею
+PSK31 / PSK63 on every narrow continuous signal	PSK31 / PSK63 на каждом узком непрерывном сигнале
+RTTY on every wide continuous pair of tones	RTTY на каждой широкой непрерывной паре тонов
+Record this conversation to a WAV file in the QO-100 folder of the data folder	Записать этот разговор в WAV-файл в папке QO-100 папки данных
+SSB conversations	SSB-разговоры
+SSTV on every steady signal about 1.3 kHz wide; pictures go to the gallery	SSTV на каждом ровном сигнале шириной около 1,3 кГц; картинки попадают в галерею
+Squelch	Шумоподавитель
+Start (UTC)	Начало (UTC)
+Stop following	Не следовать
+Tick SSB conversations in the Auto decoder view to list the voice conversations.	Отметьте «SSB-разговоры» в виде «Автодекодер», чтобы показать голосовые разговоры.
+Time the decoders use per second of signal, against the limit	Время работы декодеров на секунду сигнала в сравнении с пределом
+Tune the listening channel to this conversation (upper sideband, 300 - 3000 Hz) and play it; the dial follows its drift	Настраивает канал прослушивания на этот разговор (верхняя боковая полоса, 300 - 3000 Гц) и воспроизводит его; настройка следует за дрейфом
+When the decoders need more than this, the weakest channel is dropped	Если декодерам нужно больше, самый слабый канал отбрасывается
+no SSB conversation heard yet	SSB-разговоров пока не слышно
+talking	говорит
+the loudest conversation	самый громкий разговор
+the newest conversation	самый новый разговор

@@ -48,6 +48,22 @@ public:
     void setSilent(bool s);              // listen without opening the sound device (tests, command line)
     void setListenTap(std::function<void(const float* x, size_t n)> cb);   // tests: the 8 kHz audio Listen plays
 
+    // The narrowband auto decoder (qo100_auto.h): every signal on the 500 kHz transponder is found, classified and, for the ticked decoders, decoded.
+    void setAutoDecoders(unsigned mask);         // Qo100Dec bits: FT8, FT4, JS8, PSK31, CW, SSTV, RTTY (kQoDecSsb: the conversation list needs no decoder)
+    void setAutoMaxSlots(int n);                 // decoder channels at most (default 6)
+    void setAutoCpuLimit(float cores);           // the weakest channel is dropped above this load (default 0.7 of a core)
+    void setAutoStartTime(double utc);           // tests: the slot clock of the first sample (NaN: the system clock)
+    void clearAutoResults();
+    // The SSB conversation manager: conversations are listed in telemetry().autoDec.convs
+    void setConversationGapSec(double s);        // silence that ends one (default 90 s)
+    void setListenConversation(int id);          // Listen follows this conversation (the dial moves with its drift; 0: the dial as set)
+    void setAutoListen(int mode);                // 0 off, 1 the loudest conversation, 2 the newest one
+    void setSquelch(bool on);                    // mute the listening channel while only noise is there
+    void setRecordConversation(int id, bool on); // record its audio (8 kHz, 16 bit WAV, into the record folder) while it lasts
+    void setRecordDir(const std::string& dir);
+    // Speech to text, when that feature is there: gets 8 kHz audio of a recorded conversation in chunks of about 8 s and returns the text
+    void setSpeechToText(std::function<std::string(const float* pcm, size_t n, double rate)> fn);
+
 private:
     struct Impl;
     std::unique_ptr<Impl> p_;
