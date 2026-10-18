@@ -1,35 +1,34 @@
-// Differential test: the C++ file format layer (a generated copy in dect2::filesp_ref, see cmake/gen_rs_ref.cmake) against the one the program uses
-// (dect2::filesp: the Rust crate onair_files when DECT2_RUST is on). The same inputs go to both and every result has to be identical, double for double (bit for bit):
-// CSV records / quoting / list splitting, SigMF meta files (built from random members, mutated, truncated, nested too deep, with duplicate keys, escapes and odd
-// numbers) and both SigMF writers, WAV fmt chunks / classification / data end / names, TLE lines (valid sets with mutated columns and checksums) and TLE texts, the
-// SQLite pieces of the MBTiles reader (varints, records, payload sizes, page headers, cells of all four kinds on random pages, tile rows, schema text, database
-// header) and the results container. ONAIR_DIFF_ITERS (default 100000) inputs per family. Buffers are exactly as long as their content so a sanitizer sees a read past
-// the end. The Rust C ABI is also called with null pointers and short arrays.
+// Golden-vector test of the file format layer (dect2::filesp, the Rust crate onair_files): CSV records / quoting / list splitting, SigMF meta files (built from
+// random members, mutated, truncated, nested too deep, with duplicate keys, escapes and odd numbers) and both SigMF writers, WAV fmt chunks / classification /
+// data end / names, TLE lines (valid sets with mutated columns and checksums) and TLE texts, the SQLite pieces of the MBTiles reader (varints, records, payload
+// sizes, page headers, cells of all four kinds on random pages, tile rows, schema text, database header) and the results container. ONAIR_DIFF_ITERS (default
+// 100000) inputs per family. Buffers are exactly as long as their content so a sanitizer sees a read past the end. The Rust C ABI is also called with null pointers
+// and short arrays. Every result goes into a digest (tests/common/golden.h; doubles rounded to 1e-6) compared with the one recorded from the C++ layer the Rust code
+// replaced.
 #include "dect2/files/files_proto.h"
+#include "../common/golden.h"
+#ifdef GOLDEN_REF   // transient, used once to record the digest from the C++ reference copy
 #include "files_proto_ref.h"
+#endif
 #include "dect2/rs/files.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <random>
+#ifdef GOLDEN_REF
+namespace A = dect2::filesp_ref;
+#else
 namespace A = dect2::filesp;
-namespace R = dect2::filesp_ref;
+#endif
 
-static long fails = 0, checks = 0;
-#define SAME(c, ...) do { checks++; if (!(c)) { if (fails++ < 20) { printf("MISMATCH: " __VA_ARGS__); printf("\n"); } } } while (0)
+static golden::Digest dig;
+static long abiFails = 0;
+#define CHECK(c, ...) do { if (!(c)) { abiFails++; printf("FAILED: " __VA_ARGS__); printf("\n"); } } while (0)
 static std::mt19937 g(31337);
 static uint32_t r32() { return g(); }
 using Buf = std::vector<uint8_t>;
 
-static bool sameD(double a, double b) { return memcmp(&a, &b, sizeof a) == 0 || (std::isnan(a) && std::isnan(b)); }
-// where two texts first differ, for the failure message
-static std::string diffAt(const std::string& a, const std::string& b) {
-    size_t i = 0;
-    while (i < a.size() && i < b.size() && a[i] == b[i]) i++;
-    return "at " + std::to_string(i) + ": [" + a.substr(i > 20 ? i - 20 : 0, 60) + "] vs [" + b.substr(i > 20 ? i - 20 : 0, 60) + "]";
-}
-static std::string hexOf(const std::string& s) { std::string o; char b[4]; for (unsigned char c : s) { snprintf(b, sizeof b, "%02x", c); o += b; } return o; }
 static std::string pick(std::initializer_list<const char*> l) { return *(l.begin() + r32() % l.size()); }
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------ CSV
@@ -42,16 +41,15 @@ static void csvFamily(long iters) {
         for (int i = 0; i < n; i++) t += alpha[r32() % sizeof alpha];
         if (r32() % 20 == 0) for (int i = 0; i < 5; i++) t += (char)r32();
         auto a = A::csvParse(t);
-        auto r = R::csvParse(t);
-        SAME(a == r, "csv parse it %ld", it);
+        dig.add((uint64_t)a.size()); for (const auto& row : a) dig.add(row);
         recs += (long)a.size();
         std::string f;
         for (int i = 0, m = (int)(r32() % 12); i < m; i++) f += alpha[r32() % sizeof alpha];
-        SAME(A::csvQuote(f) == R::csvQuote(f), "csv quote it %ld", it);
+        dig.add(A::csvQuote(f));
         const char sep = r32() % 2 ? '|' : ',';
-        SAME(A::splitList(t, sep) == R::splitList(t, sep), "split it %ld", it);
+        dig.add(A::splitList(t, sep));
         // quote then parse gives the field back (a property of both)
-        if (!f.empty() && f.find('\r') == std::string::npos) { auto back = A::csvParse(A::csvQuote(f) + "\n"); SAME(back.size() == 1 && back[0].size() == 1 && back[0][0] == f, "csv roundtrip it %ld", it); }
+        if (!f.empty() && f.find('\r') == std::string::npos) { auto back = A::csvParse(A::csvQuote(f) + "\n"); CHECK(back.size() == 1 && back[0].size() == 1 && back[0][0] == f, "csv roundtrip it %ld", it); }
     }
     printf("  csv: %ld texts, %ld records\n", iters, recs);
 }
@@ -162,10 +160,8 @@ static std::string mutate(std::string s) {
     }
     return s;
 }
-static bool sameMeta(const A::SigmfMeta& a, const R::SigmfMeta& b) {
-    return a.status == b.status && a.format == b.format && a.bigEndian == b.bigEndian && a.annotations == b.annotations && sameD(a.sampleRate, b.sampleRate) &&
-           sameD(a.centerHz, b.centerHz) && a.sampleStart == b.sampleStart && a.headerBytes == b.headerBytes && a.trailingBytes == b.trailingBytes &&
-           a.description == b.description && a.dataset == b.dataset && a.datatype == b.datatype;
+static void addMeta(const A::SigmfMeta& a) {
+    dig.add(a.status, a.format, a.bigEndian, a.annotations, a.sampleRate, a.centerHz, a.sampleStart, a.headerBytes, a.trailingBytes, a.description, a.dataset, a.datatype);
 }
 static void sigmfFamily(long iters) {
     long ok = 0, bad[5] = {};
@@ -180,8 +176,7 @@ static void sigmfFamily(long iters) {
         const std::string exact(p, t.size());
         free(p);
         auto a = A::sigmfParse(exact);
-        auto r = R::sigmfParse(exact);
-        SAME(sameMeta(a, r), "sigmf it %ld status %d vs %d: %s", it, a.status, r.status, t.substr(0, 200).c_str());
+        addMeta(a);
         if (a.status == 0) ok++; else bad[a.status]++;
         // writers
         const double rates[] = {0, 2.4e6, 10e6, 61.44e6, 1e-3, 123456789.123, 1e15, -5, std::nan(""), INFINITY, -INFINITY, 1e300, 0.1 + 0.2, 2399999.9999999995};
@@ -189,9 +184,9 @@ static void sigmfFamily(long iters) {
         std::string desc; for (int i = 0, m = (int)(r32() % 24); i < m; i++) desc += (char)(r32() % 3 ? 32 + r32() % 95 : r32() % 256);
         const std::string dtn = pick({"cf32_le", "ci8_le", "cu8", "ci16_be", "cu16_le"});
         const uint64_t ss = r32() % 3 ? r32() : ((uint64_t)r32() << 32 | r32());
-        { const std::string x = A::sigmfToolMeta(dtn, rate, center, ss, desc), y = R::sigmfToolMeta(dtn, rate, center, ss, desc); SAME(x == y, "tool meta it %ld %s", it, diffAt(x, y).c_str()); }
+        { dig.add(A::sigmfToolMeta(dtn, rate, center, ss, desc)); }
         const std::string when = r32() % 3 ? "2026-10-13T09:15:30Z" : "", ds = r32() % 3 ? "onair_x.cs8" : "";
-        { const std::string x = A::sigmfRecorderMeta(dtn, rate, center, when, ds, ss % 7 ? ss : 0, desc), y = R::sigmfRecorderMeta(dtn, rate, center, when, ds, ss % 7 ? ss : 0, desc); SAME(x == y, "recorder meta it %ld %s", it, diffAt(x, y).c_str()); }
+        { dig.add(A::sigmfRecorderMeta(dtn, rate, center, when, ds, ss % 7 ? ss : 0, desc)); }
     }
     printf("  sigmf: %ld metas (%ld ok; bad: json %ld, no global %ld, no datatype %ld, unsupported %ld)\n", iters, ok, bad[1], bad[2], bad[3], bad[4]);
 }
@@ -206,19 +201,18 @@ static void wavFamily(long iters) {
         const uint32_t len = r32() % 3 ? (uint32_t)body.size() : r32() % 64;
         uint8_t* p = (uint8_t*)malloc(body.size() + 1); memcpy(p, body.data(), body.size());
         const A::WavFmt a = A::wavFmt(p, body.size(), len);
-        const R::WavFmt r = R::wavFmt(p, body.size(), len);
         free(p);
-        SAME(a.tag == r.tag && a.channels == r.channels && a.rate == r.rate && a.bits == r.bits, "wav fmt it %ld", it);
-        int fa = -1, fr = -1;
-        const int ca = A::wavClassify(a, fa), cr = R::wavClassify(r, fr);
-        SAME(ca == cr && fa == fr, "wav classify it %ld", it);
+        dig.add(a.tag, a.channels, a.rate, a.bits);
+        int fa = -1;
+        const int ca = A::wavClassify(a, fa);
+        dig.add(ca, fa);
         const uint64_t off = r32() % 3 ? r32() % 100 : ((uint64_t)r32() << 32 | r32()), size = r32() % 4 ? r32() % 1000000 : ((uint64_t)r32() << 32 | r32());
         const uint32_t dl = r32() % 5 == 0 ? 0 : r32() % 5 == 1 ? 0xFFFFFFFFu : r32();
-        SAME(A::wavDataEnd(off, dl, size) == R::wavDataEnd(off, dl, size), "wav end it %ld", it);
+        dig.add(A::wavDataEnd(off, dl, size));
         std::string name;
         for (int i = 0, m = (int)(r32() % 24); i < m; i++) name += pick({"1", "2", "5", "0", ".", "_", "MHz", "mhz", "a", "x", "00", ".5", "3.", "9"});
         if (r32() % 2) name += pick({"MHz", "mhz", "MHZ", "mHz"});
-        SAME(sameD(A::wavCenterFromName(name), R::wavCenterFromName(name)), "wav name it %ld: %s", it, name.c_str());
+        dig.add(A::wavCenterFromName(name));
     }
     printf("  wav: %ld cases\n", iters);
 }
@@ -239,9 +233,8 @@ static void tleLines(std::string& l1, std::string& l2) {
     l2 = "2 " + (r32() % 20 ? cat : digits(5)) + " " + pick({" 51.6416", "  0.0000", "180.0000", "98.7654 ", "-1.2345 ", " 1e1.5  "}) + " " + digits(3) + "." + digits(4) + " " + digits(7) + " " + digits(3) + "." + digits(4) + " " + digits(3) + "." + digits(4) + " " + pick({"15.72125391", " 0.00000000", "14.12345678", "-1.5000000 ", "16.5       "}) + digits(5);
     if (r32() % 5) { l1 = withChecksum(l1); l2 = withChecksum(l2); }
 }
-static bool sameTle(const A::TleData& a, const R::TleData& b) {
-    return a.status == b.status && a.name == b.name && a.norad == b.norad && sameD(a.epochJd, b.epochJd) && sameD(a.bstar, b.bstar) && sameD(a.inclDeg, b.inclDeg) &&
-           sameD(a.raanDeg, b.raanDeg) && sameD(a.ecc, b.ecc) && sameD(a.argpDeg, b.argpDeg) && sameD(a.meanAnomDeg, b.meanAnomDeg) && sameD(a.meanMotion, b.meanMotion);
+static void addTle(const A::TleData& a) {
+    dig.add(a.status, a.name, a.norad, a.epochJd, a.bstar, a.inclDeg, a.raanDeg, a.ecc, a.argpDeg, a.meanAnomDeg, a.meanMotion);
 }
 static void tleFamily(long iters) {
     long ok = 0, unusable = 0;
@@ -256,8 +249,7 @@ static void tleFamily(long iters) {
         else if (w == 4 && l2.size() > 60) l2[8 + r32() % 50] = "+-.eE x9"[r32() % 8];
         const std::string name = r32() % 3 ? pick({"ISS (ZARYA)", " 0 NOAA 19 ", "0 X", "0  Y ", "0 ", "  ", "NOAA 15\r", "", "0X"}) : "";
         auto a = A::tleParse(l1, l2, name);
-        auto r = R::tleParse(l1, l2, name);
-        SAME(sameTle(a, r), "tle it %ld status %d vs %d hex1 %s hex2 %s", it, a.status, r.status, hexOf(l1).c_str(), hexOf(l2).c_str());
+        addTle(a);
         if (a.status == 0) ok++; else if (a.status == 2) unusable++;
         // a text of several sets, names, junk and blank lines
         std::string text;
@@ -270,10 +262,7 @@ static void tleFamily(long iters) {
         }
         if (r32() % 10 == 0) text = mutate(text);
         auto ta = A::tleScan(text);
-        auto tr = R::tleScan(text);
-        bool same = ta.size() == tr.size();
-        for (size_t i = 0; same && i < ta.size(); i++) same = sameTle(ta[i], tr[i]);
-        SAME(same, "tle scan it %ld (%zu vs %zu)", it, ta.size(), tr.size());
+        dig.add((uint64_t)ta.size()); for (const auto& e : ta) addTle(e);
     }
     printf("  tle: %ld sets (%ld ok, %ld unusable orbits)\n", iters, ok, unusable);
 }
@@ -302,10 +291,9 @@ static Buf genRecord() {
     if (r32() % 8 == 0 && !r.empty()) r[r32() % r.size()] = (uint8_t)r32();
     return r;
 }
-static bool sameCols(const std::vector<A::Col>& a, const std::vector<R::Col>& b) {
-    if (a.size() != b.size()) return false;
-    for (size_t i = 0; i < a.size(); i++) if (a[i].isNull != b[i].isNull || a[i].isInt != b[i].isInt || a[i].isBlob != b[i].isBlob || a[i].i != b[i].i || a[i].s != b[i].s || a[i].b != b[i].b) return false;
-    return true;
+static void addCols(const std::vector<A::Col>& a) {
+    dig.add((uint64_t)a.size());
+    for (const auto& c : a) dig.add(c.isNull, c.isInt, c.isBlob, c.i, c.s, c.b);
 }
 static Buf genPage(int kind) {
     const size_t size = 40 + r32() % 200;
@@ -331,53 +319,53 @@ static void sqliteFamily(long iters) {
         Buf v(r32() % 12);
         for (auto& x : v) x = (uint8_t)(r32() % 3 ? (r32() & 0xFF) : (r32() & 0x7F));
         uint8_t* vp = (uint8_t*)malloc(v.size() + 1); memcpy(vp, v.data(), v.size());
-        uint64_t va = 1, vr = 2;
-        const int na = A::varint(vp, vp + v.size(), va), nr = R::varint(vp, vp + v.size(), vr);
+        uint64_t va = 1;
+        const int na = A::varint(vp, vp + v.size(), va);
         free(vp);
-        SAME(na == nr && (na == 0 || va == vr), "varint it %ld", it);
+        dig.add(na); if (na) dig.add(va);
         // record
         const Buf rec = genRecord();
-        std::vector<A::Col> ca; std::vector<R::Col> cr;
+        std::vector<A::Col> ca;
         const bool wb = r32() % 2;
-        const bool ra = A::record(rec, ca, wb), rr = R::record(rec, cr, wb);
-        SAME(ra == rr && (!ra || sameCols(ca, cr)), "record it %ld", it);
+        const bool ra = A::record(rec, ca, wb);
+        dig.add(ra); if (ra) addCols(ca);
         recs += ra;
         // payload sizes
         const uint64_t total = r32() % 4 ? r32() % 70000 : (r32() % 2 ? (1u << 28) + r32() % 3 - 1 : (uint64_t)r32() << 3), usable = r32() % 6 == 0 ? 36 + r32() % 600 : (uint64_t[]){480, 1024, 4096, 65536 - 12, 4084}[r32() % 5];
-        uint64_t la = 7, lr = 8; bool oa = true, orr = false;
+        uint64_t la = 7; bool oa = true;
         const bool pa = A::payloadLocal(total, usable, r32() % 2, la, oa);
         const uint32_t seed = r32(); (void)seed;
         // the same index_tree flag for both
         const bool idx = r32() % 2;
-        la = 7; lr = 8; oa = true; orr = false;
-        const bool pa2 = A::payloadLocal(total, usable, idx, la, oa), pr2 = R::payloadLocal(total, usable, idx, lr, orr);
+        la = 7; oa = true;
+        const bool pa2 = A::payloadLocal(total, usable, idx, la, oa);
         (void)pa;
-        SAME(pa2 == pr2 && (!pa2 || (la == lr && oa == orr)), "payload it %ld total %llu usable %llu", it, (unsigned long long)total, (unsigned long long)usable);
+        dig.add(pa2); if (pa2) dig.add(la, oa);
         // page header and cells
         const int kinds[] = {13, 5, 10, 2, 0, 7, 255};
         const int kind = kinds[r32() % 7];
         Buf pg = genPage(kind == 255 ? 13 : kind);
         const size_t base = pg[0] == (uint8_t)kind ? 0 : 100;
-        uint8_t ta = 1, tr = 2; unsigned cna = 0, cnr = 0; uint32_t rma = 0, rmr = 0;
-        const bool ha = A::pageHeader(pg, base, ta, cna, rma), hr = R::pageHeader(pg, base, tr, cnr, rmr);
-        SAME(ha == hr && (!ha || (ta == tr && cna == cnr && rma == rmr)), "page header it %ld", it);
+        uint8_t ta = 1; unsigned cna = 0; uint32_t rma = 0;
+        const bool ha = A::pageHeader(pg, base, ta, cna, rma);
+        dig.add(ha); if (ha) dig.add(ta, cna, rma);
         const int ck = r32() % 6 == 0 ? 6 : kind;
         for (unsigned i = 0; i <= cna + 1; i++) {
-            A::CellInfo xa; R::CellInfo xr;
-            const bool ba = A::cell(pg, ck, base, i, cna, xa), br = R::cell(pg, ck, base, i, cna, xr);
-            SAME(ba == br && (!ba || (xa.child == xr.child && xa.payloadOff == xr.payloadOff && xa.total == xr.total && xa.key == xr.key)), "cell it %ld kind %d i %u", it, ck, i);
+            A::CellInfo xa;
+            const bool ba = A::cell(pg, ck, base, i, cna, xa);
+            dig.add(ba); if (ba) dig.add(xa.child, xa.payloadOff, xa.total, xa.key);
             cellsOk += ba;
         }
         // tile row, picture kinds
         const int z = (int)(r32() % 40) - 3, x = (int)(r32() % 2000) - 20, y = (int)(r32() % 2000) - 20;
-        int64_t rowa = 5, rowr = 6;
-        const bool ta2 = A::tileRow(z, x, y, rowa), tr2 = R::tileRow(z, x, y, rowr);
-        SAME(ta2 == tr2 && (!ta2 || rowa == rowr), "tile row it %ld", it);
+        int64_t rowa = 5;
+        const bool ta2 = A::tileRow(z, x, y, rowa);
+        dig.add(ta2); if (ta2) dig.add(rowa);
         Buf pic(r32() % 12);
         for (auto& b : pic) b = (uint8_t)r32();
         if (pic.size() >= 3 && r32() % 2) { pic[0] = 0xFF; pic[1] = 0xD8; pic[2] = 0xFF; }
         if (pic.size() >= 8 && r32() % 2) { pic[0] = 0x89; pic[1] = 'P'; pic[2] = 'N'; pic[3] = 'G'; }
-        SAME(A::isRaster(pic) == R::isRaster(pic) && A::isPng(pic) == R::isPng(pic), "raster it %ld", it);
+        dig.add(A::isRaster(pic), A::isPng(pic));
         // schema text
         std::string sql = r32() % 4 ? "CREATE TABLE tiles (" : "CREATE TABLE `tiles` [";
         const char* names[] = {"zoom_level", "tile_column", "tile_row", "tile_data"};
@@ -386,11 +374,11 @@ static void sqliteFamily(long iters) {
         const int cnt = r32() % 12 == 0 ? (int)(r32() % 4) : 4;
         for (int k = 0; k < cnt; k++) sql += std::string(k ? ", " : "") + pick({"", "\"", " "}) + (r32() % 5 == 0 ? "ZOOM_LEVEL" : names[order[k]]) + pick({"", " integer", " INTEGER NOT NULL", " blob"});
         sql += pick({")", ", PRIMARY KEY (zoom_level, tile_column, tile_row))", ""});
-        std::string sa, sr;
-        const bool sga = A::tilesSchemaOk(sql, sa), sgr = R::tilesSchemaOk(sql, sr);
-        SAME(sga == sgr && (!sga || sa == sr), "schema it %ld: %s", it, sql.c_str());
+        std::string sa;
+        const bool sga = A::tilesSchemaOk(sql, sa);
+        dig.add(sga); if (sga) dig.add(sa);
         std::string isql = r32() % 4 == 0 ? "" : pick({"CREATE INDEX i ON tiles (zoom_level, tile_column, tile_row)", "CREATE INDEX i ON tiles (\"zoom_level\",\"tile_column\",\"tile_row\")", "CREATE INDEX j ON tiles (zoom_level, tile_column)", "CREATE UNIQUE INDEX k ON tiles(tile_row)"});
-        SAME(A::indexCovers(isql, sga ? sa : sql) == R::indexCovers(isql, sga ? sr : sql), "index it %ld", it);
+        dig.add(A::indexCovers(isql, sga ? sa : sql));
         // database header
         Buf h(100 + (r32() % 20 == 0 ? 0 : 0));
         for (auto& b : h) b = (uint8_t)r32();
@@ -400,8 +388,7 @@ static void sqliteFamily(long iters) {
         if (r32() % 2) { h[56] = h[57] = h[58] = 0; h[59] = r32() % 4; }
         const size_t hn = r32() % 10 == 0 ? r32() % 100 : 100;
         const A::DbHeader da = A::dbHeader(h.data(), hn);
-        const R::DbHeader dr = R::dbHeader(h.data(), hn);
-        SAME(da.status == dr.status && da.pageSize == dr.pageSize && da.reserved == dr.reserved && da.usable == dr.usable, "db header it %ld", it);
+        dig.add(da.status, da.pageSize, da.reserved, da.usable);
     }
     printf("  sqlite: %ld rounds, %ld records decoded, %ld cells decoded\n", iters, recs, cellsOk);
 }
@@ -411,74 +398,72 @@ static void containerFamily(long iters) {
     for (long it = 0; it < iters; it++) {
         std::string s(r32() % 40, '\0');
         for (auto& c : s) c = (char)r32();
-        SAME(A::fnv1a(s) == R::fnv1a(s) && A::signatureHash(s) == R::signatureHash(s), "fnv it %ld", it);
+        dig.add(A::fnv1a(s), A::signatureHash(s));
         const uint64_t h = A::signatureHash(s);
         std::string blob = A::containerHeader(h);
-        SAME(blob == R::containerHeader(h) && blob.size() == 16, "container header it %ld", it);
+        CHECK(blob.size() == 16, "container header it %ld", it); dig.add(blob);
         blob += std::string(r32() % 8, 'x');
         if (r32() % 3 == 0) blob[r32() % blob.size()] ^= (char)(1 + r32() % 255);
         if (r32() % 6 == 0) blob.resize(r32() % (blob.size() + 1));
         const uint64_t expect = r32() % 4 ? h : r32();
-        SAME(A::containerCheck(blob, expect) == R::containerCheck(blob, expect), "container check it %ld", it);
+        dig.add(A::containerCheck(blob, expect));
     }
     printf("  container: %ld blobs\n", iters);
 }
 
-#ifdef DECT2_RUST_FILES
 // the C ABI with hostile arguments: error values, no crash
 static void abiMisuse() {
     uint8_t buf[64] = {};
     size_t sz[3];
-    SAME(!onair_files_csv_measure(nullptr, 0, nullptr), "measure null out");
-    SAME(onair_files_csv_measure(nullptr, 0, sz) && sz[0] == 0 && sz[1] == 0 && sz[2] == 0, "measure null text");
-    SAME(!onair_files_csv_parse((const uint8_t*)"a,b\n", 4, buf, 1, nullptr, 0, nullptr, 0), "parse short arrays");
-    SAME(onair_files_csv_parse(nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0), "parse empty");
-    SAME(onair_files_csv_quote((const uint8_t*)"a,b", 3, buf, 2) == SIZE_MAX, "quote short");
-    SAME(onair_files_csv_quote_len(nullptr, 0) == 0, "quote len null");
+    CHECK(!onair_files_csv_measure(nullptr, 0, nullptr), "measure null out");
+    CHECK(onair_files_csv_measure(nullptr, 0, sz) && sz[0] == 0 && sz[1] == 0 && sz[2] == 0, "measure null text");
+    CHECK(!onair_files_csv_parse((const uint8_t*)"a,b\n", 4, buf, 1, nullptr, 0, nullptr, 0), "parse short arrays");
+    CHECK(onair_files_csv_parse(nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0), "parse empty");
+    CHECK(onair_files_csv_quote((const uint8_t*)"a,b", 3, buf, 2) == SIZE_MAX, "quote short");
+    CHECK(onair_files_csv_quote_len(nullptr, 0) == 0, "quote len null");
     uint32_t ends[2];
-    SAME(onair_files_split_list((const uint8_t*)"a|b|c", 5, '|', ends, 2) == SIZE_MAX, "split short ends");
-    SAME(onair_files_split_list((const uint8_t*)"a|b|c", 5, '|', nullptr, 0) == 3, "split count");
-    SAME(onair_files_json_unescape(nullptr, 0, nullptr, 0) == 0, "unescape null");
+    CHECK(onair_files_split_list((const uint8_t*)"a|b|c", 5, '|', ends, 2) == SIZE_MAX, "split short ends");
+    CHECK(onair_files_split_list((const uint8_t*)"a|b|c", 5, '|', nullptr, 0) == 3, "split count");
+    CHECK(onair_files_json_unescape(nullptr, 0, nullptr, 0) == 0, "unescape null");
     OnairFilesSigmf m;
     onair_files_sigmf_parse(nullptr, 0, &m);
-    SAME(m.status == 1, "sigmf null text");
+    CHECK(m.status == 1, "sigmf null text");
     onair_files_sigmf_parse(nullptr, 0, nullptr);
     int32_t f, be;
-    SAME(!onair_files_sigmf_datatype(nullptr, 0, &f, &be), "datatype null");
-    SAME(onair_files_sigmf_write_tool(nullptr, 0, 1, 2, 3, nullptr, 0, nullptr, 0) > 100, "write tool measure");
-    SAME(onair_files_sigmf_write_recorder(nullptr, 0, 1, 2, nullptr, 0, nullptr, 0, 0, nullptr, 0, buf, 5) > 100, "write recorder short");
+    CHECK(!onair_files_sigmf_datatype(nullptr, 0, &f, &be), "datatype null");
+    CHECK(onair_files_sigmf_write_tool(nullptr, 0, 1, 2, 3, nullptr, 0, nullptr, 0) > 100, "write tool measure");
+    CHECK(onair_files_sigmf_write_recorder(nullptr, 0, 1, 2, nullptr, 0, nullptr, 0, 0, nullptr, 0, buf, 5) > 100, "write recorder short");
     OnairFilesWavFmt w;
     onair_files_wav_fmt(nullptr, 0, 0, &w);
-    SAME(w.tag == 0 && w.channels == 0, "wav fmt null");
-    SAME(onair_files_wav_classify(nullptr, &f) == 2, "wav classify null");
-    SAME(onair_files_wav_center_from_name(nullptr, 0) == 0, "wav name null");
+    CHECK(w.tag == 0 && w.channels == 0, "wav fmt null");
+    CHECK(onair_files_wav_classify(nullptr, &f) == 2, "wav classify null");
+    CHECK(onair_files_wav_center_from_name(nullptr, 0) == 0, "wav name null");
     OnairFilesTle t;
     onair_files_tle_parse(nullptr, 0, nullptr, 0, nullptr, 0, &t);
-    SAME(t.status == 1, "tle null");
-    SAME(onair_files_tle_scan(nullptr, 0, nullptr, 0) == 0, "tle scan null");
+    CHECK(t.status == 1, "tle null");
+    CHECK(onair_files_tle_scan(nullptr, 0, nullptr, 0) == 0, "tle scan null");
     OnairFilesDbHeader dh;
     onair_files_sqlite_header(nullptr, 0, &dh);
-    SAME(dh.status == 1, "db header null");
+    CHECK(dh.status == 1, "db header null");
     uint64_t v;
-    SAME(onair_files_sqlite_varint(nullptr, 0, &v) == 0, "varint null");
-    SAME(onair_files_sqlite_record(nullptr, 0, nullptr, 0) == SIZE_MAX, "record null");
-    SAME(onair_files_sqlite_payload_local(10, 10, false, &v) == 0, "payload tiny usable");
+    CHECK(onair_files_sqlite_varint(nullptr, 0, &v) == 0, "varint null");
+    CHECK(onair_files_sqlite_record(nullptr, 0, nullptr, 0) == SIZE_MAX, "record null");
+    CHECK(onair_files_sqlite_payload_local(10, 10, false, &v) == 0, "payload tiny usable");
     uint32_t o[3];
-    SAME(!onair_files_sqlite_page_header(nullptr, 0, 0, o), "page header null");
-    SAME(!onair_files_sqlite_page_header(buf, 64, 100, o), "page header past end");
+    CHECK(!onair_files_sqlite_page_header(nullptr, 0, 0, o), "page header null");
+    CHECK(!onair_files_sqlite_page_header(buf, 64, 100, o), "page header past end");
     OnairFilesCell c;
-    SAME(!onair_files_sqlite_cell(nullptr, 0, 13, 0, 0, 1, &c), "cell null");
-    SAME(!onair_files_sqlite_cell(buf, 64, 99, 0, 0, 1, &c), "cell bad kind");
-    SAME(!onair_files_sqlite_cell(buf, 64, 13, 0, (size_t)-1 / 4, (size_t)-1 / 4, &c), "cell huge index");
+    CHECK(!onair_files_sqlite_cell(nullptr, 0, 13, 0, 0, 1, &c), "cell null");
+    CHECK(!onair_files_sqlite_cell(buf, 64, 99, 0, 0, 1, &c), "cell bad kind");
+    CHECK(!onair_files_sqlite_cell(buf, 64, 13, 0, (size_t)-1 / 4, (size_t)-1 / 4, &c), "cell huge index");
     int64_t row;
-    SAME(!onair_files_sqlite_tile_row(5, 99, 0, &row), "tile row range");
-    SAME(onair_files_sqlite_tiles_schema(nullptr, 5, buf, 64) == SIZE_MAX, "schema null");
-    SAME(onair_files_sqlite_tiles_schema((const uint8_t*)"x", 1, buf, 0) == SIZE_MAX, "schema short scratch");
-    SAME(!onair_files_sqlite_index_covers((const uint8_t*)"abc", 3, buf, 1, nullptr, 0), "index short scratch");
-    SAME(onair_files_container_check(nullptr, 0, 1) == SIZE_MAX, "container null");
-    SAME(!onair_files_container_header(1, buf, 8), "container short");
+    CHECK(!onair_files_sqlite_tile_row(5, 99, 0, &row), "tile row range");
+    CHECK(onair_files_sqlite_tiles_schema(nullptr, 5, buf, 64) == SIZE_MAX, "schema null");
+    CHECK(onair_files_sqlite_tiles_schema((const uint8_t*)"x", 1, buf, 0) == SIZE_MAX, "schema short scratch");
+    CHECK(!onair_files_sqlite_index_covers((const uint8_t*)"abc", 3, buf, 1, nullptr, 0), "index short scratch");
+    CHECK(onair_files_container_check(nullptr, 0, 1) == SIZE_MAX, "container null");
+    CHECK(!onair_files_container_header(1, buf, 8), "container short");
 }
-#endif
 
 int main() {
     const long iters = getenv("ONAIR_DIFF_ITERS") ? atol(getenv("ONAIR_DIFF_ITERS")) : 100000;
@@ -489,9 +474,7 @@ int main() {
     tleFamily(iters);
     sqliteFamily(iters);
     containerFamily(iters);
-#ifdef DECT2_RUST_FILES
     abiMisuse();
-#endif
-    printf("files_proto_rs: %ld checks, %ld mismatches\n", checks, fails);
-    return fails ? 1 : 0;
+    if (abiFails) return 1;
+    return golden::check("files_proto_rs", dig, 0x0ull, !getenv("ONAIR_DIFF_ITERS"));
 }

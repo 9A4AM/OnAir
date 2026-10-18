@@ -200,8 +200,9 @@ impl BchCtx {
     /// Systematic encoder: `bits[..k]` is the message, the parity goes to `bits[k..k + deg]`. False when the buffer is too short.
     pub fn encode(&self, bits: &mut [u8], k: usize) -> bool {
         let deg = self.deg as usize;
-        if k + deg > bits.len() {
-            return false;
+        match k.checked_add(deg) {
+            Some(end) if end <= bits.len() => {}
+            _ => return false,
         }
         let rem = self.remainder(&bits[..k], deg);
         for i in 0..deg {

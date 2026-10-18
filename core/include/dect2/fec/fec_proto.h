@@ -1,6 +1,7 @@
-// Shared forward error correction: byte-wise Reed-Solomon over GF(256) and the DVB-T2 binary BCH codes. One implementation per build: the C++ one in
-// core/src/fec/fec_proto.cpp, or (DECT2_RUST_FEC) the Rust crate onair_fec through core/src/fec/fec_proto_rs.cpp. dvbt.cpp, atsc.cpp, dab_fec.cpp and t2fec.cpp
-// call these functions; the differential test compares both implementations bit for bit (tests/fec/test_fec_proto_rs.cpp).
+// Shared forward error correction: byte-wise Reed-Solomon over GF(256), the DVB-T2 binary BCH codes and the LDPC parity-check tables, implemented by the Rust crate
+// onair_fec through core/src/fec/fec_proto_rs.cpp. The K = 7 Viterbi decoder is C++ (core/src/fec/fec_proto.cpp, NEON / SSE2 / AVX2 / portable): it is the fastest one;
+// the Rust NEON kernel is opt-in (cmake -DDECT2_RUST_VITERBI=ON). dvbt.cpp, atsc.cpp, dab_fec.cpp and t2fec.cpp call these functions; tests/fec/test_fec_proto_rs.cpp
+// is the golden-vector test.
 #pragma once
 #include <cstdint>
 #include <memory>
@@ -24,7 +25,6 @@ int rs120Decode(uint8_t* word120);
 void viterbiRange(const int8_t* soft, size_t steps, std::vector<uint8_t>& bits, long* metricOut);
 
 // DVB-T2 BCH (EN 302 755 section 6.1.1): normal frames GF(2^16), short frames GF(2^14), t = 1..12. Bits are one per byte (0 or 1), first bit = highest power.
-// The members of the C++ implementation and the context of the Rust one are both here, so the class does not depend on DECT2_RUST_FEC.
 class Bch {
 public:
     Bch(bool shortFrame, int t);
@@ -35,14 +35,8 @@ public:
     int decode(std::vector<uint8_t>& bits) const;
 
 private:
-    int m_, t_, deg_;
-    std::vector<uint32_t> exp_, log_;
-    std::vector<uint8_t> gen_;             // generator polynomial, gen_[i] = coefficient of x^i
-    mutable std::vector<uint64_t> tab_;    // byte-wise remainder table (built on first use)
-    mutable std::mutex tabMu_;
-    std::vector<uint64_t> rsctx_;          // the Rust context (DECT2_RUST_FEC), 8-byte aligned
-    int fieldMul(int a, int b) const;
-    void remainder(const std::vector<uint8_t>& bits, std::vector<uint8_t>& rem) const;
+    int deg_;                              // number of parity bits (m * t)
+    std::vector<uint64_t> rsctx_;          // the Rust context (field tables, generator, remainder table), 8-byte aligned
 };
 
 // Parity-check tables of the DVB-T2 / DVB-S2 style IRA LDPC codes (dsp/ldpc.h builds its decoder structures from them). `rows[g]` lists the addresses of the 360

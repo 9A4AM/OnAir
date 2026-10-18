@@ -1,5 +1,4 @@
-// fec_proto.h on top of the Rust crate rust/onair_fec (DECT2_RUST_FEC): thin wrappers over the C ABI of core/include/dect2/rs/fec.h. Empty when the crate is not built.
-#ifdef DECT2_RUST_FEC
+// fec_proto.h on top of the Rust crate rust/onair_fec: thin wrappers over the C ABI of core/include/dect2/rs/fec.h.
 #include "dect2/fec/fec_proto.h"
 #include "dect2/rs/fec.h"
 #include <cstdio>
@@ -14,8 +13,8 @@ int rs207Decode(uint8_t* r) { return onair_fec_rs_decode(1, r, 207); }
 void rs120Encode(const uint8_t* in, uint8_t* out) { onair_fec_rs_encode(2, in, 110, out, 120); }
 int rs120Decode(uint8_t* r) { return onair_fec_rs_decode(2, r, 120); }
 
-// m_ and t_ are kept for the callers that read them; the field tables, generator and remainder table live in the Rust context
-Bch::Bch(bool shortFrame, int t) : m_(shortFrame ? 14 : 16), t_(t), deg_(m_ * t) {
+// the field tables, generator and remainder table live in the Rust context
+Bch::Bch(bool shortFrame, int t) : deg_((shortFrame ? 14 : 16) * t) {
     rsctx_.assign(onair_fec_bch_ctx_size() / 8 + 1, 0);
     if (!onair_fec_bch_init((uint8_t*)rsctx_.data(), rsctx_.size() * 8, shortFrame, t)) { fprintf(stderr, "onair_fec: BCH t = %d is not supported\n", t); abort(); }
 }
@@ -60,4 +59,3 @@ void viterbiRange(const int8_t* soft, size_t steps, std::vector<uint8_t>& bits, 
 #endif
 
 } // namespace dect2::fecp
-#endif

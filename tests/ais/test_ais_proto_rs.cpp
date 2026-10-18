@@ -1,8 +1,11 @@
-// Differential test: the C++ AIS frame layer (a generated copy in dect2::ais_ref, see cmake/gen_ais_ref.cmake) against the Rust one (dect2::ais when
-// DECT2_RUST is used). The same inputs go to both and every result has to be identical: the known gpsd / AIS-catcher sentences, frames built here,
-// and ONAIR_DIFF_ITERS (default 200000) seeded random and mutated frames, bit streams with values other than 0 and 1, and damaged sentences.
+// Golden-vector test of the AIS frame layer (dect2::ais, the Rust crate onair_proto): the known gpsd / AIS-catcher sentences, frames built here, and ONAIR_DIFF_ITERS
+// (default 200000) seeded random and mutated frames, bit streams with values other than 0 and 1, and damaged sentences. Every result goes into a digest
+// (tests/common/golden.h; doubles rounded to 1e-6) compared with the one recorded from the C++ AIS frame layer the Rust code replaced.
 #include "dect2/ais/ais_proto.h"
+#include "../common/golden.h"
+#ifdef GOLDEN_REF   // transient, used once to record the digest from the C++ reference copy
 #include "ais_proto_ref.h"
+#endif
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -10,64 +13,59 @@
 #include <cstdlib>
 #include <cstring>
 #include <random>
+#ifdef GOLDEN_REF
+namespace A = dect2::ais_ref;
+#else
 namespace A = dect2::ais;
-namespace R = dect2::ais_ref;
+#endif
 
-static long fails = 0, checks = 0;
-#define SAME(c, ...) do { checks++; if (!(c)) { if (fails++ < 20) { printf("MISMATCH: " __VA_ARGS__); printf("\n"); } } } while (0)
+static golden::Digest dig;
+static long abiFails = 0;
+#define CHECK(c, ...) do { if (!(c)) { abiFails++; printf("FAILED: " __VA_ARGS__); printf("\n"); } } while (0)
 
-template <class T> static bool bitsEq(const T& a, const T& b) { return memcmp(&a, &b, sizeof a) == 0; }
-
-static bool msgEq(const A::AisMsg& a, const R::AisMsg& b) {
-    return a.valid == b.valid && a.type == b.type && a.repeat == b.repeat && a.mmsi == b.mmsi && a.cls == b.cls && a.hasPos == b.hasPos &&
-           bitsEq(a.lat, b.lat) && bitsEq(a.lon, b.lon) && bitsEq(a.sog, b.sog) && bitsEq(a.cog, b.cog) && a.heading == b.heading && a.hasRot == b.hasRot &&
-           bitsEq(a.rotDegMin, b.rotDegMin) && a.navStatus == b.navStatus && a.second == b.second && a.name == b.name && a.callsign == b.callsign &&
-           a.destination == b.destination && a.imo == b.imo && a.shipType == b.shipType && a.dimA == b.dimA && a.dimB == b.dimB && a.dimC == b.dimC &&
-           a.dimD == b.dimD && a.etaMonth == b.etaMonth && a.etaDay == b.etaDay && a.etaHour == b.etaHour && a.etaMin == b.etaMin &&
-           bitsEq(a.draughtM, b.draughtM) && a.epfd == b.epfd && a.partNo == b.partNo && a.vendor == b.vendor && a.aidType == b.aidType &&
-           a.offPosition == b.offPosition && a.virtualAid == b.virtualAid && a.altitudeM == b.altitudeM && a.year == b.year && a.month == b.month &&
-           a.day == b.day && a.hour == b.hour && a.minute == b.minute && a.sec == b.sec && a.text == b.text && a.dac == b.dac && a.fi == b.fi &&
-           a.destMmsi == b.destMmsi && a.bits == b.bits;
+static void addMsg(const A::AisMsg& a) {
+    dig.add(a.valid, a.type, a.repeat, a.mmsi, a.cls, a.hasPos, a.lat, a.lon, a.sog, a.cog, a.heading, a.hasRot, a.rotDegMin, a.navStatus, a.second, a.name, a.callsign);
+    dig.add(a.destination, a.imo, a.shipType, a.dimA, a.dimB, a.dimC, a.dimD, a.etaMonth, a.etaDay, a.etaHour, a.etaMin, a.draughtM, a.epfd, a.partNo, a.vendor, a.aidType);
+    dig.add(a.offPosition, a.virtualAid, a.altitudeM, a.year, a.month, a.day, a.hour, a.minute, a.sec, a.text, a.dac, a.fi, a.destMmsi, a.bits);
 }
 
 static void compareBits(const A::Bits& d, std::mt19937& g) {
-    SAME(A::fcsRegister(d.data(), d.size()) == R::fcsRegister(d.data(), d.size()), "fcsRegister n=%zu", d.size());
-    SAME(A::fcsOk(d) == R::fcsOk(d), "fcsOk");
-    SAME(A::stuff(d) == R::stuff(d), "stuff n=%zu", d.size());
-    { A::Bits o1, o2; const bool r1 = A::destuff(d, o1), r2 = R::destuff(d, o2); SAME(r1 == r2 && (!r1 || o1 == o2), "destuff n=%zu", d.size()); }
+    dig.add(A::fcsRegister(d.data(), d.size()));
+    dig.add(A::fcsOk(d));
+    dig.add(A::stuff(d));
+    { A::Bits o1; const bool r1 = A::destuff(d, o1); dig.add(r1); if (r1) dig.add(o1); }
     const int lv = (int)(g() % 4) - 1;
-    SAME(A::nrziEncode(d, lv) == R::nrziEncode(d, lv), "nrziEncode");
-    SAME(A::nrziDecode(d, lv) == R::nrziDecode(d, lv), "nrziDecode");
-    { A::Bits x = d, y = d; A::reverseOctets(x); R::reverseOctets(y); SAME(x == y, "reverseOctets"); }
-    { const A::HdlcResult h1 = A::hdlcFrames(d); const R::HdlcResult h2 = R::hdlcFrames(d); SAME(h1.good == h2.good && h1.bad == h2.bad, "hdlcFrames n=%zu good %zu/%zu bad %d/%d", d.size(), h1.good.size(), h2.good.size(), h1.bad, h2.bad); }
-    SAME(A::burstLineBits(d) == R::burstLineBits(d), "burstLineBits");
+    dig.add(A::nrziEncode(d, lv));
+    dig.add(A::nrziDecode(d, lv));
+    { A::Bits x = d; A::reverseOctets(x); dig.add(x); }
+    { const A::HdlcResult h1 = A::hdlcFrames(d); dig.add((uint64_t)h1.good.size()); for (const auto& f : h1.good) dig.add(f); dig.add(h1.bad); }
+    dig.add(A::burstLineBits(d));
     const size_t pos = g() % (d.size() + 20), len = g() % 70;
-    SAME(A::getU(d, pos, len) == R::getU(d, pos, len), "getU %zu %zu", pos, len);
-    SAME(A::getS(d, pos, len) == R::getS(d, pos, len), "getS %zu %zu", pos, len);
-    SAME(A::getText(d, pos, len) == R::getText(d, pos, len), "getText %zu %zu", pos, len);
+    dig.add(A::getU(d, pos, len));
+    dig.add(A::getS(d, pos, len));
+    dig.add(A::getText(d, pos, len));
 }
 
 static void compareMessage(const A::Bits& p) {
-    A::AisMsg a; R::AisMsg b;
-    const bool ra = A::decodeMessage(p, a), rb = R::decodeMessage(p, b);
-    SAME(ra == rb && msgEq(a, b), "decodeMessage n=%zu type %d/%d valid %d/%d", p.size(), a.type, b.type, (int)a.valid, (int)b.valid);
-    for (int dec = 0; dec < 2; dec++) {
-        SAME(A::acceptableAis(a, dec != 0) == R::acceptableAis(b, dec != 0), "acceptableAis");
-    }
-    int fa = 0, fb = 0;
-    const std::string sa = A::armour(p, fa), sb = R::armour(p, fb);
-    SAME(sa == sb && fa == fb, "armour");
-    for (int fill = -2; fill < 9; fill++) SAME(A::unarmour(sa, fill) == R::unarmour(sa, fill), "unarmour fill %d", fill);
-    SAME(A::toNmea(p, 'B', 3) == R::toNmea(p, 'B', 3) && A::toNmea(p, 'A', -13) == R::toNmea(p, 'A', -13), "toNmea");
+    A::AisMsg a;
+    const bool ra = A::decodeMessage(p, a);
+    dig.add(ra); addMsg(a);
+    for (int dec = 0; dec < 2; dec++) dig.add(A::acceptableAis(a, dec != 0));
+    int fa = 0;
+    const std::string sa = A::armour(p, fa);
+    dig.add(sa, fa);
+    for (int fill = -2; fill < 9; fill++) dig.add(A::unarmour(sa, fill));
+    dig.add(A::toNmea(p, 'B', 3), A::toNmea(p, 'A', -13));
 }
 
 static void compareSentence(const std::string& s) {
-    std::string c1 = "x", c2 = "x"; int f1 = 77, f2 = 77, n1 = 77, n2 = 77, k1 = 77, k2 = 77; char h1 = 'q', h2 = 'q';
-    const bool r1 = A::parseNmea(s, c1, f1, n1, k1, &h1), r2 = R::parseNmea(s, c2, f2, n2, k2, &h2);
-    SAME(r1 == r2 && c1 == c2 && f1 == f2 && n1 == n2 && k1 == k2 && h1 == h2, "parseNmea '%.60s' %d/%d fill %d/%d cnt %d/%d no %d/%d", s.c_str(), r1, r2, f1, f2, n1, n2, k1, k2);
-    std::string c3 = "y", c4 = "y"; int a1 = 5, a2 = 5, a3 = 5, a4 = 5, a5 = 5, a6 = 5;
-    SAME(A::parseNmea(s, c3, a1, a2, a3) == R::parseNmea(s, c4, a4, a5, a6) && c3 == c4 && a1 == a4 && a2 == a5 && a3 == a6, "parseNmea without channel");
-    SAME(A::nmeaChecksum(s) == R::nmeaChecksum(s), "nmeaChecksum");
+    std::string c1 = "x"; int f1 = 77, n1 = 77, k1 = 77; char h1 = 'q';
+    const bool r1 = A::parseNmea(s, c1, f1, n1, k1, &h1);
+    dig.add(r1, c1, f1, n1, k1, h1);
+    std::string c3 = "y"; int a1 = 5, a2 = 5, a3 = 5;
+    const bool r3 = A::parseNmea(s, c3, a1, a2, a3);
+    dig.add(r3, c3, a1, a2, a3);
+    dig.add(A::nmeaChecksum(s));
 }
 
 static const char* kSentences[] = {
@@ -132,14 +130,13 @@ static void mutateText(std::string& s) {
 int main() {
     const char* e = getenv("ONAIR_DIFF_ITERS");
     const long iters = e ? atol(e) : 200000;
-    printf("test_ais_proto_rs: A = %s, reference = C++ copy\n", A::protoImplementation());
 
     // known sentences: decode, re-frame, and the damaged versions
     for (const char* s : kSentences) {
         compareSentence(s);
         std::string chars; int fill = 0, cnt = 0, no = 0;
-        if (!R::parseNmea(s, chars, fill, cnt, no)) continue;
-        const A::Bits p = R::unarmour(chars, fill);
+        if (!A::parseNmea(s, chars, fill, cnt, no)) continue;
+        const A::Bits p = A::unarmour(chars, fill);
         compareMessage(p);
         compareBits(p, gen);
         A::Bits line = A::burstLineBits(p);
@@ -162,8 +159,7 @@ int main() {
         int lv = 1;
         for (uint8_t b : d) { if (!b) lv ^= 1; line.push_back((uint8_t)lv); }
         const A::Bits dec = A::nrziDecode(line);
-        SAME(A::hdlcFrames(dec).good == R::hdlcFrames(dec).good, "built frame type %d: Rust and C++ frames differ", t);
-        if (p.size() >= 48 && p.size() <= 1000) SAME(A::hdlcFrames(dec).good.size() == 1 && A::hdlcFrames(dec).good[0] == p, "built frame type %d decodes to the message (%zu bits)", t, p.size());
+        if (p.size() >= 48 && p.size() <= 1000) CHECK(A::hdlcFrames(dec).good.size() == 1 && A::hdlcFrames(dec).good[0] == p, "built frame type %d decodes to the message (%zu bits)", t, p.size());
         compareBits(dec, gen);
         compareMessage(p);
     }
@@ -183,7 +179,7 @@ int main() {
             if (gen() & 1) mutate(l2);
             l1.insert(l1.end(), l2.begin(), l2.end());
             compareBits(l1, gen);
-            compareMessage(R::hdlcFrames(l1).good.empty() ? l1 : R::hdlcFrames(l1).good[0]);
+            compareMessage(A::hdlcFrames(l1).good.empty() ? l1 : A::hdlcFrames(l1).good[0]);
         } else if (kind == 3) {     // pure noise, sometimes with values above 1
             A::Bits v(gen() % 1300);
             const bool wide = gen() & 1;
@@ -199,6 +195,6 @@ int main() {
             compareMessage(p);
         }
     }
-    printf("test_ais_proto_rs: %ld checks, %ld mismatches\n", checks, fails);
-    return fails ? 1 : 0;
+    if (abiFails) return 1;
+    return golden::check("ais_proto_rs", dig, 0x0ull, !e);
 }

@@ -1,4 +1,4 @@
-// Seeded mutation run of the error correction layer (the Rust one under DECT2_RUST_FEC), meant for DECT2_SANITIZE=ON: the Reed-Solomon decoders and the BCH
+// Seeded mutation run of the error correction layer, meant for DECT2_SANITIZE=ON: the Reed-Solomon decoders and the BCH
 // decoder must never crash or hang on any bytes (the BCH bits are also fed values above 1 and every length from 0), the encoders on any message length.
 // Buffers are exact-size heap blocks so a sanitizer sees a read or write past the end. Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/fec/fec_proto.h"

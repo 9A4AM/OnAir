@@ -1,29 +1,35 @@
-// Differential test: the C++ network protocol layers (a generated copy in dect2::netp_ref, see cmake/gen_rs_ref.cmake) against the ones the program uses (dect2::netp: the
-// Rust crate onair_net when DECT2_RUST is on). The same inputs go to both and every result has to be identical, double for double (bit for bit): SHA-1 / base64 /
-// WebSocket accept key and server frames, client WebSocket frames (valid, unmasked, fragmented, odd opcodes, every length class, cut short), URL text (percent decoding,
-// query strings, Host headers, loopback names, constant time compare, reason phrases), flat JSON bodies (built from random members, mutated, truncated, odd numbers and
-// escapes), HTTP request heads (request lines, header fields, Content-Length, chunked, duplicates, control characters), rtl_tcp greetings / commands / address strings,
-// SpyServer words / commands / headers / rates, the SDR++ draw list (random menus, mutated, truncated), labels from ids, rate texts, command packets, and the list of network
-// radios (parse, format, host clean-up). ONAIR_DIFF_ITERS (default 100000) inputs per family. Buffers are exactly as long as their content so a sanitizer sees a read past
-// the end. The Rust C ABI is also called with null pointers and short arrays.
+// Golden-vector test of the network protocol layers (dect2::netp, the Rust crate onair_net): SHA-1 / base64 / WebSocket accept key and server frames, client WebSocket
+// frames (valid, unmasked, fragmented, odd opcodes, every length class, cut short), URL text (percent decoding, query strings, Host headers, loopback names, constant
+// time compare, reason phrases), flat JSON bodies (built from random members, mutated, truncated, odd numbers and escapes), HTTP request heads (request lines, header
+// fields, Content-Length, chunked, duplicates, control characters), rtl_tcp greetings / commands / address strings, SpyServer words / commands / headers / rates, the
+// SDR++ draw list (random menus, mutated, truncated), labels from ids, rate texts, command packets, and the list of network radios (parse, format, host clean-up).
+// ONAIR_DIFF_ITERS (default 100000) inputs per family. Buffers are exactly as long as their content so a sanitizer sees a read past the end. The Rust C ABI is also
+// called with null pointers and short arrays. Every result goes into a digest (tests/common/golden.h; doubles rounded to 1e-6) compared with the one recorded from the
+// C++ layer the Rust code replaced.
 #include "dect2/net/net_proto.h"
+#include "../common/golden.h"
+#ifdef GOLDEN_REF   // transient, used once to record the digest from the C++ reference copy
 #include "net_proto_ref.h"
+#endif
 #include "dect2/rs/net.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <random>
+#ifdef GOLDEN_REF
+namespace A = dect2::netp_ref;
+#else
 namespace A = dect2::netp;
-namespace R = dect2::netp_ref;
+#endif
 
-static long fails = 0, checks = 0;
-#define SAME(c, ...) do { checks++; if (!(c)) { if (fails++ < 20) { printf("MISMATCH: " __VA_ARGS__); printf("\n"); } } } while (0)
+static golden::Digest dig;
+static long abiFails = 0;
+#define CHECK(c, ...) do { if (!(c)) { abiFails++; printf("FAILED: " __VA_ARGS__); printf("\n"); } } while (0)
 static std::mt19937 g(4242);
 static uint32_t r32() { return g(); }
 using Buf = std::vector<uint8_t>;
 
-static bool sameD(double a, double b) { return memcmp(&a, &b, sizeof a) == 0 || (std::isnan(a) && std::isnan(b)); }
 static std::string rbytes(size_t n) { std::string s(n, '\0'); for (auto& c : s) c = (char)r32(); return s; }
 static std::string pick(const char* const* v, int n) { return v[r32() % n]; }
 // random text from an alphabet
@@ -51,13 +57,13 @@ static std::string mutate(std::string s) {
 static void hashFamily(long iters) {
     for (long it = 0; it < iters; it++) {
         std::string d = rbytes(r32() % 3 == 0 ? r32() % 200 : r32() % 70);
-        SAME(A::sha1(d) == R::sha1(d), "sha1 it %ld", it);
-        SAME(A::base64(d) == R::base64(d), "base64 it %ld", it);
-        SAME(A::wsAcceptKey(d) == R::wsAcceptKey(d), "accept it %ld", it);
+        dig.add(A::sha1(d));
+        dig.add(A::base64(d));
+        dig.add(A::wsAcceptKey(d));
         const int op = (int)(r32() % 20);
         const size_t n = r32() % 50 == 0 ? (size_t)(r32() % 70000) : r32() % 300;
         const std::string p = rbytes(n);
-        SAME(A::wsFrame(op, p) == R::wsFrame(op, p), "frame it %ld n %zu", it, n);
+        dig.add(A::wsFrame(op, p));
     }
     printf("  hash / base64 / frames: %ld inputs\n", iters);
 }
@@ -87,8 +93,7 @@ static void wsFamily(long iters) {
             if (r32() % 4 == 0) in += rbytes(r32() % 20);
         } else in = rbytes(r32() % 12);
         const A::WsClient a = A::wsParseClient(in);
-        const R::WsClient r = R::wsParseClient(in);
-        SAME(a.kind == r.kind && a.code == r.code && a.op == r.op && a.fin == r.fin && a.used == r.used && a.payload == r.payload, "ws client it %ld kind %d/%d code %d/%d", it, a.kind, r.kind, a.code, r.code);
+        dig.add(a.kind, a.code, a.op, a.fin, a.used, a.payload);
         (a.kind == 2 ? frames : a.kind == 1 ? closes : needs)++;
     }
     printf("  client frames: %ld inputs (%ld frames, %ld close, %ld need more)\n", iters, frames, closes, needs);
@@ -99,21 +104,21 @@ static void urlFamily(long iters) {
     static const char* hosts[] = {"localhost", "127.0.0.1", "127.0.0.1:8765", "[::1]", "[::1]:80", "example.com:99", "127.x", "LOCALHOST", "", "[", "[]:", "a:b:c", ":", "127."};
     for (long it = 0; it < iters; it++) {
         const std::string s = rtext("%+ab01&=.:[]/X-_ Ff9eEzZ\x01\xff", 24);
-        SAME(A::urlDecode(s) == R::urlDecode(s), "urlDecode [%s]", s.c_str());
+        dig.add(A::urlDecode(s));
         static const char* keys[] = {"token", "a", "b", "", "x y", "k"};
         const std::string key = r32() % 3 ? pick(keys, 6) : rtext("ab%+ ", 5);
         const std::string q = r32() % 2 ? s : "a=1&token=" + rtext("abc%2B+", 8) + "&b&" + s;
-        SAME(A::queryParam(q, key) == R::queryParam(q, key), "queryParam [%s] [%s]", q.c_str(), key.c_str());
+        dig.add(A::queryParam(q, key));
         const std::string h = r32() % 2 ? pick(hosts, 14) : rtext("[]:0123456789.alo", 14);
-        SAME(A::hostOnly(h) == R::hostOnly(h), "hostOnly [%s]", h.c_str());
+        dig.add(A::hostOnly(h));
         const std::string ho = A::hostOnly(h);
-        SAME(A::loopbackName(h) == R::loopbackName(h) && A::loopbackName(ho) == R::loopbackName(ho), "loopback [%s]", h.c_str());
+        dig.add(A::loopbackName(h), A::loopbackName(ho));
         const std::string b = r32() % 2 ? h : mutate(h);
-        SAME(A::ctEqual(h, b) == R::ctEqual(h, b), "ctEqual");
+        dig.add(A::ctEqual(h, b));
         const int code = (int)(r32() % 700) - 50;
-        SAME(A::statusText(code) == R::statusText(code), "statusText %d", code);
+        dig.add(A::statusText(code));
     }
-    for (int c = -2; c < 600; c++) SAME(A::statusText(c) == R::statusText(c), "statusText %d", c);
+    for (int c = -2; c < 600; c++) dig.add(A::statusText(c));
     printf("  URL text: %ld inputs\n", iters);
 }
 
@@ -146,20 +151,18 @@ static std::string jsonObject() {
     o += r32() % 40 ? "}" : "";
     return (r32() % 10 ? "" : " \t\r\n") + o + (r32() % 10 ? "" : " ");
 }
-static bool sameJson(const std::map<std::string, dect2::JsonVal>& a, const std::map<std::string, dect2::JsonVal>& b) {
-    if (a.size() != b.size()) return false;
-    for (auto i = a.begin(), j = b.begin(); i != a.end(); ++i, ++j)
-        if (i->first != j->first || i->second.kind != j->second.kind || !sameD(i->second.num, j->second.num) || i->second.str != j->second.str || i->second.b != j->second.b) return false;
-    return true;
+static void addJson(const std::map<std::string, dect2::JsonVal>& a) {
+    dig.add((uint64_t)a.size());
+    for (const auto& kv : a) dig.add(kv.first, (int)kv.second.kind, kv.second.num, kv.second.str, kv.second.b);
 }
 static void jsonFamily(long iters) {
     long good = 0;
     for (long it = 0; it < iters; it++) {
         std::string t = jsonObject();
         if (r32() % 3 == 0) t = mutate(t);
-        std::map<std::string, dect2::JsonVal> a, r;
-        const bool oa = A::parseFlatJson(t, a), orr = R::parseFlatJson(t, r);
-        SAME(oa == orr && (!oa || sameJson(a, r)), "flat json [%s] %d/%d", t.c_str(), oa, orr);
+        std::map<std::string, dect2::JsonVal> a;
+        const bool oa = A::parseFlatJson(t, a);
+        dig.add(oa); if (oa) addJson(a);
         good += oa;
     }
     printf("  flat JSON: %ld inputs (%ld accepted)\n", iters, good);
@@ -186,21 +189,21 @@ static void httpFamily(long iters) {
     for (long it = 0; it < iters; it++) {
         std::string head = httpRequest();
         if (r32() % 4 == 0) head = mutate(head);
-        A::HttpHead ha; R::HttpHead hr;
+        A::HttpHead ha;
         const A::HttpError ea = A::httpHead(head, ha);
-        const R::HttpError er = R::httpHead(head, hr);
-        SAME(ea.status == er.status && ea.msg == er.msg, "http error [%s] %d/%d %s/%s", head.c_str(), ea.status, er.status, ea.msg.c_str(), er.msg.c_str());
-        if (!ea.status && !er.status) {
+        dig.add(ea.status, ea.msg);
+        if (!ea.status) {
             ok++;
-            SAME(ha.method == hr.method && ha.path == hr.path && ha.query == hr.query && ha.h == hr.h && ha.contentLength == hr.contentLength, "http head [%s]", head.c_str());
+            dig.add(ha.method, ha.path, ha.query, ha.contentLength, (uint64_t)ha.h.size());
+            for (const auto& kv : ha.h) dig.add(kv.first, kv.second);
         }
         // the scan of what has arrived
         std::string buf = head + (r32() % 3 ? "\r\n\r\n" : r32() % 2 ? "\r\n\r" : "") + (r32() % 4 ? "" : rbytes(r32() % 30));
         if (r32() % 200 == 0) buf = std::string(8180 + r32() % 40, 'a') + (r32() % 2 ? "\r\n\r\n" : "");
         if (r32() % 200 == 0) buf = std::string(8187 + r32() % 12, 'a') + "\r\n\r\n";
-        size_t ea1 = 7, er1 = 7;
-        const int sa = A::httpScan(buf, ea1), sr = R::httpScan(buf, er1);
-        SAME(sa == sr && ea1 == er1, "http scan %d/%d %zu/%zu", sa, sr, ea1, er1);
+        size_t ea1 = 7;
+        const int sa = A::httpScan(buf, ea1);
+        dig.add(sa, (uint64_t)ea1);
     }
     printf("  HTTP request heads: %ld inputs (%ld accepted)\n", iters, ok);
 }
@@ -213,44 +216,42 @@ static void rtlFamily(long iters) {
         for (auto& c : h) c = (unsigned char)r32();
         if (r32() % 2) { memcpy(h, r32() % 4 ? "RTL0" : "RTL1", 4); h[4] = h[5] = 0; h[6] = r32() % 3 ? 0 : (unsigned char)r32(); h[7] = (unsigned char)(r32() % 9); if (r32() % 3) { h[8] = h[9] = 0; } }
         const size_t n = r32() % 20 == 0 ? r32() % 12 : 12;
-        A::RtlGreeting a; R::RtlGreeting r;
-        const bool oa = A::rtlGreeting(h, n, a), orr = R::rtlGreeting(h, n, r);
-        SAME(oa == orr && (!oa || (a.magic == r.magic && a.tuner == r.tuner && a.nGains == r.nGains && a.other == r.other)), "rtl greeting it %ld", it);
+        A::RtlGreeting a;
+        const bool oa = A::rtlGreeting(h, n, a);
+        dig.add(oa); if (oa) dig.add(a.magic, a.tuner, a.nGains, a.other);
         const int t = (int)(r32() % 14) - 3;
-        SAME(A::rtlTunerGains(t) == R::rtlTunerGains(t) && A::rtlTunerName(t) == R::rtlTunerName(t), "rtl tuner %d", t);
+        dig.add(A::rtlTunerGains(t), A::rtlTunerName(t));
         const uint8_t cmd = (uint8_t)r32(); const uint32_t v = r32();
-        SAME(A::rtlCommand(cmd, v) == R::rtlCommand(cmd, v), "rtl cmd");
+        dig.add(A::rtlCommand(cmd, v));
         const std::string ad = r32() % 2 ? pick(addrs, 20) : rtext("[]:0123456789 +-ah", 14);
-        std::string ha, hr; int pa = -7, pr = -7;
-        const bool sa = A::splitHostPort(ad, ha, pa), sr = R::splitHostPort(ad, hr, pr);
-        SAME(sa == sr && (!sa || (ha == hr && pa == pr)), "splitHostPort [%s] %d/%d", ad.c_str(), pa, pr);
+        std::string ha; int pa = -7;
+        const bool sa = A::splitHostPort(ad, ha, pa);
+        dig.add(sa); if (sa) dig.add(ha, pa);
     }
-    for (int t = -5; t < 20; t++) SAME(A::rtlTunerGains(t) == R::rtlTunerGains(t) && A::rtlTunerName(t) == R::rtlTunerName(t), "rtl tuner %d", t);
+    for (int t = -5; t < 20; t++) dig.add(A::rtlTunerGains(t), A::rtlTunerName(t));
     printf("  rtl_tcp: %ld inputs\n", iters);
 }
 
 static void spyFamily(long iters) {
     for (long it = 0; it < iters; it++) {
         const std::string b = rbytes(r32() % 70);
-        uint32_t da[12], dr[12], ca[9], cr[9];
-        A::spyDeviceInfo((const unsigned char*)b.data(), (uint32_t)b.size(), da); R::spyDeviceInfo((const unsigned char*)b.data(), (uint32_t)b.size(), dr);
-        A::spyClientSync((const unsigned char*)b.data(), (uint32_t)b.size(), ca); R::spyClientSync((const unsigned char*)b.data(), (uint32_t)b.size(), cr);
-        SAME(!memcmp(da, dr, sizeof da) && !memcmp(ca, cr, sizeof ca), "spy words n %zu", b.size());
+        uint32_t da[12], ca[9];
+        A::spyDeviceInfo((const unsigned char*)b.data(), (uint32_t)b.size(), da);
+        A::spyClientSync((const unsigned char*)b.data(), (uint32_t)b.size(), ca);
+        dig.bytes(da, sizeof da); dig.bytes(ca, sizeof ca);
         const uint32_t ty = r32() % 4 ? r32() % 4 : r32();
-        SAME(A::spyCommand(ty, (const unsigned char*)b.data(), (uint32_t)b.size()) == R::spyCommand(ty, (const unsigned char*)b.data(), (uint32_t)b.size()), "spy cmd");
-        SAME(A::spyHello() == R::spyHello() && A::spySetSetting(ty, ca[0]) == R::spySetSetting(ty, ca[0]), "spy hello");
+        dig.add(A::spyCommand(ty, (const unsigned char*)b.data(), (uint32_t)b.size()));
+        dig.add(A::spyHello(), A::spySetSetting(ty, ca[0]));
         unsigned char h[20];
         for (auto& c : h) c = (unsigned char)r32();
         if (r32() % 2) { h[16] = (unsigned char)r32(); h[17] = (unsigned char)r32(); h[18] = r32() % 3 == 0 ? 0x10 : (unsigned char)(r32() % 0x12); h[19] = 0; }
-        uint32_t t1 = 1, f1 = 2, s1 = 3, t2 = 1, f2 = 2, s2 = 3;
-        const bool oa = A::spyHeader(h, t1, f1, s1), orr = R::spyHeader(h, t2, f2, s2);
-        SAME(oa == orr && t1 == t2 && f1 == f2 && s1 == s2, "spy header");
+        uint32_t t1 = 1, f1 = 2, s1 = 3;
+        const bool oa = A::spyHeader(h, t1, f1, s1);
+        dig.add(oa, t1, f1, s1);
         const uint32_t mr = r32() % 3 ? (uint32_t)(r32() % 40000000) : r32(), ds = r32() % 4 ? r32() % 30 : r32(), md = r32() % 4 ? r32() % 25 : r32();
-        const auto ra = A::spyRates(mr, ds, md), rr = R::spyRates(mr, ds, md);
-        bool same = ra.size() == rr.size();
-        for (size_t k = 0; same && k < ra.size(); k++) same = sameD(ra[k], rr[k]);
-        SAME(same, "spy rates %u %u %u", mr, ds, md);
-        SAME(A::spyDevName(ty) == R::spyDevName(ty), "spy name");
+        const auto ra = A::spyRates(mr, ds, md);
+        dig.add(ra);
+        dig.add(A::spyDevName(ty));
     }
     printf("  SpyServer: %ld inputs\n", iters);
 }
@@ -293,47 +294,41 @@ static std::string uiList() {
     }
     return s;
 }
-static bool sameUi(const std::vector<A::UiWidget>& a, const std::vector<R::UiWidget>& b) {
-    if (a.size() != b.size()) return false;
-    for (size_t k = 0; k < a.size(); k++) {
-        const A::UiWidget& x = a[k];
-        const R::UiWidget& y = b[k];
-        if ((int)x.kind != (int)y.kind || x.id != y.id || x.label != y.label || x.items != y.items || x.i != y.i || x.b != y.b || !sameD(x.value, y.value) || !sameD(x.minV, y.minV) ||
-            !sameD(x.maxV, y.maxV) || !sameD(x.step, y.step) || x.disabled != y.disabled) return false;
-    }
-    return true;
+static void addUi(const std::vector<A::UiWidget>& a) {
+    dig.add((uint64_t)a.size());
+    for (const A::UiWidget& x : a) dig.add((int)x.kind, x.id, x.label, x.items, x.i, x.b, x.value, x.minV, x.maxV, x.step, x.disabled);
 }
 static void sdrppFamily(long iters) {
     long good = 0, widgets = 0;
     for (long it = 0; it < iters; it++) {
         std::string t = uiList();
         if (r32() % 4 == 0) t = mutate(t);
-        std::vector<A::UiWidget> a; std::vector<R::UiWidget> r;
-        const bool oa = A::sdrppParseUi((const unsigned char*)t.data(), t.size(), a), orr = R::sdrppParseUi((const unsigned char*)t.data(), t.size(), r);
-        SAME(oa == orr && (!oa || sameUi(a, r)), "sdrpp ui it %ld size %zu %d/%d", it, t.size(), oa, orr);
+        std::vector<A::UiWidget> a;
+        const bool oa = A::sdrppParseUi((const unsigned char*)t.data(), t.size(), a);
+        dig.add(oa); if (oa) addUi(a);
         good += oa; widgets += (long)a.size();
         const std::string id = uiId();
-        SAME(A::sdrppIdFlags(id) == R::sdrppIdFlags(id) && A::sdrppLabelFromId(id) == R::sdrppLabelFromId(id), "sdrpp id [%s] %s / %s", id.c_str(), A::sdrppLabelFromId(id).c_str(), R::sdrppLabelFromId(id).c_str());
+        dig.add(A::sdrppIdFlags(id), A::sdrppLabelFromId(id));
         static const char* rates[] = {"10.0MHz", "2.5MHz", "250KHz", "2.048 MSPS", "48000", "inf", "nan", "0x10", "1e3", "5 Hz", "5 s/s", "5 ks/s", "5kSps", "0", "-3", "  7 mhz", "\t9", "1.5GHz", "1e999", "5xyz", "5 kk", "5 GHZ ", ""};
         const std::string rt = r32() % 2 ? pick(rates, 23) : rtext("0123456789.eE+-xXpP kKmMgGhHzZsS/inf\t", 12);
-        SAME(sameD(A::sdrppRateText(rt), R::sdrppRateText(rt)), "sdrpp rate [%s] %g/%g", rt.c_str(), A::sdrppRateText(rt), R::sdrppRateText(rt));
+        dig.add(A::sdrppRateText(rt));
         const std::string arg = rbytes(r32() % 10);
         const uint32_t cmd = r32();
-        SAME(A::sdrppCommand(cmd, (const unsigned char*)arg.data(), arg.size()) == R::sdrppCommand(cmd, (const unsigned char*)arg.data(), arg.size()), "sdrpp command");
+        dig.add(A::sdrppCommand(cmd, (const unsigned char*)arg.data(), arg.size()));
         const uint8_t ty = (uint8_t)(r32() % 4);
         const float f = (float)(int)r32() / 7;
         const std::string uid = r32() % 50 == 0 ? std::string(65530 + r32() % 20, 'x') : id;
         const int32_t iv = (int32_t)r32(); const bool bv = r32() & 1, sy = r32() & 1;
-        SAME(A::sdrppUiAction(uid, ty, iv, f, bv, sy) == R::sdrppUiAction(uid, ty, iv, f, bv, sy), "sdrpp ui action type %d", ty);
+        dig.add(A::sdrppUiAction(uid, ty, iv, f, bv, sy));
         unsigned char h[8];
         for (auto& c : h) c = (unsigned char)r32();
         if (r32() % 2) { h[0] = (unsigned char)(r32() % 9); h[1] = h[2] = h[3] = 0; h[4] = (unsigned char)r32(); h[5] = (unsigned char)(r32() % 3); h[6] = (unsigned char)(r32() % 3 ? 0 : r32() % 0x30); h[7] = 0; }
-        uint32_t ta = 5, ba = 6, tr = 5, br = 6;
-        const bool pa = A::sdrppPacketHeader(h, ta, ba), pr = R::sdrppPacketHeader(h, tr, br);
-        SAME(pa == pr && ta == tr && ba == br, "sdrpp packet header");
+        uint32_t ta = 5, ba = 6;
+        const bool pa = A::sdrppPacketHeader(h, ta, ba);
+        dig.add(pa, ta, ba);
         const uint8_t ec = (uint8_t)(r32() % 8);
-        std::string ea = "a", er = "a";
-        SAME(A::sdrppErrorText(ec, ea) == R::sdrppErrorText(ec, er) && ea == er, "sdrpp error text");
+        std::string ea = "a";
+        dig.add(A::sdrppErrorText(ec, ea), ea);
     }
     printf("  SDR++: %ld inputs (%ld menus read, %ld widgets)\n", iters, good, widgets);
 }
@@ -358,28 +353,24 @@ static void radiosFamily(long iters) {
         std::string s = radioList();
         if (r32() % 5 == 0) s = mutate(s);
         const std::vector<A::Radio> a = A::radiosFromString(s);
-        const std::vector<R::Radio> r = R::radiosFromString(s);
-        bool same = a.size() == r.size();
-        for (size_t k = 0; same && k < a.size(); k++) same = a[k].kind == r[k].kind && a[k].host == r[k].host && a[k].port == r[k].port && a[k].remote == r[k].remote;
-        SAME(same, "radios from [%s] %zu/%zu", s.c_str(), a.size(), r.size());
+        dig.add((uint64_t)a.size());
+        for (const auto& x : a) dig.add(x.kind, x.host, x.port, x.remote);
         items += (long)a.size();
         // the formatter on lists with odd contents (not only parsed ones)
-        std::vector<A::Radio> la; std::vector<R::Radio> lr;
+        std::vector<A::Radio> la;
         const int n = (int)(r32() % 4);
         for (int k = 0; k < n; k++) {
             A::Radio x; x.kind = r32() % 10; x.port = (int)(r32() % 5 == 0 ? (int)r32() : (int)(r32() % 70000) - 100);
             x.host = r32() % 2 ? "h" + rtext(" ,;:ip.tcp/", 8) : rtext("ab ip:tcp://,;", 12); x.remote = rtext("ab=,; ", 8);
             la.push_back(x);
-            R::Radio y; y.kind = x.kind; y.port = x.port; y.host = x.host; y.remote = x.remote;
-            lr.push_back(y);
         }
-        SAME(A::radiosToString(la) == R::radiosToString(lr), "radios to string it %ld [%s] [%s]", it, A::radiosToString(la).c_str(), R::radiosToString(lr).c_str());
+        dig.add(A::radiosToString(la));
         const std::string h = rtext("ab ip:tcp://,;\t", 16);
-        SAME(A::cleanHost(h) == R::cleanHost(h), "cleanHost [%s]", h.c_str());
+        dig.add(A::cleanHost(h));
     }
     for (uint32_t k = 0; k < 10; k++) {
-        SAME(A::radioTypeName(k) == R::radioTypeName(k) && A::radioDefaultPort(k) == R::radioDefaultPort(k) && A::radioDefaultHost(k) == R::radioDefaultHost(k), "radio tables %u", k);
-        for (int p : {-5, 0, 1, 80, 70000}) SAME(A::radioPort(k, p) == R::radioPort(k, p), "radioPort %u %d", k, p);
+        dig.add(A::radioTypeName(k), A::radioDefaultPort(k), A::radioDefaultHost(k));
+        for (int p : {-5, 0, 1, 80, 70000}) dig.add(A::radioPort(k, p));
     }
     printf("  network radios: %ld lists (%ld items)\n", iters, items);
 }
@@ -387,63 +378,63 @@ static void radiosFamily(long iters) {
 // ------------------------------------------------------------------------------------------------------------------------------ the C ABI with misuse
 static void abiMisuse() {
     uint8_t tiny[1];
-    SAME(onair_net_base64((const uint8_t*)"abcd", 4, tiny, 1) == (size_t)-1, "base64 small buffer");
-    SAME(onair_net_base64(nullptr, 0, nullptr, 0) == 0, "base64 empty");
-    SAME(onair_net_ws_frame(1, (const uint8_t*)"abc", 3, tiny, 1) == (size_t)-1, "frame small buffer");
+    CHECK(onair_net_base64((const uint8_t*)"abcd", 4, tiny, 1) == (size_t)-1, "base64 small buffer");
+    CHECK(onair_net_base64(nullptr, 0, nullptr, 0) == 0, "base64 empty");
+    CHECK(onair_net_ws_frame(1, (const uint8_t*)"abc", 3, tiny, 1) == (size_t)-1, "frame small buffer");
     onair_net_sha1(nullptr, 0, nullptr);
     onair_net_ws_accept(nullptr, 0, nullptr);
     OnairNetWsClient c;
-    SAME(onair_net_ws_parse_client(nullptr, 0, nullptr, 0, &c) == 0, "ws null");
+    CHECK(onair_net_ws_parse_client(nullptr, 0, nullptr, 0, &c) == 0, "ws null");
     const uint8_t big[] = {0x81, 0xfe, 0x0f, 0xff, 1, 2, 3, 4};   // 4095 bytes announced, payload buffer too small
     uint8_t pl[4];
     uint8_t whole[8 + 4095] = {0x81, 0xfe, 0x0f, 0xff};
-    SAME(onair_net_ws_parse_client(whole, sizeof whole, pl, sizeof pl, &c) == 1 && c.code == 1009, "ws small payload buffer");
+    CHECK(onair_net_ws_parse_client(whole, sizeof whole, pl, sizeof pl, &c) == 1 && c.code == 1009, "ws small payload buffer");
     (void)big;
-    SAME(onair_net_url_decode(nullptr, 0, nullptr, 0) == 0, "url null");
-    SAME(onair_net_url_decode((const uint8_t*)"a%41b", 5, tiny, 1) == 3 && tiny[0] == 'a', "url short buffer");
+    CHECK(onair_net_url_decode(nullptr, 0, nullptr, 0) == 0, "url null");
+    CHECK(onair_net_url_decode((const uint8_t*)"a%41b", 5, tiny, 1) == 3 && tiny[0] == 'a', "url short buffer");
     bool found = true;
-    SAME(onair_net_query_param(nullptr, 0, (const uint8_t*)"a", 1, nullptr, 0, &found) == 0 && !found, "query null");
-    SAME(onair_net_flatjson_parse(nullptr, 0, nullptr, 0, nullptr, 0) == -1, "json null");
+    CHECK(onair_net_query_param(nullptr, 0, (const uint8_t*)"a", 1, nullptr, 0, &found) == 0 && !found, "query null");
+    CHECK(onair_net_flatjson_parse(nullptr, 0, nullptr, 0, nullptr, 0) == -1, "json null");
     OnairNetJsonEntry e[1];
     uint8_t ar[8];
-    SAME(onair_net_flatjson_parse((const uint8_t*)"{\"a\":1,\"b\":2}", 13, e, 1, ar, 8) == -1, "json short entries");
+    CHECK(onair_net_flatjson_parse((const uint8_t*)"{\"a\":1,\"b\":2}", 13, e, 1, ar, 8) == -1, "json short entries");
     onair_net_http_parse(nullptr, 0, nullptr, 0, nullptr);
     OnairNetHead hd;
     OnairNetField f[1];
     const char* two = "GET / HTTP/1.1\r\nA: 1\r\nB: 2";
     onair_net_http_parse((const uint8_t*)two, strlen(two), f, 1, &hd);
-    SAME(hd.err == 3, "http short field array");
+    CHECK(hd.err == 3, "http short field array");
     uint32_t st = 1;
-    SAME(onair_net_http_error(99, &st, nullptr, 0) == 0 && st == 0, "http error unknown");
+    CHECK(onair_net_http_error(99, &st, nullptr, 0) == 0 && st == 0, "http error unknown");
     OnairNetGreeting gr;
-    SAME(!onair_net_rtltcp_greeting(nullptr, 0, &gr) && !onair_net_rtltcp_greeting((const uint8_t*)"RTL0", 4, &gr), "greeting short");
-    SAME(onair_net_rtltcp_gains(5, nullptr, 0) == 29, "gains count");
+    CHECK(!onair_net_rtltcp_greeting(nullptr, 0, &gr) && !onair_net_rtltcp_greeting((const uint8_t*)"RTL0", 4, &gr), "greeting short");
+    CHECK(onair_net_rtltcp_gains(5, nullptr, 0) == 29, "gains count");
     onair_net_rtltcp_command(1, 2, nullptr);
-    SAME(!onair_net_split_host_port(nullptr, 0, nullptr, nullptr), "split null");
+    CHECK(!onair_net_split_host_port(nullptr, 0, nullptr, nullptr), "split null");
     onair_net_spy_device_info(nullptr, 0, nullptr);
     onair_net_spy_client_sync(nullptr, 0, nullptr);
-    SAME(onair_net_spy_command(0, nullptr, 0, tiny, 1) == (size_t)-1 && onair_net_spy_hello(tiny, 1) == (size_t)-1, "spy small buffer");
+    CHECK(onair_net_spy_command(0, nullptr, 0, tiny, 1) == (size_t)-1 && onair_net_spy_hello(tiny, 1) == (size_t)-1, "spy small buffer");
     uint32_t a1, a2, a3;
-    SAME(!onair_net_spy_header(nullptr, 0, &a1, &a2, &a3), "spy header null");
-    SAME(onair_net_spy_rates(10000000, 9, 0, nullptr, 0) == 9, "spy rates count");
+    CHECK(!onair_net_spy_header(nullptr, 0, &a1, &a2, &a3), "spy header null");
+    CHECK(onair_net_spy_rates(10000000, 9, 0, nullptr, 0) == 9, "spy rates count");
     OnairNetUiCounts uc;
     onair_net_sdrpp_parse_ui(nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0, &uc);
-    SAME(uc.ok == 1 && uc.widgets == 0, "empty menu");
+    CHECK(uc.ok == 1 && uc.widgets == 0, "empty menu");
     const uint8_t cb[] = {0, 0x8b, 0, 4, 1, 0, 'x', 1, 1};
     onair_net_sdrpp_parse_ui(cb, sizeof cb, nullptr, 0, nullptr, 0, nullptr, 0, &uc);
-    SAME(uc.ok == 0, "menu with no room");
-    SAME(onair_net_sdrpp_rate_text(nullptr) == 0, "rate null");
-    SAME(onair_net_sdrpp_command(0, nullptr, 0, tiny, 1) == (size_t)-1 && onair_net_sdrpp_ui_action(nullptr, 0, 1, 0, 0, true, true, tiny, 1) == (size_t)-1, "sdrpp small buffer");
-    SAME(!onair_net_sdrpp_packet_header(nullptr, 0, &a1, &a2) && onair_net_sdrpp_error_text(9, nullptr, 0) == (size_t)-1, "sdrpp null");
+    CHECK(uc.ok == 0, "menu with no room");
+    CHECK(onair_net_sdrpp_rate_text(nullptr) == 0, "rate null");
+    CHECK(onair_net_sdrpp_command(0, nullptr, 0, tiny, 1) == (size_t)-1 && onair_net_sdrpp_ui_action(nullptr, 0, 1, 0, 0, true, true, tiny, 1) == (size_t)-1, "sdrpp small buffer");
+    CHECK(!onair_net_sdrpp_packet_header(nullptr, 0, &a1, &a2) && onair_net_sdrpp_error_text(9, nullptr, 0) == (size_t)-1, "sdrpp null");
     OnairNetRadio rr[1];
-    SAME(onair_net_radios_parse((const uint8_t*)"rtltcp,a,1;rtltcp,b,2", 21, rr, 1, ar, 8) == (size_t)-1, "radios short arrays");
-    SAME(onair_net_radios_parse(nullptr, 0, nullptr, 0, nullptr, 0) == 0, "radios empty");
-    SAME(onair_net_radios_format(nullptr, 0, nullptr, 0, nullptr, 0) == 0, "radios format empty");
-    SAME(onair_net_radio_clean_host((const uint8_t*)"a b", 3, tiny, 1) == (size_t)-1, "clean host small buffer");
+    CHECK(onair_net_radios_parse((const uint8_t*)"rtltcp,a,1;rtltcp,b,2", 21, rr, 1, ar, 8) == (size_t)-1, "radios short arrays");
+    CHECK(onair_net_radios_parse(nullptr, 0, nullptr, 0, nullptr, 0) == 0, "radios empty");
+    CHECK(onair_net_radios_format(nullptr, 0, nullptr, 0, nullptr, 0) == 0, "radios format empty");
+    CHECK(onair_net_radio_clean_host((const uint8_t*)"a b", 3, tiny, 1) == (size_t)-1, "clean host small buffer");
     size_t sizes[8];
     onair_net_struct_sizes(sizes);
     onair_net_struct_sizes(nullptr);
-    SAME(onair_net_version() == 1, "version");
+    CHECK(onair_net_version() == 1, "version");
 }
 
 int main() {
@@ -458,6 +449,6 @@ int main() {
     sdrppFamily(iters);
     radiosFamily(iters);
     abiMisuse();
-    printf("net_proto_rs: %ld checks, %ld mismatches\n", checks, fails);
-    return fails ? 1 : 0;
+    if (abiFails) return 1;
+    return golden::check("net_proto_rs", dig, 0x0ull, !getenv("ONAIR_DIFF_ITERS"));
 }
