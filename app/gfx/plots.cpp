@@ -56,6 +56,7 @@ static float identifyButton(App& a, ImVec2 plotMin, ImVec2 plotSize, float right
 }
 
 static void clickToTune(App& a, int plotId) {
+    if (autoLabelsHovered()) return;   // the mouse is on a name: it tunes (autolabel.cpp)
     if (a.family == 55) { generalPlotMouse(a, plotId); return; }   // the general receiver: its channel marker, without retuning the radio
     if (!plt::IsPlotHovered() || a.fmScan.running) return;
     if (a.identifyTool || ImGui::GetIO().KeyShift) return;   // the Identify tool and Shift+drag select a signal instead of tuning (identifyPlotInput)
@@ -876,22 +877,10 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
             double cx[2] = {a.freqMhz, a.freqMhz}, cy[2] = {a.yMin, a.yMax};
             plt::Spec cs; cs.LineColor = pal::grey(0.35f);
             plt::PlotLine("centre", cx, cy, 2, cs);
-            if (a.fmMode && pal::dev()) {   // the stations the scan found, as bookmarks (as in SDR++)
-                const plt::Rect lim = plt::GetPlotLimits();
-                int k = 0;
-                for (const auto& r : a.fmScan.results) {
-                    if (!r.found || r.mhz < lim.X.Min || r.mhz > lim.X.Max) continue;
-                    double mx[2] = {r.mhz, r.mhz}, my[2] = {a.yMin, a.yMax};
-                    plt::Spec ms; ms.LineColor = ImVec4(0.85f, 0.85f, 0.85f, 0.22f);
-                    char id[16]; snprintf(id, sizeof id, "mark%d", k++);
-                    plt::PlotLine(id, mx, my, 2, ms);
-                    char lb[48]; snprintf(lb, sizeof lb, "%s", r.name.empty() ? "" : r.name.c_str());
-                    if (lb[0]) plt::PlotText(lb, r.mhz, a.yMax, ImVec2(ImGui::CalcTextSize(lb).x * 0.5f + 4, bandPlanStripHeight() + 4 * gUi + (k % 2) * ImGui::GetTextLineHeight()));
-                }
-            }
         }
         wideMarkers(a);
         multiMarkers(a);
+        autoLabelsDraw(a, 0, plotMin, plotSize, plt::GetPlotLimits().X.Min, plt::GetPlotLimits().X.Max);
         clickToTune(a, 0);
         identifyPlotInput(a, 0);
         visLo = plt::GetPlotLimits().X.Min; visHi = plt::GetPlotLimits().X.Max;
@@ -906,7 +895,8 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
         channelWidthButton(a, plotMin, plotSize, kYLabel); wideSwitch(a, plotMin, plotSize); multiSwitch(a, plotMin, plotSize);
         gSpecBtnW = cornerPopup(a, "Spectrum###specbtn", "##specpop", plotMin, plotSize, gBwBtnW + gWideBtnW, ImGui::CalcTextSize(kYLabel).x + 24 * gUi, 0, false,
                                 tr("Spectrum: averaging, max hold, peak markers, fill, grid and the unit (dBFS or dBm)"), specDisplayPopup);
-        identifyButton(a, plotMin, plotSize, gBwBtnW + gWideBtnW + gSpecBtnW);
+        const float idW = identifyButton(a, plotMin, plotSize, gBwBtnW + gWideBtnW + gSpecBtnW);
+        autoLabelsButton(a, plotMin, plotSize, gBwBtnW + gWideBtnW + gSpecBtnW + idW);
     }
     // right-click: what is this signal?
     if (openCtx) ImGui::OpenPopup("##specctx");
@@ -994,6 +984,7 @@ static void waterfallPlot(App& a, ImVec2 size, int extraFlags) {
         channelBand(a, false);
         plotMin = plt::GetPlotPos(); plotSize = plt::GetPlotSize();
         wfScaleBar(a, plotMin, plotSize);
+        autoLabelsDraw(a, 1, plotMin, plotSize, plt::GetPlotLimits().X.Min, plt::GetPlotLimits().X.Max);
         clickToTune(a, 1);
         identifyPlotInput(a, 1);
         plt::EndPlot();

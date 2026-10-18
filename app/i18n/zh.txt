@@ -2703,3 +2703,15 @@ Watch for these	监视这些
 Lists	列表
 Watchlists...	监视列表...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	当收到列表中的飞机、船舶、呼号、频率或词语时提醒: 通知、声音、ntfy、Telegram 或 Webhook
+Labels	名称
+Names on the spectrum	频谱上的名称
+Station and channel names on the spectrum and the waterfall. A click on a name tunes to it and opens its mode.	在频谱和瀑布图上显示电台和频道名称。点击名称即可调谐到该频率并打开对应模式。
+Frequency database	频率数据库
+FM stations (RDS names)	FM 电台（RDS 名称）
+DAB ensembles	DAB 复用
+DVB networks and services	DVB 网络和服务
+Memories	记忆
+Names that do not fit are left out. Zoom in to see more of them.	放不下的名称会被省略。放大可查看更多。
+Names of the stations and channels on the spectrum: choose which sources are shown	频谱上的电台和频道名称：选择显示哪些来源
+Click to tune here	点击以调谐到此处
+Click to tune here and open its mode	点击以调谐到此处并打开其模式

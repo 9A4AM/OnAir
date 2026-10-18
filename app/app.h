@@ -9,6 +9,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "gfx/plot.h"
+#include "gfx/autolabel_logic.h"
 #include "i18n/i18n.h"
 #include "state/fm_saved.h"
 
@@ -465,6 +466,7 @@ struct App {
     bool peakHold = true;               // the max-hold line
     float holdDecay = 4.5f;             // dB a second the max-hold line falls (0: it stays until it is reset)
     float specAvgSec = 0.08f;           // time constant of the averaged trace in seconds (0: the raw frames)
+    bool specLabels = true; int specLabelMask = 63;   // names drawn on the spectrum and the waterfall (gfx/autolabel.cpp); the mask: which sources (band plan, frequency database, FM, DAB, DVB, memories)
     bool specFill = true, specGrid = true, specPeaks = false, specReadout = true, specDbm = false;   // fill under the line, grid, peak markers, level at the cursor, dBm instead of dBFS
     double specLastT = 0;               // when the last spectrum frame came in
     ImFont* mono = nullptr;
@@ -969,6 +971,13 @@ void multiSwitch(App& a, ImVec2 plotMin, ImVec2 plotSize);
 float specCornerPopup(App& a, const char* label, const char* popId, ImVec2 plotMin, ImVec2 plotSize, float rightUsed, float reserveLeft, float dropY, bool on, const char* tip, void (*body)(App&));
 float bandPlanStripHeight();         // plots.cpp: one text line plus padding; follows the font and resize
 void drawBandPlanStrip(ImDrawList* dl, float x0, float x1, float y, float h, double loMhz, double hiMhz);   // saAllocations in view
+// gfx/autolabel.cpp: the names of the stations in view, drawn on the spectrum (plotId 0) and the waterfall (1); a click on a name tunes and opens its mode
+void autoLabelsDraw(App& a, int plotId, ImVec2 plotMin, ImVec2 plotSize, double loMhz, double hiMhz);
+bool autoLabelsHovered();                 // the mouse is on a name: the plot's own click-to-tune stands back
+float autoLabelsButton(App& a, ImVec2 plotMin, ImVec2 plotSize, float rightUsed);   // the "Labels" corner button with the source toggles; returns its width
+// bandplan_ui.cpp and freqdb_ui.cpp: what they offer to the labels, and the click on a database entry
+void bandPlanLabelSource(const App& a, std::vector<autolabel::Label>& out);
+void freqdbLabelSource(std::vector<autolabel::Label>& out);
 void specxDrawBookmarks(ImDrawList* dl, double loHz, double hiHz, float x0, float x1, float y0, float y1);   // specx_ui.cpp: named point / range marks
 // specx_ident.cpp: "Identify this signal" (dect2/engine/sig_ident.h). The region is [offHz -+ widthHz / 2] from the samples' centre, which the radio
 // has at sampleCentreRadioHz (rfOfCentreHz: its RF, for the bands); identifyAt: the signal under a click on the spectrum (MHz)

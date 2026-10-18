@@ -2686,3 +2686,15 @@ Watch for these	Controlla questi
 Lists	Liste
 Watchlists...	Liste di controllo...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Avvisi quando si sentono aerei, navi, nominativi, frequenze o parole in elenco: notifica, suono, ntfy, Telegram o webhook
+Labels	Nomi
+Names on the spectrum	Nomi sullo spettro
+Station and channel names on the spectrum and the waterfall. A click on a name tunes to it and opens its mode.	Nomi di stazioni e canali sullo spettro e sulla cascata. Un clic su un nome sintonizza su di esso e apre il suo modo.
+Frequency database	Database delle frequenze
+FM stations (RDS names)	Stazioni FM (nomi RDS)
+DAB ensembles	Ensemble DAB
+DVB networks and services	Reti e servizi DVB
+Memories	Memorie
+Names that do not fit are left out. Zoom in to see more of them.	I nomi che non entrano vengono omessi. Ingrandisci per vederne di più.
+Names of the stations and channels on the spectrum: choose which sources are shown	Nomi di stazioni e canali sullo spettro: scegli quali fonti mostrare
+Click to tune here	Clic per sintonizzare qui
+Click to tune here and open its mode	Clic per sintonizzare qui e aprire il suo modo

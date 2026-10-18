@@ -2703,3 +2703,15 @@ Watch for these	Hierop letten
 Lists	Lijsten
 Watchlists...	Kijklijsten...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Meldingen als aangewezen vliegtuigen, schepen, roepnamen, frequenties of woorden worden gehoord: melding, geluid, ntfy, Telegram of webhook
+Labels	Namen
+Names on the spectrum	Namen op het spectrum
+Station and channel names on the spectrum and the waterfall. A click on a name tunes to it and opens its mode.	Zender- en kanaalnamen op het spectrum en de waterval. Een klik op een naam stemt erop af en opent de bijbehorende modus.
+Frequency database	Frequentiedatabase
+FM stations (RDS names)	FM-zenders (RDS-namen)
+DAB ensembles	DAB-ensembles
+DVB networks and services	DVB-netwerken en -diensten
+Memories	Geheugens
+Names that do not fit are left out. Zoom in to see more of them.	Namen die niet passen worden weggelaten. Zoom in om er meer te zien.
+Names of the stations and channels on the spectrum: choose which sources are shown	Namen van zenders en kanalen op het spectrum: kies welke bronnen worden getoond
+Click to tune here	Klik om hier af te stemmen
+Click to tune here and open its mode	Klik om hier af te stemmen en de modus te openen

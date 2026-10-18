@@ -96,7 +96,7 @@ const std::vector<PrefKey>& keyTable() {
         flagB("specHold", AT(a.peakHold), false, false, true),
         real("holdDecay", AT(a.holdDecay), 0, 60),
         real("specAvg", AT(a.specAvgSec), 0, 5),
-        flagB("specFill", AT(a.specFill), true, false, true), flagB("specGrid", AT(a.specGrid), false, false, true), flagB("specPeaks", AT(a.specPeaks), false, false, true),
+        flagB("specFill", AT(a.specFill), true, false, true), flagB("specGrid", AT(a.specGrid), false, false, true), flagB("specPeaks", AT(a.specPeaks), false, false, true), flagB("specLabels", AT(a.specLabels), true, false, true), num("specLabelMask", AT(a.specLabelMask), 63, 0, 63, true),
         flagB("specReadout", AT(a.specReadout), false, false, true), flagB("specDbm", AT(a.specDbm), false, false, true),
         num("tuningMode", AT(a.tuningMode), 0, 0, 1, true),
         flagI("fmMono", AT(a.fmMono), false),
