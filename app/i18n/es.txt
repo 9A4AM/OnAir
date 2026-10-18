@@ -1121,3 +1121,8 @@ Documentation	Documentación
 Troubleshooting	Solución de problemas
 Voice codecs (mbelib)	Códecs de voz (mbelib)
 Website	Sitio web
+TX sample rate	Frecuencia de muestreo TX
+TX Fs (Msps)	TX Fs (Msps)
+Requested: %.3f Msps	Solicitada: %.3f Msps
+Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	Frecuencia de muestreo IQ de transmisión solicitada. Si la radio se comparte entre RX y TX, ajuste la misma frecuencia de hardware en ambos lados. Detenga la transmisión antes de cambiarla.
+Manual TX sample rate must be greater than zero.	La frecuencia de muestreo TX manual debe ser mayor que cero.

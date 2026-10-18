@@ -1106,3 +1106,8 @@ Documentation	Dokumentáció
 Troubleshooting	Hibaelhárítás
 Voice codecs (mbelib)	Hangkodekek (mbelib)
 Website	Weboldal
+TX sample rate	TX mintavételi frekvencia
+TX Fs (Msps)	TX Fs (Msps)
+Requested: %.3f Msps	Kért érték: %.3f Msps
+Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	A kért adási IQ mintavételi frekvencia. Közös RX/TX rádiónál mindkét oldalon ugyanazt a hardveres értéket állítsa be. Módosítás előtt állítsa le az adást.
+Manual TX sample rate must be greater than zero.	A kézi TX mintavételi frekvenciának nullánál nagyobbnak kell lennie.

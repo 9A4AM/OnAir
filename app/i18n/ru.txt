@@ -1103,3 +1103,8 @@ Documentation	Документация
 Troubleshooting	Устранение неполадок
 Voice codecs (mbelib)	Голосовые кодеки (mbelib)
 Website	Сайт
+TX sample rate	Частота дискретизации TX
+TX Fs (Msps)	TX Fs (Msps)
+Requested: %.3f Msps	Запрошено: %.3f Msps
+Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	Запрошенная частота дискретизации IQ для передачи. Если радио используется совместно для RX и TX, задайте одинаковую аппаратную частоту с обеих сторон. Перед изменением остановите передачу.
+Manual TX sample rate must be greater than zero.	Частота дискретизации TX, заданная вручную, должна быть больше нуля.

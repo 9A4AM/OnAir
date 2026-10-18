@@ -1121,3 +1121,8 @@ Documentation	Dokumentacija
 Troubleshooting	Trikčių šalinimas
 Voice codecs (mbelib)	Balso kodekai (mbelib)
 Website	Svetainė
+TX sample rate	TX diskretizavimo dažnis
+TX Fs (Msps)	TX Fs (Msps)
+Requested: %.3f Msps	Prašoma: %.3f Msps
+Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	Prašomas siuntimo IQ diskretizavimo dažnis. Jei radijas bendras RX ir TX, abiejose pusėse nustatykite tą patį aparatinį dažnį. Prieš keisdami sustabdykite siuntimą.
+Manual TX sample rate must be greater than zero.	Rankiniu būdu nustatytas TX diskretizavimo dažnis turi būti didesnis už nulį.
