@@ -146,6 +146,23 @@ void stepSettings(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const 
             ImGui::InputInt(tr("seconds"), &s.onceSeconds);
             s.onceSeconds = std::max(1, std::min(3600, s.onceSeconds));
         }
+        ImGui::NewLine();
+        ImGui::SetNextItemWidth(100 * gUi);
+        if (ImGui::BeginCombo(tr("TX sample rate"), s.autoSampleRate ? tr("Auto") : tr("Manual"))) {
+            if (ImGui::Selectable(tr("Auto"), s.autoSampleRate)) s.autoSampleRate = true;
+            if (ImGui::Selectable(tr("Manual"), !s.autoSampleRate)) s.autoSampleRate = false;
+            ImGui::EndCombo();
+        }
+        if (!s.autoSampleRate) {
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(140 * gUi);
+            ImGui::InputDouble(tr("TX Fs (Msps)"), &s.sampleRateMsps, 0, 0, "%.6f");
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it."));
+        } else if (radio && mode) {
+            ImGui::SameLine();
+            const TxRequest r = makeReq(s, *mode, false);
+            ImGui::TextDisabled(tr("Requested: %.3f Msps"), txRequestRate(*mode, r, TxRateLimits{radio->txMinRateHz, radio->txMaxRateHz}) / 1e6);
+        }
         ImGui::TreePop();
     }
 

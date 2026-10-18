@@ -22,6 +22,8 @@ struct TxUi {
     SynthConfig synth;                       // the mode's own signal options (the same fields as the receiver's built-in test signal)
     int bwIdx = 0;                           // DVB-T2 / DVB-T channel width: 8, 7, 6, 5 MHz
     double freqMhz = 0;                      // typed by the user, any value; pre-filled from the receiver when the mode is chosen
+    bool autoSampleRate = true;
+    double sampleRateMsps = 4;
     double offsetMhz = 0;                    // added only to the frequency sent to the radio; the typed frequency stays freqMhz
     float gainDb = 0;
     bool gainSet = false, ampOn = false, loop = true;

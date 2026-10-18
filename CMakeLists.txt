@@ -693,9 +693,16 @@ if(DECT2_BUILD_TESTS)
   target_link_libraries(test_wsprnet PRIVATE dect2core)
   add_test(NAME wsprnet COMMAND test_wsprnet)
 
-  # The RSPduo regression also runs on Windows, where the vendor service and USB device are commonly used.
+  add_executable(test_tx_rate tests/source/test_tx_rate.cpp)
+  target_link_libraries(test_tx_rate PRIVATE dect2core)
+  add_test(NAME tx_rate COMMAND test_tx_rate)
+
+  # The RSPduo and Pluto regressions also run on Windows, where the vendor service and USB device are commonly used.
   add_library(native_fakes SHARED tests/source/native_fakes.cpp)
   set_target_properties(native_fakes PROPERTIES CXX_VISIBILITY_PRESET hidden)
+  if(WIN32)
+    target_compile_definitions(native_fakes PRIVATE _USE_MATH_DEFINES)
+  endif()
   add_executable(test_sdrplay tests/source/test_sdrplay.cpp)
   target_link_libraries(test_sdrplay PRIVATE dect2core ${CMAKE_DL_LIBS})
   add_dependencies(test_sdrplay native_fakes)
@@ -705,6 +712,10 @@ if(DECT2_BUILD_TESTS)
   add_test(NAME native_lifecycle COMMAND test_native_lifecycle)
   add_executable(sdrplay_probe tools/sdrplay_probe.cpp)
   target_link_libraries(sdrplay_probe PRIVATE dect2core)
+  add_executable(test_pluto_duplex tests/source/test_pluto_duplex.cpp)
+  target_link_libraries(test_pluto_duplex PRIVATE dect2core ${CMAKE_DL_LIBS})
+  add_dependencies(test_pluto_duplex native_fakes)
+  add_test(NAME pluto_duplex COMMAND test_pluto_duplex $<TARGET_FILE:native_fakes>)
 
   if(UNIX)
     # the native radio drivers against fake vendor libraries

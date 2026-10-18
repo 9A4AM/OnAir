@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -70,7 +71,7 @@ EXPORT int rtlsdr_read_async(rtl_dev* d, void (*cb)(unsigned char*, uint32_t, vo
 }
 EXPORT int rtlsdr_cancel_async(rtl_dev* d) { d->cancel = true; return 0; }
 // ---- radio settings: frequency correction and offset tuning (counted, so that the test sees a default that calls nothing)
-static void count(const char* k) { const double v = fake_state(k); rec(k, v < 0 ? 1 : v + 1); }
+static void count(const char* k) { std::lock_guard<std::mutex> lk(gMu); auto& v = gState[k]; v = v < 0 ? 1 : v + 1; }
 EXPORT int rtlsdr_set_freq_correction(rtl_dev*, int ppm) { rec("rtl.ppm", ppm); count("rtl.ppmCalls"); return 0; }
 EXPORT int rtlsdr_set_offset_tuning(rtl_dev*, int on) { rec("rtl.offset", on); count("rtl.offsetCalls"); return 0; }
 // (OnAir reads block by block on macOS, see RtlSource::streamLoop)
@@ -209,26 +210,78 @@ EXPORT long long iio_scan_context_get_info_list(void*, void*** info) { *info = (
 EXPORT void iio_context_info_list_free(void** i) { free(i); }
 EXPORT const char* iio_context_info_get_description(const void*) { return "0456:b673 (Analog Devices Inc. PlutoSDR (ADALM-PLUTO)), serial=1044"; }
 EXPORT const char* iio_context_info_get_uri(const void*) { return "usb:1.2.5"; }
-EXPORT void* iio_create_context_from_uri(const char* uri) { rec("pluto.connected", strstr(uri, "usb:") ? 1 : 0); return new int(1); }
-EXPORT void iio_context_destroy(void* c) { delete (int*)c; }
+static std::atomic<int> iioContexts{0}, iioRxBuffers{0}, iioTxBuffers{0};
+EXPORT void* iio_create_context_from_uri(const char* uri) {
+    if (fake_state("pluto.gone") == 1 || (fake_state("pluto.singleContext") == 1 && iioContexts > 0)) { errno = EBUSY; return nullptr; }
+    count("pluto.contextOpens"); ++iioContexts;
+    rec("pluto.connected", strstr(uri, "usb:") ? 1 : 0);
+    return new int(1);
+}
+EXPORT void iio_context_destroy(void* c) {
+    if (iioRxBuffers > 0 || iioTxBuffers > 0) count("pluto.closeWithBuffers");
+    count("pluto.contextCloses"); --iioContexts; delete (int*)c;
+}
+EXPORT const char* iio_context_get_attr_value(const void*, const char* key) {
+    return strcmp(key, "fw_version") == 0 ? (fake_state("pluto.tezuka") == 1 ? "tezuka-test" : "stock-test") : nullptr;
+}
 EXPORT void* iio_context_find_device(const void*, const char* name) { return strcmp(name, "ad9361-phy") == 0 ? (void*)"phy" : strcmp(name, "cf-ad9361-lpc") == 0 ? (void*)"rx" : strcmp(name, "cf-ad9361-dds-core-lpc") == 0 ? (void*)"tx" : nullptr; }
 EXPORT int iio_context_set_timeout(void*, unsigned) { return 0; }
 EXPORT void* iio_device_find_channel(const void* dev, const char* name, bool out) { auto* c = new iio_chan{std::string((const char*)dev) + ":" + name, out}; return c; }
 EXPORT long long iio_channel_attr_write(const void* c, const char* a, const char* v) { rec(("pluto." + ((iio_chan*)c)->name + "." + a + "=" + v).c_str(), 1); return (long long)strlen(v); }
-EXPORT int iio_channel_attr_write_longlong(const void* c, const char* a, long long v) { rec(("pluto." + ((iio_chan*)c)->name + "." + a).c_str(), (double)v); return 0; }
-EXPORT void iio_channel_enable(void*) {}
-EXPORT void iio_channel_disable(void*) {}
-struct iio_buf { std::vector<int16_t> d; std::atomic<bool> cancel{false}; };
-EXPORT void* iio_device_create_buffer(const void*, size_t n, bool) { rec("pluto.bufSamples", (double)n); auto* b = new iio_buf; b->d.resize(n * 2); for (size_t i = 0; i < n; i++) { b->d[2 * i] = (int16_t)lround(kI * 2048); b->d[2 * i + 1] = (int16_t)lround(kQ * 2048); } return b; }
-EXPORT void iio_buffer_destroy(void* b) { delete (iio_buf*)b; }
-EXPORT long long iio_buffer_refill(void* b) { auto* x = (iio_buf*)b; if (x->cancel) return -1; pace(); return (long long)(x->d.size() / 2 * 4); }
-EXPORT void iio_buffer_cancel(void* b) { ((iio_buf*)b)->cancel = true; }
+EXPORT int iio_channel_attr_write_longlong(const void* c, const char* a, long long v) {
+    const auto* ch = (const iio_chan*)c;
+    if (ch->name == "phy:altvoltage1" && strcmp(a, "frequency") == 0 && fake_state("pluto.failTxFrequency") == 1) return -22;
+    if (strcmp(a, "sampling_frequency") == 0) {
+        count("pluto.rateWrites");
+        if (iioRxBuffers > 0 && iioTxBuffers > 0) count("pluto.rateWhileDuplex");
+        rec("pluto.sharedRate", (double)v);
+    }
+    if (strcmp(a, "filter_fir_en") == 0) count("pluto.firWrites");
+    rec(("pluto." + ch->name + "." + a).c_str(), (double)v);
+    rec(("pluto." + ch->name + (ch->out ? ".out." : ".in.") + a).c_str(), (double)v);
+    return 0;
+}
+EXPORT void iio_channel_enable(void* c) { auto* ch = (iio_chan*)c; rec(("pluto." + ch->name + ".enabled").c_str(), 1); }
+EXPORT void iio_channel_disable(void* c) { auto* ch = (iio_chan*)c; rec(("pluto." + ch->name + ".enabled").c_str(), 0); }
+struct iio_buf { std::vector<int16_t> d; std::atomic<bool> cancel{false}; bool tx = false; };
+EXPORT void* iio_device_create_buffer(const void* dev, size_t n, bool) {
+    const bool tx = strcmp((const char*)dev, "tx") == 0;
+    if (fake_state(tx ? "pluto.failTxBuffer" : "pluto.failRxBuffer") == 1) return nullptr;
+    auto& active = tx ? iioTxBuffers : iioRxBuffers;
+    if (active > 0) { count("pluto.duplicateBuffers"); return nullptr; }
+    ++active;
+    count(tx ? "pluto.txBufferOpens" : "pluto.rxBufferOpens");
+    rec("pluto.bufSamples", (double)n);
+    auto* b = new iio_buf; b->tx = tx; b->d.resize(n * 2);
+    for (size_t i = 0; i < n; i++) { b->d[2 * i] = (int16_t)lround(kI * 2048); b->d[2 * i + 1] = (int16_t)lround(kQ * 2048); }
+    return b;
+}
+EXPORT void iio_buffer_destroy(void* b) {
+    auto* x = (iio_buf*)b;
+    --(x->tx ? iioTxBuffers : iioRxBuffers);
+    count(x->tx ? "pluto.txBufferCloses" : "pluto.rxBufferCloses");
+    delete x;
+}
+EXPORT long long iio_buffer_refill(void* b) {
+    auto* x = (iio_buf*)b;
+    if (x->cancel || fake_state("pluto.gone") == 1 || fake_state("pluto.rxFail") == 1) return -1;
+    pace(); count("pluto.rxRefills");
+    return (long long)(x->d.size() / 2 * 4);
+}
+EXPORT void iio_buffer_cancel(void* b) {
+    ((iio_buf*)b)->cancel = true;
+    const double delay = fake_state("pluto.cancelDelayMs");
+    if (delay > 0) {
+        rec("pluto.cancelWaiting", 1);
+        std::this_thread::sleep_for(std::chrono::milliseconds((int)delay));
+    }
+}
 // ---- transmit (PlutoSDR): iio_buffer_push records the 16-bit I/Q pairs the driver wrote into the buffer; the test reads them back
 static std::vector<int16_t> gTxCapture;
 EXPORT long long iio_buffer_push(void* b) {
     auto* x = (iio_buf*)b;
     if (x->cancel) return -1;
-    if (fake_state("pluto.txFail") == 1) return -32;   // EPIPE: the radio went away
+    if (fake_state("pluto.gone") == 1 || fake_state("pluto.txFail") == 1) return -32;   // EPIPE: the radio went away
     { std::lock_guard<std::mutex> lk(gMu); gTxCapture.insert(gTxCapture.end(), x->d.begin(), x->d.end()); }
     count("pluto.txPushes");
     return (long long)(x->d.size() / 2 * 4);
@@ -581,14 +634,25 @@ EXPORT int bladerf_expansion_attach(bl_dev*, int xb) { rec("blade.xb", xb); retu
 EXPORT const char* LMS_GetLastErrorMessage(void) { return getenv("FAKE_LIME_INIT_FAIL") ? "Gateware version mismatch" : "fake LimeSuite error"; }
 EXPORT int LMS_GetLOFrequencyRange(void*, bool, lms_range_t* r) { const char* m = getenv("FAKE_LIME_MODEL"); const bool mini = m && strstr(m, "mini"); r->min = mini ? 10e6 : 30e6; r->max = mini ? 3.5e9 : 3.8e9; r->step = 1; return 0; }
 EXPORT long long iio_channel_attr_read(const void* c, const char* a, char* dst, size_t len) {
+    if (strcmp(a, "sampling_frequency") == 0) {
+        snprintf(dst, len, "%.0f", fake_state("pluto.sharedRate"));
+        return (long long)strlen(dst);
+    }
     if (strcmp(a, "frequency_available") != 0 || ((iio_chan*)c)->name != "phy:altvoltage0") return -22;
     snprintf(dst, len, "[325000000 1 3800000000]");   // a stock Pluto (AD9363)
     return (long long)strlen(dst) + 1;
 }
 // ---- radio settings: the AD9361 reference clock (a device attribute of ad9361-phy)
 EXPORT long long iio_device_attr_read(const void* dev, const char* a, char* dst, size_t len) {
-    if (strcmp((const char*)dev, "phy") != 0 || strcmp(a, "xo_correction") != 0) return -22;
-    snprintf(dst, len, "40000000");
+    if (strcmp((const char*)dev, "phy") != 0) return -22;
+    if (strcmp(a, "ensm_mode") == 0) {
+        if (fake_state("pluto.ensmUnreadable") == 1) return -22;
+        snprintf(dst, len, "%s", fake_state("pluto.tdd") == 1 ? "alert" : "fdd");
+        return (long long)strlen(dst);
+    }
+    if (strcmp(a, "xo_correction") != 0) return -22;
+    const double hz = fake_state("pluto.phy.xo_correction");
+    snprintf(dst, len, "%.0f", hz > 0 ? hz : 40000000.0);
     return (long long)strlen(dst) + 1;
 }
 EXPORT long long iio_device_attr_write(const void* dev, const char* a, const char* v) {   // the AD9361's FIR filter, loaded as text

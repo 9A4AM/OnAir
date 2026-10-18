@@ -2689,3 +2689,8 @@ Watch for these	Ezek figyelése
 Lists	Listák
 Watchlists...	Figyelőlisták...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Riasztás, ha a listán szereplő repülőt, hajót, hívójelet, frekvenciát vagy szót hallja: értesítés, hang, ntfy, Telegram vagy webhook
+TX sample rate	TX mintavételi frekvencia
+TX Fs (Msps)	TX Fs (Msps)
+Requested: %.3f Msps	Kért érték: %.3f Msps
+Requested transmit IQ sample rate. For a shared RX/TX radio, set the same hardware rate on both sides. Stop transmitting before changing it.	A kért adási IQ mintavételi frekvencia. Közös RX/TX rádiónál mindkét oldalon ugyanazt a hardveres értéket állítsa be. Módosítás előtt állítsa le az adást.
+Manual TX sample rate must be greater than zero.	A kézi TX mintavételi frekvenciának nullánál nagyobbnak kell lennie.
