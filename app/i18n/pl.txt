@@ -3189,3 +3189,30 @@ Ping	Ping
 with interference bursts	z impulsami zakłóceń
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Sygnał testowy to nadajnik 420 Hz od środka z symulowanymi echami meteorów: krótkimi podgęstymi i kilkoma długimi nadgęstymi.
 Beacon echoes, 143.050 MHz	Echa nadajnika, 143,050 MHz
+
+# ARDOP
+ARDOP has no calling frequency: every gateway publishes its own dial frequency. These buttons only jump to the digital part of each band.	ARDOP nie ma częstotliwości wywoławczej: każda brama publikuje własną częstotliwość. Te przyciski tylko przeskakują do części cyfrowej każdego pasma.
+CRC or Reed-Solomon failed	CRC lub Reed-Solomon nieudane
+Called	Wywołana
+Count	Liczba
+Detail	Szczegóły
+Last	Ostatnia
+Last heard	Ostatnio słyszana
+Locator	Lokator
+Reed-Solomon corrections	Poprawki Reed-Solomon
+S/N %d dB, quality %d/100	S/N %d dB, jakość %d/100
+Session	Sesja
+Station	Stacja
+Winlink HF, 14.103 MHz	Winlink KF, 14,103 MHz
+bytes	bajty
+bytes corrected	bajty poprawione
+data frames	ramki danych
+failed	nieudane
+header only (PSK, QAM or 600 baud data)	tylko nagłówek (dane PSK, QAM lub 600 bodów)
+leader %d ms	preambuła %d ms
+no data yet	jeszcze brak danych
+no stations yet	jeszcze brak stacji
+other modulations	inne modulacje
+quality %d/100	jakość %d/100
+tone offset	odchyłka tonu
+unreadable	nieczytelne

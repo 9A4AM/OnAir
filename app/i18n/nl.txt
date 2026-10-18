@@ -3189,3 +3189,30 @@ Ping	Ping
 with interference bursts	met stoorpulsen
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Het testsignaal is een baken 420 Hz naast het midden met gesimuleerde meteorenechoën: korte onderdichte en enkele lange overdichte.
 Beacon echoes, 143.050 MHz	Bakenechoën, 143,050 MHz
+
+# ARDOP
+ARDOP has no calling frequency: every gateway publishes its own dial frequency. These buttons only jump to the digital part of each band.	ARDOP heeft geen oproepfrequentie: elke gateway publiceert zijn eigen dialfrequentie. Deze knoppen springen alleen naar het digitale deel van elke band.
+CRC or Reed-Solomon failed	CRC of Reed-Solomon mislukt
+Called	Opgeroepen
+Count	Aantal
+Detail	Details
+Last	Laatste
+Last heard	Laatst gehoord
+Locator	Locator
+Reed-Solomon corrections	Reed-Solomon-correcties
+S/N %d dB, quality %d/100	S/N %d dB, kwaliteit %d/100
+Session	Sessie
+Station	Station
+Winlink HF, 14.103 MHz	Winlink HF, 14,103 MHz
+bytes	bytes
+bytes corrected	bytes gecorrigeerd
+data frames	dataframes
+failed	mislukt
+header only (PSK, QAM or 600 baud data)	alleen kop (PSK-, QAM- of 600-baud-data)
+leader %d ms	leader %d ms
+no data yet	nog geen data
+no stations yet	nog geen stations
+other modulations	andere modulaties
+quality %d/100	kwaliteit %d/100
+tone offset	toonafwijking
+unreadable	onleesbaar

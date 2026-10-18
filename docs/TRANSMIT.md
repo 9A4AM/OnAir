@@ -96,6 +96,7 @@ This list is taken from the tables in `core/src/tx/tx.cpp` (`txModes()`).
 | fpv | FPV video (analog) | 103 | makeFpvSynth |
 | wmbus | Wireless M-Bus | 88 | makeWmbusSynth |
 | mt63 | MT63 | 97 | makeMt63Synth |
+| ardop | ARDOP | 109 | makeArdopSynth |
 | zwave | Z-Wave | 100 | makeZwaveSynth |
 | mscatter | Meteor scatter | 106 | makeMscatterSynth |
 | vorils | VOR / ILS | 32 | makeVorSynth |

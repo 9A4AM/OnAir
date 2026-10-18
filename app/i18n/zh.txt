@@ -3189,3 +3189,30 @@ Ping	Ping
 with interference bursts	含干扰脉冲
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	测试信号是偏离中心 420 Hz 的信标,带有模拟流星回波:短的欠密回波和少量长的过密回波。
 Beacon echoes, 143.050 MHz	信标回波,143.050 MHz
+
+# ARDOP
+ARDOP has no calling frequency: every gateway publishes its own dial frequency. These buttons only jump to the digital part of each band.	ARDOP 没有呼叫频率：每个网关发布各自的拨号频率。这些按钮只会跳到各波段的数字部分。
+CRC or Reed-Solomon failed	CRC 或里德-所罗门校验失败
+Called	被呼叫
+Count	次数
+Detail	详情
+Last	最近
+Last heard	最近收到
+Locator	网格定位
+Reed-Solomon corrections	里德-所罗门纠错数
+S/N %d dB, quality %d/100	信噪比 %d dB，质量 %d/100
+Session	会话
+Station	电台
+Winlink HF, 14.103 MHz	Winlink 短波，14.103 MHz
+bytes	字节
+bytes corrected	字节已纠正
+data frames	数据帧
+failed	失败
+header only (PSK, QAM or 600 baud data)	仅帧头（PSK、QAM 或 600 波特数据）
+leader %d ms	前导 %d 毫秒
+no data yet	暂无数据
+no stations yet	暂无电台
+other modulations	其他调制
+quality %d/100	质量 %d/100
+tone offset	音调偏差
+unreadable	无法读取

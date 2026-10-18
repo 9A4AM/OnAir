@@ -3189,3 +3189,30 @@ Ping	Ping
 with interference bursts	con ráfagas de interferencia
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	La señal de prueba es una baliza a 420 Hz del centro con ecos de meteoros simulados: cortos subdensos y algunos largos sobredensos.
 Beacon echoes, 143.050 MHz	Ecos de baliza, 143,050 MHz
+
+# ARDOP
+ARDOP has no calling frequency: every gateway publishes its own dial frequency. These buttons only jump to the digital part of each band.	ARDOP no tiene frecuencia de llamada: cada pasarela publica su propia frecuencia de dial. Estos botones solo saltan a la parte digital de cada banda.
+CRC or Reed-Solomon failed	CRC o Reed-Solomon fallido
+Called	Llamada a
+Count	Cantidad
+Detail	Detalle
+Last	Última
+Last heard	Última escucha
+Locator	Locator
+Reed-Solomon corrections	Correcciones Reed-Solomon
+S/N %d dB, quality %d/100	S/N %d dB, calidad %d/100
+Session	Sesión
+Station	Estación
+Winlink HF, 14.103 MHz	Winlink HF, 14,103 MHz
+bytes	bytes
+bytes corrected	bytes corregidos
+data frames	tramas de datos
+failed	fallidas
+header only (PSK, QAM or 600 baud data)	solo cabecera (datos PSK, QAM o de 600 baudios)
+leader %d ms	preámbulo %d ms
+no data yet	aún sin datos
+no stations yet	aún sin estaciones
+other modulations	otras modulaciones
+quality %d/100	calidad %d/100
+tone offset	desviación de tono
+unreadable	ilegibles

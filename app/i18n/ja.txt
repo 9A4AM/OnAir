@@ -3189,3 +3189,30 @@ Ping	ピング
 with interference bursts	干渉バースト付き
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	テスト信号は中心から420 Hz離れたビーコンと模擬流星エコーです。短い低密のものと、いくつかの長い過密のものを含みます。
 Beacon echoes, 143.050 MHz	ビーコンエコー、143.050 MHz
+
+# ARDOP
+ARDOP has no calling frequency: every gateway publishes its own dial frequency. These buttons only jump to the digital part of each band.	ARDOP には呼出周波数がありません。各ゲートウェイが独自のダイヤル周波数を公開しています。これらのボタンは各バンドのデジタル部分へ移動するだけです。
+CRC or Reed-Solomon failed	CRC または Reed-Solomon が失敗
+Called	呼出先
+Count	回数
+Detail	詳細
+Last	最後
+Last heard	最後に受信
+Locator	ロケーター
+Reed-Solomon corrections	Reed-Solomon 訂正数
+S/N %d dB, quality %d/100	S/N %d dB、品質 %d/100
+Session	セッション
+Station	局
+Winlink HF, 14.103 MHz	Winlink HF、14.103 MHz
+bytes	バイト
+bytes corrected	バイト訂正
+data frames	データフレーム
+failed	失敗
+header only (PSK, QAM or 600 baud data)	ヘッダーのみ（PSK、QAM、600ボーのデータ）
+leader %d ms	リーダー %d ms
+no data yet	まだデータなし
+no stations yet	まだ局なし
+other modulations	その他の変調
+quality %d/100	品質 %d/100
+tone offset	トーンのずれ
+unreadable	判読不能
