@@ -7,6 +7,7 @@
 // replaced.
 #include "dect2/files/files_proto.h"
 #include "../common/golden.h"
+#include "../common/ordered.h"
 #include "dect2/rs/files.h"
 #include <cmath>
 #include <cstdio>
@@ -20,6 +21,7 @@ static long abiFails = 0;
 #define CHECK(c, ...) do { if (!(c)) { abiFails++; printf("FAILED: " __VA_ARGS__); printf("\n"); } } while (0)
 static std::mt19937 g(31337);
 static uint32_t r32() { return g(); }
+static uint64_t r64() { const uint64_t hi = (uint64_t)r32() << 32; return hi | r32(); }   // (two draws in one expression would be evaluated in an unspecified order)
 using Buf = std::vector<uint8_t>;
 
 static std::string pick(std::initializer_list<const char*> l) { return *(l.begin() + r32() % l.size()); }
@@ -54,10 +56,10 @@ static std::string jnum() {
     case 1: return std::to_string(r32() % 100000);
     case 2: return std::to_string((long)(r32() % 3000000) - 1000000);
     case 3: { char b[64]; snprintf(b, sizeof b, "%.3f", (r32() % 10000000) / 1000.0); return b; }
-    case 4: { char b[64]; snprintf(b, sizeof b, "%.9ge%d", (r32() % 1000) / 7.0, (int)(r32() % 20)); return b; }
+    case 4: { char b[64]; const double q = (r32() % 1000) / 7.0; const int e = (int)(r32() % 20); snprintf(b, sizeof b, "%.9ge%d", q, e); return b; }
     case 5: if (r32() % 3 == 0) return std::to_string(r32() % 900) + "e6"; return pick({"1e6", "2.4e6", "1E3", "1e+3", "1e-3", "-5", "+7", ".5", "5.", "-.5e2", "100.5e6", "1e999", "-1e999", "1e-999", "00012", "1.5e", "3e+", "18446744073709551615", "18446744073709551616", "1e30", "123456789012345678901234567890"});
     case 6: if (r32() % 5) return std::to_string(r32() % 1000); return pick({"0x10", "inf", "nan", "NaN", "Infinity", "-", "+", ".", "1..2", "--1", "1e5e5", "0x"});
-    default: return std::to_string(r32() % 1000) + "." + std::to_string(r32() % 1000);
+    default: return ORD_CAT(std::to_string(r32() % 1000), ".", std::to_string(r32() % 1000));   // ORD_*: draws in a fixed order (operands are not evaluated in one)
     }
 }
 static std::string jstr(size_t maxLen = 14) {
@@ -136,7 +138,7 @@ static std::string gen(int depth) {
     case 0: return jnum();
     case 1: return jstr();
     case 2: return pick({"true", "false", "null", "tru", "nul"});
-    case 3: return "[" + gen(depth + 1) + (r32() % 2 ? "," + gen(depth + 1) : "") + "]";
+    case 3: return ORD_CAT("[", gen(depth + 1), (r32() % 2 ? "," + gen(depth + 1) : ""), "]");
     case 4: return "{\"k\": " + gen(depth + 1) + "}";
     default: return jnum();
     }
@@ -147,7 +149,7 @@ static std::string mutate(std::string s) {
         switch (r32() % 4) {
         case 0: s[r32() % s.size()] = (char)r32(); break;
         case 1: s.resize(r32() % (s.size() + 1)); break;
-        case 2: s.insert(s.begin() + r32() % (s.size() + 1), "{}[],:\"\\ "[r32() % 10]); break;
+        case 2: ORD_CALL(s.insert, s.begin() + r32() % (s.size() + 1), "{}[],:\"\\ "[r32() % 10]); break;
         default: s.erase(s.begin() + r32() % s.size());
         }
     }
@@ -176,7 +178,7 @@ static void sigmfFamily(long iters) {
         const double rate = rates[r32() % (sizeof rates / sizeof *rates)], center = rates[r32() % (sizeof rates / sizeof *rates)];
         std::string desc; for (int i = 0, m = (int)(r32() % 24); i < m; i++) desc += (char)(r32() % 3 ? 32 + r32() % 95 : r32() % 256);
         const std::string dtn = pick({"cf32_le", "ci8_le", "cu8", "ci16_be", "cu16_le"});
-        const uint64_t ss = r32() % 3 ? r32() : ((uint64_t)r32() << 32 | r32());
+        const uint64_t ss = r32() % 3 ? r32() : r64();
         { dig.add(A::sigmfToolMeta(dtn, rate, center, ss, desc)); }
         const std::string when = r32() % 3 ? "2026-10-13T09:15:30Z" : "", ds = r32() % 3 ? "onair_x.cs8" : "";
         { dig.add(A::sigmfRecorderMeta(dtn, rate, center, when, ds, ss % 7 ? ss : 0, desc)); }
@@ -199,7 +201,7 @@ static void wavFamily(long iters) {
         int fa = -1;
         const int ca = A::wavClassify(a, fa);
         dig.add(ca, fa);
-        const uint64_t off = r32() % 3 ? r32() % 100 : ((uint64_t)r32() << 32 | r32()), size = r32() % 4 ? r32() % 1000000 : ((uint64_t)r32() << 32 | r32());
+        const uint64_t off = r32() % 3 ? r32() % 100 : r64(), size = r32() % 4 ? r32() % 1000000 : r64();
         const uint32_t dl = r32() % 5 == 0 ? 0 : r32() % 5 == 1 ? 0xFFFFFFFFu : r32();
         dig.add(A::wavDataEnd(off, dl, size));
         std::string name;
@@ -220,10 +222,10 @@ static std::string withChecksum(std::string l) {
 static void tleLines(std::string& l1, std::string& l2) {
     auto digits = [&](int n) { std::string s; for (int i = 0; i < n; i++) s += char('0' + r32() % 10); return s; };
     const std::string cat = r32() % 10 ? digits(5) : " 8888";
-    std::string day = std::to_string(1 + r32() % 365) + "." + digits(8);
+    std::string day = ORD_CAT(std::to_string(1 + r32() % 365), ".", digits(8));
     while (day.size() < 12) day = " " + day;
-    l1 = "1 " + cat + "U 98067A   " + digits(2) + day + " -." + digits(8) + "  00000-0 " + pick({"-11606-4", " 11606-4", " 00000-0", "-12345+1", "   123-5", "10000-0", "-1e5-3", " 1.5-3"}) + " 0  " + digits(4);
-    l2 = "2 " + (r32() % 20 ? cat : digits(5)) + " " + pick({" 51.6416", "  0.0000", "180.0000", "98.7654 ", "-1.2345 ", " 1e1.5  "}) + " " + digits(3) + "." + digits(4) + " " + digits(7) + " " + digits(3) + "." + digits(4) + " " + digits(3) + "." + digits(4) + " " + pick({"15.72125391", " 0.00000000", "14.12345678", "-1.5000000 ", "16.5       "}) + digits(5);
+    l1 = ORD_CAT("1 ", cat, "U 98067A   ", digits(2), day, " -.", digits(8), "  00000-0 ", pick({"-11606-4", " 11606-4", " 00000-0", "-12345+1", "   123-5", "10000-0", "-1e5-3", " 1.5-3"}), " 0  ", digits(4));
+    l2 = ORD_CAT("2 ", (r32() % 20 ? cat : digits(5)), " ", pick({" 51.6416", "  0.0000", "180.0000", "98.7654 ", "-1.2345 ", " 1e1.5  "}), " ", digits(3), ".", digits(4), " ", digits(7), " ", digits(3), ".", digits(4), " ", digits(3), ".", digits(4), " ", pick({"15.72125391", " 0.00000000", "14.12345678", "-1.5000000 ", "16.5       "}), digits(5));
     if (r32() % 5) { l1 = withChecksum(l1); l2 = withChecksum(l2); }
 }
 static void addTle(const A::TleData& a) {
@@ -249,8 +251,8 @@ static void tleFamily(long iters) {
         for (int k = 0, m = (int)(r32() % 4); k < m; k++) {
             std::string a1, a2;
             tleLines(a1, a2);
-            if (r32() % 2) text += pick({"ISS", "0 NOAA", "  X  ", "1abc", "2 junk"}) + pick({"\n", "\r\n"});
-            text += a1 + pick({"\n", "\r\n", "\n\n"}) + (r32() % 8 ? a2 : mutate(a2)) + pick({"\n", "", "\r\n"});
+            if (r32() % 2) text += ORD_CAT(pick({"ISS", "0 NOAA", "  X  ", "1abc", "2 junk"}), pick({"\n", "\r\n"}));
+            text += ORD_CAT(a1, pick({"\n", "\r\n", "\n\n"}), (r32() % 8 ? a2 : mutate(a2)), pick({"\n", "", "\r\n"}));
             if (r32() % 4 == 0) text += pick({"\n", "junk line\n", "   \n"});
         }
         if (r32() % 10 == 0) text = mutate(text);
@@ -363,9 +365,9 @@ static void sqliteFamily(long iters) {
         std::string sql = r32() % 4 ? "CREATE TABLE tiles (" : "CREATE TABLE `tiles` [";
         const char* names[] = {"zoom_level", "tile_column", "tile_row", "tile_data"};
         int order[4] = {0, 1, 2, 3};
-        if (r32() % 4 == 0) std::swap(order[r32() % 4], order[r32() % 4]);
+        if (r32() % 4 == 0) { const size_t i1 = r32() % 4; const size_t i2 = r32() % 4; std::swap(order[i1], order[i2]); }
         const int cnt = r32() % 12 == 0 ? (int)(r32() % 4) : 4;
-        for (int k = 0; k < cnt; k++) sql += std::string(k ? ", " : "") + pick({"", "\"", " "}) + (r32() % 5 == 0 ? "ZOOM_LEVEL" : names[order[k]]) + pick({"", " integer", " INTEGER NOT NULL", " blob"});
+        for (int k = 0; k < cnt; k++) sql += ORD_CAT((k ? ", " : ""), pick({"", "\"", " "}), (r32() % 5 == 0 ? "ZOOM_LEVEL" : names[order[k]]), pick({"", " integer", " INTEGER NOT NULL", " blob"}));
         sql += pick({")", ", PRIMARY KEY (zoom_level, tile_column, tile_row))", ""});
         std::string sa;
         const bool sga = A::tilesSchemaOk(sql, sa);
