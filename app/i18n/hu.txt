@@ -2689,3 +2689,22 @@ Watch for these	Ezek figyelése
 Lists	Listák
 Watchlists...	Figyelőlisták...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Riasztás, ha a listán szereplő repülőt, hajót, hívójelet, frekvenciát vagy szót hallja: értesítés, hang, ntfy, Telegram vagy webhook
+%.0f Hz above the dial (%.3f kHz)	%.0f Hz a tárcsafrekvencia felett (%.3f kHz)
+Interleave	Interleave
+Line	Sor
+Long	Hosszú
+MT63 comes in three widths, 500, 1000 and 2000 Hz (5, 10 and 20 characters per second). Automatic looks for all three.	Az MT63 három szélességben létezik: 500, 1000 és 2000 Hz (másodpercenként 5, 10 és 20 karakter). Az automatikus mindhármat keresi.
+Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way	A oldalsáv (tárcsa + 200 Hz és 3,8 kHz között) lejátszása a hangkártyán; a dekódolás mindkét esetben ugyanaz
+Robust chat, 14.1095 MHz	Robusztus csevegés, 14,1095 MHz
+Short	Rövid
+The 64 carriers: the level of each, relative to the strongest	A 64 vivő: mindegyik szintje a legerősebbhez viszonyítva
+The long interleave spreads every character over 64 symbols, the short one over 32: the long one survives longer fades and bursts, the short one has less delay. Automatic decodes both and shows the one with clean codewords.	A hosszú interleave minden karaktert 64 szimbólumra szór szét, a rövid 32-re: a hosszú hosszabb fadinget és zavarimpulzust is átvészel, a rövidnek kisebb a késleltetése. Az automatikus mindkettőt dekódolja, és a tiszta kódszavúat mutatja.
+bandwidth	sávszélesség
+centre	közép
+characters	karakterek
+codeword quality	kódszó minősége
+interleave	interleave
+no callsigns yet	még nincs hívójel
+start the receiver to read the band	indítsd el a vevőt a sáv olvasásához
+synchronising	szinkronizálás
+unclear	bizonytalan

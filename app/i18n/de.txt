@@ -2703,3 +2703,22 @@ Watch for these	Auf diese achten
 Lists	Listen
 Watchlists...	Beobachtungslisten...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Meldungen, wenn gelistete Flugzeuge, Schiffe, Rufzeichen, Frequenzen oder Wörter gehört werden: Benachrichtigung, Ton, ntfy, Telegram oder Webhook
+%.0f Hz above the dial (%.3f kHz)	%.0f Hz über der Dial-Frequenz (%.3f kHz)
+Interleave	Interleave
+Line	Zeile
+Long	Lang
+MT63 comes in three widths, 500, 1000 and 2000 Hz (5, 10 and 20 characters per second). Automatic looks for all three.	MT63 gibt es in drei Breiten, 500, 1000 und 2000 Hz (5, 10 und 20 Zeichen pro Sekunde). Automatisch sucht nach allen dreien.
+Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way	Das Seitenband (Dial + 200 Hz bis 3,8 kHz) über die Soundkarte abspielen; die Dekodierung ist in beiden Fällen gleich
+Robust chat, 14.1095 MHz	Robuster Chat, 14,1095 MHz
+Short	Kurz
+The 64 carriers: the level of each, relative to the strongest	Die 64 Träger: der Pegel jedes Trägers relativ zum stärksten
+The long interleave spreads every character over 64 symbols, the short one over 32: the long one survives longer fades and bursts, the short one has less delay. Automatic decodes both and shows the one with clean codewords.	Das lange Interleave verteilt jedes Zeichen über 64 Symbole, das kurze über 32: das lange übersteht längere Schwunde und Störimpulse, das kurze hat weniger Verzögerung. Automatisch dekodiert beide und zeigt das mit den sauberen Codewörtern.
+bandwidth	Bandbreite
+centre	Mitte
+characters	Zeichen
+codeword quality	Codewortqualität
+interleave	Interleave
+no callsigns yet	noch keine Rufzeichen
+start the receiver to read the band	Empfänger starten, um das Band zu lesen
+synchronising	synchronisiere
+unclear	unklar

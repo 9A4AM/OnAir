@@ -2703,3 +2703,22 @@ Watch for these	Hierop letten
 Lists	Lijsten
 Watchlists...	Kijklijsten...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Meldingen als aangewezen vliegtuigen, schepen, roepnamen, frequenties of woorden worden gehoord: melding, geluid, ntfy, Telegram of webhook
+%.0f Hz above the dial (%.3f kHz)	%.0f Hz boven de dial (%.3f kHz)
+Interleave	Interleave
+Line	Regel
+Long	Lang
+MT63 comes in three widths, 500, 1000 and 2000 Hz (5, 10 and 20 characters per second). Automatic looks for all three.	MT63 bestaat in drie breedtes, 500, 1000 en 2000 Hz (5, 10 en 20 tekens per seconde). Automatisch zoekt naar alle drie.
+Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way	Speel de zijband (dial + 200 Hz tot 3,8 kHz) af op de geluidskaart; het decoderen is in beide gevallen hetzelfde
+Robust chat, 14.1095 MHz	Robuuste chat, 14,1095 MHz
+Short	Kort
+The 64 carriers: the level of each, relative to the strongest	De 64 dragers: het niveau van elk, relatief aan de sterkste
+The long interleave spreads every character over 64 symbols, the short one over 32: the long one survives longer fades and bursts, the short one has less delay. Automatic decodes both and shows the one with clean codewords.	De lange interleave verspreidt elk teken over 64 symbolen, de korte over 32: de lange overleeft langere fades en stoorbursts, de korte heeft minder vertraging. Automatisch decodeert beide en toont die met de schone codewoorden.
+bandwidth	bandbreedte
+centre	midden
+characters	tekens
+codeword quality	kwaliteit codewoord
+interleave	interleave
+no callsigns yet	nog geen roepletters
+start the receiver to read the band	start de ontvanger om de band te lezen
+synchronising	synchroniseren
+unclear	onduidelijk

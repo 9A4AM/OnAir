@@ -2703,3 +2703,22 @@ Watch for these	监视这些
 Lists	列表
 Watchlists...	监视列表...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	当收到列表中的飞机、船舶、呼号、频率或词语时提醒: 通知、声音、ntfy、Telegram 或 Webhook
+%.0f Hz above the dial (%.3f kHz)	拨盘频率以上 %.0f Hz(%.3f kHz)
+Interleave	交织
+Line	行
+Long	长
+MT63 comes in three widths, 500, 1000 and 2000 Hz (5, 10 and 20 characters per second). Automatic looks for all three.	MT63 有三种带宽:500、1000 和 2000 Hz(每秒 5、10 和 20 个字符)。自动模式会同时搜索这三种。
+Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way	通过声卡播放边带(拨盘频率 + 200 Hz 至 3.8 kHz);两种情况下解码相同
+Robust chat, 14.1095 MHz	稳健聊天,14.1095 MHz
+Short	短
+The 64 carriers: the level of each, relative to the strongest	64 个载波:各自相对于最强者的电平
+The long interleave spreads every character over 64 symbols, the short one over 32: the long one survives longer fades and bursts, the short one has less delay. Automatic decodes both and shows the one with clean codewords.	长交织把每个字符分散到 64 个符号,短交织分散到 32 个:长交织能承受更长的衰落和突发干扰,短交织延迟更小。自动模式同时解码两者,并显示码字干净的那个。
+bandwidth	带宽
+centre	中心
+characters	字符
+codeword quality	码字质量
+interleave	交织
+no callsigns yet	尚无呼号
+start the receiver to read the band	启动接收机以读取波段
+synchronising	正在同步
+unclear	不清楚

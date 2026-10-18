@@ -2686,3 +2686,22 @@ Watch for these	Следить за этими
 Lists	Списки
 Watchlists...	Списки наблюдения...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Оповещения, когда принимаются перечисленные самолёты, суда, позывные, частоты или слова: уведомление, звук, ntfy, Telegram или вебхук
+%.0f Hz above the dial (%.3f kHz)	%.0f Гц выше настройки (%.3f кГц)
+Interleave	Перемежение
+Line	Строка
+Long	Длинное
+MT63 comes in three widths, 500, 1000 and 2000 Hz (5, 10 and 20 characters per second). Automatic looks for all three.	MT63 бывает трёх ширин: 500, 1000 и 2000 Гц (5, 10 и 20 символов в секунду). Автоматический режим ищет все три.
+Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way	Воспроизводить боковую полосу (настройка + 200 Гц до 3,8 кГц) на звуковой карте; декодирование в обоих случаях одинаково
+Robust chat, 14.1095 MHz	Устойчивый чат, 14,1095 МГц
+Short	Короткое
+The 64 carriers: the level of each, relative to the strongest	64 несущие: уровень каждой относительно сильнейшей
+The long interleave spreads every character over 64 symbols, the short one over 32: the long one survives longer fades and bursts, the short one has less delay. Automatic decodes both and shows the one with clean codewords.	Длинное перемежение распределяет каждый символ на 64 символа передачи, короткое на 32: длинное переносит более долгие замирания и всплески помех, короткое даёт меньшую задержку. Автоматический режим декодирует оба и показывает тот, у которого кодовые слова чистые.
+bandwidth	полоса
+centre	центр
+characters	символы
+codeword quality	качество кодового слова
+interleave	перемежение
+no callsigns yet	позывных пока нет
+start the receiver to read the band	запустите приёмник, чтобы читать диапазон
+synchronising	синхронизация
+unclear	неразборчивые

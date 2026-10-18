@@ -2703,3 +2703,22 @@ Watch for these	Stebėti šiuos
 Lists	Sąrašai
 Watchlists...	Stebėjimo sąrašai...
 Alerts when listed aircraft, ships, call signs, frequencies or words are heard: notification, sound, ntfy, Telegram or webhook	Pranešimai, kai išgirstami sąraše esantys orlaiviai, laivai, šaukiniai, dažniai ar žodžiai: pranešimas, garsas, ntfy, Telegram arba webhook
+%.0f Hz above the dial (%.3f kHz)	%.0f Hz virš ratuko (%.3f kHz)
+Interleave	Persipynimas
+Line	Eilutė
+Long	Ilgas
+MT63 comes in three widths, 500, 1000 and 2000 Hz (5, 10 and 20 characters per second). Automatic looks for all three.	MT63 yra trijų pločių: 500, 1000 ir 2000 Hz (5, 10 ir 20 ženklų per sekundę). Automatinis ieško visų trijų.
+Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way	Groti šoninę juostą (ratukas + 200 Hz iki 3,8 kHz) garso plokšte; dekodavimas abiem atvejais tas pats
+Robust chat, 14.1095 MHz	Patikimas pokalbis, 14,1095 MHz
+Short	Trumpas
+The 64 carriers: the level of each, relative to the strongest	64 nešlio dažniai: kiekvieno lygis, palyginti su stipriausiu
+The long interleave spreads every character over 64 symbols, the short one over 32: the long one survives longer fades and bursts, the short one has less delay. Automatic decodes both and shows the one with clean codewords.	Ilgas persipynimas išskaido kiekvieną ženklą per 64 simbolius, trumpas per 32: ilgas atlaiko ilgesnius slopimus ir impulsinius trukdžius, trumpas turi mažesnę vėlinimą. Automatinis dekoduoja abu ir rodo tą, kurio kodo žodžiai švarūs.
+bandwidth	juostos plotis
+centre	centras
+characters	ženklai
+codeword quality	kodo žodžio kokybė
+interleave	persipynimas
+no callsigns yet	šaukinių dar nėra
+start the receiver to read the band	paleisk imtuvą, kad nuskaitytum juostą
+synchronising	sinchronizuojama
+unclear	neaiškūs
