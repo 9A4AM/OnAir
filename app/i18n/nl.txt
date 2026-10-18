@@ -3189,3 +3189,5 @@ Ping	Ping
 with interference bursts	met stoorpulsen
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Het testsignaal is een baken 420 Hz naast het midden met gesimuleerde meteorenechoën: korte onderdichte en enkele lange overdichte.
 Beacon echoes, 143.050 MHz	Bakenechoën, 143,050 MHz
+Baseband filter	Basisbandfilter
+Custom filter	Eigen filter

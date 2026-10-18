@@ -3175,3 +3175,5 @@ Ping	Ping
 with interference bursts	zavarimpulzusokkal
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	A tesztjel egy 420 Hz-re a középtől lévő jeladó szimulált meteorvisszhangokkal: rövid alulsűrűek és néhány hosszú túlsűrű.
 Beacon echoes, 143.050 MHz	Jeladó-visszhangok, 143,050 MHz
+Baseband filter	Alapsávi szűrő
+Custom filter	Egyéni szűrő

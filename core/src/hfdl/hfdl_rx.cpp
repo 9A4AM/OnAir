@@ -35,21 +35,6 @@ constexpr int kNb = 6;               // feedback taps
 constexpr double kDefCentre = 8.9e6;
 using cd = std::complex<double>;
 
-std::vector<float> lowpass(int taps, double fc, double fs) {
-    std::vector<float> h((size_t)taps);
-    double s = 0;
-    for (int i = 0; i < taps; i++) {
-        const double m = i - (taps - 1) / 2.0;
-        const double x = 2 * fc / fs * m;
-        const double sinc = std::fabs(m) < 1e-9 ? 1.0 : std::sin(M_PI * x) / (M_PI * x);
-        const double w = 0.42 - 0.5 * std::cos(2 * M_PI * i / (taps - 1)) + 0.08 * std::cos(4 * M_PI * i / (taps - 1));
-        h[(size_t)i] = (float)(2 * fc / fs * sinc * w);
-        s += h[(size_t)i];
-    }
-    for (auto& v : h) v = (float)(v / s);
-    return h;
-}
-
 using dect2::dsp::rrc;
 
 cf32 cubicAt(const std::vector<cf32>& x, double pos) {
@@ -94,6 +79,8 @@ struct HfdlReceiver::Impl {
     bool rebuild = true;
     std::vector<Chan> ch;
     std::vector<float> fir, mf;
+    std::vector<cf32> firC;                   // the baseband filter with a centre offset (empty: use fir)
+    BasebandFilterCfg bbf;
     uint64_t nIn = 0;
     uint64_t seq = 0, serial = 0;
     HfdlTelemetry tel;
@@ -122,9 +109,11 @@ struct HfdlReceiver::Impl {
         const int D = std::max(1, (int)std::floor(rate / 28800));
         const double r1 = rate / D;
         const int M = std::max(1, (int)std::floor(r1 / kFs));
-        int taps = (int)std::ceil(4.0 * r1 / 2000) | 1;
-        taps = std::max(31, std::min(301, taps));
-        fir = lowpass(taps, 1700, r1);
+        const BbDesign bd = bbf::design(bbf, 3400, 2000, r1);   // default: 3.4 kHz Blackman, as before
+        fir = bd.h;
+        firC = bd.hc;                       // the delay line runs oldest first: a correlation, so the taps are conjugated to put the pass-band at +centre
+        for (auto& v : firC) v = std::conj(v);
+        const int taps = (int)fir.size();
         mf.clear();
         double s = 0;
         for (int i = -6 * kSps; i <= 6 * kSps; i++) { mf.push_back((float)rrc((double)i / kSps, kHfdlRrcAlpha)); s += mf.back(); }
@@ -166,7 +155,8 @@ struct HfdlReceiver::Impl {
         k.mcnt = 0;
         cf32 acc(0, 0);
         const size_t T = k.fh.size();
-        for (size_t i = 0; i < T; i++) acc += k.fh[(k.fpos + i) % T] * fir[i];
+        if (firC.empty()) for (size_t i = 0; i < T; i++) acc += k.fh[(k.fpos + i) % T] * fir[i];
+        else for (size_t i = 0; i < T; i++) acc += k.fh[(k.fpos + i) % T] * firC[i];
         // cubic interpolation from r2 to 7200 Hz
         k.h2[0] = k.h2[1]; k.h2[1] = k.h2[2]; k.h2[2] = k.h2[3]; k.h2[3] = acc;
         k.n2++;
@@ -506,6 +496,7 @@ void HfdlReceiver::setSignalOffset(double hz) { std::lock_guard<std::mutex> lk(p
 void HfdlReceiver::setCenterHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); if (p_->center != hz) { p_->center = hz; p_->rebuild = true; } }
 bool HfdlReceiver::ready() const { return p_->rate >= hfdlTuning().minSampleRate - 1; }
 void HfdlReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->logCb = std::move(cb); }
+void HfdlReceiver::setBasebandFilter(const BasebandFilterCfg& c) { std::lock_guard<std::mutex> lk(p_->mu); if (c != p_->bbf) { p_->bbf = c; p_->rebuild = true; } }
 void HfdlReceiver::setChannels(const std::vector<double>& hz) { std::lock_guard<std::mutex> lk(p_->mu); if (hz != p_->want) { p_->want = hz; p_->rebuild = true; } }
 
 void HfdlReceiver::reset() {

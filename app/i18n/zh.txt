@@ -3189,3 +3189,5 @@ Ping	Ping
 with interference bursts	含干扰脉冲
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	测试信号是偏离中心 420 Hz 的信标,带有模拟流星回波:短的欠密回波和少量长的过密回波。
 Beacon echoes, 143.050 MHz	信标回波,143.050 MHz
+Baseband filter	基带滤波器
+Custom filter	自定义滤波器

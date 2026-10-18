@@ -3189,3 +3189,5 @@ Ping	Ping
 with interference bursts	con ráfagas de interferencia
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	La señal de prueba es una baliza a 420 Hz del centro con ecos de meteoros simulados: cortos subdensos y algunos largos sobredensos.
 Beacon echoes, 143.050 MHz	Ecos de baliza, 143,050 MHz
+Baseband filter	Filtro de banda base
+Custom filter	Filtro personalizado

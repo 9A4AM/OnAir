@@ -3172,3 +3172,5 @@ Ping	Ping
 with interference bursts	com rajadas de interferência
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	O sinal de teste é um farol a 420 Hz do centro com ecos de meteoros simulados: curtos subdensos e alguns longos sobredensos.
 Beacon echoes, 143.050 MHz	Ecos do farol, 143,050 MHz
+Baseband filter	Filtro de banda base
+Custom filter	Filtro personalizado

@@ -3172,3 +3172,5 @@ Ping	Ping
 with interference bursts	con raffiche di disturbo
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Il segnale di prova è un faro a 420 Hz dal centro con echi meteorici simulati: brevi sottodensi e alcuni lunghi sovradensi.
 Beacon echoes, 143.050 MHz	Echi del faro, 143,050 MHz
+Baseband filter	Filtro in banda base
+Custom filter	Filtro personalizzato

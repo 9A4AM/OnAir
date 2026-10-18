@@ -3189,3 +3189,5 @@ Ping	Ping
 with interference bursts	z impulsami zakłóceń
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Sygnał testowy to nadajnik 420 Hz od środka z symulowanymi echami meteorów: krótkimi podgęstymi i kilkoma długimi nadgęstymi.
 Beacon echoes, 143.050 MHz	Echa nadajnika, 143,050 MHz
+Baseband filter	Filtr pasma podstawowego
+Custom filter	Filtr niestandardowy

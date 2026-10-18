@@ -3172,3 +3172,5 @@ Ping	Пинг
 with interference bursts	с импульсными помехами
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	Тестовый сигнал - маяк на 420 Гц от центра с имитацией метеорного эха: короткие недоплотные и несколько долгих сверхплотных.
 Beacon echoes, 143.050 MHz	Эхо маяка, 143,050 МГц
+Baseband filter	Фильтр основной полосы
+Custom filter	Свой фильтр

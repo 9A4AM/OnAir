@@ -3189,3 +3189,5 @@ Ping	ピング
 with interference bursts	干渉バースト付き
 The test signal is a beacon 420 Hz off the centre with simulated meteor echoes: short underdense ones and a few long overdense ones.	テスト信号は中心から420 Hz離れたビーコンと模擬流星エコーです。短い低密のものと、いくつかの長い過密のものを含みます。
 Beacon echoes, 143.050 MHz	ビーコンエコー、143.050 MHz
+Baseband filter	ベースバンドフィルター
+Custom filter	カスタムフィルター

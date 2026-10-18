@@ -34,6 +34,10 @@ struct State {
     std::unordered_map<uint32_t, double> rangeFedT;   // per aircraft: the position report already counted in it
 };
 State S;
+void basebandFilterUi();
+dect2::BasebandFilterCfg gBbf;
+dect2::BasebandFilterCfg gBbfPushed;
+bool gBbfInit = false;
 
 // the HFDL bands: where several ground stations share a few hundred kHz (centre MHz)
 struct Band { const char* name; double mhz; };
@@ -48,6 +52,7 @@ void loadState() {
     plat::Prefs& d = plat::prefs();
     snprintf(S.chans, sizeof S.chans, "%s", d.getS("hfdlChans", "").c_str());
     S.map.zoom = (int)d.getI("hfdlZoom", 2);
+    gBbf = dect2::bbf::fromString(d.getS("hfdlBbf", ""));
     S.map.lat = 40; S.map.lon = -30;
     S.range.plot.configure(5.0, 0.0, 20040.0);   // HF reaches anywhere: the sanity limit is half way round the Earth, not the VHF 1000 km
     if (const char* e = getenv("DECT2_HFDL_VIEW")) S.viewMode = std::max(0, std::min(5, atoi(e)));   // dev: open on a view (screenshots)
@@ -170,6 +175,7 @@ void tick(App& a) {
         a.engine.hfdl().setChannels(hz);
         std::snprintf(S.pushedChans, sizeof S.pushedChans, "%s", S.chans);
     }
+    if (!gBbfInit || gBbf != gBbfPushed) { a.engine.hfdl().setBasebandFilter(gBbf); gBbfPushed = gBbf; gBbfInit = true; }
 }
 
 // ---------------------------------------------------------------- messages
@@ -599,6 +605,39 @@ void tuner(App& a, bool&) {
     ImGui::SetNextItemWidth(std::min(230 * gUi, ImGui::GetContentRegionAvail().x));
     if (ImGui::InputTextWithHint("##hfch", "the station table", S.chans, sizeof S.chans)) plat::prefs().setS("hfdlChans", S.chans);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("The HFDL channels to decode (dial frequencies in kHz, upper sideband), separated by spaces.\nEmpty: every frequency of the built-in ground station table inside the sample band.");
+    basebandFilterUi();
+}
+
+// the user-selectable channel filter: off = the receiver's own (3.4 kHz Blackman); the plot shows the response at the 28.8 kHz channel rate
+void basebandFilterUi() {
+    using namespace dect2;
+    if (!ImGui::CollapsingHeader("Baseband filter")) return;
+    bool ch = false;
+    ch |= ImGui::Checkbox("Custom filter##bbfon", &gBbf.enabled);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Off: the standard HFDL channel filter (3.4 kHz wide). On: the settings below.");
+    if (gBbf.enabled) {
+        ImGui::SetNextItemWidth(160 * gUi);
+        if (ImGui::BeginCombo("##bbfpre", "presets")) {
+            for (const auto& p : bbf::presets()) if (!std::strcmp(p.mode, "hfdl") && ImGui::Selectable(p.name)) { gBbf = p.cfg; ch = true; }
+            ImGui::EndCombo();
+        }
+        float bw = (float)(gBbf.bwHz > 0 ? gBbf.bwHz : 3400), tr = (float)(gBbf.transHz > 0 ? gBbf.transHz : 2000), ce = (float)gBbf.centreHz;
+        ImGui::SetNextItemWidth(160 * gUi);
+        if (ImGui::SliderFloat("##bbfbw", &bw, 1000, 6000, "%.0f Hz wide")) { gBbf.bwHz = bw; ch = true; }
+        ImGui::SetNextItemWidth(160 * gUi);
+        if (ImGui::SliderFloat("##bbftr", &tr, 400, 4000, "%.0f Hz transition")) { gBbf.transHz = tr; ch = true; }
+        ImGui::SetNextItemWidth(160 * gUi);
+        if (ImGui::SliderFloat("##bbfce", &ce, -1000, 1000, "%+.0f Hz centre")) { gBbf.centreHz = ce; ch = true; }
+        int sh = (int)gBbf.shape;
+        static const char* shapes[] = {"Blackman", "Kaiser", "Blackman-Harris", "Hann", "Butterworth"};
+        ImGui::SetNextItemWidth(160 * gUi);
+        if (ImGui::Combo("##bbfsh", &sh, shapes, 5)) { gBbf.shape = (BbShape)sh; ch = true; }
+        const BbDesign d = bbf::design(gBbf, 3400, 2000, 28800);
+        float y[128];
+        for (int i = 0; i < 128; i++) y[i] = (float)std::max(-80.0, bbf::responseDb(d, 28800, -4000 + 8000.0 * i / 127));
+        ImGui::PlotLines("##bbfplot", y, 128, 0, "-4 .. +4 kHz, 0 .. -80 dB", -80.f, 5.f, ImVec2(std::min(240 * gUi, ImGui::GetContentRegionAvail().x), 70 * gUi));
+    }
+    if (ch) plat::prefs().setS("hfdlBbf", bbf::toString(gBbf));
 }
 
 void synth(App& a, bool& changed) {
