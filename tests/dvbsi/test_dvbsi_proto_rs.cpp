@@ -18,7 +18,7 @@ namespace AT = dect2::text;
 namespace DV = dect2::dvbsi;
 
 static golden::Digest dig;
-static long stat[16];
+static long rsStat[16];
 static std::mt19937 g(777);
 static uint32_t r32() { return g(); }
 using Buf = std::vector<uint8_t>;
@@ -74,14 +74,14 @@ static void testText() {
             const std::string s((const char*)p, n);
             const std::string c1 = AT::clean(s);
             dig.add(c1);
-            if (!c1.empty()) stat[0]++;
+            if (!c1.empty()) rsStat[0]++;
         });
         const Buf t = textBytes(true);
         exact(t, [&](const uint8_t* p, size_t n) {
             for (bool gb : {false, true}) {
                 const std::string a = DV::dvbText(p, (int)n, gb);
                 dig.add(a);
-                if (!a.empty()) stat[1]++;
+                if (!a.empty()) rsStat[1]++;
             }
         });
     }
@@ -133,7 +133,7 @@ static void testTeletext() {
     for (long i = 0; i < iters; i++) {
         uint8_t w[3] = {(uint8_t)r32(), (uint8_t)r32(), (uint8_t)r32()};
         dig.add(A::ttxHamming2418(w));
-        if (A::ttxHamming2418(w) >= 0) stat[2]++;
+        if (A::ttxHamming2418(w) >= 0) rsStat[2]++;
         // data units
         const Buf u = (r32() % 4 == 0) ? [&] { Buf x; rnd(x, 44); return x; }() : teletextUnit((int)(r32() % 9), r32() % 3 == 0 ? 0 : r32() % 4 == 0 ? 27 : (int)(r32() % 32), false, 0);
         const Buf hu = teletextUnit((int)(r32() % 9), 0, true, (int)(r32() % 100));
@@ -141,7 +141,7 @@ static void testTeletext() {
             exact(*x, [&](const uint8_t* p, size_t) {
                 const A::TtxUnit a = A::ttxDecodeUnit(p);
                 addUnit(a);
-                if (a.kind >= 1 && a.kind <= 3) stat[3 + a.kind - 1]++;
+                if (a.kind >= 1 && a.kind <= 3) rsStat[3 + a.kind - 1]++;
             });
         }
         // PES walk
@@ -153,7 +153,7 @@ static void testTeletext() {
             uint32_t oa[16];
             const size_t ca = A::ttxPesUnits(p, n, oa, 16);
             dig.add((uint64_t)ca); dig.bytes(oa, sizeof(uint32_t) * (ca < 16 ? ca : 16));
-            if (ca) stat[6]++;
+            if (ca) rsStat[6]++;
         });
         // renderer
         A::TtxPage pa;
@@ -195,7 +195,7 @@ static void testTeletext() {
                 const bool ba = da.page(n, x, sub);
                 dig.add(ba, x.number, x.subcode, x.national, x.subtitle, x.newsflash, x.inhibit, x.rowMask, x.version, x.serial, x.complete);
                 dig.bytes(&x.rows, sizeof x.rows); dig.bytes(x.fastext, sizeof x.fastext); dig.bytes(x.fastextSub, sizeof x.fastextSub);
-                stat[7]++;
+                rsStat[7]++;
             }
         }
     }
@@ -264,7 +264,7 @@ static void testSubs() {
             dig.add(ba);
             if (ba) dig.add(a.payloadOff, a.hasPts, a.pts);
             if (!ba) return;
-            stat[8]++;
+            rsStat[8]++;
             const uint8_t* d = p + a.payloadOff; const size_t dn = n - a.payloadOff;
             const auto sa = A::dvbSubSegments(d, dn);
             dig.add((uint64_t)sa.size());
@@ -274,17 +274,17 @@ static void testSubs() {
                 if (sa[k].type == 0x10) { A::DvbSubPageInfo x; const bool u = A::dvbSubParsePage(s, sl, x);
                     dig.add(u);
                     if (u) { dig.add(x.timeout, x.version, x.state, (uint64_t)x.regions.size()); for (const auto& rg : x.regions) dig.add(rg.id, rg.x, rg.y); }
-                    stat[9]++; }
+                    rsStat[9]++; }
                 if (sa[k].type == 0x11) { A::DvbSubRegionInfo x; const bool u = A::dvbSubParseRegion(s, sl, x);
                     dig.add(u);
                     if (u) { dig.add(x.id, x.version, x.fill, x.w, x.h, x.depth, x.clut, x.pix8, x.pix4, x.pix2, (uint64_t)x.objs.size()); for (const auto& o : x.objs) dig.add(o.id, o.type, o.x, o.y, o.fg, o.bg); }
-                    stat[10]++; }
+                    rsStat[10]++; }
                 if (sa[k].type == 0x12) { int ia = -1; std::vector<A::DvbSubClutEntry> x; const bool u = A::dvbSubParseClut(s, sl, ia, x);
                     dig.add(u);
                     if (u) { dig.add(ia, (uint64_t)x.size()); for (const auto& c : x) dig.add(c.id, c.flags, c.rgba); }
-                    stat[11]++; }
+                    rsStat[11]++; }
                 if (sa[k].type == 0x13) { A::DvbSubObjectInfo x; const bool u = A::dvbSubParseObject(s, sl, x);
-                    dig.add(u); if (u) { dig.add(x.id, x.topOff, x.topLen, x.botOff, x.botLen); stat[12]++; } }
+                    dig.add(u); if (u) { dig.add(x.id, x.topOff, x.topLen, x.botOff, x.botLen); rsStat[12]++; } }
                 if (sa[k].type == 0x14) { int w1 = -1, h1 = -1; const bool u = A::dvbSubParseDisplay(s, sl, w1, h1); dig.add(u); if (u) dig.add(w1, h1); }
             }
         });
@@ -331,7 +331,7 @@ static void testSubs() {
             if (x) {
                 dig.add(x->seq, x->pts, x->timeout, x->dispW, x->dispH, (uint64_t)x->regions.size());
                 for (const auto& rg : x->regions) dig.add(rg.x, rg.y, rg.w, rg.h, rg.rgba);
-                if (x->regions.size()) stat[13]++;
+                if (x->regions.size()) rsStat[13]++;
             }
         }
     }
@@ -342,6 +342,6 @@ int main() {
     testTeletext();
     testSubs();
     printf("dvbsi proto: non-empty text %ld %ld, 2418 ok %ld, units %ld %ld %ld, pes %ld, decoder pages %ld, sub pes %ld page %ld region %ld clut %ld object %ld, decoder displays with regions %ld\n",
-           stat[0], stat[1], stat[2], stat[3], stat[4], stat[5], stat[6], stat[7], stat[8], stat[9], stat[10], stat[11], stat[12], stat[13]);
+           rsStat[0], rsStat[1], rsStat[2], rsStat[3], rsStat[4], rsStat[5], rsStat[6], rsStat[7], rsStat[8], rsStat[9], rsStat[10], rsStat[11], rsStat[12], rsStat[13]);
     return golden::check("dvbsi_proto_rs", dig, 0xa5a3b122daa88e30ull, !getenv("ONAIR_DIFF_ITERS"));
 }
