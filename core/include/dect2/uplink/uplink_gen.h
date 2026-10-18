@@ -12,6 +12,7 @@
 // SynthConfig (makeUplinkSynth): snrDb main-beam level over the noise, cfoHz the radio's tuning error.
 #pragma once
 #include "dect2/engine/mode_synth.h"
+#include "dect2/common/stable_random.h"
 #include "uplink_msg.h"
 #include <cstdint>
 #include <memory>
@@ -48,7 +49,7 @@ private:
     std::vector<Ev> ev_;
     cf32 h1_, h2_;
     std::mt19937 rng_;
-    std::normal_distribution<float> nd_{0.f, 1.f};
+    dect2::normal_distribution<float> nd_{0.f, 1.f};
 };
 
 // The interrogations of the test scene that start in [t0, t1) seconds

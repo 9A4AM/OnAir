@@ -1,5 +1,6 @@
 // Tone signalling test signals: see tones_gen.h.
 #include "dect2/tones/tones_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dsp/gen_util.h"
 #include "dect2/engine/mode_tuning.h"
 #include "dect2/source/source.h"
@@ -91,7 +92,7 @@ void ToneScene::twoTone(double hzA, double hzB, double t0, double secA, double s
 void ToneScene::speech(double t0, double sec, double amp) {
     pad(t0 + sec);
     std::mt19937 rng(seed_ + (uint32_t)(t0 * 1000));
-    std::uniform_real_distribution<double> u(0, 1);
+    dect2::uniform_real_distribution<double> u(0, 1);
     const size_t i0 = (size_t)std::lround(t0 * rate_), n = (size_t)std::lround(sec * rate_);
     double ph = 0, f0 = 100 + 40 * u(rng), lp = 0;
     double target = f0, syl = 0;
@@ -117,7 +118,7 @@ void ToneScene::speech(double t0, double sec, double amp) {
 void ToneScene::noise(double t0, double sec, double rms) {
     pad(t0 + sec);
     std::mt19937 rng(seed_ * 7919u + (uint32_t)(t0 * 10));
-    std::normal_distribution<double> g(0, rms);
+    dect2::normal_distribution<double> g(0, rms);
     const size_t i0 = (size_t)std::lround(t0 * rate_), n = (size_t)std::lround(sec * rate_);
     for (size_t i = 0; i < n; i++) a_[i0 + i] += (float)g(rng);
 }

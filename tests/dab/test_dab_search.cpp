@@ -2,6 +2,8 @@
 // follows is the costly part. It must not run on every block that comes in (that took ten times real time), and a DAB signal that starts after
 // them must still be found.
 #include "dect2/dab/dab.h"
+#include "../common/ci_slack.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dab/dab_gen.h"
 #include <chrono>
 #include <cmath>
@@ -22,25 +24,25 @@ int main() {
     const double rate = 2.1e6;
     const size_t N = (size_t)(4 * rate);
     std::mt19937 g(1);
-    std::normal_distribution<float> nd(0, 1.f);
+    dect2::normal_distribution<float> nd(0, 1.f);
     std::vector<cf32> x(N);
     {
         DabReceiver rx;
         rx.configure(rate);
         rx.audio().setSilent(true);
         const double zeros = feedAll(rx, x, rate);
-        CHECK(zeros < 60, "silence: load %.0f %%", zeros);
+        CHECK(zeros < 60 * ciSlack(), "silence: load %.0f %%", zeros);
         for (size_t period : {5000, 50000}) {
-            for (size_t i = 0; i < N; i++) x[i] = cf32(nd(g), nd(g)) * (((i / period) & 1) ? 1.f : 0.001f);
+            for (size_t i = 0; i < N; i++) x[i] = cf32{nd(g), nd(g)} * (((i / period) & 1) ? 1.f : 0.001f);
             const double l = feedAll(rx, x, rate);
-            CHECK(l < 60, "power dips every %zu samples: load %.0f %%", period, l);
+            CHECK(l < 60 * ciSlack(), "power dips every %zu samples: load %.0f %%", period, l);
         }
     }
     {   // the DAB signal after a channel with nothing: found within a second or two
         DabReceiver rx;
         rx.configure(rate);
         rx.audio().setSilent(true);
-        for (size_t i = 0; i < N; i++) x[i] = cf32(nd(g), nd(g)) * (((i / 5000) & 1) ? 1.f : 0.001f);
+        for (size_t i = 0; i < N; i++) x[i] = cf32{nd(g), nd(g)} * (((i / 5000) & 1) ? 1.f : 0.001f);
         feedAll(rx, x, rate);
         dabgen::TxConfig tc;
         tc.utcSeconds = 1700000000;

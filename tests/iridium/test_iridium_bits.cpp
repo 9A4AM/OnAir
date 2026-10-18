@@ -1,6 +1,7 @@
 // iridium-toolkit .bits output: every line must match iridium-toolkit bitsparser.py's RAW regex (ported to std::regex) and carry the
 // fields as gr-iridium iridium-extractor prints them. The test signal live (fed straight in) and from a recording file.
 #include "dect2/iridium/iridium_bits.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/iridium/iridium_gen.h"
 #include "dect2/iridium/iridium_phy.h"
 #include "dect2/iridium/iridium_rx.h"
@@ -144,8 +145,8 @@ int main() {
         std::vector<cf32> y((size_t)(so.secs * rate));
         pl.render(y.data(), y.size());
         std::mt19937 g(9);
-        std::normal_distribution<float> nd(0.f, (float)(sigma / std::sqrt(2.0)));
-        for (auto& v : y) v += cf32(nd(g), nd(g));
+        dect2::normal_distribution<float> nd(0.f, (float)(sigma / std::sqrt(2.0)));
+        for (auto& v : y) v += cf32{nd(g), nd(g)};
         run("scene", (dir / "scene.bits").string(), rate, &y, "", true);
     }
     run("recording", (dir / "sub dir" / "output.bits").string(), rate, nullptr, cs8);

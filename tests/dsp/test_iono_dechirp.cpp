@@ -1,6 +1,7 @@
 // The four-chain dechirp loop of the ionospheric sounder against the one-sample-at-a-time recurrence: the sums, and the phasors left for the next call,
 // agree to a part in 1e9 over runs of every length class, and splitting a run in two calls gives the same as one call.
 #include "dect2/iono/iono_dechirp.h"
+#include "dect2/common/stable_random.h"
 #include <cstdio>
 #include <random>
 #include <vector>
@@ -10,7 +11,7 @@ using namespace dect2;
 int main() {
     int fails = 0;
     std::mt19937 rng(11);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     const double fs = 20e6, r = 100e3;
     const iono::cd dw = std::polar(1.0, -2 * M_PI * r / (fs * fs));
     const double beta = std::arg(dw);

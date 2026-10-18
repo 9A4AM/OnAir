@@ -1,6 +1,7 @@
 // The QO-100 decimator computes four outputs per pass over a linear buffer; the result must equal the one-output-at-a-time circular-buffer filter
 // to float rounding (the compiler may fuse the multiply-adds differently in the two loops), whatever the block sizes (the filter state and the output phase carry across calls).
 #include "dect2/qo100/qo100_dsp.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dmr/dmr_dsp.h"
 #include <cstdio>
 #include <cstring>
@@ -47,12 +48,12 @@ int main() {
             r /= 2;
         }
         std::mt19937 rng(5);
-        std::normal_distribution<float> nd(0.f, 1.f);
+        dect2::normal_distribution<float> nd(0.f, 1.f);
         std::vector<cf32> got, want;
         for (int call = 0; call < 40; call++) {
             const size_t n = call == 0 ? 1 : (call % 5 == 0 ? 7 : 1 + rng() % 6000);
             std::vector<cf32> x(n);
-            for (auto& v : x) v = cf32(nd(rng), nd(rng));
+            for (auto& v : x) v = cf32{nd(rng), nd(rng)};
             d.process(x.data(), n, got);
             refProcess(ref, x.data(), n, want);
         }

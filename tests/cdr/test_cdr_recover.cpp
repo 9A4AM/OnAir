@@ -6,6 +6,7 @@
 //   the Re-sync request, and a retune (reset) with the listened service picked before.
 // The numbers are logical frames (0.64 s each) decoded in a window after the last event.
 #include "dect2/cdr/cdr_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/cdr/cdr_rx.h"
 #include "../common/impair.h"
 #include "../common/jobs.h"
@@ -106,15 +107,15 @@ int main() {
     });
     jobs.add([] {   // bursts of strong noise (ignition, a neighbouring transmitter)
         auto x = clean(20);
-        std::mt19937 g(5); std::normal_distribution<float> n(0, 6.f);
-        for (double t : {4.0, 7.0, 10.0}) for (size_t i = (size_t)(t * kRate); i < (size_t)((t + 0.15) * kRate); i++) x[i] += cf32(n(g), n(g));
+        std::mt19937 g(5); dect2::normal_distribution<float> n(0, 6.f);
+        for (double t : {4.0, 7.0, 10.0}) for (size_t i = (size_t)(t * kRate); i < (size_t)((t + 0.15) * kRate); i++) x[i] += cf32{n(g), n(g)};
         std::unique_ptr<CdrReceiver> p; auto m = play(*fresh(p), x, none);
         window("bursts of noise 50 dB over the signal", m, 14.0, 19.5, 5, 70);
     });
     jobs.add([] {   // 8 s of an FM-like programme alone (carrier, 19 kHz pilot, 38 kHz stereo) and then the CDR signal appears
         const double junk = 8;
         std::vector<cf32> x((size_t)(junk * kRate));
-        std::mt19937 g(9); std::normal_distribution<float> n(0, 1.f);
+        std::mt19937 g(9); dect2::normal_distribution<float> n(0, 1.f);
         double ph = 0, lp = 0, lp2 = 0;
         for (size_t i = 0; i < x.size(); i++) {
             const double t = (double)i / kRate;

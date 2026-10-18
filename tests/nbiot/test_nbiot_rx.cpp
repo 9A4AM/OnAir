@@ -1,6 +1,7 @@
 // NB-IoT receiver (nbiot_phy.h searchDecode / probe): the four test cells (standalone, guard band, in-band with the same and with another PCI),
 // one and two NRS ports, carrier offsets, sample clock errors, noise, other sample rates, an offset candidate, noise alone.
 #include "dect2/nbiot/nbiot_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/nbiot/nbiot_phy.h"
 #include "dect2/source/source.h"
 #include <chrono>
@@ -90,9 +91,9 @@ int main() {
     // noise alone: no cell
     {
         std::mt19937 rng(9);
-        std::normal_distribution<float> nd(0.f, 0.1f);
+        dect2::normal_distribution<float> nd(0.f, 0.1f);
         std::vector<cf32> x((size_t)2e6);
-        for (auto& v : x) v = cf32(nd(rng), nd(rng));
+        for (auto& v : x) v = cf32{nd(rng), nd(rng)};
         SearchOpts o; o.maxCfoHz = 22500;
         const auto r = searchDecode(x.data(), x.size(), 2e6, 0, o);
         CHECK(r.empty(), "noise alone gives no cell (found %zu)", r.size());

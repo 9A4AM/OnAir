@@ -1,5 +1,6 @@
 // ISDB-T basics: geometry and bit rates against the tables of the standard, carrier layout, pilot sequences, TMCC coding, constellations.
 #include "dect2/isdbt/isdbt.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -168,11 +169,11 @@ int main() {
     // the fast demapper agrees with the comparison against every point
     {
         std::mt19937 rng(9);
-        std::normal_distribution<float> nd(0.f, 0.6f);
+        dect2::normal_distribution<float> nd(0.f, 0.6f);
         double worst = 0;
         for (int mod : {kQpsk, k16Qam, k64Qam}) {
             for (int k = 0; k < 20000; k++) {
-                const cf32 z(nd(rng), nd(rng));
+                const cf32 z{nd(rng), nd(rng)};
                 float a[6], b[6];
                 demapCell(mod, z, 0.05f, a);
                 demapCellGeneric(mod, z, 0.05f, b);

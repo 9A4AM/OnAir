@@ -6,6 +6,7 @@
 //    impair.h, independent of the generator), a frame with a broken CRC (rejected, no device), noise alone (nothing).
 // 3. The EU868 test scene (mesh_gen region 3): every device of a cycle in the device table with the right counters.
 #include "dect2/mesh/mesh_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/mesh/mesh_lora.h"
 #include "dect2/mesh/mesh_proto.h"
 #include "dect2/mesh/mesh_rx.h"
@@ -109,8 +110,8 @@ static MeshTelemetry run(const std::vector<Shot>& shots, double snrDb, double sh
     }
     impair::shift(x, shiftHz, rate);
     std::mt19937 g(seed);
-    std::normal_distribution<float> nd(0.f, (float)std::sqrt(amp * amp * (rate / 125e3) / std::pow(10.0, snrDb / 10) / 2));
-    for (auto& v : x) v += cf32(nd(g), nd(g));
+    dect2::normal_distribution<float> nd(0.f, (float)std::sqrt(amp * amp * (rate / 125e3) / std::pow(10.0, snrDb / 10) / 2));
+    for (auto& v : x) v += cf32{nd(g), nd(g)};
     MeshReceiver rx;
     rx.setProtocols(16);
     rx.setTunedHz(tuned);

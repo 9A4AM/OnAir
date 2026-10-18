@@ -2,6 +2,7 @@
 // decoder counts audio and reports no library, and there is no test audio. With DECT2_CODEC2_PATH pointing at the library: a loopback
 // (freedv_tx test audio, plus noise, into the decoder) per mode must reach sync and decode speech frames. Quick; no sound.
 #include "dect2/hfdig/hfdig_freedv.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/hfdig/hfdig_gen.h"
 #include <cmath>
 #include <cstdio>
@@ -34,7 +35,7 @@ int main() {
     }
     printf("codec2: %s (version %s)\n", path.c_str(), ver.c_str());
     std::mt19937 rng(7);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     for (int m = 0; m < kFreedvModes; m++) {
         if (strcmp(freedvModeName(m), "RADE") == 0) continue;   // RADE is librade, not codec2
         SynthConfig sc;

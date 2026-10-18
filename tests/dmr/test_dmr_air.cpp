@@ -6,6 +6,7 @@
 // A CACH is added to the base station signal with the bit positions and the Hamming (7,4) words of the OP25 project (dmr_const.h), also written
 // out again here.
 #include "dect2/dmr/dmr_rx.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -99,7 +100,7 @@ struct Tx {
         const size_t n = (size_t)((double)ns / 48000.0 * rate);
         std::vector<cf32> out(n);
         std::mt19937 rng(seed);
-        std::normal_distribution<double> nd(0.0, 1.0);
+        dect2::normal_distribution<double> nd(0.0, 1.0);
         const double amp = 0.25;
         const double sigma = amp * std::sqrt(rate / 12500.0 / std::pow(10.0, snrDb / 10.0) / 2.0);
         double phase = 0;
@@ -109,7 +110,7 @@ struct Tx {
             const double fr = pos - (double)k;
             const double fi = f[k] * (1 - fr) + f[k + 1] * fr, gi = gs[k] * (1 - fr) + gs[k + 1] * fr;
             phase += 2 * M_PI * (fi + cfoHz + driftHzPerSec * ((double)i / rate)) / rate;
-            out[i] = cf32((float)(amp * gi * std::cos(phase) + sigma * nd(rng) + dc), (float)(amp * gi * std::sin(phase) + sigma * nd(rng) + dc * 0.5));
+            out[i] = cf32{(float)(amp * gi * std::cos(phase) + sigma * nd(rng) + dc), (float)(amp * gi * std::sin(phase) + sigma * nd(rng) + dc * 0.5)};
         }
         return out;
     }

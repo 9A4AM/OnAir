@@ -1,5 +1,6 @@
 // Protocol lab tests: every stage alone, then the whole pipeline on generated signals of several known protocols.
 #include "dect2/protolab/protolab.h"
+#include "dect2/common/stable_random.h"
 #include <chrono>
 #include <cstring>
 #include <cstdio>
@@ -245,7 +246,7 @@ static void testFields() {
 
 static std::vector<float> square(const std::vector<int>& bitsv, double spb, double jitter, std::mt19937& rng) {
     std::vector<float> s;
-    std::uniform_real_distribution<double> u(-jitter, jitter);
+    dect2::uniform_real_distribution<double> u(-jitter, jitter);
     double acc = 0;
     for (int b : bitsv) { acc += spb + u(rng); while ((double)s.size() < acc) s.push_back(b ? 1.f : -1.f); }
     return s;
@@ -376,9 +377,9 @@ static void testChannelise() {
 static void testPipelineEdgeCases() {
     // noise only
     std::mt19937 rng(3);
-    std::normal_distribution<float> g(0.f, 0.1f);
+    dect2::normal_distribution<float> g(0.f, 0.1f);
     std::vector<cf> n(300000);
-    for (auto& v : n) v = cf(g(rng), g(rng));
+    for (auto& v : n) v = cf{g(rng), g(rng)};
     Report r = analyse(n, 250000);
     CHECK(r.candidates.empty());
     // one burst only

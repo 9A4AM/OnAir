@@ -1,5 +1,6 @@
 // TETRA test signal (tetra_gen.h).
 #include "dect2/tetra/tetra_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/cell/cell_dsp.h"
 #include "dect2/source/source.h"
 #include <cmath>
@@ -139,11 +140,11 @@ public:
                 b.ph = std::fmod(b.ph + w, 2 * M_PI);
             }
         }
-        std::normal_distribution<float> nd(0.f, 1.f);
+        dect2::normal_distribution<float> nd(0.f, 1.f);
         const double wc = 2 * M_PI * cfo_ / out_;
         for (size_t i = 0; i < n; i++) {
             if (cfo_ != 0) { o[i] *= cf32((float)std::cos(cph_), (float)std::sin(cph_)); cph_ = std::fmod(cph_ + wc, 2 * M_PI); }
-            if (noise_ > 0) o[i] += cf32(noise_ * nd(rng_), noise_ * nd(rng_));
+            if (noise_ > 0) o[i] += cf32{noise_ * nd(rng_), noise_ * nd(rng_)};
         }
     }
 

@@ -4,6 +4,7 @@
 // timing: the receivers notice within a symbol or two (DVB-T) or from the next P1 (DVB-T2), find the symbol start again and keep the
 // carrier, the channel estimate and the frame position, so a gap costs roughly the symbols it touches.
 #include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dvbt/dvbt_rx.h"
 #include "dect2/t2/t2.h"
 #include "dect2/t2/t2gen.h"
@@ -34,7 +35,7 @@ struct Loss { double fraction; double gapMs; double maxPerT; double maxFerT2; };
 static std::vector<cf32> lossy(const std::vector<cf32>& x, double rate, Loss l, unsigned seed, size_t start) {
     if (l.fraction <= 0) return x;
     std::mt19937 rng(seed);
-    std::uniform_real_distribution<double> u(0.5, 1.5);
+    dect2::uniform_real_distribution<double> u(0.5, 1.5);
     const double gapMean = l.gapMs * 1e-3 * rate, period = gapMean / l.fraction;
     std::vector<cf32> out;
     out.reserve(x.size());

@@ -1,6 +1,7 @@
 // ATSC 3.0 Preamble OFDM layer: pilot sequence, cell counts against A/322 Table 7.2, the frequency interleaver, and a round trip
 // through modulation, noise and demodulation.
 #include "dect2/atsc3/atsc3_ofdm.h"
+#include "dect2/common/stable_random.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -104,7 +105,7 @@ int main() {
 
     // round trip through the channel: random QPSK, noise, and an echo
     std::mt19937 rng(7);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     struct Case { int ps; int cred; int sym; double snr; bool echo; } cases[] = {
         {0, 4, 0, 30, false}, {0, 4, 1, 15, false}, {30, 4, 1, 20, true}, {35, 4, 0, 15, false}, {75, 3, 2, 12, true}, {95, 4, 0, 15, false}, {95, 4, 1, 15, false}, {130, 2, 3, 15, true}};
     for (auto& cs : cases) {
@@ -133,7 +134,7 @@ int main() {
         for (size_t i = 0; i < tx.size(); i++) sig += std::norm(rx[i]);
         sig /= tx.size();
         double sigma = std::sqrt(sig / std::pow(10.0, cs.snr / 10.0) / 2.0);
-        for (auto& v : rx) v += cf32(g(rng), g(rng)) * (float)sigma;
+        for (auto& v : rx) v += cf32{g(rng), g(rng)} * (float)sigma;
         std::vector<cf32> out;
         float nv = 0;
         bool okd = demodulatePreambleSymbol(q, cs.cred, cs.sym, rx.data(), out, &nv);

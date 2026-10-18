@@ -1,4 +1,5 @@
 #include "dect2/engine/mode_synth.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/source/hamlib_rig.h"
 #include "dect2/source/source.h"
 #include "dect2/net/netradio.h"
@@ -468,7 +469,7 @@ protected:
         const float ea = cfg_.echoDb > 0 ? (float)std::pow(10.0, -cfg_.echoDb / 20.0) : 0.f;
         const int ed = std::min<int>(std::max(1, cfg_.echoDelay), (int)delay_.size() - 1);
         const double dph = 2 * M_PI * cfg_.cfoHz / rate_;
-        // noise from a table and the carrier offset as an oscillator recurrence: std::normal_distribution and sin/cos per sample cost more than the generator
+        // noise from a table and the carrier offset as an oscillator recurrence: dect2::normal_distribution and sin/cos per sample cost more than the generator
         nz_.assign(maxN, cf32(0, 0));
         noise_.add(nz_.data(), maxN, (float)nsig);
         cf32 osc = cf32((float)std::cos(phase_), (float)std::sin(phase_));

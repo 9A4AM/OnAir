@@ -2,6 +2,7 @@
 // deviation, burst timing and symbol length are known: the measurements must come out within the tolerances below, at any frequency offset,
 // with noise, and fast enough (under 200 ms). Also the region helpers (regionAt, findRegions), the calibrated reject option and the text forms.
 #include "dect2/engine/sig_ident.h"
+#include "dect2/common/stable_random.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -14,7 +15,7 @@ using namespace dect2::sigid;
 namespace {
 
 std::mt19937 rng(12345);
-double gauss() { static std::normal_distribution<double> d(0, 1); return d(rng); }
+double gauss() { static dect2::normal_distribution<double> d(0, 1); return d(rng); }
 
 // root-raised-cosine pulse, `sps` samples per symbol, span symbols each side
 std::vector<float> rrc(double beta, int sps, int span) {

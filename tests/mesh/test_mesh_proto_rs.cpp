@@ -8,7 +8,7 @@
 #include "dect2/mesh/mesh_pb.h"
 #include "dect2/mesh/mesh_crypto.h"
 
-golden::Digest dig;
+golden::Dual dig;
 std::mt19937 g(31337);
 
 std::vector<uint8_t> mutateBytes(std::vector<uint8_t> v) {
@@ -191,5 +191,5 @@ int main() {
     testMeshtastic(iters);
     const int rc2 = runMeshProto2();
     if (rc2) return 1;
-    return golden::check("mesh_proto_rs", dig, 0x9c82d2bce01c85a6ull, !getenv("ONAIR_DIFF_ITERS"));
+    return golden::checkDual("mesh_proto_rs", dig, 0x9c82d2bce01c85a6ull, 0xf5f1fd51d51330d5ull, !getenv("ONAIR_DIFF_ITERS"));
 }

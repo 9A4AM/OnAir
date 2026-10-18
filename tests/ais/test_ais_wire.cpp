@@ -6,6 +6,7 @@
 //   -> flags 0x7E -> NRZI (a 0 is a change of level) -> GMSK, BT 0.4, modulation index 0.5, 9600 bd at 96 kHz -> placed at +-25 kHz at 2.4 Msps.
 // The result goes into AisReceiver and the stations, positions and sentences it reports are compared with what the sentences say.
 #include "dect2/ais/ais_rx.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/ais/ais_proto.h"
 #include <cmath>
 #include "dect2/common/crc.h"
@@ -123,7 +124,7 @@ static std::string payloadOf(const AisTelemetry& t, const std::string& want) {  
 static void runCase(const char* name, const std::vector<Tx>& txs, double snrDb, uint32_t seed) {
     const double fs = 2.4e6;
     std::mt19937 rng(seed);
-    std::normal_distribution<double> nd(0.0, 1.0);
+    dect2::normal_distribution<double> nd(0.0, 1.0);
     const double amp = 0.3, nsig = amp / std::pow(10.0, snrDb / 20.0) / std::sqrt(2.0) * std::sqrt(fs / 48000.0 / 1.0);   // noise per sample for snr in 48 kHz
     std::vector<cf32> x;
     auto gap = [&](double sec) { const size_t n = (size_t)(sec * fs); for (size_t i = 0; i < n; i++) x.push_back(cf32(0, 0)); };
@@ -137,7 +138,7 @@ static void runCase(const char* name, const std::vector<Tx>& txs, double snrDb, 
         for (const cf32& v : b) x.push_back(v);
         gap(0.4);
     }
-    for (cf32& v : x) v += cf32((float)(nd(rng) * nsig), (float)(nd(rng) * nsig));
+    for (cf32& v : x) v += cf32{(float)(nd(rng) * nsig), (float)(nd(rng) * nsig)};
     AisReceiver rx;
     rx.configure(fs);
     std::vector<std::vector<uint8_t>> got;

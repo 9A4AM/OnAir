@@ -1,6 +1,7 @@
 // CDR tables and building blocks against values printed in GY/T 268.1-2013 / GY/T 268.2-2013 (as published by the NRTA) and against
 // independent implementations, so that the generator and the receiver are not only checked against each other. Quick.
 #include "dect2/cdr/cdr_defs.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/cdr/cdr_ldpc.h"
 #include "dect2/cdr/cdr_mux.h"
 #include "dect2/dab/dab.h"
@@ -194,7 +195,7 @@ int main() {
             CHECK(c.syndromeWeight(w.data()) == 0, "encoder rate %s", ldpcRateText(r));
             CHECK(std::equal(info.begin(), info.end(), w.begin()), "systematic");
             std::vector<float> llr(9216);
-            std::normal_distribution<float> nd(0, 0.5f);
+            dect2::normal_distribution<float> nd(0, 0.5f);
             for (int i = 0; i < 9216; i++) llr[(size_t)i] = 8.f * ((w[(size_t)i] ? -1.f : 1.f) + nd(rng));
             const CdrLdpc::Result res = c.decode(llr.data(), out.data());
             CHECK(res.ok && out == info, "decoder rate %s", ldpcRateText(r));

@@ -1,6 +1,7 @@
 // ATSC 3.0 L1-Basic: packing with CRC, the protection chain for modes 1 to 5 (cell counts of A/322 Table 6.17, decoding in noise), and the
 // complete path through a Preamble OFDM symbol.
 #include "dect2/atsc3/atsc3_l1.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/atsc3/atsc3_ofdm.h"
 #include <cmath>
 #include <cstdio>
@@ -62,7 +63,7 @@ int main() {
 
     // decoding in noise: every mode, at a signal-to-noise ratio around its operating point and well below it
     std::mt19937 rng(5);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     struct T { int mode; double snrDb; bool expectOk; } tests[] = {
         {1, -3, true}, {1, -6, true}, {2, 0, true}, {3, 6, true}, {4, 12, true}, {5, 15, true}, {1, -14, false}, {5, -2, false}};
     for (auto& t : tests) {
@@ -72,7 +73,7 @@ int main() {
             v.l1DetailTotalCells = 1000 * (k + 1);
             auto cells = encodeL1Basic(v, t.mode);
             float sigma = (float)std::sqrt(std::pow(10.0, -t.snrDb / 10.0) / 2.0);
-            for (auto& c : cells) c += cf32(g(rng), g(rng)) * sigma;
+            for (auto& c : cells) c += cf32{g(rng), g(rng)} * sigma;
             L1Basic o;
             bool ok = decodeL1Basic(cells.data(), (int)cells.size(), 2 * sigma * sigma, t.mode, o);
             okc += ok && same(v, o);
@@ -95,7 +96,7 @@ int main() {
     std::vector<cf32> rx(tx);
     for (size_t i = 0; i + 30 < tx.size(); i++) rx[i + 30] += tx[i] * cf32(0.2f, -0.15f);
     float sigma = (float)std::sqrt(std::pow(10.0, -2.0 / 10.0) / 2.0);
-    for (auto& v : rx) v += cf32(g(rng), g(rng)) * sigma * 0.5f;
+    for (auto& v : rx) v += cf32{g(rng), g(rng)} * sigma * 0.5f;
     std::vector<cf32> eq;
     float nv = 0;
     CHECK(demodulatePreambleSymbol(pp, cred, 0, rx.data(), eq, &nv), "preamble demodulation");

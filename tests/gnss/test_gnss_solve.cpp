@@ -1,6 +1,7 @@
 // Position solver tests on pseudoranges made from the simulated constellation's geometry (noise-free and with noise, with and without the atmosphere),
 // the DOP figures against a separate matrix inversion, the outlier check, and a second system with its own clock.
 #include "dect2/gnss/gnss_sim.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/gnss/gnss_solve.h"
 #include <cmath>
 #include <cstdio>
@@ -11,7 +12,7 @@ using namespace dect2;
 // observations for the satellites that the simulation transmits, at true time t
 static std::vector<GnssObs> makeObs(const GnssSim& sim, double t, double bias, bool atmosphere, std::mt19937* rng, double sigma) {
     std::vector<GnssObs> obs;
-    std::normal_distribution<double> nd(0.0, 1.0);
+    dect2::normal_distribution<double> nd(0.0, 1.0);
     for (size_t i = 0; i < sim.sats().size(); i++) {
         const GnssSimSat& s = sim.sats()[i];
         if (!s.transmitted) continue;
@@ -148,7 +149,7 @@ int main() {
     {
         // many noisy fixes: the scatter of the horizontal error agrees with HDOP times the pseudorange noise (weights are 1/sin^2 el, so sigma_i = s / sin(el))
         std::mt19937 rng(11);
-        std::normal_distribution<double> nd(0.0, 1.0);
+        dect2::normal_distribution<double> nd(0.0, 1.0);
         double lat, lon, h;
         ecefToLla(sim.receiverEcef(), &lat, &lon, &h);
         const double la = lat * kPi / 180, lo = lon * kPi / 180;

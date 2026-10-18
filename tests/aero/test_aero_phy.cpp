@@ -5,6 +5,7 @@
 //   SU check: CRC-16/X-25 (aerol.h AeroLcrc16: 0x8408 reflected, start 0xFFFF, inverted), catalogue check value 0x906E for "123456789"
 //   interleaver row permutation (aerol.cpp: interleaverowdepermute[i] = (i*27) % 64)
 #include "dect2/aero/aero_phy.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/aero/aero_demod.h"
 #include <cmath>
 #include <cstdio>
@@ -100,7 +101,7 @@ int main() {
             std::vector<std::vector<uint8_t>> sent, got;
             int susOk = 0, susBad = 0;
             fr.setCallback([&](AeroFrameEvent& e) { got.push_back(e.bytes); susOk += e.susOk; susBad += e.susBad; });
-            std::normal_distribution<float> nd(0.f, (float)std::sqrt(1.0 / (2 * std::pow(10.0, ebn0 / 10))));
+            dect2::normal_distribution<float> nd(0.f, (float)std::sqrt(1.0 / (2 * std::pow(10.0, ebn0 / 10))));
             for (int i = 0; i < 300; i++) fr.push(nd(g) > 0 ? 1.f : -1.f);       // noise before the first frame
             const int nFrames = rate == 10500 ? 8 : 12;
             for (int f = 0; f < nFrames; f++) {

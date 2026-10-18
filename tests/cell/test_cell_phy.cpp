@@ -1,6 +1,7 @@
 // Cell towers, LTE building blocks: CRC, the tail-biting convolutional code, the turbo code and its rate matching, the QPP interleaver,
 // DCI formats 1A / 1C, the control region mapping, and the SIB1 - SIB5 UPER coder (round trips and fixed points from the specifications).
 #include "dect2/cell/cell_asn.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/cell/cell_fec.h"
 #include "dect2/cell/cell_lte.h"
 #include <cmath>
@@ -14,7 +15,7 @@ static Bits randBits(std::mt19937& r, size_t n) { Bits b(n); for (auto& v : b) v
 
 int main() {
     std::mt19937 rng(5);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     // CRC: the parity of the message followed by its parity is zero; a flipped bit is caught
     {
         Bits b = randBits(rng, 100);

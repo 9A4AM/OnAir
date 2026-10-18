@@ -1,8 +1,9 @@
 // Small helpers shared by the test signal generators of ATSC 1.0, ISDB-T and DVB-T: a table of Gaussian noise read from pseudo
-// random positions (std::normal_distribution with a Mersenne twister costs more than all the rest of a cheap generator), and a
+// random positions (dect2::normal_distribution with a Mersenne twister costs more than all the rest of a cheap generator), and a
 // dot product written with independent partial sums so that every compiler vectorises it.
 #pragma once
 #include <cmath>
+#include "dect2/common/stable_random.h"
 #include <complex>
 #include <cstddef>
 #include <cstdint>
@@ -26,7 +27,7 @@ inline double gfskPulse(double tau, double bt) {
     return 0.5 * (std::erf((tau + 0.5) * k) - std::erf((tau - 0.5) * k));
 }
 
-// Gaussian values that are the same with every standard library: std::normal_distribution is not (libc++ and libstdc++
+// Gaussian values that are the same with every standard library: dect2::normal_distribution is not (libc++ and libstdc++
 // give different sequences), so tests tuned on macOS met other noise on Linux. This is libc++'s algorithm (Marsaglia's
 // polar method) written out, with the fused multiply-add clang uses on arm64, so it gives macOS's values bit for bit.
 class PortableNormal {

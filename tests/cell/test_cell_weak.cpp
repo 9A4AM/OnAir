@@ -3,6 +3,7 @@
 // combined over the 40 ms periods, or borrowed from the strong cell, the strong cell's reference signals and PBCH cancelled from under it,
 // SIB1 combined over its repetitions. Noise alone must give nothing.
 #include "dect2/cell/cell_dsp.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/cell/cell_gen.h"
 #include "dect2/cell/cell_lte.h"
 #include "../common/impair.h"
@@ -68,8 +69,8 @@ int main() {
     {
         std::vector<cf32> n(x.size());
         std::mt19937 rng(11);
-        std::normal_distribution<float> nd(0.f, 0.2f);
-        for (auto& v : n) v = cf32(nd(rng), nd(rng));
+        dect2::normal_distribution<float> nd(0.f, 0.2f);
+        for (auto& v : n) v = cf32{nd(rng), nd(rng)};
         const auto rn = lteSearchDecode(n.data(), n.size(), kFs, 0, o);
         CHECK(rn.empty(), "noise only gave %zu cells", rn.size());
     }

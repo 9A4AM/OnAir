@@ -1,6 +1,7 @@
 // Analog FPV video test signal, see fpv_gen.h. The composite video comes from the analog TV generator (atv_gen.h) at 12 Msps, is brought to the
 // output rate, gets the sound subcarrier added and frequency modulates the carrier; noise last.
 #include "dect2/fpv/fpv_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/fpv/fpv_chan.h"
 #include "dect2/atv/atv_gen.h"
 #include "dect2/dsp/exact_resampler.h"
@@ -21,7 +22,7 @@ struct FpvGenerator::Impl {
     double ph = 0, subPh = 0, tonePh = 0, hpY = 0, hpX = 0;
     bool hpInit = false;
     std::mt19937_64 rng;
-    std::normal_distribution<float> nd{0.f, 1.f};
+    dect2::normal_distribution<float> nd{0.f, 1.f};
     double noiseSigma = 0;
     uint64_t nOut = 0;
 

@@ -1,6 +1,7 @@
 // 5G NR cells search: synthetic SS/PBCH bursts (38.211 / 38.212) through searchDecode at other sample rates, off the centre, with carrier
 // and clock offsets, noise and weak beams; noise alone finds nothing.
 #include "dect2/cell/cell_dsp.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/nr/nr_phy.h"
 #include <chrono>
 #include <cmath>
@@ -29,8 +30,8 @@ static std::vector<cf32> scene(const std::vector<Placed>& cells, double fs, doub
         const double nat = 256e3 * (cells.empty() ? 30 : cells[0].g.scsKhz);
         const float sd = (float)std::sqrt(0.04 * std::max(1.0, fs / nat) / std::pow(10.0, snrDb / 10) / 2);
         std::mt19937 rng(seed);
-        std::normal_distribution<float> nd(0, 1);
-        for (auto& v : out) v += cf32(sd * nd(rng), sd * nd(rng));
+        dect2::normal_distribution<float> nd(0, 1);
+        for (auto& v : out) v += cf32{sd * nd(rng), sd * nd(rng)};
     }
     return out;
 }

@@ -2,6 +2,7 @@
 // tuning (as the radio's sweep header does) and posted to SaSweepTap; the same samples go to the engine. The scene: carriers at
 // 100 MHz (-30 dBFS), 433.92 MHz (-40), 1090 MHz (-35) and 2440 MHz (-25), over a noise floor. modeVal[0] / [1]: the range in MHz.
 #include "dect2/specan/specan_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/specan/specan_dsp.h"
 #include <cmath>
 #include <random>
@@ -42,8 +43,8 @@ private:
         const double loHz = tags_[t_] + 7.5e6;
         int nt = 0;
         const SpecanTone* tn = specanTestTones(nt);
-        std::normal_distribution<float> g(0.f, sigma_ / std::sqrt(2.f));
-        for (size_t i = 0; i < kBlock; i++) block_[i] = cf32(g(rng_), g(rng_));
+        dect2::normal_distribution<float> g(0.f, sigma_ / std::sqrt(2.f));
+        for (size_t i = 0; i < kBlock; i++) block_[i] = cf32{g(rng_), g(rng_)};
         for (int k = 0; k < nt; k++) {
             const double off = tn[k].hz - loHz;
             if (std::fabs(off) > rate_ * 0.45) continue;

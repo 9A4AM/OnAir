@@ -1,5 +1,6 @@
 // L1 codec round trip: encode -> noise -> decode, plus P2 distribution and interleaver self-consistency.
 #include "dect2/t2/t2interleave.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/t2/t2l1.h"
 #include <cmath>
 #include <cstdio>
@@ -14,7 +15,7 @@ static int fails = 0;
 
 int main() {
     std::mt19937 rng(5);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     // L1-pre
     L1Pre pre;
     pre.s1 = 0; pre.s2 = (1 << 1); pre.guardInterval = 2; pre.papr = 2; pre.l1Mod = 1; pre.pilotPattern = 6; pre.cellId = 0x1234;
@@ -24,7 +25,7 @@ int main() {
     for (float snrDb : {20.f, 6.f, 2.f}) {
         float n0 = std::pow(10.f, -snrDb / 10.f) / 2.f; // per real dimension
         auto y = cells;
-        for (auto& v : y) v += cf32(nd(rng), nd(rng)) * std::sqrt(n0);
+        for (auto& v : y) v += cf32{nd(rng), nd(rng)} * std::sqrt(n0);
         L1Pre got;
         L1Result r = decodeL1Pre(y, n0, got);
         CHECK(r.ok && r.crcOk && r.bchOk, "L1-pre decode failed at %.0f dB (ldpc iters %d bch %d)", snrDb, r.ldpcIters, r.bchOk);
@@ -50,7 +51,7 @@ int main() {
         float snrDb = mod == 3 ? 24.f : mod == 2 ? 18.f : 8.f;
         float n0 = std::pow(10.f, -snrDb / 10.f) / 2.f;
         auto y = pc;
-        for (auto& v : y) v += cf32(nd(rng), nd(rng)) * std::sqrt(n0);
+        for (auto& v : y) v += cf32{nd(rng), nd(rng)} * std::sqrt(n0);
         L1Post got;
         L1Result r = decodeL1Post(y, n0, p, nP2, false, got);
         bool same = r.ok && got.numPlp == 2 && got.plps[0].mod == 3 && got.plps[1].cod == 1 && got.dyn[1].start == 777 && got.rf[0].freq == 522000000u && got.changeCounter == 9;

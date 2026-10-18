@@ -1,5 +1,6 @@
 // LoRa (raw) test signal (see loraraw_gen.h).
 #include "dect2/loraraw/loraraw_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dsp/gen_util.h"
 #include "dect2/loraraw/loraraw_rx.h"
 #include <algorithm>
@@ -77,7 +78,7 @@ struct LoraRawGenerator::Impl {
             f.amp = (float)(c.amp * std::pow(10.0, g.snrOffDb / 20));
             if (c.snrDb < 99 && g.p.bwHz != 125e3) f.amp = (float)(c.amp * std::pow(10.0, g.snrOffDb / 20));   // same noise: a wider band is a lower SNR
             f.freqHz = c.dialOffsetHz + c.cfoHz + g.cfoHz;
-            f.phase0 = std::uniform_real_distribution<double>(0, 1)(rng);
+            f.phase0 = dect2::uniform_real_distribution<double>(0, 1)(rng);
             nextStart = f.endSec() + g.gapSec;
             lastEnd = std::max(lastEnd, f.endSec());
             active.push_back(std::move(f));

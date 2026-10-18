@@ -1,5 +1,6 @@
 // 5G NR cells test signal (nr_gen.h).
 #include "dect2/nr/nr_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/cell/cell_dsp.h"
 #include "dect2/source/source.h"
 #include <cmath>
@@ -68,8 +69,8 @@ public:
                 s.ph = std::fmod(s.ph + w, 2 * M_PI);
             }
         }
-        std::normal_distribution<float> nd(0.f, 1.f);
-        if (noise_ > 0) for (size_t i = 0; i < n; i++) o[i] += cf32(noise_ * nd(rng_), noise_ * nd(rng_));
+        dect2::normal_distribution<float> nd(0.f, 1.f);
+        if (noise_ > 0) for (size_t i = 0; i < n; i++) o[i] += cf32{noise_ * nd(rng_), noise_ * nd(rng_)};
     }
 
 private:

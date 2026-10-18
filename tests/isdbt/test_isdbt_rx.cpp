@@ -1,5 +1,6 @@
 // ISDB-T receiver end to end: generator -> radio impairments (carrier offset, noise, echo, sample rate) -> receiver -> transport stream.
 #include "dect2/dsp/exact_resampler.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/isdbt/isdbt_gen.h"
 #include "dect2/isdbt/isdbt_rx.h"
 #include "../common/jobs.h"
@@ -48,7 +49,7 @@ static bool run(const Case& c) {
     // pad with silence of noise before and after so the receiver has to find the signal
     const char* seedEnv = getenv("ISDBT_SEED");   // development: another noise realisation
     std::mt19937 rng(seedEnv ? (unsigned)atoi(seedEnv) : 11u);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     const float sigma = (float)std::sqrt(std::pow(10.0, -c.snrDb / 10.0) / 2.0);
     const size_t lead = (size_t)(0.02 * c.radioRate);
     std::vector<cf32> x(lead + radio.size());
@@ -56,7 +57,7 @@ static bool run(const Case& c) {
         cf32 v = i >= lead ? radio[i - lead] : cf32(0, 0);
         const double ph = 2 * M_PI * c.cfoHz * (double)i / c.radioRate;
         v *= cf32((float)std::cos(ph), (float)std::sin(ph));
-        x[i] = v + cf32(nd(rng), nd(rng)) * sigma;
+        x[i] = v + cf32{nd(rng), nd(rng)} * sigma;
     }
     IsdbtReceiver rx;
     rx.configure(c.radioRate);

@@ -3,6 +3,7 @@
 // HackRF rate; every product must come back byte for byte (Rice and plain images, the JPEG, the admin and EMWIN texts) and every LRIT
 // file must equal the one sent. Noise alone gives nothing.
 #include "dect2/goes/goes_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/goes/goes_rx.h"
 #include "dect2/goes/goes_tel.h"
 #include "dect2/hfdig/hfdig_hamdrm.h"
@@ -76,12 +77,12 @@ int main() {
         GoesReceiver rx;
         rx.configure(2.4e6);
         std::mt19937 rng(1);
-        std::normal_distribution<float> n(0.f, 0.2f);
+        dect2::normal_distribution<float> n(0.f, 0.2f);
         std::vector<cf32> buf(65536);
         GoesTelemetry t;
         uint64_t seq = 0;
         for (int k = 0; k < 40; k++) {
-            for (auto& v : buf) v = cf32(n(rng), n(rng));
+            for (auto& v : buf) v = cf32{n(rng), n(rng)};
             rx.feed(buf.data(), buf.size());
             if (rx.telemetry(t, seq)) seq = t.seq;
         }

@@ -2,6 +2,7 @@
 // stronger than the wanted one, impulse noise and a reset in the middle. Compared with what the generator says it sent (dmr_eval.h). The basics are
 // in tests/test_dmr_rx.cpp, handsets (direct mode, mobile station) in tests/test_dmr_handset.cpp.
 #include "dect2/dmr/dmr_eval.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dmr/dmr_gen.h"
 #include "dect2/dmr/dmr_rx.h"
 #include <chrono>
@@ -110,7 +111,7 @@ int main() {
         auto rng = std::make_shared<std::mt19937>(5);
         auto left = std::make_shared<size_t>(0);
         s.mod = [rng, left](cf32* x, size_t n, size_t, double rate) {
-            std::normal_distribution<float> nd(0.f, 0.35f);
+            dect2::normal_distribution<float> nd(0.f, 0.35f);
             const size_t len = (size_t)(100e-6 * rate), gap = (size_t)(rate / 20.0);
             for (size_t i = 0; i < n; i++) {
                 if (*left == 0 && (*rng)() % gap == 0) *left = len;

@@ -4,6 +4,7 @@
 // them, or the TPS never decodes and nothing else follows. The first case is the condition of a real capture (Hungary, 554 MHz) that did not
 // decode: 8K, guard 1/4, 64-QAM 3/4, the radio 7.9 kHz off (7 carriers and a bit), recorded at 10 Msps.
 #include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dvbt/dvbt_rx.h"
 #include "dect2/dsp/resampler.h"
 #include "dect2/t2/t2.h"
@@ -37,7 +38,7 @@ static Result run(const dvbt::Params& p, int frames, double cfoCarriers, double 
         counter++;
     });
     std::mt19937 rng(7);
-    std::normal_distribution<float> nd(0, 1);
+    dect2::normal_distribution<float> nd(0, 1);
     const float sigma = (float)(std::pow(10.0, -snrDb / 20.0) / std::sqrt(2.0));
     std::vector<cf32> sig, sym;
     for (int i = 0; i < 40000; i++) sig.push_back(cf32(0, 0));   // some lead-in before the signal
@@ -45,7 +46,7 @@ static Result run(const dvbt::Params& p, int frames, double cfoCarriers, double 
     const double dph = 2 * M_PI * cfoHz / fn;
     for (size_t i = 0; i < sig.size(); i++) {
         const double a = dph * (double)i;
-        sig[i] = sig[i] * cf32((float)std::cos(a), (float)std::sin(a)) + cf32(nd(rng), nd(rng)) * sigma;
+        sig[i] = sig[i] * cf32((float)std::cos(a), (float)std::sin(a)) + cf32{nd(rng), nd(rng)} * sigma;
     }
     std::vector<cf32> in;
     if (inRate != fn) { RationalResampler up; up.configure(fn, inRate); up.process(sig.data(), sig.size(), in); }

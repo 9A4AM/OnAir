@@ -1,5 +1,6 @@
 // VDL Mode 2 test signal: see vdl2_gen.h.
 #include "dect2/vdl2/vdl2_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/aero/aero_adsc.h"
 #include "dect2/vdl2/vdl2_proto.h"
 #include <algorithm>
@@ -115,7 +116,7 @@ struct Vdl2Traffic::Impl {
     std::vector<double> busy;
     std::priority_queue<Ev, std::vector<Ev>, std::greater<Ev>> q;
 
-    double uni(double a, double b) { return std::uniform_real_distribution<double>(a, b)(rng); }
+    double uni(double a, double b) { return dect2::uniform_real_distribution<double>(a, b)(rng); }
 
     explicit Impl(const Vdl2GenOptions& opt) : o(opt), rng(opt.seed ? opt.seed : 1) {
         const int nc = std::max<int>(1, (int)o.channelsHz.size());
@@ -294,8 +295,8 @@ public:
     }
     double sampleRate() const override { return rate_; }
     void generate(cf32* out, size_t n) override {
-        std::normal_distribution<float> g(0.f, (float)sigma_);
-        for (size_t i = 0; i < n; i++) out[i] = sigma_ > 0 ? cf32(g(noise_), g(noise_)) : cf32(0, 0);
+        dect2::normal_distribution<float> g(0.f, (float)sigma_);
+        for (size_t i = 0; i < n; i++) out[i] = sigma_ > 0 ? cf32{g(noise_), g(noise_)} : cf32(0, 0);
         const double tEnd = (double)(pos_ + (int64_t)n) / fsEff_ + 0.01;
         while (nextB_.t < tEnd) {
             Vdl2Wave w = vdl2MakeWave(nextB_.frames);

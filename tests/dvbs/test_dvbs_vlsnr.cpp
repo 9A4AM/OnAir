@@ -3,6 +3,7 @@
 // receiver round trips (transport stream equal) for the modes the front end can acquire at the Es/N0 they need. Only generated signals: no real VL-SNR
 // transmission was available, see the notes in core/src/dvbs_vlsnr.h on what the text of the standard leaves open.
 #include "../../core/src/dvbs/dvbs_vlsnr.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dvbs/dvbs_testkit.h"
 #include <cmath>
 #include <cstdio>
@@ -69,11 +70,11 @@ int main() {
         }
         // at Es/N0 = -10 dB: 900 symbols are plenty
         int wrong = 0;
-        std::normal_distribution<float> nd(0.f, std::sqrt(0.5f * 10.f));
+        dect2::normal_distribution<float> nd(0.f, std::sqrt(0.5f * 10.f));
         for (int t = 0; t < 200; t++) {
             const int w = (int)(rng() % 16);
             cf32 x[900];
-            for (int j = 0; j < 900; j++) x[j] = h[w][j] + cf32(nd(rng), nd(rng));
+            for (int j = 0; j < 900; j++) x[j] = h[w][j] + cf32{nd(rng), nd(rng)};
             if (vlHeaderDetect(x) != w) wrong++;
         }
         CHECK(wrong == 0, "%d of 200 headers misread at -10 dB", wrong);
@@ -99,13 +100,13 @@ int main() {
             // with noise (sigma2 per real dimension for unit symbol energy)
             const double esn0 = m.esn0 + 1.5;
             const float sigma2 = (float)(0.5 * std::pow(10.0, -esn0 / 10.0));
-            std::normal_distribution<float> nd(0.f, std::sqrt(sigma2));
+            dect2::normal_distribution<float> nd(0.f, std::sqrt(sigma2));
             int bad = 0;
             double itSum = 0;
             const int trials = 6;
             for (int t = 0; t < trials; t++) {
                 std::vector<cf32> y = sym;
-                for (auto& s : y) s += cf32(nd(rng), nd(rng));
+                for (auto& s : y) s += cf32{nd(rng), nd(rng)};
                 vlDemap(y.data(), i, sigma2, llr.data());
                 fixed = vlDecode(llr.data(), i, 100, out, &it);
                 itSum += it;

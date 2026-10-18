@@ -1,6 +1,7 @@
 // ATSC 3.0 subframe symbols: the number of data cells per data symbol and per subframe boundary symbol against A/322 Tables 7.3 to 7.6
 // (every FFT size, carrier reduction and scattered pilot pattern), and a round trip through modulation, a channel and demodulation.
 #include "dect2/atsc3/atsc3_subframe.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -122,7 +123,7 @@ int main() {
     CHECK(std::fabs(spAmplitude(b) - 1.585) < 0.002, "pilot boost amplitude");
 
     std::mt19937 rng(23);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     struct Case { int fft, guard, pattern, cred; bool fi; bool sbsFirst, sbsLast; int nulls; double snr; bool echo; } cases[] = {
         {8192, 192, 2, 0, true, true, true, 40, 28, false}, {8192, 1024, 4, 1, false, false, false, 0, 28, true},
         {16384, 768, 6, 2, true, true, false, 0, 28, true}, {32768, 512, 12, 0, true, false, true, 0, 28, false}, {16384, 2048, 5, 0, true, false, false, 0, 28, true}};
@@ -155,7 +156,7 @@ int main() {
             for (size_t i = 0; i < tx.size(); i++) sig += std::norm(rx[i]);
             sig /= tx.size();
             float sigma = (float)std::sqrt(sig / std::pow(10.0, cs.snr / 10.0) / 2.0);
-            for (auto& v : rx) v += cf32(g(rng), g(rng)) * sigma;
+            for (auto& v : rx) v += cf32{g(rng), g(rng)} * sigma;
             std::vector<cf32> out;
             float nv = 0;
             bool ok = demodulateSubframeSymbol(s, l, rx.data(), out, &nv);

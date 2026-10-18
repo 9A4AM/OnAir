@@ -1,6 +1,7 @@
 // Iridium radio layer: known answers (unique words, DQPSK mapping, sync word rule) and single bursts through the detector and the
 // demodulator at the rates the radios offer.
 #include "dect2/iridium/iridium_frame.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/iridium/iridium_gen.h"
 #include "dect2/iridium/iridium_phy.h"
 #include <cmath>
@@ -35,8 +36,8 @@ static int oneBurst(double rate, double freq, double esn0Db, int preamble, bool 
     const size_t n = (size_t)(0.03 * rate);
     std::vector<cf32> x(n, cf32(0, 0));
     iridiumRenderBursts({b}, rate, 0, x.data(), n);
-    std::normal_distribution<float> nd(0, (float)sigma);
-    for (auto& v : x) v += cf32(nd(r), nd(r));
+    dect2::normal_distribution<float> nd(0, (float)sigma);
+    for (auto& v : x) v += cf32{nd(r), nd(r)};
     BurstDetector det;
     det.configure(rate);
     std::vector<DetectedBurst> found;

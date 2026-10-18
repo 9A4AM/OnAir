@@ -1,5 +1,6 @@
 // ATSC channel coding: Reed-Solomon, randomiser, interleaver pair and the full field encoder/decoder round trip, with noise.
 #include "dect2/atsc/atsc.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -69,7 +70,7 @@ int main() {
     for (double snrDb : {99.0, 22.0, 17.0, 15.5}) {
         FieldEncoder enc;
         FieldDecoder dec;
-        std::normal_distribution<double> nd(0, 1);
+        dect2::normal_distribution<double> nd(0, 1);
         const double sigma = snrDb > 90 ? 0 : std::sqrt(21.0 / std::pow(10.0, snrDb / 10.0));   // symbol power of the 8 levels is 21
         const int nf = 6;
         std::vector<uint8_t> ts((size_t)nf * kDataSegs * 188), got;

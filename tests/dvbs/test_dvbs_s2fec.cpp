@@ -1,6 +1,7 @@
 // DVB-S2 channel coding and framing building blocks: properties of the code tables, known-answer checks against the specification
 // (EN 302 307-1), and a round trip through every MODCOD (BB scrambling, BCH, LDPC, bit interleaver, mapping, noise, soft demapping, decoding).
 #include "dect2/dvbs/dvbs_s2.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dvbt/dvbt.h"
 #include <algorithm>
 #include <chrono>
@@ -232,13 +233,13 @@ int main() {
         s2PlHeader(4, false, true, hdr);
         CHECK(hdr[0] == s2Bpsk(0, 0) && std::fabs(hdr[0].real() - hdr[0].imag()) < 1e-6f && std::fabs(hdr[1].real() + hdr[1].imag()) < 1e-6f, "PLHEADER first symbols");
         // the PLS decoder finds every code word in noise
-        std::normal_distribution<float> nd(0.f, 1.f);
+        dect2::normal_distribution<float> nd(0.f, 1.f);
         int wrong = 0;
         for (int p = 0; p < 128; p++) {
             cf32 hh[90];
             s2PlHeader(p >> 2, (p >> 1) & 1, p & 1, hh);
             cf32 sy[64];
-            for (int k = 0; k < 64; k++) sy[k] = hh[26 + k] + cf32(nd(rng), nd(rng)) * 0.5f;   // Es/N0 = 3 dB
+            for (int k = 0; k < 64; k++) sy[k] = hh[26 + k] + cf32{nd(rng), nd(rng)} * 0.5f;   // Es/N0 = 3 dB
             const PlsResult r = s2PlsDecode(sy);
             if (r.modcod != (p >> 2) || r.shortFrame != (bool)((p >> 1) & 1) || r.pilots != (bool)(p & 1)) wrong++;
         }
@@ -294,7 +295,7 @@ int main() {
             {0, 0, 0, 0, 5.50, 6.62, 7.91, 0, 9.35, 10.69, 10.98},
             {0, 0, 0, 0, 0, 8.97, 10.21, 11.03, 11.61, 12.89, 13.13},
             {0, 0, 0, 0, 0, 0, 12.73, 13.64, 14.28, 15.69, 16.05}};
-        std::normal_distribution<float> nd(0.f, 1.f);
+        dect2::normal_distribution<float> nd(0.f, 1.f);
         int frames = 0, bad = 0;
         double totalMs = 0, itSum = 0, ms8 = 0, msF = 0, it8Sum = 0;
         int bad8 = 0;
@@ -319,7 +320,7 @@ int main() {
                     s2MapBits(il.data(), d.nldpc, mo, r, sym.data());
                     const double es = qef[mo][r] + (sh ? 1.3 : 0.9) + (getenv("S2FEC_DB") ? atof(getenv("S2FEC_DB")) : 0.0);   // S2FEC_DB: less margin, to compare the decoders
                     const double sigma2 = std::pow(10.0, -es / 10.0) / 2.0;
-                    for (auto& s : sym) s += cf32(nd(rng), nd(rng)) * (float)std::sqrt(sigma2);
+                    for (auto& s : sym) s += cf32{nd(rng), nd(rng)} * (float)std::sqrt(sigma2);
                     auto t0 = std::chrono::steady_clock::now();
                     std::vector<float> llr((size_t)d.nldpc), dl((size_t)d.nldpc);
                     s2Demap(sym.data(), d.xfecSymbols, mo, r, (float)sigma2, llr.data());

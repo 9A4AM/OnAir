@@ -5,6 +5,8 @@
 //  - the mode's tuneOffsetHz (a radio is tuned that far off its dial) must not be applied to a sound card;
 //  - the centre finder, the clipping flag and the L = R hint.
 #include "dect2/engine/engine.h"
+#include "../common/ci_slack.h"
+#include "../common/tmp_path.h"
 #include "dect2/engine/engine_testkit.h"
 #include "dect2/engine/mode_tuning.h"
 #include "dect2/dsp/resampler.h"
@@ -31,7 +33,7 @@ using namespace dect2::enginetest;
 
 #include "../common/test_util.h"
 
-static std::string tmp(const std::string& n) { return (getenv("TMPDIR") ? std::string(getenv("TMPDIR")) : std::string("/tmp")) + "/" + n; }
+static std::string tmp(const std::string& n) { return tmpPath(n); }
 
 // 16-bit stereo PCM WAV
 static bool writeWav(const std::string& path, int rate, const std::vector<float>& l, const std::vector<float>& r) {
@@ -116,7 +118,7 @@ static Result run(const Case& c, double secs) {
     t.radio["audio_chan"] = std::to_string(c.audioChan);
     t.radio["audio_if_hz"] = std::to_string(c.ifHz);
     t.radio["audio_rate"] = std::to_string(c.rate);
-    t.radio["audio_pace"] = "25";
+    t.radio["audio_pace"] = ciSlack() > 1 ? "8" : "25";   // x real time: a shared CI runner needs more time for the decoder
     e.setStandard(sm->stdMode);
     applySubMode(e, sm);
     e.marine().setFrequencyHz(0);
@@ -320,7 +322,7 @@ static bool viaCard(const char* name, const std::string& wav, int rate, int stdM
     t.radio["audio_chan"] = "2";
     t.radio["audio_if_hz"] = std::to_string(ifHz);
     t.radio["audio_rate"] = std::to_string(rate);
-    t.radio["audio_pace"] = "25";
+    t.radio["audio_pace"] = ciSlack() > 1 ? "8" : "25";   // x real time: a shared CI runner needs more time for the decoder
     e.setStandard(stdMode);
     setup(e);
     FileOptions fo;

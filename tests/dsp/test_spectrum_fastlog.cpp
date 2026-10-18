@@ -1,5 +1,6 @@
 // The analyser's fast dB conversion against std::log10 over the whole range it is used in: it must stay within 0.0001 dB.
 #include "dect2/dsp/spectrum.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -7,7 +8,7 @@ using namespace dect2;
 
 int main() {
     std::mt19937 rng(7);
-    std::uniform_real_distribution<double> ex(-14.0, 4.0);
+    dect2::uniform_real_distribution<double> ex(-14.0, 4.0);
     double worst = 0;
     for (int i = 0; i < 2000000; i++) {
         const float p = (float)std::pow(10.0, ex(rng));

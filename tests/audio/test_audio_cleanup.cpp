@@ -1,6 +1,7 @@
 // Audio cleanup chain (audio_cleanup.h): off = the input itself, SNR gain of the noise reduction, transparency on clean sound, the notch
 // following a drifting whistle without hurting speech, leveller targets and limiter, silence gate, click-free switching, thread safety, CPU.
 #include "dect2/audio/audio_cleanup.h"
+#include "dect2/common/stable_random.h"
 #include <atomic>
 #include <chrono>
 #include <cmath>
@@ -34,7 +35,7 @@ static void speechLike(int rate, double seconds, std::vector<float>& c, std::vec
     }
 }
 static void addWhite(std::vector<float>& x, double sigma, unsigned seed) {
-    std::mt19937 g(seed); std::normal_distribution<float> nd(0.f, (float)sigma);
+    std::mt19937 g(seed); dect2::normal_distribution<float> nd(0.f, (float)sigma);
     for (auto& v : x) v += nd(g);
 }
 // run a whole signal through a chain (mono as stereo), chunks of `chunk` frames; returns the left channel
@@ -214,7 +215,7 @@ int main() {
     {
         std::vector<float> c; std::vector<char> on; speechLike(R, 6, c, on, 0.08);
         std::vector<float> x = c;
-        std::mt19937 g(2); std::normal_distribution<float> nd(0, 1);
+        std::mt19937 g(2); dect2::normal_distribution<float> nd(0, 1);
         float p1 = 0, p2 = 0;
         for (size_t i = 0; i < x.size(); i++) {
             const double t = std::fmod((double)i / R, 1.0);

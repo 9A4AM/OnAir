@@ -1,6 +1,7 @@
 // FEC round trips: BCH error correction and the whole data path (encode -> noise -> demap -> LDPC -> BCH).
 // The encoder side was compared bit-for-bit with the open-source gr-dvbt2 transmitter (336 configurations).
 #include "dect2/t2/t2fec.h"
+#include "dect2/common/stable_random.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -35,14 +36,14 @@ static bool chain(const PlpFec& f, float snrDb, int blocks, int tiBlocks, std::m
     std::vector<cf32> tx;
     cellInterleave(f, blocks, tiBlocks, txCells, tx);
     // channel: AWGN plus a per-cell gain so that noise variance differs per cell (as after equalisation)
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     float n0avg = std::pow(10.f, -snrDb / 10.f) / 2.f;
     std::vector<cf32> rx(tx.size());
     std::vector<float> n0(tx.size());
     for (size_t i = 0; i < tx.size(); i++) {
         float g = 0.6f + 0.8f * ((i * 2654435761u >> 8) % 1000) / 1000.f; // 0.6 .. 1.4
         n0[i] = n0avg / (g * g);
-        rx[i] = tx[i] + cf32(nd(rng), nd(rng)) * std::sqrt(n0[i]);
+        rx[i] = tx[i] + cf32{nd(rng), nd(rng)} * std::sqrt(n0[i]);
     }
     std::vector<cf32> rd(rx.size());
     std::vector<float> nd0(rx.size());

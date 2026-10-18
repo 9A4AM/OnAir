@@ -1,6 +1,7 @@
 // Spectrum analyser maths: the grid, stitching across step edges, spur removal, peak hold and average, CSV, allocations, ticks,
 // and the stepped receiver over a synthetic band (the retune callback moves a made-up radio).
 #include "dect2/specan/specan_dsp.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/specan/specan_rx.h"
 #include "dect2/specan/specan_tel.h"
 #include <cmath>
@@ -119,14 +120,14 @@ int main() {
         rx.setRange(100e6, 106e6);
         rx.setRetuneCallback([&](double hz) { radioHz = hz; retunes++; return true; });
         std::mt19937 rng(3);
-        std::normal_distribution<float> g(0, 0.003f);
+        dect2::normal_distribution<float> g(0, 0.003f);
         std::vector<cf32> blk(8192);
         double ph1 = 0, ph2 = 0;
         SpecanTelemetry t;
         bool got = false;
         for (int it = 0; it < 4000 && !got; it++) {
             for (auto& v : blk) {
-                v = cf32(g(rng), g(rng)) + cf32(0.05f, 0);   // a DC spike at every centre
+                v = cf32{g(rng), g(rng)} + cf32(0.05f, 0);   // a DC spike at every centre
                 if (std::fabs(101.3e6 - radioHz) < 1e6) { ph1 += 2 * M_PI * (101.3e6 - radioHz) / 2e6; v += 0.1f * cf32((float)std::cos(ph1), (float)std::sin(ph1)); }
                 if (std::fabs(104.2e6 - radioHz) < 1e6) { ph2 += 2 * M_PI * (104.2e6 - radioHz) / 2e6; v += 0.01f * cf32((float)std::cos(ph2), (float)std::sin(ph2)); }
             }

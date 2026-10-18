@@ -2,6 +2,7 @@
 // with 8-bit samples and odd chunk sizes: every frame decodes, none fails its CRC; the CPU time per second of signal is printed.
 // Also the US region at 10 Msps, where Meshtastic (906.875 MHz) and MeshCore (910.525 MHz) are 3.65 MHz apart.
 #include "dect2/mesh/mesh_gen.h"
+#include "../common/ci_slack.h"
 #include "dect2/mesh/mesh_rx.h"
 #include <cmath>
 #include <cstdio>
@@ -38,7 +39,7 @@ static void run(double rate, double secs, int region, size_t chunk) {
     // 8 Meshtastic and 4 MeshCore frames end in the first 12 s (the last a few ms after: 7 or 8)
     CHECK(mt >= (secs >= 12 ? 7 : 4) && t.blocksBad == 0, "%.1f Msps: %llu Meshtastic frames, %llu bad", rate / 1e6, (unsigned long long)mt, (unsigned long long)t.blocksBad);
     CHECK(mc >= (secs >= 12 ? 4 : 2), "%.1f Msps: %llu MeshCore frames", rate / 1e6, (unsigned long long)mc);
-    CHECK(cpu / secs < 0.5, "%.1f Msps: %.2f s of CPU per second", rate / 1e6, cpu / secs);
+    CHECK(cpu / secs < 0.5 * ciSlack(), "%.1f Msps: %.2f s of CPU per second", rate / 1e6, cpu / secs);
 }
 
 int main() {

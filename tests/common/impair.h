@@ -2,6 +2,7 @@
 // because the generator and the receiver share the same assumption. See REAL_WORLD_CHECKLIST.md.
 #pragma once
 #include <cmath>
+#include "dect2/common/stable_random.h"
 #include <complex>
 #include <cstdint>
 #include <random>
@@ -78,8 +79,8 @@ inline void noise(std::vector<cf32>& x, double snrDb, uint32_t seed = 1) {
     for (auto& v : x) p += std::norm(v);
     p /= (double)std::max<size_t>(1, x.size());
     std::mt19937 rng(seed);
-    std::normal_distribution<float> g(0.f, (float)std::sqrt(p * std::pow(10.0, -snrDb / 10) / 2));
-    for (auto& v : x) v += cf32(g(rng), g(rng));
+    dect2::normal_distribution<float> g(0.f, (float)std::sqrt(p * std::pow(10.0, -snrDb / 10) / 2));
+    for (auto& v : x) v += cf32{g(rng), g(rng)};
 }
 
 // Lost samples: remove n samples starting at sample at (a USB drop).

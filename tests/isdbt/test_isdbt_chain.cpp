@@ -1,5 +1,6 @@
 // ISDB-T channel coding loop-back: generator -> FFT with ideal timing -> demodulator core -> transport stream packets, noise free and noisy.
 #include "dect2/dsp/fftutil.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/isdbt/isdbt_demod.h"
 #include "dect2/isdbt/isdbt_gen.h"
 #include <algorithm>
@@ -24,7 +25,7 @@ static bool run(const Case& c) {
     const int N = fftN(c.p.mode), G = guardSamples(c.p.mode, c.p.guard), K = totalCarriers(c.p.mode), kc = centerCarrier(c.p.mode);
     Fft fft(N);
     std::mt19937 rng(7);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     std::vector<cf32> frame, sym((size_t)N), Y((size_t)K);
     long good[3] = {0, 0, 0}, bad[3] = {0, 0, 0};
     long lastCounter[3] = {-1, -1, -1}, gaps[3] = {0, 0, 0}, order[3] = {0, 0, 0};
@@ -38,7 +39,7 @@ static bool run(const Case& c) {
         gen.nextFrame(frame);
         for (int s = 0; s < kSymbolsPerFrame; s++) {
             const cf32* base = frame.data() + (size_t)s * (N + G) + G;
-            for (int i = 0; i < N; i++) sym[(size_t)i] = base[i] + (c.snrDb < 200 ? cf32(nd(rng), nd(rng)) * sigma : cf32(0, 0));
+            for (int i = 0; i < N; i++) sym[(size_t)i] = base[i] + (c.snrDb < 200 ? cf32{nd(rng), nd(rng)} * sigma : cf32(0, 0));
             fft.forward(sym.data());
             for (int k = 0; k < K; k++) Y[(size_t)k] = sym[(size_t)(((k - kc) % N + N) % N)];
             dem.pushSymbol(Y.data(), s);

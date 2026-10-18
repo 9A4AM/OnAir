@@ -1,5 +1,6 @@
 // Airband test signal (see airband_gen.h): AM channels with keyed carriers, voice-like audio or a tone, over noise.
 #include "dect2/airband/airband_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cmath>
@@ -31,7 +32,7 @@ struct GenChan {
     double amp = 0;
     double ph = 0, step = 0;
     std::mt19937 rng;
-    std::normal_distribution<double> nd{0, 1};
+    dect2::normal_distribution<double> nd{0, 1};
     Bq hp1{true, 300, 0.7071, kAudRate}, lp1{false, 2800, 0.5412, kAudRate}, lp2{false, 2800, 1.3066, kAudRate};
     double prev = 0, next = 0;
     int64_t aIdx = 0;

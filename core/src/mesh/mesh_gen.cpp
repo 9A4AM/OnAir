@@ -1,5 +1,6 @@
 // Mesh (LoRa) test signal: see mesh_gen.h.
 #include "dect2/mesh/mesh_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dsp/gen_util.h"
 #include "dect2/mesh/mesh_lora.h"
 #include "dect2/mesh/mesh_proto.h"
@@ -187,7 +188,7 @@ public:
         for (int i = 0; i < 6; i++) lwSnr_[i] = strong - (strong - weak) * i / 5.0;
         // the noise: the strongest LongFast node at an amplitude of 0.35
         noiseRms_ = 0.35 / std::sqrt(std::pow(10.0, strong / 10) * 250e3 / rate);
-        std::uniform_real_distribution<double> u(-1500, 1500);
+        dect2::uniform_real_distribution<double> u(-1500, 1500);
         for (int i = 0; i < 6; i++) mtCfo_[i] = u(rng_);
         for (int i = 0; i < 3; i++) mcCfo_[i] = u(rng_);
         for (int i = 0; i < 3; i++) apCfo_[i] = u(rng_);
@@ -253,13 +254,13 @@ private:
                 f.data = lora::encode(net.p, bytes.data(), bytes.size());
                 f.startSec = start;
                 f.sroPpm = cfg_.sroPpm;
-                const double snr = (isMt ? mtSnr_[e.node] : mcSnr_[e.node]) + std::uniform_real_distribution<double>(-1.5, 1.5)(rng_);
+                const double snr = (isMt ? mtSnr_[e.node] : mcSnr_[e.node]) + dect2::uniform_real_distribution<double>(-1.5, 1.5)(rng_);
                 f.amp = (float)std::sqrt(std::pow(10.0, snr / 10) * noiseRms_ * noiseRms_ * net.bwHz / rate_);
                 f.freqHz = net.offsetHz + cfg_.cfoHz + (isMt ? mtCfo_[e.node] : mcCfo_[e.node]);
-                f.phase0 = std::uniform_real_distribution<double>(0, 1)(rng_);
+                f.phase0 = dect2::uniform_real_distribution<double>(0, 1)(rng_);
                 active_.push_back(f);
                 // the next frame on this frequency waits for this one and a pause (the firmware's random back-off)
-                net.nextFree = f.endSec() + std::uniform_real_distribution<double>(0.3, 0.9)(rng_);
+                net.nextFree = f.endSec() + dect2::uniform_real_distribution<double>(0.3, 0.9)(rng_);
             }
             if (++net.nextEv >= nev) { net.nextEv = 0; net.cycle++; }
         }
@@ -288,12 +289,12 @@ private:
             f.data = lora::encode(net.p, bytes.data(), bytes.size());
             f.startSec = start;
             f.sroPpm = cfg_.sroPpm;
-            const double snr = (isAprs ? apSnr_[who] : mcmSnr_[who]) + std::uniform_real_distribution<double>(-1.5, 1.5)(rng_) * jitter_;
+            const double snr = (isAprs ? apSnr_[who] : mcmSnr_[who]) + dect2::uniform_real_distribution<double>(-1.5, 1.5)(rng_) * jitter_;
             f.amp = (float)std::sqrt(std::pow(10.0, snr / 10) * noiseRms_ * noiseRms_ * net.bwHz / rate_);
             f.freqHz = net.offsetHz + cfg_.cfoHz + (isAprs ? apCfo_[who] : mcmCfo_[who]);
-            f.phase0 = std::uniform_real_distribution<double>(0, 1)(rng_);
+            f.phase0 = dect2::uniform_real_distribution<double>(0, 1)(rng_);
             active_.push_back(f);
-            net.nextFree = f.endSec() + std::uniform_real_distribution<double>(0.3, 0.9)(rng_);
+            net.nextFree = f.endSec() + dect2::uniform_real_distribution<double>(0.3, 0.9)(rng_);
             if (++net.nextEv >= nev) { net.nextEv = 0; net.cycle++; }
         }
     }
@@ -329,12 +330,12 @@ private:
             f.data = lora::encode(p, bytes.data(), bytes.size());
             f.startSec = start;
             f.sroPpm = cfg_.sroPpm;
-            const double snr = lwSnr_[e.dev] + std::uniform_real_distribution<double>(-1.5, 1.5)(rng_) * jitter_;
+            const double snr = lwSnr_[e.dev] + dect2::uniform_real_distribution<double>(-1.5, 1.5)(rng_) * jitter_;
             f.amp = (float)std::sqrt(std::pow(10.0, snr / 10) * noiseRms_ * noiseRms_ * p.bwHz / rate_);
             f.freqHz = lwOff_[d.chan] + cfg_.cfoHz + lwCfo_[e.dev];
-            f.phase0 = std::uniform_real_distribution<double>(0, 1)(rng_);
+            f.phase0 = dect2::uniform_real_distribution<double>(0, 1)(rng_);
             active_.push_back(f);
-            lwFreeAt_[d.chan] = f.endSec() + std::uniform_real_distribution<double>(0.3, 0.9)(rng_);
+            lwFreeAt_[d.chan] = f.endSec() + dect2::uniform_real_distribution<double>(0.3, 0.9)(rng_);
         }
     }
 

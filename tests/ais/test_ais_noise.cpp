@@ -1,5 +1,6 @@
 // AIS: receiving only noise must not produce stations or positions (issue #87).
 #include "dect2/ais/ais_rx.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/ais/ais_testutil.h"
 #include <cstdio>
 #include <random>
@@ -7,7 +8,7 @@ using namespace dect2;
 
 int main() {
     std::mt19937 rng(7);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     for (double fs : {3e6, 2e6, 1e6}) {
         AisReceiver rx;
         rx.configure(fs);
@@ -16,7 +17,7 @@ int main() {
         for (size_t i = 0; i < x.size(); i++) {
             const double ph = std::fmod((double)i / fs * gateHz, 1.0);
             const float a = ph < 0.3 ? 1e-1f : 1e-3f;
-            x[i] = cf32(g(rng) * a, g(rng) * a);
+            x[i] = cf32{g(rng) * a, g(rng) * a};
         }
         const AisTelemetry t = aistest::runReceiver(rx, x);
         int pos = 0;

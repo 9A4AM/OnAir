@@ -1,5 +1,6 @@
 // GOES HRIT test signal (goes_gen.h).
 #include "dect2/goes/goes_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dsp/rrc.h"
 #include "dect2/goes/goes_rx.h"
 #include "dect2/hfdig/hfdig_hamdrm.h"
@@ -197,7 +198,7 @@ struct GoesGenerator::Impl {
     int64_t n = 0;
     double phase0 = 0;
     std::mt19937 rng;
-    std::normal_distribution<float> gauss{0.f, 1.f};
+    dect2::normal_distribution<float> gauss{0.f, 1.f};
     float sigma = 0;
 
     explicit Impl(const GoesGenConfig& cfg) : c(cfg), mux(cfg.scid), rng(cfg.seed) {
@@ -205,7 +206,7 @@ struct GoesGenerator::Impl {
         table.resize((size_t)(2 * kSpan * kOver + 2));
         for (size_t i = 0; i < table.size(); i++) table[i] = (float)rrc((double)i / kOver - kSpan, c.rolloff);
         sigma = c.snrDb >= 99 ? 0.f : (float)std::sqrt(c.amplitude * c.amplitude * (c.rate / c.symbolRate) / std::pow(10.0, c.snrDb / 10) / 2);
-        phase0 = std::uniform_real_distribution<double>(0, 2 * kPi)(rng);
+        phase0 = dect2::uniform_real_distribution<double>(0, 2 * kPi)(rng);
         sym.assign(kSpan, 0.f); symBase = -kSpan;    // silence before the first symbol
         addRound();
         fillLeft = std::max(0, c.fillFrames);
@@ -248,7 +249,7 @@ struct GoesGenerator::Impl {
                 if (j >= 0 && j + 1 < (int)table.size()) acc += sp[t] * (table[(size_t)j] + f * (table[(size_t)j + 1] - table[(size_t)j]));
             const double ph = phase0 + w * (double)n;
             cf32 s = cf32((float)(c.amplitude * acc * std::cos(ph)), (float)(c.amplitude * acc * std::sin(ph)));
-            if (sigma > 0) s += cf32(sigma * gauss(rng), sigma * gauss(rng));
+            if (sigma > 0) s += cf32{sigma * gauss(rng), sigma * gauss(rng)};
             out[i] = s;
         }
         // drop the symbols no longer needed

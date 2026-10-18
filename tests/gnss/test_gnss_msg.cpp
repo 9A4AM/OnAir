@@ -5,6 +5,7 @@
 // - the convolutional code and the interleaver against the I/NAV numerical example of OS SIS ICD Annex D.2
 // - CRC-24Q, SBAS messages and I/NAV pages through the coder and the Viterbi decoder with noise, both polarities
 #include "dect2/gnss/gnss_codes.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/gnss/gnss_msg.h"
 #include "dect2/gnss/gnss_tel.h"
 #include <cmath>
@@ -128,7 +129,7 @@ int main() {
         }
         std::vector<uint8_t> sy(bits.size() * 2);
         convEncode(bits.data(), (int)bits.size(), false, 0, sy.data());
-        std::normal_distribution<float> g(0.f, 0.75f);     // symbol SNR about 2.5 dB
+        dect2::normal_distribution<float> g(0.f, 0.75f);     // symbol SNR about 2.5 dB
         for (int pol = 0; pol < 2; pol++) {
             std::vector<float> soft(sy.size());
             for (size_t k = 0; k < sy.size(); k++) soft[k] = ((sy[k] ^ pol) ? -1.f : 1.f) + g(rng);
@@ -147,7 +148,7 @@ int main() {
     {
         std::mt19937 rng(3);
         int good = 0;
-        std::normal_distribution<float> g(0.f, 0.7f);
+        dect2::normal_distribution<float> g(0.f, 0.7f);
         for (int t = 0; t < 20; t++) {
             uint8_t w[128], oss[64], ev[120], od[120];
             for (auto& v : w) v = (uint8_t)(rng() & 1);

@@ -1,6 +1,7 @@
 // DVB-T receiver load: how much of real time does the receive path need for a given mode?
 //   bench_dvbt [frames] [mode 0=2K 1=8K] [constellation 0..2] [gi 0..3]
 #include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dvbt/dvbt_rx.h"
 #include <chrono>
 #include <cstdio>
@@ -23,13 +24,13 @@ int main(int argc, char** argv) {
     dvbt::Generator gen(p, [&](uint8_t* pkt) { pkt[0] = 0x47; pkt[1] = 0x01; pkt[2] = 0; pkt[3] = 0x10; memcpy(pkt + 4, &counter, 4); for (int i = 8; i < 188; i++) pkt[i] = (uint8_t)(counter * 31 + i * 7); counter++; });
     const double fn = nativeRateHz(8);
     std::mt19937 rng(5);
-    std::normal_distribution<float> nd(0, 1);
+    dect2::normal_distribution<float> nd(0, 1);
     const float sigma = (float)(std::pow(10.0, -30 / 20.0) / std::sqrt(2.0));
     std::vector<cf32> sig, sym;
-    for (int i = 0; i < 20000; i++) sig.push_back(cf32(nd(rng), nd(rng)) * sigma);
+    for (int i = 0; i < 20000; i++) sig.push_back(cf32{nd(rng), nd(rng)} * sigma);
     for (int s = 0; s < frames * 68; s++) {
         gen.nextSymbol(sym);
-        for (auto v : sym) sig.push_back(v + cf32(nd(rng), nd(rng)) * sigma);
+        for (auto v : sym) sig.push_back(v + cf32{nd(rng), nd(rng)} * sigma);
     }
     DvbtReceiver rx;
     rx.configure(fn, 8);

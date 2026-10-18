@@ -1,6 +1,7 @@
 // Signal identifier (sig_ident.h) on the test signals of the modes: DMR, NXDN96 / NXDN48, P25, dPMR, TETRA, AIS, POCSAG, LoRa, DAB (OFDM),
 // FM broadcast, an AM carrier and plain noise, off the centre and with a carrier error; plus a capture through the Capture thread.
 #include "dect2/ais/ais_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dab/dab_gen.h"
 #include "dect2/dmr/dmr_gen.h"
 #include "dect2/dpmr/dpmr_gen.h"
@@ -182,8 +183,8 @@ int main() {
             f.render(x.data(), x.size(), 0, fs);
             t = f.endSec() + 0.005;
         }
-        std::normal_distribution<float> nd(0, 0.3f * std::pow(10.f, -25 / 20.f) * std::sqrt(fs / 125e3f / 2));
-        for (auto& v : x) v += cf32(nd(rng), nd(rng));
+        dect2::normal_distribution<float> nd(0, 0.3f * std::pow(10.f, -25 / 20.f) * std::sqrt(fs / 125e3f / 2));
+        for (auto& v : x) v += cf32{nd(rng), nd(rng)};
         const Result r = run("LoRa", x, fs, 868.1e6, "LoRa", ModChirp);
         CHECK(r.f.loraSf == 9, "LoRa SF %d", r.f.loraSf);
     }
@@ -212,11 +213,11 @@ int main() {
         const double fs = 250e3;
         std::vector<cf32> x((size_t)(fs * 0.5));
         std::mt19937 rng(9);
-        std::normal_distribution<float> nd(0, 0.002f);
+        dect2::normal_distribution<float> nd(0, 0.002f);
         for (size_t i = 0; i < x.size(); i++) {
             const double t = i / fs;
             const double a = 0.2 * (1 + 0.35 * std::sin(2 * M_PI * 700 * t) + 0.25 * std::sin(2 * M_PI * 1900 * t + 1));
-            x[i] = cf32((float)(a * std::cos(2 * M_PI * 30e3 * t)), (float)(a * std::sin(2 * M_PI * 30e3 * t))) + cf32(nd(rng), nd(rng));
+            x[i] = cf32((float)(a * std::cos(2 * M_PI * 30e3 * t)), (float)(a * std::sin(2 * M_PI * 30e3 * t))) + cf32{nd(rng), nd(rng)};
         }
         run("AM", x, fs, 124.5e6, "Airband voice", ModAm);
     }
@@ -224,8 +225,8 @@ int main() {
     {
         std::vector<cf32> x(400000);
         std::mt19937 rng(1);
-        std::normal_distribution<float> nd(0, 0.01f);
-        for (auto& v : x) v = cf32(nd(rng), nd(rng));
+        dect2::normal_distribution<float> nd(0, 0.01f);
+        for (auto& v : x) v = cf32{nd(rng), nd(rng)};
         const Result r = identify(x.data(), x.size(), 1e6);
         CHECK(!r.f.valid && r.f.mod == ModNoise, "noise taken for %s", modName(r.f.mod));
     }

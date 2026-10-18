@@ -1,5 +1,6 @@
 // ATSC 3.0 BICM (FEC frame to cells and back): block interleaver against the examples of A/322, constellation power, and decoding through noise.
 #include "dect2/atsc3/atsc3_bicm.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -36,7 +37,7 @@ int main() {
     CHECK(b[0] == 0 && b[1] == 360 && b[7] == 2520 && b[8] == 1 && b[63360] == 63360, "type B 256QAM");
 
     std::mt19937 rng(17);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     struct T { int n, rate, eta, outer; double snr; } tests[] = {
         {64800, 8, 2, 0, 3}, {64800, 8, 4, 0, 8}, {64800, 8, 6, 1, 12}, {64800, 10, 8, 0, 20}, {64800, 9, 10, 2, 22}, {64800, 8, 12, 0, 26},
         {16200, 6, 2, 0, 3}, {16200, 5, 4, 1, 9}, {16200, 8, 6, 0, 14}, {16200, 10, 8, 0, 22}, {64800, 3, 2, 0, -2}, {64800, 13, 8, 0, 29}};
@@ -57,7 +58,7 @@ int main() {
         auto cells = bicm.encode(in);
         CHECK((int)cells.size() == t.n / t.eta, "cell count");
         float sigma = (float)std::sqrt(std::pow(10.0, -t.snr / 10.0) / 2.0);
-        for (auto& v : cells) v += cf32(g(rng), g(rng)) * sigma;
+        for (auto& v : cells) v += cf32{g(rng), g(rng)} * sigma;
         std::vector<uint8_t> out;
         int it = 0;
         bool ok = bicm.decode(cells.data(), 2 * sigma * sigma, out, &it);

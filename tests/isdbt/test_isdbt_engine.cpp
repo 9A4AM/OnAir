@@ -2,6 +2,7 @@
 // test programme) is opened as a file source with the ISDB-T standard selected; the engine must lock, decode the transport stream and its
 // analysis must see the service with a video and an audio stream.
 #include "dect2/tv/demo_ts.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/engine/engine.h"
 #include "dect2/dsp/exact_resampler.h"
 #include "dect2/isdbt/isdbt_gen.h"
@@ -33,7 +34,7 @@ int main() {
     std::vector<cf32> wave((size_t)(0.02 * radio), cf32(0, 0));
     rs.process(sig.data(), sig.size(), wave);
     std::mt19937 rng(3);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     const float sigma = (float)std::sqrt(std::pow(10.0, -28.0 / 10.0) / 2.0);
     const std::string pathStr = (std::filesystem::temp_directory_path() / "dect2_isdbt_test.cs8").string();
     const char* path = pathStr.c_str();
@@ -42,7 +43,7 @@ int main() {
         std::vector<int8_t> b8;
         for (size_t i = 0; i < wave.size(); i++) {
             const double ph = 2 * M_PI * 2800.0 * (double)i / radio;
-            cf32 v = wave[i] * cf32((float)std::cos(ph), (float)std::sin(ph)) + cf32(g(rng), g(rng)) * sigma;
+            cf32 v = wave[i] * cf32((float)std::cos(ph), (float)std::sin(ph)) + cf32{g(rng), g(rng)} * sigma;
             b8.push_back((int8_t)std::max(-127.f, std::min(127.f, std::round(v.real() * 22.f))));
             b8.push_back((int8_t)std::max(-127.f, std::min(127.f, std::round(v.imag() * 22.f))));
             if (b8.size() >= (1 << 20)) { o.write((const char*)b8.data(), (std::streamsize)b8.size()); b8.clear(); }

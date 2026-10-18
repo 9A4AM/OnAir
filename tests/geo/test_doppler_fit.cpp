@@ -2,6 +2,7 @@
 // the perturbation must be recovered (the predicted Doppler matches, the timing error shrinks), outliers must not matter, and the peak tracker
 // must follow a synthetic carrier.
 #include "dect2/geo/doppler_fit.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -35,7 +36,7 @@ int main() {
     real.meanAnomDeg += 0.35; real.meanMotion += 0.0012; real.raanDeg += 0.03; real.inclDeg -= 0.01;
     Sgp4 sr; CHECK(sr.init(real), "real init");
     std::mt19937 rng(7);
-    std::normal_distribution<double> nz(0, 1);
+    dect2::normal_distribution<double> nz(0, 1);
     const double rxOffset = 600;   // Hz: the receiver's reference is off
     auto curve = [&](double noise, bool outliers) {
         std::vector<DopplerSample> v;
@@ -118,7 +119,7 @@ int main() {
         const size_t n = 4096; const double fs = 48000, centre = 137.1e6, nominal = 137.1e6;
         std::vector<float> db(n);
         std::mt19937 r2(3);
-        std::uniform_real_distribution<float> u(-100.f, -96.f);
+        dect2::uniform_real_distribution<float> u(-100.f, -96.f);
         DopplerTracker tr; DopplerSample s;
         bool allOk = true; double worst = 0;
         for (double off : {-3000.0, -1234.5, 0.0, 777.7, 3000.0}) {

@@ -2,6 +2,7 @@
 // Used by the tests and by dtmbtool. Header only; not part of the receiver.
 #pragma once
 #include "dtmb_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dtmb_rx.h"
 #include <algorithm>
 #include <cmath>
@@ -87,7 +88,7 @@ inline Result run(const Scenario& o, bool verbose = false) {
     const size_t total = (size_t)(o.seconds * o.sc.rate);
     std::vector<cf32> buf;
     std::mt19937 rng(o.rngSeed);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     const float gI = (float)std::pow(10.0, o.iqGainDb / 40.0), gQ = 1.f / gI;
     const float sp = (float)std::sin(o.iqPhaseDeg * 3.14159265 / 180.0), cp = (float)std::cos(o.iqPhaseDeg * 3.14159265 / 180.0);
     const double sigPower = (double)o.sc.rms * o.sc.rms;
@@ -102,7 +103,7 @@ inline Result run(const Scenario& o, bool verbose = false) {
     size_t oddIdx = 0;
     double cpu = 0, tonePhase = 0;
     size_t dropLeft = 0;
-    std::uniform_real_distribution<double> ur(0.0, 1.0);
+    dect2::uniform_real_distribution<double> ur(0.0, 1.0);
     const float lvl = (float)std::pow(10.0, o.levelDb / 20.0), stepGain = (float)std::pow(10.0, o.stepDb / 20.0);
     r.lastRate = netBitrate(o.sc.tx.header, o.sc.tx.profile, o.sc.symbolRate);
     while (produced < total) {
@@ -117,7 +118,7 @@ inline Result run(const Scenario& o, bool verbose = false) {
             if (toneAmp > 0) { v += toneAmp * cf32((float)std::cos(tonePhase), (float)std::sin(tonePhase)); tonePhase += toneStep; if (tonePhase > 6.283185307) tonePhase -= 6.283185307; }
             if (o.burstsPerSec > 0) {
                 if (burstLeft == 0 && ur(rng) < burstProb) burstLeft = burstLen;
-                if (burstLeft) { v += cf32(nd(rng), nd(rng)) * burstSigma; burstLeft--; }
+                if (burstLeft) { v += cf32{nd(rng), nd(rng)} * burstSigma; burstLeft--; }
             }
             v *= g;   // level steps and the gain in front of the converter act on everything that arrives, the interference included
             float re = v.real(), im = v.imag();

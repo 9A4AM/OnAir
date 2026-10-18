@@ -1,6 +1,7 @@
 // Neural noise remover (RNNoise): off = bit-identical, delay and size invariants at 8 / 12 / 16 / 24 / 48 kHz, strength 0 = the dry signal
 // delayed, noise between speech-like bursts goes down, chunking does not change the result.
 #include "dect2/audio/neural_nr.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -16,7 +17,7 @@ static void makeSignal(int rate, double seconds, float noiseRms, std::vector<flo
     const size_t n = (size_t)(rate * seconds);
     x.assign(n, 0.f); speech.assign(n, 0); clean.assign(n, 0.f);
     std::mt19937 g(seed);
-    std::normal_distribution<float> nd(0.f, noiseRms);
+    dect2::normal_distribution<float> nd(0.f, noiseRms);
     const double top = std::min(3400.0, 0.45 * rate);
     for (size_t i = 0; i < n; i++) {
         const double t = (double)i / rate;

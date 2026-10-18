@@ -1,6 +1,7 @@
 // The meteor scatter receiver as the engine runs it: IQ chunks in, telemetry out; the list, the hourly and daily counts, the CSV log file,
 // the threshold, clearing, and input that must not poison the filters.
 #include "dect2/mscatter/mscatter_gen.h"
+#include "../common/tmp_path.h"
 #include "dect2/mscatter/mscatter_live.h"
 #include "dect2/mscatter/mscatter_tel.h"
 #include <cmath>
@@ -22,7 +23,7 @@ static void feedSeconds(MscatterLiveReceiver& r, MscatterGenerator& g, double ra
 
 int main() {
     const double rate = 240000;
-    const std::string path = "/tmp/mscatter_live_test.csv";
+    const std::string path = tmpPath("mscatter_live_test.csv");
     std::remove(path.c_str());
     MscatterLiveReceiver r;
     r.configure(rate);

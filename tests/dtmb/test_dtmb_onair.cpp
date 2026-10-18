@@ -7,6 +7,7 @@
 // the receiver's tables, so that the two cannot drift together again), at the parameters of the recordings: 10 Msps, 8 MHz, a carrier offset of
 // 230 Hz, a clock 0.4 ppm off, a short echo, C/N 18 dB, 8 bit samples.
 #include "dect2/dtmb/dtmb_defs.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dtmb/dtmb_gen.h"
 #include "dect2/dtmb/dtmb_rx.h"
 #include "dect2/dtmb/dtmb_tx.h"
@@ -76,7 +77,7 @@ int main() {
     const double step = kSymbolRate / rate * (1.0 + ppm * 1e-6);
     double t = 1234.37;   // the recording starts somewhere inside a frame
     std::mt19937 rng(7);
-    std::normal_distribution<float> gauss(0.f, 1.f);
+    dect2::normal_distribution<float> gauss(0.f, 1.f);
     const float sigma = (float)std::sqrt(0.5 * rate / kSymbolRate * std::pow(10.0, -cnDb / 10.0));
     const double dph = 2.0 * 3.14159265358979 * cfoHz / rate;
 
@@ -102,7 +103,7 @@ int main() {
             const float* w = &table[(size_t)ph * 2 * H];
             cf32 v(0, 0);
             for (int j = 0; j < 2 * H; j++) v += s[j] * w[j];
-            v = v * std::polar(1.f, (float)std::fmod(dph * (double)n0, 2.0 * 3.14159265358979)) + cf32(sigma * gauss(rng), sigma * gauss(rng));
+            v = v * std::polar(1.f, (float)std::fmod(dph * (double)n0, 2.0 * 3.14159265358979)) + cf32{sigma * gauss(rng), sigma * gauss(rng)};
             // 8 bit samples, rms about 12 as in the recordings
             const float re = std::max(-127.f, std::min(127.f, std::round(v.real() * 12.f)));
             const float im = std::max(-127.f, std::min(127.f, std::round(v.imag() * 12.f)));

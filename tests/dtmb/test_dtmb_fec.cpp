@@ -1,5 +1,6 @@
 // DTMB channel coding: LDPC encoder against the parity-check matrix, decoder round trips, BCH, scrambler, interleaver, 4QAM-NR.
 #include "dect2/dtmb/dtmb_ldpc.h"
+#include "dect2/common/stable_random.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -15,7 +16,7 @@ static int failures = 0;
 
 int main() {
     std::mt19937 rng(7);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
 
     // ---- LDPC structure and encoder
     const int edges[3] = {34925, 37592, 37338}, infoBits[3] = {3048, 4572, 6096};

@@ -1,5 +1,6 @@
 // Transmitter model -> channel decoder at the symbol level (no radio part): every profile, bit-exact packets, then noise.
 #include "dect2/dtmb/dtmb_chain.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/dtmb/dtmb_gen.h"
 #include "dect2/dtmb/dtmb_map.h"
 #include <chrono>
@@ -23,7 +24,7 @@ static std::vector<uint8_t> streamOf(Header h, const Profile& p, double snrDb, i
     std::vector<float> var((size_t)kDataSymbols, (float)std::pow(10.0, -snrDb / 10.0));
     MixedFft fft(kBody);
     std::mt19937 rng(21);
-    std::normal_distribution<float> nd;
+    dect2::normal_distribution<float> nd;
     const float sd = (float)std::sqrt(std::pow(10.0, -snrDb / 10.0) / 2.0);
     std::vector<uint8_t> out;
     auto cb = [&](const uint8_t* pk, size_t n, double) { out.insert(out.end(), pk, pk + n * 188); };
@@ -33,7 +34,7 @@ static std::vector<uint8_t> streamOf(Header h, const Profile& p, double snrDb, i
         fft.forward(bins.data());
         for (auto& b : bins) b *= 1.f / std::sqrt((float)kBody);
         splitBody(bins.data(), si.data(), data.data());
-        for (auto& d : data) d += cf32(sd * nd(rng), sd * nd(rng));
+        for (auto& d : data) d += cf32{sd * nd(rng), sd * nd(rng)};
         chain.pushFrame(data.data(), var.data());
         chain.poll(cb);
     }
@@ -53,7 +54,7 @@ static Outcome run(Header h, const Profile& p, double snrDb, int frames, int wor
     std::vector<float> var((size_t)kDataSymbols, (float)std::pow(10.0, -snrDb / 10.0));
     MixedFft fft(kBody);
     std::mt19937 rng(9);
-    std::normal_distribution<float> nd;
+    dect2::normal_distribution<float> nd;
     Outcome o;
     const float sd = (float)std::sqrt(std::pow(10.0, -snrDb / 10.0) / 2.0);
     uint32_t expect = 0xFFFFFFFF;
@@ -75,7 +76,7 @@ static Outcome run(Header h, const Profile& p, double snrDb, int frames, int wor
         fft.forward(bins.data());
         for (auto& b : bins) b *= 1.f / std::sqrt((float)kBody);
         splitBody(bins.data(), si.data(), data.data());
-        for (auto& d : data) d += cf32(sd * nd(rng), sd * nd(rng));
+        for (auto& d : data) d += cf32{sd * nd(rng), sd * nd(rng)};
         chain.pushFrame(data.data(), var.data());
         chain.poll(cb);
     }

@@ -1,5 +1,6 @@
 // ISM sensors test signal. See ism_gen.h. Each frame follows the layout documented in the rtl_433 file named beside its encoder.
 #include "dect2/ism/ism_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/ism/ism_rx.h"
 #include <algorithm>
 #include <cmath>
@@ -416,7 +417,7 @@ double defaultDev(IsmTx p) {
 struct IsmGenerator::Impl {
     IsmGenConfig c;
     std::mt19937 rng;
-    std::normal_distribution<float> g{0.f, 1.f};
+    dect2::normal_distribution<float> g{0.f, 1.f};
     float sigma = 0;
     uint64_t n = 0;
     double carrPh = 0;
@@ -453,7 +454,7 @@ struct IsmGenerator::Impl {
             b.segs = o;
         }
         b.amp = c.amp * std::pow(10.0, d.levelDb / 20);
-        b.ph = std::uniform_real_distribution<double>(0, 2 * M_PI)(rng);
+        b.ph = dect2::uniform_real_distribution<double>(0, 2 * M_PI)(rng);
         active.push_back(b);
     }
 
@@ -486,7 +487,7 @@ struct IsmGenerator::Impl {
                 if (carrPh > M_PI) carrPh -= 2 * M_PI;
                 v += std::polar(carrA, carrPh);
             }
-            out[i] = cf32((float)v.real() + sigma * g(rng), (float)v.imag() + sigma * g(rng));
+            out[i] = cf32{(float)v.real() + sigma * g(rng), (float)v.imag() + sigma * g(rng)};
         }
     }
 };

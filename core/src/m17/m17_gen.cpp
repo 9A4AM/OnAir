@@ -1,5 +1,6 @@
 // M17 test signal (see m17_gen.h): whole M17 transmissions as 4FSK, over noise.
 #include "dect2/m17/m17_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/m17/m17_codec2.h"
 #include "dect2/m17/m17_rx.h"
 #include "dect2/dsp/gen_util.h"
@@ -32,7 +33,7 @@ struct Voice {
         ph += pitch / fs;
         double x = 0;
         if (ph >= 1) { ph -= 1; x = 1; }
-        x += 0.02 * std::normal_distribution<double>(0, 1)(rng);
+        x += 0.02 * dect2::normal_distribution<double>(0, 1)(rng);
         const double seg = t * 4;   // a vowel every 250 ms, blended
         const int a = (int)seg % 5, b = (a + 1) % 5;
         const double f = seg - std::floor(seg);

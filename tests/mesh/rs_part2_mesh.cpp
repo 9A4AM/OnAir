@@ -38,7 +38,7 @@ static void testMeshCore(long iters) {
         std::vector<uint8_t> path(g() % 4);
         for (auto& b : path) b = rb();
         if (mode <= 2) {
-            pkt = A::meshcoreAdvert(mcNode(), r32());
+            pkt = ORD_CALL(A::meshcoreAdvert, mcNode(), r32());
             if (mode == 1) pkt = mutateBytes(pkt);
             if (mode == 2 && pkt.size() > 110) pkt.resize(102 + g() % (pkt.size() - 101));   // cut inside the app data
             adverts++;
@@ -127,7 +127,7 @@ static void testLorawan(long iters) {
         int ta = -2; uint32_t na = 11, ea = 22;
         dig.add(A::lorawanNetwork(da, &ta, &na, &ea), ta, na, ea);
         dig.add(A::lorawanMacName((uint8_t)i, i & 0x100));
-        const uint64_t eui = i % 3 ? ((uint64_t)r32() << 32 | r32()) : (0x70B3D57EDull << 28 | (r32() & 0xFFFFFFF));
+        const uint64_t eui = i % 3 ? r64() : (0x70B3D57EDull << 28 | (r32() & 0xFFFFFFF));
         dig.add(std::string(A::lorawanVendor(eui)), A::lorawanEui(eui));
         dig.add(std::string(A::lorawanMTypeName((int)(i % 12) - 2)));
         dig.add(A::meshHexString(f.data(), f.size()));
@@ -150,7 +150,7 @@ static std::string tnc2() {
     case 0: s += ORD_CAT("!", std::to_string(10 + g() % 79), "27.31N/0", std::to_string(10 + g() % 79), "15.50E>", RT(g() % 20, "test /A=000100")); break;
     case 1: s += ORD_CAT(":", (call() + "         ").substr(0, 9), ":", RT(g() % 30, "hello world "), "{", std::to_string(g() % 999)); break;
     case 2: s += ">" + RT(g() % 30, "status text "); break;
-    case 3: s += "=" + RT(8, "0123456789") + "N/" + RT(9, "0123456789") + "E-" + RT(g() % 15, "caf\xC3\xA9 \xFF\x01"); break;
+    case 3: s += ORD_CAT("=", RT(8, "0123456789"), "N/", RT(9, "0123456789"), "E-", RT(g() % 15, "caf\xC3\xA9 \xFF\x01")); break;
     default: s += RT(g() % 40, "abc XYZ!:>,*\r\n\xC3\xB6\x80"); break;
     }
     return s;

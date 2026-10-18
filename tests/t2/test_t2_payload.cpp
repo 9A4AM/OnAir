@@ -1,6 +1,7 @@
 // End to end: a DVB-T2 signal that carries real payload (T2-Base and T2-Lite configurations) goes through noise and the whole receiver
 // (sync, L1, channel estimation, de-interleaving, LDPC, BCH), and every decoded baseband frame must equal what was sent.
 #include "dect2/t2/t2gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/t2/t2rx.h"
 #include "../common/impair.h"
 #include "../common/jobs.h"
@@ -36,7 +37,7 @@ static void runCase(const Case& c) {
     std::map<int, std::vector<std::vector<uint8_t>>> sent;   // by L1 frame index
     std::vector<cf32> frame;
     std::mt19937 rng(7);
-    std::normal_distribution<float> nd(0.f, 1.f);
+    dect2::normal_distribution<float> nd(0.f, 1.f);
     // the whole transmission first: a sample-clock error (the receiver's clock c.sroPpm fast) resamples it as one stream (tests/common/impair.h)
     std::vector<cf32> tx;
     std::vector<size_t> txEnd;
@@ -82,7 +83,7 @@ static void runCase(const Case& c) {
         }
         for (auto& v : frame) {
             if (c.cfoHz != 0) { v *= cf32((float)std::cos(ph), (float)std::sin(ph)); ph = std::fmod(ph + 2 * M_PI * c.cfoHz / fn, 2 * M_PI); }
-            v += cf32(nd(rng), nd(rng)) * (float)sigma;
+            v += cf32{nd(rng), nd(rng)} * (float)sigma;
         }
         if (c.dcDb > -100) impair::dc(frame, c.dcDb);   // the radio's DC offset, after the frequency offset (it is the radio's)
         for (size_t o = 0; o < frame.size(); o += 1 << 16) rx.feed(frame.data() + o, std::min<size_t>(1 << 16, frame.size() - o));

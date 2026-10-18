@@ -1,6 +1,7 @@
 // ATSC 3.0 LDPC (16200): the encoder satisfies every parity check of the matrix built from the tables, and the decoder recovers a code
 // word from noisy soft bits, for all code rates.
 #include "../../core/src/atsc3/atsc3_ldpc.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -12,7 +13,7 @@ static int fails = 0;
 
 int main() {
     std::mt19937 rng(11);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     for (int r = 2; r <= 13; r++) {
         const Ldpc& c = ldpc16200(r);
         char m[100];

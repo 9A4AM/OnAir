@@ -2,6 +2,7 @@
 // decoder (normalised min-sum, 50 iterations, then a retry pass) with a floating-point sum-product reference with many iterations.
 //   bench_threshold [mod 0..3] [rate 0..] [rotation 0|1] [blocks per point] [snr_from snr_to step] [short 0|1]
 #include "dect2/t2/t2fec.h"
+#include "dect2/common/stable_random.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -62,7 +63,7 @@ int main(int argc, char** argv) {
         std::atomic<int> fails{0}, failsBp{0}, next{0};
         auto worker = [&](unsigned seed) {
             std::mt19937 rng(seed);
-            std::normal_distribution<float> nd(0.f, 1.f);
+            dect2::normal_distribution<float> nd(0.f, 1.f);
             for (;;) {
                 const int b = next++;
                 if (b >= blocks) return;
@@ -78,7 +79,7 @@ int main(int argc, char** argv) {
                 const float n0 = std::pow(10.f, -snr / 10.f) / 2.f;
                 std::vector<cf32> rx(tx.size());
                 std::vector<float> nv(tx.size(), n0);
-                for (size_t i = 0; i < tx.size(); i++) rx[i] = tx[i] + cf32(nd(rng), nd(rng)) * std::sqrt(n0);
+                for (size_t i = 0; i < tx.size(); i++) rx[i] = tx[i] + cf32{nd(rng), nd(rng)} * std::sqrt(n0);
                 std::vector<float> llrLab((size_t)cells * bps), llr(d.nLdpc);
                 qamDemapBlock(f, rx.data(), nv.data(), cells, llrLab.data());
                 for (int p = 0; p < d.nLdpc; p++) llr[map[p]] = llrLab[p];

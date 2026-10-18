@@ -2,6 +2,7 @@
 // the frame's rate, everything converted to the radio's rate, with a carrier frequency offset, noise and an echo. The synchroniser finds the
 // frames on its own, and the receiver delivers a transport stream with all the video and audio frames.
 #include "atsc3_sim.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/atsc3/atsc3_sync.h"
 #include <chrono>
 #include <cmath>
@@ -40,7 +41,7 @@ int main(int argc, char** argv) {
     const double period = 0.118;   // frames back to back
 
     std::mt19937 rng(7);
-    std::normal_distribution<float> g(0.f, 1.f);
+    dect2::normal_distribution<float> g(0.f, 1.f);
     std::vector<cf32> wave;   // the whole transmission at the radio's rate
     int frames = 0;
     for (size_t i = 0; i < st.bb.size(); i += perFrame) {
@@ -70,7 +71,7 @@ int main(int argc, char** argv) {
     float sigma = (float)std::sqrt(sig / std::pow(10.0, snr / 10.0) / 2.0);
     for (size_t i = 0; i < rxw.size(); i++) {
         rxw[i] *= cf32((float)std::cos(2 * M_PI * cfo * i / radio), (float)std::sin(2 * M_PI * cfo * i / radio));
-        rxw[i] += cf32(g(rng), g(rng)) * sigma;
+        rxw[i] += cf32{g(rng), g(rng)} * sigma;
     }
     printf("  %d frames, %.2f s of signal at %.3f Msamples/s (%zu samples), carrier offset %.0f Hz, SNR %.0f dB\n", frames, rxw.size() / radio, radio / 1e6, rxw.size(), cfo, snr);
 

@@ -2,6 +2,7 @@
 // after the baseline has been learned are each found and classified; broadband noise through the whole receiver shows as a C/N0 drop next to the
 // noise rise; a sudden position jump and equal C/N0 on every satellite raise the spoofing indicators; the CSV export has the history and the log.
 #include "dect2/gnss/gnss_interf.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/gnss/gnss_testkit.h"
 #include <cmath>
 #include <cstdio>
@@ -20,7 +21,7 @@ struct Adder {
     Imp imp;
     double from;
     std::mt19937 rng{7};
-    std::normal_distribution<float> g{0.f, 1.f};
+    dect2::normal_distribution<float> g{0.f, 1.f};
     double ph = 0;
     void operator()(std::vector<cf32>& b, size_t done) {
         for (size_t k = 0; k < b.size(); k++) {
@@ -38,7 +39,7 @@ struct Adder {
                 if (std::fmod(t, 1e-3) < 12e-6) { const double a = kTwoPi * 200e3 * t; b[k] += cf32((float)(0.6 * std::cos(a)), (float)(0.6 * std::sin(a))); }
                 break;
             }
-            case Noise: b[k] += cf32(0.2f * g(rng), 0.2f * g(rng)); break;
+            case Noise: b[k] += cf32{0.2f * g(rng), 0.2f * g(rng)}; break;
             default: break;
             }
         }

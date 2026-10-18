@@ -6,6 +6,7 @@
 //    a capture that starts inside a frame, two colliding frames, a frame sent without CRC.
 // 3. The 70 cm test scene (mesh_gen region 2): every LoRa APRS and MeshCom packet of a cycle at -15 dB / +22 kHz / +100 ppm.
 #include "dect2/mesh/mesh_gen.h"
+#include "dect2/common/stable_random.h"
 #include "dect2/mesh/mesh_lora.h"
 #include "dect2/mesh/mesh_proto.h"
 #include "dect2/mesh/mesh_rx.h"
@@ -134,8 +135,8 @@ static MeshTelemetry runFrames(const std::vector<Shot>& shots, double snrDb, dou
     if (ppm != 0) x = impair::clock(x, ppm);
     // noise for snrDb in the LoRa bandwidth of the frame at relDb 0
     std::mt19937 g(seed);
-    std::normal_distribution<float> nd(0.f, (float)std::sqrt(amp * amp * (rate / p.bwHz) / std::pow(10.0, snrDb / 10) / 2));
-    for (auto& v : x) v += cf32(nd(g), nd(g));
+    dect2::normal_distribution<float> nd(0.f, (float)std::sqrt(amp * amp * (rate / p.bwHz) / std::pow(10.0, snrDb / 10) / 2));
+    for (auto& v : x) v += cf32{nd(g), nd(g)};
     impair::skip(x, skipSamples);
     if (swapIq) impair::swapIq(x);
     MeshReceiver rx;
