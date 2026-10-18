@@ -4,7 +4,7 @@
 // run along the bottom of the film. Modes and groups are the app's own mode table (groups027.js); footage is the 0.2.7 build on each mode's built-in test
 // signal (clips7: n_<id> new modes, o_<id> older ones, f_<name> features). 60 fps.
 const RED='#ff5a46', V='0.2.7', FPS7=60;
-const logo7=new Image(); logo7.src='assets/logo_027.png';
+const logo7=new Image(); logo7.src='assets/logo_028.png';
 // ---------------------------------------------------------------- audio: events, section times, the song's spectrum
 const NBND=AUD.nb, ABAND=Uint8Array.from(atob(AUD.bands),c=>c.charCodeAt(0)), ALOUD=Uint8Array.from(atob(AUD.loud),c=>c.charCodeAt(0));
 const KICK=AUD.kick, SNARE=AUD.snare, HAT=AUD.hat, SEC=AUD.sections, BAND=AUD.band, END=AUD.final, LEN=AUD.len+1.4;
