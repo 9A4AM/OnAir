@@ -99,10 +99,10 @@ pub fn read_xid(p: &[u8], m: &mut Parsed) {
                                     w.str("  ");
                                     w.str(if id == 0x84 { "aircraft location" } else { "ground station location" });
                                     w.byte(b' ');
-                                    w.fixed(format_f, 1, la.abs());
+                                    w.fixed(format_f, 1, (if la < 0.0 { -la } else { la }));
                                     w.byte(if la < 0.0 { b'S' } else { b'N' });
                                     w.byte(b' ');
-                                    w.fixed(format_f, 1, lo.abs());
+                                    w.fixed(format_f, 1, (if lo < 0.0 { -lo } else { lo }));
                                     w.byte(if lo < 0.0 { b'W' } else { b'E' });
                                     if alt {
                                         w.byte(b' ');

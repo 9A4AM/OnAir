@@ -5,6 +5,7 @@
 // to 1e-6) compared with the one recorded from the C++ layers the Rust code replaced.
 #include "dect2/vdl2/vdl2_proto.h"
 #include "../common/golden.h"
+#include "../common/ordered.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -30,7 +31,7 @@ static std::vector<uint8_t> mutate(std::vector<uint8_t> v) {
         case 0: v[g() % v.size()] = rb(); break;
         case 1: v[g() % v.size()] ^= (uint8_t)(1u << (g() % 8)); break;
         case 2: v.erase(v.begin() + (long)(g() % v.size())); break;
-        case 3: v.insert(v.begin() + (long)(g() % (v.size() + 1)), rb()); break;
+        case 3: ORD_CALL(v.insert, v.begin() + (long)(g() % (v.size() + 1)), rb()); break;   // ORD_*: draws in a fixed order (arguments and operands are not evaluated in one)
         default: v.resize(g() % (v.size() + 1)); break;
         }
     }
@@ -98,7 +99,8 @@ static void testRs(long iters) {
 static void testBurst(long iters) {
     long ok = 0;
     for (long i = 0; i < iters; i++) {
-        const size_t nbits = 8 + g() % 4000 + (g() % 40 == 0 ? g() % 20000 : 0);
+        const size_t nbase = 8 + g() % 4000;
+        const size_t nbits = nbase + (g() % 40 == 0 ? g() % 20000 : 0);
         std::vector<uint8_t> data(nbits);
         for (auto& b : data) b = g() % 2;
         std::vector<uint8_t> burst = D::vdl2BurstBits(data);       // header, data, FEC, scrambled
@@ -161,14 +163,14 @@ static void testAddr(long iters) {
 
 static std::vector<uint8_t> info(int kind) {
     switch (kind) {
-    case 0: return D::vdl2AcarsInfo(RS(7, "ABCDEFGHIJ-.0123"), RS(2, "ABCH1_2Q0"), (char)('0' + g() % 10), RS(g() % 80, "ABC xyz 0123 N25E055 /.-,\n"));
+    case 0: return ORD_CALL(D::vdl2AcarsInfo, RS(7, "ABCDEFGHIJ-.0123"), RS(2, "ABCH1_2Q0"), (char)('0' + g() % 10), RS(g() % 80, "ABC xyz 0123 N25E055 /.-,\n"));
     case 1: {
         std::vector<uint8_t> a = rndBytes(g() % 20), b = rndBytes(g() % 20), u = rndBytes(g() % 50);
-        return D::vdl2X25ClnpData((int)(g() % 4096), (int)(g() % 8), (int)(g() % 8), a, b, u);
+        return ORD_CALL(D::vdl2X25ClnpData, (int)(g() % 4096), (int)(g() % 8), (int)(g() % 8), a, b, u);
     }
-    case 2: return D::vdl2X25CallRequest((int)(g() % 4096), RS(g() % 12, "0123456789"), RS(g() % 12, "0123456789"));
-    case 3: return D::vdl2XidGsif((double)((int)(g() % 1800) - 900) / 10.0, (double)((int)(g() % 3600) - 1800) / 10.0, RS(g() % 30, "OMDBLTBYEGLL "));
-    case 4: return D::vdl2XidAircraftLe((double)((int)(g() % 1800) - 900) / 10.0, (double)((int)(g() % 3600) - 1800) / 10.0, (int)(g() % 45000), RS(g() % 6, "OMDB"));
+    case 2: return ORD_CALL(D::vdl2X25CallRequest, (int)(g() % 4096), RS(g() % 12, "0123456789"), RS(g() % 12, "0123456789"));
+    case 3: return ORD_CALL(D::vdl2XidGsif, (double)((int)(g() % 1800) - 900) / 10.0, (double)((int)(g() % 3600) - 1800) / 10.0, RS(g() % 30, "OMDBLTBYEGLL "));
+    case 4: return ORD_CALL(D::vdl2XidAircraftLe, (double)((int)(g() % 1800) - 900) / 10.0, (double)((int)(g() % 3600) - 1800) / 10.0, (int)(g() % 45000), RS(g() % 6, "OMDB"));
     default: return rndBytes(g() % 60);
     }
 }
@@ -195,8 +197,8 @@ static void testFrames(long iters) {
             std::vector<uint8_t> inf = kind == 6 ? x25Packet() : info(kind);
             uint8_t ctrl;
             switch (g() % 5) {
-            case 0: ctrl = D::vdl2ControlI((int)(g() % 8), (int)(g() % 8), g() % 2); break;
-            case 1: ctrl = (uint8_t)(0x01 | (g() % 4) << 2 | (g() % 2) << 4 | (g() % 8) << 5); break;
+            case 0: ctrl = ORD_CALL(D::vdl2ControlI, (int)(g() % 8), (int)(g() % 8), g() % 2); break;
+            case 1: { const uint32_t c2 = (g() % 4) << 2, c4 = (g() % 2) << 4, c5 = (g() % 8) << 5; ctrl = (uint8_t)(0x01 | c2 | c4 | c5); } break;
             case 2: ctrl = (uint8_t)(D::kVdl2CtrlXID | (g() % 2 ? 0x10 : 0)); break;
             case 3: ctrl = (uint8_t)(D::kVdl2CtrlUI | (g() % 2 ? 0x10 : 0)); break;
             default: ctrl = rb(); break;

@@ -779,7 +779,8 @@ if(DECT2_BUILD_TESTS)
     add_executable(test_tour tests/app/test_tour.cpp)   # the first-run tour: steps, anchors, skipping, start rule (app/ui/tour_logic.h)
     target_compile_definitions(test_tour PRIVATE DECT2_SOURCE_DIR="${ONAIR_ROOT}")
     add_test(NAME tour_logic COMMAND test_tour)
-    if(APPLE OR WIN32)   # a hidden window run of the program itself (a renamed copy, its own data and settings folders): applies memories to a receiver and checks its state
+    # (not on Windows: the CI runner has no GPU, so the window cannot be created there and the program exits with 1 before the test starts)
+    if(APPLE OR (WIN32 AND DECT2_WINDOW_TESTS))   # a hidden window run of the program itself (a renamed copy, its own data and settings folders): applies memories to a receiver and checks its state
       add_test(NAME memory_recall_app COMMAND ${CMAKE_COMMAND} -DBIN=$<TARGET_FILE:dect2> -DDIR=${CMAKE_BINARY_DIR}/memory_recall_test -P ${ONAIR_ROOT}/tests/app/run_memory_recall.cmake)
       set_tests_properties(memory_recall_app PROPERTIES TIMEOUT 120)
     endif()
@@ -945,6 +946,7 @@ if(DECT2_BUILD_TESTS)
   if(SOAPY_FOUND AND NOT WIN32)   # the test loads a plug-in module the POSIX way; Windows is not covered yet
     # a fake SoapySDR radio (plugin module) and a test that drives the generic-radio source through it
     set_target_properties(dect2core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    set_target_properties(dect2_automation PROPERTIES POSITION_INDEPENDENT_CODE ON)
     add_library(SoapyOnAirTest MODULE tests/source/soapy_testdriver.cpp)
     target_include_directories(SoapyOnAirTest PRIVATE ${SOAPY_INCLUDE_DIRS})
     target_link_libraries(SoapyOnAirTest PRIVATE dect2core)
