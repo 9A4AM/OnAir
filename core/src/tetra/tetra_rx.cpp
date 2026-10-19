@@ -339,6 +339,7 @@ struct TetraReceiver::Impl {
     std::atomic<uint64_t> gen{0};
     std::atomic<bool> idle{true};
     std::atomic<bool> clearReq{false};
+    std::atomic<SpeechFrameSink*> voiceSink{nullptr};
     // capture (analysis thread)
     std::vector<cf32> acc;
     size_t want = 0;
@@ -444,7 +445,7 @@ struct TetraReceiver::Impl {
                 for (const auto& t : tel.cells) if (std::fabs(t.freqHz - f) < 5e3 && t.mcc >= 0) { kMcc = t.mcc; kMnc = t.mnc; kCc = t.colourCode; break; }
             }
             const std::vector<cf32> s = tetra::channelize(x.data(), x.size(), fs, c.off);
-            tetra::CarrierDecode d = tetra::decodeCarrier(s.data(), s.size(), kMcc, kMnc, kCc);
+            tetra::CarrierDecode d = tetra::decodeCarrier(s.data(), s.size(), kMcc, kMnc, kCc, voiceSink.load());
             const double freq = (center > 0 ? center : 0.0) + c.off + d.cfoHz;
             TetraCarrierSeen cs; cs.freqHz = d.tetra ? freq : (center > 0 ? center : 0.0) + c.off; cs.levelDb = c.levelDb; cs.synced = d.synced;
             seen.push_back(cs);
@@ -605,6 +606,7 @@ void TetraReceiver::setCenterHz(double hz) {
     p_->centerHz = hz; p_->tel.centerHz = hz;
 }
 bool TetraReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->rateSet >= tetraTuning().minSampleRate - 1; }
+void TetraReceiver::setVoiceSink(SpeechFrameSink* s) { p_->voiceSink.store(s); }
 void TetraReceiver::reset() { p_->gen++; }
 void TetraReceiver::clearCells() { std::lock_guard<std::mutex> lk(p_->mu); p_->tel.cells.clear(); p_->tel.events.clear(); p_->tel.blocksOk = p_->tel.blocksBad = 0; p_->publish(); }
 void TetraReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }

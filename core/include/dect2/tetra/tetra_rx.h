@@ -46,6 +46,8 @@ public:
     std::string saveResults() const;                     // for the results file (results_io.h)
     bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
+    // Where unencrypted traffic bursts go (tetra_voice_codec.h). The sink must outlive the receiver; null: voice frames are dropped.
+    void setVoiceSink(SpeechFrameSink* s);
     bool busy() const;                 // a block is captured or being searched (tools: feed a file only as fast as it is searched)
 
 private:

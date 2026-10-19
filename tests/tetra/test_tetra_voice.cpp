@@ -2,6 +2,7 @@
 // encrypted one, and one with unknown encryption state, produce "not decoded" and the sink is never called.
 #include "dect2/tetra/tetra_phy.h"
 #include "dect2/tetra/tetra_voice.h"
+#include "dect2/tetra/tetra_voice_codec.h"
 #include <cstdio>
 #include <cstring>
 #include <random>
@@ -52,6 +53,37 @@ int main() {
     {   // state unknown: not decoded
         Sink s; CallEncryption e;
         CHECK(processTrafficBurst(l.data(), l.data() + 216, scr, e, &s) == VoiceVerdict::StateUnknownNotDecoded && s.calls == 0, "unknown state refused");
+    }
+    {   // the codec loader path: a silent fake codec stands in for the user-installed plug-in
+        struct Silent final : dect2::codec::SpeechCodec {
+            int sampleRate() const override { return 8000; }
+            std::vector<int16_t> decode(const std::vector<uint8_t>& c) override { return std::vector<int16_t>(c.size() * 4, 0); }
+        };
+        auto setup = [](TetraVoiceSink& vs, size_t& pcmN, bool withCodec) {
+            if (withCodec) vs.setCodec(std::make_unique<Silent>());
+            // test-only stand-in for the (not yet implemented) traffic channel decoder: pack 8 bits per byte
+            vs.setFrameDecoder([](const uint8_t* b, size_t n) { std::vector<uint8_t> o(n / 8); for (size_t i = 0; i < o.size(); i++) o[i] = b[i * 8]; return o; });
+            vs.setPcmOut([&pcmN](const int16_t*, size_t n, int) { pcmN += n; });
+        };
+        {   TetraVoiceSink vs; size_t pcmN = 0; setup(vs, pcmN, true);
+            CallEncryption e; e.known = true;
+            processTrafficBurst(l.data(), l.data() + 216, scr, e, &vs);
+            CHECK(pcmN == 54 * 4 && vs.framesDecoded() == 1, "clear burst gives PCM through the codec sink (%zu)", pcmN);
+            e.encMode = 1;
+            processTrafficBurst(l.data(), l.data() + 216, scr, e, &vs);
+            CHECK(pcmN == 54 * 4 && vs.framesDecoded() == 1, "encrypted burst gives no further PCM");
+        }
+        {   TetraVoiceSink vs; size_t pcmN = 0; setup(vs, pcmN, false);
+            CallEncryption e; e.known = true;
+            processTrafficBurst(l.data(), l.data() + 216, scr, e, &vs);
+            CHECK(pcmN == 0 && vs.status().find("not installed") != std::string::npos, "no codec: no audio, not-installed text");
+        }
+        {   TetraVoiceSink vs; vs.setCodec(std::make_unique<Silent>()); size_t pcmN = 0;
+            vs.setPcmOut([&pcmN](const int16_t*, size_t n, int) { pcmN += n; });
+            CallEncryption e; e.known = true;
+            processTrafficBurst(l.data(), l.data() + 216, scr, e, &vs);
+            CHECK(pcmN == 0, "no traffic channel decoder: nothing reaches the codec");
+        }
     }
     printf(fails ? "tetra voice: %d FAILED\n" : "tetra voice: all passed\n", fails);
     return fails ? 1 : 0;
