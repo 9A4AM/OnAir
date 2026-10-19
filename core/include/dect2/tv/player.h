@@ -36,6 +36,32 @@ struct VideoFrame {
     bool bt709 = true, fullRange = false, interlaced = false;
 };
 
+// How many decoded pictures the player may queue. A broadcaster that muxes the video well ahead of the audio (1.6 s is seen on
+// DVB-T2 HEVC 1080p50) needs about 3.5 s of pictures, so the cap follows the frame rate (never below 80) and is bounded by memory:
+// at most about 768 MB of NV12 pictures (never below 30, so 4K still has a second of queue).
+inline size_t videoQueueCap(double fps, size_t frameBytes) {
+    if (!(fps >= 1.0) || fps > 240.0) fps = 25.0;
+    size_t cap = (size_t)(fps * 3.5 + 0.999);
+    if (cap < 80) cap = 80;
+    if (frameBytes > 0) {
+        size_t byMem = (size_t)(768ull * 1024 * 1024) / frameBytes;
+        if (byMem < 30) byMem = 30;
+        if (cap > byMem) cap = byMem;
+    }
+    return cap;
+}
+
+// Brings a queue of pictures (ordered by pts) back to at most cap entries. Pictures that are already late are dropped first (oldest
+// first); the pictures that are due next are kept, so when the queue is still too long the NEWEST ones go (the decoder is too far ahead,
+// the back-pressure in the read loop holds it back). Returns the number dropped.
+template <class Q>
+inline size_t trimVideoQueue(Q& q, size_t cap, double clock, bool haveClock) {
+    size_t n = 0;
+    while (q.size() > cap && haveClock && q.size() > 1 && q.front()->pts < clock) { q.pop_front(); n++; }
+    while (q.size() > cap) { q.pop_back(); n++; }
+    return n;
+}
+
 struct AudioTrackInfo { int pid = 0; std::string codec, lang; int channels = 0; };
 
 struct PlayerStats {

@@ -703,10 +703,18 @@ void Player::threadMain() {
                 if (!actx && !I.wallValid) { I.wallValid = true; I.wallPts = vf->pts; I.wallT0 = nowSec() + 0.35; }
             }
             const bool keyframe = (f->flags & AV_FRAME_FLAG_KEY) != 0;
+            // queue cap from the frame rate and the picture size; over the cap the late pictures go first, then the newest (never the next due)
+            auto trimQ = [&](const std::shared_ptr<VideoFrame>& pic) {
+                const size_t cap = videoQueueCap(vFrameDur > 0 ? 1.0 / vFrameDur : 25.0, pic->y.size() + pic->uv.size() + pic->rgba.size());
+                if (I.vq.size() <= cap) return;
+                double clk = 0; const bool have = clockNow(clk);
+                const size_t n = trimVideoQueue(I.vq, cap, clk, have);
+                if (n) { std::lock_guard<std::mutex> sl(I.smu); I.st.late += n; }
+            };
             auto pushPlain = [&](const std::shared_ptr<VideoFrame>& p) {
                 std::lock_guard<std::mutex> lk(I.vmu);
                 I.vq.push_back(p);
-                while (I.vq.size() > 80) { I.vq.pop_front(); std::lock_guard<std::mutex> sl(I.smu); I.st.late++; }
+                trimQ(p);
             };
             auto flushHeld = [&]() { for (auto& h : held) { pushPlain(h); lastVf = h; } held.clear(); suspect = false; };
             if (suspect && conceal_ && !getenv("DECT2_NOREPAIR") && vf->rgba.empty()) {
@@ -759,7 +767,7 @@ void Player::threadMain() {
             lastVf = vf;
             std::lock_guard<std::mutex> lk(I.vmu);
             I.vq.push_back(vf);
-            while (I.vq.size() > 80) { I.vq.pop_front(); std::lock_guard<std::mutex> sl(I.smu); I.st.late++; }
+            trimQ(vf);
         };
 
         auto pushAudio = [&](AVFrame* f) {
