@@ -115,12 +115,15 @@ int main() {
             CHECK(b->ur == "CQCQCQ" && b->rpt1 == "DIRECT" && !(b->flag[0] & 0x40), "%s: simplex header", f.name);
             CHECK(b->text == "Hello via simplex", "%s: text '%s'", f.name, b->text.c_str());
             CHECK(b->squelch == 12, "%s: squelch %d", f.name, b->squelch);
-            CHECK(b->voiceFrames >= 145 && b->voiceFrames <= 151, "%s: %u voice frames", f.name, b->voiceFrames);
+            // without an end pattern the call ends on carrier loss (three weak frames in a row, the two before taken back), so a few noise frames
+            // may be counted as voice first; how many depends on the noise realisation (libm last bits), so allow up to 6 more
+            CHECK(b->voiceFrames >= 145 && b->voiceFrames <= (f.noEnd ? 157u : 151u), "%s: %u voice frames", f.name, b->voiceFrames);
         }
         CHECK(posNear(t, "N0CALL", 54.68720, 25.27970), "%s: NMEA position", f.name);
         CHECK(posNear(t, "LY1TST-7", 54.89850, 23.90360), "%s: D-PRS position", f.name);
         CHECK(t.inverted == f.swap, "%s: inverted %d", f.name, t.inverted);
-        if (!late && f.snr >= 30 && f.noise == 0) CHECK(r.voiceBits > 0 && r.voiceErr == 0, "%s: voice bits %llu wrong", f.name, (unsigned long long)r.voiceErr);
+        if (!late && f.snr >= 30 && f.noise == 0 && !f.noEnd) CHECK(r.voiceBits > 0 && r.voiceErr == 0, "%s: voice bits %llu wrong", f.name, (unsigned long long)r.voiceErr);
+        if (!late && f.noEnd) CHECK(r.voiceBits > 0 && r.voiceErr < r.voiceBits / 100, "%s: voice BER %llu / %llu", f.name, (unsigned long long)r.voiceErr, (unsigned long long)r.voiceBits);   // the trailing noise frames (see above)
         if (!late && f.snr < 30) CHECK(r.voiceBits > 0 && r.voiceErr < r.voiceBits / 100, "%s: voice BER %llu / %llu", f.name, (unsigned long long)r.voiceErr, (unsigned long long)r.voiceBits);
         if (f.cfo != 0 && !f.swap) CHECK(std::fabs(t.cfoHz - f.cfo) < 150, "%s: offset %.0f Hz", f.name, t.cfoHz);
     }

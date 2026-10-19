@@ -18,7 +18,7 @@ std::vector<uint8_t> mutateBytes(std::vector<uint8_t> v) {
         case 0: v[g() % v.size()] = rb(); break;
         case 1: v[g() % v.size()] ^= (uint8_t)(1u << (g() % 8)); break;
         case 2: v.erase(v.begin() + (long)(g() % v.size())); break;
-        case 3: v.insert(v.begin() + (long)(g() % (v.size() + 1)), rb()); break;
+        case 3: { const size_t at = g() % (v.size() + 1); v.insert(v.begin() + (long)at, rb()); break; }   // the position first, then the byte (two draws in one call would be unordered)
         case 4: v.resize(g() % (v.size() + 1)); break;
         default: v.push_back(rb()); break;
         }

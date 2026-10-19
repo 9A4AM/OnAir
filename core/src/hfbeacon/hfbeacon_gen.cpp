@@ -90,7 +90,8 @@ double Gen::envelope(const Src& x, double t) const {
 
 void Gen::generate(cf32* out, size_t n) {
     const double sg = std::sqrt(var_ / 2), dt = 1.0 / rate_;
-    if (noise_) for (size_t i = 0; i < n; i++) out[i] = cf32((float)(sg * gauss()), (float)(sg * gauss()));
+    // braced: the real and imaginary draws are in a fixed order (two calls in one argument list are unordered in C++)
+    if (noise_) for (size_t i = 0; i < n; i++) out[i] = cf32{(float)(sg * gauss()), (float)(sg * gauss())};
     else std::fill(out, out + n, cf32(0.f, 0.f));
     const size_t blk = 64;
     for (Src& x : src_) {
