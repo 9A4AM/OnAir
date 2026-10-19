@@ -26,6 +26,13 @@ int32_t onair_kris_conv_encode(int32_t kind, const uint8_t* bits, int32_t nbits,
 // out_bits needs nsym (minus 6 when terminated) bytes. Returns the number of decoded bits, or -1.
 int32_t onair_kris_viterbi(int32_t kind, const float* llr, int32_t nsym, int32_t terminated, uint8_t* out_bits);
 
+// KAVB FEC groups, erasure code over GF(256): g data cells and p parity cells of cell_len bytes (g + p <= 256); any g of the g + p cells restore the group.
+// encode: data = g * cell_len bytes, parity (p * cell_len bytes) is written. 0, or -1 for bad arguments.
+int32_t onair_kris_erasure_encode(int32_t g, int32_t p, int32_t cell_len, const uint8_t* data, uint8_t* parity);
+// recover: cells = (g + p) * cell_len bytes, present = g + p flags (non-zero = received). Missing data cells are rebuilt in place (parity cells are not touched).
+// 0 when every data cell is available afterwards, -1 when fewer than g cells are present or the arguments are bad.
+int32_t onair_kris_erasure_recover(int32_t g, int32_t p, int32_t cell_len, uint8_t* cells, const uint8_t* present);
+
 #ifdef __cplusplus
 }
 #endif
