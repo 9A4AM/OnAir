@@ -42,6 +42,11 @@ static void runCase(const char* name, int opt0, double cfo, double expectRs, int
             services |= v && a;
         }
     }
+    // the packet counters start at the first input: the error flags of the first seconds (equaliser and carrier loop still converging) are
+    // not judged, the steady state is what is counted after a settle
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+    e.latestRx(t, 0);
+    const uint64_t packets0 = t.dvbc.packets, bad0 = t.dvbc.packetsBad;
     std::this_thread::sleep_for(std::chrono::seconds(2));
     e.latestRx(t, 0);
     const DvbcTelemetry& d = t.dvbc;
@@ -50,7 +55,8 @@ static void runCase(const char* name, int opt0, double cfo, double expectRs, int
     CHECK(services, "%s: the TS analysis sees a service with video and audio", name);
     CHECK(d.qam == expectQam, "%s: QAM %d", name, d.qam);
     CHECK(std::fabs(d.symbolRate / expectRs - 1) < 1e-4, "%s: symbol rate %.1f", name, d.symbolRate);
-    CHECK(t.rateOk && d.packets > 1000 && d.packetsBad == 0, "%s: %llu packets, %llu bad", name, (unsigned long long)d.packets, (unsigned long long)d.packetsBad);
+    CHECK(t.rateOk && d.packets - packets0 > 1000 && d.packetsBad == bad0, "%s: %llu packets in the steady state, %llu bad", name, (unsigned long long)(d.packets - packets0),
+          (unsigned long long)(d.packetsBad - bad0));
     CHECK(!d.cells.empty() && !d.psdDb.empty() && !d.eqDb.empty(), "%s: pictures for the interface", name);
     e.stop();
 }

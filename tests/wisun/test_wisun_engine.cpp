@@ -36,7 +36,8 @@ int main() {
     const WisunTelemetry& d = rx.wisun;
     printf("  %d reports: %s, %llu bad, %llu dropped, load %.0f%%, %.1f - %.1f MHz\n", reports, wisunSummary(d).c_str(), (unsigned long long)d.blocksBad,
            (unsigned long long)d.dropped, d.loadPct, d.loMhz, d.hiMhz);
-    CHECK(reports > 10 && wrong == 0, "%d reports, %d wrong", reports, wrong);
+    // reports made by the engine (its sequence number), not the polls that happened to see one: a fast or slow runner polls a different share of them
+    CHECK(rx.seq > 10 && wrong == 0, "%llu reports made (%d seen), %d wrong", (unsigned long long)rx.seq, reports, wrong);
     CHECK(rx.rateOk, "rate");
     CHECK(d.region == "ANZ" && d.loMhz < 915.5 && d.hiMhz > 927.5, "coverage %s %.1f - %.1f", d.region.c_str(), d.loMhz, d.hiMhz);
     CHECK(d.pans.size() == 1 && d.nodes.size() == 3 && d.blocksOk > 100 && d.blocksBad == 0, "%zu PANs, %zu nodes, %llu frames", d.pans.size(), d.nodes.size(),

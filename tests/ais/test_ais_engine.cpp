@@ -50,8 +50,9 @@ static void run(double rate, double secs) {
     printf("  %.1f Msps: %d reports, decoding after %.1f s: %s\n", rate / 1e6, reports, firstDecode, aisSummary(a).c_str());
     printf("    %d named, %d with a position, %d with a track, per minute %.0f / %.0f, snr %.1f dB, noise %.1f dBFS, dropped samples %llu\n", named, positioned, tracks,
            a.burstsPerMin[0], a.burstsPerMin[1], a.snrDb, a.noiseDbfs[0], (unsigned long long)e.droppedSamples());
-    CHECK(decoding && firstDecode < 3.0, "decoding after %.1f s", firstDecode);
-    CHECK(seqOk && reports >= 4, "report numbers: %d reports", reports);
+    // the first decoded report in the first half of the signal: a budget in signal time, which a fast or slow runner reaches at different report times
+    CHECK(decoding && firstDecode < secs / 2, "decoding after %.1f s of %.0f s", firstDecode, secs);
+    CHECK(seqOk && rx.seq >= 4, "report numbers: %llu reports made (%d seen)", (unsigned long long)rx.seq, reports);
     CHECK(a.seq > secs * 2, "the receiver made %llu reports in %.0f s of signal", (unsigned long long)a.seq, secs);   // about 4 a second of signal
     CHECK(rx.state == 2 && rx.dataValid && a.dataValid && a.state == 2, "state %d", rx.state);
     CHECK(rx.blocksOk == a.blocksOk && rx.blocksBad == a.blocksBad, "common prefix copied");

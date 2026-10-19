@@ -61,7 +61,11 @@ static void runCase(const Case& c) {
             services |= v && a;
         }
     }
-    // let it run a little longer and look at the steady state
+    // let it run a little longer; the packet counters start at the first input, so the error flags of the first seconds (the receiver is still
+    // converging) are not judged: the steady state is the packets counted after a settle
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+    e.latestRx(t, 0);
+    const uint64_t packets0 = t.dvbs.packets, bad0 = t.dvbs.packetsBad;
     std::this_thread::sleep_for(std::chrono::seconds(4));
     e.latestRx(t, 0);
     const DvbsTelemetry& d = t.dvbs;
@@ -77,7 +81,8 @@ static void runCase(const Case& c) {
     // blocks the receiver could not decode, and TS packets with the error flag: none in steady state
     // (a CI machine that cannot keep up with the real-time source loses frames: not checked there)
     if (!std::getenv("CI")) CHECK(d.blocksBad <= 2, "%s: %llu bad frames or packets", c.name, (unsigned long long)d.blocksBad);
-    CHECK(d.packets > 1000 && d.packetsBad == 0, "%s: %llu packets, %llu with the error flag", c.name, (unsigned long long)d.packets, (unsigned long long)d.packetsBad);
+    CHECK(d.packets - packets0 > 1000 && d.packetsBad == bad0, "%s: %llu packets in the steady state, %llu with the error flag", c.name, (unsigned long long)(d.packets - packets0),
+          (unsigned long long)(d.packetsBad - bad0));
     e.stop();
 }
 
