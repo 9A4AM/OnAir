@@ -4,6 +4,7 @@
 #include "dect2/common/thread_name.h"
 #include "app.h"
 #include "dect2/specan/burst_monitor.h"
+#include "dect2/specan/leo_detect.h"
 #include "dect2/specan/specan_dsp.h"
 #include "dect2/specan/specan_rx.h"
 #include "dect2/specan/specan_tel.h"
@@ -58,6 +59,15 @@ struct State {
     float monLast = -200, monBase = -200;
     struct MonEvent { std::time_t wall; double mhz; dect2::BurstEvent ev; };
     std::vector<MonEvent> monLog;
+    // LEO monitor (detect only): the watched slice of each sweep, and the carriers found in it
+    bool leoOn = false;
+    double leoMhz = 137.5;        // centre of the watched slice
+    float leoSpanKhz = 200;       // width of the watched slice
+    std::vector<dect2::LeoFrame> leoFrames;
+    double leoStartHz = 0, leoBinHz = 0;   // grid the frames were taken on
+    size_t leoBins = 0;
+    double leoLastRun = 0;        // ms, last detector run
+    std::vector<dect2::LeoCarrier> leoFound;
 };
 State S;
 std::mutex& autoMu() { static std::mutex m; return m; }
@@ -165,6 +175,36 @@ void feedMonitor(const dect2::SpecanTelemetry& t) {
     S.monBase = S.mon.lastBaseDb();
 }
 
+// LEO monitor: keep the bins of the watched slice from each sweep (last two minutes), and run the detector about once a second.
+// A change of grid (centre, span, resolution or sweep range) starts the frames again, because the detector needs one grid.
+void feedLeo(const dect2::SpecanTelemetry& t) {
+    if (!S.leoOn || t.binHz <= 0 || t.live.empty()) return;
+    const double c0 = S.leoMhz * 1e6 - S.leoSpanKhz * 500.0, c1 = c0 + S.leoSpanKhz * 1e3;
+    long k0 = (long)std::ceil((c0 - t.loHz) / t.binHz), k1 = (long)std::floor((c1 - t.loHz) / t.binHz);
+    k0 = std::max(0L, k0);
+    k1 = std::min((long)t.live.size() - 1, k1);
+    if (k1 < k0) return;   // the watched slice is outside the sweep range
+    const double start = t.loHz + (double)k0 * t.binHz;
+    const size_t bins = (size_t)(k1 - k0 + 1);
+    if (start != S.leoStartHz || t.binHz != S.leoBinHz || bins != S.leoBins) {
+        S.leoFrames.clear();
+        S.leoFound.clear();
+        S.leoStartHz = start;
+        S.leoBinHz = t.binHz;
+        S.leoBins = bins;
+    }
+    dect2::LeoFrame f;
+    f.tMs = nowS() * 1000.0;
+    f.db.assign(t.live.begin() + k0, t.live.begin() + k1 + 1);
+    S.leoFrames.push_back(std::move(f));
+    const double cut = S.leoFrames.back().tMs - 120000.0;
+    while (!S.leoFrames.empty() && (S.leoFrames.front().tMs < cut || S.leoFrames.size() > 600)) S.leoFrames.erase(S.leoFrames.begin());
+    if (S.leoFrames.back().tMs - S.leoLastRun >= 1000.0) {
+        S.leoLastRun = S.leoFrames.back().tMs;
+        S.leoFound = dect2::detectDopplerCarriers(S.leoFrames, dect2::LeoBand{S.leoStartHz, S.leoBinHz});
+    }
+}
+
 void ingest(App& a) {
     const auto& t = a.rx.specan;
     if (!live(a) || t.seq == S.seenSeq) return;
@@ -187,6 +227,7 @@ void ingest(App& a) {
     }
     S.wfDirty = S.psDirty = true;
     feedMonitor(t);
+    feedLeo(t);
 }
 
 std::string mhzText(double hz) {
@@ -386,6 +427,36 @@ void chart(App& a, float h) {
     }
 }
 
+// LEO monitor (WIP, detect only): carriers in the watched slice whose frequency drifts like a satellite downlink.
+void leoMonitor(App& a) {
+    if (!ImGui::CollapsingHeader("LEO monitor (WIP, detect only)")) return;
+    ImGui::TextWrapped("Detect only: lists carriers that drift like a satellite downlink. Nothing is decoded.");
+    bool changed = ImGui::Checkbox("Watch##leo", &S.leoOn);
+    ImGui::SameLine();
+    if (ImGui::SmallButton("137 MHz")) { S.leoMhz = 137.5; changed = true; }
+    ImGui::SameLine();
+    if (ImGui::SmallButton("1.5 GHz")) { S.leoMhz = 1500.0; changed = true; }
+    ImGui::SameLine();
+    changed |= ImGui::InputDouble("MHz##leo", &S.leoMhz, 0.01, 1.0, "%.3f");
+    ImGui::SameLine();
+    changed |= ImGui::InputFloat("Span (kHz)##leo", &S.leoSpanKhz, 10.f, 100.f, "%.0f");
+    if (changed) { S.leoFrames.clear(); S.leoFound.clear(); S.leoLastRun = 0; }
+    if (!live(a)) ImGui::TextDisabled("Needs a running sweep that covers the watched slice.");
+    else if (S.leoFrames.empty()) ImGui::TextDisabled(S.leoOn ? "Waiting for sweeps over the watched slice." : "Tick Watch to collect sweeps.");
+    else ImGui::Text("%zu sweeps over %.0f s, %zu carriers", S.leoFrames.size(), (S.leoFrames.back().tMs - S.leoFrames.front().tMs) / 1000.0, S.leoFound.size());
+    if (ImGui::SmallButton("Clear##leo")) { S.leoFrames.clear(); S.leoFound.clear(); S.leoLastRun = 0; }
+    ImGui::SameLine();
+    ImGui::TextDisabled("First seen        MHz      Drift Hz/s  Duration s");
+    const std::time_t now = std::time(nullptr);
+    const double nowMs = nowS() * 1000.0;
+    for (const auto& c : S.leoFound) {
+        const std::time_t seen = now - (std::time_t)((nowMs - c.firstSeenMs) / 1000.0);
+        char when[16] = "";
+        std::strftime(when, sizeof when, "%H:%M:%S", std::localtime(&seen));
+        ImGui::Text("%s  %10.3f  %+11.1f  %11.1f", when, c.carrierHz / 1e6, c.driftHzPerS, c.durationMs / 1000.0);
+    }
+}
+
 void waterfall(App& a, float h) {
     const ImVec2 p0 = ImGui::GetCursorScreenPos();
     const float w = ImGui::GetContentRegionAvail().x;
@@ -430,6 +501,7 @@ void tab(App& a) {
     }
     controls(a);
     monitor(a);
+    leoMonitor(a);
     const float avail = ImGui::GetContentRegionAvail().y;
     chart(a, std::max(120 * gUi, avail * 0.62f));
     waterfall(a, std::max(40 * gUi, ImGui::GetContentRegionAvail().y - 2));
