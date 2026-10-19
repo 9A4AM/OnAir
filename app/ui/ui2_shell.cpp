@@ -514,7 +514,7 @@ float menuBar(App& a) {
         ImGui::EndMainMenuBar();
     }
     creditsWindow(a);
-    tx::window(a);
+    tx::windowPanel(a);
     return menuH;
 }
 
