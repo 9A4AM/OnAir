@@ -3,6 +3,7 @@
 #include "../ui/typography.h"
 #include "dect2/geo/passes.h"
 #include "dect2/source/rotator.h"
+#include "dect2/specan/rot_scan.h"
 #include "imgui.h"
 #include <algorithm>
 #include <cmath>
@@ -38,8 +39,7 @@ struct State {
         double az = 0, azEnd = 0, step = 2;
         int i = 0, n = 0;
         double settleUntil = 0;
-        double bestMechAz = 0;
-        float bestScore = -120.f;
+        std::vector<double> levels;   // signal level at each scan step (dB), for the parabolic peak
     } peak;
 };
 State S;
@@ -72,19 +72,18 @@ static float signalScoreForPeakCal(const App& a) {
 }
 
 static void startPeakAzCal(double trueAz, double trueEl, double mechAz, double mechEl) {
-    constexpr double halfSpan = 24.0;
+    constexpr double halfSpan = 10.0;   // +-10 degrees in 1 degree steps around the current reading
     S.peak.on = true;
     S.peak.trueAz = trueAz;
     S.peak.trueEl = trueEl;
     S.peak.mechEl = mechEl;
     S.peak.az = normAz360(mechAz - halfSpan);
     S.peak.azEnd = normAz360(mechAz + halfSpan);
-    S.peak.step = 2.0;
+    S.peak.step = 1.0;
     S.peak.i = 0;
     S.peak.n = (int)std::ceil((halfSpan * 2.0) / S.peak.step) + 1;
     S.peak.settleUntil = 0;
-    S.peak.bestScore = -120.f;
-    S.peak.bestMechAz = mechAz;
+    S.peak.levels.clear();
 }
 
 static void stepPeakAzCal(App& a, dect2::Rotator& rot) {
@@ -94,23 +93,25 @@ static void stepPeakAzCal(App& a, dect2::Rotator& rot) {
     const dect2::RotatorStatus st = rot.status();
     if (S.peak.settleUntil > 0 && st.moving && now < S.peak.settleUntil + 2.5) return;
 
-    if (S.peak.settleUntil > 0) {
-        const float sc = signalScoreForPeakCal(a);
-        const double mech = normAz360(S.peak.az + S.peak.i * S.peak.step);
-        if (sc > S.peak.bestScore) {
-            S.peak.bestScore = sc;
-            S.peak.bestMechAz = mech;
-        }
+    if (S.peak.settleUntil > 0) {   // the level at the step commanded last
+        S.peak.levels.push_back((double)signalScoreForPeakCal(a));
         S.peak.i++;
     }
 
     if (S.peak.i >= S.peak.n) {
         S.peak.on = false;
-        S.azOff = (float)dect2::rotatorAzOffsetForTrueBearing(S.peak.trueAz, S.peak.bestMechAz);
-        char b[160];
-        snprintf(b, sizeof b, "Auto az offset %.1f° (peak mech %.1f°, score %.1f)", S.azOff, S.peak.bestMechAz, S.peak.bestScore);
-        S.calMsg = b;
-        saveUiPrefs();
+        double peakOff = 0;
+        const dect2::ScanPeakResult r = dect2::scanPeakParabolic(S.peak.levels, S.peak.step, peakOff);
+        if (r == dect2::ScanPeakResult::Ok) {
+            const double peakMech = dect2::scanPeakMechAz(S.peak.az, peakOff);
+            S.azOff = (float)dect2::rotatorAzOffsetForTrueBearing(S.peak.trueAz, peakMech);
+            char b[160];
+            snprintf(b, sizeof b, "Auto az offset %.1f° (peak at mech %.1f°)", S.azOff, peakMech);
+            S.calMsg = b;
+            saveUiPrefs();
+        } else {
+            S.calMsg = "No clear peak within 10 degrees: check the signal and the dish, then try again";
+        }
         return;
     }
 

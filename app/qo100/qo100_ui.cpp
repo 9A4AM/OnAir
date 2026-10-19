@@ -14,6 +14,7 @@
 #include "dect2/qo100/qo100_gen.h"
 #include "dect2/qo100/qo100_rx.h"
 #include "dect2/qo100/qo100_tel.h"
+#include "dect2/specan/lnb_cal.h"
 #include "dect2/specx/specx_measure.h"
 #include <algorithm>
 #include <cmath>
@@ -58,6 +59,10 @@ struct State {
     int loPreset = 0;               // loPresets index, or the count = custom
     double customLoMhz = 9750;
     bool autoCorr = true;           // correct the frequencies by the LNB error measured on the beacons
+    double lnbPpm = 0;              // LNB error from the beacon calibration (WIP), applied to the LO (prefs qo100LnbPpm)
+    double calBeaconMhz = 10489.750, calIfMhz = 0;   // LNB calibration inputs: the known beacon and its measured IF peak
+    double calLastT = -1e9;         // time of the last drift sample (seconds)
+    dect2::LnbDriftTracker drift;   // slow filter over the total LNB error seen on the beacons
     double dialHz = 10489.600e6;
     bool listen = false;
     int view = 0;                   // 0 narrowband, 1 wideband, 2 drift
@@ -93,10 +98,12 @@ void tip(const char* t) { if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDi
 bool live(const App& a) { return a.rx.standard == 54; }   // the engine reports its standard code minus one
 const dect2::Qo100Telemetry& T(const App& a) { return a.rx.qo100; }
 
-double loHz() {
+double nominalLoHz() {
     int n = 0; const q::LoPreset* p = q::loPresets(n);
     return S.loPreset >= 0 && S.loPreset < n ? p[S.loPreset].loHz : S.customLoMhz * 1e6;
 }
+// the LO the radio is set to: the nominal oscillator corrected by the calibrated LNB error
+double loHz() { return dect2::lnbCorrectedLoHz(nominalLoHz(), S.lnbPpm); }
 std::string mhz(double hz, int dec = 3) { char b[40]; snprintf(b, sizeof b, "%.*f MHz", dec, hz / 1e6); return b; }
 
 void load() {
@@ -108,6 +115,8 @@ void load() {
     S.customLoMhz = p.getD("qo100LoCustom", 9750);
     S.dialHz = p.getD("qo100Dial", 10489.600e6);
     S.autoCorr = p.getB("qo100AutoCorr", true);
+    S.lnbPpm = p.getD("qo100LnbPpm", 0);
+    S.calBeaconMhz = p.getD("qo100CalBeaconMhz", 10489.750);
     S.listen = p.getB("qo100Listen", false);
     S.view = (int)std::clamp(p.getI("qo100View", 0), 0L, 4L);
     S.autoMask = (unsigned)p.getI("qo100AutoMask", dect2::kQoDecSsb);
@@ -120,6 +129,7 @@ void save() {
     auto& p = plat::prefs();
     p.setI("qo100LoPreset", S.loPreset); p.setD("qo100LoCustom", S.customLoMhz); p.setD("qo100Dial", S.dialHz); p.setI("qo100View", S.view);
     p.setB("qo100AutoCorr", S.autoCorr);
+    p.setD("qo100LnbPpm", S.lnbPpm); p.setD("qo100CalBeaconMhz", S.calBeaconMhz);
     p.setI("qo100AutoMask", (long)S.autoMask); p.setI("qo100Slots", S.maxSlots); p.setD("qo100Cpu", S.cpuLimit);
     p.setI("qo100AutoListen", S.autoListen); p.setB("qo100Squelch", S.squelch);
 }
@@ -149,6 +159,42 @@ bool decodingCarrier(const App& a, const dect2::Qo100Datv& d) {
     return S.dvbsOn && a.engine.secondaryStandard() == 8 && std::fabs(d.ifHz - S.dvbsCarrier.ifHz) < 0.6 * std::max(d.bw3Hz, 50e3);
 }
 
+// LNB calibration from a known beacon (WIP): the beacon's measured IF gives the oscillator error; Apply stores it and the LO follows
+void lnbCalSection(const App& a) {
+    const auto& t = T(a);
+    if (live(a) && t.corrValid) {   // slow drift of the total LNB error, one sample per 10 s
+        const double now = ImGui::GetTime();
+        if (now - S.calLastT >= 10.0) { S.calLastT = now; S.drift.add(now, S.lnbPpm + t.lnbErrPpm); }
+    }
+    ImGui::TextDisabled("%s", "LNB calibration (WIP)");
+    tip("Enter the beacon's known frequency and the IF peak measured on it (fine FFT peak). Apply stores the LNB error and corrects the LO for QO-100 tuning and presets.");
+    flowNext(16 * gUi);
+    ImGui::SetNextItemWidth(120 * gUi);
+    if (ImGui::InputDouble("##calbeacon", &S.calBeaconMhz, 0, 0, "%.3f MHz")) { S.calBeaconMhz = std::clamp(S.calBeaconMhz, 10000.0, 12750.0); save(); }
+    tip("The beacon's known frequency at the feed (QO-100 beacons: 10489.500 and 10490.000 MHz)");
+    flowNext(6 * gUi);
+    ImGui::SetNextItemWidth(120 * gUi);
+    ImGui::InputDouble("##calif", &S.calIfMhz, 0, 0, "%.4f MHz");
+    tip("The beacon's IF peak as the radio shows it (fine FFT peak with parabolic interpolation)");
+    flowNext(10 * gUi);
+    if (S.calIfMhz > 0) {
+        const double nominal = nominalLoHz();
+        const dect2::LnbError e = dect2::lnbErrorFromBeacon(S.calBeaconMhz * 1e6, nominal, S.calIfMhz * 1e6, q::invertedLo(nominal));
+        ImGui::Text("Offset %+.1f Hz (%+.3f ppm)", e.hz, e.ppm);
+        ImGui::SameLine();
+        if (ImGui::Button("Apply")) { S.lnbPpm = e.ppm; save(); }
+        tip("Stores this LNB error and sets the LO to nominal x (1 + error) for QO-100 tuning and its presets");
+    } else ImGui::TextDisabled("%s", "Enter the measured beacon IF");
+    flowNext(10 * gUi);
+    ImGui::TextDisabled("Applied %+.3f ppm", S.lnbPpm);
+    ImGui::SameLine();
+    if (ImGui::SmallButton("Clear")) { S.lnbPpm = 0; save(); }
+    if (S.drift.valid()) {
+        ImGui::SameLine();
+        ImGui::TextDisabled("drift %+.4f ppm/h (%d samples)", S.drift.ppmPerHour(), S.drift.samples());
+    }
+}
+
 // LNB, IF and where the radio is
 void strip(App& a) {
     int n = 0; const q::LoPreset* pr = q::loPresets(n);
@@ -169,6 +215,9 @@ void strip(App& a) {
     flowNext(10 * gUi);
     if (ImGui::Checkbox("Auto frequency correction", &S.autoCorr)) save();
     tip("On: the LNB's frequency error is measured on the CW beacons and every frequency shown is corrected by it.\nOff: no correction (for a GPS-locked LNB). The beacons are still measured and the error is shown.");
+    flowBreak();
+    lnbCalSection(a);
+    flowNext(10 * gUi);
     const double lo = loHz();
     double i0 = q::ifOf(q::kDownLoHz, lo), i1 = q::ifOf(q::kDownHiHz, lo);
     if (i0 > i1) std::swap(i0, i1);
