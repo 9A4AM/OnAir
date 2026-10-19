@@ -204,9 +204,72 @@ static void handBuiltTest() {
     printf("  hand-built FLEX frame: %zu pages\n", out.size());
 }
 
+// Round trip of an alpha page per POCSAG speed: encode, flip the bits of one code word (hit = its index, -1 for none), parse.
+static std::vector<PagerMessage> parseWithFlip(const std::vector<PocsagPage>& pages, int hit, uint32_t mask, PocsagParser& p) {
+    const std::vector<uint8_t> bits = pocsagBits(pages);
+    std::vector<PagerMessage> out;
+    int k = 0;
+    for (size_t i = 576; i + 32 * 17 <= bits.size(); i += 32 * 17) {
+        for (int s = 0; s < 16; s++, k++) {
+            uint32_t w = wordFromBits(&bits[i + 32 + 32 * (size_t)s]);
+            if (k == hit) w ^= mask;
+            p.word(w, s, out);
+        }
+    }
+    p.flush(out);
+    return out;
+}
+
+static void pocsagRoundTripTests() {
+    // 512, 1200 and 2400 baud use the same code words: the bit layer carries the text, the baud only sets the symbol rate
+    const char* const texts[] = {"OnAir test 512: hello", "OnAir test 1200: hello", "OnAir test 2400: hello"};
+    const int bauds[] = {512, 1200, 2400};
+    for (int s = 0; s < 3; s++) {
+        PocsagPage a; a.ric = 1234563; a.fn = 3; a.type = kPagerAlpha; a.text = texts[s];
+        const std::vector<PocsagPage> pages = {a};
+        // clean: the text comes back whole and the page is not a tone page
+        PocsagParser clean; clean.readMode = kPocsagReadAlpha;
+        const std::vector<PagerMessage> out = parseWithFlip(pages, -1, 0, clean);
+        CHECK(out.size() == 1, "%d baud: %zu pages", bauds[s], out.size());
+        if (out.size() == 1) {
+            CHECK(out[0].type == kPagerAlpha && out[0].text == texts[s] && !out[0].damaged, "%d baud: '%s' type %d", bauds[s], out[0].text.c_str(), out[0].type);
+        }
+        // a message word that cannot be repaired (3 wrong bits, refused by the code): the third message word (code word 9,
+        // the address is code word 6) and the first one (code word 7)
+        const std::vector<uint8_t> bits = pocsagBits(pages);
+        auto refusedFlip = [&](int k) {
+            const uint32_t w = wordFromBits(&bits[576 + 32 + 32 * (size_t)k]);
+            for (int x = 0; x < 32; x++)
+                for (int y = x + 1; y < 32; y++)
+                    for (int z = y + 1; z < 32; z++) {
+                        const uint32_t m3 = (1u << x) | (1u << y) | (1u << z);
+                        if (pocsagClassify(w ^ m3).kind == PocsagWord::Failed) return m3;
+                    }
+            return 0u;
+        };
+        const uint32_t mask = refusedFlip(9), mask1 = refusedFlip(7);
+        CHECK(mask != 0 && mask1 != 0, "%d baud: no 3-bit error refused", bauds[s]);
+        PocsagParser mid; mid.readMode = kPocsagReadAlpha;
+        const std::vector<PagerMessage> outMid = parseWithFlip(pages, 9, mask, mid);
+        CHECK(outMid.size() == 1 && outMid[0].type == kPagerAlpha && outMid[0].damaged, "%d baud: damaged page kept (%zu pages)", bauds[s], outMid.size());
+        if (outMid.size() == 1) {
+            // the characters after the lost word come back exactly; the lost word's 20 bits are a gap (characters 5 and 8 may be dropped)
+            CHECK(outMid[0].text.rfind("OnAir", 0) == 0, "%d baud: text before the gap '%s'", bauds[s], outMid[0].text.c_str());
+            CHECK(outMid[0].text.find(std::string(texts[s]).substr(9)) != std::string::npos, "%d baud: text after the gap '%s'", bauds[s], outMid[0].text.c_str());
+        }
+        CHECK(mid.failed == 1, "%d baud: %d failed words", bauds[s], mid.failed);
+        // the first message word lost: the page used to become a tone page here
+        PocsagParser first; first.readMode = kPocsagReadAlpha;
+        const std::vector<PagerMessage> outFirst = parseWithFlip(pages, 7, mask1, first);
+        CHECK(outFirst.size() == 1 && outFirst[0].type != kPagerTone && !outFirst[0].text.empty(), "%d baud: first word lost gives a tone page", bauds[s]);
+        if (outFirst.size() == 1) CHECK(outFirst[0].text.find(std::string(texts[s]).substr(3)) != std::string::npos, "%d baud: text after first gap '%s'", bauds[s], outFirst[0].text.c_str());
+    }
+}
+
 int main() {
     bchTests();
     pocsagTests();
+    pocsagRoundTripTests();
     readModeTests();
     flexTests();
     handBuiltTest();
