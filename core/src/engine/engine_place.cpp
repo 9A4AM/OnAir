@@ -118,6 +118,7 @@ void Engine::configureReceiver(int a, double r) {
     case 28: rxVdl2_.configure(r); break;
     case 29: rxIsm_.configure(r); break;
     case 30: rxNdb_.configure(r); break;
+    case 123: rxDme_.configure(r); break;
     case 31: rxVor_.configure(r); break;
     case 32: rxM17_.configure(r); break;
     case 34: rxDstar_.configure(r); break;
