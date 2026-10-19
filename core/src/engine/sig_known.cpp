@@ -35,7 +35,7 @@ const Known kKnown[] = {
 {"D-STAR", "dstar", "", "Digital voice", MB(ModGmsk)|MB(ModFsk2), ModGmsk, {4800}, {4.9e3}, 1200, 0, 0, 0, SyncNone, {144, 148, 420, 450, 1240, 1300}, "GMSK 4800 Bd, 6.25 kHz"},
 {"TETRA", "tetra", "", "Digital voice", MB(ModPi4Dqpsk)|MB(ModQpsk)|MB(ModQam), ModPi4Dqpsk, {18000}, {20.9e3}, 0, 1, 0, 0, SyncNone, {380, 400, 410, 430, 450, 470, 870, 876, 915, 921}, "pi/4-DQPSK 18 kBd, 25 kHz, continuous downlink"},
 {"TETRAPOL", "tetrapol", "", "Digital voice", MB(ModGmsk)|MB(ModFsk2)|MB(ModFsk4), ModGmsk, {8000}, {7.5e3}, 0, 1, 0, 0, SyncNone, {380, 400, 410, 430, 450, 470}, "GMSK 8 kBd, 10 / 12.5 kHz, TDMA frames of 40 ms"},
-{"DECT", "dect", "", "Digital voice", MB(ModGmsk)|MB(ModFsk2)|MB(ModOfdm)|MB(ModPulse)|MB(ModFm), ModGmsk, {1.152e6}, {1.4e6}, 0, 2, 0.417, 0, SyncNone, {1880, 1900}, "GFSK 1.152 MBd, 10 ms TDMA frame, 24 slots of 0.417 ms"},
+{"DECT", "dect", "", "Digital voice", MB(ModGmsk)|MB(ModFsk2)|MB(ModOfdm)|MB(ModPulse)|MB(ModFm), ModGmsk, {1.152e6}, {1.4e6}, 0, 2, 0.417, 0, SyncNone, {1880, 1900, 1920, 1930}, "GFSK 1.152 MBd, 10 ms TDMA frame, 24 slots of 0.417 ms"},
 {"GSM-R / GSM", "gsmr", "", "Cellular", MB(ModGmsk)|MB(ModFsk2)|MB(ModChirp), ModGmsk, {270833}, {245e3}, 67708, 0, 0, 0, SyncNone, {876, 880, 921, 960, 1805, 1880}, "GMSK 270.833 kBd, 200 kHz, TDMA slots of 0.577 ms"},
 // ---- aviation
 {"ADS-B / Mode S", "adsb", "", "Aviation", MB(ModPulse)|MB(ModAm)|MB(ModOfdm), ModPulse, {1e6, 2e6}, {2.75e6, 2.6e6}, 0, 2, 0.12, 0, SyncNone, {1089, 1091}, "PPM pulses 1 Mbit/s, 120 us messages on 1090 MHz"},

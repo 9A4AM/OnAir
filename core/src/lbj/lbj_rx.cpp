@@ -22,7 +22,7 @@ ModeTuning lbjTuning() {
     t.maxMhz = 821.5;
     t.defMhz = lbj::kDefaultMhz;
     t.sampleRate = 960000;
-    t.basebandHz = 35000;
+    t.basebandHz = 150000;                   // the radio's analogue filter must pass the carrier 50 kHz off its centre (+-4.5 kHz deviation, 6 kHz channel)
     t.bandwidthMhz = 0.035;
     t.minSampleRate = 256000;
     t.tuneOffsetHz = 50000;

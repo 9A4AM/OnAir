@@ -53,6 +53,11 @@ static int countFound(const LbjTelemetry& t, const char* what) {
 int main() {
     const double rate = 960000;
     const double cycle = 4 * (576 + 32 + 512) / 1200.0 + 4 * 0.6 + 0.5;      // seconds
+    {   // the radio's analogue filter (total width basebandHz, centred on its own 0 Hz) must pass the carrier, which sits
+        // tuneOffsetHz away from the centre with about +-4.5 kHz of deviation: a 35 kHz filter cut every LBJ signal
+        const ModeTuning t = lbjTuning();
+        CHECK(t.basebandHz / 2 > t.tuneOffsetHz + 4500 + 6000, "analogue filter %.0f Hz does not pass the carrier at %.0f Hz", t.basebandHz, t.tuneOffsetHz);
+    }
     {
         SynthConfig cfg; cfg.snrDb = 40;
         countFound(run(cfg, rate, cycle + 1), "clean");
