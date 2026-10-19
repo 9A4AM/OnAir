@@ -666,6 +666,14 @@ EXPORT long long iio_device_attr_write(const void* dev, const char* a, const cha
 EXPORT int iio_device_attr_write_longlong(const void* dev, const char* a, long long v) { rec((std::string("pluto.") + (const char*)dev + "." + a).c_str(), (double)v); count("pluto.xoWrites"); return 0; }
 EXPORT int uhd_usrp_set_clock_source(void*, const char* src, size_t mb) { rec("usrp.clock", strcmp(src, "internal") == 0 ? 1 : strcmp(src, "external") == 0 ? 2 : strcmp(src, "gpsdo") == 0 ? 3 : 0); rec("usrp.clockMb", (double)mb); count("usrp.clockCalls"); return 0; }
 EXPORT int uhd_usrp_set_time_source(void*, const char* src, size_t) { rec("usrp.time", strcmp(src, "none") == 0 ? 1 : strcmp(src, "external") == 0 ? 2 : strcmp(src, "gpsdo") == 0 ? 3 : strcmp(src, "mimo") == 0 ? 4 : 0); count("usrp.timeCalls"); return 0; }
+// what the motherboard offers (a radio without a GPSDO: FAKE_USRP_NO_GPSDO) and the ref_locked sensor (FAKE_USRP_UNLOCKED)
+EXPORT int uhd_usrp_get_clock_sources(void*, size_t, strvec** h) { (*h)->v = {"internal", "external"}; if (!getenv("FAKE_USRP_NO_GPSDO")) (*h)->v.push_back("gpsdo"); return 0; }
+EXPORT int uhd_usrp_get_time_sources(void*, size_t, strvec** h) { (*h)->v = {"none", "external", "mimo"}; return 0; }
+struct uhd_sensor { bool v = false; };
+EXPORT int uhd_sensor_value_make(uhd_sensor** h) { *h = new uhd_sensor; return 0; }
+EXPORT int uhd_sensor_value_free(uhd_sensor** h) { delete *h; *h = nullptr; return 0; }
+EXPORT int uhd_usrp_get_mboard_sensor(void*, const char* name, size_t, uhd_sensor** h) { if (strcmp(name, "ref_locked") != 0) return 1; count("usrp.lockPolls"); (*h)->v = !getenv("FAKE_USRP_UNLOCKED"); return 0; }
+EXPORT int uhd_sensor_value_to_bool(uhd_sensor* h, bool* out) { *out = h->v; return 0; }
 EXPORT int uhd_get_last_error(char* out, size_t len) { snprintf(out, len, "%s", "fake UHD error"); return 0; }
 EXPORT int uhd_usrp_last_error(void*, char* out, size_t len) { snprintf(out, len, "%s", "fake USRP error"); return 0; }
 EXPORT int uhd_usrp_get_rx_freq_range(void*, size_t, uhd_range* r) { r->lo = 70e6; r->hi = 6e9; return 0; }
