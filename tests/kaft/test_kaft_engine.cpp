@@ -25,6 +25,7 @@
 using namespace dect2;
 namespace fs = std::filesystem;
 #include "../common/test_util.h"
+#include "../common/ci_slack.h"
 
 static std::vector<uint8_t> readFile(const std::string& p) {
     std::ifstream f(p, std::ios::binary);
@@ -197,7 +198,7 @@ int main() {
         std::string err;
         const double rate = 1.25e6;
         const std::vector<cf32> sig = generate(rq, rate, err);
-        for (double cfo : {-200.0, 150.0}) {
+        for (double cfo : {-200.0, 150.0, 2000.0, -2100.0}) {   // 5 ppm at 440 MHz is 2.2 kHz, the limit of root 7 at 200 kHz
             // Es/N0 = (P / Pn) x (rate / symbol rate): for 6 dB at 160 ksym/s the signal-to-noise ratio over the whole sample rate is 6 - 10log10(rate / 160e3)
             const double snrSample = 6.0 - 10.0 * std::log10(rate / 160e3);
             KaftLiveReceiver rx;
@@ -207,6 +208,56 @@ int main() {
             printf("200 kHz, cfo %+.0f Hz, Es/N0 6 dB: files %zu, blocks %llu/%llu, measured Es/N0 %.1f dB\n", cfo, r.t.files.size(), (unsigned long long)r.t.blocksOk, (unsigned long long)r.t.blocksBad, (double)r.t.esN0Db);
             CHECK(!r.t.files.empty() && r.t.files[0].saved && readFile(r.t.files[0].path) == data, "cfo %+.0f Hz with noise: file not delivered intact (%zu files)", cfo, r.t.files.size());
         }
+    }
+
+    // ---- 1 MHz width: carrier offsets up to +-5 kHz (about 5 ppm at 1 GHz) with noise (Es/N0 12 dB at 800 ksym/s)
+    {
+        const std::vector<uint8_t> data = randomBytes(6000, 71);
+        const std::string src = (dir / "in" / "wide.bin").string();
+        writeFile(src, data);
+        TxRequest rq;
+        rq.modeId = "kaft";
+        rq.file = src;
+        rq.opt["kaft.width"] = 0; rq.opt["kaft.profile"] = 2; rq.opt["kaft.repeat"] = 2;
+        std::string err;
+        const double rate = 2.4e6;
+        const std::vector<cf32> sig = generate(rq, rate, err);
+        for (double cfo : {5000.0, -5000.0, 3000.0}) {
+            KaftLiveReceiver rx;
+            rx.setSaveFolder((dir / "out_wide").string());
+            rx.configure(rate);
+            const Result r = feedAll(rx, sig, rate, cfo, 12.0 - 10.0 * std::log10(rate / 800e3));
+            printf("1 MHz, cfo %+.0f Hz, Es/N0 12 dB: files %zu, measured cfo %.0f Hz, blocks %llu/%llu\n", cfo, r.t.files.size(), (double)r.t.cfoHz, (unsigned long long)r.t.blocksOk, (unsigned long long)r.t.blocksBad);
+            CHECK(!r.t.files.empty() && r.t.files[0].saved && readFile(r.t.files[0].path) == data, "1 MHz with %+.0f Hz and noise: file not delivered intact", cfo);
+        }
+    }
+
+    // ---- speed: 10 s of a 2.4 Msps signal (a 1 MHz transfer, repeated) must be processed in well under real time
+    {
+        const std::vector<uint8_t> data = randomBytes(30000, 81);
+        const std::string src = (dir / "in" / "speed.bin").string();
+        writeFile(src, data);
+        TxRequest rq;
+        rq.modeId = "kaft";
+        rq.file = src;
+        rq.opt["kaft.width"] = 0; rq.opt["kaft.profile"] = 3; rq.opt["kaft.repeat"] = 1;
+        std::string err;
+        const double rate = 2.4e6;
+        const std::vector<cf32> one = generate(rq, rate, err);
+        std::vector<cf32> sig;
+        while ((double)sig.size() < 10.0 * rate) {
+            sig.insert(sig.end(), one.begin(), one.end());
+            sig.insert(sig.end(), (size_t)(0.3 * rate), cf32(0.f, 0.f));
+        }
+        sig.resize((size_t)(10.0 * rate));
+        KaftLiveReceiver rx;
+        rx.setSaveFolder((dir / "out_speed").string());
+        rx.configure(rate);
+        const Result r = feedAll(rx, sig, rate, 0, INFINITY);
+        const double cpuPerSec = r.secWork / (r.secSignal + 3.0 * 0.0);
+        printf("speed: %.1f s of signal at 2.4 Msps: %.2f s of CPU (%.2f x real time), files %zu\n", r.secSignal, r.secWork, cpuPerSec, r.t.files.size());
+        CHECK(r.secWork < 5.0 * ciSlack(), "10 s of 2.4 Msps took %.2f s of CPU, the limit is %.1f s", r.secWork, 5.0 * ciSlack());
+        CHECK(!r.t.files.empty(), "the speed run still delivers the file");
     }
 
     // ---- blocks lost in the first pass are made up by the second

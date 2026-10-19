@@ -134,14 +134,122 @@ float BurstReceiver::corrHalf(size_t n, int half) const {
 
 float BurstReceiver::metricAt(size_t n) const { return corrHalf(n, 0) + corrHalf(n, 1); }
 
+namespace {
+constexpr int kBlk = 8;                        // symbols per block
+constexpr int kNBlk = (2 * kZcLen) / kBlk;     // 31 blocks of the 254 preamble symbols
+constexpr int kHalfBlk = kZcLen / kBlk;        // 15 blocks in the first half
+}
+
+bool BurstReceiver::blockSums(size_t n, std::complex<double>* b) const {
+    const std::vector<cf>& pre = preambleSymbols();
+    if (n + (size_t)(kSps * (kNBlk * kBlk)) >= mf_.size()) return false;
+    for (int j = 0; j < kNBlk; ++j) {
+        cd acc{0, 0};
+        for (int i = 0; i < kBlk; ++i) {
+            const int k = j * kBlk + i;
+            acc += cd(mf_[n + (size_t)(kSps * k)]) * std::conj(cd(pre[(size_t)k]));
+        }
+        b[j] = acc;
+    }
+    return true;
+}
+
+static double stridedEnergy(const std::vector<double>& cs, size_t n, int count) {
+    const size_t last = n + (size_t)(kSps * (count - 1));
+    return cs[last] - (n >= (size_t)kSps ? cs[n - (size_t)kSps] : 0.0);
+}
+
+double BurstReceiver::blockMetricHalf(size_t n) const {
+    const std::vector<cf>& pre = preambleSymbols();
+    const int syms = kHalfBlk * kBlk;
+    double sum = 0;
+    for (int j = 0; j < kHalfBlk; ++j) {
+        cd acc{0, 0};
+        for (int i = 0; i < kBlk; ++i) {
+            const int k = j * kBlk + i;
+            acc += cd(mf_[n + (size_t)(kSps * k)]) * std::conj(cd(pre[(size_t)k]));
+        }
+        sum += std::norm(acc);
+    }
+    const double e = stridedEnergy(cs_, n, syms);
+    if (e < 1e-12) return 0.0;
+    return sum / e;   // noise only: mean 1 (a block of kBlk symbols adds kBlk times the sample power, kHalfBlk blocks cover kHalfBlk x kBlk symbols)
+}
+
+double BurstReceiver::blockMetricFull(size_t n) const {
+    cd b[kNBlk];
+    if (!blockSums(n, b)) return 0.0;
+    double sum = 0;
+    for (int j = 0; j < kNBlk; ++j) sum += std::norm(b[j]);
+    const double e = stridedEnergy(cs_, n, kNBlk * kBlk);
+    if (e < 1e-12) return 0.0;
+    return sum / e;
+}
+
+double BurstReceiver::blockOmega(size_t n) const {
+    cd b[kNBlk];
+    if (!blockSums(n, b)) return 0.0;
+    cd acc{0, 0};
+    for (int j = 0; j + 1 < kNBlk; ++j) acc += b[j + 1] * std::conj(b[j]);
+    return std::arg(acc) / (double)kBlk;
+}
+
+double BurstReceiver::cohMetric(size_t n, double wh) const {
+    const std::vector<cf>& pre = preambleSymbols();
+    if (n + (size_t)(kSps * kPreambleSyms) >= mf_.size()) return 0.0;
+    cd acc{0, 0};
+    for (int k = 0; k < kPreambleSyms; ++k)
+        acc += cd(mf_[n + (size_t)(kSps * k)]) * std::conj(cd(pre[(size_t)k])) * std::polar(1.0, -wh * k);
+    const double e = stridedEnergy(cs_, n, kPreambleSyms);
+    if (e < 1e-12) return 0.0;
+    return std::norm(acc) / (e * (double)kPreambleSyms);
+}
+
+void BurstReceiver::refinePeak(size_t coarse) {
+    // Two hypotheses, no offset and the offset read from the blocks; the one that correlates the whole preamble better wins (the block estimate is noisy
+    // at very low Es/N0, where the coherent halves already see a small offset).
+    auto search = [&](double wh, size_t& best, double& bestV) {
+        bestV = -1;
+        best = coarse;
+        for (long d = -4; d <= 4; ++d) {
+            if ((long)coarse + d < 8) continue;
+            const size_t k = (size_t)((long)coarse + d);
+            const double v = cohMetric(k, wh);
+            if (v > bestV) { bestV = v; best = k; }
+        }
+    };
+    size_t b0, b1;
+    double v0, v1;
+    search(0.0, b0, v0);
+    const double whBlk = blockOmega(coarse);
+    search(whBlk, b1, v1);
+    size_t best = b0;
+    double wh = 0.0;
+    if (v1 > 1.5 * v0) {   // a real offset: refine it at the better position
+        best = b1;
+        wh = blockOmega(b1);
+    }
+    double fr = 0.0;
+    if (best > 8) {
+        const double mm = cohMetric(best - 1, wh), m0 = cohMetric(best, wh), mp = cohMetric(best + 1, wh);
+        const double d = mm - 2.0 * m0 + mp;
+        if (d < 0.0) fr = std::max(-0.5, std::min(0.5, 0.5 * (mm - mp) / d));
+    }
+    peak_ = best;
+    frac_ = fr;
+    wh_ = wh;
+}
+
 bool BurstReceiver::scanForPeak() {
     const size_t need = (size_t)(kSps * (2 * kZcLen - 1) + 48);   // furthest sample one evaluation (and the peak search after it) touches
     const float th = cfg_.detectThreshold;
     size_t n = scan_;
     while (n + need < mf_.size()) {
+        bool found = false;
+        size_t best = n;
         const float a = corrHalf(n, 0);
         if (a > 0.4f * th && a + corrHalf(n, 1) > th) {
-            size_t best = n;
+            found = true;
             float bestM = metricAt(n);
             for (size_t k = n + 1; k <= n + 24; ++k) {
                 const float m = metricAt(k);
@@ -150,17 +258,23 @@ bool BurstReceiver::scanForPeak() {
                     best = k;
                 }
             }
-            double fr = 0.0;
-            if (best > 0) {
-                const float mm = metricAt(best - 1), mp = metricAt(best + 1);
-                const float d = mm - 2.f * bestM + mp;
-                if (d < 0.f) fr = std::max(-0.5, std::min(0.5, 0.5 * (double)(mm - mp) / (double)d));
+        } else if ((n & 1) == 0 && blockMetricHalf(n) > 2.2 && blockMetricFull(n) > 2.4) {
+            // a carrier offset too large for the coherent halves: found by the block powers (noise-only mean 1; the signal gives about 8 at full strength)
+            found = true;
+            double bestM = 0;
+            for (size_t k = n; k <= n + 24; ++k) {
+                const double m = blockMetricFull(k);
+                if (m > bestM) {
+                    bestM = m;
+                    best = k;
+                }
             }
-            peak_ = best;
-            frac_ = fr;
+        }
+        if (found) {
+            refinePeak(best);
             havePeak_ = true;
-            needMf_ = best + (size_t)(kSps * (kPreambleSyms + kHeaderSyms + 4)) + 8;
-            scan_ = best;
+            needMf_ = peak_ + (size_t)(kSps * (kPreambleSyms + kHeaderSyms + 4)) + 8;
+            scan_ = peak_;
             st_.detections++;
             return true;
         }
@@ -202,7 +316,7 @@ void BurstReceiver::decodeAtPeak() {
     const double pos0 = (double)peak_ + frac_;
     const int KN = kPreambleSyms + kHeaderSyms;   // 942 known symbols
     const int kc = KN / 2;                        // reference index of the known-symbol fit
-    auto at = [&](long k) { return symAt(pos0 + step * (double)k); };
+    auto at = [&](long k) { return cf(cd(symAt(pos0 + step * (double)k)) * std::polar(1.0, -wh_ * (double)(k - kZcLen))); };   // the offset found at detection is removed here
 
     std::vector<cf> r((size_t)KN);
     for (int k = 0; k < KN; ++k) r[(size_t)k] = at(k);
@@ -389,7 +503,7 @@ void BurstReceiver::decodeAtPeak() {
     out.flags = hdr.flags;
     out.nBlocks = nB;
     out.snrDb = (float)snr;
-    out.cfoHz = (float)(omega * kSymRate / (2.0 * kPi));
+    out.cfoHz = (float)((omega + wh_) * kSymRate / (2.0 * kPi));
     out.startSample = absBase_ + (uint64_t)peak_;
     {   // a sample of the equalised symbols for the display
         const size_t stride = std::max<size_t>(1, ds.size() / 400);

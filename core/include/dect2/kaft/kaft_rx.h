@@ -4,7 +4,11 @@
 // Input: complex baseband at config.inputRate (default kRefRate = 3.2 Msps, every width is a whole division of it). The receiver looks for all three
 // widths at once, each through its own decimation to 4 samples per symbol; the width whose preamble correlates is the width of the frame (a header that
 // disagrees with the preamble width is ignored, as the spec says).
-// Limits: the carrier offset is estimated from the two halves of the preamble (unambiguous to +-symRate/502: +-1.6 kHz at 1 MHz, +-320 Hz at 200 kHz);
+// Carrier offset: first from blocks of 16 preamble symbols, then refined from the two repeats of the preamble (residual within +-symRate/502). A Zadoff-Chu
+// sequence couples a timing error with a frequency error (one symbol of timing looks like symRate x root / 251), so the capture range is +-symRate x root / 502:
+// +-20 kHz at 1 MHz (root 13), +-8.7 kHz at 500 kHz (root 11) and +-2.2 kHz at 200 kHz (root 7; 5 ppm at 440 MHz, 1.7 ppm at 1.29 GHz).
+// Cost: the input is converted and matched-filtered once per width, only the new samples at each call.
+// Limits:
 // there is no sample clock tracking inside a frame (frames are at most 32000 symbols, so a clock error of a few ppm is harmless).
 #pragma once
 #include "dect2/kaft/kaft_frame.h"
@@ -34,7 +38,7 @@ struct FrameReceiverConfig {
     int forceWidth = -1;              // 0 / 1 / 2 to look for one width only, -1 for all
     float detectThreshold = 0.18f;    // normalised lag-251 autocorrelation that makes a candidate
     float verifyThreshold = 0.10f;    // normalised preamble cross-correlation that accepts it
-    ResampleFn resample;              // optional hook replacing resample() of kaft_frame.h
+    ResampleFn resample;              // no longer used: the receiver converts the input incrementally with its own copy of the resample() filter
 };
 
 class FrameReceiver {
@@ -59,6 +63,11 @@ private:
     };
     enum class Status { Ok, Incomplete, Reject };
     void process(bool final);
+    // Incremental front end: each width keeps its resampled stream (dec_) and its matched-filter output (mf_) from absolute output index decSt_; only the
+    // samples that arrived since the last call are converted (the outputs whose filter support is complete; the rest on flush).
+    void extendDec(int w, bool final);
+    void extendMf(int w, bool final);
+    void trimFront();
     Status decodeAt(int w, const std::vector<cf>& mf, const Cand& c, RxFrame& out, double& endIn) const;
 
     FrameReceiverConfig cfg_;
@@ -69,6 +78,10 @@ private:
     size_t sinceProcess_ = 0;
     size_t minProcess_ = 0;
     std::vector<RxFrame> frames_;
+    std::vector<cf> dec_[kNumWidths], mf_[kNumWidths];
+    int64_t decSt_[kNumWidths] = {0, 0, 0};
+    std::vector<float> tap_[kNumWidths];
+    int tapH_[kNumWidths] = {0, 0, 0};
 };
 
 // convenience: all frames of one recording

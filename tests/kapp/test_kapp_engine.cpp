@@ -122,10 +122,11 @@ int main() {
         CHECK(!r.t.constellation.empty() && r.t.constellationBits == 2, "rate %.0f: constellation %zu points, %d bits", rate, r.t.constellation.size(), r.t.constellationBits);
     }
 
-    // ---- impairments: carrier offsets and noise, several profiles. The offsets stay inside +-300 Hz: the receiver measures the carrier from the phase between the
-    // two Zadoff-Chu halves of the preamble (1.59 ms apart), which is unambiguous only to +-315 Hz (about 0.7 ppm at 433 MHz) - a limit of the KAPP receiver, reported.
+    // ---- impairments: carrier offsets (up to +-2.5 kHz: 5 ppm at 440 MHz, found from blocks of 8 preamble symbols) and noise, several profiles. Es/N0 of P0 is 1 dB,
+    // 2 dB above the measured -1 dB threshold.
     struct Case { int profile; double cfo, esn0; };
-    for (const Case c : {Case{2, 0, 9}, Case{2, 200, 9}, Case{2, -250, 9}, Case{0, 150, 3}, Case{5, -200, 16}, Case{8, 100, 33}}) {
+    for (const Case c : {Case{2, 0, 9}, Case{2, 200, 9}, Case{2, -250, 9}, Case{0, 150, 3}, Case{5, -200, 16}, Case{8, 100, 33},
+                         Case{2, 2000, 9}, Case{2, -2000, 9}, Case{2, 2500, 9}, Case{0, -2000, 1.0}, Case{0, 1500, 1.0}, Case{5, -2400, 16}, Case{8, 2000, 33}}) {
         TxRequest rq = base;
         rq.opt["kapp.profile"] = c.profile;
         std::string err;
