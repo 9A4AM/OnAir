@@ -600,6 +600,17 @@ const bool gGenOptions = [] {
 
 double generalChannelWidthMhz(const App&) { load(); double lo, hi; edges(lo, hi); return (hi - lo) / 1e6; }
 
+const char* generalDemodLabel() { load(); return dect2::generalDemodName(S.demod); }
+
+// the same demodulator choice as the controls above, drawn in the spectrum's BW popup
+void generalDemodPicker() {
+    load();
+    for (int d = 0; d < dect2::GenDemodCount; d++) {
+        if (d) ImGui::SameLine();
+        if (ImGui::RadioButton(dect2::generalDemodName(d), S.demod == d)) setDemod(d);
+    }
+}
+
 void generalChannelBand(const App& a, bool fill) {
     load();
     double lo, hi;

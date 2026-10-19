@@ -1044,6 +1044,8 @@ void generalPlotMouse(App& a, int plotId);
 void generalChannelBand(const App& a, bool fill);
 bool generalDragging(int plotId);
 double generalChannelWidthMhz(const App& a);
+const char* generalDemodLabel();      // the general receiver's demodulator as drawn in the spectrum readout ("NFM", "AM"...)
+void generalDemodPicker();            // its demodulator radio buttons (the spectrum's BW popup)
 void histogramPlot(App& a, ImVec2 size);
 void constDensityPlot(App& a, ImVec2 sz);
 void constClusterPlot(App& a, ImVec2 sz);
