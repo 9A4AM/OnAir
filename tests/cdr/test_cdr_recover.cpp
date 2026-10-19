@@ -145,6 +145,16 @@ int main() {
         auto m = play(*fresh(p), x, [&](CdrReceiver& r, double t) { if (!done && t >= 8.0) { done = true; r.reset(); } });
         window("after the retune", m, 12.0, 17.5, 5, 70);
     });
+    jobs.add([] {   // a 6 s dropout (the link stops): the lock is lost, the beacon is searched again after it, and the sound comes back and keeps going
+        auto x = clean(22);
+        for (size_t i = (size_t)(4.0 * kRate); i < (size_t)(10.0 * kRate); i++) x[i] = cf32(0, 0);
+        std::unique_ptr<CdrReceiver> p; auto m = play(*fresh(p), x, none);
+        window("6 s dropout, before it", m, 2.0, 4.0, 4, 50);
+        window("6 s dropout, after it (relocked)", m, 14.0, 19.5, 5, 70);
+        CdrTelemetry t; p->telemetry(t, 0);
+        CHECK(t.unlocks >= 1, "the dropout must drop the lock (%llu unlocks)", (unsigned long long)t.unlocks);
+        CHECK(t.locks >= 2, "the receiver must lock again after the dropout (%llu locks)", (unsigned long long)t.locks);
+    });
     jobs.add([] {   // an overloaded input (gain too high, samples at full scale): the receiver says so, and still decodes what it can
         auto x = clean(14);
         double pw = 0;
