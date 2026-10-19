@@ -365,6 +365,8 @@ static void viewMenu(App& a) {
             ImGui::TextDisabled("%s", tr("Ctrl + / Ctrl - / Ctrl 0"));
             ImGui::EndMenu();
         }
+        if (ImGui::MenuItem(tr("Touch interface"), nullptr, &a.touchUi)) savePrefs(a);   // the same flag as the side panel: big targets, bottom dock (ui/touch.h)
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("For tablets and touch screens: big buttons, an on-screen keypad for the frequency, a full-screen mode picker."));
         if (ImGui::MenuItem(tr("Transcripts ..."), nullptr, tx::windowOpen())) tx::windowOpen() = !tx::windowOpen();
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on."));
         if (ImGui::MenuItem(tr("Reset layout"))) { a.splitSide = a.splitRight = a.splitBottom = a.splitDock = a.splitBot2 = 0; savePrefs(a); }
