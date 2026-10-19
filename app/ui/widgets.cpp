@@ -1,5 +1,6 @@
 // small reusable widgets: pill buttons, lamps, gauges, scatter and history plots, formatting helpers
 #include "../app.h"
+#include "typography.h"
 #include "touch.h"
 #include "command_palette.h"
 
@@ -60,7 +61,7 @@ bool tabItem(const char* name, Ic icon) {
     const std::string label = std::string(nSp, ' ') + tr(name) + "###" + name;
     // a narrow pane (gTightTabs, set by mainTabs() for its tab bar): less padding, so that every tab keeps its whole name in view
     if (gTightTabs) ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(3 * gUi, ImGui::GetStyle().FramePadding.y));
-    const bool open = ImGui::BeginTabItem(label.c_str(), nullptr, fl);
+    const bool open = typo::beginTabItem(label.c_str(), nullptr, fl);
     if (touch::on()) touch::noteTab(name, open);   // swipe between tabs
     paletteNoteTab(name);                          // the command palette lists the tabs of this frame
     if (gTightTabs) ImGui::PopStyleVar();

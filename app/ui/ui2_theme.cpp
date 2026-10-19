@@ -77,6 +77,17 @@ void accentMenu() {
     ImGui::EndDisabled();
 }
 
+// View > Font look: Current (the default), Clean, Compact. Saved now; the fonts are built at start-up, so it applies after a restart.
+void typographyChoice(bool menu) {
+    static const char* names[3] = {N_("Current"), N_("Clean"), N_("Compact")};
+    const int cur = (int)plat::prefs().getI("uiTypography", 0);
+    ImGui::TextDisabled("%s", tr("Font look (applies after a restart)"));
+    for (int i = 0; i < 3; i++) {
+        const bool hit = menu ? ImGui::MenuItem(tr(names[i]), nullptr, cur == i) : ImGui::RadioButton(tr(names[i]), cur == i);
+        if (hit && i != cur) plat::prefs().setI("uiTypography", i);
+    }
+}
+
 // View > Theme: Dark (the palettes), Light (every colour's lightness turned over, main.cpp), High contrast (below)
 void themeChoice(App& a, bool menu) {
     static const char* names[3] = {N_("Dark"), N_("Light (dark on white)"), N_("High contrast (black, white, yellow)")};

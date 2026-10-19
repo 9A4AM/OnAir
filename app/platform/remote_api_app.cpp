@@ -1,6 +1,7 @@
 // The remote-control API inside the app (core/src/net/remote_api.cpp is the server): the host that carries the commands out on the main thread, the
 // published telemetry, the preferences and the settings panel (in View > Data feeds). Off by default; RX 1 only.
 #include "../app.h"
+#include "../ui/typography.h"
 #include "dect2/net/remote_api.h"
 #include "dect2/results/rx_json.h"
 #include <chrono>
@@ -267,7 +268,7 @@ void remoteApiTick(App& a) {
 void remoteApiSection(App& a) {
     State& s = st();
     RemoteApiConfig& c = s.cfg;
-    ImGui::SeparatorText(tr("Remote control API (HTTP and WebSocket)"));
+    typo::separatorText(tr("Remote control API (HTTP and WebSocket)"));
     bool ch = false;
     ch |= ImGui::Checkbox(tr("Let scripts and other programs control this receiver"), &c.on);
     ImGui::SameLine();

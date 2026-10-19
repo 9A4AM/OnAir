@@ -2,6 +2,7 @@
 // (https://github.com/Opendigitalradio/etisnoop): a node per FIG type and extension, a node per distinct FIG under it with how often and how
 // regularly it comes, and the decoded fields of that FIG under that (dab_fig.h).
 #include "app.h"
+#include "../ui/typography.h"
 #include "dect2/dab/dab_fig.h"
 #include <functional>
 
@@ -112,7 +113,7 @@ void dabFicTab(App& a) {
     if (fic.figs.empty()) { ImGui::TextDisabled(a.rx.dab.state == 2 ? "waiting for the first FIGs" : "no signal: nothing in the FIC yet"); return; }
 
     // ---- totals per FIG type and extension
-    if (ImGui::CollapsingHeader("FIG types in the FIC")) {
+    if (typo::collapsingHeader("FIG types in the FIC")) {
         uint64_t total = 0;
         for (const DabFicStat& s : fic.stats) total += s.bytes;
         if (ImGui::BeginTable("ficstat", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {

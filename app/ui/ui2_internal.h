@@ -4,6 +4,7 @@
 #pragma once
 #include "touch.h"
 #include "../app.h"
+#include "typography.h"
 #include "imgui_internal.h"   // RenderArrow for the folding mode groups
 
 namespace ui2 {
@@ -30,6 +31,7 @@ namespace ui2 {
 // ui2_theme.cpp
 void accentMenu();
 void themeChoice(App& a, bool menu);
+void typographyChoice(bool menu);
 
 // ui2_widgets.cpp
 void autoRange(App& a);

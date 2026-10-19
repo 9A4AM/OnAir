@@ -1,6 +1,7 @@
 // Radio clips dialog: choose a range on the history bar (or a preset), choose what goes in, save a folder + zip, copy the Discord text.
 #include "dect2/common/thread_name.h"
 #include "clips_ui.h"
+#include "../ui/typography.h"
 #include "clips.h"
 #include "../app.h"
 #include "../ui/icons.h"
@@ -195,7 +196,7 @@ void draw(App& a) {
     ImGui::SameLine();
     if (ImGui::Button(tr("Open folder"))) dect2::openUrl(D.lastDir.empty() ? plat::dataDir() + "/clips" : D.lastDir);
     if (!D.status.empty()) ImGui::TextWrapped("%s", D.status.c_str());
-    if (ImGui::CollapsingHeader(tr("Memory kept for clips"))) {
+    if (typo::collapsingHeader(tr("Memory kept for clips"))) {
         bool ch = false;
         ch |= ImGui::Checkbox(tr("Waterfall history"), &C.wf);
         if (C.wf) { ImGui::SameLine(); ImGui::SetNextItemWidth(110 * gUi); ch |= ImGui::SliderInt("##cwm", &C.wfMin, 1, 10, tr("%d min")); ImGui::SameLine(); ImGui::SetNextItemWidth(110 * gUi); ch |= ImGui::SliderInt("##cwb", &C.wfMB, 2, 64, tr("%d MB max")); }

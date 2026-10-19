@@ -3,6 +3,7 @@
 // Split from ui2.cpp; the shared declarations are in ui2_internal.h.
 #include "ui2_internal.h"
 #include "dect2/dsp/baseband_filter.h"
+#include "typography.h"
 
 using namespace ui2;
 
@@ -238,10 +239,10 @@ void bodyDock(App& a, float bodyH, ImVec2 disp) {
     beginPane("##dock", ImVec2(0, 0));
     tgRect(a, TgConst);
     if (ImGui::BeginTabBar("##docktabs", ImGuiTabBarFlags_DrawSelectedOverline)) {
-        if (!a.atsc3Mode && ImGui::BeginTabItem(trw("Analysis"))) { constellationsTab(a); ImGui::EndTabItem(); }
-        if (ImGui::BeginTabItem(listTitle(a, false))) { tgRect(a, TgRight); rightPanel(a); ImGui::EndTabItem(); }
-        if (ImGui::BeginTabItem(trw("Receiver"))) { statusBar(a); ImGui::Spacing(); receiverGlance(a, ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y); ImGui::EndTabItem(); }
-        if (ImGui::BeginTabItem(trw("Log"))) { logConsole(a, 0); ImGui::EndTabItem(); }
+        if (!a.atsc3Mode && typo::beginTabItem(trw("Analysis"))) { constellationsTab(a); ImGui::EndTabItem(); }
+        if (typo::beginTabItem(listTitle(a, false))) { tgRect(a, TgRight); rightPanel(a); ImGui::EndTabItem(); }
+        if (typo::beginTabItem(trw("Receiver"))) { statusBar(a); ImGui::Spacing(); receiverGlance(a, ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y); ImGui::EndTabItem(); }
+        if (typo::beginTabItem(trw("Log"))) { logConsole(a, 0); ImGui::EndTabItem(); }
         ImGui::EndTabBar();
     }
     endPane();

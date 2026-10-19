@@ -5,6 +5,7 @@
 #include <unistd.h>
 #endif
 #include "app.h"
+#include "ui/typography.h"
 #include "ui/contrast.h"
 #include "dect2/source/iq_file.h"
 #include "panels/gallery.h"
@@ -121,6 +122,10 @@ static void mergeCjk(ImGuiIO& io, ImFont* dst) {
 }
 
 void loadFonts(App& app, ImGuiIO& io) {
+    if (typo::loadFonts(io, [](ImGuiIO& i, ImFont* f) { mergeCjk(i, f); })) {   // Clean or Compact: Inter and JetBrains Mono, embedded
+        app.ui = typo::fonts().regular; app.mono = typo::fonts().mono;
+        return;
+    }
     ImFont* ui = nullptr;
     app.mono = nullptr;
     for (const auto& f : plat::monoFontCandidates()) if (access(f.c_str(), R_OK) == 0 && (ui = io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f))) break; // the whole UI is monospaced

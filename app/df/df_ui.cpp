@@ -3,6 +3,7 @@
 // fix from several bearings. Sources: a built-in simulator (demo, no hardware needed), an interleaved cf32 / SigMF recording, or bearings
 // read from a KrakenSDR DoA server JSON file. Nothing here talks to a radio: see docs/direction-finding.md for what is verified.
 #include "../app.h"
+#include "../ui/typography.h"
 #include "../ui/scale.h"
 #include "rfcam_ui.h"
 #include "../adsb/adsb_map.h"
@@ -389,7 +390,7 @@ void drawWindow(App& a) {
     ImGui::SameLine();
     ImGui::BeginChild("##dfright", ImVec2(0, 0), false);
     if (S.src != SrcJson) rfCamSection(a);
-    if (ImGui::CollapsingHeader(tr("Array and estimator"), ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (typo::collapsingHeader(tr("Array and estimator"), ImGuiTreeNodeFlags_DefaultOpen)) {
         const char* geos[] = {N_("Circular (KrakenSDR)"), N_("Linear")};
         ImGui::SetNextItemWidth(170 * gUi);
         if (ImGui::BeginCombo(tr("Array"), tr(geos[S.geo]))) { for (int i = 0; i < NumGeo; i++) if (ImGui::Selectable(tr(geos[i]), S.geo == i)) { S.geo = i; ch = true; } ImGui::EndCombo(); }
@@ -405,7 +406,7 @@ void drawWindow(App& a) {
         ImGui::SetNextItemWidth(70 * gUi); ImGui::InputInt(tr("Sources"), &S.sources); S.sources = std::clamp(S.sources, 1, std::max(1, S.elements - 1));
         ImGui::Checkbox(tr("Forward-backward averaging (reflections)"), &S.fb);
     }
-    if (ImGui::CollapsingHeader(tr("Calibration"))) {
+    if (typo::collapsingHeader(tr("Calibration"))) {
         ImGui::TextWrapped("%s", tr("1. Feed all channels the same signal: the receiver's noise source (KrakenSDR: switch it on in the DAQ), or a signal from a known bearing. 2. Choose the matching mode and press Calibrate. The offsets between the channels are measured and removed."));
         ImGui::RadioButton(tr("Common noise source"), &S.calMode, 0); ImGui::SameLine(); ImGui::RadioButton(tr("Known bearing"), &S.calMode, 1);
         if (S.calMode == 1) { ImGui::SetNextItemWidth(120 * gUi); ImGui::SliderFloat(tr("Bearing of the source"), &S.calBearing, 0, 359, "%.0f\xC2\xB0"); }
@@ -416,15 +417,15 @@ void drawWindow(App& a) {
         if (S.cal.empty()) ImGui::TextDisabled("%s", tr("Not calibrated."));
         if (S.src == SrcSim) { ImGui::Checkbox(tr("Simulated channel errors"), &S.simErrors); }
     }
-    if (S.src == SrcSim && ImGui::CollapsingHeader(tr("Simulator"), ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (S.src == SrcSim && typo::collapsingHeader(tr("Simulator"), ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::SetNextItemWidth(160 * gUi); ImGui::SliderFloat(tr("Transmitter bearing"), &S.simBearing, 0, 359.9f, "%.0f\xC2\xB0");
         ImGui::SameLine(); ImGui::Checkbox(tr("Spin"), &S.simSpin);
         ImGui::SetNextItemWidth(160 * gUi); ImGui::SliderFloat(tr("SNR per channel"), &S.simSnr, -10, 30, "%.0f dB");
         ImGui::Checkbox(tr("Second transmitter"), &S.sim2);
         if (S.sim2) { ImGui::SetNextItemWidth(160 * gUi); ImGui::SliderFloat(tr("Second bearing"), &S.sim2Bearing, 0, 359.9f, "%.0f\xC2\xB0"); }
     }
-    if (ImGui::CollapsingHeader(tr("Position fix"), ImGuiTreeNodeFlags_DefaultOpen)) fixSection(a);
-    if (ImGui::CollapsingHeader(tr("Sharing"))) {
+    if (typo::collapsingHeader(tr("Position fix"), ImGuiTreeNodeFlags_DefaultOpen)) fixSection(a);
+    if (typo::collapsingHeader(tr("Sharing"))) {
         ch |= ImGui::Checkbox(tr("Share my bearing on the map server"), &S.share);
         ImGui::TextWrapped("%s", tr("Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross."));
     }

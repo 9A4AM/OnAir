@@ -1,6 +1,7 @@
 // Marine screens: the NAVTEX messages grouped by station with the text panel, the DSC calls (distress in red, the position on a small
 // map), the weather fax picture (zoom, pan, slant, save as PNG) and a tuning aid (the audio spectrum with the tones each service expects).
 #include "app.h"
+#include "../ui/typography.h"
 #include "panels/gallery.h"
 #include "dect2/results/results_io.h"
 #include "../adsb/adsb_map.h"
@@ -148,7 +149,7 @@ void navtexView(App& a) {
             char h[48];
             snprintf(h, sizeof h, "Station %c  (%d)###st%c", cur, n, cur);
             ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-            open = ImGui::CollapsingHeader(h);
+            open = typo::collapsingHeader(h);
         }
         if (!open) continue;
         ImGui::PushID(navKey(*m).c_str());
@@ -723,7 +724,7 @@ void list(App& a) {
         ImGui::PopID();
     }
     if (svc == 0 || svc == 3) {
-        if (!S.faxes.empty()) ImGui::SeparatorText("Fax pictures");
+        if (!S.faxes.empty()) typo::separatorText("Fax pictures");
         for (size_t i = 0; i < S.faxes.size(); i++) {
             const State::Fax& f = S.faxes[i];
             ImGui::PushID((int)(1000 + i));
