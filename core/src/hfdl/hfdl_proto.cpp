@@ -41,9 +41,27 @@ int pskLabel(int bps, int k) {
 }
 } // namespace
 
+namespace {
+// QPSK and 8PSK points, computed once with the same expression the direct path uses (hfdlSoftBits and the equaliser call this per symbol)
+struct PskTable {
+    std::complex<float> pt[4][8];
+    PskTable() {
+        for (int bps = 2; bps <= 3; bps++)
+            for (int v = 0; v < (1 << bps); v++) {
+                const float ph = (float)(2 * M_PI * pskPhase(bps, v) / (1 << bps));
+                pt[bps][v] = {std::cos(ph), std::sin(ph)};
+            }
+    }
+};
+} // namespace
+
 std::complex<float> hfdlPsk(int bps, int v) {
     if (bps == 1) return {(v & 1) ? -1.f : 1.f, 0.f};
     const int M = 1 << bps;
+    if (bps == 2 || bps == 3) {   // the table holds exactly the values the formula below gives
+        static const PskTable t;
+        return t.pt[bps][v & (M - 1)];
+    }
     const float ph = (float)(2 * M_PI * pskPhase(bps, v & (M - 1)) / M);
     return {std::cos(ph), std::sin(ph)};
 }
