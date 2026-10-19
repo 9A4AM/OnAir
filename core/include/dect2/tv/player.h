@@ -123,7 +123,7 @@ public:
     void setConceal(bool on) { conceal_ = on; }    // bridge gaps in the stream: continue the audio, interpolate missing pictures
     bool conceal() const { return conceal_; }
     // Decode video on the graphics chip (VideoToolbox / Direct3D 11) when it can; off = always on the CPU. Takes effect by restarting the stream.
-    void setHardwareDecode(bool on) { if (hwAllowed_.exchange(on) != on) restart_ = true; }
+    void setHardwareDecode(bool on) { hwFallback_ = false; if (hwAllowed_.exchange(on) != on) restart_ = true; }
     bool hardwareDecode() const { return hwAllowed_; }
     bool subtitlesAvailable() const { return subsAvail_; }
     // Save the raw audio elementary stream (DRA, else MPEG audio) of the selected service to a file FFmpeg can play. Returns the file
@@ -163,6 +163,7 @@ private:
     std::atomic<bool> subsOn_{true}, subsAvail_{false};
     std::atomic<bool> conceal_{false};   // off by default: interpolating pictures costs CPU that slower computers need for decoding
     std::atomic<bool> hwAllowed_{true};
+    std::atomic<bool> hwFallback_{false};   // the GPU decoder stayed silent on this service: software decoding until the service or the setting changes
     ServiceFilter filter_;
     mutable std::mutex mu_;
     std::condition_variable cv_;
