@@ -3,6 +3,7 @@
 // the waterfall of the sweeps below, and CSV export of the current sweep.
 #include "dect2/common/thread_name.h"
 #include "app.h"
+#include "dect2/specan/burst_monitor.h"
 #include "dect2/specan/specan_dsp.h"
 #include "dect2/specan/specan_rx.h"
 #include "dect2/specan/specan_tel.h"
@@ -49,6 +50,14 @@ struct State {
     std::atomic<bool> autoBusy{false};
     std::thread autoTh;
     bool prefsLoaded = false;
+    // burst monitor: one level per sweep at the watched frequency
+    bool monOn = false, monOpen = false;
+    double monMhz = 20.1;
+    float monRiseDb = 6, monMinMs = 200;
+    dect2::BurstDetector mon;
+    float monLast = -200, monBase = -200;
+    struct MonEvent { std::time_t wall; double mhz; dect2::BurstEvent ev; };
+    std::vector<MonEvent> monLog;
 };
 State S;
 std::mutex& autoMu() { static std::mutex m; return m; }
@@ -133,6 +142,29 @@ float colMax(const std::vector<float>& v, const dect2::SpecanTelemetry& t, doubl
     return m;
 }
 
+void applyMonitor() {
+    dect2::BurstConfig c;
+    c.riseDb = S.monRiseDb;
+    c.minMs = S.monMinMs;
+    S.mon = dect2::BurstDetector(c);
+    S.monLast = S.monBase = -200;
+}
+
+// The level in the bin nearest the watched frequency, from this sweep, goes to the burst detector.
+void feedMonitor(const dect2::SpecanTelemetry& t) {
+    if (!S.monOn || t.binHz <= 0 || t.live.empty()) return;
+    const double k = (S.monMhz * 1e6 - t.loHz) / t.binHz;
+    if (k < 0 || k >= (double)t.live.size()) { S.monLast = -200; return; }
+    const float v = t.live[(size_t)k];
+    S.monLast = v;
+    dect2::BurstEvent ev;
+    if (S.mon.push(v, nowS() * 1000.0, ev)) {
+        S.monLog.push_back({std::time(nullptr), S.monMhz, ev});
+        if (S.monLog.size() > 200) S.monLog.erase(S.monLog.begin());
+    }
+    S.monBase = S.mon.lastBaseDb();
+}
+
 void ingest(App& a) {
     const auto& t = a.rx.specan;
     if (!live(a) || t.seq == S.seenSeq) return;
@@ -154,6 +186,7 @@ void ingest(App& a) {
         S.ps[i] = h <= 0.01f ? 0xFF000000u : Waterfall::jet(h);
     }
     S.wfDirty = S.psDirty = true;
+    feedMonitor(t);
 }
 
 std::string mhzText(double hz) {
@@ -362,6 +395,31 @@ void waterfall(App& a, float h) {
     ImGui::Dummy(ImVec2(w, h));
 }
 
+// Burst monitor: watch one frequency sweep by sweep; a rise of Rise dB above the running median for at least Minimum ms is logged.
+void monitor(App& a) {
+    if (!ImGui::CollapsingHeader("Burst monitor (solar and Jupiter bursts)")) return;
+    bool changed = ImGui::Checkbox("Watch", &S.monOn);
+    ImGui::SameLine();
+    changed |= ImGui::InputDouble("MHz", &S.monMhz, 0.01, 1.0, "%.3f");
+    ImGui::SameLine();
+    changed |= ImGui::SliderFloat("Rise (dB)", &S.monRiseDb, 1.f, 30.f, "%.0f");
+    ImGui::SameLine();
+    changed |= ImGui::InputFloat("Minimum (ms)", &S.monMinMs, 50.f, 500.f, "%.0f");
+    if (changed) applyMonitor();
+    if (!live(a)) ImGui::TextDisabled("Needs a running sweep that covers the watched frequency.");
+    else ImGui::Text("Level %.1f dB, median %.1f dB, %s", S.monLast, S.monBase, S.mon.inBurst() ? "in a burst" : "quiet");
+    ImGui::TextDisabled("One level per sweep, so the time resolution is one sweep. Sweeps are read while this tab is open.");
+    if (ImGui::SmallButton("Clear log")) S.monLog.clear();
+    ImGui::SameLine();
+    ImGui::TextDisabled("Ended        MHz       Peak dB  Median dB  Duration ms");
+    for (size_t i = S.monLog.size(); i-- > 0;) {
+        const auto& e = S.monLog[i];
+        char when[16] = "";
+        std::strftime(when, sizeof when, "%H:%M:%S", std::localtime(&e.wall));
+        ImGui::Text("%s  %10.3f  %8.1f  %9.1f  %11.0f", when, e.mhz, e.ev.peakDb, e.ev.baseDb, e.ev.durationMs);
+    }
+}
+
 void tab(App& a) {
     ingest(a);
     if (gGfx && !S.wf.empty()) {
@@ -371,6 +429,7 @@ void tab(App& a) {
         if (S.psDirty) { S.psImg->update(0, 0, State::kCols, State::kLevels, S.ps.data()); S.psDirty = false; }
     }
     controls(a);
+    monitor(a);
     const float avail = ImGui::GetContentRegionAvail().y;
     chart(a, std::max(120 * gUi, avail * 0.62f));
     waterfall(a, std::max(40 * gUi, ImGui::GetContentRegionAvail().y - 2));
