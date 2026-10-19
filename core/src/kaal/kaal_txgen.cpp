@@ -1,6 +1,8 @@
 // KAAL transmit generator: see kaal_txgen.h.
 #include "dect2/kaal/kaal_txgen.h"
 #include "dect2/kaal/kaal_tx.h"
+#include "dect2/kaal/kaal_codec3.h"
+#include "dect2/kaal/kaal_sweepid.h"
 #include "dect2/kaal/kaal_beacon.h"
 #include <algorithm>
 #include <cctype>
@@ -110,6 +112,16 @@ private:
 std::unique_ptr<TxGenerator> makeKaalTxGenerator(const TxRequest& r, double rateHz, std::string& err) {
     if (rateHz < 48000.0 - 1) { err = "KAAL needs a transmit rate of at least 48 kHz"; return nullptr; }
     auto g = std::make_unique<KaalGen>(rateHz, r.pullAudio);
+    const int kb = (int)std::lround(r.o("kaal.bitrate", 16.0));
+    if (!KaalCodec3::validBitrate(kb)) { err = "KAAL: the voice bitrate is 12, 16, 24 or 32 kbit/s"; return nullptr; }
+    g->tx_.setBitrate(kb);
+    {   // the callsign also goes into the sweep (6 characters + a suffix class); one that does not fit leaves the sweep without an ID
+        std::string cs;
+        for (char c : r.callsign) cs += (char)std::toupper((unsigned char)c);
+        while (!cs.empty() && cs.back() == ' ') cs.pop_back();
+        if (cs.empty()) cs = "ONAIR";
+        g->tx_.setSweepCallsign(cs);
+    }
     const bool beacon = r.o("kaal.beacon", 1) > 0.5;
     if (beacon) {
         std::string cs, gr, text;

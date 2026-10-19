@@ -45,7 +45,7 @@ int main() {
     KaalTelemetry last;
     uint64_t seq = 0;
     std::vector<cf32> blk(4800);
-    for (int i = 0; i < 100; i++) {   // 10 s
+    for (int i = 0; i < 300; i++) {   // 30 s (the sweep ID needs two cycles of 12 s)
         gen->generate(blk.data(), blk.size());
         rx.feed(blk.data(), blk.size());
         KaalTelemetry t;
@@ -56,11 +56,17 @@ int main() {
     CHECK(pulled > 0, "the generator pulled audio");
     CHECK(last.state == 2, "locked (state %d)", last.state);
     CHECK(last.blocksOk >= 100, "good frames %llu", (unsigned long long)last.blocksOk);
+    CHECK(last.bitrateKbps == 16, "the default voice bitrate is 16 kbit/s, telemetry says %d", last.bitrateKbps);
+    CHECK(last.sweepIdValid && last.sweepId == "LY2ABC", "sweep ID '%s' (valid %d)", last.sweepId.c_str(), (int)last.sweepIdValid);
     CHECK(last.blocksBad <= last.blocksOk / 10, "bad frames %llu", (unsigned long long)last.blocksBad);
-    CHECK(tapSamples >= 16000 * 5, "decoded speech %zu samples", tapSamples);
+    CHECK(tapSamples >= 16000 * 20, "decoded speech %zu samples", tapSamples);
     CHECK(last.beaconValid && last.callsign == "LY2ABC" && last.grid == "KO26ab", "beacon '%s' '%s'", last.callsign.c_str(), last.grid.c_str());
     CHECK(std::fabs(last.lat - 54.687) < 0.01 && std::fabs(last.lon - 25.279) < 0.01 && std::fabs(last.powerDbm - 20) < 0.6, "beacon position %.3f %.3f power %.1f", last.lat, last.lon, last.powerDbm);
 
+    // every codec bitrate is accepted, anything else refused; a callsign too long for the sweep ID is only sent in the beacon
+    for (int kb : {12, 16, 24, 32}) { TxRequest q = r; q.opt["kaal.bitrate"] = kb; CHECK(makeKaalTxGenerator(q, rate, err) != nullptr, "bitrate %d refused: %s", kb, err.c_str()); }
+    { TxRequest q = r; q.opt["kaal.bitrate"] = 20; CHECK(!makeKaalTxGenerator(q, rate, err) && !err.empty(), "bitrate 20 must be refused"); }
+    { TxRequest q = r; q.callsign = "OH2XYZ123"; CHECK(makeKaalTxGenerator(q, rate, err) != nullptr, "a 9-character callsign is fine for the beacon: %s", err.c_str()); }
     // an unusable callsign is refused in plain words, and the sound-card path of a rate below 48 kHz too
     TxRequest bad = r;
     bad.callsign = "WAYTOOLONGCALL";

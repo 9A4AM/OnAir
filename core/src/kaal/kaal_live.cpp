@@ -17,6 +17,9 @@ struct KaalLiveReceiver::Impl {
     std::mutex pubMu;                        // the published telemetry and the callbacks
     kaal::VoiceRx vrx;
     kaal::BeaconSliceRx brx;
+    kaal::SweepIdScanner scan;               // station ID from the sweep alone, while the voice receiver is not locked
+    kaal::SweepIdResult scanId;              // the last ID the scanner found (kept while the voice receiver has the signal)
+    bool scanWasFed = false;
     double rate = 0;
     bool ready = false;
     uint64_t samples = 0, nextReport = 0, seq = 0;
@@ -65,6 +68,9 @@ struct KaalLiveReceiver::Impl {
     void startStream() {
         vrx.configure(rate);
         brx.configure(rate);
+        scan.configure(rate);
+        scanId = kaal::SweepIdResult();
+        scanWasFed = false;
         samples = 0; nextReport = (uint64_t)(0.25 * rate); level = 0; lastSample = 0;
         beaconValid = false; beacons = 0; beaconAtSec = 0; btext.clear(); bf = kaal::BeaconFields();
         wasLocked = false;
@@ -79,6 +85,9 @@ struct KaalLiveReceiver::Impl {
         t.audioLevel = level;
         level *= 0.7f;
         t.blocksOk = st.framesGood; t.blocksBad = st.framesBad;
+        t.bitrateKbps = st.bitrateKbps;
+        if (st.idValid) { t.sweepIdValid = true; t.sweepId = st.idCall; t.sweepIdGateDb = st.idGateDb; }
+        else if (scanId.valid) { t.sweepIdValid = true; t.sweepId = scanId.callsign; t.sweepIdGateDb = scanId.gateDb; }
         t.dataValid = st.locked && st.framesGood > 0;
         t.inputRate = rate;
         t.timeSec = rate > 0 ? (double)samples / rate : 0;
@@ -136,6 +145,18 @@ void KaalLiveReceiver::feed(const cf32* x, size_t n) {
     if (!m.ready) return;
     m.vrx.feed(x, n);
     m.brx.feed(x, n);
+    {   // the sweep-only scanner reads the signals the voice receiver cannot lock to
+        const bool locked = m.vrx.stats().locked;
+        if (!locked) { m.scan.feed(x, n); m.scanWasFed = true; }
+        else if (m.scanWasFed) { m.scan.reset(); m.scanWasFed = false; }
+        kaal::SweepIdResult ir;
+        while (m.scan.poll(ir)) {
+            m.scanId = ir;
+            std::function<void(const std::string&)> lg;
+            { std::lock_guard<std::mutex> pk(m.pubMu); lg = m.log; }
+            if (lg) lg("KAAL sweep ID " + ir.callsign);
+        }
+    }
     m.samples += n;
     m.pcm.resize(4096);
     for (;;) {

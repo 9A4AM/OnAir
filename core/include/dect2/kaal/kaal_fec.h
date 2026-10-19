@@ -20,6 +20,13 @@ void ldpcEncode(const uint8_t* info, uint8_t* out);
 // llr: 640 values, positive = bit 0 more likely. info: 320 decoded bits. Returns true when all parity checks are satisfied.
 // iterationsUsed (optional) gets the number of message-passing iterations run.
 bool ldpcDecode(const float* llr, uint8_t* info, int maxIter = kLdpcIters, float alpha = kLdpcAlpha, int* iterationsUsed = nullptr);
+// Rate-matched words for the 160-symbol voice frames (480 coded bits): the (640,320) code shortened to k information bits, k in 160 ..
+// 320 (the 320 - k missing information bits are zero and not sent), and punctured to 480 sent bits: k information bits followed by the
+// first 480 - k parity bits (the tail of the parity part is dropped). k = 240 is rate 1/2, k = 320 is rate 2/3.
+constexpr int kRmCoded = 480;
+void ldpcEncodeRm(const uint8_t* info, int k, uint8_t* out);   // info: k bits; out: 480 bits [info | parity]
+// llr: 480 values, positive = bit 0 more likely. info: k decoded bits. Returns true when all parity checks of the full code are satisfied.
+bool ldpcDecodeRm(const float* llr, int k, uint8_t* info, int maxIter = kLdpcIters, float alpha = kLdpcAlpha);
 // Fraction of satisfied parity checks on the hard decisions of llr (alignment metric).
 float ldpcSyndromeScore(const float* llr);
 
