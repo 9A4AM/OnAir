@@ -304,6 +304,20 @@ struct StreamCbParamsT {   // sdrplay_api_StreamCbParamsT
     int fsChanged;
     unsigned int numSamples;
 };
+// The analogue IF filter for a channel: the narrowest that holds the channel (and what the app wants its filter to pass), but never wider than the
+// sample rate. A narrow channel the app tunes offCentreHz away from the radio's centre (to keep it off the DC spike) must lie inside the filter, which
+// is centred on the radio: the filter is at least 2 * (|offset| + channel / 2) wide (issue #199: Meteor LRPT, 120 kHz wide, 200 kHz off the centre,
+// was cut away by the 200 kHz filter picked for its 150 kHz channel).
+inline Bw_MHzT ifBandwidth(double channelHz, double filterHz, double rate, double offCentreHz = 0) {
+    static const Bw_MHzT bws[] = {BW_0_200, BW_0_300, BW_0_600, BW_1_536, BW_5_000, BW_6_000, BW_7_000, BW_8_000};
+    double want = channelHz > filterHz ? channelHz : filterHz;
+    const double off = offCentreHz < 0 ? -offCentreHz : offCentreHz;
+    if (off > 0) { const double need = 2 * (off + channelHz / 2); if (need > want) want = need; }
+    size_t i = 0;
+    while (i + 1 < 8 && (int)bws[i] * 1e3 < want * 0.999) i++;
+    while (i > 0 && (int)bws[i] * 1e3 > rate * 1.001) i--;
+    return bws[i];
+}
 }   // namespace sdrplay
 }   // namespace dect2
 
