@@ -696,6 +696,7 @@ void wfDisplayPopup(App& a) {
     ImGui::Separator();
     if (ImGui::Checkbox(tr("Pause"), &a.wf.paused)) { if (!a.wf.paused) a.wf.nextRowT = 0; }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Stop adding rows: the picture stays, and drag or the wheel on the waterfall scroll and zoom back through it"));
+    wfExportPopup(a);
 }
 
 // the unit, the offset of the radio and the other choices of the spectrum line

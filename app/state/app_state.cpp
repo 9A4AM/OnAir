@@ -377,7 +377,7 @@ void ingestSpectrum(App& a) {
     for (size_t i = 0; i < n; i++) sm[i] += alpha * (in[i] - sm[i]);
     if (a.holdDecay > 0) for (size_t i = 0; i < n; i++) pk[i] = std::max(pk[i] - fall, in[i]);
     else for (size_t i = 0; i < n; i++) pk[i] = std::max(pk[i], in[i]);
-    if (a.wf.offer(f.dbfs, now)) a.wf.stamp(now);
+    if (a.wf.offer(f.dbfs, now)) { a.wf.stamp(now); wfExportRow(a, now); }
     roomsFeedRow(f.dbfs, a.wf.minDb, a.wf.maxDb);   // Live rooms (a flag check when not live)
     clipsui::feed(f.dbfs);   // radio clips: the retroactive history
     if (a.wf.autoTrack && !a.wf.paused && now - a.wf.trackT > 0.25) { a.wf.trackT = now; a.wf.fitRange(a.smooth, false); }

@@ -469,7 +469,15 @@ void showFatalError(const char* title, const char* text) {
 #ifdef _WIN32
 std::string openFileDialog() { return fileDialog(false, nullptr); }
 std::string saveFileDialog(const char* name) { return fileDialog(true, name); }
+std::string openFolderDialog() { return {}; }   // Windows: the path is typed in the export dialog
 #else
+std::string openFolderDialog() {
+    if (haveProgram("zenity")) return capture("zenity --file-selection --directory --title='Choose a folder' 2>/dev/null");
+    if (haveProgram("kdialog")) return capture("kdialog --getexistingdirectory \"$HOME\" 2>/dev/null");
+    fprintf(stderr, "no folder dialog available (install zenity or kdialog); type the path in the text field instead\n");
+    return {};
+}
+
 std::string openFileDialog() {
     if (haveProgram("zenity")) return capture("zenity --file-selection --title='Open' 2>/dev/null");
     if (haveProgram("kdialog")) return capture("kdialog --getopenfilename \"$HOME\" 2>/dev/null");
