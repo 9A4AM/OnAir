@@ -5,6 +5,7 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 namespace dect2 {
@@ -26,6 +27,22 @@ public:
     std::vector<int16_t> decode(const std::vector<uint8_t>& bits) const;
     // One vector per frame; a frame whose size is not 320 counts as lost.
     std::vector<int16_t> decode(const std::vector<std::vector<uint8_t>>& frames) const;
+
+    // Frame-by-frame decoding with the same state as decode(): pushing the frames of a stream one at a time gives exactly the samples
+    // decode() returns for the whole stream.
+    class StreamDecoder {
+    public:
+        StreamDecoder();
+        ~StreamDecoder();
+        StreamDecoder(const StreamDecoder&) = delete;
+        StreamDecoder& operator=(const StreamDecoder&) = delete;
+        void reset();
+        // bits: 320 bytes of 0 or 1, or nullptr for a lost frame (concealed). pcm receives kFrame samples (delayed by kDelay as in decode()).
+        void push(const uint8_t* bits, int16_t* pcm);
+    private:
+        struct Impl;
+        std::unique_ptr<Impl> p_;
+    };
 };
 
 }  // namespace dect2

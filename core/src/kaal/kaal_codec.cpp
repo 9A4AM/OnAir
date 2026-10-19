@@ -387,37 +387,43 @@ std::vector<uint8_t> KaalCodec::encode(const int16_t* pcm, size_t n) const {
 }
 
 namespace {
-// ptr == nullptr: a frame that is not valid by shape
-std::vector<int16_t> decodeImpl(const std::vector<const uint8_t*>& frames) {
-    const size_t nf = frames.size();
-    DecState st;
-    std::vector<double> out(nf * FRAME);
-    for (size_t t = 0; t < nf; t++) {
-        double X[FRAME];
-        bool ok = false;
-        if (frames[t]) {
-            bool binary = true;
-            for (int i = 0; i < BITS; i++) if (frames[t][i] > 1) { binary = false; break; }
-            if (binary) ok = decodeFrame(frames[t], st, X);
-        }
-        if (!ok) {   // concealment: repeat the last good spectrum, decayed, with random signs
-            st.lossRun++;
-            double nz[FRAME];
-            st.noise(nz, FRAME);
-            const double decay = std::pow(0.6, st.lossRun);
-            for (int k = 0; k < FRAME; k++) X[k] = st.lastX[k] * decay * (nz[k] < 0 ? -1.0 : 1.0);
-        } else {
-            st.lossRun = 0;
-            std::copy(X, X + FRAME, st.lastX);
-        }
-        st.synth(X, &out[t * FRAME]);
+// One decoder step: ptr == nullptr is a frame that is not valid by shape. Writes FRAME samples.
+void stepFrame(const uint8_t* frame, DecState& st, int16_t* pcm) {
+    double X[FRAME];
+    bool ok = false;
+    if (frame) {
+        bool binary = true;
+        for (int i = 0; i < BITS; i++) if (frame[i] > 1) { binary = false; break; }
+        if (binary) ok = decodeFrame(frame, st, X);
     }
-    std::vector<int16_t> pcm(out.size());
-    for (size_t i = 0; i < out.size(); i++)
-        pcm[i] = (int16_t)std::min(32767.0, std::max(-32768.0, std::nearbyint(out[i])));
+    if (!ok) {   // concealment: repeat the last good spectrum, decayed, with random signs
+        st.lossRun++;
+        double nz[FRAME];
+        st.noise(nz, FRAME);
+        const double decay = std::pow(0.6, st.lossRun);
+        for (int k = 0; k < FRAME; k++) X[k] = st.lastX[k] * decay * (nz[k] < 0 ? -1.0 : 1.0);
+    } else {
+        st.lossRun = 0;
+        std::copy(X, X + FRAME, st.lastX);
+    }
+    double blk[FRAME];
+    st.synth(X, blk);
+    for (int i = 0; i < FRAME; i++) pcm[i] = (int16_t)std::min(32767.0, std::max(-32768.0, std::nearbyint(blk[i])));
+}
+
+std::vector<int16_t> decodeImpl(const std::vector<const uint8_t*>& frames) {
+    DecState st;
+    std::vector<int16_t> pcm(frames.size() * FRAME);
+    for (size_t t = 0; t < frames.size(); t++) stepFrame(frames[t], st, &pcm[t * FRAME]);
     return pcm;
 }
 }  // namespace
+
+struct KaalCodec::StreamDecoder::Impl { DecState st; };
+KaalCodec::StreamDecoder::StreamDecoder() : p_(new Impl) {}
+KaalCodec::StreamDecoder::~StreamDecoder() = default;
+void KaalCodec::StreamDecoder::reset() { p_.reset(new Impl); }
+void KaalCodec::StreamDecoder::push(const uint8_t* bits, int16_t* pcm) { stepFrame(bits, p_->st, pcm); }
 
 std::vector<int16_t> KaalCodec::decode(const uint8_t* bits, size_t nFrames) const {
     std::vector<const uint8_t*> f(nFrames);
