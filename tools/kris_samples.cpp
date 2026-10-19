@@ -1,12 +1,14 @@
-// Writes sample IQ files of the KAAL, KAPP and KAFT transmitters through the transmit IQ-file sink (tx_iqfile.h):
+// Writes sample IQ files of the KAAL, KAPP, KAFT and KAIT transmitters through the transmit IQ-file sink (tx_iqfile.h):
 //   kris_samples <out folder> [<folder with 16 kHz mono voice WAV files for KAAL, one per file>]
 // Per signal: a two-channel 16-bit WAV (I left, Q right, opens in SDR++), a SigMF cf32 and a SigMF ci16 file. The rates are the transmitters' own:
-// KAAL 48 ksps, KAPP 320 ksps (the 640 ksps internal rate halved), KAFT 4 samples per symbol (640 ksps, 1.6 Msps, 3.2 Msps for 200 kHz, 500 kHz, 1 MHz).
+// KAAL 48 ksps, KAPP 320 ksps (the 640 ksps internal rate halved), KAFT 4 samples per symbol (640 ksps, 1.6 Msps, 3.2 Msps for 200 kHz, 500 kHz, 1 MHz), KAIT 632 ksps (4 samples per symbol, 10 s picture burst).
 #include "dect2/kaal/kaal_txgen.h"
 #include "dect2/kaft/kaft_frame.h"
 #include "dect2/kaft/kaft_rx.h"
 #include "dect2/kapp/kapp_rx.h"
 #include "dect2/kapp/kapp_frame.h"
+#include "dect2/kait/kait_frame.h"
+#include "dect2/kait/kait_rx.h"
 #include "dect2/tx/tx.h"
 #include "dect2/tx/tx_iqfile.h"
 #include <cmath>
@@ -151,6 +153,30 @@ static void kappProfile(const std::string& dir, int p, double snrDb, const char*
     writeAll(dir, nm, 320000, all, "kapp");
 }
 
+
+// KAIT: one 10 s picture burst (the synthetic 1080p test picture) with noise at snrDb in the 190 kHz band, half a second of noise before and after
+static void kaitSample(const std::string& dir, int profile, double snrDb, const char* label) {
+    const kait::BurstPlan plan = kait::planBurst(kait::syntheticPicture(), "LY1TST", profile);
+    if (!plan.ok) { fprintf(stderr, "kait: no plan for profile %d\n", profile); g_ok = false; return; }
+    const std::vector<cfx> burst = kait::buildBurst(plan);
+    const size_t pad = (size_t)(0.5 * kait::kInternalRate);
+    std::vector<cf32> all(pad + burst.size() + pad, cf32(0, 0));
+    std::copy(burst.begin(), burst.end(), all.begin() + (long)pad);
+    std::mt19937_64 rng(3000 + (unsigned)profile);
+    const double sd = std::sqrt(kait::kInternalRate / kait::kBandwidthHz / std::pow(10.0, snrDb / 10.0) / 2.0);
+    std::normal_distribution<double> g(0.0, sd);
+    for (cf32& s : all) s += cf32((float)g(rng), (float)g(rng));
+    {   // check: our own receiver decodes the file
+        const kait::RxResult r = kait::decodeBurst(all);
+        printf("check KAIT profile %d at %.0f dB: header %d, SNR %.1f dB, %d of %d layers, %zu stream bytes, picture PSNR %.1f dB\n", profile, snrDb, r.headerOk, r.snrDb, r.layersComplete,
+               r.hdr.nLayers, r.bytesGood, r.image.rgb.empty() ? 0.0 : kait::psnrRgb(kait::syntheticPicture(), r.image));
+        if (!r.headerOk) g_ok = false;
+    }
+    char nm[64];
+    snprintf(nm, sizeof nm, "KAIT_P%d_%s", profile, label);
+    writeAll(dir, nm, kait::kInternalRate, all, "kait");
+}
+
 static void kaftProfile(const std::string& dir, kaft::Width w, int p, double snrDb, const char* label) {
     std::mt19937_64 rng(2000 + (unsigned)p * 7 + (unsigned)w);
     const kaft::WidthInfo& wi = kaft::widthInfo(w);
@@ -212,6 +238,8 @@ int main(int argc, char** argv) {
     kappProfile(out + "/KAPP", 1, 12.0, "low");
     kappProfile(out + "/KAPP", 4, 22.0, "mid");
     kappProfile(out + "/KAPP", 7, 34.0, "high");
+    kaitSample(out + "/KAIT", 1, -4.0, "weak");
+    kaitSample(out + "/KAIT", 0, 9.0, "mid");
     kaftProfile(out + "/KAFT", kaft::Width::W200k, 1, 12.0, "low");
     kaftProfile(out + "/KAFT", kaft::Width::W500k, 4, 24.0, "mid");
     kaftProfile(out + "/KAFT", kaft::Width::W1M, 1, 12.0, "low");
