@@ -170,7 +170,7 @@ const ModeUi* modeUi(int family) {
     case 79: return &kTetrapolUi;
     case 80: return &kElektroUi;
     case 81: return &kLbjUi;
-    case 119: return &kDgpsUi;
+    case 120: return &kDgpsUi;
     case 83: return &kUatUi;
     case 75: return &kMultitoneUi;
     case 71: return &kLoraRawUi;

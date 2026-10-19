@@ -136,7 +136,7 @@ void DgpsReceiver::setLogCallback(std::function<void(const std::string&)> cb) {
 
 ModeTuning dgpsTuning() {
     ModeTuning t;
-    t.stdMode = 121;
+    t.stdMode = 122;
     t.id = "dgps";
     t.name = "DGPS beacon (WIP)";
     t.minMhz = 0.2835;

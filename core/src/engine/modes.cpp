@@ -589,7 +589,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 80: return tetrapolSummary(t.tetrapol);
     case 81: return elektroSummary(t.elektro);
     case 82: return lbjSummary(t.lbj);
-    case 120: return dgpsSummary(t.dgps);
+    case 122: return dgpsSummary(t.dgps);
     case 84: return uatSummary(t.uat);
     case 76: return multitoneSummary(t.multitone);
     case 72: return loraRawSummary(t.loraraw);

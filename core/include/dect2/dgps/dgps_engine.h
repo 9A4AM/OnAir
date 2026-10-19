@@ -1,5 +1,5 @@
 // DGPS beacons in the engine: the receiver of dgps_rx.h behind the engine's interface (configure, offset, feed, telemetry).
-// Engine standard 121 (family 119, "DGPS beacon (WIP)"), active standard 120. Receive only; nothing is transmitted.
+// Engine standard 122 (family 120, "DGPS beacon (WIP)"). Receive only; nothing is transmitted.
 #pragma once
 #include "dect2/dgps/dgps_rx.h"
 #include "dect2/engine/mode_tuning.h"

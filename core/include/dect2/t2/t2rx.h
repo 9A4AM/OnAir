@@ -222,7 +222,7 @@ struct RxTelemetry {
     MacTelemetry mac;           // valid when standard == 48
     GsmrTelemetry gsmr;         // valid when standard == 40
     LbjTelemetry lbj;           // valid when standard == 82 (LBJ, engine standard 83)
-    DgpsTelemetry dgps;         // valid when standard == 120 (DGPS beacon, engine standard 121)
+    DgpsTelemetry dgps;         // valid when standard == 122 (DGPS beacon, engine standard 122)
     struct Dvbt {                // DVB-T only: TPS parameters and the channel decoder's statistics
         bool tpsOk = false, fecSync = false;
         int mode = 0, guard = 0, mod = 0, hier = 0, crHp = 0, crLp = 0, cellId = 0, frameIdx = 0, punctPhase = 0;
