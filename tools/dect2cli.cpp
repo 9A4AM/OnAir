@@ -47,6 +47,7 @@ static double secsSinceStart() { return std::chrono::duration<double>(std::chron
 
 int main(int argc, char** argv) {
     std::string msLog;
+    std::string dcsLog;
     dect2::crash::install("crash-cli");   // a crash leaves crash-cli.txt next to the log
     if (!dect2::cpuSupportsBuild()) { fprintf(stderr, "this build needs a processor with AVX2 and FMA\n"); return 1; }
     Engine e;
@@ -97,6 +98,7 @@ int main(int argc, char** argv) {
         else if (a == "--bw") tune.bandwidthMhz = atof(next());
         else if (a == "--autobw") autoBw = true;
         else if (a == "--secs") secs = atof(next());
+        else if (a == "--dcs-log") dcsLog = next();   // with --standard goesdcs: append every report to this CSV file
         else if (a == "--ms-log") msLog = next();   // with --standard mscatter: append every ping to this CSV file
         else if (a == "--play") playSid = atoi(next());
         else if (a == "--serve") servePort = atoi(next());
@@ -221,6 +223,7 @@ int main(int argc, char** argv) {
     e.general().setSilent(true);  // general receiver: no sound from the command line
     e.wifi().clearNetworks();     // Wi-Fi networks: no sound; the network table is printed with each line
     e.flarm().clearResults();
+    if (!dcsLog.empty()) e.goesdcs().setLogFile(dcsLog);   // GOES DCS: the reports are appended to a CSV file
     if (!msLog.empty()) e.mscatter().setLogFile(msLog);   // meteor scatter: the pings are appended to a CSV file
     e.hfbeacon().setSilent(true);   // HF beacons: no sound in the command line
     e.dji().clearResults();       // DJI drones: the drones and signals are printed with each line
@@ -410,6 +413,11 @@ int main(int argc, char** argv) {
                 for (const auto& n : t.halow.nets)
                     printf("  halow: %s %-32s ch %3d %6.1f MHz %d MHz MCS %d x%d %-9s %-9s SNR %3.0f dB %6.1f dBFS %s\n", n.bssid.c_str(), n.hasSsid ? n.ssid.c_str() : n.hidden ? "(hidden)" : "(compressed SSID)", n.ccf, n.freqMhz,
                            n.seenWidthMhz, n.mcs, n.nss, n.security.c_str(), n.pre == 0 ? "S1G_SHORT" : n.pre == 1 ? "S1G_LONG" : "S1G_1M", n.snrDb, n.rssi, n.vendor.c_str());
+            if (t.standard == 131)   // GOES DCS: the newest reports
+                for (size_t i = 0; i < t.goesdcs.messages.size() && i < 3; i++) {
+                    const auto& p = t.goesdcs.messages[i];
+                    printf("  dcs: %08X ch %d %d bps %5.1f dB %.60s\n", p.address, p.channel, p.bps, (double)p.snrDb, p.text.c_str());
+                }
             if (t.standard == 105)   // meteor scatter: the newest pings
                 for (size_t i = 0; i < t.mscatter.pings.size() && i < 3; i++) {
                     const auto& p = t.mscatter.pings[i];

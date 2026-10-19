@@ -3388,3 +3388,41 @@ other modulations	autres modulations
 quality %d/100	qualité %d/100
 tone offset	écart de tonalité
 unreadable	illisibles
+# GOES DCS
+Copies the reports as CSV: id, time, platform address, channel, frequency, bit rate, coding, level, data format, parity errors, data.	Copie les rapports en CSV : id, heure, adresse de la plateforme, canal, fréquence, débit, codage, niveau, format des données, erreurs de parité, données.
+Appends every report to goes_dcs.csv in the data folder, also when nobody watches the screen.	Ajoute chaque rapport à goes_dcs.csv dans le dossier de données, même quand personne ne regarde l'écran.
+How far above the noise a carrier line must rise to be followed. Lower finds weaker platforms and more false carriers.	De combien une raie porteuse doit dépasser le bruit pour être suivie. Plus bas trouve des plateformes plus faibles et plus de fausses porteuses.
+start the receiver to see the reports	démarrez le récepteur pour voir les rapports
+No report yet. Tune the uplink band (401.7 to 402.1 MHz, centre 401.85 MHz) with 0.5 Msps or more: platforms send once every few minutes to once an hour, mostly at set times.	Aucun rapport pour l'instant. Accordez la bande montante (401,7 à 402,1 MHz, centre 401,85 MHz) avec 0,5 Msps ou plus : les plateformes émettent de toutes les quelques minutes à une fois par heure, le plus souvent à heures fixes.
+Platform	Plateforme
+Data	Données
+Manchester	Manchester
+NRZ	NRZ
+address	adresse
+BCH check passed after correcting bit errors	Contrôle BCH réussi après correction d'erreurs de bit
+BCH check passed	Contrôle BCH réussi
+flags	indicateurs
+format	format
+pseudo-binary B	pseudo-binaire B
+ASCII	ASCII
+, no end code (carrier lost)	, pas de code de fin (porteuse perdue)
+sensor data	données des capteurs
+text as received	texte tel que reçu
+start the receiver to see the platforms	démarrez le récepteur pour voir les plateformes
+platforms heard, the most recent first	plateformes entendues, les plus récentes d'abord
+Reports	Rapports
+Last (UTC)	Dernier (UTC)
+Latest data	Dernières données
+no platform heard yet	aucune plateforme entendue pour l'instant
+start the receiver to see the band	démarrez le récepteur pour voir la bande
+the captured band, the last few seconds (brighter = stronger over the noise); carriers being followed are marked	la bande capturée, les dernières secondes (plus clair = plus fort que le bruit) ; les porteuses suivies sont marquées
+spectrum now (dB over the local noise)	spectre actuel (dB au-dessus du bruit local)
+Platforms	Plateformes
+reports	rapports
+carriers	porteuses
+receiving	réception
+locked, waiting for the sync	accroché, attente de la synchro
+The GOES and Meteosat data collection system: river gauges, weather stations, tide gauges and buoys send a short report on a 1.5 kHz channel of 401.7 to 402.1 MHz, at 100, 300 or 1200 bps. The 8-digit hex address names the platform. The receiver tries every bit rate and coding on every carrier it finds.	Le système de collecte de données de GOES et Meteosat : limnimètres, stations météo, marégraphes et bouées envoient un court rapport sur un canal de 1,5 kHz de 401,7 à 402,1 MHz, à 100, 300 ou 1200 bps. L'adresse hexadécimale à 8 chiffres nomme la plateforme. Le récepteur essaie chaque débit et chaque codage sur chaque porteuse trouvée.
+with a steady carrier on another channel	avec une porteuse fixe sur un autre canal
+The test signal is three platforms on channels 60, 100 and 140 that each send a short report every 14 to 18 seconds.	Le signal d'essai est composé de trois plateformes sur les canaux 60, 100 et 140 qui envoient chacune un court rapport toutes les 14 à 18 secondes.
+Platform reports, 401.85 MHz	Rapports de plateformes, 401,85 MHz

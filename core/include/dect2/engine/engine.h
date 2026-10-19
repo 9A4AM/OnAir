@@ -105,6 +105,7 @@
 #include "dect2/mscatter/mscatter_live.h"
 #include "dect2/ardop/ardop_rx.h"
 #include "dect2/ardop/ardop_rx.h"
+#include "dect2/goesdcs/goesdcs_live.h"
 #include "dect2/rid/rid_rx.h"
 #include "dect2/meteor/meteor_rx.h"
 #include "dect2/nr/nr_rx.h"
@@ -406,6 +407,7 @@ public:
     EczasLiveReceiver& eczas() { return rxEcz_; }   // e-Czas (225 kHz, Poland): audio input, receiver position, clear the log (telemetry through latestRx)
     FpvReceiver& fpv() { return rxFpv_; }   // FPV video: picture controls, sound, clear the channel levels (telemetry through latestRx)
     ZwaveReceiver& zwave() { return rxZw_; }   // Z-Wave: region, clear the tables (telemetry through latestRx)
+    GoesDcsReceiver& goesdcs() { return rxGd_; }   // GOES DCS: CSV log file, carrier threshold, clear the lists (telemetry through latestRx)
     MscatterLiveReceiver& mscatter() { return rxMs_; }   // meteor scatter: threshold, CSV log file, clear the list (telemetry through latestRx)
     WisunReceiver& wisun() { return rxWs_; }   // Wi-SUN FAN: region, clear the tables (telemetry through latestRx)
     LoraRawReceiver& loraraw() { return rxLr_; }   // LoRa (raw): settings, clear the frame log (telemetry through latestRx)
@@ -683,6 +685,7 @@ private:
     CquamReceiver rxCq_;
     ArdopReceiver rxArd_;
     MscatterLiveReceiver rxMs_;
+    GoesDcsReceiver rxGd_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;

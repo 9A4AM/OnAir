@@ -113,6 +113,7 @@ ifkp	--mode ifkp	Overview|IFKP|Receiver|History
 cquam	--mode cquam	Overview|C-QUAM|Receiver|History
 ardop	--mode ardop	Overview|ARDOP|Receiver|History
 mscatter	--mode mscatter	Overview|Meteors|Receiver|History
+goesdcs	--mode goesdcs	Overview|Platforms|Receiver|History
 nbiot	--mode nbiot	Overview|NB-IoT|Receiver|History
 codar	--mode codar	Overview|Radar|Receiver|History
 wb	--mode wb	Overview|Workbench|Receiver|History

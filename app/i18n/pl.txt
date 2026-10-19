@@ -3388,3 +3388,41 @@ other modulations	inne modulacje
 quality %d/100	jakość %d/100
 tone offset	odchyłka tonu
 unreadable	nieczytelne
+# GOES DCS
+Copies the reports as CSV: id, time, platform address, channel, frequency, bit rate, coding, level, data format, parity errors, data.	Kopiuje raporty jako CSV: id, czas, adres platformy, kanał, częstotliwość, szybkość, kodowanie, poziom, format danych, błędy parzystości, dane.
+Appends every report to goes_dcs.csv in the data folder, also when nobody watches the screen.	Dopisuje każdy raport do goes_dcs.csv w folderze danych, także gdy nikt nie patrzy na ekran.
+How far above the noise a carrier line must rise to be followed. Lower finds weaker platforms and more false carriers.	O ile linia nośnej musi wystawać ponad szum, by była śledzona. Niższa wartość znajduje słabsze platformy i więcej fałszywych nośnych.
+start the receiver to see the reports	uruchom odbiornik, aby zobaczyć raporty
+No report yet. Tune the uplink band (401.7 to 402.1 MHz, centre 401.85 MHz) with 0.5 Msps or more: platforms send once every few minutes to once an hour, mostly at set times.	Brak raportów. Dostrój pasmo uplinku (401,7 do 402,1 MHz, środek 401,85 MHz) przy 0,5 Msps lub więcej: platformy nadają od co kilka minut do raz na godzinę, najczęściej o stałych porach.
+Platform	Platforma
+Data	Dane
+Manchester	Manchester
+NRZ	NRZ
+address	adres
+BCH check passed after correcting bit errors	Kontrola BCH zaliczona po poprawieniu błędów bitowych
+BCH check passed	Kontrola BCH zaliczona
+flags	flagi
+format	format
+pseudo-binary B	pseudobinarny B
+ASCII	ASCII
+, no end code (carrier lost)	, brak kodu końca (utrata nośnej)
+sensor data	dane z czujników
+text as received	tekst tak, jak odebrano
+start the receiver to see the platforms	uruchom odbiornik, aby zobaczyć platformy
+platforms heard, the most recent first	usłyszane platformy, najnowsze pierwsze
+Reports	Raporty
+Last (UTC)	Ostatni (UTC)
+Latest data	Najnowsze dane
+no platform heard yet	nie usłyszano jeszcze żadnej platformy
+start the receiver to see the band	uruchom odbiornik, aby zobaczyć pasmo
+the captured band, the last few seconds (brighter = stronger over the noise); carriers being followed are marked	zarejestrowane pasmo z ostatnich sekund (jaśniej = silniej ponad szumem); śledzone nośne są zaznaczone
+spectrum now (dB over the local noise)	widmo teraz (dB ponad lokalny szum)
+Platforms	Platformy
+reports	raporty
+carriers	nośne
+receiving	odbiór
+locked, waiting for the sync	zsynchronizowano, czekam na synchronizację ramki
+The GOES and Meteosat data collection system: river gauges, weather stations, tide gauges and buoys send a short report on a 1.5 kHz channel of 401.7 to 402.1 MHz, at 100, 300 or 1200 bps. The 8-digit hex address names the platform. The receiver tries every bit rate and coding on every carrier it finds.	System zbierania danych GOES i Meteosat: wodowskazy, stacje pogodowe, mareografy i boje wysyłają krótki raport na kanale 1,5 kHz w paśmie 401,7–402,1 MHz, z szybkością 100, 300 lub 1200 bps. 8-cyfrowy adres szesnastkowy nazywa platformę. Odbiornik próbuje każdej szybkości i kodowania na każdej znalezionej nośnej.
+with a steady carrier on another channel	ze stałą nośną na innym kanale
+The test signal is three platforms on channels 60, 100 and 140 that each send a short report every 14 to 18 seconds.	Sygnał testowy to trzy platformy na kanałach 60, 100 i 140, z których każda co 14 do 18 sekund wysyła krótki raport.
+Platform reports, 401.85 MHz	Raporty platform, 401,85 MHz

@@ -98,6 +98,7 @@
 #include "dect2/cquam/cquam_tel.h"
 #include "dect2/mscatter/mscatter_tel.h"
 #include "dect2/ardop/ardop_tel.h"
+#include "dect2/goesdcs/goesdcs_tel.h"
 #include "dect2/rid/rid_tel.h"
 #include "dect2/meteor/meteor_tel.h"
 #include "dect2/nr/nr_tel.h"
@@ -206,6 +207,7 @@ struct RxTelemetry {
     EczasTelemetry eczas;     // valid when standard == 86 (e-Czas, 225 kHz Poland)
     MsTelemetry mscatter;     // valid when standard == 105 (meteor scatter)
     DmeTelemetry dme;         // valid when standard == 123 (DME, engine standard 123)
+    DcsTelemetry goesdcs;     // valid when standard == 131 (GOES DCS, family 130)
     HfbTelemetry hfb;         // valid when standard == 68 (HF beacons)
     WbTelemetry wb;           // valid when standard == 74 (Signal workbench)
     DatawellTelemetry datawell;   // valid when standard == 75 (Datawell buoy HF link)

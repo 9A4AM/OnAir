@@ -102,6 +102,7 @@ This list is taken from the tables in `core/src/tx/tx.cpp` (`txModes()`).
 | ardop | ARDOP | 109 | makeArdopSynth |
 | zwave | Z-Wave | 100 | makeZwaveSynth |
 | mscatter | Meteor scatter | 106 | makeMscatterSynth |
+| goesdcs | GOES DCS | 109 | makeGoesDcsSynth |
 | vorils | VOR / ILS | 32 | makeVorSynth |
 | m17 | M17 | 33 | makeM17Synth |
 | dstar | D-STAR | 35 | makeDstarSynth |

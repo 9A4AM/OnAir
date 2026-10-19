@@ -3371,3 +3371,41 @@ other modulations	другие виды модуляции
 quality %d/100	качество %d/100
 tone offset	сдвиг тона
 unreadable	нечитаемые
+# GOES DCS
+Copies the reports as CSV: id, time, platform address, channel, frequency, bit rate, coding, level, data format, parity errors, data.	Копирует отчёты в формате CSV: номер, время, адрес платформы, канал, частота, скорость, кодирование, уровень, формат данных, ошибки чётности, данные.
+Appends every report to goes_dcs.csv in the data folder, also when nobody watches the screen.	Добавляет каждый отчёт в goes_dcs.csv в папке данных, в том числе когда никто не смотрит на экран.
+How far above the noise a carrier line must rise to be followed. Lower finds weaker platforms and more false carriers.	На сколько линия несущей должна подняться над шумом, чтобы за ней следили. Меньше значение находит более слабые платформы и больше ложных несущих.
+start the receiver to see the reports	запустите приёмник, чтобы увидеть отчёты
+No report yet. Tune the uplink band (401.7 to 402.1 MHz, centre 401.85 MHz) with 0.5 Msps or more: platforms send once every few minutes to once an hour, mostly at set times.	Отчётов пока нет. Настройтесь на полосу восходящей линии (401,7–402,1 МГц, центр 401,85 МГц) при 0,5 Мвыб/с или больше: платформы передают от раза в несколько минут до раза в час, чаще в заданное время.
+Platform	Платформа
+Data	Данные
+Manchester	Манчестер
+NRZ	NRZ
+address	адрес
+BCH check passed after correcting bit errors	Проверка BCH пройдена после исправления битовых ошибок
+BCH check passed	Проверка BCH пройдена
+flags	флаги
+format	формат
+pseudo-binary B	псевдодвоичный B
+ASCII	ASCII
+, no end code (carrier lost)	, нет кода конца (несущая потеряна)
+sensor data	данные датчиков
+text as received	текст как принят
+start the receiver to see the platforms	запустите приёмник, чтобы увидеть платформы
+platforms heard, the most recent first	услышанные платформы, новейшие первыми
+Reports	Отчёты
+Last (UTC)	Последний (UTC)
+Latest data	Последние данные
+no platform heard yet	платформ пока не слышно
+start the receiver to see the band	запустите приёмник, чтобы увидеть полосу
+the captured band, the last few seconds (brighter = stronger over the noise); carriers being followed are marked	принятая полоса за последние секунды (ярче = сильнее шума); отслеживаемые несущие отмечены
+spectrum now (dB over the local noise)	спектр сейчас (дБ над местным шумом)
+Platforms	Платформы
+reports	отчёты
+carriers	несущие
+receiving	приём
+locked, waiting for the sync	захвачено, ожидание синхронизации
+The GOES and Meteosat data collection system: river gauges, weather stations, tide gauges and buoys send a short report on a 1.5 kHz channel of 401.7 to 402.1 MHz, at 100, 300 or 1200 bps. The 8-digit hex address names the platform. The receiver tries every bit rate and coding on every carrier it finds.	Система сбора данных GOES и Meteosat: водомерные посты, метеостанции, мареографы и буи передают короткий отчёт на канале 1,5 кГц в полосе 401,7–402,1 МГц со скоростью 100, 300 или 1200 бит/с. 8-значный шестнадцатеричный адрес называет платформу. Приёмник пробует каждую скорость и кодирование на каждой найденной несущей.
+with a steady carrier on another channel	с постоянной несущей на другом канале
+The test signal is three platforms on channels 60, 100 and 140 that each send a short report every 14 to 18 seconds.	Тестовый сигнал — три платформы на каналах 60, 100 и 140, каждая из которых передаёт короткий отчёт раз в 14–18 секунд.
+Platform reports, 401.85 MHz	Отчёты платформ, 401,85 МГц

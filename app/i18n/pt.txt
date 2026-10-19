@@ -3371,3 +3371,41 @@ other modulations	outras modulações
 quality %d/100	qualidade %d/100
 tone offset	desvio de tom
 unreadable	ilegíveis
+# GOES DCS
+Copies the reports as CSV: id, time, platform address, channel, frequency, bit rate, coding, level, data format, parity errors, data.	Copia os relatórios como CSV: id, hora, endereço da plataforma, canal, frequência, taxa de bits, codificação, nível, formato dos dados, erros de paridade, dados.
+Appends every report to goes_dcs.csv in the data folder, also when nobody watches the screen.	Acrescenta cada relatório a goes_dcs.csv na pasta de dados, mesmo quando ninguém olha o ecrã.
+How far above the noise a carrier line must rise to be followed. Lower finds weaker platforms and more false carriers.	Quanto uma linha portadora tem de subir acima do ruído para ser seguida. Mais baixo encontra plataformas mais fracas e mais portadoras falsas.
+start the receiver to see the reports	inicie o receptor para ver os relatórios
+No report yet. Tune the uplink band (401.7 to 402.1 MHz, centre 401.85 MHz) with 0.5 Msps or more: platforms send once every few minutes to once an hour, mostly at set times.	Ainda sem relatórios. Sintonize a banda de subida (401,7 a 402,1 MHz, centro 401,85 MHz) com 0,5 Msps ou mais: as plataformas transmitem de poucos em poucos minutos até uma vez por hora, quase sempre a horas fixas.
+Platform	Plataforma
+Data	Dados
+Manchester	Manchester
+NRZ	NRZ
+address	endereço
+BCH check passed after correcting bit errors	Verificação BCH aprovada após corrigir erros de bit
+BCH check passed	Verificação BCH aprovada
+flags	sinalizadores
+format	formato
+pseudo-binary B	pseudobinário B
+ASCII	ASCII
+, no end code (carrier lost)	, sem código de fim (portadora perdida)
+sensor data	dados dos sensores
+text as received	texto como recebido
+start the receiver to see the platforms	inicie o receptor para ver as plataformas
+platforms heard, the most recent first	plataformas ouvidas, as mais recentes primeiro
+Reports	Relatórios
+Last (UTC)	Último (UTC)
+Latest data	Dados mais recentes
+no platform heard yet	ainda nenhuma plataforma ouvida
+start the receiver to see the band	inicie o receptor para ver a banda
+the captured band, the last few seconds (brighter = stronger over the noise); carriers being followed are marked	a banda capturada nos últimos segundos (mais claro = mais forte que o ruído); as portadoras seguidas estão marcadas
+spectrum now (dB over the local noise)	espectro agora (dB acima do ruído local)
+Platforms	Plataformas
+reports	relatórios
+carriers	portadoras
+receiving	a receber
+locked, waiting for the sync	bloqueado, à espera da sincronização
+The GOES and Meteosat data collection system: river gauges, weather stations, tide gauges and buoys send a short report on a 1.5 kHz channel of 401.7 to 402.1 MHz, at 100, 300 or 1200 bps. The 8-digit hex address names the platform. The receiver tries every bit rate and coding on every carrier it finds.	O sistema de recolha de dados do GOES e do Meteosat: réguas linimétricas, estações meteorológicas, marégrafos e bóias enviam um relatório curto num canal de 1,5 kHz entre 401,7 e 402,1 MHz, a 100, 300 ou 1200 bps. O endereço hexadecimal de 8 dígitos nomeia a plataforma. O receptor experimenta cada taxa de bits e codificação em cada portadora encontrada.
+with a steady carrier on another channel	com uma portadora fixa noutro canal
+The test signal is three platforms on channels 60, 100 and 140 that each send a short report every 14 to 18 seconds.	O sinal de teste são três plataformas nos canais 60, 100 e 140 que enviam cada uma um relatório curto a cada 14 a 18 segundos.
+Platform reports, 401.85 MHz	Relatórios de plataformas, 401,85 MHz
