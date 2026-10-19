@@ -315,6 +315,8 @@ void Engine::configureDecoderReceivers(const DeviceInfo& dev, const TuneSettings
     rxVor_.setLogCallback([this](const std::string& s) { log(s); });
     rxNdb_.configure(rate_);
     rxNdb_.setLogCallback([this](const std::string& s) { log(s); });
+    rxDme_.configure(rate_);
+    rxDme_.setLogCallback([this](const std::string& s) { log(s); });
     rxM17_.configure(rate_);
     rxHfdl_.configure(rate_);
     rxHfdl_.setLogCallback([this](const std::string& s) { log(s); });

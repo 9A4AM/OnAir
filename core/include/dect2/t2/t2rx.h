@@ -34,6 +34,7 @@
 #include "dect2/ism/ism_tel.h"
 #include "dect2/vor/vor_tel.h"
 #include "dect2/ndb/ndb_tel.h"
+#include "dect2/dme/dme_tel.h"
 #include "dect2/m17/m17_tel.h"
 #include "dect2/hfdl/hfdl_tel.h"
 #include "dect2/cell/cell_tel.h"
@@ -196,6 +197,7 @@ struct RxTelemetry {
     CquamTelemetry cquam;     // valid when standard == 108 (AM stereo, C-QUAM)
     EczasTelemetry eczas;     // valid when standard == 86 (e-Czas, 225 kHz Poland)
     MsTelemetry mscatter;     // valid when standard == 105 (meteor scatter)
+    DmeTelemetry dme;         // valid when standard == 120 (DME, engine standard 121)
     HfbTelemetry hfb;         // valid when standard == 68 (HF beacons)
     WbTelemetry wb;           // valid when standard == 74 (Signal workbench)
     DatawellTelemetry datawell;   // valid when standard == 75 (Datawell buoy HF link)

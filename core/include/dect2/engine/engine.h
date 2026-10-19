@@ -44,6 +44,7 @@
 #include "dect2/ism/ism_rx.h"
 #include "dect2/vor/vor_rx.h"
 #include "dect2/ndb/ndb_rx.h"
+#include "dect2/dme/dme_live.h"
 #include "dect2/m17/m17_rx.h"
 #include "dect2/hfdl/hfdl_rx.h"
 #include "dect2/cell/cell_rx.h"
@@ -433,6 +434,7 @@ public:
     M17Receiver& m17() { return rxM17_; }   // M17: the receiver's own controls and results (the interface reads telemetry through latestRx)
     AirbandReceiver& airband() { return rxAirband_; }   // Airband: the receiver's own controls and results (the interface reads telemetry through latestRx)
     VorReceiver& vor() { return rxVor_; }   // VOR / ILS: the receiver's own controls and results (the interface reads telemetry through latestRx)
+    DmeLiveReceiver& dme() { return rxDme_; }   // DME (WIP): channel X or Y, pair rate, the Morse ident (telemetry through latestRx)
     NdbReceiver& ndb() { return rxNdb_; }   // NDB: long-wave non-directional beacons, the Morse ident (telemetry through latestRx)
     TeletextDecoder& teletext() { return ttx_; }
     DvbSubDecoder& dvbSubtitles() { return dvbsub_; }
@@ -604,6 +606,7 @@ private:
     IsmReceiver rxIsm_;
     VorReceiver rxVor_;
     NdbReceiver rxNdb_;
+    DmeLiveReceiver rxDme_;
     M17Receiver rxM17_;
     HfdlReceiver rxHfdl_;
     CellReceiver rxCell_;

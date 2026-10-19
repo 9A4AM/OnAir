@@ -90,6 +90,7 @@ extern const ModeUi kRidUi;
 extern const ModeUi kMeteorUi;
 extern const ModeUi kNrUi;
 extern const ModeUi kGoesUi;
+extern const ModeUi kDmeUi;
 extern const ModeUi kHrptUi;
 extern const ModeUi kLbjUi;
 
@@ -180,6 +181,7 @@ const ModeUi* modeUi(int family) {
     case 95: return &kMt63Ui;
     case 113: return &kFsqUi;
     case 116: return &kIfkpUi;
+    case 119: return &kDmeUi;
     case 107: return &kCquamUi;
     case 98: return &kZwaveUi;
     case 104: return &kMscatterUi;
