@@ -59,7 +59,7 @@ std::string sigmfMetaJson(const SigmfInfo& i) {   // the text: core/src/files/fi
 void IqRecorder::writeSigmf(bool final) {
     if (sigmfPath_.empty()) return;
     SigmfInfo i;
-    i.fmt = fmt_; i.rateHz = rate_; i.centerHz = centerHz_; i.datetimeUtc = sigmfWhen_;
+    i.fmt = fmt_; i.rateHz = rate_; i.centerHz = centerHz_; i.datetimeUtc = sigmfWhen_; i.description = sigmfDesc_;
     const std::string::size_type s = path_.find_last_of("/\\");
     i.dataFile = path_.substr(s == std::string::npos ? 0 : s + 1);
     if (final) { std::lock_guard<std::mutex> lk(mu_); i.sampleCount = samples_; }

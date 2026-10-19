@@ -614,6 +614,8 @@ void radioMessagesUi(App& a, bool vertical) {
     recordUi(a);
     flowNext(6 * gUi);
     timeMachineUi(a);
+    flowNext(6 * gUi);
+    recordingLibraryUi(a);
     flowNext(10 * gUi);
     audioRecordUi(a);
     flowNext(6 * gUi);

@@ -139,7 +139,7 @@ bool Engine::startRecording(const std::string& path, FileFormat fmt, std::string
     if (kind == DeviceInfo::File) { err = "recording a file playback is not needed: the file is already there"; return false; }
     TuneSettings t;
     { std::lock_guard<std::mutex> lk(tuneMu_); t = lastTune_; }
-    rec_.setSigmf(recSigmf_, kind == DeviceInfo::Synthetic ? 0.0 : radioTune(t).centerHz);
+    rec_.setSigmf(recSigmf_, kind == DeviceInfo::Synthetic ? 0.0 : radioTune(t).centerHz, recordingModeId(stdMode_.load()));
     return rec_.start(path, fmt, srcRate_, err);
 }
 
