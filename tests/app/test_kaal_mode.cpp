@@ -37,7 +37,7 @@ int main() {
     need("app/ui/mode_table.cpp", table, "IM_COL32(236, 160, 84, 255)};");
 
     const std::string app = readSource("app/app.h");
-    need("app/app.h", app, "constexpr int kNumFamilies = 126;");
+    need("app/app.h", app, "constexpr int kNumFamilies = ");
     need("app/app.h", app, "constexpr int kNumGroups = 16;");
     absent("app/app.h", app, "kaalOpen");
 

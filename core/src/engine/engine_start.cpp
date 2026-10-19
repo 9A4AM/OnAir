@@ -258,6 +258,8 @@ void Engine::placeNarrowReceivers(const DeviceInfo& dev, const TuneSettings& tun
         rxTetrapol_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);
         rxLbj_.setSignalOffset(o);
         rxLbj_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);
+        rxEloran_.setSignalOffset(o);
+        rxEloran_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);
         rxDgps_.setSignalOffset(o);
         rxDgps_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);
         rxMt_.setSignalOffset(o);
@@ -435,6 +437,8 @@ void Engine::configureDataReceivers(const DeviceInfo& dev, const TuneSettings& t
     rxTetrapol_.setLogCallback([this](const std::string& s) { log(s); });
     rxLbj_.configure(rate_);
     rxLbj_.setLogCallback([this](const std::string& s) { log(s); });
+    rxEloran_.configure(rate_);
+    rxEloran_.setLogCallback([this](const std::string& s) { log(s); });
     rxDgps_.configure(rate_);
     rxDgps_.setLogCallback([this](const std::string& s) { log(s); });
     rxMt_.configure(rate_);
