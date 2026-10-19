@@ -106,10 +106,10 @@ int main() {
     {
         struct E { int region, w, count; double first, last; };
         const E want[] = {
-            {RegUS, 1, 26, 902.5, 927.5}, {RegUS, 2, 13, 903.0, 927.0}, {RegUS, 4, 6, 904.0, 924.0}, {RegUS, 8, 3, 906.0, 922.0}, {RegUS, 16, 1, 910.0, 910.0},
+            {RegUS, 1, 26, 902.5, 927.5}, {RegUS, 2, 13, 903.0, 927.0}, {RegUS, 4, 6, 906.0, 926.0}, {RegUS, 8, 3, 908.0, 924.0}, {RegUS, 16, 1, 912.0, 912.0},
             {RegEU, 1, 5, 863.5, 867.5}, {RegEU, 2, 2, 864.0, 866.0},
-            {RegJP, 1, 11, 917.0, 927.0}, {RegKR, 1, 6, 918.0, 923.0}, {RegSG, 1, 8, 866.5, 924.5}, {RegAU, 1, 13, 915.5, 927.5}, {RegAU, 8, 1, 919.0, 919.0},
-            {RegNZ, 2, 6, 916.0, 926.0}, {RegCN, 1, 32, 755.5, 786.5}, {RegIN, 1, 2, 865.5, 866.5}, {RegIN, 2, 1, 866.0, 866.0}, {RegTW, 1, 8, 920.5, 927.5}, {RegTW, 8, 1, 924.0, 924.0},
+            {RegJP, 1, 11, 917.0, 927.0}, {RegKR, 1, 6, 918.0, 923.0}, {RegSG, 1, 8, 866.5, 924.5}, {RegAU, 1, 13, 915.5, 927.5}, {RegAU, 4, 3, 918.0, 926.0}, {RegAU, 8, 1, 924.0, 924.0},
+            {RegNZ, 2, 6, 916.0, 926.0}, {RegCN, 1, 32, 755.5, 786.5}, {RegIN, 1, 2, 865.5, 866.5}, {RegIN, 2, 1, 866.0, 866.0}, {RegTW, 1, 8, 920.5, 927.5}, {RegTW, 4, 2, 922.0, 926.0}, {RegTW, 8, 1, 924.0, 924.0},
         };
         for (const E& e : want) {
             const auto v = regionChannels(e.region, e.w);
@@ -131,8 +131,17 @@ int main() {
                 for (size_t i = 1; i < v.size(); i++) CHECK(v[i].mhz - v[i - 1].mhz >= w - 1e-9, "%s %d MHz channels overlap", ri.code, w);
             }
         }
+        {   // issue 192: US 4 MHz channels 8 ... 48 (the top one touches 928, none touches 902), 8 MHz 12 / 28 / 44, 16 MHz 20; 1 and 2 MHz as before
+            const int w4[] = {8, 16, 24, 32, 40, 48}; const auto v4 = regionChannels(RegUS, 4);
+            CHECK(v4.size() == 6, "US 4 MHz count");
+            for (size_t i = 0; i < v4.size() && i < 6; i++) CHECK(v4[i].ccf == w4[i] && v4[i].mhz == 902.0 + 0.5 * w4[i], "US 4 MHz channel %d", v4[i].ccf);
+            CHECK(v4.back().mhz + 2.0 == 928.0 && v4.front().mhz - 2.0 == 904.0, "US 4 MHz edges");
+            const auto v8 = regionChannels(RegUS, 8), v16 = regionChannels(RegUS, 16), v1 = regionChannels(RegUS, 1), v2 = regionChannels(RegUS, 2);
+            CHECK(v8.size() == 3 && v8[0].ccf == 12 && v8[1].ccf == 28 && v8[2].ccf == 44 && v16.size() == 1 && v16[0].ccf == 20, "US 8 / 16 MHz numbers");
+            CHECK(v1.front().ccf == 1 && v1.back().ccf == 51 && v2.front().ccf == 2 && v2[1].ccf == 6 && v2.back().ccf == 50, "US 1 / 2 MHz numbers");
+        }
         CHECK(regionOf(915.0) == RegUS && regionOf(865.0) == RegEU && regionOf(920.5) == RegUS && regionOf(760.0) == RegCN && regionOf(433.9) == -1 && regionOf(2437) == -1, "region of a frequency");
-        CHECK(nearestChannel(RegUS, 915.4, 1) == 27 && nearestChannel(RegUS, 915.0, 2) == 26 && nearestChannel(RegUS, 914.6, 8) == 24 && nearestChannel(RegEU, 915.0, 1) == 0, "nearest");
+        CHECK(nearestChannel(RegUS, 915.4, 1) == 27 && nearestChannel(RegUS, 915.0, 2) == 26 && nearestChannel(RegUS, 916.4, 8) == 28 && nearestChannel(RegEU, 915.0, 1) == 0, "nearest");
         CHECK(operatingClass(RegUS, 16) == 5 && operatingClass(RegEU, 2) == 7 && operatingClass(RegEU, 4) == 0 && chanMhz(6, 1) == 863.5 && chanMhz(99, 1) == 0, "classes");
     }
     return testSummary("halow frames");
