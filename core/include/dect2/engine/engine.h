@@ -111,6 +111,7 @@
 #include "dect2/lbj/lbj_rx.h"
 #include "dect2/dgps/dgps_engine.h"
 #include "dect2/eloran/eloran_engine.h"
+#include "dect2/mpt1327/mpt1327_engine.h"
 #include "dect2/uat/uat_rx.h"
 #include "dect2/hrpt/hrpt_rx.h"
 #include "dect2/tv/bbunpack.h"
@@ -425,6 +426,7 @@ public:
     GoesReceiver& goes() { return rxGoes_; }   // GOES HRIT: clear the products (telemetry through latestRx)
     ElektroReceiver& elektro() { return rxEl_; }   // Elektro-L HRIT / LRIT / GGAK (telemetry through latestRx)
     ElLoranReceiver& eloran() { return rxEloran_; }   // eLoran / Loran-C (WIP): GRI, stations, arrival times (telemetry through latestRx)
+    MptReceiver& mpt1327() { return rxMpt_; }   // MPT1327 trunking control channel (WIP): messages and channel table (telemetry through latestRx)
     DgpsReceiver& dgps() { return rxDgps_; }   // DGPS beacons: the station, the frames (telemetry through latestRx)
     LbjReceiver& lbj() { return rxLbj_; }   // LBJ railway warnings (telemetry through latestRx)
     Vdl4Receiver& vdl4() { return rxVdl4_; }   // VDL Mode 4 (telemetry through latestRx)
@@ -683,6 +685,7 @@ private:
     LbjReceiver rxLbj_;
     DgpsReceiver rxDgps_;
     ElLoranReceiver rxEloran_;
+    MptReceiver rxMpt_;
     Vdl4Receiver rxVdl4_;
     UatReceiver rxUat_;
     HrptReceiver rxHrpt_;

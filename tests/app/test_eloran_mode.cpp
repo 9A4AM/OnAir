@@ -32,7 +32,7 @@ int main() {
     const std::string modeUi = readFile("app/panels/modeui.cpp");
     CHECK(modeUi.find("case 126: return &kElLoranUi;") != std::string::npos, "family 126 not mapped to kElLoranUi");
     const std::string cmake = readFile("CMakeLists.txt");
-    CHECK(cmake.find(" eloran)") != std::string::npos, "eloran not in DECT2_MODES");
+    CHECK(cmake.find(" eloran ") != std::string::npos, "eloran not in DECT2_MODES");
     size_t lists = 0;
     for (size_t p = cmake.find("set(DECT2_MODES"); p != std::string::npos; p = cmake.find("set(DECT2_MODES", p + 1)) lists++;
     CHECK(lists == 1, "%d DECT2_MODES lists, want exactly 1", (int)lists);
