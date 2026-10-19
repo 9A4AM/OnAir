@@ -24,6 +24,9 @@ public:
     void setMuted(bool m);
     void setMono(bool on);                               // force mono: the 19 kHz pilot and the stereo decoder are ignored (less noise on a weak station); off = stereo when the pilot is locked
     void setDeemphasis(double microseconds);             // 50 (Europe, Middle East, most of the world) or 75 (Americas, South Korea)
+    // Audio tone for the broadcast sound (after de-emphasis, 48 kHz): bass and treble shelves -6 .. +6 dB, and Warm (a -3 dB high shelf above
+    // 6 kHz, on top of the treble). All zero and Warm off leaves the audio untouched (any thread).
+    void setTone(int bassDb, int trebleDb, bool warm);
     // RDS meanings: 0 Auto, 1 RDS (Europe), 2 RBDS (US): the programme type names and the call letters in the PI code (fm_rbds.h). Auto reads the
     // tuned frequency (odd tenths = RBDS); tunedMhz is the station's frequency, give it again after a retune (any thread).
     void setRdsRegion(int region, double tunedMhz);

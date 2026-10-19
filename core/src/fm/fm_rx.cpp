@@ -8,6 +8,7 @@
 #include "dect2/dsp/dsp_compat.h"
 #include "dect2/dsp/fftutil.h"
 #include "dect2/fm/fm_rbds.h"
+#include "dect2/fm/fm_tone.h"
 #include "dect2/fm/rds_tmc.h"
 #include "dect2/dsp/resampler.h"
 #include <algorithm>
@@ -335,6 +336,11 @@ struct FmReceiver::Impl {
     std::atomic<int> rdsRegion{kRdsAuto};       // setRdsRegion(): RDS (Europe) or RBDS (US) names; Auto decides from the tuned frequency
     std::atomic<double> tunedMhz{0};
     std::atomic<bool> forceMono{false};
+    std::atomic<int> toneBass{0}, toneTreble{0};   // setTone(): the requested tone; the audio thread reconfigures tone when they change
+    std::atomic<bool> toneWarm{false};
+    FmTone tone;
+    int toneBassSet = 0, toneTrebleSet = 0;
+    bool toneWarmSet = false;
     RationalResampler audioRs;
     bool audioRsOk = false;
     std::vector<cf32> lr, lr48;
@@ -436,7 +442,7 @@ struct FmReceiver::Impl {
 
     void reset() {
         for (auto& c : chan) c.reset();
-        mpxDecim.reset(); lpM.reset(); lpD.reset(); rdsLp.reset();
+        mpxDecim.reset(); lpM.reset(); lpD.reset(); rdsLp.reset(); tone.reset();
         if (audioRsOk) audioRs.reset();
         if (rdsRsOk) rdsRs.reset();
         prev = cf32(1, 0); dcCh = cf32(0, 0); cmaReset();
@@ -621,10 +627,17 @@ struct FmReceiver::Impl {
             lr48.clear();
             audioRs.process(lr.data(), na, lr48);
             outL.resize(lr48.size()); outR.resize(lr48.size()); inter.resize(lr48.size() * 2);
-            for (size_t i = 0; i < lr48.size(); i++) {
-                outL[i] = lr48[i].real(); outR[i] = lr48[i].imag();
-                inter[2 * i] = outL[i]; inter[2 * i + 1] = outR[i];
+            for (size_t i = 0; i < lr48.size(); i++) { outL[i] = lr48[i].real(); outR[i] = lr48[i].imag(); }
+            {   // the tone control: off by default, so the audio is not touched unless the user sets it
+                const int tb = toneBass.load(), tt = toneTreble.load();
+                const bool tw = toneWarm.load();
+                if (tb != toneBassSet || tt != toneTrebleSet || tw != toneWarmSet) {
+                    tone.configure(tb, tt, tw, kAudioRate);
+                    toneBassSet = tb; toneTrebleSet = tt; toneWarmSet = tw;
+                }
+                tone.process(outL.data(), outR.data(), lr48.size());
             }
+            for (size_t i = 0; i < lr48.size(); i++) { inter[2 * i] = outL[i]; inter[2 * i + 1] = outR[i]; }
             if (audio && !lr48.empty()) {
                 // the radio's clock and the sound card's differ by a few ppm: keep the queue near 0.2 s by adding or removing one frame per block
                 int frames = (int)lr48.size();
@@ -771,6 +784,11 @@ void FmReceiver::setDeemphasis(double us) {
 void FmReceiver::setRdsRegion(int region, double tunedMhz) {
     p_->rdsRegion = region == kRdsEurope || region == kRdsUs ? region : (int)kRdsAuto;
     p_->tunedMhz = tunedMhz;
+}
+void FmReceiver::setTone(int bassDb, int trebleDb, bool warm) {
+    p_->toneBass = std::max(-6, std::min(6, bassDb));
+    p_->toneTreble = std::max(-6, std::min(6, trebleDb));
+    p_->toneWarm = warm;
 }
 void FmReceiver::setMono(bool on) { p_->forceMono = on; }
 void FmReceiver::setStationFinder(bool on) { p_->autoFind = on; }
