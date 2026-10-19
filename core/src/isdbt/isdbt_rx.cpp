@@ -408,6 +408,8 @@ struct IsdbtReceiver::Impl {
             if (state == 2) intShift += (int)stp;
         }
         transform(s);
+        fprintf(stderr, "TEMP-DIAG sym=%llu state=%d s=%lld terr=%.4f eraw=%.4f timingAcc=%.4f cumStep=%lld epsFrac=%.4f intShift=%d sroPpm=%.2f\n", // TEMP-DIAG (do not merge)
+                (unsigned long long)symbols, state, (long long)s, terr, eraw, timingAcc, (long long)cumStep, epsFrac, intShift, sroPpm);
         symStart += P;
         if (state == 1) { huntStore(); absSym++; }
         else { processLocked(); absSym++; }
