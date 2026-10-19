@@ -2,6 +2,10 @@
 // the selected carrier, its neighbour cells, the carriers seen in the spectrum, a scan over a span, and the log. Only what base stations
 // broadcast in the clear to every terminal is shown: nothing is decrypted, no voice, no short data, no subscriber identities.
 #include "app.h"
+#include "codec/speech_codec_ui.h"
+#include "dect2/audio/audioout.h"
+#include "dect2/tetra/tetra_traffic.h"
+#include "dect2/tetra/tetra_voice_codec.h"
 #include "state/results_export.h"
 #include "dect2/gsmr/gsmr_rx.h"
 #include "dect2/tetra/tetra_pdu.h"
@@ -28,6 +32,43 @@ struct State {
     float dwell = 6.0f;           // a capture is 2.3 s, and the search takes about as long again
 };
 State S;
+
+// Unencrypted voice: the sink hands each clear traffic frame to the user-installed speech codec and the PCM goes to the speaker.
+// Encrypted calls and calls of unknown encryption state never reach it (tetra_voice.h). OnAir ships no codec.
+dect2::tetra::TetraVoiceSink gVoice;
+dect2::AudioOut gVoiceOut;
+bool gVoiceWired = false;
+
+void wireVoice(App& a) {
+    if (gVoiceWired) return;
+    gVoiceWired = true;
+    gVoice.setPcmOut([&a](const int16_t* pcm, size_t n, int rate) {
+        if (!gVoiceOut.running() || gVoiceOut.sampleRate() != rate) { gVoiceOut.stop(); gVoiceOut.start(rate); }
+        gVoiceOut.setVolume(a.volume); gVoiceOut.setMuted(a.muted);
+        std::vector<float> st(n * 2);
+        for (size_t i = 0; i < n; i++) st[2 * i] = st[2 * i + 1] = pcm[i] / 32768.f;
+        gVoiceOut.write(st.data(), (int)n);
+    });
+    gVoice.setFrameDecoder(dect2::tetra::makeTrafficFrameDecoder());   // channel decoding from EN 300 395-2 clause 5.5; the codec itself is the user's plug-in
+    a.engine.tetra().setVoiceSink(&gVoice);
+}
+
+void voiceStrip(App& a) {
+    wireVoice(a);
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Voice");
+    ImGui::SameLine();
+    if (!gVoice.hasCodec()) {
+        // The notice gate runs first; a codec is loaded only after the user accepted it. Nothing is decoded without a codec.
+        std::unique_ptr<dect2::codec::SpeechCodec> c;
+        if (appcodec::speechCodecGate("tetra", c) && c) gVoice.setCodec(std::move(c));
+        return;
+    }
+    ImGui::TextUnformatted(gVoice.status().c_str());
+    ImGui::SameLine();
+    ImGui::TextDisabled("(clear calls only; %s / %s)", dect2::tetra::voiceVerdictText(dect2::tetra::VoiceVerdict::EncryptedNotDecoded),
+                        dect2::tetra::voiceVerdictText(dect2::tetra::VoiceVerdict::StateUnknownNotDecoded));
+}
 
 const char* airEncShort(const dect2::TetraCell& c) {
     switch (c.airEnc()) {
@@ -242,8 +283,9 @@ void tick(App& a) {
 void tab(App& a) {
     scanBar(a);
     ImGui::PushTextWrapPos(0);
-    ImGui::TextDisabled("Receive only: the public information every TETRA base station broadcasts to all terminals (network code, location area, services, encryption advertised). Nothing is decrypted; no voice, messages or identities are decoded.");
+    ImGui::TextDisabled("Receive only: the public information every TETRA base station broadcasts to all terminals (network code, location area, services, encryption advertised). Nothing is decrypted; no messages or identities are decoded. Clear (unencrypted) voice can be played only with a speech codec you install yourself; encrypted calls are never decoded.");
     ImGui::PopTextWrapPos();
+    voiceStrip(a);
     subNav("tetrav", S.view, {"Cells", "Neighbours", "Carriers", "Log"});
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to find the TETRA base stations around you"); return; }
     if (S.view == 0) {

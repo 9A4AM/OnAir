@@ -46,6 +46,8 @@ public:
     std::string saveResults() const;                     // for the results file (results_io.h)
     bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
+    // Where unencrypted traffic bursts go (tetra_voice_codec.h). The sink must outlive the receiver; null: voice frames are dropped.
+    void setVoiceSink(SpeechFrameSink* s);
     bool busy() const;                 // a block is captured or being searched (tools: feed a file only as fast as it is searched)
 
 private:
@@ -76,8 +78,10 @@ struct CarrierDecode {
     int tsUsage[4] = {-1, -1, -1, -1};
 };
 // knownMcc etc.: the identity of a cell already heard on this carrier, used when this capture has no synchronisation burst (-1: none)
+// calls: the per-call encryption state of this carrier, kept across captures by the caller (null: no call state, so no traffic burst is ever decoded);
+// nowSec: the clock of its expiry (any monotonic seconds).
 CarrierDecode decodeCarrier(const cf32* x72k, size_t n, int knownMcc = -1, int knownMnc = -1, int knownCc = -1,
-                              SpeechFrameSink* sink = nullptr);
+                              SpeechFrameSink* sink = nullptr, CallTracker* calls = nullptr, double nowSec = 0);
 
 } // namespace tetra
 

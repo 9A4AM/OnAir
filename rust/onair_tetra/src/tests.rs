@@ -132,3 +132,48 @@ fn block_sysinfo_and_garbage() {
         parse_block(&v, &mut o);
     }
 }
+
+/// A MAC-RESOURCE (SSI address, channel allocation, fill bits) carrying an LLC BL-UDATA, MLE discriminator 2 (CMCE) and a D-SETUP.
+fn setup_block(enc_flag: u64, slots: u64, carrier: u64) -> Vec<u8> {
+    let mut w = W(vec![]);
+    for (v, n) in [(0, 2), (1, 1), (0, 1), (0, 2), (0, 1), (14, 6), (1, 3), (0x123456, 24), (0, 1), (0, 1), (1, 1)] {
+        w.put(v, n);
+    }
+    // channel allocation: type 0, timeslots, up/down 3, CLCH 0, cell change 0, carrier, no extended numbering, monitoring pattern 1
+    for (v, n) in [(0, 2), (slots, 4), (3, 2), (0, 1), (0, 1), (carrier, 12), (0, 1), (1, 2)] {
+        w.put(v, n);
+    }
+    // LLC BL-UDATA (0010), MLE protocol discriminator 2, D-SETUP: type 00111, call id 777, time-out 5, hook 0, simplex 1, basic service information
+    for (v, n) in [(2, 4), (2, 3), (7, 5), (777, 14), (5, 4), (0, 1), (1, 1), (0, 3), (enc_flag, 1), (0, 2), (0, 2)] {
+        w.put(v, n);
+    }
+    // fill bits: a 1 then 0s up to 14 octets
+    w.put(1, 1);
+    while w.0.len() < 112 {
+        w.put(0, 1);
+    }
+    w.0
+}
+
+#[test]
+fn call_setup_encryption_flag() {
+    for (flag, want) in [(0u64, 0), (1, 1)] {
+        let b = setup_block(flag, 0b0100, 1234);
+        let mut nw = [Nwrk::default(); 4];
+        let mut nb = [Neighbour::default(); 8];
+        let mut o = Out { blk: MacBlock::default(), nwrk: &mut nw, nbr: &mut nb };
+        parse_block(&b, &mut o);
+        assert_eq!(o.blk.resources, 1);
+        assert_eq!(o.blk.n_call, 1);
+        let c = o.blk.call[0];
+        assert_eq!((c.kind, c.call_id, c.enc, c.slots, c.carrier), (1, 777, want, 0b0100, 1234));
+    }
+    // an air interface encrypted MAC-RESOURCE: nothing of the call is read
+    let mut b = setup_block(0, 0b0100, 1234);
+    b[4] = 1; // encryption mode bits (after type 2, fill 1, grant 1): 2 bits at 4..6
+    let mut nw = [Nwrk::default(); 4];
+    let mut nb = [Neighbour::default(); 8];
+    let mut o = Out { blk: MacBlock::default(), nwrk: &mut nw, nbr: &mut nb };
+    parse_block(&b, &mut o);
+    assert_eq!((o.blk.encrypted, o.blk.n_call), (1, 0));
+}
