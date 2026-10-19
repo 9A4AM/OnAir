@@ -67,6 +67,7 @@ struct HfdlReceiver::Impl {
         double r2 = 0, tNext = 0; int64_t n2 = 0; cf32 h2[4] = {};
         std::vector<cf32> mh; size_t mpos = 0;
         std::vector<cf32> x; int64_t xBase = 0;          // matched filter output at 7200 Hz, x[0] is sample xBase
+        std::vector<float> xa;                           // std::abs(x[i]), stored once when the sample is made (coarse() reads it)
         int64_t searchAt = 0, waitUntil = 0;
         double noisePow = 0; double blkPow = 0; int blkN = 0;
         HfdlChannelInfo info;
@@ -153,10 +154,16 @@ struct HfdlReceiver::Impl {
         k.fpos = (k.fpos + 1) % k.fh.size();
         if (++k.mcnt < k.M) return;
         k.mcnt = 0;
+        // same taps, same order as the ring index (k.fpos + i) % T, split in two runs so there is no modulo per tap
         cf32 acc(0, 0);
-        const size_t T = k.fh.size();
-        if (firC.empty()) for (size_t i = 0; i < T; i++) acc += k.fh[(k.fpos + i) % T] * fir[i];
-        else for (size_t i = 0; i < T; i++) acc += k.fh[(k.fpos + i) % T] * firC[i];
+        const size_t T = k.fh.size(), p0 = k.fpos, n1 = T - p0;
+        if (firC.empty()) {
+            for (size_t i = 0; i < n1; i++) acc += k.fh[p0 + i] * fir[i];
+            for (size_t i = n1; i < T; i++) acc += k.fh[i - n1] * fir[i];
+        } else {
+            for (size_t i = 0; i < n1; i++) acc += k.fh[p0 + i] * firC[i];
+            for (size_t i = n1; i < T; i++) acc += k.fh[i - n1] * firC[i];
+        }
         // cubic interpolation from r2 to 7200 Hz
         k.h2[0] = k.h2[1]; k.h2[1] = k.h2[2]; k.h2[2] = k.h2[3]; k.h2[3] = acc;
         k.n2++;
@@ -177,9 +184,11 @@ struct HfdlReceiver::Impl {
         k.mh[k.mpos] = v;
         k.mpos = (k.mpos + 1) % k.mh.size();
         cf32 acc(0, 0);
-        const size_t T = k.mh.size();
-        for (size_t i = 0; i < T; i++) acc += k.mh[(k.mpos + i) % T] * mf[i];
+        const size_t T = k.mh.size(), p0 = k.mpos, n1 = T - p0;   // same order as (mpos + i) % T, no modulo per tap
+        for (size_t i = 0; i < n1; i++) acc += k.mh[p0 + i] * mf[i];
+        for (size_t i = n1; i < T; i++) acc += k.mh[i - n1] * mf[i];
         k.x.push_back(acc);
+        k.xa.push_back(std::abs(acc));
         k.blkPow += std::norm(acc); k.blkN++;
         if (k.blkN >= 1800) {     // a quarter second: the noise floor follows the quiet blocks
             const double p = k.blkPow / k.blkN;
@@ -213,8 +222,9 @@ struct HfdlReceiver::Impl {
         const int64_t i0 = s - k.xBase;   // whole samples: cubicAt() would only return x[i] here, at several times the cost
         if (i0 < 0 || i0 + (int64_t)(kSearchSyms - 1) * kSps >= (int64_t)k.x.size()) return 0;
         const cf32* p = &k.x[(size_t)i0];
+        const float* pa = &k.xa[(size_t)i0];   // |x| of the same samples, stored by symSample()
         double sumA = 0;
-        for (int q = 0; q < kSearchSyms; q++) sumA += std::abs(p[q * kSps]);
+        for (int q = 0; q < kSearchSyms; q++) sumA += pa[q * kSps];
         if (sumA <= 1e-6 * kSearchSyms) return 0;
         double best = 0;
         for (const auto& ref : coarseRefs()) {
@@ -273,7 +283,7 @@ struct HfdlReceiver::Impl {
 
     void trim(Chan& k) {
         const int64_t keep = k.searchAt - 64;
-        if (keep - k.xBase > 40000) { k.x.erase(k.x.begin(), k.x.begin() + (keep - k.xBase)); k.xBase = keep; }
+        if (keep - k.xBase > 40000) { k.x.erase(k.x.begin(), k.x.begin() + (keep - k.xBase)); k.xa.erase(k.xa.begin(), k.xa.begin() + (keep - k.xBase)); k.xBase = keep; }
     }
 
     // returns -1 when more samples are needed, else 0 (searchAt moved on)
@@ -283,6 +293,7 @@ struct HfdlReceiver::Impl {
         refProducts(k, (double)s0, kSearchSyms, y);
         double bf = 0, bv = -1;
         std::vector<double> mags;
+        mags.reserve((size_t)(2 * kMaxCfo / 1.5) + 4);
         for (double f = -kMaxCfo; f <= kMaxCfo + 1e-9; f += 1.5) { const double v = std::abs(corrAt(y, f, 0, kSearchSyms)); mags.push_back(v); if (v > bv) { bv = v; bf = f; } }
         {
             const int i = (int)std::lround((bf + kMaxCfo) / 1.5);
@@ -344,8 +355,7 @@ struct HfdlReceiver::Impl {
         for (int mode = 0; mode < 3 && !ok; mode++) {   // 0: equaliser, 1: gain / phase tracker with decisions, no equaliser, 2: known symbols only (weak signals)
         const int eqOn = mode == 0 ? 1 : 0;
         const int Nf = 2 * kL + 1;
-        std::vector<cf32> w((size_t)Nf, cf32(0, 0)), b((size_t)kNb, cf32(0, 0)), dp((size_t)kNb, cf32(0, 0));
-        w[(size_t)kL] = std::conj(h) / (std::norm(h) + 1e-30f);
+        std::vector<cf32> w, b, dp;
         w.assign((size_t)Nf, cf32(0, 0)); b.assign((size_t)kNb, cf32(0, 0)); dp.assign((size_t)kNb, cf32(0, 0));
         w[(size_t)kL] = std::conj(h) / (std::norm(h) + 1e-30f);
         float theta = 0;
