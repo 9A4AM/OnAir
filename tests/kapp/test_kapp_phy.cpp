@@ -18,7 +18,7 @@ static BurstSpec makeSpec(int profile, int nBlocks, int seq, Rng& rng) {
 static void testTable() {
     CHECK(profileTableConsistent(), "profile table does not match kris::ldpcK");
     for (const Profile& p : kProfiles) {
-        CHECK(p.payloadBytes == (kris::ldpcK(kBlockN, p.rate) - 16) / 8, "profile %d payload bytes", p.id);
+        CHECK(p.payloadBytes == (dect2::kris::ldpcK(kBlockN, p.rate) - 16) / 8, "profile %d payload bytes", p.id);
         CHECK(p.bitsPerSym == (int)p.mod, "profile %d bits per symbol", p.id);
     }
     CHECK(profileById(9) == nullptr && profileById(-1) == nullptr && profileById(8) != nullptr, "profile ids");
@@ -28,7 +28,7 @@ static void testTable() {
     CHECK(maxBlocksForMs(kProfiles[6], 1000.0) == 199, "P6 1 s blocks %d", maxBlocksForMs(kProfiles[6], 1000.0));
     // callsign code
     CHECK(decodeCallsign(encodeCallsign("LY1ABC")) == "LY1ABC", "callsign round trip");
-    CHECK(decodeCallsign(encodeCallsign("LY1ABC/P")) == "LY1ABC/", "long call cut to 7 characters");
+    CHECK(decodeCallsign(encodeCallsign("LY1ABC/P")) == "LY1ABC", "long call cut to 7 characters, the trailing / (also the padding code) dropped");
     CHECK(decodeCallsign(encodeCallsign("N0CALL")) == "N0CALL", "short call");
     // header bits
     BurstHeader h;

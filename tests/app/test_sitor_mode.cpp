@@ -1,5 +1,6 @@
 // The SITOR mode is registered: a row in the mode table, a UI case in modeui.cpp, the family count covers it, and the
 // panel carries the unverified-table warning. Reads the sources (DECT2_SOURCE_DIR), as test_credits does.
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -19,7 +20,7 @@ int main() {
     const std::string panel = readSource("app/hfdig/hfdig_sitor_ui.cpp");
     CHECK(table.find("{119, \"SITOR (WIP, table unverified)\"") != std::string::npos, "SITOR row (family 119) missing from the mode table");
     CHECK(modeui.find("case 119: return &kSitorUi;") != std::string::npos, "family 119 has no UI in modeui.cpp");
-    CHECK(app.find("kNumFamilies = 120;") != std::string::npos, "kNumFamilies does not cover family 119");
+    { const size_t q = app.find("kNumFamilies = "); CHECK(q != std::string::npos && atoi(app.c_str() + q + 15) >= 120, "kNumFamilies does not cover family 119"); }
     CHECK(panel.find("Character table not yet checked against ITU-R M.476; text may be wrong.") != std::string::npos, "SITOR panel lacks the table warning");
     return testSummary("sitor_mode");
 }

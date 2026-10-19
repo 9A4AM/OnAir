@@ -1,4 +1,4 @@
-// The DME mode (family 119, engine standard 121, telemetry 120) is registered: its mode-table row, its panel's strings and its
+// The DME mode (family 121, engine standard 123, active standard 122) is registered: its mode-table row, its panel's strings and its
 // engine wiring are in the sources. Text checks only, so it builds without the app.
 #include <cstdio>
 #include <fstream>
@@ -40,14 +40,14 @@ int main() {
     need("core/src/dme/dme_live.cpp", live, "t.name = \"DME (WIP)\";");
 
     const std::string modes = readSource("core/src/engine/modes.cpp");
-    need("core/src/engine/modes.cpp", modes, "dmeTuning(),");
-    need("core/src/engine/modes.cpp", modes, "case 123: return dmeSummary(t.dme);");
+    need("core/src/engine/modes.cpp", modes, "dmeTuning()");
+    need("core/src/engine/modes.cpp", modes, "case 122: return dmeSummary(t.dme);");
 
     const std::string telemetry = readSource("core/src/engine/engine_telemetry.cpp");
-    need("core/src/engine/engine_telemetry.cpp", telemetry, "case 123: return pollStd(rxDme_, 123");
+    need("core/src/engine/engine_telemetry.cpp", telemetry, "case 122: return pollStd(rxDme_, 122");
 
     const std::string engine = readSource("core/src/engine/engine.cpp");
-    need("core/src/engine/engine.cpp", engine, "else if (a == 123) rxDme_.feed(x, n);");
+    need("core/src/engine/engine.cpp", engine, "else if (a == 122) rxDme_.feed(x, n);");
 
     if (fails == 0) std::printf("dme mode: registered, panel strings and wiring present\n");
     return fails == 0 ? 0 : 1;

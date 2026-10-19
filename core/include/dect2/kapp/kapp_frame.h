@@ -58,11 +58,11 @@ struct Profile {
     kris::LdpcRate rate;
     int bitsPerSym;
     int payloadBytes;      // (K - 16) / 8
-    float needEsN0Db;      // spec estimate (Shannon + 1.5 dB), FER ~1e-2
+    float needEsN0Db;      // FER ~1e-2; P0 measured with this PHY (the spec estimate of -5.7 dB was 4 dB too low), the others spec estimates (Shannon + 1.5 dB)
 };
 
 inline constexpr std::array<Profile, 9> kProfiles{{
-    {0, kris::Mod::Bpsk, kris::LdpcRate::R1_4, 1, 70, -5.7f},
+    {0, kris::Mod::Bpsk, kris::LdpcRate::R1_4, 1, 70, -1.5f},
     {1, kris::Mod::Qpsk, kris::LdpcRate::R1_4, 2, 70, -2.3f},
     {2, kris::Mod::Qpsk, kris::LdpcRate::R1_2, 2, 142, 1.5f},
     {3, kris::Mod::Qpsk, kris::LdpcRate::R3_4, 2, 214, 4.1f},

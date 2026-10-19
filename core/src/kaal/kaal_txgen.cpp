@@ -41,6 +41,7 @@ class Mono16 {
 public:
     Mono16() {
         const int n = 21, mid = n / 2;
+        h_.assign((size_t)n, 0.f);
         double sum = 0;
         for (int i = 0; i < n; i++) {
             const double x = (double)(i - mid);

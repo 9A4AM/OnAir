@@ -57,7 +57,7 @@ struct ProfileInfo {
     double reqEsN0Db;   // spec table, an estimate (Shannon + 1.5 dB)
 };
 inline constexpr ProfileInfo kProfiles[kNumProfiles] = {
-    {0, "P0 BPSK 1/4", kris::Mod::Bpsk, kris::LdpcRate::R1_4, 0.25, -5.7},
+    {0, "P0 BPSK 1/4", kris::Mod::Bpsk, kris::LdpcRate::R1_4, 0.25, -1.0},
     {1, "P1 QPSK 1/4", kris::Mod::Qpsk, kris::LdpcRate::R1_4, 0.25, -2.3},
     {2, "P2 QPSK 1/2", kris::Mod::Qpsk, kris::LdpcRate::R1_2, 0.5, 1.5},
     {3, "P3 QPSK 3/4", kris::Mod::Qpsk, kris::LdpcRate::R3_4, 0.75, 4.1},

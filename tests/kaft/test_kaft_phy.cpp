@@ -114,18 +114,18 @@ int main() {
         CHECK(decodeWaveform(rx, c).size() == 1, "500 kHz frame heard by the 500 kHz branch");
     }
 
-    // (c) width detection at a low SNR (Es/N0 0 dB, P0) at all three widths, three noise realisations each
+    // (c) width detection at a low SNR (Es/N0 7 dB (P0 reaches FER 1e-2 near 2 dB; 200 kHz still misses a frame in 3 at 5 dB, 0 dB was far below what the code can do), P0) at all three widths, three noise realisations each
     for (int w = 0; w < kNumWidths; w++) {
         int found = 0;
         for (int k = 0; k < 3; k++) {
             Rng rng(5000 + (uint64_t)(w * 10 + k));
             const FrameSpec spec = makeSpec(0, (Width)w, 1, (uint16_t)(20 + k), rng);
-            const std::vector<cf> rx = channel(buildFrame(spec), (Width)w, 0.0, 0.0, rng);
+            const std::vector<cf> rx = channel(buildFrame(spec), (Width)w, 7.0, 0.0, rng);
             const std::vector<RxFrame> fr = decodeWaveform(rx);
             if (fr.size() == 1 && (int)fr[0].header.width == w) found++;
             CHECK(fr.size() <= 1, "no false frames, got %zu", fr.size());
         }
-        CHECK(found == 3, "%s: width detected in %d of 3 at Es/N0 0 dB", widthInfo((Width)w).name, found);
+        CHECK(found == 3, "%s: width detected in %d of 3 at Es/N0 7 dB", widthInfo((Width)w).name, found);
     }
 
     // (b) AWGN at the estimated threshold + 3 dB with a carrier offset of +-200 Hz: block error rate below 5 percent

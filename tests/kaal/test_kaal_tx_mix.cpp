@@ -46,7 +46,8 @@ int main() {
     printf("beacon power relative to the transmit signal: %.1f dB (it is on for part of the time)\n", ratio);
     CHECK(ratio < -10.0 && ratio > -20.0, "beacon level %.1f dB", ratio);
 
-    // without the mix the receiver finds nothing; with it, the full frame at 0 s and headers at 4 s and 6 s
+    // without the mix the receiver finds nothing; with it, the full frame at 0 s (it lasts 3.4 s, so the 2 s header slot is skipped) and headers at 4 s, 6 s and 8 s: the 7 s of speech take 8.9 s on air
+    // because a 20 ms voice frame is 202 symbols at 8000 symbols/s (25.25 ms)
     auto rxAll = [&](const std::vector<cf>& y) {
         BeaconSliceRx rx;
         rx.configure(48000);
@@ -61,7 +62,7 @@ int main() {
     CHECK(rxAll(plain).empty(), "a beacon without the mix");
     const auto got = rxAll(mixed);
     printf("frames decoded from the mixed signal: %zu\n", got.size());
-    CHECK(got.size() == 3u, "%zu frames, expected the full one and two headers", got.size());
+    CHECK(got.size() == 4u, "%zu frames, expected the full one and three headers", got.size());
     if (got.size() >= 1) CHECK(got[0].second == bio && got[0].first.callsign == "LY2ABC", "first frame is not the full beacon");
     for (size_t i = 1; i < got.size(); i++) CHECK(got[i].second.empty() && got[i].first.callsign == "LY2ABC", "frame %zu is not a header", i);
     return testSummary("kaal_tx_mix");

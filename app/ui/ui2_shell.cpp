@@ -508,10 +508,6 @@ float menuBar(App& a) {
         mapSendServerMenu(a);
         const float sx1 = ImGui::GetCursorScreenPos().x;
         tourMark("server", ImVec2(mx1, my0), ImVec2(sx1, my1));
-        if (ImGui::BeginMenu("Custom modes")) {
-            if (ImGui::MenuItem("KAAL (WIP)")) a.kaalOpen = true;
-            ImGui::EndMenu();
-        }
         const float hx0 = ImGui::GetCursorScreenPos().x;
         if (ImGui::BeginMenu(tr("Help"))) {
             if (ImGui::MenuItem(tr("Credits"))) { a.creditsOpen = true; a.creditsTab = 0; }
@@ -546,17 +542,6 @@ float menuBar(App& a) {
     creditsWindow(a);
     tx::windowPanel(a);
     reportProblemWindow(a);
-    if (a.kaalOpen) {
-        ImGui::SetNextWindowSize(ImVec2(420 * gUi, 0), ImGuiCond_FirstUseEver);
-        if (ImGui::Begin("KAAL (work in progress)", &a.kaalOpen, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 400 * gUi);
-            ImGui::TextUnformatted("KAAL is our own amateur UHF digital system. The modulation, voice codec and frame format are being designed and tested. There is no receiver in OnAir yet, so nothing can be decoded here. Specification drafts are in the project's docs when they are published.");
-            ImGui::PopTextWrapPos();
-            ImGui::Spacing();
-            if (ImGui::Button("Close")) a.kaalOpen = false;
-        }
-        ImGui::End();
-    }
     return menuH;
 }
 

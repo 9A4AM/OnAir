@@ -1,5 +1,6 @@
 // DGPS beacon mode (work in progress): the engine tuning is registered under its number, the mode row and the family
 // count agree with it, and the panel's strings are in the screen source.
+#include <cstdlib>
 #include "dect2/dgps/dgps_engine.h"
 #include "dect2/engine/mode_tuning.h"
 #include <cstdio>
@@ -29,7 +30,7 @@ int main() {
     const std::string table = readFile("app/ui/mode_table.cpp");
     CHECK(table.find("{120, \"DGPS beacon (WIP)\", 4,") != std::string::npos, "mode row for family 120 missing");
     const std::string appH = readFile("app/app.h");
-    CHECK(appH.find("constexpr int kNumFamilies = 120;") != std::string::npos, "kNumFamilies is not 120");
+    { const size_t q = appH.find("constexpr int kNumFamilies = "); CHECK(q != std::string::npos && atoi(appH.c_str() + q + 29) >= 121, "kNumFamilies does not cover family 120"); }
     const std::string modeUi = readFile("app/panels/modeui.cpp");
     CHECK(modeUi.find("case 120: return &kDgpsUi;") != std::string::npos, "family 120 not mapped to kDgpsUi");
 
