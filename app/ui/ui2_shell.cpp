@@ -510,6 +510,8 @@ float menuBar(App& a) {
                 for (int i = 0; i < nt; i++) if (ImGui::MenuItem(tr(ts[i].title))) tourStartTour(a, i);
                 ImGui::EndMenu();
             }
+            if (ImGui::MenuItem(tr("Get me listening"))) listenWizardOpen(a);
+            if (ImGui::MenuItem(tr("Guided tour"))) tourStart(a);
             ImGui::Separator();
             if (ImGui::MenuItem(tr("Documentation"))) dect2::openUrl("https://on-air.dev/docs/");
             if (ImGui::MenuItem(tr("Troubleshooting"))) dect2::openUrl("https://on-air.dev/docs/troubleshooting/");
