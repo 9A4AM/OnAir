@@ -8,6 +8,7 @@
 #include "adsb/adsb_map.h"
 #include "ui/contrast.h"
 #include "ui/touch.h"
+#include "ui/command_palette.h"
 #include "clips/clips_ui.h"
 #include "dect2/source/iq_file.h"
 #include "panels/gallery.h"
@@ -260,6 +261,7 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
     else if (a.newUi) drawShell2(a, disp);
     else classicShell(a, disp);
     floatingWindows(a, disp);
+    commandPalette(a);   // Ctrl+K (ui/command_palette.h)
     crashNotePopup(disp);
     hiddenPopOut(a);
 }

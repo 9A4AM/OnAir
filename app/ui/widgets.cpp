@@ -1,6 +1,7 @@
 // small reusable widgets: pill buttons, lamps, gauges, scatter and history plots, formatting helpers
 #include "../app.h"
 #include "touch.h"
+#include "command_palette.h"
 
 // Frequency step arrows: one step on press, then after 0.40 s one more step every 0.08 s.
 // At most one step per frame so a hitch does not jump many channels.
@@ -61,6 +62,7 @@ bool tabItem(const char* name, Ic icon) {
     if (gTightTabs) ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(3 * gUi, ImGui::GetStyle().FramePadding.y));
     const bool open = ImGui::BeginTabItem(label.c_str(), nullptr, fl);
     if (touch::on()) touch::noteTab(name, open);   // swipe between tabs
+    paletteNoteTab(name);                          // the command palette lists the tabs of this frame
     if (gTightTabs) ImGui::PopStyleVar();
     const ImVec2 r0 = ImGui::GetItemRectMin(), r1 = ImGui::GetItemRectMax();
     if (!pal::dev()) icons::draw(icon, ImVec2(r0.x + ImGui::GetStyle().FramePadding.x + iconSize() * 0.5f + 1.f, (r0.y + r1.y) * 0.5f), iconSize() * 0.92f,
