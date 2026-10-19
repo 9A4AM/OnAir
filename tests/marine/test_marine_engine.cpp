@@ -60,7 +60,8 @@ static void session(const char* name, int service, double centerHz, double secs,
     e.latestRx(rx, 0);
     const MarineTelemetry& m = rx.marine;
     printf("%s: %d reports, %s\n  NAVTEX %zu, DSC %zu, snr %.1f dB, dropped samples %llu\n", name, reports, marineSummary(m).c_str(), m.navtex.size(), m.dsc.size(), m.snrDb, (unsigned long long)e.droppedSamples());
-    CHECK(seqOk && reports >= 4, "%s: %d reports", name, reports);
+    // the reports made (sequence number), not the polls that saw one: a fast runner can finish the signal between two polls
+    CHECK(seqOk && rx.seq >= 4, "%s: %llu reports made (%d seen)", name, (unsigned long long)rx.seq, reports);
     CHECK(m.seq > secs * 2, "%s: the receiver made %llu reports in %.0f s of signal", name, (unsigned long long)m.seq, secs);   // about 4 a second of signal time
     CHECK(rx.rateOk, "%s: the engine says the rate is too low", name);
     CHECK(e.droppedSamples() == 0, "%s: dropped %llu samples", name, (unsigned long long)e.droppedSamples());
