@@ -295,10 +295,12 @@ void statusLine(App& a) {
     const float lh = ImGui::GetTextLineHeight();
     auto field = [&](const char* text, bool first = false, ImVec4 col = ImVec4(-1, 0, 0, 0), bool fit = false) {
         if (!first) {
-            if (!sameLineIf(16 * gUi + (fit ? 40 * gUi : ImGui::CalcTextSize(text).x), 8 * gUi)) return;   // no room left on the bar
-            const ImVec2 p = ImGui::GetCursorScreenPos();
-            dl->AddLine(ImVec2(p.x, p.y + 1), ImVec2(p.x, p.y + lh - 1), u32(T.dim));
-            ImGui::SameLine(0, 8 * gUi);
+            // the rule sits in the middle of an 8 px gap on each side: text, rule, text never touch
+            const float gap = 8 * gUi;
+            if (!sameLineIf(2 * gap + 1 + (fit ? 40 * gUi : ImGui::CalcTextSize(text).x), gap)) return;   // no room left on the bar
+            const ImVec2 p = ImGui::GetCursorScreenPos();   // gap after the previous text
+            dl->AddLine(ImVec2(p.x + 0.5f, p.y + 1), ImVec2(p.x + 0.5f, p.y + lh - 1), u32(T.dim));
+            ImGui::SameLine(0, gap + 1);   // the next text starts a gap past the rule (1 px wide)
         }
         const std::string t = fit ? ellipsize(text, ImGui::GetContentRegionAvail().x, ImGui::GetFontSize()) : text;   // the log line: as much as fits
         if (col.x < 0) ImGui::TextUnformatted(t.c_str()); else ImGui::TextColored(col, "%s", t.c_str());
@@ -472,6 +474,8 @@ static void menuBarRight(App& a) {
 
 float menuBar(App& a) {
     float menuH = 0;
+    // a taller bar: the buttons at its right end (credit, Support, version, Clear all) and the menu titles get room below their text
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, ImGui::GetStyle().FramePadding.y + 3 * gUi));
     if (ImGui::BeginMainMenuBar()) {
         menuH = ImGui::GetWindowHeight();
         const bool running = a.engine.running();
@@ -531,6 +535,7 @@ float menuBar(App& a) {
         menuBarRight(a);
         ImGui::EndMainMenuBar();
     }
+    ImGui::PopStyleVar();
     workspaceDialogs(a);
     creditsWindow(a);
     tx::windowPanel(a);

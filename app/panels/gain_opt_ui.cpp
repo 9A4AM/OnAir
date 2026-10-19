@@ -47,7 +47,10 @@ void gainOptButtons(App& a, bool running) {
     GainOptSession& s = a.gopt;
     int lo = 0, hi = 0;
     const bool can = running && gainRange(a, lo, hi) && !a.sweep.active() && a.dir.state() != DirectionFinder::State::Measuring;
-    flowNext();
+    // the button goes beside the row when its label fits the panel now (flowNext() used last frame's width, so it could run past the edge)
+    const float btnPad = 2.f * ImGui::GetStyle().FramePadding.x;
+    const char* optLbl = s.opt.active() ? tr("Stop optimising") : tr("Optimise gain");
+    sameLineIf(ImGui::CalcTextSize(optLbl).x + btnPad, ImGui::GetStyle().ItemSpacing.x);
     if (s.opt.active()) {
         if (ImGui::Button(tr("Stop optimising"))) {
             int g = 0;
@@ -70,7 +73,7 @@ void gainOptButtons(App& a, bool running) {
                                        "ratio of the spectrum around the channel, else the ADC level), then sets the lowest gain that is within 0.5 dB of the best quality and does not "
                                        "overload the ADC. Takes about 40 s and needs a signal. The AGC is paused and stays off."));
         if (s.undoable) {
-            flowNext();
+            sameLineIf(ImGui::CalcTextSize(tr("Undo gain")).x + btnPad, ImGui::GetStyle().ItemSpacing.x);
             if (ImGui::Button(tr("Undo gain"))) {
                 setGain(a, s.undoDb, &s.undoStages);
                 apply(a);
