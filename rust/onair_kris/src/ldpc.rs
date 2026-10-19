@@ -250,7 +250,7 @@ impl Code {
             return -1;
         }
         let z = self.z;
-        let mut l: Vec<f32> = llr.iter().map(|&v| if v != v { 0.0 } else if v > 30.0 { 30.0 } else if v < -30.0 { -30.0 } else { v }).collect();
+        let mut l: Vec<f32> = llr.iter().map(|&v| if v.is_nan() { 0.0 } else { v.clamp(-30.0, 30.0) }).collect();
         let mut hard = vec![0u8; self.n];
         let finish = |l: &[f32], info: &mut [u8]| {
             for (i, o) in info.iter_mut().enumerate() {
@@ -291,7 +291,13 @@ impl Code {
                         sgn[zz] ^= bits & 0x8000_0000;
                         let lt1 = m < min1[zz];
                         let lt2 = m < min2[zz];
-                        min2[zz] = if lt1 { min1[zz] } else if lt2 { m } else { min2[zz] };
+                        min2[zz] = if lt1 {
+                            min1[zz]
+                        } else if lt2 {
+                            m
+                        } else {
+                            min2[zz]
+                        };
                         idx[zz] = if lt1 { tt } else { idx[zz] };
                         min1[zz] = if lt1 { m } else { min1[zz] };
                     }

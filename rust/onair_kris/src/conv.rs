@@ -73,7 +73,7 @@ pub fn decode_into(kind: i32, llr: &[f32], nsym: usize, terminated: bool, out: &
         for (p, m) in bm.iter_mut().enumerate().take(1 << no) {
             let mut s = 0.0;
             for (i, &v) in l.iter().enumerate() {
-                let v = if v != v { 0.0 } else { v };
+                let v = if v.is_nan() { 0.0 } else { v };
                 s += if (p >> i) & 1 == 1 { -v } else { v };
             }
             *m = s;
