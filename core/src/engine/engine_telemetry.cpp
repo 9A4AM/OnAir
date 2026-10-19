@@ -226,7 +226,7 @@ int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
     case 28: return pollStd(rxVdl2_, 28, t, seqs[21], &RxTelemetry::vdl2);
     case 29: return pollStd(rxIsm_, 29, t, seqs[22], &RxTelemetry::ism);
     case 30: return pollStd(rxNdb_, 30, t, seqs[23], &RxTelemetry::ndb);
-    case 123: return pollStd(rxDme_, 123, t, seqs[110], &RxTelemetry::dme);
+    case 122: return pollStd(rxDme_, 122, t, seqs[110], &RxTelemetry::dme);
     case 31: return pollStd(rxVor_, 31, t, seqs[24], &RxTelemetry::vor);
     case 32: return pollStd(rxM17_, 32, t, seqs[25], &RxTelemetry::m17);
     case 33: return pollStd(rxCell_, 33, t, seqs[26], &RxTelemetry::cell);
@@ -276,7 +276,7 @@ int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
     case 79: return pollStd(rxDect_, 79, t, seqs[73], &RxTelemetry::dect);
     case 80: return pollStd(rxTetrapol_, 80, t, seqs[74], &RxTelemetry::tetrapol);
     case 81: return poll81(rxEl_, t, seqs);
-    case 122: return pollStd(rxDgps_, 122, t, seqs[110], &RxTelemetry::dgps);   // DGPS beacons (slot 110)
+    case 121: return pollStd(rxDgps_, 121, t, seqs[110], &RxTelemetry::dgps);   // DGPS beacons (slot 110)
     case 82: return pollStd(rxLbj_, 82, t, seqs[76], &RxTelemetry::lbj);
     case 84: return pollStd(rxUat_, 84, t, seqs[78], &RxTelemetry::uat);
     case 83: return pollStd(rxVdl4_, 83, t, seqs[77], &RxTelemetry::vdl4);

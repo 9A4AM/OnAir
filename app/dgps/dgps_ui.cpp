@@ -6,7 +6,7 @@
 
 namespace {
 
-bool live(const App& a) { return a.rx.standard == 120; }   // family 119 / engine standard 121
+bool live(const App& a) { return a.rx.standard == 121; }   // family 120, engine standard 122, active standard 121
 
 std::string typesText(const dect2::DgpsTelemetry& t) {
     if (t.typesSeen.empty()) return "-";

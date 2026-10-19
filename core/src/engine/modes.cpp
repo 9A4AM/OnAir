@@ -554,7 +554,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 83: return vdl4Summary(t.vdl4);   // engine standard 83 (stdMode 84)
     case 29: return ismSummary(t.ism);
     case 30: return ndbSummary(t.ndb);
-    case 123: return dmeSummary(t.dme);
+    case 122: return dmeSummary(t.dme);
     case 31: return vorSummary(t.vor);
     case 32: return m17Summary(t.m17);
     case 36: return hfdlSummary(t.hfdl);
@@ -594,7 +594,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 80: return tetrapolSummary(t.tetrapol);
     case 81: return elektroSummary(t.elektro);
     case 82: return lbjSummary(t.lbj);
-    case 122: return dgpsSummary(t.dgps);
+    case 121: return dgpsSummary(t.dgps);
     case 84: return uatSummary(t.uat);
     case 76: return multitoneSummary(t.multitone);
     case 72: return loraRawSummary(t.loraraw);

@@ -6,7 +6,7 @@
 
 namespace {
 
-bool live(const App& a) { return a.rx.standard == 120; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 122; }   // family 121, engine standard 123, active standard 122
 
 void tab(App& a) {
     ImGui::PushTextWrapPos(0);
