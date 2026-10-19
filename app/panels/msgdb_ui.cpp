@@ -138,7 +138,7 @@ void exportButton(const char* label, const char* fmt, const char* ext) {
     S.note = o ? std::string(tr("saved")) + " " + path : std::string(tr("could not write")) + " " + path;
 }
 
-void window(App& a) {
+void windowPanel(App& a) {
     ImGui::SetNextWindowSize(ImVec2(980, 620), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin(tr("Messages"), &a.msgdbOpen)) { ImGui::End(); return; }
     mdb::Db& db = mdb::global();
@@ -244,5 +244,5 @@ void msgdbWindow(App& a) {
         return;
     }
     if (!S.started) start();
-    if (a.msgdbOpen) window(a);
+    if (a.msgdbOpen) windowPanel(a);
 }

@@ -251,7 +251,7 @@ void illuminatorSection() {
     if (ch) save();
 }
 
-void window(App& a) {
+void windowPanel(App& a) {
     load();
     ImGui::SetNextWindowSize(ImVec2(980 * gUi, 680 * gUi), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin(trw("Passive radar"), &a.passiveRadarOpen)) { ImGui::End(); return; }
@@ -341,5 +341,5 @@ void window(App& a) {
 
 void passiveRadarWindow(App& a) {
     if (!a.passiveRadarOpen) return;
-    window(a);
+    windowPanel(a);
 }

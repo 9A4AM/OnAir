@@ -442,7 +442,7 @@ void walkTab() {
     }
 }
 
-void window(App& a) {
+void windowPanel(App& a) {
     load();
     ImGui::SetNextWindowSize(ImVec2(940 * gUi, 780 * gUi), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin(trw("Interference hunter"), &a.rfiOpen)) { ImGui::End(); return; }
@@ -458,7 +458,7 @@ void window(App& a) {
 } // namespace
 
 void rfiWindow(App& a) {
-    if (a.rfiOpen) window(a);
+    if (a.rfiOpen) windowPanel(a);
     else {
         if (S.running.load()) stopSweep();   // closing the window gives the radio back
         if (S.grun.load()) stopGps();

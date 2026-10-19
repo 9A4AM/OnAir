@@ -232,7 +232,7 @@ void surveyPanel(App& a) {
     }
 }
 
-void window(App& a) {
+void windowPanel(App& a) {
     ImGui::SetNextWindowSize(ImVec2(900 * gUi, 760 * gUi), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin(trw("Sweep scanner"), &a.sweepOpen)) { ImGui::End(); return; }
     const bool run = S.running.load();
@@ -369,6 +369,6 @@ void window(App& a) {
 } // namespace
 
 void sweepWindow(App& a) {
-    if (a.sweepOpen) window(a);
+    if (a.sweepOpen) windowPanel(a);
     else if (S.running.load()) stopSweep();   // closing the window gives the radio back
 }

@@ -373,7 +373,7 @@ void historyTab() {
     }
 }
 
-void window(App& a) {
+void windowPanel(App& a) {
     ImGui::SetNextWindowSize(ImVec2(820 * gUi, 520 * gUi), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin(tr("Watchlists"), &a.watchlistOpen)) { ImGui::End(); return; }
     if (ImGui::Checkbox(tr("Watch for these"), &S.set.enabled)) S.dirty = true;
@@ -396,6 +396,6 @@ void watchlistWindow(App& a) {
         return;
     }
     if (!S.started) start();
-    if (a.watchlistOpen) window(a);
+    if (a.watchlistOpen) windowPanel(a);
     else if (ImGui::GetTime() - S.lastTz > 600) { S.lastTz = ImGui::GetTime(); apply(); }   // keeps the local-time offset of the quiet hours current
 }

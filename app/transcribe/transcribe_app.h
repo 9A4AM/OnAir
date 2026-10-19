@@ -14,7 +14,7 @@ namespace tx {
 void tick(App& first);                       // once per frame (cheap: it works about once a second)
 void shutdown();
 bool& windowOpen();                          // View > Transcripts
-void window(App& a);                         // the Transcripts window (list, search, filters, export, settings, speech model)
+void windowPanel(App& a);                         // the Transcripts window (list, search, filters, export, settings, speech model)
 void captions(App& a);                       // the live captions strip at the top of the airband screen
 // What was said to or about an aircraft, newest first (from the callsign or registration spoken, or the aircraft the call was matched to).
 void voiceSection(const App& a, uint32_t icao, const std::string& callsign, const std::string& reg);

@@ -674,7 +674,7 @@ void modelPopups() {
 
 }  // namespace
 
-void window(App& a) {
+void windowPanel(App& a) {
     load();
     if (!gWindowOpen) return;
     const ImGuiViewport* vp = ImGui::GetMainViewport();

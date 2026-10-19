@@ -721,7 +721,7 @@ void runDev() {
     v.hist = true; v.curve = 1; v.mapOn = true; v.border = true; v.stretch = true;
 }
 
-void window(App& a) {
+void windowPanel(App& a) {
     load();
     runDev();
     ImGui::SetNextWindowSize(ImVec2(960 * gUi, 620 * gUi), ImGuiCond_FirstUseEver);
@@ -800,5 +800,5 @@ void window(App& a) {
 void galleryDev(int mode) { gDev = mode; }
 
 void galleryWindow(App& a) {
-    if (a.galleryOpen) window(a);
+    if (a.galleryOpen) windowPanel(a);
 }

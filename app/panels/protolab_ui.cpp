@@ -486,7 +486,7 @@ void resultPanel() {
     }
 }
 
-void window(App& a) {
+void windowPanel(App& a) {
     ImGui::SetNextWindowSize(ImVec2(900, 700), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin(tr("Protocol lab"), &a.protolabOpen)) { ImGui::End(); return; }
     if (S.run == 2) {
@@ -505,5 +505,5 @@ void protolabWindow(App& a) {
         if (App* f = receiverById(1)) { f->protolabOpen = a.protolabOpen; protolabWindow(*f); a.protolabOpen = f->protolabOpen; }
         return;
     }
-    if (a.protolabOpen) window(a);
+    if (a.protolabOpen) windowPanel(a);
 }

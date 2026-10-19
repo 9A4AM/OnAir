@@ -656,7 +656,7 @@ void recipesPopup() {
     }
 }
 
-void window(App& a) {
+void windowPanel(App& a) {
     ImGui::SetNextWindowSize(ImVec2(980 * gUi, 640 * gUi), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin(trw("Automations"), &a.automationOpen)) { ImGui::End(); return; }
     if (ImGui::Button(tr("New rule"))) addItem(newRule());
@@ -784,5 +784,5 @@ void automationWindow(App& a) {
     if (S.dirty) applyEngine();
     automationapp::uiTick(a);
     automationapp::drawBanner();
-    if (a.automationOpen) window(a);
+    if (a.automationOpen) windowPanel(a);
 }
