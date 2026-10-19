@@ -50,6 +50,13 @@ struct UhdApi {
     err_t (DECT2_CALL* set_rx_antenna)(usrp_t*, const char*, size_t) = nullptr;
     err_t (DECT2_CALL* set_clock_source)(usrp_t*, const char*, size_t) = nullptr;   // optional: the reference clock of a motherboard
     err_t (DECT2_CALL* set_time_source)(usrp_t*, const char*, size_t) = nullptr;    // optional: where the PPS (time) comes from
+    // optional: what the motherboard offers (get_clock_sources / get_time_sources) and the "ref_locked" sensor
+    err_t (DECT2_CALL* get_clock_sources)(usrp_t*, size_t, strvec_t**) = nullptr;
+    err_t (DECT2_CALL* get_time_sources)(usrp_t*, size_t, strvec_t**) = nullptr;
+    err_t (DECT2_CALL* get_mboard_sensor)(usrp_t*, const char*, size_t, void**) = nullptr;
+    err_t (DECT2_CALL* sensor_make)(void**) = nullptr;
+    err_t (DECT2_CALL* sensor_free)(void**) = nullptr;
+    err_t (DECT2_CALL* sensor_to_bool)(void*, bool*) = nullptr;
     bool ok = false;
     DynLib lib;
     UhdApi() {
@@ -72,6 +79,9 @@ struct UhdApi {
             lib.opt(get_last_error, "uhd_get_last_error"); lib.opt(usrp_last_error, "uhd_usrp_last_error"); lib.opt(get_rx_freq_range, "uhd_usrp_get_rx_freq_range");
             lib.opt(get_rx_num_channels, "uhd_usrp_get_rx_num_channels"); lib.opt(get_rx_antennas, "uhd_usrp_get_rx_antennas"); lib.opt(set_rx_antenna, "uhd_usrp_set_rx_antenna");
             lib.opt(set_clock_source, "uhd_usrp_set_clock_source"); lib.opt(set_time_source, "uhd_usrp_set_time_source");
+            lib.opt(get_clock_sources, "uhd_usrp_get_clock_sources"); lib.opt(get_time_sources, "uhd_usrp_get_time_sources");
+            lib.opt(get_mboard_sensor, "uhd_usrp_get_mboard_sensor"); lib.opt(sensor_make, "uhd_sensor_value_make");
+            lib.opt(sensor_free, "uhd_sensor_value_free"); lib.opt(sensor_to_bool, "uhd_sensor_value_to_bool");
         }
     }
     // UHD's text for the last failure, on one line (its messages can span several)
@@ -163,6 +173,12 @@ protected:
         // the reference clock (TuneSettings "clock"): UHD's own choice unless the user picked one (an external 10 MHz, a GPSDO). Set first:
         // everything that follows is tuned against it
         if (const std::string clk = radioOption(s, "clock", "default"); clk != "default") {
+            std::string offered;
+            if (!sourceOffered(true, clk, offered)) {
+                err = "USRP: this radio has no reference clock \"" + clk + "\" (it offers: " + offered + ")";
+                openFailure_ = OpenFailure::Final;
+                return false;
+            }
             if (!uhd().set_clock_source || uhd().set_clock_source(dev_, clk.c_str(), 0) != 0) {
                 err = "USRP: the reference clock \"" + clk + "\" was refused" + (uhd().set_clock_source ? ": " + uhd().text(dev_) : std::string(" (this UHD cannot set it)"));
                 openFailure_ = OpenFailure::Final;
@@ -172,12 +188,19 @@ protected:
         // the time (PPS) source (TuneSettings "time"): UHD's own choice unless picked. "external" = the PPS SMA, "gpsdo" = the GPS module, "mimo" = the
         // MIMO cable of an N2xx/X3xx pair. Sample capture does not need it; it only matters when radios are to be aligned in time.
         if (const std::string ts = radioOption(s, "time", "default"); ts != "default") {
+            std::string offered;
+            if (!sourceOffered(false, ts, offered)) {
+                err = "USRP: this radio has no time source \"" + ts + "\" (it offers: " + offered + ")";
+                openFailure_ = OpenFailure::Final;
+                return false;
+            }
             if (!uhd().set_time_source || uhd().set_time_source(dev_, ts.c_str(), 0) != 0) {
                 err = "USRP: the time source \"" + ts + "\" was refused" + (uhd().set_time_source ? ": " + uhd().text(dev_) : std::string(" (this UHD cannot set it)"));
                 openFailure_ = OpenFailure::Final;
                 return false;
             }
         }
+        if (radioOption(s, "clock", "default") != "default") lockNote_ = refLockNote(); else lockNote_.clear();
         rememberInputs();
         if (size_t n = 0; ch_ > 0 && uhd().get_rx_num_channels && uhd().get_rx_num_channels(dev_, &n) == 0 && ch_ >= n) {
             err = "USRP: this radio has " + std::to_string(n) + " receive channel(s), channel " + std::to_string(ch_ + 1) + " was picked";
@@ -197,7 +220,9 @@ protected:
             }
             uhd().meta_range_free(&rg);
         }
-        return configure(s, err, false);
+        const bool cfg = configure(s, err, false);
+        if (cfg) addNote(err, lockNote_);
+        return cfg;
     }
     bool configure(const TuneSettings& s, std::string& err, bool live) override {
         if (!dev_) return false;
@@ -285,6 +310,43 @@ private:
         if (md_) uhd().rx_metadata_free(&md_);
         streamer_ = nullptr; md_ = nullptr;
     }
+    // The sources the radio offers ("" list = the library cannot say): the user's pick is checked against them, so a radio without a GPSDO
+    // says what it does have instead of UHD's bare exception
+    bool sourceOffered(bool clock, const std::string& want, std::string& offered) {
+        auto fn = clock ? uhd().get_clock_sources : uhd().get_time_sources;
+        offered.clear();
+        if (!fn) return true;
+        UhdApi::strvec_t* v = nullptr;
+        if (uhd().strvec_make(&v) != 0 || !v) return true;
+        bool found = false, known = false;
+        size_t k = 0;
+        if (fn(dev_, 0, &v) == 0 && uhd().strvec_size(v, &k) == 0 && k > 0)
+            for (size_t i = 0; i < k && i < 16; i++) {
+                char b[128] = {0};
+                if (uhd().strvec_at(v, i, b, sizeof b) != 0 || !b[0]) continue;
+                known = true;
+                if (want == b) found = true;
+                offered += (offered.empty() ? "" : ", ") + std::string(b);
+            }
+        uhd().strvec_free(&v);
+        return found || !known;
+    }
+    // "reference locked" after a clock source was picked: the motherboard's ref_locked sensor, polled for up to 3 s (a GPSDO or an external
+    // reference takes a moment). Returns a plain-words note, "" when the radio has no such sensor
+    std::string refLockNote() {
+        if (!uhd().get_mboard_sensor || !uhd().sensor_make || !uhd().sensor_free || !uhd().sensor_to_bool) return "";
+        for (int i = 0; i < 12; i++) {
+            void* sv = nullptr;
+            if (uhd().sensor_make(&sv) != 0 || !sv) return "";
+            bool locked = false;
+            const bool got = uhd().get_mboard_sensor(dev_, "ref_locked", 0, &sv) == 0 && uhd().sensor_to_bool(sv, &locked) == 0;
+            uhd().sensor_free(&sv);
+            if (!got) return "";
+            if (locked) return "reference locked";
+            if (i < 11) std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        }
+        return "the reference clock is NOT locked (check the 10 MHz / GPSDO cable and that the signal is present)";
+    }
     // the inputs of each channel, for the next listing (a radio is only opened when it is started)
     void rememberInputs() {
         if (!uhd().get_rx_antennas) return;
@@ -303,6 +365,7 @@ private:
         gInputs[args_] = in;
     }
     std::string otw_ = "sc16";   // the wire format ("wire" setting)
+    std::string lockNote_;   // "reference locked" / not locked, shown with the start message
     std::string args_, antenna_;   // antenna_: the input the user picked ("" = UHD's default)
     size_t ch_ = 0;                // the receive channel (the B210's RF A = 0, RF B = 1)
     UhdApi::usrp_t* dev_ = nullptr;
@@ -356,7 +419,9 @@ void listUsrp(std::vector<DeviceInfo>& out) {
             d.settings = {ppmSetting(0.01),
                           choiceSetting("clock", "Reference clock",
                                         "The 10 MHz reference the USRP locks to. Default: UHD's choice (the internal oscillator; a B2xx with a GPSDO fitted\n"
-                                        "uses the GPSDO). External: a 10 MHz reference on the REF input. Takes effect when the radio is started.",
+                                        "uses the GPSDO). External: a 10 MHz reference on the REF input (the radio locks its oscillator to it). A source this\n"
+                                        "radio does not have is refused with the list it offers; whether the reference locked is shown when the radio starts.\n"
+                                        "Takes effect when the radio is started.",
                                         {"default", "internal", "external", "gpsdo"}, {"Default", "Internal", "External 10 MHz", "GPSDO"}, "default", true),
                           choiceSetting("time", "Time source (PPS)",
                                         "Where the radio takes its one-pulse-per-second time reference from. Default: UHD's choice. None: no PPS. External: a PPS\n"

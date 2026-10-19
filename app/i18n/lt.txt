@@ -2477,6 +2477,15 @@ Host PIN (to moderate on the room page):	Šeimininko PIN (moderuoti kambario pus
 Go live (Live rooms)...	Pradėti transliaciją (Gyvi kambariai)...
 Could not create the room	Nepavyko sukurti kambario
 Lost the connection to the rooms server	Prarastas ryšys su kambarių serveriu
+The live rooms server is not available yet.	Tiesioginių kambarių serveris dar nepasiekiamas.
+No internet connection.	Nėra interneto ryšio.
+The live rooms server did not answer in time.	Tiesioginių kambarių serveris neatsakė laiku.
+The live rooms server is full right now. Try again later.	Tiesioginių kambarių serveris šiuo metu pilnas. Bandykite vėliau.
+Too many rooms were started from here. Try again in a few minutes.	Iš čia paleista per daug kambarių. Bandykite dar kartą po kelių minučių.
+The live rooms server refused the request.	Tiesioginių kambarių serveris atmetė užklausą.
+The live rooms server sent an answer OnAir does not understand.	Tiesioginių kambarių serveris atsiuntė atsakymą, kurio OnAir nesupranta.
+Checking the live rooms server...	Tikrinamas tiesioginių kambarių serveris...
+Check the live rooms server again	Dar kartą patikrinti tiesioginių kambarių serverį
 Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Gyvi kambariai: kol transliuojate, kiekvienas, turintis kambario nuorodą, gali matyti šio imtuvo krioklio diagramą, režimą ir derinamą dažnį bei kalbėtis tarpusavyje. Kambarių sąraše internete rodomas ir jo pavadinimas. Kol nenuspausite Pradėti transliaciją, niekas nesiunčiama, o kambariui pasibaigus nieko nelieka saugoma. Jūsų vieta, vardas ir garsas niekada nesiunčiami.
 Room title	Kambario pavadinimas
 Also show decoded ACARS text in the room (public)	Rodyti kambaryje ir dekoduotą ACARS tekstą (viešai)

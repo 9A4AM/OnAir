@@ -3,12 +3,14 @@
 // Audio is not sent: the repo has no Opus encoder. The host token goes in the JSON body, never in a URL. The room page shows the viewers.
 #include "dect2/common/thread_name.h"
 #include "rooms.h"
+#include "rooms_net.h"
 #include "../app.h"
 #include "../map/pos_predict.h"
 #include "../platform/platform.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <mutex>
@@ -30,7 +32,13 @@ std::atomic<int> gViewers{0};
 std::thread gTh;
 std::mutex gMu;                       // guards everything below
 std::string gTitle, gMode, gId, gToken, gPin, gUrl;
-std::atomic<int> gErr{0};            // 1 could not create the room, 2 lost the connection
+std::atomic<int> gErr{0};            // a roomsnet::Fail (as int) when the room could not be created, kLost when the connection was lost
+constexpr int kLost = 1000;
+std::string gErrDetail;               // technical reason of the last failure (under gMu)
+roomsnet::AvailCache gAvail;          // under gMu
+std::thread gChk;                     // the availability check (never on the UI thread)
+std::atomic<bool> gChecking{false}, gCheckDone{false};
+bool gWantConsent = false;            // the user clicked Go live while the check ran (UI thread only)
 double gFreq = 0;
 bool gShareText = false;
 std::vector<std::string> gLines;      // base64 waterfall lines not yet sent
@@ -79,18 +87,62 @@ int jint(const std::string& j, const char* key) {
     return p == std::string::npos ? -1 : std::atoi(j.c_str() + p + k.size());
 }
 
+std::string userAgent() { return std::string("OnAir/") + ONAIR_VERSION + " (live rooms)"; }
+
+roomsnet::Transport transport() {
+    return [](const std::string& m, const std::string& url, const std::string& body, int to) { return plat::httpRequest(m, url, body, userAgent(), to); };
+}
+
+void rlog(const std::string& s) { std::fprintf(stderr, "live rooms: %s\n", s.c_str()); }
+
+void checkWorker() {
+    const std::string o = origin();
+    const roomsnet::Avail a = roomsnet::checkAvailable(o, transport(), 3);
+    rlog(std::string(a.ok ? "server reachable: " : "server not available: ") + a.detail);
+    {
+        std::lock_guard<std::mutex> lk(gMu);
+        gAvail.store(o, a, roomsnet::AvailCache::Clock::now());
+    }
+    gChecking = false;
+    gCheckDone = true;
+}
+
+void startCheck() {
+    if (gChecking.exchange(true)) return;
+    if (gChk.joinable()) gChk.join();
+    gCheckDone = false;
+    gChk = std::thread(checkWorker);
+}
+
 void worker() {
-    const std::string ua = std::string("OnAir/") + ONAIR_VERSION + " (live rooms)";
+    const std::string ua = userAgent();
     std::string reply, body;
     {
         std::lock_guard<std::mutex> lk(gMu);
         char f[48]; std::snprintf(f, sizeof f, "%.6f", gFreq);
         body = "{\"consent\":true,\"title\":\"" + esc(gTitle) + "\",\"mode\":\"" + esc(gMode) + "\",\"freq\":" + f + ",\"transcript\":" + (gShareText ? "true" : "false") + "}";
     }
-    if (!plat::postJsonReply(origin() + "/api/create", body, ua, reply) || jstr(reply, "id").empty() || jstr(reply, "hostToken").empty()) {
-        gErr = 1;
-        gPhase = kFailed;
-        return;
+    {
+        const std::string url = origin() + "/api/create";
+        const plat::HttpResult r = plat::httpRequest("POST", url, body, ua, 12);
+        roomsnet::Fail f = roomsnet::classify(r);
+        reply = r.body;
+        if (f == roomsnet::Fail::None && (jstr(reply, "id").empty() || jstr(reply, "hostToken").empty())) f = roomsnet::Fail::BadReply;
+        if (f != roomsnet::Fail::None) {
+            const std::string d = roomsnet::describe(url, r);
+            rlog("could not create the room: " + d);
+            {
+                std::lock_guard<std::mutex> lk(gMu);
+                gErrDetail = d;
+                if (roomsnet::serverMissing(f)) {
+                    roomsnet::Avail a; a.ok = false; a.why = f; a.detail = d;
+                    gAvail.store(origin(), a, roomsnet::AvailCache::Clock::now());
+                }
+            }
+            gErr = (int)f;
+            gPhase = kFailed;
+            return;
+        }
     }
     {
         std::lock_guard<std::mutex> lk(gMu);
@@ -123,7 +175,8 @@ void worker() {
             const int v = jint(reply, "viewers");
             if (v >= 0) gViewers = v;
         } else if (++fails >= kMaxFails) {
-            gErr = 2;
+            gErr = kLost;
+            { std::lock_guard<std::mutex> lk(gMu); gErrDetail = "the room did not accept data for " + std::to_string(kMaxFails) + " pushes in a row"; }
             gPhase = kFailed;
             break;
         }
@@ -149,6 +202,21 @@ void startLive() {
     gErr = 0;
     gPhase = kStarting;
     gTh = dect2::namedThread("onair-rooms", worker);
+}
+
+const char* failText(int f) {
+    switch ((roomsnet::Fail)f) {
+        case roomsnet::Fail::Dns:
+        case roomsnet::Fail::NotFound:
+        case roomsnet::Fail::Unavailable: return tr("The live rooms server is not available yet.");
+        case roomsnet::Fail::Offline: return tr("No internet connection.");
+        case roomsnet::Fail::Timeout: return tr("The live rooms server did not answer in time.");
+        case roomsnet::Fail::Full: return tr("The live rooms server is full right now. Try again later.");
+        case roomsnet::Fail::RateLimited: return tr("Too many rooms were started from here. Try again in a few minutes.");
+        case roomsnet::Fail::Refused: return tr("The live rooms server refused the request.");
+        case roomsnet::Fail::BadReply: return tr("The live rooms server sent an answer OnAir does not understand.");
+        default: return tr("Could not create the room");
+    }
 }
 
 void curMode(App& a, std::string& mode, double& freq) {
@@ -191,7 +259,10 @@ void roomsFeedText(const std::string& t) {
     if (gTexts.size() > 40) gTexts.erase(gTexts.begin());
 }
 
-void roomsShutdown() { stopLive(); }
+void roomsShutdown() {
+    stopLive();
+    if (gChk.joinable()) gChk.join();
+}
 
 void roomsMenu(App& a, bool menu) {
     const int ph = gPhase.load();
@@ -209,9 +280,62 @@ void roomsMenu(App& a, bool menu) {
         }
         return;
     }
-    if (ph == kFailed) ImGui::TextDisabled("%s", gErr.load() == 1 ? tr("Could not create the room") : tr("Lost the connection to the rooms server"));
+    if (ph == kFailed) {
+        std::string d;
+        { std::lock_guard<std::mutex> lk(gMu); d = gErrDetail; }
+        ImGui::TextDisabled("%s", gErr.load() == kLost ? tr("Lost the connection to the rooms server") : failText(gErr.load()));
+        if (ImGui::IsItemHovered() && !d.empty()) ImGui::SetTooltip("%s", d.c_str());
+    }
+    bool missing = false;
+    std::string detail;
+    int why = 0;
+    {
+        std::lock_guard<std::mutex> lk(gMu);
+        const auto now = roomsnet::AvailCache::Clock::now();
+        missing = gAvail.fresh(origin(), now) && !gAvail.value().ok;
+        if (!gAvail.value().ok) { detail = gAvail.value().detail; why = (int)gAvail.value().why; }
+    }
+    const bool checking = gChecking.load();
+    if (checking) {
+        ImGui::BeginDisabled();
+        menu ? ImGui::MenuItem(tr("Checking the live rooms server...")) : ImGui::Button(tr("Checking the live rooms server..."));
+        ImGui::EndDisabled();
+        (void)a;
+        return;
+    }
+    if (missing) {
+        ImGui::BeginDisabled();
+        menu ? ImGui::MenuItem(tr("Go live (Live rooms)...")) : ImGui::Button(tr("Go live (Live rooms)..."));
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted(failText(why));
+            if (!detail.empty()) ImGui::TextDisabled("%s", detail.c_str());
+            ImGui::EndTooltip();
+        }
+        const bool again = menu ? ImGui::MenuItem(tr("Check the live rooms server again")) : ImGui::SmallButton(tr("Check the live rooms server again"));
+        if (again) {
+            { std::lock_guard<std::mutex> lk(gMu); gAvail.reset(); }
+            gWantConsent = false;
+            startCheck();
+        }
+        (void)a;
+        return;
+    }
+    if (why != 0 && !detail.empty() && ph != kFailed) {   // the last check failed in a way that is not kept (offline, timeout)
+        ImGui::TextDisabled("%s", failText(why));
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", detail.c_str());
+    }
     const bool hit = menu ? ImGui::MenuItem(tr("Go live (Live rooms)...")) : ImGui::Button(tr("Go live (Live rooms)..."));
-    if (hit) { gOpenConsent = true; }
+    if (hit) {
+        bool ok = false;
+        {
+            std::lock_guard<std::mutex> lk(gMu);
+            ok = gAvail.fresh(origin(), roomsnet::AvailCache::Clock::now()) && gAvail.value().ok;
+        }
+        if (ok) gOpenConsent = true;
+        else { gWantConsent = true; startCheck(); }
+    }
     (void)a;
 }
 
@@ -219,6 +343,13 @@ void roomsPopups(App& a) {
     if (gPhase.load() == kLive) {
         std::lock_guard<std::mutex> lk(gMu);
         curMode(a, gMode, gFreq);
+    }
+    if (gCheckDone.exchange(false)) {
+        if (gChk.joinable()) gChk.join();
+        bool ok;
+        { std::lock_guard<std::mutex> lk(gMu); ok = gAvail.value().ok; }
+        if (gWantConsent && ok) gOpenConsent = true;
+        gWantConsent = false;
     }
     if (gOpenConsent) { ImGui::OpenPopup("##roomsconsent"); gOpenConsent = false; }
     if (!ImGui::BeginPopupModal("##roomsconsent", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) return;

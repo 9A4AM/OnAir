@@ -2477,6 +2477,15 @@ Host PIN (to moderate on the room page):	Host-PIN (zum Moderieren auf der Raumse
 Go live (Live rooms)...	Live gehen (Live-Räume)...
 Could not create the room	Der Raum konnte nicht erstellt werden
 Lost the connection to the rooms server	Verbindung zum Raum-Server verloren
+The live rooms server is not available yet.	Der Live-Räume-Server ist noch nicht verfügbar.
+No internet connection.	Keine Internetverbindung.
+The live rooms server did not answer in time.	Der Live-Räume-Server hat nicht rechtzeitig geantwortet.
+The live rooms server is full right now. Try again later.	Der Live-Räume-Server ist gerade voll. Versuche es später erneut.
+Too many rooms were started from here. Try again in a few minutes.	Von hier wurden zu viele Räume gestartet. Versuche es in ein paar Minuten erneut.
+The live rooms server refused the request.	Der Live-Räume-Server hat die Anfrage abgelehnt.
+The live rooms server sent an answer OnAir does not understand.	Der Live-Räume-Server hat eine Antwort gesendet, die OnAir nicht versteht.
+Checking the live rooms server...	Live-Räume-Server wird geprüft...
+Check the live rooms server again	Live-Räume-Server erneut prüfen
 Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Live-Räume: Solange du live bist, kann jeder mit dem Raumlink das Wasserfalldiagramm dieses Empfängers, den Modus und die eingestellte Frequenz sehen und miteinander chatten. Die Raumliste im Web zeigt auch den Titel. Vor dem Klick auf Live gehen wird nichts gesendet, und nach dem Ende des Raums wird nichts gespeichert. Dein Standort, dein Name und der Ton werden nie gesendet.
 Room title	Raumtitel
 Also show decoded ACARS text in the room (public)	Auch dekodierten ACARS-Text im Raum zeigen (öffentlich)

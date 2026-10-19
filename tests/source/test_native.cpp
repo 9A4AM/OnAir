@@ -991,6 +991,28 @@ static void radioSettingsChecks(const char* dir, const char* ext) {
         ok = tsrc->start(t, ring, e);
         CHECK(ok && st("usrp.time") == 4 && st("usrp.timeCalls") == 1, "USRP time source mimo: %.0f", st("usrp.time"));
         if (ok) tsrc->stop();
+        // the sources the radio offers, and its ref_locked sensor
+        t.radio = {{"clock", "external"}};
+        auto lk = makeSource(d);
+        e.clear();
+        ok = lk->start(t, ring, e);
+        CHECK(ok && has(e, "reference locked") && !has(e, "NOT"), "USRP external reference locked is reported: %s", e.c_str());
+        if (ok) lk->stop();
+        setenv("FAKE_USRP_UNLOCKED", "1", 1);
+        auto ul = makeSource(d);
+        e.clear();
+        ok = ul->start(t, ring, e);
+        CHECK(ok && has(e, "NOT locked"), "USRP unlocked reference is reported: %s", e.c_str());
+        if (ok) ul->stop();
+        unsetenv("FAKE_USRP_UNLOCKED");
+        setenv("FAKE_USRP_NO_GPSDO", "1", 1);
+        t.radio = {{"clock", "gpsdo"}};
+        set("usrp.clockCalls", 0);
+        auto ng = makeSource(d);
+        e.clear();
+        ok = ng->start(t, ring, e);
+        CHECK(!ok && has(e, "no reference clock \"gpsdo\"") && has(e, "internal, external") && st("usrp.clockCalls") == 0, "USRP without a GPSDO names what it offers: %s", e.c_str());
+        unsetenv("FAKE_USRP_NO_GPSDO");
     }
     fakeState = nullptr;
 }

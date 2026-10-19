@@ -36,6 +36,32 @@ struct VideoFrame {
     bool bt709 = true, fullRange = false, interlaced = false;
 };
 
+// How many decoded pictures the player may queue. A broadcaster that muxes the video well ahead of the audio (1.6 s is seen on
+// DVB-T2 HEVC 1080p50) needs about 3.5 s of pictures, so the cap follows the frame rate (never below 80) and is bounded by memory:
+// at most about 768 MB of NV12 pictures (never below 30, so 4K still has a second of queue).
+inline size_t videoQueueCap(double fps, size_t frameBytes) {
+    if (!(fps >= 1.0) || fps > 240.0) fps = 25.0;
+    size_t cap = (size_t)(fps * 3.5 + 0.999);
+    if (cap < 80) cap = 80;
+    if (frameBytes > 0) {
+        size_t byMem = (size_t)(768ull * 1024 * 1024) / frameBytes;
+        if (byMem < 30) byMem = 30;
+        if (cap > byMem) cap = byMem;
+    }
+    return cap;
+}
+
+// Brings a queue of pictures (ordered by pts) back to at most cap entries. Pictures that are already late are dropped first (oldest
+// first); the pictures that are due next are kept, so when the queue is still too long the NEWEST ones go (the decoder is too far ahead,
+// the back-pressure in the read loop holds it back). Returns the number dropped.
+template <class Q>
+inline size_t trimVideoQueue(Q& q, size_t cap, double clock, bool haveClock) {
+    size_t n = 0;
+    while (q.size() > cap && haveClock && q.size() > 1 && q.front()->pts < clock) { q.pop_front(); n++; }
+    while (q.size() > cap) { q.pop_back(); n++; }
+    return n;
+}
+
 struct AudioTrackInfo { int pid = 0; std::string codec, lang; int channels = 0; };
 
 struct PlayerStats {
@@ -97,7 +123,7 @@ public:
     void setConceal(bool on) { conceal_ = on; }    // bridge gaps in the stream: continue the audio, interpolate missing pictures
     bool conceal() const { return conceal_; }
     // Decode video on the graphics chip (VideoToolbox / Direct3D 11) when it can; off = always on the CPU. Takes effect by restarting the stream.
-    void setHardwareDecode(bool on) { if (hwAllowed_.exchange(on) != on) restart_ = true; }
+    void setHardwareDecode(bool on) { hwFallback_ = false; if (hwAllowed_.exchange(on) != on) restart_ = true; }
     bool hardwareDecode() const { return hwAllowed_; }
     bool subtitlesAvailable() const { return subsAvail_; }
     // Save the raw audio elementary stream (DRA, else MPEG audio) of the selected service to a file FFmpeg can play. Returns the file
@@ -137,6 +163,7 @@ private:
     std::atomic<bool> subsOn_{true}, subsAvail_{false};
     std::atomic<bool> conceal_{false};   // off by default: interpolating pictures costs CPU that slower computers need for decoding
     std::atomic<bool> hwAllowed_{true};
+    std::atomic<bool> hwFallback_{false};   // the GPU decoder stayed silent on this service: software decoding until the service or the setting changes
     ServiceFilter filter_;
     mutable std::mutex mu_;
     std::condition_variable cv_;

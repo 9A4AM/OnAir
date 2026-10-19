@@ -1,4 +1,5 @@
 #include "platform.h"
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
@@ -152,6 +153,43 @@ bool postRequest(const std::string& url, const std::string& body, const std::str
         if (dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, 13 * NSEC_PER_SEC)) != 0) return false;
         return ok;
     }
+}
+
+HttpResult httpRequest(const std::string& method, const std::string& url, const std::string& body, const std::string& userAgent, int timeoutSec) {
+    HttpResult r;
+    @autoreleasepool {
+        NSURL* u = [NSURL URLWithString:[NSString stringWithUTF8String:url.c_str()]];
+        if (!u) { r.net = 4; r.detail = "bad URL"; return r; }
+        NSMutableURLRequest* req = [NSMutableURLRequest requestWithURL:u cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:std::max(1, timeoutSec)];
+        req.HTTPMethod = [NSString stringWithUTF8String:method.c_str()];
+        if (method == "POST") {
+            req.HTTPBody = [NSData dataWithBytes:body.data() length:body.size()];
+            [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+        }
+        [req setValue:[NSString stringWithUTF8String:userAgent.c_str()] forHTTPHeaderField:@"User-Agent"];
+        dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+        __block HttpResult res;
+        [[[NSURLSession sharedSession] dataTaskWithRequest:req completionHandler:^(NSData* data, NSURLResponse* resp, NSError* err) {
+            NSHTTPURLResponse* h = (NSHTTPURLResponse*)resp;
+            if (err) {
+                switch (err.code) {
+                    case NSURLErrorCannotFindHost: case NSURLErrorDNSLookupFailed: res.net = 1; break;
+                    case NSURLErrorNotConnectedToInternet: case NSURLErrorCannotConnectToHost: case NSURLErrorNetworkConnectionLost: res.net = 2; break;
+                    case NSURLErrorTimedOut: res.net = 3; break;
+                    default: res.net = 4; break;
+                }
+                const char* d = err.localizedDescription.UTF8String;
+                res.detail = std::string(d ? d : "network error") + " (" + std::to_string((long)err.code) + ")";
+            } else if (h) {
+                res.status = (int)h.statusCode;
+                if (data) res.body.assign((const char*)data.bytes, std::min<size_t>(data.length, 65536));
+            } else { res.net = 4; res.detail = "no HTTP answer"; }
+            dispatch_semaphore_signal(sem);
+        }] resume];
+        if (dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeoutSec + 2) * NSEC_PER_SEC)) != 0) { r.net = 3; r.detail = "timed out"; return r; }
+        r = res;
+    }
+    return r;
 }
 bool postJson(const std::string& url, const std::string& json, const std::string& userAgent) { return postImpl(url, json, userAgent, nullptr); }
 bool postJsonReply(const std::string& url, const std::string& json, const std::string& userAgent, std::string& reply) { reply.clear(); return postImpl(url, json, userAgent, &reply); }

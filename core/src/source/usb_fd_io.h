@@ -41,6 +41,15 @@ struct UsbFdSys {
     virtual int reset(int fd) = 0;
     virtual int clearHalt(int fd, uint8_t ep) = 0;
     virtual int detachKernel(int fd, unsigned iface) = 0;   // best effort (Android has no kernel driver bound to a radio it handed over)
+    // A queue of bulk reads kept in flight on the endpoint (usbfs URBs: SUBMITURB / REAPURB), the way librtlsdr's rtlsdr_read_async does. A
+    // read one 16 KiB request at a time leaves the radio's small FIFO unserved between two requests and it overruns at megasample rates.
+    // streamStart: 0 and a handle, or -errno (-ENOSYS = not supported: the caller reads block by block). streamRead: 0 with the oldest completed
+    // buffer (valid until streamRecycle), -ETIMEDOUT if none within timeoutMs, or -errno (a failed transfer; the buffer is recycled by the
+    // callee). streamStop cancels what is in flight and frees the queue.
+    virtual int streamStart(int, uint8_t, int, int, void**) { return -ENOSYS; }
+    virtual int streamRead(void*, uint8_t**, int*, uint32_t) { return -ENOSYS; }
+    virtual int streamRecycle(void*, uint8_t*) { return -ENOSYS; }
+    virtual void streamStop(void*) {}
 };
 UsbFdSys& usbFdLinuxSys();   // ioctl on usbfs (usb_fd_io.cpp, Linux and Android only)
 

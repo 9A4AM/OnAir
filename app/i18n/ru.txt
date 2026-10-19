@@ -2460,6 +2460,15 @@ Host PIN (to moderate on the room page):	PIN ведущего (для модер
 Go live (Live rooms)...	Начать трансляцию (Живые комнаты)...
 Could not create the room	Не удалось создать комнату
 Lost the connection to the rooms server	Потеряно соединение с сервером комнат
+The live rooms server is not available yet.	Сервер живых комнат пока недоступен.
+No internet connection.	Нет подключения к интернету.
+The live rooms server did not answer in time.	Сервер живых комнат не ответил вовремя.
+The live rooms server is full right now. Try again later.	Сервер живых комнат сейчас переполнен. Попробуйте позже.
+Too many rooms were started from here. Try again in a few minutes.	Отсюда запущено слишком много комнат. Повторите попытку через несколько минут.
+The live rooms server refused the request.	Сервер живых комнат отклонил запрос.
+The live rooms server sent an answer OnAir does not understand.	Сервер живых комнат прислал ответ, который OnAir не понимает.
+Checking the live rooms server...	Проверка сервера живых комнат...
+Check the live rooms server again	Проверить сервер живых комнат ещё раз
 Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Живые комнаты: пока вы в эфире, любой, у кого есть ссылка на комнату, может смотреть водопад этого приёмника, режим и настроенную частоту и общаться в чате. Список комнат в сети также показывает её название. До нажатия «Начать трансляцию» ничего не отправляется, а после завершения комнаты ничего не хранится. Ваше местоположение, имя и звук не отправляются никогда.
 Room title	Название комнаты
 Also show decoded ACARS text in the room (public)	Показывать в комнате и декодированный текст ACARS (публично)

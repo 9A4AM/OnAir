@@ -2460,6 +2460,15 @@ Host PIN (to moderate on the room page):	PIN dell'host (per moderare dalla pagin
 Go live (Live rooms)...	Vai in diretta (Stanze live)...
 Could not create the room	Impossibile creare la stanza
 Lost the connection to the rooms server	Connessione al server delle stanze persa
+The live rooms server is not available yet.	Il server delle stanze live non è ancora disponibile.
+No internet connection.	Nessuna connessione a Internet.
+The live rooms server did not answer in time.	Il server delle stanze live non ha risposto in tempo.
+The live rooms server is full right now. Try again later.	Il server delle stanze live è pieno al momento. Riprova più tardi.
+Too many rooms were started from here. Try again in a few minutes.	Da qui sono state avviate troppe stanze. Riprova tra qualche minuto.
+The live rooms server refused the request.	Il server delle stanze live ha rifiutato la richiesta.
+The live rooms server sent an answer OnAir does not understand.	Il server delle stanze live ha inviato una risposta che OnAir non comprende.
+Checking the live rooms server...	Controllo del server delle stanze live...
+Check the live rooms server again	Controlla di nuovo il server delle stanze live
 Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Stanze live: finché sei in diretta, chiunque abbia il link della stanza può vedere la cascata di questo ricevitore, la modalità e la frequenza sintonizzata, e chattare con gli altri. L'elenco delle stanze sul web mostra anche il titolo. Non viene inviato nulla prima di premere Vai in diretta e nulla viene conservato dopo la fine della stanza. La tua posizione, il tuo nome e l'audio non vengono mai inviati.
 Room title	Titolo della stanza
 Also show decoded ACARS text in the room (public)	Mostra anche il testo ACARS decodificato nella stanza (pubblico)

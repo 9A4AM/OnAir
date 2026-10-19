@@ -372,12 +372,44 @@ static void testChunks() {
     }
 }
 
+// The stream starts somewhere inside a frame (a radio that has just been opened): the receiver locks once the buffer holds the samples it reads
+// before the frame start (the cyclic prefix of the first symbol and the null symbol for TII), and never reads before the buffer (crash with an RTL-SDR, #210)
+static void testStartOffsets() {
+    jprintf("stream start offsets (samples dropped before the first one fed):\n");
+    const dabgen::TxConfig tc = baseConfig();
+    const SynthConfig sc;
+    const double rate = 2.048e6;
+    const size_t leads[] = {0, 1, 100, 700, 1500, 2600, 3500, 5000, 20000, 77777};
+    for (size_t lead : leads) {
+        auto syn = makeDabSynth(tc, sc, rate);
+        if (!syn) { CHECK(false, "no generator"); return; }
+        DabReceiver rx;
+        rx.configure(rate);
+        rx.audio().setSilent(true);
+        std::vector<cf32> x(16384);
+        for (size_t d = 0; d < lead;) { const size_t n = std::min(x.size(), lead - d); syn->generate(x.data(), n); d += n; }
+        const size_t total = (size_t)(1.5 * rate);
+        for (size_t done = 0; done < total;) {
+            const size_t n = std::min(x.size(), total - done);
+            syn->generate(x.data(), n);
+            for (size_t i = 0; i < n; i++) x[i] = cf32(std::round(x[i].real() * 127.f) / 127.f, std::round(x[i].imag() * 127.f) / 127.f);
+            rx.feed(x.data(), n);
+            done += n;
+        }
+        DabTelemetry tel;
+        rx.telemetry(tel, 0);
+        jprintf("  lead %6zu: state %d frames %llu FIB ok %llu bad %llu\n", lead, tel.state, (unsigned long long)tel.frames, (unsigned long long)tel.fibOk, (unsigned long long)tel.fibBad);
+        CHECK(tel.state == 2 && tel.frames >= 5 && tel.fibBad == 0, "lead %zu: state %d frames %llu bad FIBs %llu", lead, tel.state, (unsigned long long)tel.frames, (unsigned long long)tel.fibBad);
+    }
+}
+
 int main() {
     testAudio();
     testRates();
     testSnr();
     testOffsets();
     testChunks();
+    testStartOffsets();
     if (fails) { jprintf("%d FAILED\n", fails.load()); return 1; }
     jprintf("test_dab_rx: all passed\n");
     return 0;

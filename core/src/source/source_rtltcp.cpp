@@ -23,6 +23,7 @@ enum : uint8_t {
     kCmdAgc = 0x08, kCmdDirect = 0x09, kCmdOffset = 0x0a, kCmdGainIndex = 0x0d, kCmdBiasTee = 0x0e,
 };
 enum { kTunerUnknown = 0, kE4000 = 1, kFC0012 = 2, kFC0013 = 3, kFC2580 = 4, kR820T = 5, kR828D = 6 };
+constexpr int kLocalConnectMs = 10000;   // a driver app on this device (Android) accepts late while it starts its radio: wait longer than for the network
 constexpr int kConnectMs = 3000;   // an unreachable server is reported after this
 constexpr int kGreetingMs = 10000; // a server still closing the previous client can take seconds to greet
 constexpr int kStallMs = 3000;     // no samples for this long: the connection is taken as lost
@@ -60,6 +61,8 @@ void rtlTcpNoteServer(const std::string& addr, bool other) {
     if (other) gOther.insert(addr); else gOther.erase(addr);
 }
 
+static bool isLoopbackHost(const std::string& h) { return h == "localhost" || h == "::1" || h == "[::1]" || h.compare(0, 4, "127.") == 0; }
+
 class RtlTcpSource : public NativeSource {
 public:
     explicit RtlTcpSource(std::string addr) : addr_(std::move(addr)) {}
@@ -71,7 +74,7 @@ protected:
         int port = 0;
         if (!splitHostPort(addr_, host, port)) { err = "rtl_tcp: bad address " + addr_ + " (host:port)"; openFailure_ = OpenFailure::Final; return false; }
         std::string e;
-        const sock_t k = tcpConnect(host, port, kConnectMs, e);
+        const sock_t k = tcpConnect(host, port, isLoopbackHost(host) ? kLocalConnectMs : kConnectMs, e);
         if (k == kBadSock) { err = "rtl_tcp: " + e; openFailure_ = OpenFailure::Retry; return false; }
         sock_ = k;
         sockRecvTimeout(sock_, kGreetingMs);

@@ -54,16 +54,21 @@ const RegionInfo& regionInfo(int region) { return table()[(size_t)(region < 0 ? 
 
 int operatingClass(int region, int widthMhz) { return classOf(region, widthMhz); }
 
-// Tiles of one width in every band: the first centre is half a width above the band edge, the next one a width further, while the channel stays inside the band.
+// Tiles of one width in every band (4 / 8 / 16 MHz of the 902 MHz classes on the 904 MHz grid, see below): the first centre is half a width above the band edge, the next one a width further, while the channel stays inside the band.
 std::vector<Chan> regionChannels(int region, int widthMhz) {
     const RegionInfo& r = regionInfo(region);
     std::vector<Chan> v;
     if (std::find(r.widths.begin(), r.widths.end(), widthMhz) == r.widths.end()) return v;
-    for (const Band& b : r.bands)
-        for (double c = b.loMhz + widthMhz / 2.0; c + widthMhz / 2.0 <= b.hiMhz + 1e-6; c += widthMhz) {
+    for (const Band& b : r.bands) {
+        // 4 / 8 / 16 MHz channels of the 902 MHz operating classes sit on a grid that starts 2 MHz above 902 (US 4 MHz: 8, 16 ... 48 = 906 ... 926 MHz,
+        // the top one touches 928 and none touches 902; 8 MHz: 908, 916, 924; 16 MHz: 912); narrower ones and the other regions tile from the band edge
+        const double origin = (r.startMhz == 902.0 && widthMhz >= 4) ? 904.0 : b.loMhz;
+        const double first = origin + widthMhz / 2.0 + std::ceil((b.loMhz - origin) / widthMhz - 1e-9) * widthMhz;
+        for (double c = first; c + widthMhz / 2.0 <= b.hiMhz + 1e-6; c += widthMhz) {
             const int ccf = (int)std::lround((c - r.startMhz) * 2.0);
             if (ccf > 0 && ccf < 256) v.push_back({ccf, r.startMhz + 0.5 * ccf, widthMhz});
         }
+    }
     return v;
 }
 

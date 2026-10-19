@@ -2477,6 +2477,15 @@ Host PIN (to moderate on the room page):	PIN gospodarza (do moderowania na stron
 Go live (Live rooms)...	Rozpocznij transmisję (Pokoje na żywo)...
 Could not create the room	Nie udało się utworzyć pokoju
 Lost the connection to the rooms server	Utracono połączenie z serwerem pokoi
+The live rooms server is not available yet.	Serwer pokoi na żywo nie jest jeszcze dostępny.
+No internet connection.	Brak połączenia z internetem.
+The live rooms server did not answer in time.	Serwer pokoi na żywo nie odpowiedział na czas.
+The live rooms server is full right now. Try again later.	Serwer pokoi na żywo jest teraz pełny. Spróbuj ponownie później.
+Too many rooms were started from here. Try again in a few minutes.	Z tego miejsca uruchomiono zbyt wiele pokoi. Spróbuj ponownie za kilka minut.
+The live rooms server refused the request.	Serwer pokoi na żywo odrzucił żądanie.
+The live rooms server sent an answer OnAir does not understand.	Serwer pokoi na żywo wysłał odpowiedź, której OnAir nie rozumie.
+Checking the live rooms server...	Sprawdzanie serwera pokoi na żywo...
+Check the live rooms server again	Sprawdź serwer pokoi na żywo ponownie
 Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Pokoje na żywo: dopóki transmitujesz, każdy z linkiem do pokoju może oglądać wodospad tego odbiornika, tryb i ustawioną częstotliwość oraz czatować z innymi. Lista pokoi w sieci pokazuje też jego tytuł. Nic nie jest wysyłane przed naciśnięciem Rozpocznij transmisję i nic nie jest przechowywane po zakończeniu pokoju. Twoja lokalizacja, imię i dźwięk nigdy nie są wysyłane.
 Room title	Tytuł pokoju
 Also show decoded ACARS text in the room (public)	Pokazuj w pokoju także zdekodowany tekst ACARS (publicznie)
