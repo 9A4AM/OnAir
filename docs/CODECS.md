@@ -23,6 +23,7 @@ looks for, the exact folders it searches, an **Open codecs folder** button (it m
 | CDR (China Digital Radio) | DRA+ (patent and licence status not verified) | the **DRA+ add-on** (`libonair_dra`) that you build yourself (see [DRA+ (CDR sound)](#dra-cdr-sound)); sound is silent until you do |
 | FreeDV 700D / 700E / 1600, M17 | codec2 (open, LGPL) | **codec2**: comes with OnAir (the library `libcodec2` next to the program) |
 | FreeDV RADE | RADE neural modem (open, BSD) | **librade** (not codec2): optional; without it the RADE slot stays dark |
+| Yaesu System Fusion (WIP) | AMBE+2 class (proprietary, DVSI) | a speech codec **plug-in with the id `ysf`** that you install yourself (see [Speech codec plug-ins](#speech-codec-plug-ins-voice-modes)); callsigns and data are shown without it, no sound |
 | TETRA | its own speech codec | nothing from you: it is not mbelib and not codec2 |
 | DAB, DRM, TV, FM | MP2, AAC, H.264 ... | nothing (FFmpeg is inside OnAir) |
 | ATSC 3.0 (US, South Korea) | Dolby AC-4 (patented) | optional **libavcodec + libavutil from an FFmpeg with an AC-4 decoder** (see below); without it the AC-4 sound is left out, picture and AAC / AC-3 sound still play |
@@ -327,6 +328,10 @@ the program: `onair-codec-<id>.dylib` / `.so` / `.dll` in the codecs folder unde
 mode says "Codec not installed" and links here. The first time, OnAir shows a legal notice: you are responsible for following the laws
 where you live on listening to radio traffic and for the codec's licence; OnAir does not include or distribute the codec. The codec loads only
 after you accept it once. The plug-in's C interface is in `core/include/dect2/codec/speech_codec.h`.
+
+Yaesu Fusion (id `ysf`) hands the plug-in one voice frame per call, as it was sent: 9 bytes (the 72 channel bits of V/D mode 1), 7 bytes (the 49 voice
+bits of V/D mode 2 after the error correction, MSB first) or 18 bytes (the 144 channel bits of voice FR). The bit order inside the V/D mode 1 and voice FR frames is not in
+Yaesu's public specification, so the plug-in has to do that part itself.
 
 ## Legal note
 
