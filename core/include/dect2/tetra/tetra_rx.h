@@ -2,7 +2,7 @@
 // terminals on its downlink (ETSI EN 300 392-2): the synchronisation channel (BSCH: colour code, MCC, MNC, frame numbers, sharing mode),
 // the broadcast network channel (BNCH SYSINFO: main carrier, band, duplex spacing, location area, cell services and security
 // parameters), the access assignment channel (what each timeslot carries) and the neighbour cell broadcasts on the main control channel.
-// Receive only. Nothing is decrypted and nothing addressed to a terminal is decoded: no voice, no short data, no subscriber identities.
+// Receive only. Nothing is decrypted and nothing addressed to a terminal is decoded: no short data, no subscriber identities. Voice: only unencrypted traffic bursts, as coded frames to a user-installed codec (tetra_voice.h); encrypted or unknown is never decoded.
 // Signalling sent with air interface encryption is reported as encrypted and counted, never read. The user is responsible for following
 // the rules on receiving radio signals that apply where they are.
 //
@@ -14,6 +14,7 @@
 // Written to the engine's contract: configure() once the sample rate is known, feed() from the analysis thread (never blocks),
 // telemetry() and the setters from the interface thread.
 #pragma once
+#include "dect2/tetra/tetra_voice.h"
 #include "dect2/engine/mode_tuning.h"
 #include "dect2/common/ring.h"
 #include "tetra_pdu.h"
@@ -69,11 +70,14 @@ struct CarrierDecode {
     double cfoHz = 0;          // the frequency error found, relative to the carrier's assumed centre
     float snrDb = -99;
     int slots = 0, trafficSlots = 0, blocksOk = 0, blocksBad = 0;
+    int voicePassed = 0, voiceNotDecoded = 0;   // traffic bursts handed to the speech frame sink / refused (encrypted or state unknown)
+    const char* voiceStatus = "";                // text of the last traffic burst verdict (tetra_voice.h)
     std::vector<MacBlock> macs;
     int tsUsage[4] = {-1, -1, -1, -1};
 };
 // knownMcc etc.: the identity of a cell already heard on this carrier, used when this capture has no synchronisation burst (-1: none)
-CarrierDecode decodeCarrier(const cf32* x72k, size_t n, int knownMcc = -1, int knownMnc = -1, int knownCc = -1);
+CarrierDecode decodeCarrier(const cf32* x72k, size_t n, int knownMcc = -1, int knownMnc = -1, int knownCc = -1,
+                              SpeechFrameSink* sink = nullptr);
 
 } // namespace tetra
 
