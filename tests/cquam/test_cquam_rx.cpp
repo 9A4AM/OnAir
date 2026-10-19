@@ -72,10 +72,11 @@ int main() {
         SynthConfig s = cfg(0); s.modeOpt[1] = 1;
         const Result r = run(s, 8);
         CHECK(r.t.stereo, "stereo with a silent left channel");
-        double lrms = 0, rrms = 0;
-        for (size_t i = 0; i < r.l.size(); i++) { lrms += r.l[i] * r.l[i]; rrms += r.r[i] * r.r[i]; }
-        printf("  left silent: L %.1f dB R %.1f dB\n", 10 * std::log10(lrms / r.l.size() + 1e-12), 10 * std::log10(rrms / r.r.size() + 1e-12));
-        CHECK(10 * std::log10((lrms + 1e-12) / (rrms + 1e-12)) < -25, "left %.4f right %.4f", lrms, rrms);
+        // crosstalk of the right tone into the silent left channel, measured on the tone: the broadband power of the left channel is
+        // the noise floor (35 dB C/N) and the 25 Hz pilot, both there by design, not program leaking across
+        const double xt = db(tone(r.l, 660), tone(r.r, 660));
+        printf("  left silent: 660 Hz leakage into L %.1f dB\n", xt);
+        CHECK(xt < -25, "660 Hz in the silent left channel %.1f dB re right", xt);
     }
     {   // plain AM: mono, no pilot, the same audio on both channels
         const Result r = run(cfg(1), 10);
