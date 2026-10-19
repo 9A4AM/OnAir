@@ -334,7 +334,7 @@ void logTable() {
     }
 }
 
-void window(App& a) {
+void scannerWindow(App& a) {
     ImGui::SetNextWindowSize(ImVec2(760 * gUi, 620 * gUi), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin(trw("Scanner (highly experimental)"), &a.scannerOpen)) { ImGui::End(); return; }
     ImGui::TextColored(pal::warnAmber(), "%s", tr("HIGHLY EXPERIMENTAL"));
@@ -410,7 +410,7 @@ void scannerLoadList(App& a, const std::vector<ScanSeed>& list) {
 void scannerWindow(App& a) {
     load();
     tick(a);
-    if (a.scannerOpen) ::window(a);   // the file-local window(), not dect2::window (common/window.h)
+    if (a.scannerOpen) scannerWindow(a);
     if (S.dirty && !ImGui::IsAnyItemActive()) save(a);
 }
 
