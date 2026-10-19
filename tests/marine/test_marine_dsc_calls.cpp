@@ -67,6 +67,15 @@ int main() {
         const auto got = run(dscFrameBits(indiv, 117, 20), false, 0, 0, 5, true);
         CHECK(got.size() == 1 && got[0].eccOk && got[0].vhf, "20 dots");
     }
+    {   // a generated VHF channel 70 distress call (20 dots, 1200 bd): MMSI, nature, position and time reach the call record
+        const auto got = run(dscFrameBits(distress, 127, 20), false, 0, 0, 8, true);
+        CHECK(got.size() == 1 && got[0].eccOk && got[0].vhf, "VHF distress: one call with a good ECC, got %zu", got.size());
+        if (got.size() == 1) {
+            const DscCall& c = got[0];
+            CHECK(c.distress && c.fromMmsi == "232123456" && c.nature == 103 && c.hasPos && std::abs(c.lat - 50.85) < 1e-6 && std::abs(c.lon + 1.3) < 1e-6, "VHF distress fields: %s", c.text.c_str());
+            CHECK(c.hasTime && c.utcHour == 12 && c.utcMin == 34 && c.eos == 127, "VHF distress time/eos: %s", c.text.c_str());
+        }
+    }
     {   // damage: kill a whole DX symbol and a whole RX symbol: the other copy gives the symbol
         auto bits = dscFrameBits(distress, 127, 200);
         const size_t base = 200 + 10 * 16;                       // first information symbol after the phasing and the format specifiers is slot 16
