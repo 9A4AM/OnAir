@@ -23,6 +23,7 @@ struct RxBurst {
     float snrDb = 0.f;                // Es/N0 from the preamble and header
     float cfoHz = 0.f;                // carrier offset
     uint64_t startSample = 0;         // absolute index (internal rate) of the first preamble symbol
+    std::vector<cf> symbols;          // up to 400 of the equalised data symbols (evenly spread over the burst), for a constellation display
     bool isAck() const { return (flags & kFlagAck) != 0; }
     int blocksOk() const {
         int n = 0;

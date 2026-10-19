@@ -293,6 +293,8 @@ int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
     case 114: return pollStd(rxFsq_, 114, t, seqs[108], &RxTelemetry::fsq);
     case 117: return pollStd(rxIfkp_, 117, t, seqs[109], &RxTelemetry::ifkp);
     case 123: return pollStd(rxKaal_, 123, t, seqs[116], &RxTelemetry::kaal);
+    case 125: return pollStd(rxKapp_, 125, t, seqs[130], &RxTelemetry::kapp);   // KAPP (slot 130)
+    case 126: return pollStd(rxKaft_, 126, t, seqs[131], &RxTelemetry::kaft);   // KAFT (slot 131)
     case 108: return pollStd(rxCq_, 108, t, seqs[104], &RxTelemetry::cquam);
     case 105: return pollStd(rxMs_, 105, t, seqs[101], &RxTelemetry::mscatter);
     default: return -1;

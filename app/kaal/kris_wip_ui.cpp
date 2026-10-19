@@ -1,6 +1,6 @@
-// The panels of the three "Kris custom modes" that only exist as specifications so far: KAVB (video), KAPP (packets) and KAFT (file transfer).
-// Each shows what the mode is, its width, the planned profiles (speed against range, from the draft specification v0.1) and that nothing is
-// built yet. The transmit section is in place for later, with its controls disabled. No receiver and no engine code belongs to these modes.
+// The panel of the one "Kris custom mode" that only exists as a specification so far: KAVB (video). KAPP and KAFT have their own screens (app/kapp, app/kaft).
+// It shows what the mode is, its width, the planned profiles (speed against range, from the draft specification v0.1) and that nothing is
+// built yet. The transmit section is in place for later, with its controls disabled. No receiver and no engine code belongs to this mode.
 #include "app.h"
 #include <string>
 #include <vector>
@@ -24,27 +24,6 @@ const Wip& kavb() {
          "Robust: QPSK 1/2, about 0.35 Mbit/s, for weak links"}};
     return w;
 }
-const Wip& kapp() {
-    static const Wip w = {"KAPP", "Amateur packet data in bursts with selective acknowledgement: from short messages to bulk data, the profile follows the link quality.",
-                          "100 kHz wide (80 ksym/s)",
-        {"0  BPSK 1/4      about 19 kbit/s net    needs about -5.7 dB Es/N0 (longest range)",
-         "2  QPSK 1/2      about 78 kbit/s net    needs about +1.5 dB",
-         "5  16-QAM 3/4    about 233 kbit/s net   needs about +10 dB",
-         "7  256-QAM 3/4   about 465 kbit/s net   needs about +19.5 dB",
-         "8  1024-QAM 5/6  about 646 kbit/s net   needs about +26.6 dB (short, strong paths)"}};
-    return w;
-}
-const Wip& kaft() {
-    static const Wip w = {"KAFT", "Amateur file transfer with a session handshake, resume, compression and automatic profile selection by the measured link quality.",
-                          "200 kHz, 500 kHz or 1 MHz wide",
-        {"P0  BPSK 1/4       31 / 86 / 165 kbit/s net     (200 kHz / 500 kHz / 1 MHz)   longest range",
-         "P2  QPSK 1/2       134 / 353 / 677 kbit/s net",
-         "P4  16-QAM 3/4     411 / 1067 / 2054 kbit/s net",
-         "P6  256-QAM 3/4    827 / 2139 / 4123 kbit/s net",
-         "P9  1024-QAM 9/10  1244 / 3213 / 6194 kbit/s net   fastest, strongest signals only"}};
-    return w;
-}
-
 void panel(App& a, const Wip& w) {
     ImGui::PushTextWrapPos(0);
     ImGui::TextColored(pal::heading(), "%s", w.name);
@@ -79,17 +58,9 @@ void panel(App& a, const Wip& w) {
 }
 
 void tabKavb(App& a) { panel(a, kavb()); }
-void tabKapp(App& a) { panel(a, kapp()); }
-void tabKaft(App& a) { panel(a, kaft()); }
 void sumKavb(const App&, std::string& l1, std::string& l2) { l1 = "KAVB (WIP)"; l2 = "video, 1-2 MHz: no receiver yet"; }
-void sumKapp(const App&, std::string& l1, std::string& l2) { l1 = "KAPP (WIP)"; l2 = "packets, 100 kHz: no receiver yet"; }
-void sumKaft(const App&, std::string& l1, std::string& l2) { l1 = "KAFT (WIP)"; l2 = "files, 200 kHz - 1 MHz: no receiver yet"; }
 
 } // namespace
 
 extern const ModeUi kKavbUi;
 const ModeUi kKavbUi = {.sideTitle = "PROFILES", .tabName = "KAVB", .tabIcon = Ic::Tv, .tab = tabKavb, .summary = sumKavb};
-extern const ModeUi kKappUi;
-const ModeUi kKappUi = {.sideTitle = "PROFILES", .tabName = "KAPP", .tabIcon = Ic::Signal, .tab = tabKapp, .summary = sumKapp};
-extern const ModeUi kKaftUi;
-const ModeUi kKaftUi = {.sideTitle = "PROFILES", .tabName = "KAFT", .tabIcon = Ic::Signal, .tab = tabKaft, .summary = sumKaft};

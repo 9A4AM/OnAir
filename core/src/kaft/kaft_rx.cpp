@@ -197,10 +197,14 @@ void FrameReceiver::process(bool final) {
             c.posIn = tau * inPerOwn;
             cands.push_back(c);
         };
+        // Digital silence (exact zeros between frames, as in a recorded file made without noise): the differences of the running sums are then
+        // rounding residue of both numerator and denominator, and their ratio would come out large. A window is only looked at when its energy is
+        // a real share of the average.
+        const double eFloor = 1e-6 * (e[n] / (double)n) * (double)kWin;
         for (size_t s = 0; s < nS; s++) {
             const cd P = cs[s + kWin] - cs[s];
             const double e1 = e[s + kWin] - e[s], e2 = e[s + kLag + kWin] - e[s + kLag];
-            const double m = std::abs(P) / std::sqrt(std::max(e1 * e2, 1e-30));
+            const double m = (e1 < eFloor || e2 < eFloor) ? 0.0 : std::abs(P) / std::sqrt(std::max(e1 * e2, 1e-30));
             if (m > (double)cfg_.detectThreshold) {
                 if (!inRun) { inRun = true; best = s; bestM = m; bestP = P; }
                 else if (m > bestM) { best = s; bestM = m; bestP = P; }

@@ -1,5 +1,5 @@
-// The KAAL mode (family 122, engine standard 124, telemetry 123) and its three work-in-progress neighbours KAVB (123, 125), KAPP (124, 126) and
-// KAFT (125, 127) in the group "Kris custom modes": the mode-table rows, the group, the modeui cases, the panel strings, the engine wiring, the transmit
+// The KAAL mode (family 122, engine standard 124, telemetry 123) and its neighbours in the group "Kris custom modes": KAVB (123, 125, still work in
+// progress), KAPP (124, 126) and KAFT (125, 127, both built: tests/app/test_kapp_kaft_mode.cpp): the mode-table rows, the group, the modeui cases, the panel strings, the engine wiring, the transmit
 // registration and the IQ-file destination are in the sources. Text checks only, so it builds without the app.
 #include <cstdio>
 #include <fstream>
@@ -31,13 +31,13 @@ int main() {
     const std::string table = readSource("app/ui/mode_table.cpp");
     need("app/ui/mode_table.cpp", table, "{122, \"KAAL\", 15,");
     need("app/ui/mode_table.cpp", table, "{123, \"KAVB (WIP)\", 15,");
-    need("app/ui/mode_table.cpp", table, "{124, \"KAPP (WIP)\", 15,");
-    need("app/ui/mode_table.cpp", table, "{125, \"KAFT (WIP)\", 15,");
+    need("app/ui/mode_table.cpp", table, "{124, \"KAPP\", 15,");
+    need("app/ui/mode_table.cpp", table, "{125, \"KAFT\", 15,");
     need("app/ui/mode_table.cpp", table, "N_(\"PLUGINS\"), \"Kris custom modes\"}");
     need("app/ui/mode_table.cpp", table, "IM_COL32(236, 160, 84, 255)};");
 
     const std::string app = readSource("app/app.h");
-    need("app/app.h", app, "constexpr int kNumFamilies = 126;");
+    need("app/app.h", app, "constexpr int kNumFamilies = 129;");
     need("app/app.h", app, "constexpr int kNumGroups = 16;");
     absent("app/app.h", app, "kaalOpen");
 
@@ -74,13 +74,9 @@ int main() {
 
     const std::string wip = readSource("app/kaal/kris_wip_ui.cpp");
     need("app/kaal/kris_wip_ui.cpp", wip, "const ModeUi kKavbUi");
-    need("app/kaal/kris_wip_ui.cpp", wip, "const ModeUi kKappUi");
-    need("app/kaal/kris_wip_ui.cpp", wip, "const ModeUi kKaftUi");
     need("app/kaal/kris_wip_ui.cpp", wip, "Work in progress: no receiver or transmitter yet.");
     need("app/kaal/kris_wip_ui.cpp", wip, "ImGui::BeginDisabled(true);");
     need("app/kaal/kris_wip_ui.cpp", wip, "1 to 2 MHz wide");
-    need("app/kaal/kris_wip_ui.cpp", wip, "100 kHz wide");
-    need("app/kaal/kris_wip_ui.cpp", wip, "200 kHz, 500 kHz or 1 MHz wide");
 
     const std::string live = readSource("core/src/kaal/kaal_live.cpp");
     need("core/src/kaal/kaal_live.cpp", live, "t.stdMode = 124;");
@@ -108,10 +104,8 @@ int main() {
     const std::string start = readSource("core/src/engine/engine_start.cpp");
     need("core/src/engine/engine_start.cpp", start, "rxKaal_.configure(rate_);");
 
-    // the KAVB, KAPP and KAFT neighbours have no engine cases at all
+    // KAVB has no engine case at all (KAPP and KAFT have: 125 and 126)
     absent("core/src/engine/engine_telemetry.cpp", telemetry, "case 124: return pollStd");
-    absent("core/src/engine/engine_telemetry.cpp", telemetry, "case 125: return pollStd");
-    absent("core/src/engine/engine_telemetry.cpp", telemetry, "case 126: return pollStd");
 
     // the transmit side
     const std::string tx = readSource("core/src/tx/tx.cpp");

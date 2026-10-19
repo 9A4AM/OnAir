@@ -76,7 +76,7 @@ enum class TxPayloadKind {
     Ftx, Rtty, Keyboard, Cw, Psk, Js8, Hamdrm, Sstv, Freedv,
     Pager, Packet, Ais, AdsB, VoiceFm, VoiceAir, VoiceDigital, Qo100,
     Marine, AcarsFamily, Sonde, Same, Ale, VorIls, LoraRaw, Dect,
-    CubeSat, WeatherScene, SatScene, Flarm, Zigbee, Dji, HfBeacon, Vdes, Uplink, Mesh, Mac, Kaal
+    CubeSat, WeatherScene, SatScene, Flarm, Zigbee, Dji, HfBeacon, Vdes, Uplink, Mesh, Mac, Kaal, Kapp, Kaft
 };
 TxPayloadKind txPayloadKind(const std::string& id);
 
@@ -110,6 +110,9 @@ public:
     virtual ~TxGenerator() = default;
     virtual double sampleRate() const = 0;
     virtual void generate(cf32* out, size_t n) = 0;
+    // A generator of a finite transmission (a file, a message) says when everything has been generated; the session then ends by itself, like a one-pass
+    // transmission. The default is endless.
+    virtual bool finished() const { return false; }
 };
 
 // What to send. Strings are the operator's own content (callsign, text, a file). They are never packed into SynthConfig::modeOpt.
@@ -173,6 +176,8 @@ bool txCanEncodeVoice(const TxModeSpec& m);
 // Plain words for the panel: encode path, or why live encode is off (AMBE/IMBE decode-only, library missing). Empty when not a voice mode.
 std::string txVocoderNote(const TxModeSpec& m);
 bool txModeNeedsAudio(const TxModeSpec& m, const TxRequest& r);
+// A mode whose generator ends by itself (a message or a file sent a set number of times: KAPP, KAFT). Into an IQ file it is written as fast as it is made.
+bool txModeFinite(const TxModeSpec& m);
 
 // FT8 / FT4 / WSPR / JT* message built from callsign, grid, dest, text and kind. Empty when those fields are empty (the demo stations are used).
 std::string txFtxMessage(const TxRequest& r);

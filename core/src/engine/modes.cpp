@@ -211,6 +211,10 @@
 #include "dect2/ifkp/ifkp_rx.h"
 #include "dect2/kaal/kaal_live.h"
 #include "dect2/kaal/kaal_tel.h"
+#include "dect2/kapp/kapp_live.h"
+#include "dect2/kapp/kapp_tel.h"
+#include "dect2/kaft/kaft_live.h"
+#include "dect2/kaft/kaft_tel.h"
 #include "dect2/ifkp/ifkp_gen.h"
 #include "dect2/cquam/cquam_rx.h"
 #include "dect2/cquam/cquam_gen.h"
@@ -609,6 +613,8 @@ std::string modeSummary(const RxTelemetry& t) {
     case 114: return fsqSummary(t.fsq);
     case 117: return ifkpSummary(t.ifkp);
     case 123: return kaalSummary(t.kaal);
+    case 125: return kappSummary(t.kapp);
+    case 126: return kaftSummary(t.kaft);
     case 108: return cquamSummary(t.cquam);
     case 105: return msSummary(t.mscatter);
     case 57: return ridSummary(t.rid);

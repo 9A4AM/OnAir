@@ -391,6 +391,10 @@ void BurstReceiver::decodeAtPeak() {
     out.snrDb = (float)snr;
     out.cfoHz = (float)(omega * kSymRate / (2.0 * kPi));
     out.startSample = absBase_ + (uint64_t)peak_;
+    {   // a sample of the equalised symbols for the display
+        const size_t stride = std::max<size_t>(1, ds.size() / 400);
+        for (size_t i = 0; i < ds.size() && out.symbols.size() < 400; i += stride) out.symbols.push_back(ds[i]);
+    }
     out.blockOk.assign((size_t)nB, 0);
     out.payload.assign((size_t)nB * (size_t)P.payloadBytes, 0);
     const int K = infoBitsPerBlock(P);

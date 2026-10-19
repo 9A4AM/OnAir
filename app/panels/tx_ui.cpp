@@ -185,9 +185,20 @@ TxRequest makeReq(const TxUi& s, const TxModeSpec& mode, bool carrier) {
         r.opt["kaal.powerDbm"] = s.kaalPower;
         r.opt["kaal.beacon"] = s.kaalBeacon ? 1.0 : 0.0;
     }
+    if (std::string(mode.id) == "kapp") {
+        r.opt["kapp.profile"] = s.kappProfile;
+        r.opt["kapp.repeat"] = s.kappPasses;
+    }
+    if (std::string(mode.id) == "kaft") {
+        r.opt["kaft.profile"] = s.kaftProfile;
+        r.opt["kaft.width"] = s.kaftWidth;
+        r.opt["kaft.repeat"] = s.kaftPasses;
+    }
     r.dest = s.dest;
     r.path = s.path;
     r.file = s.file;
+    if (std::string(mode.id) == "kapp") r.file = s.kappFile;   // their own file fields: the audio or video file of another mode is never sent as data
+    if (std::string(mode.id) == "kaft") r.file = s.kaftFile;
     r.name = s.name;
     r.provider = s.provider;
     r.network = s.network;
@@ -256,7 +267,7 @@ bool startTx(App& a, TxUi& s, const DeviceInfo* radio, const TxModeSpec* mode, b
         fc.format = (IqFileFormat)std::max(0, std::min(kIqFileFormats - 1, s.ifFormat));
         fc.centerHz = req.tune.centerHz;
         const bool fileAudio = txModeNeedsAudio(*mode, req) && !carrier && req.audioSrc == 1;
-        fc.paced = !fileAudio && s.loop;   // a WAV file (or a one-pass transmission) is written as fast as it is made; the rest at its own speed
+        fc.paced = !fileAudio && s.loop && !txModeFinite(*mode);   // a WAV file (or a one-pass transmission) is written as fast as it is made; the rest at its own speed
         fc.description = mode->id ? mode->id : "";
         fc.path = iqFilePath(s.ifPath, iqFileBaseName(mode->id ? mode->id : "tx", req.tune.centerHz, req.tune.sampleRate), fc.format);
         s.ifCounters = std::make_shared<IqFileTxCounters>();
