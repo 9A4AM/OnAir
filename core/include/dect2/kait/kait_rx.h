@@ -46,6 +46,10 @@ struct RxResult {
 using ProgressFn = std::function<void(int layer, const RxResult& partial)>;
 RxResult decodeBurst(const std::vector<cf>& in, const RxConfig& cfg = RxConfig{}, const ProgressFn& progress = nullptr);
 
+// The strongest up sweep in x[0 .. n) at the internal rate: its first sample index (fractional), and how far above the mean correlation power it is. False when it is
+// below `ratio`. Cheap enough to run on a second of samples at a time (the live receiver does).
+bool findStartSweep(const cf* x, size_t n, float ratio, double& pos, double& peakRatio);
+
 // Streaming front end: collects samples and decodes when a whole burst (plus slack) is buffered or on flush().
 class StreamReceiver {
 public:

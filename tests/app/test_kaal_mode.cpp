@@ -2,6 +2,7 @@
 // KAFT (125, 127) in the group "Kris custom modes": the mode-table rows, the group, the modeui cases, the panel strings, the engine wiring, the transmit
 // registration and the IQ-file destination are in the sources. Text checks only, so it builds without the app.
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -37,7 +38,7 @@ int main() {
     need("app/ui/mode_table.cpp", table, "IM_COL32(236, 160, 84, 255)};");
 
     const std::string app = readSource("app/app.h");
-    need("app/app.h", app, "constexpr int kNumFamilies = 126;");
+    { const size_t q = app.find("constexpr int kNumFamilies = "); if (q == std::string::npos || atoi(app.c_str() + q + 29) < 126) { std::printf("FAIL: app/app.h: kNumFamilies below 126\n"); fails++; } }   // other modes raise it
     need("app/app.h", app, "constexpr int kNumGroups = 16;");
     absent("app/app.h", app, "kaalOpen");
 

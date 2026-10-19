@@ -380,6 +380,21 @@ RxResult decodeBurst(const std::vector<cf>& inRaw, const RxConfig& cfg, const Pr
     return res;
 }
 
+bool findStartSweep(const cf* x, size_t n, float ratio, double& pos, double& peakRatio) {
+    if (n < 2U * (size_t)kSweepSamples) return false;
+    const std::vector<cf> v(x, x + n);
+    const std::vector<float> cu = corrPower(v, sweepUp());
+    double mean = 0;
+    for (float f : cu) mean += f;
+    mean /= (double)cu.size();
+    if (mean <= 0) return false;
+    const size_t i = argmaxIn(cu, 0, (long)cu.size() - 1);
+    peakRatio = cu[i] / mean;
+    if (peakRatio < ratio) return false;
+    pos = refinePeak(cu, i);
+    return true;
+}
+
 void StreamReceiver::feed(const cf* x, size_t n) {
     buf_.insert(buf_.end(), x, x + n);
     const double need = (kBurstSeconds + 2.0) * cfg_.sampleRate;

@@ -198,6 +198,10 @@ TxRequest makeReq(const TxUi& s, const TxModeSpec& mode, bool carrier) {
     r.baudIdx = s.baudIdx;
     r.shiftIdx = s.shiftIdx;
     r.variant = s.variant;
+    if (std::string(mode.id) == "kait") {   // the profile and the picture file (other formats are converted to a PPM)
+        r.variant = s.kaitProfile;
+        r.file = kaitPictureFile(s.file);
+    }
     r.wpm = s.wpm;
     r.dbm = s.dbm;
     r.function = s.function;

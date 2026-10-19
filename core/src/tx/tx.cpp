@@ -18,6 +18,7 @@
 #include "dect2/isdbt/isdbt_gen.h"
 #include "dect2/m17/m17_codec2.h"
 #include "dect2/kaal/kaal_txgen.h"
+#include "dect2/kait/kait_txgen.h"
 #include "dect2/engine/mode_tuning.h"
 #include "dect2/t2/t2.h"
 #include "dect2/t2/t2gen.h"
@@ -178,6 +179,7 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("ndb", "NDB beacons", 31, "makeNdbSynth", kOpt, kUnv),
         mk("elektro", "Elektro-L", 82, "makeElektroSynth", kOpt, kUnv),
         mk("lbj", "LBJ", 83, "makeLbjSynth", kOpt, kUnv),
+        mk("kait", "KAIT", 133, "makeKaitTxGenerator (kait::planBurst: wavelet image stream in layers, 10 s burst, sweeps, pilots)", "callsign, a PNG or PPM picture (empty: the demo picture), profile 0 balanced / 1 robust / 2 quality / 3 direct", kUnv, 0, 632000, false, 400000),
         mk("kaal", "KAAL", 124, "makeKaalTxGenerator (kaal::VoiceTx: 16 kbit/s voice codec, 16-QAM LDPC, beacon slice)", "callsign, grid, position, power, bio text, beacon on or off; the voice from a microphone or a WAV file", kUnv, 0, 48000, false, 48000),
     };
 }
@@ -278,6 +280,7 @@ TxPayloadKind txPayloadKind(const std::string& id) {
     if (id == "mesh") return TxPayloadKind::Mesh;
     if (id == "mac") return TxPayloadKind::Mac;
     if (id == "kaal") return TxPayloadKind::Kaal;
+    if (id == "kait") return TxPayloadKind::Kait;
     if (id == "vdl4" || id == "uat" || id == "wisun" || id == "zwave") return TxPayloadKind::SatScene;   // demo-traffic generators, no custom message
     return TxPayloadKind::SatScene;   // never a generic callsign dump; unknown ids are treated as a test scene
 }
@@ -597,6 +600,7 @@ static SynthConfig cleanSynth(const SynthConfig& c, int stdMode) {
 
 std::unique_ptr<TxGenerator> makeTxGenerator(const TxModeSpec& m, const TxRequest& r, double rateHz, std::string& err) {
     if (m.stdMode == 124) return makeKaalTxGenerator(r, rateHz > 0 ? rateHz : m.nominalRateHz, err);   // KAAL: its own transmitter chain at the radio's rate
+    if (m.stdMode == 133) return makeKaitTxGenerator(r, rateHz > 0 ? rateHz : m.nominalRateHz, err);   // KAIT: a picture burst at the radio's rate
     const SynthConfig s = cleanSynth(r.synth, m.stdMode);
     std::unique_ptr<TxGenerator> g;
     double native = 0;

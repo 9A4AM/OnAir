@@ -76,7 +76,7 @@ enum class TxPayloadKind {
     Ftx, Rtty, Keyboard, Cw, Psk, Js8, Hamdrm, Sstv, Freedv,
     Pager, Packet, Ais, AdsB, VoiceFm, VoiceAir, VoiceDigital, Qo100,
     Marine, AcarsFamily, Sonde, Same, Ale, VorIls, LoraRaw, Dect,
-    CubeSat, WeatherScene, SatScene, Flarm, Zigbee, Dji, HfBeacon, Vdes, Uplink, Mesh, Mac, Kaal
+    CubeSat, WeatherScene, SatScene, Flarm, Zigbee, Dji, HfBeacon, Vdes, Uplink, Mesh, Mac, Kaal, Kait
 };
 TxPayloadKind txPayloadKind(const std::string& id);
 
