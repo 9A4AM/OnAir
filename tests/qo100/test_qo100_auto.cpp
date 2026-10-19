@@ -20,6 +20,7 @@
 #include <complex>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 #include <functional>
 #include <string>
 #include <vector>
@@ -244,8 +245,9 @@ int main(int argc, char** argv) {
     // ---- 1. the full passband
     {
         Scene sc = makeScene(secs, true);
-        const std::string dir = "/tmp/qo100-auto-rec";
-        (void)system(("mkdir -p " + dir).c_str());
+        // Platform temp dir: "/tmp" does not exist on Windows, and "mkdir -p" is not available there either.
+        const std::string dir = (std::filesystem::temp_directory_path() / "qo100-auto-rec").string();
+        { std::error_code ec; std::filesystem::create_directories(dir, ec); }
         int listenSeen = 0;
         int convForListen = 0, convRec = 0;
         std::vector<Qo100AutoTelemetry> snaps;
