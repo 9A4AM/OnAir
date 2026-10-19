@@ -105,7 +105,7 @@ int main() {
         c.rate = 2.4e6; c.snrDb = 25; c.frames = nearBy;
         const WisunTelemetry t = run(c, scheduleSecs(nearBy));
         printf("  2.4 Msps: %s, %d bins of %.0f kHz, %.1f - %.1f MHz\n", wisunSummary(t).c_str(), t.bins, t.binKhz, t.loMhz, t.hiMhz);
-        CHECK(t.blocksOk == near.size() && t.blocksBad == 0, "%llu of %zu frames at 2.4 Msps", (unsigned long long)t.blocksOk, near.size());
+        CHECK(t.blocksOk == nearBy.size() && t.blocksBad == 0, "%llu of %zu frames at 2.4 Msps", (unsigned long long)t.blocksOk, nearBy.size());
         CHECK(t.bins == 8 && t.binKhz == 300, "bins");
     }
     {   // a damaged FCS: counted, not shown

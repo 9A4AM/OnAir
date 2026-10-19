@@ -57,7 +57,7 @@ int main() {
         CHECK(firstAfter >= 0 && firstAfter < (ms < 100 ? 0.30 : 3.0), "gap %.0f ms: the first picture came %.0f ms after the end", ms, firstAfter * 1e3);
         CHECK(bad == 0, "gap %.0f ms: %d reports out of lock more than a second after the gap", ms, bad);
         const size_t n = r.audio.size();
-        CHECK(n > 48000 * 3 && near(toneAmp(r.audio, 1000, n - 24000, n), 0.5, 0.05), "gap %.0f ms: the sound did not come back", ms);
+        CHECK(n > 48000 * 3 && nearBy(toneAmp(r.audio, 1000, n - 24000, n), 0.5, 0.05), "gap %.0f ms: the sound did not come back", ms);
     });
     // ---- the carrier jumps (an oscillator that is retuned, a transmitter that is switched): the loop has to find it again
     for (double hz : {5e3, 40e3, -200e3}) jobs.add([&, hz] {
@@ -71,7 +71,7 @@ int main() {
         int bad = 0;
         for (const auto& s : r.stateLog) if (s.first > 3.0 && s.second != 2) bad++;
         CHECK(r.tel.state == 2 && r.tel.colour && barError(r, gp) < 0.06 && bad == 0, "carrier jump %+.0f kHz: state %d colour %d bars %.3f, %d reports out of lock after 3 s", hz / 1e3, r.tel.state, (int)r.tel.colour, barError(r, gp), bad);
-        CHECK(near(r.tel.cfoHz, hz, 500), "carrier jump %+.0f kHz: carrier offset read as %.0f Hz", hz / 1e3, r.tel.cfoHz);
+        CHECK(nearBy(r.tel.cfoHz, hz, 500), "carrier jump %+.0f kHz: carrier offset read as %.0f Hz", hz / 1e3, r.tel.cfoHz);
     });
     // ---- impulse noise (ignition, switches): bursts of 5 us at three times the carrier, 50 a second
     jobs.add([&] {
@@ -93,7 +93,7 @@ int main() {
         const Run r = run(c, 6.0, o);
         char nm[48]; snprintf(nm, sizeof nm, "CW at +4.75 MHz, %.0f dB", db);
         line(nm, r, barError(r, gp));
-        CHECK(r.tel.state == 2 && near(r.tel.visionHz, -2.75e6, 1000) && r.tel.colour && barError(r, gp) < 0.06, "CW %.0f dB: state %d vision carrier %.0f Hz bars %.3f", db, r.tel.state, r.tel.visionHz, barError(r, gp));
+        CHECK(r.tel.state == 2 && nearBy(r.tel.visionHz, -2.75e6, 1000) && r.tel.colour && barError(r, gp) < 0.06, "CW %.0f dB: state %d vision carrier %.0f Hz bars %.3f", db, r.tel.state, r.tel.visionHz, barError(r, gp));
     });
     // ---- a carrier inside the picture band: a beat pattern in the picture, nothing worse
     for (double db : {-40.0, -30.0, -20.0}) jobs.add([&, db] {
@@ -132,7 +132,7 @@ int main() {
         CHECK(r.tel.state == 2 && r.tel.colour, "compression %.0f %%: state %d colour %d", comp * 100, r.tel.state, (int)r.tel.colour);
         CHECK(nearBy(r.tel.syncCompressionPct, comp * 100 * 0.75, 0.15 * comp * 100 + 3) || nearBy(r.tel.syncCompressionPct, comp * 100, 0.15 * comp * 100 + 3),
               "compression %.0f %%: measured %.1f %%", comp * 100, r.tel.syncCompressionPct);
-        CHECK(near(r.tel.syncDepthPct, 26.25 * (1 - comp), 2.0), "compression %.0f %%: sync depth %.1f %%", comp * 100, r.tel.syncDepthPct);
+        CHECK(nearBy(r.tel.syncDepthPct, 26.25 * (1 - comp), 2.0), "compression %.0f %%: sync depth %.1f %%", comp * 100, r.tel.syncDepthPct);
         CHECK(w < (comp < 0.3 ? 0.08 : comp < 0.5 ? 0.12 : 0.18), "compression %.0f %%: bars %.3f", comp * 100, w);
     });
     // ---- a step in the level (an AGC in the radio, a fade): 5 times down for 1.5 s and back

@@ -54,17 +54,17 @@ int main() {
     CHECK(bad == 0, "%d round trips failed", bad);
     // ---- coordinate text
     auto nearBy = [](double a, double b) { return std::fabs(a - b) < 1e-6; };
-    CHECK(parseCoordinates("54.687, 25.280", la, lo) && near(la, 54.687) && near(lo, 25.28), "decimal with comma");
-    CHECK(parseCoordinates("54.687 25.280", la, lo) && near(la, 54.687) && near(lo, 25.28), "decimal with space");
-    CHECK(parseCoordinates("-33.9 151.2", la, lo) && near(la, -33.9) && near(lo, 151.2), "negative");
-    CHECK(parseCoordinates("33.9S 70.5W", la, lo) && near(la, -33.9) && near(lo, -70.5), "hemisphere letters after");
-    CHECK(parseCoordinates("N54.687 E25.28", la, lo) && near(la, 54.687) && near(lo, 25.28), "hemisphere letters before");
-    CHECK(parseCoordinates("25.28E 54.687N", la, lo) && near(la, 54.687) && near(lo, 25.28), "longitude first with letters");
-    CHECK(parseCoordinates("54\xC2\xB0" "41'13\"N 25\xC2\xB0" "16'48\"E", la, lo) && near(la, 54 + 41 / 60.0 + 13 / 3600.0) && near(lo, 25 + 16 / 60.0 + 48 / 3600.0), "DMS with signs");
-    CHECK(parseCoordinates("54 41 13 N 25 16 48 E", la, lo) && near(la, 54 + 41 / 60.0 + 13 / 3600.0) && near(lo, 25.28), "DMS with spaces");
-    CHECK(parseCoordinates("54 41 13 25 16 48", la, lo) && near(la, 54 + 41 / 60.0 + 13 / 3600.0) && near(lo, 25.28), "DMS without letters");
-    CHECK(parseCoordinates("N54 41.2 E25 16.8", la, lo) && near(la, 54 + 41.2 / 60) && near(lo, 25.28), "degrees and decimal minutes");
-    CHECK(parseCoordinates("48\xC2\xB0" "08\xE2\x80\xB2" "45.6\xE2\x80\xB3" "S 11\xC2\xB0" "36\xE2\x80\xB2" "28.8\xE2\x80\xB3" "W", la, lo) && near(la, -(48 + 8 / 60.0 + 45.6 / 3600)) && near(lo, -(11 + 36 / 60.0 + 28.8 / 3600)), "prime signs");
+    CHECK(parseCoordinates("54.687, 25.280", la, lo) && nearBy(la, 54.687) && nearBy(lo, 25.28), "decimal with comma");
+    CHECK(parseCoordinates("54.687 25.280", la, lo) && nearBy(la, 54.687) && nearBy(lo, 25.28), "decimal with space");
+    CHECK(parseCoordinates("-33.9 151.2", la, lo) && nearBy(la, -33.9) && nearBy(lo, 151.2), "negative");
+    CHECK(parseCoordinates("33.9S 70.5W", la, lo) && nearBy(la, -33.9) && nearBy(lo, -70.5), "hemisphere letters after");
+    CHECK(parseCoordinates("N54.687 E25.28", la, lo) && nearBy(la, 54.687) && nearBy(lo, 25.28), "hemisphere letters before");
+    CHECK(parseCoordinates("25.28E 54.687N", la, lo) && nearBy(la, 54.687) && nearBy(lo, 25.28), "longitude first with letters");
+    CHECK(parseCoordinates("54\xC2\xB0" "41'13\"N 25\xC2\xB0" "16'48\"E", la, lo) && nearBy(la, 54 + 41 / 60.0 + 13 / 3600.0) && nearBy(lo, 25 + 16 / 60.0 + 48 / 3600.0), "DMS with signs");
+    CHECK(parseCoordinates("54 41 13 N 25 16 48 E", la, lo) && nearBy(la, 54 + 41 / 60.0 + 13 / 3600.0) && nearBy(lo, 25.28), "DMS with spaces");
+    CHECK(parseCoordinates("54 41 13 25 16 48", la, lo) && nearBy(la, 54 + 41 / 60.0 + 13 / 3600.0) && nearBy(lo, 25.28), "DMS without letters");
+    CHECK(parseCoordinates("N54 41.2 E25 16.8", la, lo) && nearBy(la, 54 + 41.2 / 60) && nearBy(lo, 25.28), "degrees and decimal minutes");
+    CHECK(parseCoordinates("48\xC2\xB0" "08\xE2\x80\xB2" "45.6\xE2\x80\xB3" "S 11\xC2\xB0" "36\xE2\x80\xB2" "28.8\xE2\x80\xB3" "W", la, lo) && nearBy(la, -(48 + 8 / 60.0 + 45.6 / 3600)) && nearBy(lo, -(11 + 36 / 60.0 + 28.8 / 3600)), "prime signs");
     CHECK(!parseCoordinates("91 10", la, lo), "latitude over 90 refused");
     CHECK(!parseCoordinates("10 181", la, lo), "longitude over 180 refused");
     CHECK(!parseCoordinates("54 61 0 25 0 0", la, lo), "61 minutes refused");

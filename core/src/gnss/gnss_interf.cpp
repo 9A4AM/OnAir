@@ -379,7 +379,7 @@ void GnssInterfMonitor::update(const GnssTelemetry& t, double almMismatchKm, int
             for (int k = 0; k < 3; k++) { const double e = f.ecef[k] - sumEcef_[k] / nAvg_; d2 += e * e; }
             r_.distFromAvgM = (float)std::sqrt(d2);
             const bool farBy = r_.distFromAvgM > 300 + 5 * f.hErrM;
-            if (far && !r_.farFromAverage) { farSince_ = ts; event(2, fmt("position %.0f m from the average of %.0f fixes", r_.distFromAvgM, nAvg_)); }
+            if (farBy && !r_.farFromAverage) { farSince_ = ts; event(2, fmt("position %.0f m from the average of %.0f fixes", r_.distFromAvgM, nAvg_)); }
             r_.farFromAverage = farBy;
             if (farBy && ts - farSince_ > 600) {      // ten minutes away: the antenna has moved, start a new average
                 nAvg_ = 0; for (double& v : sumEcef_) v = 0;

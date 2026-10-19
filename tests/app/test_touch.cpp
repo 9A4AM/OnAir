@@ -14,7 +14,7 @@ static void keypad() {
     Keypad k;
     CHECK(k.empty() && k.shown() == "-" && k.hz() == 0, "a new keypad is empty");
     for (char c : std::string("7.1")) k.key(c);
-    CHECK(k.text == "7.1" && near(k.value(), 7.1) && near(k.hz(), 7.1e6), "7.1 MHz: %s %.1f", k.text.c_str(), k.hz());
+    CHECK(k.text == "7.1" && nearBy(k.value(), 7.1) && nearBy(k.hz(), 7.1e6), "7.1 MHz: %s %.1f", k.text.c_str(), k.hz());
     k.key('.');
     CHECK(k.text == "7.1", "a second point is ignored");
     k.key('x'); k.key('-');
@@ -26,18 +26,18 @@ static void keypad() {
     k.key('0'); k.key('0'); k.key('7');
     CHECK(k.text == "7", "leading zeros collapse: %s", k.text.c_str());
     k.clear(); k.key('.'); k.key('5');
-    CHECK(k.text == "0.5" && near(k.value(), 0.5), "a point first gives 0.: %s", k.text.c_str());
+    CHECK(k.text == "0.5" && nearBy(k.value(), 0.5), "a point first gives 0.: %s", k.text.c_str());
     k.clear(); k.key('0'); k.key('.'); k.key('0');
     CHECK(k.text == "0.0" && k.empty(), "0.0 is nothing to apply");
     k.clear();
     for (int i = 0; i < 20; i++) k.key('9');
     CHECK(k.text.size() == 12, "at most 12 characters: %zu", k.text.size());
     k.clear(); k.key('4'); k.key('5'); k.key('5'); k.unit = Unit::kHz;
-    CHECK(near(k.hz(), 455e3), "455 kHz = %.0f Hz", k.hz());
+    CHECK(nearBy(k.hz(), 455e3), "455 kHz = %.0f Hz", k.hz());
     k.unit = Unit::GHz; k.clear(); k.key('2'); k.key('.'); k.key('4');
-    CHECK(near(k.hz(), 2.4e9), "2.4 GHz");
+    CHECK(nearBy(k.hz(), 2.4e9), "2.4 GHz");
     k.unit = Unit::Hz; k.clear(); k.key('1');
-    CHECK(near(k.hz(), 1), "1 Hz");
+    CHECK(nearBy(k.hz(), 1), "1 Hz");
     k.setHz(7.074e6);
     CHECK(k.unit == Unit::MHz && k.text == "7.074", "setHz 7.074 MHz: %s %s", k.text.c_str(), unitName(k.unit));
     k.setHz(455e3);
@@ -52,14 +52,14 @@ static void keypad() {
 
 static void parse() {
     double hz = 0;
-    CHECK(parseFrequency("145.5", Unit::MHz, hz) && near(hz, 145.5e6), "bare number in the default unit");
-    CHECK(parseFrequency("145.5", Unit::kHz, hz) && near(hz, 145.5e3), "default kHz");
-    CHECK(parseFrequency("7100k", Unit::MHz, hz) && near(hz, 7.1e6), "7100k");
-    CHECK(parseFrequency("433920 kHz", Unit::MHz, hz) && near(hz, 433.92e6), "433920 kHz");
-    CHECK(parseFrequency("  2.4G", Unit::MHz, hz) && near(hz, 2.4e9), "2.4G");
-    CHECK(parseFrequency("93.9 MHz", Unit::kHz, hz) && near(hz, 93.9e6), "93.9 MHz overrides the default");
-    CHECK(parseFrequency("1500 HZ", Unit::MHz, hz) && near(hz, 1500), "HZ any case");
-    CHECK(parseFrequency("0.455 m", Unit::kHz, hz) && near(hz, 455e3), "m = MHz");
+    CHECK(parseFrequency("145.5", Unit::MHz, hz) && nearBy(hz, 145.5e6), "bare number in the default unit");
+    CHECK(parseFrequency("145.5", Unit::kHz, hz) && nearBy(hz, 145.5e3), "default kHz");
+    CHECK(parseFrequency("7100k", Unit::MHz, hz) && nearBy(hz, 7.1e6), "7100k");
+    CHECK(parseFrequency("433920 kHz", Unit::MHz, hz) && nearBy(hz, 433.92e6), "433920 kHz");
+    CHECK(parseFrequency("  2.4G", Unit::MHz, hz) && nearBy(hz, 2.4e9), "2.4G");
+    CHECK(parseFrequency("93.9 MHz", Unit::kHz, hz) && nearBy(hz, 93.9e6), "93.9 MHz overrides the default");
+    CHECK(parseFrequency("1500 HZ", Unit::MHz, hz) && nearBy(hz, 1500), "HZ any case");
+    CHECK(parseFrequency("0.455 m", Unit::kHz, hz) && nearBy(hz, 455e3), "m = MHz");
     CHECK(!parseFrequency("", Unit::MHz, hz), "empty");
     CHECK(!parseFrequency("abc", Unit::MHz, hz), "text");
     CHECK(!parseFrequency("12 parsecs", Unit::MHz, hz), "unknown unit");
@@ -82,14 +82,14 @@ static void gestures() {
         CHECK(!f.pinching && f.scale == 1.f, "the first two-finger frame only starts");
         p[0] = P(0, 75, 200); p[1] = P(1, 225, 200);
         f = g.update(0.02, p, 2);
-        CHECK(f.pinching && near(f.scale, 1.5, 1e-4) && near(f.panDx, 0) && near(f.cx, 150), "pinch out: scale %.3f", f.scale);
+        CHECK(f.pinching && nearBy(f.scale, 1.5, 1e-4) && nearBy(f.panDx, 0) && nearBy(f.cx, 150), "pinch out: scale %.3f", f.scale);
         p[0] = P(0, 112.5f, 210); p[1] = P(1, 187.5f, 210);
         f = g.update(0.04, p, 2);
-        CHECK(f.pinching && near(f.scale, 0.5, 1e-4) && near(f.panDy, 10, 1e-4), "pinch in: scale %.3f pan %.1f", f.scale, f.panDy);
+        CHECK(f.pinching && nearBy(f.scale, 0.5, 1e-4) && nearBy(f.panDy, 10, 1e-4), "pinch in: scale %.3f pan %.1f", f.scale, f.panDy);
         p[0] = P(0, 112.5f, 210); p[1] = P(1, 187.5f, 210);
         p[0].x += 30; p[1].x += 30;   // both fingers slide right, same distance: a pan, no zoom
         f = g.update(0.06, p, 2);
-        CHECK(f.pinching && near(f.scale, 1, 1e-4) && near(f.panDx, 30, 1e-4), "two-finger pan: %.1f", f.panDx);
+        CHECK(f.pinching && nearBy(f.scale, 1, 1e-4) && nearBy(f.panDx, 30, 1e-4), "two-finger pan: %.1f", f.panDx);
         p[0].down = p[1].down = false;
         f = g.update(0.08, p, 2);
         CHECK(!f.pinching && f.swipe == 0, "fingers up: nothing");
@@ -103,10 +103,10 @@ static void gestures() {
         CHECK(!f.panning, "inside the slop is not a pan");
         p.y = 130;
         f = g.update(0.04, &p, 1);
-        CHECK(f.panning && near(f.panDy, 25), "beyond the slop: pan delta %.1f", f.panDy);
+        CHECK(f.panning && nearBy(f.panDy, 25), "beyond the slop: pan delta %.1f", f.panDy);
         p.y = 140;
         f = g.update(0.06, &p, 1);
-        CHECK(f.panning && near(f.panDy, 10), "next delta %.1f", f.panDy);
+        CHECK(f.panning && nearBy(f.panDy, 10), "next delta %.1f", f.panDy);
     }
     {   // long press: once, after 0.5 s, only while still
         Gestures g;

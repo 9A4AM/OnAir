@@ -54,15 +54,15 @@ int main() {
         const double M = 1490 / (m.hmF2 + 176);
         printf("    want foE %.2f h'E %.0f foF2 %.2f fxF2 %.2f h'F %.0f hmF2 %.0f M3000 %.3f MUF3000 %.2f\n", m.foE, hE, m.foF2, fx, hF, m.hmF2, M, m.foF2 * M);
         CHECK(s.geometry == 1, "geometry %d", s.geometry);
-        CHECK(near(s.foE, m.foE, 0.2) && !s.foEAbove, "foE %.2f", s.foE);
-        CHECK(near(s.foF2, m.foF2, 0.2) && !s.foF2Above, "foF2 %.2f", s.foF2);
-        CHECK(near(s.fxF2, fx, 0.25), "fxF2 %.2f want %.2f", s.fxF2, fx);
-        CHECK(near(s.hE, hE, 15), "h'E %.0f want %.0f", s.hE, hE);
-        CHECK(near(s.hF, hF, 20), "h'F %.0f want %.0f", s.hF, hF);
-        CHECK(near(s.m3000, M, 0.15), "M3000 %.3f want %.3f", s.m3000, M);
-        CHECK(near(s.muf3000, m.foF2 * M, 0.8), "MUF3000 %.2f", s.muf3000);
+        CHECK(nearBy(s.foE, m.foE, 0.2) && !s.foEAbove, "foE %.2f", s.foE);
+        CHECK(nearBy(s.foF2, m.foF2, 0.2) && !s.foF2Above, "foF2 %.2f", s.foF2);
+        CHECK(nearBy(s.fxF2, fx, 0.25), "fxF2 %.2f want %.2f", s.fxF2, fx);
+        CHECK(nearBy(s.hE, hE, 15), "h'E %.0f want %.0f", s.hE, hE);
+        CHECK(nearBy(s.hF, hF, 20), "h'F %.0f want %.0f", s.hF, hF);
+        CHECK(nearBy(s.m3000, M, 0.15), "M3000 %.3f want %.3f", s.m3000, M);
+        CHECK(nearBy(s.muf3000, m.foF2 * M, 0.8), "MUF3000 %.2f", s.muf3000);
         CHECK(std::isnan(s.foF1), "foF1 %.2f without an F1 layer", s.foF1);
-        CHECK(near(s.fmin, m.fLoMhz, 0.3), "fmin %.2f", s.fmin);
+        CHECK(nearBy(s.fmin, m.fLoMhz, 0.3), "fmin %.2f", s.fmin);
         int multi = 0; for (const auto& t : tr) if (t.hops == 2) multi++;
         CHECK(multi >= 1, "no multiple reflection found");
         // MUF(3000) puts 20 m open, 10 m closed; 160 m below fmin (1.0) is open, nothing absorbed
@@ -80,12 +80,12 @@ int main() {
         const IonoScaling s = iono::scaleIonogram(makeIonoLayerIonogram(m), sounder(100e3), opt, &tr);
         print("vertical E+F1+F2", s, tr);
         const double M = 1490 / (m.hmF2 + 176);
-        CHECK(near(s.foE, m.foE, 0.2), "foE %.2f", s.foE);
-        CHECK(near(s.foF1, m.foF1, 0.3), "foF1 %.2f", s.foF1);
-        CHECK(near(s.foF2, m.foF2, 0.2), "foF2 %.2f", s.foF2);
-        CHECK(near(s.m3000, M, 0.2), "M3000 %.3f want %.3f", s.m3000, M);
+        CHECK(nearBy(s.foE, m.foE, 0.2), "foE %.2f", s.foE);
+        CHECK(nearBy(s.foF1, m.foF1, 0.3), "foF1 %.2f", s.foF1);
+        CHECK(nearBy(s.foF2, m.foF2, 0.2), "foF2 %.2f", s.foF2);
+        CHECK(nearBy(s.m3000, M, 0.2), "M3000 %.3f want %.3f", s.m3000, M);
         const double hF = minH(m, m.foE + 0.01, m.foF2);
-        CHECK(near(s.hF, hF, 20), "h'F %.0f want %.0f", s.hF, hF);
+        CHECK(nearBy(s.hF, hF, 20), "h'F %.0f want %.0f", s.hF, hF);
     }
     {   // vertical, the sweep stops below foF2: a lower bound only, no M(3000)
         IonoLayerModel m;
@@ -103,12 +103,12 @@ int main() {
         print("oblique 1500 km", s, tr);
         const double muf1F = ionoPathMufMhz(m, 3, 1), muf2F = ionoPathMufMhz(m, 3, 2), muf1E = ionoPathMufMhz(m, 1, 1);
         printf("    want MUF 1E %.2f 1F %.2f 2F %.2f\n", muf1E, muf1F, muf2F);
-        CHECK(s.geometry == 2 && s.distFrom == 1 && near(s.distKm, m.distKm, 0.08 * m.distKm), "distance %.0f", s.distKm);
-        CHECK(near(s.pathMuf, muf1F, 0.4) && !s.pathMufAbove, "path MUF %.2f want %.2f", s.pathMuf, muf1F);
+        CHECK(s.geometry == 2 && s.distFrom == 1 && nearBy(s.distKm, m.distKm, 0.08 * m.distKm), "distance %.0f", s.distKm);
+        CHECK(nearBy(s.pathMuf, muf1F, 0.4) && !s.pathMufAbove, "path MUF %.2f want %.2f", s.pathMuf, muf1F);
         bool f1 = false, f2 = false;
         for (const auto& md : s.modes) {
-            if (md.layer == IonoTrace::F2 && md.hops == 1) { f1 = true; CHECK(near(md.mufMhz, muf1F, 0.4), "1F MUF %.2f", md.mufMhz); }
-            if (md.layer == IonoTrace::F2 && md.hops == 2) { f2 = true; CHECK(near(md.mufMhz, muf2F, 0.4), "2F MUF %.2f", md.mufMhz); }
+            if (md.layer == IonoTrace::F2 && md.hops == 1) { f1 = true; CHECK(nearBy(md.mufMhz, muf1F, 0.4), "1F MUF %.2f", md.mufMhz); }
+            if (md.layer == IonoTrace::F2 && md.hops == 2) { f2 = true; CHECK(nearBy(md.mufMhz, muf2F, 0.4), "2F MUF %.2f", md.mufMhz); }
         }
         CHECK(f1 && f2, "modes 1F %d 2F %d", f1, f2);
     }
@@ -119,8 +119,8 @@ int main() {
         const IonoScaling s = iono::scaleIonogram(makeIonoLayerIonogram(m), sounder(125e3), opt, &tr);
         print("oblique 800 km", s, tr);
         const double muf = ionoPathMufMhz(m, 3, 1);
-        CHECK(s.geometry == 2 && near(s.distKm, m.distKm, 0.1 * m.distKm), "distance %.0f", s.distKm);
-        CHECK(near(s.pathMuf, muf, 0.4), "path MUF %.2f want %.2f", s.pathMuf, muf);
+        CHECK(s.geometry == 2 && nearBy(s.distKm, m.distKm, 0.1 * m.distKm), "distance %.0f", s.distKm);
+        CHECK(nearBy(s.pathMuf, muf, 0.4), "path MUF %.2f want %.2f", s.pathMuf, muf);
     }
     {   // a known sounder (rate and schedule) and the receiver location: the distance from the sites
         const std::vector<iono::KnownSounder> list = {
@@ -134,8 +134,8 @@ int main() {
         const IonoScaling s = iono::scaleIonogram(makeIonoLayerIonogram(m), sounder(100e3, 300, 12), o, &tr, list);
         print("known sounder", s, tr);
         CHECK(s.known == 0 && s.knownMatch == 2 && s.candidates == 2, "known %d match %d of %d", s.known, s.knownMatch, s.candidates);
-        CHECK(s.geometry == 2 && s.distFrom == 2 && near(s.distKm, d, 1), "distance %.0f want %.0f (%d)", s.distKm, d, s.distFrom);
-        CHECK(near(s.pathMuf, ionoPathMufMhz(m, 3, 1), 0.4), "path MUF %.2f", s.pathMuf);
+        CHECK(s.geometry == 2 && s.distFrom == 2 && nearBy(s.distKm, d, 1), "distance %.0f want %.0f (%d)", s.distKm, d, s.distFrom);
+        CHECK(nearBy(s.pathMuf, ionoPathMufMhz(m, 3, 1), 0.4), "path MUF %.2f", s.pathMuf);
         // the rate alone: two 100 kHz/s entries, no distance to choose by -> not identified
         int match = 0, cands = 0;
         CHECK(iono::identify(sounder(100e3), iono::Observer{}, NAN, match, cands, list) < 0 && cands == 2, "rate only");
@@ -146,7 +146,7 @@ int main() {
         CHECK(s2.known == 2 && s2.knownMatch == 1 && s2.geometry == 1, "nearby known %d match %d geometry %d", s2.known, s2.knownMatch, s2.geometry);
     }
     {   // geometry checks
-        CHECK(near(iono::obliqueDistanceKm(iono::obliqueGroupPathKm(2000, 300, 2), 300, 2), 2000, 0.01), "geometry inverse");
+        CHECK(nearBy(iono::obliqueDistanceKm(iono::obliqueGroupPathKm(2000, 300, 2), 300, 2), 2000, 0.01), "geometry inverse");
         CHECK(std::isnan(iono::obliqueDistanceKm(100, 300, 1)), "path shorter than the height");
     }
     for (int k = 0; k < 6; k++) {   // noise only, with interfering carriers: nothing
@@ -162,7 +162,7 @@ int main() {
         IonoLayerModel m;
         m.fLoMhz = 1.0; m.fHiMhz = 16; m.carriersMhz = {4.0, 5.0, 6.0, 9.4}; m.seed = 21;
         const IonoScaling s = iono::scaleIonogram(makeIonoLayerIonogram(m), sounder(100e3), opt);
-        CHECK(near(s.foF2, m.foF2, 0.2) && near(s.foE, m.foE, 0.2), "with carriers foE %.2f foF2 %.2f", s.foE, s.foF2);
+        CHECK(nearBy(s.foF2, m.foF2, 0.2) && nearBy(s.foE, m.foE, 0.2), "with carriers foE %.2f foF2 %.2f", s.foE, s.foF2);
     }
     {   // the processor on the IQ test signal (constant echo delays, 1 Msps at 0.5 MHz): traces at the two echo ranges, scaled per sweep
         const double fs = 1e6, fc = 0.5e6;

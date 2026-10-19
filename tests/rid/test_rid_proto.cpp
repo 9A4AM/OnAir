@@ -23,17 +23,17 @@ int main() {
         const uint8_t m[25] = {0x12, 0x20, 0x5A, 0x22, 0x03, 0xC0, 0x9A, 0x98, 0x20, 0x48, 0x60, 0x11, 0x0F, 0x9D, 0x09, 0xBA, 0x09, 0xC0, 0x08, 0x4A, 0x33, 0x39, 0x30, 0x02, 0x00};
         Message o;
         CHECK(decodeMessage(m, o) && o.type == Location, "location type");
-        CHECK(o.status == 2 && o.heightType == 0 && near(o.direction, 90) && near(o.speed, 8.5) && o.vspeedValid && near(o.vspeed, 1.5), "vector %.1f %.2f %.1f", o.direction, o.speed, o.vspeed);
-        CHECK(o.posValid && near(o.lat, 54.6872) && near(o.lon, 25.2797), "position %.7f %.7f", o.lat, o.lon);
-        CHECK(near(o.altBaro, 230.5) && near(o.altGeo, 245) && near(o.height, 120), "altitudes %.1f %.1f %.1f", o.altBaro, o.altGeo, o.height);
+        CHECK(o.status == 2 && o.heightType == 0 && nearBy(o.direction, 90) && nearBy(o.speed, 8.5) && o.vspeedValid && nearBy(o.vspeed, 1.5), "vector %.1f %.2f %.1f", o.direction, o.speed, o.vspeed);
+        CHECK(o.posValid && nearBy(o.lat, 54.6872) && nearBy(o.lon, 25.2797), "position %.7f %.7f", o.lat, o.lon);
+        CHECK(nearBy(o.altBaro, 230.5) && nearBy(o.altGeo, 245) && nearBy(o.height, 120), "altitudes %.1f %.1f %.1f", o.altBaro, o.altGeo, o.height);
         CHECK(o.horizAcc == 10 && o.vertAcc == 4 && o.baroAcc == 3 && o.speedAcc == 3 && o.timestamp == 12345 && o.tsAcc == 2, "accuracies");
         CHECK(horizAccText(10) == "< 10 m" && vertAccText(4) == "< 10 m" && speedAccText(3) == "< 1 m/s", "accuracy names");
     }
     {   // Location: track 275 (east-west bit), 70 m/s (speed multiplier), vertical speed unknown, height above ground
         const uint8_t m[25] = {0x12, 0x27, 0x5F, 0x08, 0x7E, 0xA8, 0x92, 0x9A, 0x20, 0x10, 0x81, 0x14, 0x0F, 0x04, 0x0B, 0x18, 0x0B, 0x28, 0x0A, 0x5B, 0x04, 0x58, 0x02, 0x00, 0x00};
         Message o;
-        CHECK(decodeMessage(m, o) && near(o.direction, 275) && near(o.speed, 69.75) && !o.vspeedValid && o.heightType == 1, "dir %.0f speed %.2f", o.direction, o.speed);
-        CHECK(near(o.lat, 54.7001) && near(o.lon, 25.3002) && near(o.height, 300) && o.timestamp == 600, "position 2");
+        CHECK(decodeMessage(m, o) && nearBy(o.direction, 275) && nearBy(o.speed, 69.75) && !o.vspeedValid && o.heightType == 1, "dir %.0f speed %.2f", o.direction, o.speed);
+        CHECK(nearBy(o.lat, 54.7001) && nearBy(o.lon, 25.3002) && nearBy(o.height, 300) && o.timestamp == 600, "position 2");
     }
     {   // Location with every value unknown
         uint8_t m[25] = {0x12, 0x03, 181, 255, 126};
@@ -81,8 +81,8 @@ int main() {
         if (out.size() == 4) {
             CHECK(out[0].idType == 4 && out[0].uaType == 6 && out[0].id == "abc-123", "rt basic");
             CHECK(out[1].status == 3 && nearBy(out[1].lat, -33.8688) && nearBy(out[1].lon, 151.2093) && nearBy(out[1].altGeo, 50) && nearBy(out[1].height, 12.5) &&
-                  std::fabs(out[1].speed - 200) < 0.4 && near(out[1].direction, 359) && near(out[1].vspeed, -4) && out[1].timestamp == 35999, "rt location %.2f", out[1].speed);
-            CHECK(out[2].opLocType == 2 && out[2].areaCount == 3 && out[2].areaRadius == 250 && near(out[2].areaCeiling, 120) && near(out[2].areaFloor, 0) && near(out[2].opLat, -33.87), "rt system");
+                  std::fabs(out[1].speed - 200) < 0.4 && nearBy(out[1].direction, 359) && nearBy(out[1].vspeed, -4) && out[1].timestamp == 35999, "rt location %.2f", out[1].speed);
+            CHECK(out[2].opLocType == 2 && out[2].areaCount == 3 && out[2].areaRadius == 250 && nearBy(out[2].areaCeiling, 120) && nearBy(out[2].areaFloor, 0) && nearBy(out[2].opLat, -33.87), "rt system");
             CHECK(out[3].text == "OP-1", "rt operator");
         }
         // the Wi-Fi vendor element inside a beacon

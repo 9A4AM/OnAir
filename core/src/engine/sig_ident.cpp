@@ -616,7 +616,7 @@ static void applyPriors(Result& R, const Features& f) {
         if (d <= tol || (e.bwHz > 0 && d <= 0.5 * e.bwHz)) nearBy.push_back(&e);
         else if (e.hz > hz + 2e6) continue;
     }
-    for (const FreqEntry* e : near) R.priors.push_back(e->name + " (" + freqModeName(e->mode) + ", " + e->category + ")");
+    for (const FreqEntry* e : nearBy) R.priors.push_back(e->name + " (" + freqModeName(e->mode) + ", " + e->category + ")");
     if (R.priors.size() > 8) R.priors.resize(8);
     for (Candidate& c : R.cands) {
         bool exact = false, family = false;

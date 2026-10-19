@@ -52,8 +52,8 @@ int main() {
         CHECK(r.tel.state == 2, "C/N %.0f: state %d", s.cnr, r.tel.state);
         CHECK(r.tel.colour == s.colour || !s.colour, "C/N %.0f: colour %d", s.cnr, (int)r.tel.colour);
         CHECK(w < s.bars, "C/N %.0f: bars error %.3f", s.cnr, w);
-        CHECK(near(r.tel.carrierToNoiseDb, s.cnr, 1.5), "C/N %.0f: measured %.1f dB", s.cnr, r.tel.carrierToNoiseDb);
-        CHECK(near(r.tel.snrDb, s.cnr - 7.2, 2.0) || s.cnr > 33, "C/N %.0f: video SNR %.1f dB (expected about C/N - 7)", s.cnr, r.tel.snrDb);
+        CHECK(nearBy(r.tel.carrierToNoiseDb, s.cnr, 1.5), "C/N %.0f: measured %.1f dB", s.cnr, r.tel.carrierToNoiseDb);
+        CHECK(nearBy(r.tel.snrDb, s.cnr - 7.2, 2.0) || s.cnr > 33, "C/N %.0f: video SNR %.1f dB (expected about C/N - 7)", s.cnr, r.tel.snrDb);
     });
     // ---- carrier offset: the whole channel found anywhere, the offset measured
     for (double cfo : {-1.5e6, -600e3, -150e3, -12e3, 12e3, 150e3, 600e3, 1.2e6}) jobs.add([&, cfo] {
@@ -63,9 +63,9 @@ int main() {
         char nm[48]; snprintf(nm, sizeof nm, "carrier offset %+.0f kHz", cfo / 1e3);
         line(nm, r, w);
         CHECK(r.tel.state == 2 && r.tel.colour && w < 0.06, "offset %+.0f kHz: state %d colour %d bars %.3f", cfo / 1e3, r.tel.state, (int)r.tel.colour, w);
-        CHECK(near(r.tel.cfoHz, cfo, 400), "offset %+.0f kHz: measured %.0f Hz", cfo / 1e3, r.tel.cfoHz);
+        CHECK(nearBy(r.tel.cfoHz, cfo, 400), "offset %+.0f kHz: measured %.0f Hz", cfo / 1e3, r.tel.cfoHz);
         const size_t n = r.audio.size();
-        CHECK(n > 96000 && near(toneAmp(r.audio, 1000, n - 24000, n), 0.5, 0.05), "offset %+.0f kHz: sound", cfo / 1e3);
+        CHECK(n > 96000 && nearBy(toneAmp(r.audio, 1000, n - 24000, n), 0.5, 0.05), "offset %+.0f kHz: sound", cfo / 1e3);
     });
     // ---- the offset is against the channel layout; for 5.5 MHz sound the layout (7 or 8 MHz) comes from the user, because the signal cannot tell
     // (an 8 MHz channel with the carrier 500 kHz high is a 7 MHz channel: same spectrum)
@@ -74,9 +74,9 @@ int main() {
         Options o; o.channelWidth = 7;
         const Run r = run(c, 2.5, o);
         line("B, 7 MHz channel, +100 kHz", r, barError(r, gp));
-        CHECK(r.tel.state == 2 && near(r.tel.cfoHz, 100e3, 400), "7 MHz channel: state %d offset %.0f Hz", r.tel.state, r.tel.cfoHz);
+        CHECK(r.tel.state == 2 && nearBy(r.tel.cfoHz, 100e3, 400), "7 MHz channel: state %d offset %.0f Hz", r.tel.state, r.tel.cfoHz);
         const Run u = run(c, 2.5);
-        CHECK(near(u.tel.cfoHz, 600e3, 400), "same signal read as an 8 MHz channel: %.0f Hz (the default)", u.tel.cfoHz);
+        CHECK(nearBy(u.tel.cfoHz, 600e3, 400), "same signal read as an 8 MHz channel: %.0f Hz (the default)", u.tel.cfoHz);
     });
     // ---- sample clock error: the line rate is measured against the standard's, the picture does not care
     for (double ppm : {-100.0, -40.0, 40.0, 100.0}) jobs.add([&, ppm] {
@@ -86,8 +86,8 @@ int main() {
         char nm[48]; snprintf(nm, sizeof nm, "clock error %+.0f ppm", ppm);
         line(nm, r, w);
         CHECK(r.tel.state == 2 && r.tel.colour && w < 0.06, "clock %+.0f ppm: state %d colour %d bars %.3f", ppm, r.tel.state, (int)r.tel.colour, w);
-        CHECK(near(r.tel.lineErrPpm, -ppm, 8), "clock %+.0f ppm: line rate error read as %.1f ppm (expected %.0f)", ppm, r.tel.lineErrPpm, -ppm);
-        CHECK(near(r.tel.fieldHz, 50.0 * (1 - ppm * 1e-6), 0.01), "clock %+.0f ppm: field rate %.4f", ppm, r.tel.fieldHz);
+        CHECK(nearBy(r.tel.lineErrPpm, -ppm, 8), "clock %+.0f ppm: line rate error read as %.1f ppm (expected %.0f)", ppm, r.tel.lineErrPpm, -ppm);
+        CHECK(nearBy(r.tel.fieldHz, 50.0 * (1 - ppm * 1e-6), 0.01), "clock %+.0f ppm: field rate %.4f", ppm, r.tel.fieldHz);
     });
     // ---- sample rates a radio offers (below 8 Msps the receiver says so and does not run)
     for (double rate : {8e6, 10e6, 12.5e6, 16e6, 20e6}) jobs.add([&, rate] {

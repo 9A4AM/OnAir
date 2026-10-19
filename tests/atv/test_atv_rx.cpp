@@ -46,12 +46,12 @@ int main() {
         CHECK(r.lockedAfterMs >= 0 && r.lockedAfterMs < 1000, "locked after %d ms", r.lockedAfterMs);
         CHECK(t.fieldCount > 100 && t.frameCount > 50, "fields %llu pictures %llu", (unsigned long long)t.fieldCount, (unsigned long long)t.frameCount);
         CHECK(t.blocksBad <= 2, "damaged fields %llu", (unsigned long long)t.blocksBad);
-        CHECK(near(t.lineErrPpm, 0, 6), "line rate %.1f ppm off", t.lineErrPpm);
-        CHECK(near(t.fieldHz, 50.0, 0.005), "field rate %.4f", t.fieldHz);
-        CHECK(near(t.visionHz, -2.75e6, 300) && near(t.cfoHz, 0, 300), "vision carrier %.1f Hz (cfo %.1f)", t.visionHz, t.cfoHz);
-        CHECK(near(t.soundSpacingMhz, 5.5, 1e-9) && near(t.soundHz, 2.75e6, 1500), "sound carrier %.0f Hz, spacing %.2f", t.soundHz, t.soundSpacingMhz);
-        CHECK(near(t.syncDepthPct, 26.25, 1.0), "sync depth %.2f %% (expected 26.25)", t.syncDepthPct);
-        CHECK(near(t.burstLevel, 1.0, 0.12), "burst %.2f of nominal", t.burstLevel);
+        CHECK(nearBy(t.lineErrPpm, 0, 6), "line rate %.1f ppm off", t.lineErrPpm);
+        CHECK(nearBy(t.fieldHz, 50.0, 0.005), "field rate %.4f", t.fieldHz);
+        CHECK(nearBy(t.visionHz, -2.75e6, 300) && nearBy(t.cfoHz, 0, 300), "vision carrier %.1f Hz (cfo %.1f)", t.visionHz, t.cfoHz);
+        CHECK(nearBy(t.soundSpacingMhz, 5.5, 1e-9) && nearBy(t.soundHz, 2.75e6, 1500), "sound carrier %.0f Hz, spacing %.2f", t.soundHz, t.soundSpacingMhz);
+        CHECK(nearBy(t.syncDepthPct, 26.25, 1.0), "sync depth %.2f %% (expected 26.25)", t.syncDepthPct);
+        CHECK(nearBy(t.burstLevel, 1.0, 0.12), "burst %.2f of nominal", t.burstLevel);
         CHECK(t.syncDetector, "the synchronous detector is not in use");
         CHECK(t.snrDb > 30, "video SNR %.1f dB", t.snrDb);
         CHECK(t.lineWave.size() >= 400 && t.vbiWave.size() >= 400, "scope data %zu %zu", t.lineWave.size(), t.vbiWave.size());
@@ -78,8 +78,8 @@ int main() {
             const double hz = peakTone(r.audio, 24000, 24000 + 12000);
             const double amp = toneAmp(r.audio, 1000, 24000, 24000 + 12000);
             printf("sound: tone %.1f Hz amplitude %.3f deviation reported %.1f kHz\n", hz, amp, t.soundDevKhz);
-            CHECK(near(hz, 1000, 3), "tone at %.1f Hz", hz);
-            CHECK(near(amp, 0.5, 0.06), "tone amplitude %.3f (sent 0.5 of full scale)", amp);
+            CHECK(nearBy(hz, 1000, 3), "tone at %.1f Hz", hz);
+            CHECK(nearBy(amp, 0.5, 0.06), "tone amplitude %.3f (sent 0.5 of full scale)", amp);
         }
     }
     // ---- the other systems
@@ -101,9 +101,9 @@ int main() {
         CHECK(t.state == 2, "%s: state %d", s.name, t.state);
         CHECK(t.system == s.name, "%s: system '%s'", s.name, t.system.c_str());
         CHECK(t.colour, "%s: colour not decoded", s.name);
-        CHECK(near(t.soundSpacingMhz, s.spacing, 1e-6), "%s: sound spacing %.4f", s.name, t.soundSpacingMhz);
-        CHECK(near(t.visionHz, s.vision, 400), "%s: vision carrier %.0f Hz", s.name, t.visionHz);
-        CHECK(near(t.lineErrPpm, 0, 8) && t.blocksBad <= 3, "%s: line error %.1f ppm, %llu bad fields", s.name, t.lineErrPpm, (unsigned long long)t.blocksBad);
+        CHECK(nearBy(t.soundSpacingMhz, s.spacing, 1e-6), "%s: sound spacing %.4f", s.name, t.soundSpacingMhz);
+        CHECK(nearBy(t.visionHz, s.vision, 400), "%s: vision carrier %.0f Hz", s.name, t.visionHz);
+        CHECK(nearBy(t.lineErrPpm, 0, 8) && t.blocksBad <= 3, "%s: line error %.1f ppm, %llu bad fields", s.name, t.lineErrPpm, (unsigned long long)t.blocksBad);
         CHECK(t.soundPresent && t.soundDevKhz > 0.4 * f.soundDevKhz, "%s: sound deviation %.1f kHz", s.name, t.soundDevKhz);
         if (r.frame) {
             double worst;

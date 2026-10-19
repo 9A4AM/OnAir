@@ -24,7 +24,7 @@ static bool nearBy(double a, double b, double tol = 1.0) { return std::fabs(a - 
 // channel `n` of a numbered raster band is at `hz`
 static void ch(const Band* b, int n, double hz, const char* what) {
     double c = 0;
-    if (!b || !b->channelCentre(n, c) || !near(c, hz)) { failures++; std::printf("FAIL: %s ch %d expected %.3f MHz, got %.3f\n", what, n, hz / 1e6, c / 1e6); }
+    if (!b || !b->channelCentre(n, c) || !nearBy(c, hz)) { failures++; std::printf("FAIL: %s ch %d expected %.3f MHz, got %.3f\n", what, n, hz / 1e6, c / 1e6); }
 }
 static uint32_t rng = 12345;
 static uint32_t rnd() { rng = rng * 1664525u + 1013904223u; return rng >> 8; }
@@ -66,12 +66,12 @@ int main() {
       ch(fm, 200, 87.9e6, "us fm"); ch(fm, 300, 107.9e6, "us fm");
       CHECK(fm && fm->count() == 101, "US FM has channels 200-300");
       const Band* mw = B(p, "am", "MW");
-      CHECK(mw && mw->count() == 117 && near(mw->list().front().centreHz, 540e3) && near(mw->list().back().centreHz, 1700e3), "US MW 540-1700 kHz, 10 kHz");
+      CHECK(mw && mw->count() == 117 && nearBy(mw->list().front().centreHz, 540e3) && nearBy(mw->list().back().centreHz, 1700e3), "US MW 540-1700 kHz, 10 kHz");
       CHECK(!p->bandsFor("tv", "ATSC").empty() && p->bandsFor("tv", "DVB-T2").empty(), "US TV bands are ATSC, not DVB-T2"); }
     { const Plan* p = P(reg, "jp");
       ch(B(p, "tv", "UHF TV"), 13, 473142857, "jp"); ch(B(p, "tv", "UHF TV"), 52, 707142857, "jp");
       const Band* fm = B(p, "fm", "FM broadcast");
-      CHECK(fm && near(fm->startHz, 76e6) && near(fm->endHz, 95e6), "Japan FM is 76-95 MHz"); }
+      CHECK(fm && nearBy(fm->startHz, 76e6) && nearBy(fm->endHz, 95e6), "Japan FM is 76-95 MHz"); }
     { const Plan* p = P(reg, "br");
       ch(B(p, "tv", "VHF TV"), 7, 177142857, "br"); ch(B(p, "tv", "UHF TV"), 14, 473142857, "br"); ch(B(p, "tv", "UHF TV"), 51, 695142857, "br"); }
     { const Plan* p = P(reg, "au");
@@ -89,8 +89,8 @@ int main() {
         if (b.channels.empty() && b.stepHz > 0 && b.count() > 0 && b.count() < 5000) {
             for (const Channel& c : b.list()) {
                 Channel back;
-                if (!b.channelAt(c.centreHz, back) || !near(back.centreHz, c.centreHz, 0.01) || back.number != c.number) { failures++; std::printf("FAIL: %s / %s channel %d does not map back\n", p.id.c_str(), b.name.c_str(), c.number); break; }
-                if (b.firstChannel >= 0) { double hz; if (!b.channelCentre(c.number, hz) || !near(hz, c.centreHz, 0.01)) { failures++; std::printf("FAIL: %s / %s number %d\n", p.id.c_str(), b.name.c_str(), c.number); break; } }
+                if (!b.channelAt(c.centreHz, back) || !nearBy(back.centreHz, c.centreHz, 0.01) || back.number != c.number) { failures++; std::printf("FAIL: %s / %s channel %d does not map back\n", p.id.c_str(), b.name.c_str(), c.number); break; }
+                if (b.firstChannel >= 0) { double hz; if (!b.channelCentre(c.number, hz) || !nearBy(hz, c.centreHz, 0.01)) { failures++; std::printf("FAIL: %s / %s number %d\n", p.id.c_str(), b.name.c_str(), c.number); break; } }
                 if (c.centreHz - b.bandwidthHz / 2 < b.startHz - 5 || c.centreHz + b.bandwidthHz / 2 > b.endHz + 5) { failures++; std::printf("FAIL: %s / %s channel %d sticks out of the band\n", p.id.c_str(), b.name.c_str(), c.number); break; }
             }
         }
@@ -102,11 +102,11 @@ int main() {
       Channel c;
       CHECK(dab && dab->count() == 41 && dab->channelAt(174.928e6, c) && c.label == "5A" && dab->channelAt(239.2e6, c) && c.label == "13F" && dab->channelAt(224.096e6, c) && c.label == "12N", "DAB band III 5A to 13F and the N blocks");
       const Band* mw = B(p, "am", "MW");
-      CHECK(mw && mw->count() == 120 && near(mw->list().front().centreHz, 531e3) && near(mw->list().back().centreHz, 1602e3), "MW 531-1602 kHz, 9 kHz");
+      CHECK(mw && mw->count() == 120 && nearBy(mw->list().front().centreHz, 531e3) && nearBy(mw->list().back().centreHz, 1602e3), "MW 531-1602 kHz, 9 kHz");
       const Band* lw = B(p, "am", "LW");
       CHECK(lw && lw->channelAt(198e3, c) && lw->channelAt(234e3, c), "LW 198 and 234 kHz are on the 9 kHz raster");
       const Band* a25 = B(p, "air", "Airband 25 kHz");
-      CHECK(a25 && a25->count() == 760 && near(a25->list().back().centreHz, 136.975e6), "airband 25 kHz: 118.000-136.975");
+      CHECK(a25 && a25->count() == 760 && nearBy(a25->list().back().centreHz, 136.975e6), "airband 25 kHz: 118.000-136.975");
       const Band* a833 = B(p, "air", "Airband 8.33 kHz");
       CHECK(a833 && a833->count() == 2278, "airband 8.33 kHz has 2278 channels (%d)", a833 ? a833->count() : 0);
       const Band* pm = B(p, "pmr", "PMR446 analogue");
@@ -119,10 +119,10 @@ int main() {
       const Band* ais = B(p, "marine", "AIS");
       CHECK(ais && ais->count() == 2 && ais->channelAt(162.025e6, c) && c.label.find("AIS 2") == 0, "AIS 2 is on 162.025 MHz");
       const Band* h20 = B(p, "ham", "20 m");
-      CHECK(h20 && h20->count() == 0 && h20->contains(14.2e6) && near(h20->startHz, 14e6) && near(h20->endHz, 14.35e6), "20 m is a plain range 14.000-14.350");
+      CHECK(h20 && h20->count() == 0 && h20->contains(14.2e6) && nearBy(h20->startHz, 14e6) && nearBy(h20->endHz, 14.35e6), "20 m is a plain range 14.000-14.350");
       const Band* h2 = B(p, "ham", "2 m");
-      CHECK(h2 && near(h2->endHz, 146e6), "Region 1 2 m ends at 146 MHz");
-      CHECK(near(B(P(reg, "us"), "ham", "2 m")->endHz, 148e6) && near(B(P(reg, "au"), "ham", "40 m")->endHz, 7.3e6), "Region 2 / Australia limits"); }
+      CHECK(h2 && nearBy(h2->endHz, 146e6), "Region 1 2 m ends at 146 MHz");
+      CHECK(nearBy(B(P(reg, "us"), "ham", "2 m")->endHz, 148e6) && nearBy(B(P(reg, "au"), "ham", "40 m")->endHz, 7.3e6), "Region 2 / Australia limits"); }
 
     // ---- defaults from the language and locale
     CHECK(reg.defaultFor("de", "") == "de" && reg.defaultFor("lt", "en_US.UTF-8") == "lt" && reg.defaultFor("ja", "") == "jp" && reg.defaultFor("zh", "") == "cn", "language picks a plan");
@@ -164,7 +164,7 @@ int main() {
     { Plan p; std::string err;   // a handwritten CSV in MHz / kHz with a quoted name and a comment
       const char* csv = "# name: My town\n# country: de; at\n# source: my notes\nband,service,start_mhz,end_mhz,step_khz,bw_khz,first_channel,first_centre_mhz,modes\n\"Local, FM\",fm,87.5,108,100,,,87.5,FM\nUHF,tv,470,694,8000,8000,21,474,DVB-T2;DVB-T\n";
       CHECK(parseCsv(csv, p, err), "handwritten CSV: %s", err.c_str());
-      CHECK(p.name == "My town" && p.countries.size() == 2 && p.countries[1] == "AT" && p.bands.size() == 2 && p.bands[0].name == "Local, FM" && near(p.bands[1].stepHz, 8e6) && p.bands[1].modes.size() == 2, "handwritten CSV fields");
+      CHECK(p.name == "My town" && p.countries.size() == 2 && p.countries[1] == "AT" && p.bands.size() == 2 && p.bands[0].name == "Local, FM" && nearBy(p.bands[1].stepHz, 8e6) && p.bands[1].modes.size() == 2, "handwritten CSV fields");
       ch(&p.bands[1], 22, 482e6, "csv"); }
 
     // ---- the user's registry

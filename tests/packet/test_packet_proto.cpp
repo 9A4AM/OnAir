@@ -105,30 +105,30 @@ static void testAprs() {
     bool ok;
     // APRS101 chapter 8 example: uncompressed position without timestamp
     aprs::Info a = P("APRS", "!4903.50N/07201.75W-Test 001234", &ok);
-    CHECK(ok && a.type == "Position" && a.hasPos && near(a.lat, 49.058333, 1e-5) && near(a.lon, -72.029167, 1e-5) && a.symTable == '/' && a.symCode == '-' && a.comment == "Test 001234",
+    CHECK(ok && a.type == "Position" && a.hasPos && nearBy(a.lat, 49.058333, 1e-5) && nearBy(a.lon, -72.029167, 1e-5) && a.symTable == '/' && a.symCode == '-' && a.comment == "Test 001234",
           "uncompressed %.5f %.5f '%s'", a.lat, a.lon, a.comment.c_str());
     // with a time stamp, messaging, course/speed and altitude
     a = P("APRS", "@092345z4903.50N/07201.75W>088/036/A=001234mobile", &ok);
-    CHECK(ok && a.hasPos && a.hasCourse && a.courseDeg == 88 && a.hasSpeed && near(a.speedKnots, 36, 1e-9) && a.hasAlt && near(a.altM, 1234 * 0.3048, 0.01) && a.symCode == '>', "timestamp position");
+    CHECK(ok && a.hasPos && a.hasCourse && a.courseDeg == 88 && a.hasSpeed && nearBy(a.speedKnots, 36, 1e-9) && a.hasAlt && nearBy(a.altM, 1234 * 0.3048, 0.01) && a.symCode == '>', "timestamp position");
     // position ambiguity: spaces count as zero
     a = P("APRS", "!49  .  N/072  .  W-", &ok);
-    CHECK(ok && near(a.lat, 49.0, 1e-6) && near(a.lon, -72.0, 1e-6), "ambiguity");
+    CHECK(ok && nearBy(a.lat, 49.0, 1e-6) && nearBy(a.lon, -72.0, 1e-6), "ambiguity");
     // APRS101 chapter 9 compressed example: 49 30 N, 72 45 W, 88 degrees, 36.2 knots
     a = P("APRS", "=/5L!!<*e7>7P[", &ok);
-    CHECK(ok && a.hasPos && near(a.lat, 49.5, 1e-3) && near(a.lon, -72.75, 1e-3) && a.symTable == '/' && a.symCode == '>', "compressed pos %.4f %.4f", a.lat, a.lon);
-    CHECK(a.hasCourse && a.courseDeg == 88 && a.hasSpeed && near(a.speedKnots, 36.2, 0.1), "compressed course %d speed %.2f", a.courseDeg, a.speedKnots);
+    CHECK(ok && a.hasPos && nearBy(a.lat, 49.5, 1e-3) && nearBy(a.lon, -72.75, 1e-3) && a.symTable == '/' && a.symCode == '>', "compressed pos %.4f %.4f", a.lat, a.lon);
+    CHECK(a.hasCourse && a.courseDeg == 88 && a.hasSpeed && nearBy(a.speedKnots, 36.2, 0.1), "compressed course %d speed %.2f", a.courseDeg, a.speedKnots);
     // Mic-E, a packet from Dire Wolf's notes: N1JDU-9>ECCU8Y: lat 42 25.89 N, lon 071 02.99 W, speed 0, course 344, symbol />
     a = P("ECCU8Y", std::string("'cZ\x7f") + "l#H>/]Go fly a kite!", &ok);
-    CHECK(ok && a.type == "Mic-E" && near(a.lat, 42 + 25.89 / 60, 1e-4) && near(a.lon, -(71 + 2.99 / 60), 1e-4), "mic-e position %.5f %.5f", a.lat, a.lon);
-    CHECK(a.hasSpeed && near(a.speedKnots, 0, 1e-9) && a.hasCourse && a.courseDeg == 344 && a.symCode == '>' && a.symTable == '/', "mic-e speed %.1f course %d sym %c%c", a.speedKnots, a.courseDeg, a.symTable, a.symCode);
+    CHECK(ok && a.type == "Mic-E" && nearBy(a.lat, 42 + 25.89 / 60, 1e-4) && nearBy(a.lon, -(71 + 2.99 / 60), 1e-4), "mic-e position %.5f %.5f", a.lat, a.lon);
+    CHECK(a.hasSpeed && nearBy(a.speedKnots, 0, 1e-9) && a.hasCourse && a.courseDeg == 344 && a.symCode == '>' && a.symTable == '/', "mic-e speed %.1f course %d sym %c%c", a.speedKnots, a.courseDeg, a.symTable, a.symCode);
     // Mic-E south and east with a message code in the first three letters ("En Route" = P P 0), and an altitude
     a = P("RU2305", std::string("`") + (char)(55 + 28) + (char)(18 + 28) + (char)(27 + 28) + (char)(1 + 28) + (char)(2 + 28) + (char)(47 + 28) + std::string(">/\"xT}hi"), &ok);
-    CHECK(ok && a.hasPos && near(a.lat, -(25 + 23.05 / 60), 1e-4) && near(a.lon, 55 + 18.27 / 60, 1e-4), "mic-e hemispheres %.4f %.4f", a.lat, a.lon);
-    CHECK(a.hasAlt && near(a.altM, 6249, 0.5) && a.comment == "hi" && a.hasSpeed && near(a.speedKnots, 10, 1e-9) && a.courseDeg == 247, "mic-e altitude %.0f '%s'", a.altM, a.comment.c_str());
+    CHECK(ok && a.hasPos && nearBy(a.lat, -(25 + 23.05 / 60), 1e-4) && nearBy(a.lon, 55 + 18.27 / 60, 1e-4), "mic-e hemispheres %.4f %.4f", a.lat, a.lon);
+    CHECK(a.hasAlt && nearBy(a.altM, 6249, 0.5) && a.comment == "hi" && a.hasSpeed && nearBy(a.speedKnots, 10, 1e-9) && a.courseDeg == 247, "mic-e altitude %.0f '%s'", a.altM, a.comment.c_str());
     CHECK(a.micEStatus == "En Route", "mic-e status '%s'", a.micEStatus.c_str());
     // object
     a = P("APRS", ";LEADER   *092345z4903.50N/07201.75W>088/036", &ok);
-    CHECK(ok && a.type == "Object" && a.name == "LEADER" && a.live && near(a.lat, 49.058333, 1e-5) && a.hasSpeed, "object '%s'", a.name.c_str());
+    CHECK(ok && a.type == "Object" && a.name == "LEADER" && a.live && nearBy(a.lat, 49.058333, 1e-5) && a.hasSpeed, "object '%s'", a.name.c_str());
     a = P("APRS", ")AID #2!4903.50N/07201.75WA", &ok);
     CHECK(ok && a.type == "Item" && a.name == "AID #2" && a.live && a.symCode == 'A', "item '%s'", a.name.c_str());
     // message, with number; ack
@@ -141,11 +141,11 @@ static void testAprs() {
     CHECK(ok && a.type == "Status" && a.text == "Net Control Center", "status");
     // APRS101 chapter 12 weather examples: positionless, and with a position
     a = P("APRS", "_10090556c220s004g005t077r000p000P000h50b09900wRSW", &ok);
-    CHECK(ok && a.type == "Weather" && a.hasWx && near(a.wx.windDirDeg, 220, 1e-9) && near(a.wx.windMph, 4, 1e-9) && near(a.wx.gustMph, 5, 1e-9) && near(a.wx.tempF, 77, 1e-9)
-          && near(a.wx.humidityPct, 50, 1e-9) && near(a.wx.pressureMbar, 990.0, 1e-9), "positionless weather");
+    CHECK(ok && a.type == "Weather" && a.hasWx && nearBy(a.wx.windDirDeg, 220, 1e-9) && nearBy(a.wx.windMph, 4, 1e-9) && nearBy(a.wx.gustMph, 5, 1e-9) && nearBy(a.wx.tempF, 77, 1e-9)
+          && nearBy(a.wx.humidityPct, 50, 1e-9) && nearBy(a.wx.pressureMbar, 990.0, 1e-9), "positionless weather");
     a = P("APRS", "@092345z4903.50N/07201.75W_220/004g005t-07r001p002P003h00b10132", &ok);
-    CHECK(ok && a.type == "Weather" && near(a.wx.tempF, -7, 1e-9) && near(a.wx.humidityPct, 100, 1e-9) && near(a.wx.rain1hIn, 0.01, 1e-9) && near(a.wx.rain24hIn, 0.02, 1e-9)
-          && near(a.wx.rainMidnightIn, 0.03, 1e-9) && near(a.wx.pressureMbar, 1013.2, 1e-9) && near(a.wx.windMph, 4, 1e-9), "weather with position");
+    CHECK(ok && a.type == "Weather" && nearBy(a.wx.tempF, -7, 1e-9) && nearBy(a.wx.humidityPct, 100, 1e-9) && nearBy(a.wx.rain1hIn, 0.01, 1e-9) && nearBy(a.wx.rain24hIn, 0.02, 1e-9)
+          && nearBy(a.wx.rainMidnightIn, 0.03, 1e-9) && nearBy(a.wx.pressureMbar, 1013.2, 1e-9) && nearBy(a.wx.windMph, 4, 1e-9), "weather with position");
     // telemetry is shown raw
     a = P("APRS", "T#005,199,000,255,073,123,01101001", &ok);
     CHECK(ok && a.type == "Telemetry" && a.text.rfind("005,199", 0) == 0, "telemetry");

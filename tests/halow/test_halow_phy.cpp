@@ -52,11 +52,11 @@ int main() {
         CHECK(nz == wi.nUsed && lf[0] == 0.f, "LTF %d MHz tones %d of %d", 1 << w, nz, wi.nUsed);
     }
     // the published S1G data rates (long GI, one spatial stream), Mbit/s: 1 MHz 0.3 .. 4.0 and MCS 10 0.15; 2 MHz 0.65 .. 7.8; 4 MHz 1.35 .. 18; 8 MHz 2.925 .. 39; 16 MHz 5.85 .. 78
-    CHECK(near(dataRateMbps(W1, 0, 1, false), 0.30) && near(dataRateMbps(W1, 10, 1, false), 0.15) && near(dataRateMbps(W1, 9, 1, false), 4.0), "1 MHz rates");
-    CHECK(near(dataRateMbps(W2, 0, 1, false), 0.65) && near(dataRateMbps(W2, 1, 1, false), 1.3) && near(dataRateMbps(W2, 8, 1, false), 7.8), "2 MHz rates");
-    CHECK(near(dataRateMbps(W4, 0, 1, false), 1.35) && near(dataRateMbps(W4, 4, 1, false), 8.1) && near(dataRateMbps(W4, 9, 1, false), 18.0), "4 MHz rates");
-    CHECK(near(dataRateMbps(W8, 0, 1, false), 2.925) && near(dataRateMbps(W8, 7, 1, false), 29.25) && near(dataRateMbps(W8, 9, 1, false), 39.0), "8 MHz rates");
-    CHECK(near(dataRateMbps(W16, 0, 1, false), 5.85) && near(dataRateMbps(W16, 9, 1, false), 78.0) && near(dataRateMbps(W16, 9, 1, true), 86.667) && near(dataRateMbps(W16, 9, 4, true), 346.667), "16 MHz rates");
+    CHECK(nearBy(dataRateMbps(W1, 0, 1, false), 0.30) && nearBy(dataRateMbps(W1, 10, 1, false), 0.15) && nearBy(dataRateMbps(W1, 9, 1, false), 4.0), "1 MHz rates");
+    CHECK(nearBy(dataRateMbps(W2, 0, 1, false), 0.65) && nearBy(dataRateMbps(W2, 1, 1, false), 1.3) && nearBy(dataRateMbps(W2, 8, 1, false), 7.8), "2 MHz rates");
+    CHECK(nearBy(dataRateMbps(W4, 0, 1, false), 1.35) && nearBy(dataRateMbps(W4, 4, 1, false), 8.1) && nearBy(dataRateMbps(W4, 9, 1, false), 18.0), "4 MHz rates");
+    CHECK(nearBy(dataRateMbps(W8, 0, 1, false), 2.925) && nearBy(dataRateMbps(W8, 7, 1, false), 29.25) && nearBy(dataRateMbps(W8, 9, 1, false), 39.0), "8 MHz rates");
+    CHECK(nearBy(dataRateMbps(W16, 0, 1, false), 5.85) && nearBy(dataRateMbps(W16, 9, 1, false), 78.0) && nearBy(dataRateMbps(W16, 9, 1, true), 86.667) && nearBy(dataRateMbps(W16, 9, 4, true), 346.667), "16 MHz rates");
     // valid MCS: 2 MHz MCS 9 only with 3 streams, 1 MHz MCS 10 only at 1 MHz, MCS 10 never above
     CHECK(!mcsValid(W2, 9, 1) && !mcsValid(W2, 9, 2) && mcsValid(W2, 9, 3) && !mcsValid(W2, 9, 4), "2 MHz MCS 9");
     CHECK(mcsValid(W1, 10, 1) && !mcsValid(W2, 10, 1) && !mcsValid(W16, 10, 1) && !mcsValid(W4, 11, 1) && !mcsValid(W4, -1, 1), "MCS 10");
@@ -69,21 +69,21 @@ int main() {
     {
         const uint8_t a[4] = {0, 0, 0, 0}, b[4] = {1, 0, 0, 1}, c[4] = {1, 1, 0, 1};
         const float k10 = 1.f / std::sqrt(10.f);
-        CHECK(near(mapQam(a, 4).real(), -3 * k10, 1e-5) && near(mapQam(a, 4).imag(), -3 * k10, 1e-5), "16-QAM 0000");
-        CHECK(near(mapQam(b, 4).real(), 3 * k10, 1e-5) && near(mapQam(b, 4).imag(), -1 * k10, 1e-5), "16-QAM 1001");
-        CHECK(near(mapQam(c, 4).real(), 1 * k10, 1e-5) && near(mapQam(c, 4).imag(), -1 * k10, 1e-5), "16-QAM 1101");
+        CHECK(nearBy(mapQam(a, 4).real(), -3 * k10, 1e-5) && nearBy(mapQam(a, 4).imag(), -3 * k10, 1e-5), "16-QAM 0000");
+        CHECK(nearBy(mapQam(b, 4).real(), 3 * k10, 1e-5) && nearBy(mapQam(b, 4).imag(), -1 * k10, 1e-5), "16-QAM 1001");
+        CHECK(nearBy(mapQam(c, 4).real(), 1 * k10, 1e-5) && nearBy(mapQam(c, 4).imag(), -1 * k10, 1e-5), "16-QAM 1101");
         const uint8_t d[6] = {0, 1, 1, 1, 0, 0}, e[6] = {1, 0, 0, 0, 0, 0};
         const float k42 = 1.f / std::sqrt(42.f);
-        CHECK(near(mapQam(d, 6).real(), -3 * k42, 1e-5) && near(mapQam(d, 6).imag(), 7 * k42, 1e-5), "64-QAM 011 100");
-        CHECK(near(mapQam(e, 6).real(), 7 * k42, 1e-5) && near(mapQam(e, 6).imag(), -7 * k42, 1e-5), "64-QAM 100 000");
+        CHECK(nearBy(mapQam(d, 6).real(), -3 * k42, 1e-5) && nearBy(mapQam(d, 6).imag(), 7 * k42, 1e-5), "64-QAM 011 100");
+        CHECK(nearBy(mapQam(e, 6).real(), 7 * k42, 1e-5) && nearBy(mapQam(e, 6).imag(), -7 * k42, 1e-5), "64-QAM 100 000");
         const uint8_t f[8] = {1, 0, 0, 0, 0, 0, 0, 0};
-        CHECK(near(mapQam(f, 8).real(), 15 / std::sqrt(170.f), 1e-5) && near(mapQam(f, 8).imag(), -15 / std::sqrt(170.f), 1e-5), "256-QAM corner");
+        CHECK(nearBy(mapQam(f, 8).real(), 15 / std::sqrt(170.f), 1e-5) && nearBy(mapQam(f, 8).imag(), -15 / std::sqrt(170.f), 1e-5), "256-QAM corner");
         // unit average power of every constellation
         for (int nb : {1, 2, 4, 6, 8}) {
             double p = 0;
             const int n = 1 << nb;
             for (int v = 0; v < n; v++) { uint8_t bt[8]; for (int i = 0; i < nb; i++) bt[i] = (uint8_t)(v >> (nb - 1 - i) & 1); p += std::norm(mapQam(bt, nb)); }
-            CHECK(near(p / n, 1.0, 1e-4), "constellation power %d bits: %.4f", nb, p / n);
+            CHECK(nearBy(p / n, 1.0, 1e-4), "constellation power %d bits: %.4f", nb, p / n);
         }
         // the soft demapper agrees with the mapper for every symbol of every constellation, with noise-free input
         for (int nb : {1, 2, 4, 6, 8}) {
@@ -186,7 +186,7 @@ int main() {
         const double pre = w == W1 ? 560.0 : 240.0;
         const double total = (double)ppduSamples(s) / fs * 1e6;
         const double nd = dataSymbols(w, 0, 1);
-        CHECK(near(total, pre + nd * 40.0, 0.01), "%d MHz: %.2f us, preamble %.0f + %g symbols", 1 << w, total, pre, nd);
+        CHECK(nearBy(total, pre + nd * 40.0, 0.01), "%d MHz: %.2f us, preamble %.0f + %g symbols", 1 << w, total, pre, nd);
     }
     return testSummary("halow phy");
 }

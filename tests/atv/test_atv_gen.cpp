@@ -80,9 +80,9 @@ static void checkTiming(const AtvFormat& f, const std::vector<float>& v, const c
     }
     printf("%s: %zu pulses: line %d (mean %.3f us), equalising %d (%.3f us), broad %d (%.3f us)\n", tag, pulses.size(), nLine, sumLine / std::max(1, nLine), nEq, sumEq / std::max(1, nEq), nBroad, sumBroad / std::max(1, nBroad));
     (void)sumGapB;
-    CHECK(near(sumLine / nLine, f.syncUs, 0.03), "%s: line sync width %.3f us, expected %.2f", tag, sumLine / nLine, f.syncUs);
-    CHECK(near(sumEq / nEq, f.eqUs, 0.05), "%s: equalising pulse %.3f us, expected %.2f", tag, sumEq / nEq, f.eqUs);
-    CHECK(near(sumBroad / nBroad, f.broadUs, 0.05), "%s: field sync pulse %.3f us, expected %.2f", tag, sumBroad / nBroad, f.broadUs);
+    CHECK(nearBy(sumLine / nLine, f.syncUs, 0.03), "%s: line sync width %.3f us, expected %.2f", tag, sumLine / nLine, f.syncUs);
+    CHECK(nearBy(sumEq / nEq, f.eqUs, 0.05), "%s: equalising pulse %.3f us, expected %.2f", tag, sumEq / nEq, f.eqUs);
+    CHECK(nearBy(sumBroad / nBroad, f.broadUs, 0.05), "%s: field sync pulse %.3f us, expected %.2f", tag, sumBroad / nBroad, f.broadUs);
     // pulse counts in two frames (the second one is complete): eq pulses 4 x eq, broad 2 x eq a frame
     // line period: consecutive regular pulses
     std::vector<double> iv;
@@ -94,18 +94,18 @@ static void checkTiming(const AtvFormat& f, const std::vector<float>& v, const c
     const double mean = std::accumulate(iv.begin(), iv.end(), 0.0) / iv.size();
     double dev = 0;
     for (double d : iv) dev = std::max(dev, std::fabs(d - mean));
-    CHECK(near(mean, f.lineUs, 0.0005) && dev < 0.01, "%s: line period %.5f us (max deviation %.4f), expected %.5f", tag, mean, dev, f.lineUs);
+    CHECK(nearBy(mean, f.lineUs, 0.0005) && dev < 0.01, "%s: line period %.5f us (max deviation %.4f), expected %.5f", tag, mean, dev, f.lineUs);
     // field sync: the start of each group of broad pulses; spacing between fields and where it falls on the line grid
     std::vector<double> broadStarts;
     for (size_t i = 0; i < pulses.size(); i++) if (pulses[i].widthUs > 20 && (broadStarts.empty() || pulses[i].startUs - broadStarts.back() > 5 * f.lineUs)) broadStarts.push_back(pulses[i].startUs);
     CHECK(broadStarts.size() >= 4, "%s: %zu field syncs found", tag, broadStarts.size());
     // (the first pulse of the first block starts at t = 0, before the first sample, and is not seen)
     for (size_t i = 2; i < broadStarts.size(); i++)
-        CHECK(near(broadStarts[i] - broadStarts[i - 1], f.lineUs * f.lines / 2, 0.01), "%s: fields %.3f us apart, expected %.3f", tag, broadStarts[i] - broadStarts[i - 1], f.lineUs * f.lines / 2);
+        CHECK(nearBy(broadStarts[i] - broadStarts[i - 1], f.lineUs * f.lines / 2, 0.01), "%s: fields %.3f us apart, expected %.3f", tag, broadStarts[i] - broadStarts[i - 1], f.lineUs * f.lines / 2);
     // level of the sync tip and of blanking
     const double lvl0 = lineStarts[lineStarts.size() / 2];
-    CHECK(near(meanBetween(v, lvl0 + 1.5, lvl0 + 3.2), f.syncLevel, 0.002), "%s: sync tip %.4f, expected %.4f", tag, meanBetween(v, lvl0 + 1.5, lvl0 + 3.2), f.syncLevel);
-    CHECK(near(meanBetween(v, lvl0 - 1.0, lvl0 - 0.4), 0.0, 0.002), "%s: front porch level %.4f", tag, meanBetween(v, lvl0 - 1.0, lvl0 - 0.4));
+    CHECK(nearBy(meanBetween(v, lvl0 + 1.5, lvl0 + 3.2), f.syncLevel, 0.002), "%s: sync tip %.4f, expected %.4f", tag, meanBetween(v, lvl0 + 1.5, lvl0 + 3.2), f.syncLevel);
+    CHECK(nearBy(meanBetween(v, lvl0 - 1.0, lvl0 - 0.4), 0.0, 0.002), "%s: front porch level %.4f", tag, meanBetween(v, lvl0 - 1.0, lvl0 - 0.4));
 }
 
 // sample index of the start of a line (1 based, in frame 0)
@@ -145,10 +145,10 @@ static void checkColour(const AtvFormat& f, const std::vector<float>& v, const A
         const double bamp = std::hypot(bu, bv);
         if (f.pal) {
             CHECK(std::fabs(std::fabs(th) - 135) < 6, "%s line %d: burst phase %.1f degrees, expected +-135", tag, line, th);
-            CHECK(near(bamp, f.burstAmp, 0.15 * f.burstAmp), "%s line %d: burst amplitude %.4f, expected %.4f", tag, line, bamp, f.burstAmp);
+            CHECK(nearBy(bamp, f.burstAmp, 0.15 * f.burstAmp), "%s line %d: burst amplitude %.4f, expected %.4f", tag, line, bamp, f.burstAmp);
         } else {
             CHECK(std::fabs(std::fabs(th) - 180) < 6, "%s line %d: burst phase %.1f degrees, expected 180", tag, line, th);
-            CHECK(near(bamp, f.burstAmp, 0.15 * f.burstAmp), "%s line %d: burst amplitude %.4f, expected %.4f", tag, line, bamp, f.burstAmp);
+            CHECK(nearBy(bamp, f.burstAmp, 0.15 * f.burstAmp), "%s line %d: burst amplitude %.4f, expected %.4f", tag, line, bamp, f.burstAmp);
         }
         const int vsign = f.pal ? (th > 0 ? 1 : -1) : 1;                // the burst carries the sign of V (Table 2 item 2.9)
         // the bars
@@ -161,8 +161,8 @@ static void checkColour(const AtvFormat& f, const std::vector<float>& v, const A
             double su, sv, sm;
             subcarrier(v, f.fscHz, t0, t1, su, sv, sm);
             const double sc = 1 - f.setup;
-            CHECK(near(sm, f.setup + sc * y, 0.012), "%s line %d bar %d: luminance %.4f, expected %.4f", tag, line, i, sm, f.setup + sc * y);
-            CHECK(near(su, sc * u, 0.02) && near(sv * vsign, sc * vv, 0.02), "%s line %d bar %d: chroma U %.3f V %.3f, expected %.3f %.3f (V sign %d)", tag, line, i, su, sv, sc * u, sc * vv, vsign);
+            CHECK(nearBy(sm, f.setup + sc * y, 0.012), "%s line %d bar %d: luminance %.4f, expected %.4f", tag, line, i, sm, f.setup + sc * y);
+            CHECK(nearBy(su, sc * u, 0.02) && nearBy(sv * vsign, sc * vv, 0.02), "%s line %d bar %d: chroma U %.3f V %.3f, expected %.3f %.3f (V sign %d)", tag, line, i, su, sv, sc * u, sc * vv, vsign);
             if (nearBy(sv * vsign, sc * vv, 0.02)) signOk++; else signBad++;
         }
         tested++;
@@ -250,9 +250,9 @@ static void checkSecam(int sys, int ident, const char* tag) {
             CHECK(am < 0.01, "%s line %d: chroma %.4f on the back porch with the lines not identified", tag, line, am);
         } else {
             const double f0 = isR ? kSecamF0R : kSecamF0B;
-            CHECK(near(fr, f0, 15e3), "%s line %d (%s): lead-in at %.0f Hz, expected %.0f", tag, line, isR ? "D'R" : "D'B", fr, f0);
+            CHECK(nearBy(fr, f0, 15e3), "%s line %d (%s): lead-in at %.0f Hz, expected %.0f", tag, line, isR ? "D'R" : "D'B", fr, f0);
             const double expAmp = kSecamM0 * std::abs(atvSecamHfPreEmph(f0));
-            CHECK(near(am, expAmp, 0.12 * expAmp), "%s line %d: lead-in amplitude %.4f, expected %.4f (M0 times the anti-bell at the rest frequency)", tag, line, am, expAmp);
+            CHECK(nearBy(am, expAmp, 0.12 * expAmp), "%s line %d: lead-in amplitude %.4f, expected %.4f (M0 times the anti-bell at the rest frequency)", tag, line, am, expAmp);
         }
         // before 5.6 us (the sync pulse and the front of the back porch) and after the active line: no subcarrier (item 2.17: blanked)
         double f2, a2;
@@ -271,8 +271,8 @@ static void checkSecam(int sys, int ident, const char* tag) {
             secamTone(v, t0, t1, fm, ab);
             const double expAmp = kSecamM0 * std::abs(atvSecamHfPreEmph(fexp));
             if (!nearBy(fm, fexp, 20e3)) bad++;
-            CHECK(near(fm, fexp, 20e3), "%s line %d bar %d (%s): subcarrier %.0f Hz, expected %.0f (D' = %.3f)", tag, line, i, isR ? "D'R" : "D'B", fm, fexp, D);
-            CHECK(near(ab, expAmp, 0.15 * expAmp + 0.004), "%s line %d bar %d: amplitude %.4f, expected %.4f", tag, line, i, ab, expAmp);
+            CHECK(nearBy(fm, fexp, 20e3), "%s line %d bar %d (%s): subcarrier %.0f Hz, expected %.0f (D' = %.3f)", tag, line, i, isR ? "D'R" : "D'B", fm, fexp, D);
+            CHECK(nearBy(ab, expAmp, 0.15 * expAmp + 0.004), "%s line %d bar %d: amplitude %.4f, expected %.4f", tag, line, i, ab, expAmp);
         }
         if (isR) nR++; else nB++;
         if (nR + nB <= 2) printf("%s line %d (%s): lead-in %.0f Hz amplitude %.4f\n", tag, line, isR ? "D'R" : "D'B", fr, am);
@@ -287,7 +287,7 @@ static void checkSecam(int sys, int ident, const char* tag) {
         secamTone(v, ls + 40, ls + 55, fr, am);
         if (bottle && ident != 1) {
             const double fexp = isR ? kSecamF0R + 350e3 : kSecamF0B - 350e3;
-            CHECK(near(fr, fexp, 15e3), "%s line %d (%s): identification signal ends at %.0f Hz, expected %.0f", tag, line, isR ? "D'R" : "D'B", fr, fexp);
+            CHECK(nearBy(fr, fexp, 15e3), "%s line %d (%s): identification signal ends at %.0f Hz, expected %.0f", tag, line, isR ? "D'R" : "D'B", fr, fexp);
             nb++;
         } else {
             CHECK(am < 0.012, "%s line %d: %.4f of subcarrier on a line of the field blanking without identification", tag, line, am);
@@ -320,7 +320,7 @@ int main() {
         const int row = by0 + 10, line = f.firstLine[row & 1] + (row >> 1);
         const double ls = lineStartUs(f, line), pxUs = f.activeUs / f.picW;
         const int xa = bx0 + (bx1 - bx0) * 7 / 8, xb = bx0 + (bx1 - bx0) * 8 / 8;
-        CHECK(near(meanBetween(v, ls + f.blankEndUs + (xa + 0.2 * (xb - xa)) * pxUs, ls + f.blankEndUs + (xa + 0.8 * (xb - xa)) * pxUs), 0.075, 0.004), "NTSC black bar at 7.5 IRE");
+        CHECK(nearBy(meanBetween(v, ls + f.blankEndUs + (xa + 0.2 * (xb - xa)) * pxUs, ls + f.blankEndUs + (xa + 0.8 * (xb - xa)) * pxUs), 0.075, 0.004), "NTSC black bar at 7.5 IRE");
     }
     // ---- other systems and colour options: they build, with the right numbers
     for (int sys : {kAtvB, kAtvI, kAtvDK, kAtvN}) {
@@ -365,7 +365,7 @@ int main() {
         std::sort(top.begin(), top.end());
         const double tip = top.empty() ? 0 : top[top.size() / 2];
         printf("ideal detector: sync tip %.4f (expected %.4f)\n", tip, 0.5 * c.level);
-        CHECK(near(tip, 0.5 * c.level, 0.004), "sync tip after the detector %.4f, expected %.4f", tip, 0.5 * c.level);
+        CHECK(nearBy(tip, 0.5 * c.level, 0.004), "sync tip after the detector %.4f, expected %.4f", tip, 0.5 * c.level);
         // the transmitted spectrum: the vestigial sideband is at least 20 dB down 1.5 MHz below the carrier (BT.470-6 Table 3 item 6: 20 dB at -1.25 MHz)
         Fft fft(n);
         std::vector<cf32> X = x;
@@ -388,7 +388,7 @@ int main() {
         const double aSound = std::sqrt(pSound / ((double)n * sw2));
         const double expect = c.level * std::pow(10.0, f.soundRelDb / 20);
         printf("sound carrier amplitude %.4f (expected %.4f)\n", aSound, expect);
-        CHECK(near(20 * std::log10(aSound / expect), 0, 0.7), "sound carrier level %.4f, expected %.4f", aSound, expect);
+        CHECK(nearBy(20 * std::log10(aSound / expect), 0, 0.7), "sound carrier level %.4f, expected %.4f", aSound, expect);
         // FM deviation: mix to zero, band-limit, differentiate the phase
         {
             std::vector<cf32> s(x.size());
@@ -412,7 +412,7 @@ int main() {
             const double g50 = std::sqrt(1 + std::pow(2 * M_PI * 1000 * f.preEmphUs * 1e-6, 2));
             const double expDev = f.soundDevKhz * 1e3 * 0.5 * g50;
             printf("sound deviation +%.0f / %.0f Hz (expected +-%.0f), carrier %.1f Hz off\n", devMax, devMin, expDev, mean);
-            CHECK(near(devMax, expDev, 0.06 * expDev) && near(-devMin, expDev, 0.06 * expDev), "FM deviation +%.0f / %.0f Hz, expected +-%.0f", devMax, devMin, expDev);
+            CHECK(nearBy(devMax, expDev, 0.06 * expDev) && nearBy(-devMin, expDev, 0.06 * expDev), "FM deviation +%.0f / %.0f Hz, expected +-%.0f", devMax, devMin, expDev);
             CHECK(std::fabs(mean) < 150, "sound carrier %.1f Hz off its place", mean);
         }
     }
@@ -434,7 +434,7 @@ int main() {
         const double p = bandPower(psd, 12e6, 3.9e6, 5.4e6) / ((double)n * sw2) / 1.5e6 * 5e6;      // mean power in 5 MHz
         const double cnr = 10 * std::log10(c.level * c.level / p);
         printf("noise: C/N measured %.2f dB, asked 25\n", cnr);
-        CHECK(near(cnr, 25, 0.5), "carrier-to-noise ratio %.2f dB, asked 25", cnr);
+        CHECK(nearBy(cnr, 25, 0.5), "carrier-to-noise ratio %.2f dB, asked 25", cnr);
     }
     // ---- carrier offset and clock error
     {
@@ -454,7 +454,7 @@ int main() {
         const double fpk = ((best < n / 2 ? best : best - n) + delta) * 10e6 / n;
         const double expect = (-2.75e6 + 7300) / (1 + 100e-6);
         printf("carrier at %.1f Hz, expected %.1f\n", fpk, expect);
-        CHECK(near(fpk, expect, 40), "carrier at %.1f Hz, expected %.1f", fpk, expect);
+        CHECK(nearBy(fpk, expect, 40), "carrier at %.1f Hz, expected %.1f", fpk, expect);
     }
     // ---- sample rates: the same signal at the rates a radio offers
     for (double rate : {8e6, 10e6, 12.5e6, 16e6, 20e6}) {

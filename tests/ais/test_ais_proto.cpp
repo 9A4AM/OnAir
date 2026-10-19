@@ -96,29 +96,29 @@ int main() {
         AisMsg m = dec({"!AIVDM,1,1,,A,15RTgt0PAso;90TKcjM8h6g208CQ,0*4A"});
         CHECK(m.valid && m.type == 1 && m.mmsi == 371798000 && m.navStatus == 0, "type 1 header");
         CHECK(m.hasRot && m.rotDegMin < -700, "rot -127");
-        CHECK(near(m.sog, 12.3, 1e-3) && near(m.lon, -123.395383333, 1e-6) && near(m.lat, 48.3816333333, 1e-6), "type 1 position %f %f %f", m.sog, m.lon, m.lat);
-        CHECK(near(m.cog, 224, 1e-3) && m.heading == 215 && m.second == 33 && m.cls == AIS_CLASS_A, "type 1 course");
+        CHECK(nearBy(m.sog, 12.3, 1e-3) && nearBy(m.lon, -123.395383333, 1e-6) && nearBy(m.lat, 48.3816333333, 1e-6), "type 1 position %f %f %f", m.sog, m.lon, m.lat);
+        CHECK(nearBy(m.cog, 224, 1e-3) && m.heading == 215 && m.second == 33 && m.cls == AIS_CLASS_A, "type 1 course");
         m = dec({"!AIVDM,1,1,,A,16SteH0P00Jt63hHaa6SagvJ087r,0*42"});
         CHECK(m.valid && m.type == 1 && m.mmsi == 440348000 && !m.hasRot && nearBy(m.sog, 0) && nearBy(m.lon, -42454920 / 600000.0, 1e-6) && nearBy(m.lat, 25848090 / 600000.0, 1e-6) &&
-              near(m.cog, 93.4, 1e-3) && m.heading == -1, "type 1 second sample");
+              nearBy(m.cog, 93.4, 1e-3) && m.heading == -1, "type 1 second sample");
         m = dec({"!AIVDM,1,1,,A,38Id705000rRVJhE7cl9n;160000,0*40"});
         CHECK(m.valid && m.type == 3 && m.mmsi == 563808000 && m.navStatus == 5 && nearBy(m.lon, -45796520 / 600000.0, 1e-6) && nearBy(m.lat, 22146000 / 600000.0, 1e-6) &&
-              near(m.cog, 252.0, 1e-3) && m.heading == 352 && m.second == 35, "type 3");
+              nearBy(m.cog, 252.0, 1e-3) && m.heading == 352 && m.second == 35, "type 3");
         m = dec({"!AIVDM,1,1,,B,25Cjtd0Oj;Jp7ilG7=UkKBoB0<06,0*60"});
-        CHECK(m.valid && m.type == 2 && m.mmsi == 356302000 && m.heading == 91 && near(m.sog, 13.9, 1e-3), "type 2");
+        CHECK(m.valid && m.type == 2 && m.mmsi == 356302000 && m.heading == 91 && nearBy(m.sog, 13.9, 1e-3), "type 2");
     }
     // ---- type 4
     {
         AisMsg m = dec({"!AIVDM,1,1,,A,403OviQuMGCqWrRO9>E6fE700@GO,0*4D"});
         CHECK(m.valid && m.type == 4 && m.mmsi == 3669702 && m.year == 2007 && m.month == 5 && m.day == 14 && m.hour == 19 && m.minute == 57 && m.sec == 39, "type 4 time");
-        CHECK(near(m.lon, -76.35236166667, 1e-6) && near(m.lat, 36.88376666667, 1e-6) && m.epfd == 7 && m.cls == AIS_CLASS_BASE, "type 4 position");
+        CHECK(nearBy(m.lon, -76.35236166667, 1e-6) && nearBy(m.lat, 36.88376666667, 1e-6) && m.epfd == 7 && m.cls == AIS_CLASS_BASE, "type 4 position");
     }
     // ---- type 5, two sentences
     {
         AisMsg m = dec({"!AIVDM,2,1,1,A,55?MbV02;H;s<HtKR20EHE:0@T4@Dn2222222216L961O5Gf0NSQEp6ClRp8,0*1C", "!AIVDM,2,2,1,A,88888888880,2*25"});
         CHECK(m.valid && m.type == 5 && m.mmsi == 351759000 && m.imo == 9134270 && m.callsign == "3FOF8" && m.name == "EVER DIADEM", "type 5 names: '%s' '%s'", m.callsign.c_str(), m.name.c_str());
         CHECK(m.shipType == 70 && m.dimA == 225 && m.dimB == 70 && m.dimC == 1 && m.dimD == 31 && m.epfd == 1, "type 5 dimensions");
-        CHECK(m.etaMonth == 5 && m.etaDay == 15 && m.etaHour == 14 && m.etaMin == 0 && near(m.draughtM, 12.2, 1e-3) && m.destination == "NEW YORK", "type 5 voyage: %s eta %d-%d %d:%d draught %f", m.destination.c_str(), m.etaMonth, m.etaDay, m.etaHour, m.etaMin, m.draughtM);
+        CHECK(m.etaMonth == 5 && m.etaDay == 15 && m.etaHour == 14 && m.etaMin == 0 && nearBy(m.draughtM, 12.2, 1e-3) && m.destination == "NEW YORK", "type 5 voyage: %s eta %d-%d %d:%d draught %f", m.destination.c_str(), m.etaMonth, m.etaDay, m.etaHour, m.etaMin, m.draughtM);
         m = dec({"!AIVDM,2,1,2,A,542M92h00001@<7;?G0PD4i@R0<tqA8tj37>220o0h:2240Ht500000000000000,0*3C", "!AIVDM,2,2,2,A,0000002,2*24"}, false);
         CHECK(m.valid && m.type == 5, "type 5 with 420 bits (a transmitter that leaves out the spare bits)");
     }
@@ -145,10 +145,10 @@ int main() {
     {
         AisMsg m = dec({"!AIVDM,1,1,,A,B52K>;h00Fc>jpUlNV@ikwpUoP06,0*4C"});
         CHECK(m.valid && m.type == 18 && m.mmsi == 338087471 && nearBy(m.sog, 0.1, 1e-3) && nearBy(m.lon, -74.0721316667, 1e-6) && nearBy(m.lat, 40.68454, 1e-6) &&
-              near(m.cog, 79.6, 1e-3) && m.heading == -1 && m.second == 49 && m.cls == AIS_CLASS_B, "type 18");
+              nearBy(m.cog, 79.6, 1e-3) && m.heading == -1 && m.second == 49 && m.cls == AIS_CLASS_B, "type 18");
         m = dec({"!AIVDM,1,1,,B,C5N3SRgPEnJGEBT>NhWAwwo862PaLELTBJ:V00000000S0D:R220,0*0B"});
         CHECK(m.valid && m.type == 19 && m.mmsi == 367059850 && nearBy(m.sog, 8.7, 1e-3) && nearBy(m.lon, -88.8103916667, 1e-6) && nearBy(m.lat, 29.543695, 1e-6) &&
-              near(m.cog, 335.9, 1e-3) && m.second == 46 && m.name == "CAPT.J.RIMES" && m.shipType == 70 && m.dimA == 5 && m.dimB == 21 && m.dimC == 4 && m.dimD == 4, "type 19: '%s'", m.name.c_str());
+              nearBy(m.cog, 335.9, 1e-3) && m.second == 46 && m.name == "CAPT.J.RIMES" && m.shipType == 70 && m.dimA == 5 && m.dimB == 21 && m.dimC == 4 && m.dimD == 4, "type 19: '%s'", m.name.c_str());
     }
     // ---- 21 with name extension
     {
@@ -170,9 +170,9 @@ int main() {
     // ---- 27, in the 96 bit and the 168 bit form
     {
         AisMsg m = dec({"!AIVDM,1,1,,A,KCQ9r=hrFUnH7P00,0*41"});
-        CHECK(m.valid && m.type == 27 && m.mmsi == 236091959 && m.navStatus == 3 && near(m.lon, -92521 / 600.0, 1e-9) && near(m.lat, 52239 / 600.0, 1e-9) && m.bits == 96, "type 27 (96 bits)");
+        CHECK(m.valid && m.type == 27 && m.mmsi == 236091959 && m.navStatus == 3 && nearBy(m.lon, -92521 / 600.0, 1e-9) && nearBy(m.lat, 52239 / 600.0, 1e-9) && m.bits == 96, "type 27 (96 bits)");
         m = dec({"!AIVDM,1,1,,B,KC5E2b@U19PFdLbMuc5=ROv62<7m,0*16"});
-        CHECK(m.valid && m.type == 27 && m.mmsi == 206914217 && m.navStatus == 2 && near(m.lon, 82214 / 600.0, 1e-9) && near(m.lat, 2904 / 600.0, 1e-9) && near(m.sog, 57) && near(m.cog, 167), "type 27 (168 bits)");
+        CHECK(m.valid && m.type == 27 && m.mmsi == 206914217 && m.navStatus == 2 && nearBy(m.lon, 82214 / 600.0, 1e-9) && nearBy(m.lat, 2904 / 600.0, 1e-9) && nearBy(m.sog, 57) && nearBy(m.cog, 167), "type 27 (168 bits)");
     }
     // ---- the rest: unknown types keep their header, a wrong length is refused
     {
@@ -188,7 +188,7 @@ int main() {
         Bits b; putU(b, 0, 6, 18); putU(b, 8, 30, 470123456); putS(b, 57, 28, (int32_t)(55.05 * 600000)); putS(b, 85, 27, (int32_t)(-25.0 * 600000));
         putU(b, 46, 10, 123); putU(b, 112, 12, 1234); putU(b, 124, 9, 511); putU(b, 133, 6, 17); b.resize(168, 0);
         AisMsg m;
-        CHECK(decodeMessage(b, m) && m.mmsi == 470123456 && near(m.lon, 55.05, 1e-5) && near(m.lat, -25.0, 1e-5) && near(m.sog, 12.3, 1e-3) && near(m.cog, 123.4, 1e-3), "built type 18");
+        CHECK(decodeMessage(b, m) && m.mmsi == 470123456 && nearBy(m.lon, 55.05, 1e-5) && nearBy(m.lat, -25.0, 1e-5) && nearBy(m.sog, 12.3, 1e-3) && nearBy(m.cog, 123.4, 1e-3), "built type 18");
         Bits t; putText(t, 0, 120, "Jebel Ali 1"); CHECK(getText(t, 0, 120) == "JEBEL ALI 1", "text round trip");
     }
     if (fails) { printf("%d checks failed\n", fails); return 1; }

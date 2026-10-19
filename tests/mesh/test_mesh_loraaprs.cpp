@@ -35,7 +35,7 @@ static void packetLayer() {
     auto r = aprsOf("A61AB-7>APLRT1,WIDE1-1:!2504.83N/05508.42E>Marina tracker 12.6V");
     CHECK(r.ok && r.hasAprs, "position: %s", r.packet.note.c_str());
     CHECK(r.aprsSource == "A61AB-7" && r.aprsDest == "APLRT1" && r.aprsPath == "WIDE1-1", "header %s %s %s", r.aprsSource.c_str(), r.aprsDest.c_str(), r.aprsPath.c_str());
-    CHECK(r.aprs.hasPos && near(r.aprs.lat, 25 + 4.83 / 60) && near(r.aprs.lon, 55 + 8.42 / 60), "pos %.5f %.5f", r.aprs.lat, r.aprs.lon);
+    CHECK(r.aprs.hasPos && nearBy(r.aprs.lat, 25 + 4.83 / 60) && nearBy(r.aprs.lon, 55 + 8.42 / 60), "pos %.5f %.5f", r.aprs.lat, r.aprs.lon);
     CHECK(r.aprs.symTable == '/' && r.aprs.symCode == '>' && r.aprs.comment == "Marina tracker 12.6V", "sym %c%c '%s'", r.aprs.symTable, r.aprs.symCode, r.aprs.comment.c_str());
     // message with number
     r = aprsOf("A61AB-7>APLRT1,WIDE1-1::A61EF-9  :Meet at the Marina at 9{01");
@@ -44,7 +44,7 @@ static void packetLayer() {
                                       r.messages[0].from.c_str(), r.messages[0].to.c_str(), r.messages[0].text.c_str());
     // object
     r = aprsOf("A61CD-10>APLRG1:;DXBMTG   *071200z2513.00N/05519.00E-Ham meeting Friday");
-    CHECK(r.ok && r.aprs.type == "Object" && r.aprs.name.find("DXBMTG") == 0 && near(r.aprs.lat, 25 + 13.0 / 60) && near(r.aprs.lon, 55 + 19.0 / 60), "object %s '%s'", r.aprs.type.c_str(), r.aprs.name.c_str());
+    CHECK(r.ok && r.aprs.type == "Object" && r.aprs.name.find("DXBMTG") == 0 && nearBy(r.aprs.lat, 25 + 13.0 / 60) && nearBy(r.aprs.lon, 55 + 19.0 / 60), "object %s '%s'", r.aprs.type.c_str(), r.aprs.name.c_str());
     // Mic-E (the destination carries the latitude; APRS101 example values are checked in the packet mode's tests, here only the routing)
     r = aprsOf("A61AB-7>T2SP0W:`(_fn\"Oj/]");
     CHECK(r.ok && r.aprs.type == "Mic-E", "mic-e type %s", r.aprs.type.c_str());
@@ -75,8 +75,8 @@ static void packetLayer() {
     CHECK(r.ok && r.packet.type == "POSITION", "meshcom pos: %s", r.packet.note.c_str());
     CHECK(r.aprsSource == "A61MC-2" && r.aprsPath == "A61MC-1" && r.packet.packetId == 0x11223344 && r.packet.hopLimit == 4, "meshcom header %s %s %08x",
           r.aprsSource.c_str(), r.aprsPath.c_str(), r.packet.packetId);
-    CHECK(r.aprs.hasPos && near(r.aprs.lat, 25.1) && near(r.aprs.lon, 55.2) && r.aprs.symCode == '[' && r.batteryPct == 64, "meshcom pos %.5f %.5f batt %d", r.aprs.lat, r.aprs.lon, r.batteryPct);
-    CHECK(r.aprs.hasAlt && near(r.aprs.altM, 123 * 0.3048, 0.01), "meshcom alt %.2f", r.aprs.altM);
+    CHECK(r.aprs.hasPos && nearBy(r.aprs.lat, 25.1) && nearBy(r.aprs.lon, 55.2) && r.aprs.symCode == '[' && r.batteryPct == 64, "meshcom pos %.5f %.5f batt %d", r.aprs.lat, r.aprs.lon, r.batteryPct);
+    CHECK(r.aprs.hasAlt && nearBy(r.aprs.altM, 123 * 0.3048, 0.01), "meshcom alt %.2f", r.aprs.altM);
     // the firmware's own log line (aprs_functions.cpp) of a relayed weather position decodes the same way
     m = MeshComFrame(); m.type = ':'; m.msgId = 7; m.sourcePath = "A61MC-1"; m.dest = "A61MC-2"; m.payload = "QSL, 59 here";
     mb = meshcomBuild(m);
@@ -162,7 +162,7 @@ static void radio() {
     for (const auto& c : cases) {
         const MeshTelemetry t = runFrames({{pos, 0.3}, {msg, 3.6}}, -15, c.shift, c.ppm, 7.0, 0, 11);
         const MeshAprsStation* s = station(t, "A61AB-7");
-        const bool posOk = s && s->st.hasPos && near(s->st.lat, 25 + 4.83 / 60) && near(s->st.lon, 55 + 8.42 / 60) && s->st.comment == "Marina tracker 12.6V";
+        const bool posOk = s && s->st.hasPos && nearBy(s->st.lat, 25 + 4.83 / 60) && nearBy(s->st.lon, 55 + 8.42 / 60) && s->st.comment == "Marina tracker 12.6V";
         bool msgOk = false;
         for (const auto& m : t.messages) msgOk |= m.protocol == 3 && m.from == "A61CD-10" && m.to == "A61AB-7" && m.text == "Welcome to the net";
         double cfo = 0; for (const auto& p : t.packets) if (p.crcOk) cfo = p.cfoHz;
@@ -238,7 +238,7 @@ static void scene() {
     for (const auto& w : want) {
         const MeshAprsStation* f = nullptr;
         for (const auto& s : t.aprsStations) if (s.protocol == w.proto && s.st.call.rfind(w.call, 0) == 0) f = &s;
-        CHECK(f && f->st.hasPos && near(f->st.lat, w.lat) && near(f->st.lon, w.lon), "station %s", w.call);
+        CHECK(f && f->st.hasPos && nearBy(f->st.lat, w.lat) && nearBy(f->st.lon, w.lon), "station %s", w.call);
     }
     const MeshAprsStation* ef = station(t, "A61EF-9");
     CHECK(ef && ef->st.comment.find("Abu Dhabi, 35\xc2\xb0" "C") != std::string::npos, "status with UTF-8: '%s'", ef ? ef->st.comment.c_str() : "");

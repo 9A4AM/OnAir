@@ -46,8 +46,8 @@ int main() {
         CHECK(t.system == k.name && t.colourSystem == "SECAM" && t.colour, "ident %d: system '%s' colour '%s' %d", k.ident, t.system.c_str(), t.colourSystem.c_str(), (int)t.colour);
         if (k.how) CHECK(logHas(r, k.how) || k.ident == 0, "ident %d: the log does not say how SECAM was found (%s)", k.ident, k.how);
         CHECK(t.blocksBad <= 3, "ident %d: %llu damaged fields", k.ident, (unsigned long long)t.blocksBad);
-        CHECK(near(t.burstLevel, 1.0, 0.25), "ident %d: chroma level %.2f of nominal", k.ident, t.burstLevel);
-        CHECK(near(t.soundSpacingMhz, f.soundSpacingMhz, 1e-6), "ident %d: sound spacing %.2f", k.ident, t.soundSpacingMhz);
+        CHECK(nearBy(t.burstLevel, 1.0, 0.25), "ident %d: chroma level %.2f of nominal", k.ident, t.burstLevel);
+        CHECK(nearBy(t.soundSpacingMhz, f.soundSpacingMhz, 1e-6), "ident %d: sound spacing %.2f", k.ident, t.soundSpacingMhz);
         CHECK(r.frame && r.frame->colour, "ident %d: no coloured picture", k.ident);
         if (r.frame) {
             const double w = barError(*r.frame, f);
@@ -79,7 +79,7 @@ int main() {
         AtvFormat f; atvMakeFormat(kAtvG, kAtvSecam, f);
         const double w = r.frame ? barError(*r.frame, f) : 9;
         CHECK(r.tel.state == 2 && r.tel.colour && w < 0.07, "offset: state %d colour %d bars %.3f", r.tel.state, (int)r.tel.colour, w);
-        CHECK(near(r.tel.cfoHz, -250e3 / 1.00006, 600), "carrier offset %.0f Hz", r.tel.cfoHz);
+        CHECK(nearBy(r.tel.cfoHz, -250e3 / 1.00006, 600), "carrier offset %.0f Hz", r.tel.cfoHz);
     }
     for (double rate : {12.5e6, 16e6, 20e6}) {
         AtvGenConfig c; c.sys = kAtvG; c.colour = kAtvSecam; c.cnrDb = 40; c.rate = rate;

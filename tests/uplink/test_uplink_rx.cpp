@@ -148,7 +148,7 @@ int main() {
         CHECK(ra >= 3, "RA coordination %d", ra);
         bool farBy = false;
         for (const auto& a : r.tel.aircraft) farBy |= a.addr == 0x40621D;
-        CHECK(far, "roll-call through a sidelobe");
+        CHECK(farBy, "roll-call through a sidelobe");
         CHECK(r.tel.blocksBad == 0 || r.tel.blocksBad < r.tel.blocksOk / 50, "bad %llu of %llu", (unsigned long long)r.tel.blocksBad, (unsigned long long)r.tel.blocksOk);
         printf("  scene: %s\n", uplinkSummary(r.tel).c_str());
     }

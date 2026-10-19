@@ -81,7 +81,7 @@ int main() {
     {
         const auto L = layoutFor(1, 1);
         const double a1 = 2 * M_PI * 48 / 967.0, a2 = -2 * M_PI * 48 * 3 / 967.0;
-        CHECK(near(L->beaconSeq[1], std::cos(a1), std::sin(a1)) && near(L->beaconSeq[2], std::cos(a2), std::sin(a2)), "Pb(1), Pb(2)");
+        CHECK(nearBy(L->beaconSeq[1], std::cos(a1), std::sin(a1)) && nearBy(L->beaconSeq[2], std::cos(a2), std::sin(a2)), "Pb(1), Pb(2)");
         CHECK(L->carrier.front() == -121 && L->carrier.back() == 121 && L->syncCarrier.front() == -60, "spectrum mode 1 carriers");
         const auto L9 = layoutFor(1, 9);
         CHECK(L9->carrier.front() == -497 && L9->carrier[120] == -377 && L9->carrier[121] == 377, "spectrum mode 9: DA1(L) and DA4(U)");
@@ -91,13 +91,13 @@ int main() {
     // ---- 5.4.1 constellations (Figures 8 to 10)
     {
         const uint8_t q10[2] = {1, 0}, q01[2] = {0, 1};
-        CHECK(near(mapBits(q10, kQpsk), -M_SQRT1_2, M_SQRT1_2) && near(mapBits(q01, kQpsk, (float)std::sqrt(2.0)), 1, -1), "QPSK");
+        CHECK(nearBy(mapBits(q10, kQpsk), -M_SQRT1_2, M_SQRT1_2) && nearBy(mapBits(q01, kQpsk, (float)std::sqrt(2.0)), 1, -1), "QPSK");
         const uint8_t a[4] = {0, 0, 0, 0}, b[4] = {1, 1, 0, 1}, c[4] = {0, 1, 1, 1};
         const double s10 = 1 / std::sqrt(10.0), s42 = 1 / std::sqrt(42.0);
-        CHECK(near(mapBits(a, k16Qam), 3 * s10, 3 * s10) && near(mapBits(b, k16Qam), -3 * s10, -1 * s10) && near(mapBits(c, k16Qam), s10, -s10), "16QAM");
+        CHECK(nearBy(mapBits(a, k16Qam), 3 * s10, 3 * s10) && nearBy(mapBits(b, k16Qam), -3 * s10, -1 * s10) && nearBy(mapBits(c, k16Qam), s10, -s10), "16QAM");
         const uint8_t d[6] = {0, 0, 0, 0, 0, 0}, e[6] = {1, 1, 0, 1, 0, 0}, f[6] = {0, 1, 1, 0, 1, 1}, g[6] = {1, 0, 1, 1, 1, 1};
         CHECK(nearBy(mapBits(d, k64Qam), 7 * s42, 7 * s42) && nearBy(mapBits(e, k64Qam), -7 * s42, -1 * s42) && nearBy(mapBits(f, k64Qam), 3 * s42, -5 * s42) &&
-              near(mapBits(g, k64Qam), -3 * s42, 3 * s42), "64QAM");
+              nearBy(mapBits(g, k64Qam), -3 * s42, 3 * s42), "64QAM");
         // the demapper inverts the mapper
         std::mt19937 rng(3);
         for (int mod = 0; mod < 3; mod++)

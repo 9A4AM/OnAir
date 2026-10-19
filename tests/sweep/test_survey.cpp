@@ -59,7 +59,7 @@ int main() {
     Sweep coarse = make(3e9, false, 102.0e6, rng); coarse.binHz = 20e3; coarse.db.resize(500); coarse.floorDb.resize(500);
     CHECK(a.add(coarse), "coarse sweep added");
     Sweep farBy = coarse; farBy.startHz = 500e6;
-    CHECK(!a.add(far), "out-of-range sweep refused");
+    CHECK(!a.add(farBy), "out-of-range sweep refused");
     // the row cap merges the old rows and keeps the carrier
     SurveyConfig sc; sc.maxRows = 40;
     Survey m(sc);

@@ -21,7 +21,7 @@ static bool nearBy(double a, double b, double tol) { return std::fabs(a - b) <= 
 static void textPos(const char* label, const char* text, double lat, double lon, double tol, int alt) {
     AeroPosition p;
     const bool ok = aeroParseTextPosition(label, text, p);
-    CHECK(ok && near(p.lat, lat, tol) && near(p.lon, lon, tol), "%s '%s': %d %.4f %.4f, want %.4f %.4f", label, text, ok, p.lat, p.lon, lat, lon);
+    CHECK(ok && nearBy(p.lat, lat, tol) && nearBy(p.lon, lon, tol), "%s '%s': %d %.4f %.4f, want %.4f %.4f", label, text, ok, p.lat, p.lon, lat, lon);
     if (alt >= 0) CHECK(ok && p.hasAlt && p.altFt == alt, "%s '%s': altitude %d, want %d", label, text, p.altFt, alt);
 }
 
@@ -34,10 +34,10 @@ int main() {
         CHECK(f && m.found && m.crcOk && m.complete, "VQ-BPJ found %d crc %d complete %d", m.found, m.crcOk, m.complete);
         CHECK(m.groundAddr == "LPAFAYA" && m.airReg == "VQ-BPJ", "addresses '%s' '%s'", m.groundAddr.c_str(), m.airReg.c_str());
         CHECK(m.tags.size() == 2 && m.tags[0] == 20 && m.tags[1] == 13, "groups");
-        CHECK(m.hasPos && m.posTag == 20 && near(m.lat, 50.3429604, 1e-6) && near(m.lon, 16.3785553, 1e-6) && m.altFt == 37000, "position %.7f %.7f %d", m.lat, m.lon, m.altFt);
-        CHECK(near(m.timeSec, 396.0, 1e-9) && m.accuracy == 6 && m.redundancyOk && m.tcasOk, "time %.3f accuracy %d", m.timeSec, m.accuracy);
-        CHECK(m.hasRoute && near(m.next.lat, 51.7226028, 1e-6) && near(m.next.lon, 19.7335052, 1e-6) && m.next.altFt == 37000 && m.next.etaSec == 1090, "next waypoint");
-        CHECK(near(m.nextNext.lat, 52.5409126, 1e-6) && near(m.nextNext.lon, 21.9525719, 1e-6) && m.nextNext.altFt == 37000, "next + 1 waypoint");
+        CHECK(m.hasPos && m.posTag == 20 && nearBy(m.lat, 50.3429604, 1e-6) && nearBy(m.lon, 16.3785553, 1e-6) && m.altFt == 37000, "position %.7f %.7f %d", m.lat, m.lon, m.altFt);
+        CHECK(nearBy(m.timeSec, 396.0, 1e-9) && m.accuracy == 6 && m.redundancyOk && m.tcasOk, "time %.3f accuracy %d", m.timeSec, m.accuracy);
+        CHECK(m.hasRoute && nearBy(m.next.lat, 51.7226028, 1e-6) && nearBy(m.next.lon, 19.7335052, 1e-6) && m.next.altFt == 37000 && m.next.etaSec == 1090, "next waypoint");
+        CHECK(nearBy(m.nextNext.lat, 52.5409126, 1e-6) && nearBy(m.nextNext.lon, 21.9525719, 1e-6) && m.nextNext.altFt == 37000, "next + 1 waypoint");
         // one hex digit changed: the CRC must catch it and no position is taken
         AeroAdscMessage bad;
         aeroDecodeAdsc("/LPAFAYA.ADS.VQ-BPJ1423CCA85D2D090886301D0D24C7D0704309088442255CC87CE2C90881DF97", false, bad);
@@ -49,8 +49,8 @@ int main() {
         AeroPosition p;
         std::string detail;
         const bool ok = aeroPositionFromMessage("H1", "#M1B/B6 LHWE1YA.ADS.N572UP07263B5872A048C9F21C1F0E5B88D700000239", false, p, &detail);
-        CHECK(ok && p.source == 1 && near(p.lat, 53.7634850, 1e-6) && near(p.lon, 20.1490974, 1e-6) && p.altFt == 35996, "N572UP %.7f %.7f %d", p.lat, p.lon, p.altFt);
-        CHECK(near(p.secPastHour, 3207.0, 1e-9) && p.hasTrack && near(p.trackDeg, 257.4, 0.05) && p.hasSpeed && near(p.speedKt, 430.0, 1e-9), "track %.2f speed %.1f", p.trackDeg,
+        CHECK(ok && p.source == 1 && nearBy(p.lat, 53.7634850, 1e-6) && nearBy(p.lon, 20.1490974, 1e-6) && p.altFt == 35996, "N572UP %.7f %.7f %d", p.lat, p.lon, p.altFt);
+        CHECK(nearBy(p.secPastHour, 3207.0, 1e-9) && p.hasTrack && nearBy(p.trackDeg, 257.4, 0.05) && p.hasSpeed && nearBy(p.speedKt, 430.0, 1e-9), "track %.2f speed %.1f", p.trackDeg,
               p.speedKt);
         AeroAdscMessage m;
         aeroDecodeAdsc("#M1B/B6 LHWE1YA.ADS.N572UP07263B5872A048C9F21C1F0E5B88D700000239", false, m);
@@ -84,12 +84,12 @@ int main() {
         AeroAdscMessage m;
         CHECK(aeroDecodeAdsc(txt, false, m) && m.crcOk && m.complete, "own message '%s'", txt.c_str());
         const double lsb = 90.0 / (1 << 19);
-        CHECK(near(m.lat, -33.94612, lsb) && near(m.lon, 151.17722, lsb) && m.altFt == 37004 && near(m.timeSec, 1234.375, 1e-9) && m.accuracy == 5, "basic %.6f %.6f %d",
+        CHECK(nearBy(m.lat, -33.94612, lsb) && nearBy(m.lon, 151.17722, lsb) && m.altFt == 37004 && nearBy(m.timeSec, 1234.375, 1e-9) && m.accuracy == 5, "basic %.6f %.6f %d",
               m.lat, m.lon, m.altFt);
         CHECK(m.flightId == "QFA1" && m.airReg == "VH-OQA", "flight id '%s'", m.flightId.c_str());
-        CHECK(m.hasEarth && near(m.trackDeg, 287.3, 90.0 / 1024) && near(m.groundKt, 471.5, 1e-9) && m.vsFpm == -1200, "earth %.2f %.1f %d", m.trackDeg, m.groundKt, m.vsFpm);
-        CHECK(m.hasRoute && near(m.next.lat, -33.5, lsb) && near(m.nextNext.lon, 148.8, lsb) && m.next.etaSec == 600 && m.nextNext.altFt == 39000, "route");
-        CHECK(m.hasMeteo && near(m.windKt, 42.5, 1e-9) && near(m.windDeg, 265, 90.0 / 128) && near(m.tempC, -54.25, 1e-9), "meteo %.1f %.1f %.2f", m.windKt, m.windDeg, m.tempC);
+        CHECK(m.hasEarth && nearBy(m.trackDeg, 287.3, 90.0 / 1024) && nearBy(m.groundKt, 471.5, 1e-9) && m.vsFpm == -1200, "earth %.2f %.1f %d", m.trackDeg, m.groundKt, m.vsFpm);
+        CHECK(m.hasRoute && nearBy(m.next.lat, -33.5, lsb) && nearBy(m.nextNext.lon, 148.8, lsb) && m.next.etaSec == 600 && m.nextNext.altFt == 39000, "route");
+        CHECK(m.hasMeteo && nearBy(m.windKt, 42.5, 1e-9) && nearBy(m.windDeg, 265, 90.0 / 128) && nearBy(m.tempC, -54.25, 1e-9), "meteo %.1f %.1f %.2f", m.windKt, m.windDeg, m.tempC);
     }
     {   // text formats, values from the airframes decoder tests
         textPos("H1", "POSN43312W123174,EASON,215754,370,EBINY,220601,ELENN,M48,02216,185/TS215754,0921227A40", 43.52, -123.29, 1e-3, 37000);

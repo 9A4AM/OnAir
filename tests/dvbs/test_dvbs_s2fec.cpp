@@ -282,8 +282,8 @@ int main() {
         const cf32* p8 = s2Constellation(k8psk, 5);
         for (int a = 0; a < 8; a++) {
             int nearBy = 0;
-            for (int b = 0; b < 8; b++) if (a != b && std::abs(p8[a] - p8[b]) < 0.78 + 1e-3) { near++; CHECK(__builtin_popcount(a ^ b) == 1, "8PSK labels %d and %d are neighbours but not Gray", a, b); }
-            CHECK(near == 2, "8PSK point %d has %d neighbours", a, near);
+            for (int b = 0; b < 8; b++) if (a != b && std::abs(p8[a] - p8[b]) < 0.78 + 1e-3) { nearBy++; CHECK(__builtin_popcount(a ^ b) == 1, "8PSK labels %d and %d are neighbours but not Gray", a, b); }
+            CHECK(nearBy == 2, "8PSK point %d has %d neighbours", a, nearBy);
         }
         printf("constellations: unit energy, rings and ratios of tables 9 and 10, 8PSK Gray\n");
     }

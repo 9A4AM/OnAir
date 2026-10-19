@@ -40,9 +40,9 @@ int main() {
     }
     {   // QPSK on the axes, the first bit the most significant bit of the Gray label
         auto nearBy = [](std::complex<float> a, float re, float im) { return std::abs(a - std::complex<float>(re, im)) < 1e-4f; };
-        CHECK(near(hfdlPsk(2, 0), 1, 0) && near(hfdlPsk(2, 2), 0, 1) && near(hfdlPsk(2, 3), -1, 0) && near(hfdlPsk(2, 1), 0, -1), "QPSK map");
+        CHECK(nearBy(hfdlPsk(2, 0), 1, 0) && nearBy(hfdlPsk(2, 2), 0, 1) && nearBy(hfdlPsk(2, 3), -1, 0) && nearBy(hfdlPsk(2, 1), 0, -1), "QPSK map");
         const float h = dect2::math::k1OverSqrt2f;
-        CHECK(near(hfdlPsk(3, 0), 1, 0) && near(hfdlPsk(3, 4), h, h) && near(hfdlPsk(3, 6), 0, 1) && near(hfdlPsk(3, 1), h, -h), "8PSK map");
+        CHECK(nearBy(hfdlPsk(3, 0), 1, 0) && nearBy(hfdlPsk(3, 4), h, h) && nearBy(hfdlPsk(3, 6), 0, 1) && nearBy(hfdlPsk(3, 1), h, -h), "8PSK map");
         for (int b = 2; b <= 3; b++) for (int v = 0; v < (1 << b); v++) {
             float s[3];
             hfdlSoftBits(b, hfdlPsk(b, v), 1, s);

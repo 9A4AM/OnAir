@@ -125,7 +125,7 @@ int main() {
         a.advanceTo(8 * kStep + 0.001);
         CHECK(std::fabs((double)s.lr.size() / 2 - 8 * kOutPerPacket) < 400, "8 packets gave %zu frames at 48 kHz (want %.0f)", s.lr.size() / 2, 8 * kOutPerPacket);
         for (int i = 0; i < 8; i++) {
-            CHECK(near(s.mid(0, i, 0), (10 + i) * 100 + (i == 0 ? 7 : 0)) && near(s.mid(0, i, 1), 1600), "HD1 packet %d: L %.1f R %.1f", i, s.mid(0, i, 0), s.mid(0, i, 1));
+            CHECK(nearBy(s.mid(0, i, 0), (10 + i) * 100 + (i == 0 ? 7 : 0)) && nearBy(s.mid(0, i, 1), 1600), "HD1 packet %d: L %.1f R %.1f", i, s.mid(0, i, 0), s.mid(0, i, 1));
         }
         HdcAudio::Stats st = a.stats();
         CHECK(st.libFound && st.program == 0 && st.decoded == 8 && st.errors == 0 && st.lost == 0, "stats: decoded %llu errors %llu lost %llu", (unsigned long long)st.decoded, (unsigned long long)st.errors, (unsigned long long)st.lost);
@@ -137,7 +137,7 @@ int main() {
         const size_t from = s.lr.size() / 2;
         a.advanceTo(16 * kStep + 0.001);
         for (int i = 0; i < 8; i++)
-            CHECK(near(s.mid(from, i, 0), (58 + i) * 100 + (i == 0 ? 7 : 0)) && near(s.mid(from, i, 1), 800), "HD2 packet %d: L %.1f R %.1f", i, s.mid(from, i, 0), s.mid(from, i, 1));
+            CHECK(nearBy(s.mid(from, i, 0), (58 + i) * 100 + (i == 0 ? 7 : 0)) && nearBy(s.mid(from, i, 1), 800), "HD2 packet %d: L %.1f R %.1f", i, s.mid(from, i, 0), s.mid(from, i, 1));
         CHECK(a.stats().program == 1, "program reported");
 
         // a lost packet (seq 18 never comes) and a packet with a bad CRC (seq 20): silence for each, and the decoder starts over after it
@@ -148,7 +148,7 @@ int main() {
         const size_t from2 = s.lr.size() / 2;
         a.advanceTo(24 * kStep + 0.001);
         const double want[8] = {7000 + 7 * 0, 7100, 0, 7200 + 7, 0, 7400 + 7, 7500, 7600};   // packets 16..23: after the silence a fresh state (+7)
-        for (int i = 0; i < 8; i++) CHECK(near(s.mid(from2, i, 0), want[i] + (i == 0 ? 0 : 0)), "gap test packet %d: L %.1f want %.1f", i, s.mid(from2, i, 0), want[i]);
+        for (int i = 0; i < 8; i++) CHECK(nearBy(s.mid(from2, i, 0), want[i] + (i == 0 ? 0 : 0)), "gap test packet %d: L %.1f want %.1f", i, s.mid(from2, i, 0), want[i]);
         st = a.stats();
         CHECK(st.lost == 2, "lost slots %llu", (unsigned long long)st.lost);
 
@@ -159,7 +159,7 @@ int main() {
         const uint64_t errs0 = a.stats().errors, rs0 = a.stats().resets;
         a.advanceTo(29 * kStep + 0.001);
         CHECK(a.stats().errors - errs0 == 3 && a.stats().resets - rs0 == 1, "errors %llu resets %llu", (unsigned long long)(a.stats().errors - errs0), (unsigned long long)(a.stats().resets - rs0));
-        CHECK(near(s.mid(from3, 0, 0), 0) && near(s.mid(from3, 1, 0), 0) && near(s.mid(from3, 2, 0), 0) && near(s.mid(from3, 3, 0), 3000 + 7) && near(s.mid(from3, 4, 0), 3100), "error run: %.1f %.1f %.1f %.1f %.1f",
+        CHECK(nearBy(s.mid(from3, 0, 0), 0) && nearBy(s.mid(from3, 1, 0), 0) && nearBy(s.mid(from3, 2, 0), 0) && nearBy(s.mid(from3, 3, 0), 3000 + 7) && nearBy(s.mid(from3, 4, 0), 3100), "error run: %.1f %.1f %.1f %.1f %.1f",
               s.mid(from3, 0, 0), s.mid(from3, 1, 0), s.mid(from3, 2, 0), s.mid(from3, 3, 0), s.mid(from3, 4, 0));
 
         // a packet that crosses two PDUs: the halves are joined (100 + 60 bytes, the first byte is in the front half)
@@ -167,8 +167,8 @@ int main() {
         { const std::vector<uint8_t> f = packet(45, 100), b(60, 0x66); a.push(1, 0, 30, HdcAudio::HalfFront, true, f.data(), f.size()); a.push(1, 0, 30, HdcAudio::HalfBack, false, b.data(), b.size()); }   // a bad back half
         const size_t from4 = s.lr.size() / 2;
         a.advanceTo(31 * kStep + 0.001);
-        CHECK(near(s.mid(from4, 0, 0), 4400) && near(s.mid(from4, 0, 1), 1600), "joined packet: L %.1f R %.1f", s.mid(from4, 0, 0), s.mid(from4, 0, 1));
-        CHECK(near(s.mid(from4, 1, 0), 0), "half packet with a bad half: L %.1f", s.mid(from4, 1, 0));
+        CHECK(nearBy(s.mid(from4, 0, 0), 4400) && nearBy(s.mid(from4, 0, 1), 1600), "joined packet: L %.1f R %.1f", s.mid(from4, 0, 0), s.mid(from4, 0, 1));
+        CHECK(nearBy(s.mid(from4, 1, 0), 0), "half packet with a bad half: L %.1f", s.mid(from4, 1, 0));
 
         // a program that stops: no endless silence queued for it
         const size_t before = s.lr.size();
@@ -184,7 +184,7 @@ int main() {
         a.align(1, 0, 0);
         pushRun(a, 1, 0, 2, 20, 80);
         a.advanceTo(100.0 + 2 * kStep + 0.001);
-        CHECK(near(s.mid(0, 0, 0), 2000 + 7) && near(s.mid(0, 1, 0), 2100), "after reset: %.1f %.1f", s.mid(0, 0, 0), s.mid(0, 1, 0));
+        CHECK(nearBy(s.mid(0, 0, 0), 2000 + 7) && nearBy(s.mid(0, 1, 0), 2100), "after reset: %.1f %.1f", s.mid(0, 0, 0), s.mid(0, 1, 0));
     }
 
     // ---------------------------------------------------------------- 4 through the Layer 2 decoder
@@ -218,11 +218,11 @@ int main() {
         CHECK(s.lr.size() / 2 > (size_t)(frames * 32 * kOutPerPacket * 0.95), "latency %d: %zu output frames", latency, s.lr.size() / 2);
         for (int n : {0, 10, 50, 80}) {
             const double v = s.mid(0, n, 0);
-            CHECK(near(v, (10 + n / 32) * 100 + (n == 0 ? 7 : 0)) && near(s.mid(0, n, 1), 1000), "latency %d: HD1 packet %d level %.1f / %.1f", latency, n, v, s.mid(0, n, 1));
+            CHECK(nearBy(v, (10 + n / 32) * 100 + (n == 0 ? 7 : 0)) && nearBy(s.mid(0, n, 1), 1000), "latency %d: HD1 packet %d level %.1f / %.1f", latency, n, v, s.mid(0, n, 1));
         }
         for (int n : {120, 150, 180}) {
             const double v = s.mid(0, n, 0);
-            CHECK(near(v, (100 + n / 32) * 100) && near(s.mid(0, n, 1), 400), "latency %d: HD2 packet %d level %.1f / %.1f", latency, n, v, s.mid(0, n, 1));
+            CHECK(nearBy(v, (100 + n / 32) * 100) && nearBy(s.mid(0, n, 1), 400), "latency %d: HD2 packet %d level %.1f / %.1f", latency, n, v, s.mid(0, n, 1));
         }
         const HdcAudio::Stats st = a.stats();
         CHECK(st.errors == 0 && st.lost == 0 && st.decoded >= 186, "latency %d: decoded %llu errors %llu lost %llu", latency, (unsigned long long)st.decoded, (unsigned long long)st.errors, (unsigned long long)st.lost);

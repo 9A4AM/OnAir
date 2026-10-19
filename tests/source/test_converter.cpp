@@ -31,7 +31,7 @@ int main() {
     CHECK(q.active && !q.inverts());
     CHECK(nearBy(q.rfToIf(10489.55e6), 739.55e6));
     CHECK(nearBy(q.ifToRf(739.55e6), 10489.55e6));
-    CHECK(near(make("ku-high").rfToIf(11.8e9), 1.2e9));
+    CHECK(nearBy(make("ku-high").rfToIf(11.8e9), 1.2e9));
 
     // Ham It Down: 2400 MHz at the antenna, the radio at 900 MHz, no mirror, ppm field, below the LO unreachable
     Converter d = make("hamitdown");
@@ -39,7 +39,7 @@ int main() {
     CHECK(nearBy(d.rfToIf(2400e6), 900e6));
     CHECK(nearBy(d.ifToRf(900e6), 2400e6));
     CHECK(nearBy(d.ifToRf(d.rfToIf(2403.5e6)), 2403.5e6));
-    CHECK(near(make("hamitdown", {{convKeyPpm(), "2"}}).effLoHz(), 1500e6 + 3000));
+    CHECK(nearBy(make("hamitdown", {{convKeyPpm(), "2"}}).effLoHz(), 1500e6 + 3000));
     CHECK(d.reachable(2400e6) && !d.reachable(1400e6) && !d.reachable(1500e6));
     CHECK(make("hamitdown", {{convKeyInvert(), "1"}}).inverts());
     CHECK(findConverterPreset("hamitdown") != nullptr);
@@ -50,8 +50,8 @@ int main() {
     CHECK(nearBy(b.rfToIf(10489.55e6), 739.55e6 - 9750));
     CHECK(nearBy(b.ifToRf(b.rfToIf(10489.55e6)), 10489.55e6));
     // a preset without a ppm field ignores a stray value
-    CHECK(near(make("qo100", {{convKeyPpm(), "5"}}).effLoHz(), 9750e6));
-    CHECK(near(make("hamitup", {{convKeyPpm(), "-2.5"}}).effLoHz(), 125e6 * (1 - 2.5e-6)));
+    CHECK(nearBy(make("qo100", {{convKeyPpm(), "5"}}).effLoHz(), 9750e6));
+    CHECK(nearBy(make("hamitup", {{convKeyPpm(), "-2.5"}}).effLoHz(), 125e6 * (1 - 2.5e-6)));
 
     // custom: high-side injection mirrors the spectrum
     Converter c = make("custom", {{convKeyLo(), "1000"}, {convKeyMode(), "high"}});
