@@ -7,6 +7,7 @@
 #include "dect2/channels/freq_db.h"
 #include "dect2/common/u8file.h"
 #include "dect2/qo100/qo100_dsp.h"
+#include "dect2/specan/lnb_cal.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -107,6 +108,7 @@ bool tuneTo(App& a, const FreqEntry& e, bool withMode) {
         int n = 0; const dect2::qo100::LoPreset* pr = dect2::qo100::loPresets(n);
         const long sel = plat::prefs().getI("qo100LoPreset", 0);
         lo = sel >= 0 && sel < n ? pr[sel].loHz : plat::prefs().getD("qo100LoCustom", 9750) * 1e6;
+        lo = dect2::lnbCorrectedLoHz(lo, plat::prefs().getD("qo100LnbPpm", 0));   // the calibrated LNB error (qo100_ui LNB calibration)
         m.freqHz = (uint64_t)std::llround(dect2::qo100::ifOf((double)e.hz, lo));
     }
     if (memoryModeIndex(m.mode) < 0) withMode = false;   // a mode this build lacks: the frequency alone

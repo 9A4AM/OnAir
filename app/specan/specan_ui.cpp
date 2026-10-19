@@ -5,6 +5,7 @@
 #include "app.h"
 #include "dect2/specan/burst_monitor.h"
 #include "dect2/specan/leo_detect.h"
+#include "dect2/specan/geo_look.h"
 #include "dect2/specan/specan_dsp.h"
 #include "dect2/specan/specan_rx.h"
 #include "dect2/specan/specan_tel.h"
@@ -68,6 +69,11 @@ struct State {
     size_t leoBins = 0;
     double leoLastRun = 0;        // ms, last detector run
     std::vector<dect2::LeoCarrier> leoFound;
+    // dish alignment (WIP): beacon level at a watched IF, peak hold, 60 s history; look-angle helper
+    double dishMhz = 1000;
+    float dishLevel = -200, dishPeak = -200;
+    std::vector<std::pair<double, float>> dishHist;   // (steady seconds, dB)
+    double latMine = 0, lonMine = 0, lonSat = 19.2;
 };
 State S;
 std::mutex& autoMu() { static std::mutex m; return m; }
@@ -205,6 +211,25 @@ void feedLeo(const dect2::SpecanTelemetry& t) {
     }
 }
 
+// Dish alignment: the largest bin within +-5 kHz of the beacon, from this sweep, goes to the peak hold and the 60 s history.
+void feedDish(const dect2::SpecanTelemetry& t) {
+    if (t.binHz <= 0 || t.live.empty()) return;
+    const double c = (S.dishMhz * 1e6 - t.loHz) / t.binHz, w = 5e3 / t.binHz;
+    const long last = (long)t.live.size() - 1;
+    if (c + w < 0 || c - w > (double)last) { S.dishLevel = -200; return; }
+    const long k0 = std::max(0L, (long)std::floor(c - w)), k1 = std::min(last, (long)std::ceil(c + w));
+    float v = -200;
+    for (long k = k0; k <= k1; k++) v = std::max(v, t.live[(size_t)k]);
+    S.dishLevel = v;
+    if (v <= -199) return;
+    const double now = nowS();
+    S.dishHist.push_back({now, v});
+    S.dishPeak = std::max(S.dishPeak, v);
+    size_t drop = 0;
+    while (drop < S.dishHist.size() && now - S.dishHist[drop].first > 60.0) drop++;
+    if (drop) S.dishHist.erase(S.dishHist.begin(), S.dishHist.begin() + (long)drop);
+}
+
 void ingest(App& a) {
     const auto& t = a.rx.specan;
     if (!live(a) || t.seq == S.seenSeq) return;
@@ -228,6 +253,7 @@ void ingest(App& a) {
     S.wfDirty = S.psDirty = true;
     feedMonitor(t);
     feedLeo(t);
+    feedDish(t);
 }
 
 std::string mhzText(double hz) {
@@ -491,6 +517,79 @@ void monitor(App& a) {
     }
 }
 
+// Dish alignment (WIP): the beacon level in dB with a peak hold, a 60 s strip chart and a level bar, and a geostationary look-angle helper.
+// Pointing arc and LNB calibration are not done yet.
+void dish(App& a) {
+    if (!ImGui::CollapsingHeader("Dish alignment (WIP): beacon level and look angles")) return;
+    ImGui::TextDisabled("Work in progress: no dish-pointing arc and no LNB calibration yet.");
+    ImGui::SetNextItemWidth(130 * gUi);
+    if (ImGui::InputDouble("Beacon IF (MHz)", &S.dishMhz, 1.0, 10.0, "%.3f")) {
+        S.dishHist.clear();
+        S.dishPeak = S.dishLevel = -200;
+    }
+    ImGui::SameLine();
+    if (ImGui::SmallButton("Zero")) S.dishPeak = S.dishLevel;
+    ImGui::TextDisabled("Enter the frequency the receiver sees (after the LNB). The level is the strongest bin within +-5 kHz.");
+    if (!live(a)) {
+        ImGui::TextDisabled("Needs a running sweep that covers the beacon frequency.");
+    } else if (S.dishLevel <= -199) {
+        ImGui::TextDisabled("The beacon frequency is outside the sweep.");
+    } else {
+        ImGui::SetWindowFontScale(2.0f);
+        ImGui::Text("%.1f dB", S.dishLevel);
+        ImGui::SetWindowFontScale(1.0f);
+    }
+    if (S.dishPeak > -199) ImGui::Text("Peak hold %.1f dB", S.dishPeak);
+    else ImGui::TextDisabled("Peak hold --");
+
+    // level bar on the chart's dB scale
+    const float bot = S.refDb - S.rangeDb;
+    const float frac = S.dishLevel > -199 ? std::clamp((S.dishLevel - bot) / S.rangeDb, 0.f, 1.f) : 0.f;
+    const float pfrac = S.dishPeak > -199 ? std::clamp((S.dishPeak - bot) / S.rangeDb, 0.f, 1.f) : 0.f;
+    const float barW = std::min(360 * gUi, ImGui::GetContentRegionAvail().x), barH = 16 * gUi;
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImVec2 p = ImGui::GetCursorScreenPos();
+    dl->AddRectFilled(p, ImVec2(p.x + barW, p.y + barH), IM_COL32(40, 40, 46, 255));
+    dl->AddRectFilled(p, ImVec2(p.x + barW * frac, p.y + barH), IM_COL32(90, 200, 120, 255));
+    if (S.dishPeak > -199) dl->AddLine(ImVec2(p.x + barW * pfrac, p.y), ImVec2(p.x + barW * pfrac, p.y + barH), IM_COL32(255, 210, 80, 255), 2.f);
+    ImGui::Dummy(ImVec2(barW, barH));
+    ImGui::TextDisabled("Bar scale %.0f to %.0f dB", bot, S.refDb);
+
+    // 60 s strip chart of the level
+    const float chartW = std::min(600 * gUi, ImGui::GetContentRegionAvail().x), chartH = 110 * gUi;
+    p = ImGui::GetCursorScreenPos();
+    dl->AddRectFilled(p, ImVec2(p.x + chartW, p.y + chartH), IM_COL32(20, 22, 28, 255));
+    dl->AddRect(p, ImVec2(p.x + chartW, p.y + chartH), IM_COL32(90, 90, 100, 255));
+    const double now = nowS();
+    std::vector<ImVec2> pts;
+    pts.reserve(S.dishHist.size());
+    for (const auto& s : S.dishHist) {
+        const float x = (float)(1.0 - (now - s.first) / 60.0), y = (S.refDb - s.second) / S.rangeDb;
+        pts.push_back(ImVec2(p.x + chartW * std::clamp(x, 0.f, 1.f), p.y + chartH * std::clamp(y, 0.f, 1.f)));
+    }
+    if (pts.size() >= 2) dl->AddPolyline(pts.data(), (int)pts.size(), IM_COL32(110, 190, 255, 255), 0, 1.5f);
+    ImGui::Dummy(ImVec2(chartW, chartH));
+    ImGui::TextDisabled("Last 60 s, top %.0f dB, bottom %.0f dB", S.refDb, bot);
+
+    // geostationary look angle from the user's position
+    ImGui::Separator();
+    ImGui::TextDisabled("Look angle to a geostationary satellite (spherical Earth, no refraction)");
+    ImGui::SetNextItemWidth(100 * gUi);
+    ImGui::InputDouble("Your latitude", &S.latMine, 0.1, 1.0, "%.4f");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(100 * gUi);
+    ImGui::InputDouble("Your longitude", &S.lonMine, 0.1, 1.0, "%.4f");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(100 * gUi);
+    ImGui::InputDouble("Satellite longitude", &S.lonSat, 0.1, 1.0, "%.2f");
+    S.latMine = std::clamp(S.latMine, -90.0, 90.0);
+    S.lonMine = std::clamp(S.lonMine, -180.0, 180.0);
+    S.lonSat = std::clamp(S.lonSat, -180.0, 180.0);
+    const dect2::GeoLookAngle la = dect2::geoLookAngle(S.latMine, S.lonMine, S.lonSat);
+    ImGui::Text("Azimuth %.1f deg, elevation %.1f deg", la.azimuthDeg, la.elevationDeg);
+    if (la.elevationDeg < 0) ImGui::TextDisabled("The satellite is below your horizon.");
+}
+
 void tab(App& a) {
     ingest(a);
     if (gGfx && !S.wf.empty()) {
@@ -502,6 +601,7 @@ void tab(App& a) {
     controls(a);
     monitor(a);
     leoMonitor(a);
+    dish(a);
     const float avail = ImGui::GetContentRegionAvail().y;
     chart(a, std::max(120 * gUi, avail * 0.62f));
     waterfall(a, std::max(40 * gUi, ImGui::GetContentRegionAvail().y - 2));

@@ -1,7 +1,7 @@
 //! Signalling block walk (ETSI EN 300 392-2 clauses 21.4, 21.5 and the MLE of 18): the MAC PDUs of one SCH/HD or SCH/F block. Only broadcasts
 //! are read: SYSINFO and the MLE D-NWRK-BROADCAST (neighbour cells, network time). Addresses are skipped and never kept; any other message is only
 //! counted by protocol discriminator; air interface encrypted PDUs are only counted. No call, subscriber or short data content is read.
-use crate::abi::{MacBlock, Neighbour, Nwrk};
+use crate::abi::{CallInfo, MacBlock, Neighbour, Nwrk, MAX_CALLS};
 use crate::bits::Reader;
 use crate::sysinfo::{parse_sysinfo, Parsed};
 
@@ -99,8 +99,71 @@ fn parse_nwrk(r: &mut Reader, out: &mut Out) {
     }
 }
 
-/// TL-SDU: the LLC header, then the MLE; only the mobility link entity's (protocol discriminator 5) broadcast is read.
-fn parse_tl_sdu(b: &[u8], from: usize, to: usize, out: &mut Out) {
+/// The call set-up PDUs of the CMCE (ETSI EN 300 392-2 clause 14.7), after the MLE protocol discriminator: only the call identifier and the end-to-end
+/// encryption flag of the basic service information are kept (D-SETUP type 00111, D-CONNECT 00010, D-DISCONNECT 00100, D-RELEASE 00110). Nothing else
+/// of the call (parties, priority, content) is read. `slots` and `carrier` come from the channel allocation of the MAC-RESOURCE that carried the PDU.
+fn parse_cmce(r: &mut Reader, slots: i32, carrier: i32, out: &mut Out) {
+    let ty = r.get(5);
+    let (kind, id, enc) = match ty {
+        7 => {
+            // D-SETUP: call id 14, call time-out 4, hook method 1, simplex/duplex 1, basic service information 8 (circuit mode type 3, encryption flag 1, ...)
+            let id = r.get(14);
+            r.get(4);
+            r.get(1);
+            r.get(1);
+            r.get(3);
+            let e = r.bit();
+            if !r.ok {
+                return;
+            }
+            (1, id, e as i32)
+        }
+        2 => {
+            // D-CONNECT: call id 14, call time-out 4, hook 1, simplex 1, transmission grant 2, transmission request permission 1, call ownership 1,
+            // then the O-bit and the type 2 elements: call priority (P-bit, 4) and basic service information (P-bit, 8), each only when present
+            let id = r.get(14);
+            r.get(4);
+            r.get(1);
+            r.get(1);
+            r.get(2);
+            r.get(1);
+            r.get(1);
+            if !r.ok {
+                return;
+            }
+            let mut enc = -1;
+            if r.bit() {
+                if r.bit() {
+                    r.get(4);
+                }
+                if r.bit() {
+                    r.get(3);
+                    let e = r.bit();
+                    if r.ok {
+                        enc = e as i32;
+                    }
+                }
+            }
+            (2, id, enc)
+        }
+        4 | 6 => {
+            let id = r.get(14);
+            if !r.ok {
+                return;
+            }
+            (3, id, -1)
+        }
+        _ => return,
+    };
+    let k = out.blk.n_call as usize;
+    if k < MAX_CALLS {
+        out.blk.call[k] = CallInfo { kind, call_id: id as i32, enc, slots, carrier };
+        out.blk.n_call += 1;
+    }
+}
+
+/// TL-SDU: the LLC header, then the MLE; only the mobility link entity's (protocol discriminator 5) broadcast and the CMCE call set-up facts are read.
+fn parse_tl_sdu(b: &[u8], from: usize, to: usize, slots: i32, carrier: i32, out: &mut Out) {
     let mut r = Reader::new(b, from, to);
     let llc = r.get(4);
     match llc {
@@ -127,6 +190,10 @@ fn parse_tl_sdu(b: &[u8], from: usize, to: usize, out: &mut Out) {
         return;
     }
     out.blk.by_pd[pd & 7] += 1;
+    if pd == 2 {
+        parse_cmce(&mut r, slots, carrier, out);
+        return;
+    }
     if pd != 5 {
         return;
     }
@@ -224,7 +291,18 @@ pub fn parse_block(b: &[u8], out: &mut Out) {
             out.blk.encrypted += 1;
         } else if r.ok {
             let mut readable = true;
+            let (mut slots, mut carrier) = (-1i32, -1i32);
             if ca {
+                // timeslot assigned and carrier number of the channel allocation (21.5.2): type 2, timeslots 4, up/down 2, CLCH 1, cell change 1, carrier 12
+                let mut c = Reader::new(b, r.p, b.len());
+                c.get(2);
+                let sl = c.get(4);
+                c.get(4);
+                let car = c.get(12);
+                if c.ok {
+                    slots = sl as i32;
+                    carrier = car as i32;
+                }
                 let l = chan_alloc_len(b, r.p);
                 if l < 0 {
                     readable = false;
@@ -243,7 +321,7 @@ pub fn parse_block(b: &[u8], out: &mut Out) {
                     }
                 }
                 if end > r.p {
-                    parse_tl_sdu(b, r.p, end, out);
+                    parse_tl_sdu(b, r.p, end, slots, carrier, out);
                 }
             }
         }

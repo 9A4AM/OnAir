@@ -4,7 +4,8 @@
 //   ACCESS-ASSIGN (AACH): what each timeslot carries (common control, assigned control, traffic, unallocated)
 //   MAC-RESOURCE on the MCCH carrying the MLE D-NWRK-BROADCAST: neighbour cells, network time
 // Signalling sent with air interface encryption (MAC-RESOURCE encryption mode not 0) is only counted. Nothing addressed to a terminal
-// is kept: no subscriber identity, no call or short data content, no voice.
+// is kept: no subscriber identity, no call or short data content, no voice. The one exception is the call identifier and end-to-end encryption flag of
+// the call set-up PDUs (CallEvent), read only to decide whether a call may be decoded at all.
 #pragma once
 #include "tetra_phy.h"
 #include <cstdint>
@@ -68,6 +69,12 @@ struct NwrkBroadcast {
 // TETRA network time (18.5.24): "YYYY-MM-DD HH:MM:SS UTC, local +HH:MM"; empty when not valid
 std::string networkTimeText(uint64_t time48);
 
+// The call set-up facts of one clear CMCE PDU (EN 300 392-2 clause 14.7): only the call identifier and the end-to-end encryption flag of the
+// basic service information are read, nothing else of the call. kind: 1 D-SETUP, 2 D-CONNECT, 3 D-DISCONNECT or D-RELEASE.
+// enc: 0 the PDU says clear, 1 it says encrypted, -1 not stated. slots: the "timeslot assigned" bit map (bit 3 = timeslot 1) and carrier: the
+// carrier number of the channel allocation in the same MAC-RESOURCE, both -1 when it holds no channel allocation.
+struct CallEvent { int kind = 0, callId = 0, enc = -1, slots = -1, carrier = -1; };
+
 // Everything one decoded signalling block (SCH/HD, SCH/F) of the downlink holds
 struct MacBlock {
     bool sysinfo = false; Sysinfo si;
@@ -77,6 +84,7 @@ struct MacBlock {
     int fragments = 0;          // fragmented PDUs and their continuations (not reassembled)
     int byPd[8] = {};           // clear MLE layer messages by protocol discriminator (1 MM, 2 CMCE, 4 SNDCP, 5 MLE, 6 management): counted, never read
     std::vector<NwrkBroadcast> nwrk;
+    std::vector<CallEvent> calls;   // the call set-up PDUs sent in the clear (never from air interface encrypted PDUs)
 };
 void parseMacBlock(const Bits& type1, MacBlock& out);
 

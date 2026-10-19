@@ -5,9 +5,11 @@
 //  1. Encrypted calls are never decoded. The encryption state is checked FIRST, before any bit of the burst is touched.
 //     Unknown encryption state counts as encrypted. No key work, no cipher work of any kind.
 //  2. No speech codec is part of this program. The ACELP codec is a user-installed add-on loaded at run time. This code
-//     only hands the descrambled, deinterleaved coded frame (432 type-3 bits, channel coding NOT removed) to a SpeechFrameSink.
+//     only hands the descrambled coded burst (432 type-4 bits, still interleaved, channel coding NOT removed) to a SpeechFrameSink;
+//     the channel decoding of the traffic channel (tetra_traffic.h) turns that into the speech frame bits the plug-in takes.
 //  3. A speech frame that is passed on is never stored by this code.
 #pragma once
+#include "dect2/tetra/tetra_pdu.h"
 #include "dect2/tetra/tetra_phy.h"
 #include <cstddef>
 #include <cstdint>
@@ -15,7 +17,7 @@
 
 namespace dect2::tetra {
 
-// Where coded speech frames go: the codec loader (written elsewhere). bits: one bit per byte, 432 of them.
+// Where coded speech frames go: the codec loader (tetra_voice_codec.h). bits: one bit per byte, the 432 descrambled type-4 bits of a burst.
 class SpeechFrameSink {
 public:
     virtual ~SpeechFrameSink() = default;
@@ -34,8 +36,29 @@ struct CallEncryption {
 VoiceVerdict voiceVerdict(const CallEncryption& e);
 const char* voiceVerdictText(VoiceVerdict v);   // "voice (clear)", "encrypted, not decoded", "encryption state unknown, not decoded"
 
+// Per-call encryption state from the call set-up PDUs (EN 300 392-2 clause 14.7: D-SETUP and D-CONNECT carry the end-to-end encryption flag in the basic
+// service information). A downlink traffic slot counts as clear ONLY when a set-up PDU for the call in that slot said "clear mode" (flag 0) and the
+// state is fresh; encrypted (flag 1), never seen, expired or released all give "not known": the slot is then not decoded.
+// The call is tied to the slot through the channel allocation of the MAC-RESOURCE that carried the PDU, and only when that allocation names the cell's
+// main (control) carrier; traffic on any other carrier stays unknown (AMBIGUITY, left unresolved: the traffic carrier number cannot be read from the
+// capture of another carrier, so those calls are never decoded). The state expires kTtlSec after the last set-up PDU for the slot (the set-up is
+// repeated for late entry; a stale entry could otherwise outlive the call): a missed repeat only costs audio, never decodes an unchecked call.
+class CallTracker {
+public:
+    static constexpr double kTtlSec = 20.0;
+    void setMainCarrier(int carrierNumber) { mainCarrier_ = carrierNumber; }   // -1: unknown (every event is then ignored)
+    int mainCarrier() const { return mainCarrier_; }
+    void onEvent(const CallEvent& e, double nowSec);
+    // known=false: no fresh set-up PDU for this downlink slot (tn 1..4) or it did not say clear; encMode 1: the set-up PDU said encrypted
+    CallEncryption slotState(int tn, double nowSec) const;
+private:
+    struct Entry { bool valid = false; int callId = 0, enc = -1; double t = 0; };
+    Entry slot_[4];
+    int mainCarrier_ = -1;
+};
+
 // One full slot traffic burst: bkn1 and bkn2 are the two 216 soft bit blocks (llr > 0 means a 1). The verdict is taken first;
-// only a Passed burst is descrambled and deinterleaved and given to the sink (which may be null: the frame is then dropped).
+// only a Passed burst is descrambled (type-5 to type-4 bits) and given to the sink (which may be null: the frame is then dropped).
 VoiceVerdict processTrafficBurst(const float* bkn1, const float* bkn2, uint32_t scramblerInit, const CallEncryption& e, SpeechFrameSink* sink);
 
 } // namespace dect2::tetra
