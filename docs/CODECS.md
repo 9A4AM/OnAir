@@ -319,6 +319,15 @@ by patents, licensed to makers of products (and Dolby's AC-4 specification is ET
 OnAir ships no AC-4 code, no FFmpeg patch and downloads nothing; the build script above also pulls in GPL and non-free libraries if you ask it to
 (`--enable-gpl-and-non-free`), which would make that binary unredistributable. Whether you may use it where you live is your responsibility.
 
+## Speech codec plug-ins (voice modes)
+
+A voice mode that needs a speech codec OnAir does not ship (TETRA voice, later Iridium voice) loads it from your user folder, never from
+the program: `onair-codec-<id>.dylib` / `.so` / `.dll` in the codecs folder under the app data folder (macOS
+`~/Library/Application Support/OnAir/codecs/`, Linux `~/.local/share/onair/codecs/`, Windows `%LOCALAPPDATA%\OnAir\codecs\`). Without it the
+mode says "Codec not installed" and links here. The first time, OnAir shows a legal notice: you are responsible for following the laws
+where you live on listening to radio traffic and for the codec's licence; OnAir does not include or distribute the codec. The codec loads only
+after you accept it once. The plug-in's C interface is in `core/include/dect2/codec/speech_codec.h`.
+
 ## Legal note
 
 Some of these codecs are covered by patents in some countries. Whether you install and use them is your choice and your
