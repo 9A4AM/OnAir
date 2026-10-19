@@ -328,6 +328,8 @@ mode says "Codec not installed" and links here. The first time, OnAir shows a le
 where you live on listening to radio traffic and for the codec's licence; OnAir does not include or distribute the codec. The codec loads only
 after you accept it once. The plug-in's C interface is in `core/include/dect2/codec/speech_codec.h`.
 
+TETRA voice: OnAir removes the radio channel coding (ETSI EN 300 395-2 clause 5.5) and gives the plug-in one speech frame per call of `onair_speech_decode`: 137 bytes, one bit per byte (0 or 1), byte i is speech frame bit B(i+1) of table 4 of that standard (the output order of the source encoder). Two frames per burst, 30 ms each, in order. Frames whose CRC fails are dropped, not passed on. Encrypted calls, and calls whose set-up OnAir did not hear saying "clear", are never decoded and never reach the plug-in.
+
 ## Legal note
 
 Some of these codecs are covered by patents in some countries. Whether you install and use them is your choice and your

@@ -14,11 +14,10 @@ struct Sink : SpeechFrameSink {
     void onCodedFrame(const uint8_t* b, size_t n) override { calls++; last.assign(b, b + n); }
 };
 
-// A generated burst: the 432 type-3 bits are interleaved and scrambled the way the transmitter does, then made soft.
+// A generated burst: the 432 type-4 bits are scrambled the way the transmitter does, then made soft. (The speech channel interleaver is
+// the traffic decoder's business, see test_tetra_traffic.cpp; the voice path hands the descrambled type-4 bits on.)
 static void makeBurst(const Bits& t3, uint32_t scr, std::vector<float>& l) {
-    Bits t4(432), t5;
-    for (int i = 1; i <= 432; i++) t4[(size_t)((103 * i) % 432)] = t3[(size_t)(i - 1)];
-    t5 = t4;
+    Bits t5 = t3;
     scramble(t5.data(), 432, scr);
     l.resize(432);
     for (int i = 0; i < 432; i++) l[(size_t)i] = t5[(size_t)i] ? 1.f : -1.f;

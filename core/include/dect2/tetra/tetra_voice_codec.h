@@ -13,11 +13,10 @@
 
 namespace dect2::tetra {
 
-// Turns the 432 type-3 bits of a traffic burst (one bit per byte, channel coding NOT removed) into the coded speech frame the
-// codec takes (bytes). Empty result: the frame is dropped.
-// TODO(ETSI EN 300 395-2): the traffic channel coding (RCPC decoding and the ACELP frame layout of the full slot traffic channel)
-// is NOT implemented. The exact clause of the public standard could not be read, and the coding parameters must not be guessed.
-// Until a decoder written from that clause is set here, no frame reaches the codec and no audio is produced.
+// Turns the 432 descrambled type-4 bits of a traffic burst (one bit per byte, still interleaved and channel coded) into the speech frames the codec
+// plug-in takes: one or more frames of kTchSFrameBits (137) bytes each, one bit per byte in the order B1..B137 of EN 300 395-2 table 4, frames
+// back to back (see tetra_traffic.h: makeTrafficFrameDecoder() is the decoder written from clause 5.5). Empty result: the burst is dropped.
+// A result whose size is a multiple of 137 is split into frames and the plug-in is called once per frame; any other size is passed as one frame.
 using TrafficFrameDecoder = std::function<std::vector<uint8_t>(const uint8_t* bits, size_t n)>;
 
 class TetraVoiceSink final : public SpeechFrameSink {

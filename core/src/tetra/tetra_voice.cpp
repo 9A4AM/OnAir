@@ -17,17 +17,48 @@ const char* voiceVerdictText(VoiceVerdict v) {
     }
 }
 
+void CallTracker::onEvent(const CallEvent& e, double now) {
+    if (e.kind == 3) {   // D-DISCONNECT / D-RELEASE: the call is over
+        for (auto& s : slot_) if (s.valid && s.callId == e.callId) s.valid = false;
+        return;
+    }
+    if (e.kind != 1 && e.kind != 2) return;
+    if (mainCarrier_ < 0 || e.carrier != mainCarrier_ || e.slots <= 0) return;   // not tied to a slot of this carrier: ignored
+    for (int tn = 1; tn <= 4; tn++) {
+        if (!(e.slots & (1 << (4 - tn)))) continue;
+        Entry& s = slot_[tn - 1];
+        if (s.valid && s.callId == e.callId) {
+            // encrypted is sticky within a call; clear needs a PDU that says so; "not stated" (D-CONNECT without the element) changes nothing
+            if (e.enc == 1) s.enc = 1; else if (e.enc == 0 && s.enc == -1) s.enc = 0;
+            s.t = now;
+        } else {
+            s.valid = true; s.callId = e.callId; s.enc = e.enc; s.t = now;
+        }
+    }
+}
+
+CallEncryption CallTracker::slotState(int tn, double now) const {
+    CallEncryption c;
+    if (tn < 1 || tn > 4) return c;
+    const Entry& s = slot_[tn - 1];
+    if (!s.valid || s.enc < 0 || now - s.t > kTtlSec || now < s.t) return c;
+    c.known = true;
+    c.encMode = s.enc == 1 ? 1 : 0;
+    return c;
+}
+
 VoiceVerdict processTrafficBurst(const float* bkn1, const float* bkn2, uint32_t scr, const CallEncryption& e, SpeechFrameSink* sink) {
     const VoiceVerdict v = voiceVerdict(e);   // first, before the burst is read
     if (v != VoiceVerdict::Passed) return v;
     if (!sink || !bkn1 || !bkn2) return v;
-    float f[432], t3[432];
+    float f[432];
     std::copy(bkn1, bkn1 + 216, f);
     std::copy(bkn2, bkn2 + 216, f + 216);
+    // EN 300 392-2 clause 8: the type-5 bits of the traffic channel are scrambled with the cell's colour code like the SCH/F; the block
+    // interleaver of the speech channel (EN 300 395-2 clause 5.5.3, NOT the a = 103 interleaver of the control channels) is undone by the traffic decoder
     descramble(f, 432, scr);
-    deinterleave(f, t3, 432, 103);
     uint8_t bits[432];
-    for (int i = 0; i < 432; i++) bits[i] = t3[i] > 0.f ? 1 : 0;
+    for (int i = 0; i < 432; i++) bits[i] = f[i] > 0.f ? 1 : 0;
     sink->onCodedFrame(bits, 432);
     return v;
 }

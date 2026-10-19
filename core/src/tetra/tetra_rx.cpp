@@ -10,6 +10,7 @@
 #include <cmath>
 #include <condition_variable>
 #include <ctime>
+#include <map>
 #include <mutex>
 #include <thread>
 #include "dect2/common/timecompat.h"
@@ -130,7 +131,7 @@ SlotFit fitSlot(const std::vector<cf32>& dd, long s) {
 
 // ---------------------------------------------------------------- one carrier
 
-CarrierDecode decodeCarrier(const cf32* x, size_t n, int kMcc, int kMnc, int kCc, SpeechFrameSink* sink) {
+CarrierDecode decodeCarrier(const cf32* x, size_t n, int kMcc, int kMnc, int kCc, SpeechFrameSink* sink, CallTracker* calls, double nowSec) {
     CarrierDecode out;
     if (n < (size_t)kSlotSamples * 8) return out;
     // matched filter
@@ -259,7 +260,8 @@ CarrierDecode decodeCarrier(const cf32* x, size_t n, int kMcc, int kMnc, int kCc
         const long a = ((a0 + (long)i - syncSlot) % (60L * 72) + 60L * 72) % (60L * 72);
         tn = (int)(a % 4) + 1; fn = (int)((a / 4) % 18) + 1;
     };
-    std::vector<std::vector<float>> traffic;
+    struct TrafficSlot { int tn; std::vector<float> t; };
+    std::vector<TrafficSlot> traffic;
     for (size_t i = 0; i < slots.size(); i++) {
         const Slot& sl = slots[i];
         if (sl.f.mid < 0.5f || sl.f.total < 1.0f) continue;
@@ -291,7 +293,7 @@ CarrierDecode decodeCarrier(const cf32* x, size_t n, int kMcc, int kMnc, int kCc
                 std::vector<float> t(432);
                 std::copy(llr.begin() + kNbBkn1, llr.begin() + kNbBkn1 + 216, t.begin());
                 std::copy(llr.begin() + kNbBkn2, llr.begin() + kNbBkn2 + 216, t.begin() + 216);
-                traffic.push_back(std::move(t));
+                traffic.push_back({tn, std::move(t)});
                 continue;
             }
             float f[432];
@@ -300,17 +302,27 @@ CarrierDecode decodeCarrier(const cf32* x, size_t n, int kMcc, int kMnc, int kCc
             block(f, kSchF);
         }
     }
+    // call set-up PDUs (D-SETUP / D-CONNECT / release) read from the clear signalling of this capture: the per-call encryption state
+    if (calls) {
+        for (const auto& m : out.macs) if (m.sysinfo) calls->setMainCarrier(m.si.mainCarrier);
+        for (const auto& m : out.macs) for (const auto& e : m.calls) calls->onEvent(e, nowSec);
+    }
     if (!traffic.empty()) {
         // Encryption state of the cell from this capture: known only when clear MAC-RESOURCE signalling was read; any encrypted
         // PDU or an advertised air interface encryption service means encrypted. Unknown counts as encrypted.
-        CallEncryption ce;
+        CallEncryption cell;
         for (const auto& m : out.macs) {
-            if (m.resources > 0) ce.known = true;
-            if (m.encrypted > 0) ce.encMode = 1;
-            if (m.sysinfo && m.si.bsService >= 0 && (m.si.bsService & kSvcAirEncryption)) ce.cellOffersEncryption = true;
+            if (m.resources > 0) cell.known = true;
+            if (m.encrypted > 0) cell.encMode = 1;
+            if (m.sysinfo && m.si.bsService >= 0 && (m.si.bsService & kSvcAirEncryption)) cell.cellOffersEncryption = true;
         }
-        for (const auto& t : traffic) {
-            const VoiceVerdict v = processTrafficBurst(t.data(), t.data() + 216, scr, ce, sink);
+        for (const auto& tr : traffic) {
+            // the cell-level gate AND the per-call gate: clear only when both say clear; the call's set-up PDU must have said "no encryption"
+            CallEncryption ce = cell;
+            const CallEncryption call = calls ? calls->slotState(tr.tn, nowSec) : CallEncryption{};
+            if (!call.known) ce.known = false;
+            if (call.encMode != 0) ce.encMode = 1;
+            const VoiceVerdict v = processTrafficBurst(tr.t.data(), tr.t.data() + 216, scr, ce, sink);
             out.voiceStatus = voiceVerdictText(v);
             if (v == VoiceVerdict::Passed) out.voicePassed++; else out.voiceNotDecoded++;
         }
@@ -340,6 +352,9 @@ struct TetraReceiver::Impl {
     std::atomic<bool> idle{true};
     std::atomic<bool> clearReq{false};
     std::atomic<SpeechFrameSink*> voiceSink{nullptr};
+    // per-call encryption state of each carrier (analysis thread only), keyed by the carrier's 25 kHz channel
+    std::map<long, tetra::CallTracker> callTrackers;
+    static long callKey(double center, double off) { return std::lround(((center > 0 ? center : 0.0) + off) / 25e3); }
     // capture (analysis thread)
     std::vector<cf32> acc;
     size_t want = 0;
@@ -445,7 +460,8 @@ struct TetraReceiver::Impl {
                 for (const auto& t : tel.cells) if (std::fabs(t.freqHz - f) < 5e3 && t.mcc >= 0) { kMcc = t.mcc; kMnc = t.mnc; kCc = t.colourCode; break; }
             }
             const std::vector<cf32> s = tetra::channelize(x.data(), x.size(), fs, c.off);
-            tetra::CarrierDecode d = tetra::decodeCarrier(s.data(), s.size(), kMcc, kMnc, kCc, voiceSink.load());
+            if (callTrackers.size() > 64) callTrackers.clear();
+            tetra::CarrierDecode d = tetra::decodeCarrier(s.data(), s.size(), kMcc, kMnc, kCc, voiceSink.load(), &callTrackers[callKey(center, c.off)], (double)wallNow());
             const double freq = (center > 0 ? center : 0.0) + c.off + d.cfoHz;
             TetraCarrierSeen cs; cs.freqHz = d.tetra ? freq : (center > 0 ? center : 0.0) + c.off; cs.levelDb = c.levelDb; cs.synced = d.synced;
             seen.push_back(cs);

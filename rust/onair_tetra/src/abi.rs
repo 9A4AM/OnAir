@@ -107,6 +107,22 @@ pub struct Nwrk {
     pub time48: u64,
 }
 
+/// The call set-up facts of one clear CMCE PDU (ETSI EN 300 392-2 clause 14): kind 1 D-SETUP, 2 D-CONNECT, 3 D-DISCONNECT / D-RELEASE; the call
+/// identifier; `enc` the end-to-end encryption flag of the basic service information (0 clear, 1 encrypted, -1 not stated); `slots` the
+/// "timeslot assigned" bit map (MSB = timeslot 1) and `carrier` the carrier number of the channel allocation of the same MAC-RESOURCE, -1 when it has none.
+#[repr(C)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
+pub struct CallInfo {
+    pub kind: i32,
+    pub call_id: i32,
+    pub enc: i32,
+    pub slots: i32,
+    pub carrier: i32,
+}
+
+/// Call events kept per block.
+pub const MAX_CALLS: usize = 4;
+
 /// What a signalling block held (counters and the SYSINFO), see `mac::parse_block`.
 #[repr(C)]
 #[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
@@ -119,5 +135,7 @@ pub struct MacBlock {
     pub by_pd: [i32; 8],
     pub n_nwrk: u32,
     pub n_nbr: u32,
+    pub n_call: i32,
+    pub call: [CallInfo; MAX_CALLS],
     pub si: Sysinfo,
 }

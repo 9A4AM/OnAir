@@ -4,6 +4,7 @@
 #include "app.h"
 #include "codec/speech_codec_ui.h"
 #include "dect2/audio/audioout.h"
+#include "dect2/tetra/tetra_traffic.h"
 #include "dect2/tetra/tetra_voice_codec.h"
 #include "state/results_export.h"
 #include "dect2/gsmr/gsmr_rx.h"
@@ -48,6 +49,7 @@ void wireVoice(App& a) {
         for (size_t i = 0; i < n; i++) st[2 * i] = st[2 * i + 1] = pcm[i] / 32768.f;
         gVoiceOut.write(st.data(), (int)n);
     });
+    gVoice.setFrameDecoder(dect2::tetra::makeTrafficFrameDecoder());   // channel decoding from EN 300 395-2 clause 5.5; the codec itself is the user's plug-in
     a.engine.tetra().setVoiceSink(&gVoice);
 }
 
