@@ -13,6 +13,7 @@
 #include <sys/resource.h>
 #endif
 #include "../platform/discord_rpc.h"
+#include "../panels/report_problem.h"
 
 using namespace ui2;
 
@@ -515,6 +516,8 @@ float menuBar(App& a) {
             if (ImGui::MenuItem(tr("Voice codecs (mbelib)"))) dect2::openUrl("https://on-air.dev/docs/codecs/");
             if (ImGui::MenuItem(tr("Website"))) dect2::openUrl("https://on-air.dev/");
             if (ImGui::MenuItem(tr("Credits and licences"))) { a.creditsOpen = true; a.creditsTab = 1; }
+            ImGui::Separator();
+            if (ImGui::MenuItem(tr("Report a problem"))) a.reportOpen = true;
             ImGui::EndMenu();
         }
         tourMark("help", ImVec2(hx0, my0), ImVec2(ImGui::GetCursorScreenPos().x, my1));
@@ -523,6 +526,7 @@ float menuBar(App& a) {
     }
     creditsWindow(a);
     tx::windowPanel(a);
+    reportProblemWindow(a);
     return menuH;
 }
 

@@ -381,6 +381,12 @@ void audioMonitorUi(App& a) {
 
 } // namespace
 
+void systemInfoText(std::string& os, std::string& cpu, std::string& gpu) {
+    os = osName();
+    cpu = cpuName();
+    gpu = gpuName();
+}
+
 std::string radioRangeWarning(const DeviceInfo& d, double freqMhz, const std::map<std::string, std::string>* radio) {
     if (!d.isRadio() || d.minFreqHz <= 0 || d.maxFreqHz <= 0) return "";
     double hz = freqMhz * 1e6;
@@ -450,6 +456,8 @@ std::string slurp(const std::filesystem::path& p, size_t maxBytes = 4u << 20) {
     return s;
 }
 }
+
+bool writeZipFile(const std::string& path, const std::vector<std::pair<std::string, std::string>>& files) { return writeZip(path, files); }
 
 std::string buildDiagnostics(const DiagInput& in) {
     std::string s = "OnAir diagnostics\n";
