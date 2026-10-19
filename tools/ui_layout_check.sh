@@ -110,6 +110,7 @@ sarsat	--mode sarsat	Overview|Beacons|Receiver|History
 mt63	--mode mt63	Overview|MT63|Receiver|History
 fsq	--mode fsq	Overview|FSQ|Receiver|History
 ifkp	--mode ifkp	Overview|IFKP|Receiver|History
+cquam	--mode cquam	Overview|C-QUAM|Receiver|History
 mscatter	--mode mscatter	Overview|Meteors|Receiver|History
 nbiot	--mode nbiot	Overview|NB-IoT|Receiver|History
 codar	--mode codar	Overview|Radar|Receiver|History

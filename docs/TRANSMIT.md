@@ -98,6 +98,7 @@ This list is taken from the tables in `core/src/tx/tx.cpp` (`txModes()`).
 | mt63 | MT63 | 97 | makeMt63Synth |
 | fsq | FSQ | 115 | makeFsqSynth |
 | ifkp | IFKP | 118 | makeIfkpSynth |
+| cquam | AM stereo (C-QUAM) | 109 | makeCquamSynth |
 | zwave | Z-Wave | 100 | makeZwaveSynth |
 | mscatter | Meteor scatter | 106 | makeMscatterSynth |
 | vorils | VOR / ILS | 32 | makeVorSynth |

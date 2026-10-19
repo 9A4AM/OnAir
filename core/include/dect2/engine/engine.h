@@ -99,6 +99,7 @@
 #include "dect2/mt63/mt63_rx.h"
 #include "dect2/fsq/fsq_rx.h"
 #include "dect2/ifkp/ifkp_rx.h"
+#include "dect2/cquam/cquam_rx.h"
 #include "dect2/mscatter/mscatter_live.h"
 #include "dect2/rid/rid_rx.h"
 #include "dect2/meteor/meteor_rx.h"
@@ -391,6 +392,7 @@ public:
     FsqReceiver& fsq() { return rxFsq_; }   // FSQ: speed, own callsign, clear the text (telemetry through latestRx)
     IfkpReceiver& ifkp() { return rxIfkp_; }   // IFKP: speed, clear the text (telemetry through latestRx)
     Mt63Receiver& mt63() { return rxMt63_; }   // MT63: bandwidth and interleave (automatic by default), clear the text (telemetry through latestRx)
+    CquamReceiver& cquam() { return rxCq_; }   // AM stereo (C-QUAM): stereo mode, audio bandwidth, squelch, channel offset (telemetry through latestRx)
     EczasLiveReceiver& eczas() { return rxEcz_; }   // e-Czas (225 kHz, Poland): audio input, receiver position, clear the log (telemetry through latestRx)
     FpvReceiver& fpv() { return rxFpv_; }   // FPV video: picture controls, sound, clear the channel levels (telemetry through latestRx)
     ZwaveReceiver& zwave() { return rxZw_; }   // Z-Wave: region, clear the tables (telemetry through latestRx)
@@ -661,6 +663,7 @@ private:
     Mt63Receiver rxMt63_;
     FsqReceiver rxFsq_;
     IfkpReceiver rxIfkp_;
+    CquamReceiver rxCq_;
     MscatterLiveReceiver rxMs_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;

@@ -3252,3 +3252,25 @@ FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is
 IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	Скорости IFKP: 0,5, 1,0 и 2,0 (1,95, 3,9 и 7,8 бод). Авто ищет все три; полоса при любой скорости шириной 387 Гц.
 Directed chat, 14.105 MHz	Адресный чат, 14,105 МГц
 Keyboard chat, 14.083 MHz	Клавиатурный чат, 14,083 МГц
+25 Hz pilot	Пилот 25 Гц
+Audio width	Полоса звука
+Auto switches to stereo when the 25 Hz pilot is there. Mono plays L + R on both sides. Stereo uses the quadrature part whatever the pilot says.	Авто переключается на стерео, когда есть пилот 25 Гц. Моно воспроизводит L + R с обеих сторон. Стерео использует квадратурную часть независимо от пилота.
+Left and right audio level (dBFS, the last 30 s on the right)	Уровень звука слева и справа (dBFS, справа последние 30 с)
+MONO	МОНО
+MW stereo, 531 - 1602 kHz	Стерео на СВ, 531 - 1602 кГц
+Mono	Моно
+Mute the noise when the carrier is weaker than 4 dB over it	Заглушить шум, когда несущая выше него менее чем на 4 дБ
+NO CARRIER	НЕТ НЕСУЩЕЙ
+Pilot	Пилот
+STEREO	СТЕРЕО
+Squelch	Шумоподавитель
+The channel filter, each side of the carrier: 4.5 kHz for 9 kHz channel spacing, 5 kHz for 10 kHz, wider for a quiet band	Фильтр канала по каждую сторону несущей: 4,5 кГц при сетке 9 кГц, 5 кГц при 10 кГц, шире для тихого диапазона
+The quadrature part of the carrier (L - R and the pilot), 0 - 60 Hz. A C-QUAM station has a 25 Hz tone at about 5 percent of the carrier here.	Квадратурная часть несущей (L - R и пилот), 0 - 60 Гц. У станции C-QUAM здесь тон 25 Гц примерно в 5 процентов от несущей.
+carrier to noise	отношение несущая/шум
+found	найден
+modulation	модуляция
+no carrier yet	несущей пока нет
+pilot	пилот
+pilot checks	проверки пилота
+separation	разделение
+stereo phase	фаза стерео

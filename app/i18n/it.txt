@@ -3252,3 +3252,25 @@ FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is
 IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	Velocità IFKP: 0,5, 1,0 e 2,0 (1,95, 3,9 e 7,8 baud). Auto cerca tutte e tre; la banda è larga 387 Hz a ogni velocità.
 Directed chat, 14.105 MHz	Chat diretta, 14,105 MHz
 Keyboard chat, 14.083 MHz	Chat da tastiera, 14,083 MHz
+25 Hz pilot	Pilota a 25 Hz
+Audio width	Larghezza audio
+Auto switches to stereo when the 25 Hz pilot is there. Mono plays L + R on both sides. Stereo uses the quadrature part whatever the pilot says.	Auto passa allo stereo quando c'è il pilota a 25 Hz. Mono riproduce L + R su entrambi i lati. Stereo usa la parte in quadratura qualunque sia il pilota.
+Left and right audio level (dBFS, the last 30 s on the right)	Livello audio sinistro e destro (dBFS, a destra gli ultimi 30 s)
+MONO	MONO
+MW stereo, 531 - 1602 kHz	Stereo in onde medie, 531 - 1602 kHz
+Mono	Mono
+Mute the noise when the carrier is weaker than 4 dB over it	Silenzia il rumore quando la portante è a meno di 4 dB sopra di esso
+NO CARRIER	NESSUNA PORTANTE
+Pilot	Pilota
+STEREO	STEREO
+Squelch	Squelch
+The channel filter, each side of the carrier: 4.5 kHz for 9 kHz channel spacing, 5 kHz for 10 kHz, wider for a quiet band	Il filtro di canale, per ogni lato della portante: 4,5 kHz per canali a 9 kHz, 5 kHz per 10 kHz, più largo per una banda tranquilla
+The quadrature part of the carrier (L - R and the pilot), 0 - 60 Hz. A C-QUAM station has a 25 Hz tone at about 5 percent of the carrier here.	La parte in quadratura della portante (L - R e il pilota), 0 - 60 Hz. Una stazione C-QUAM ha qui un tono a 25 Hz a circa il 5 per cento della portante.
+carrier to noise	rapporto portante/rumore
+found	trovato
+modulation	modulazione
+no carrier yet	ancora nessuna portante
+pilot	pilota
+pilot checks	controlli del pilota
+separation	separazione
+stereo phase	fase stereo
