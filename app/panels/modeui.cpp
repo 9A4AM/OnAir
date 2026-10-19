@@ -92,6 +92,7 @@ extern const ModeUi kNrUi;
 extern const ModeUi kGoesUi;
 extern const ModeUi kHrptUi;
 extern const ModeUi kLbjUi;
+extern const ModeUi kDgpsUi;
 
 // ---- whole-span decoding ("wide decode"): the families whose receivers can decode everything in the visible span (widespan.h) ----
 bool modeSupportsWideHf(int family) { return family == 25 || family == 34 || family == 36; }   // HF digital, CW, PSK: widespan.h inside the receiver
@@ -168,6 +169,7 @@ const ModeUi* modeUi(int family) {
     case 79: return &kTetrapolUi;
     case 80: return &kElektroUi;
     case 81: return &kLbjUi;
+    case 119: return &kDgpsUi;
     case 83: return &kUatUi;
     case 75: return &kMultitoneUi;
     case 71: return &kLoraRawUi;

@@ -46,6 +46,7 @@
 #include "dect2/mac/mac_tel.h"
 #include "dect2/gsmr/gsmr_tel.h"
 #include "dect2/lbj/lbj_tel.h"
+#include "dect2/dgps/dgps_engine.h"
 #include "dect2/dvbc/dvbc_tel.h"
 #include "dect2/orbcomm/orbcomm_tel.h"
 #include "dect2/uplink/uplink_tel.h"
@@ -221,6 +222,7 @@ struct RxTelemetry {
     MacTelemetry mac;           // valid when standard == 48
     GsmrTelemetry gsmr;         // valid when standard == 40
     LbjTelemetry lbj;           // valid when standard == 82 (LBJ, engine standard 83)
+    DgpsTelemetry dgps;         // valid when standard == 120 (DGPS beacon, engine standard 121)
     struct Dvbt {                // DVB-T only: TPS parameters and the channel decoder's statistics
         bool tpsOk = false, fecSync = false;
         int mode = 0, guard = 0, mod = 0, hier = 0, crHp = 0, crLp = 0, cellId = 0, frameIdx = 0, punctPhase = 0;

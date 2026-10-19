@@ -107,6 +107,7 @@
 #include "dect2/goes/goes_rx.h"
 #include "dect2/elektro/elektro_rx.h"
 #include "dect2/lbj/lbj_rx.h"
+#include "dect2/dgps/dgps_engine.h"
 #include "dect2/uat/uat_rx.h"
 #include "dect2/hrpt/hrpt_rx.h"
 #include "dect2/tv/bbunpack.h"
@@ -419,6 +420,7 @@ public:
     HrptReceiver& hrpt() { return rxHrpt_; }   // HRPT / AHRPT: variant, new picture (telemetry through latestRx)
     GoesReceiver& goes() { return rxGoes_; }   // GOES HRIT: clear the products (telemetry through latestRx)
     ElektroReceiver& elektro() { return rxEl_; }   // Elektro-L HRIT / LRIT / GGAK (telemetry through latestRx)
+    DgpsReceiver& dgps() { return rxDgps_; }   // DGPS beacons: the station, the frames (telemetry through latestRx)
     LbjReceiver& lbj() { return rxLbj_; }   // LBJ railway warnings (telemetry through latestRx)
     Vdl4Receiver& vdl4() { return rxVdl4_; }   // VDL Mode 4 (telemetry through latestRx)
     UatReceiver& uat() { return rxUat_; }         // UAT 978 MHz ADS-B / FIS-B / TIS-B (telemetry through latestRx)
@@ -671,6 +673,7 @@ private:
     GoesReceiver rxGoes_;
     ElektroReceiver rxEl_;
     LbjReceiver rxLbj_;
+    DgpsReceiver rxDgps_;
     Vdl4Receiver rxVdl4_;
     UatReceiver rxUat_;
     HrptReceiver rxHrpt_;
