@@ -3426,3 +3426,8 @@ The GOES and Meteosat data collection system: river gauges, weather stations, ti
 with a steady carrier on another channel	su pastoviu nešliu kitame kanale
 The test signal is three platforms on channels 60, 100 and 140 that each send a short report every 14 to 18 seconds.	Bandomąjį signalą sudaro trys platformos 60, 100 ir 140 kanaluose, kurios kas 14–18 sekundžių siunčia trumpą ataskaitą.
 Platform reports, 401.85 MHz	Platformų ataskaitos, 401,85 MHz
+# Mode A/C
+Codes	Kodai
+start the receiver to see the codes	paleiskite imtuvą, kad pamatytumėte kodus
+Squawk and altitude, 1090 MHz	Squawk ir aukštis, 1090 MHz
+Mode A is the squawk, Mode C the altitude in 100 ft steps. A reply does not say which of the two it is: a code shows as A/C until it can only be a squawk or is matched to a Mode S aircraft by its squawk or its altitude.	A režimas yra squawk kodas, C režimas – aukštis 100 pėdų žingsniais. Atsakymas nenurodo, kuris iš jų tai yra: kodas rodomas kaip A/C, kol gali būti tik squawk arba kol pagal squawk ar aukštį nesusiejamas su Mode S orlaiviu.

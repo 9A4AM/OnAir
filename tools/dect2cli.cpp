@@ -418,6 +418,11 @@ int main(int argc, char** argv) {
                     const auto& p = t.goesdcs.messages[i];
                     printf("  dcs: %08X ch %d %d bps %5.1f dB %.60s\n", p.address, p.channel, p.bps, (double)p.snrDb, p.text.c_str());
                 }
+            if (t.standard == 132)   // Mode A/C: the newest codes
+                for (size_t i = 0; i < t.modeac.codes.size() && i < 4; i++) {
+                    const auto& c = t.modeac.codes[i];
+                    printf("  code: squawk %04d  alt %s  type %s  %u replies  %.0f dBFS%s%s\n", c.squawk, c.altValid ? std::to_string(c.altFt).c_str() : "-", c.kind == 1 ? "A" : c.kind == 2 ? "C" : "A/C", c.count, (double)c.levelDbfs, c.spi ? "  SPI" : "", c.icao ? "  matched" : "");
+                }
             if (t.standard == 105)   // meteor scatter: the newest pings
                 for (size_t i = 0; i < t.mscatter.pings.size() && i < 3; i++) {
                     const auto& p = t.mscatter.pings[i];

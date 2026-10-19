@@ -3426,3 +3426,8 @@ The GOES and Meteosat data collection system: river gauges, weather stations, ti
 with a steady carrier on another channel	avec une porteuse fixe sur un autre canal
 The test signal is three platforms on channels 60, 100 and 140 that each send a short report every 14 to 18 seconds.	Le signal d'essai est composé de trois plateformes sur les canaux 60, 100 et 140 qui envoient chacune un court rapport toutes les 14 à 18 secondes.
 Platform reports, 401.85 MHz	Rapports de plateformes, 401,85 MHz
+# Mode A/C
+Codes	Codes
+start the receiver to see the codes	démarrez le récepteur pour voir les codes
+Squawk and altitude, 1090 MHz	Squawk et altitude, 1090 MHz
+Mode A is the squawk, Mode C the altitude in 100 ft steps. A reply does not say which of the two it is: a code shows as A/C until it can only be a squawk or is matched to a Mode S aircraft by its squawk or its altitude.	Le mode A est le squawk, le mode C l'altitude par pas de 100 ft. Une réponse ne dit pas lequel des deux elle est : un code s'affiche comme A/C tant qu'il ne peut être qu'un squawk ou qu'il n'est pas associé à un aéronef Mode S par son squawk ou son altitude.

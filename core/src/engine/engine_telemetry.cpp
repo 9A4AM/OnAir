@@ -300,6 +300,7 @@ int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
     case 108: return pollStd(rxCq_, 108, t, seqs[104], &RxTelemetry::cquam);
     case 105: return pollStd(rxMs_, 105, t, seqs[101], &RxTelemetry::mscatter);
     case 131: return pollStd(rxGd_, 131, t, seqs[119], &RxTelemetry::goesdcs);
+    case 132: return pollStd(rxModeAc_, 132, t, seqs[120], &RxTelemetry::modeac);   // Mode A/C (slot 120)
     default: return -1;
     }
 }

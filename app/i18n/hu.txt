@@ -3412,3 +3412,8 @@ The GOES and Meteosat data collection system: river gauges, weather stations, ti
 with a steady carrier on another channel	állandó vivővel egy másik csatornán
 The test signal is three platforms on channels 60, 100 and 140 that each send a short report every 14 to 18 seconds.	A tesztjel három platform a 60., 100. és 140. csatornán, amelyek 14–18 másodpercenként egy rövid jelentést küldenek.
 Platform reports, 401.85 MHz	Platformjelentések, 401,85 MHz
+# Mode A/C
+Codes	Kódok
+start the receiver to see the codes	indítsa el a vevőt a kódok megtekintéséhez
+Squawk and altitude, 1090 MHz	Squawk és magasság, 1090 MHz
+Mode A is the squawk, Mode C the altitude in 100 ft steps. A reply does not say which of the two it is: a code shows as A/C until it can only be a squawk or is matched to a Mode S aircraft by its squawk or its altitude.	Az A mód a squawk, a C mód a magasság 100 láb lépésekben. A válasz nem árulja el, melyik a kettő közül: a kód A/C-ként jelenik meg, amíg csak squawk lehet, vagy amíg squawk vagy magasság alapján nem társítják egy Mode S légijárműhöz.

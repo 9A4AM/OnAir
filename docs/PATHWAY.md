@@ -62,3 +62,5 @@ Captions from speech for the sound of the heard receiver (FM/AM/DAB/DRM/HD Radio
 Marine DSC checked against M.493: added call kinds by name, MID country and station kind, partial MMSI (~), symbol repair with the check character, raw symbols, name table, search, CSV, distress banner, watchlist entry "DSC distress". YADD site was unreachable, compared from public write-ups only. Synthetic tests only.
 ## 2026-10-18 GOES / Meteosat DCS
 New mode goesdcs (family 107, active 108, std 109): whole 401.7 - 402.1 MHz uplink band scanned for platform carriers, PLL per carrier, 100/300/1200 bps NRZ and Manchester hypotheses with preamble + frame sync candidates, BCH (31,21) platform address (checked against the JMA annex example), ASCII and pseudo-binary B data, platform table, CSV log. Synthetic tests only; the 300/1200 bps spare bit and flag word are from summaries, not tried on a real platform.
+## 2026-10-18 Mode A/C
+New mode modeac (family 105, active 106, std 107, poll slot 102): Mode A squawk and Mode C Gillham altitude replies with the SPI pulse, shared ADS-B front end and map, matching by squawk or altitude. Synthetic tests only.

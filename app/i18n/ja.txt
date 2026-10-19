@@ -3426,3 +3426,8 @@ The GOES and Meteosat data collection system: river gauges, weather stations, ti
 with a steady carrier on another channel	別のチャンネルに連続キャリアを加える
 The test signal is three platforms on channels 60, 100 and 140 that each send a short report every 14 to 18 seconds.	テスト信号は、チャンネル60、100、140の3つのプラットフォームで、それぞれ14〜18秒ごとに短いレポートを送信します。
 Platform reports, 401.85 MHz	プラットフォームのレポート、401.85 MHz
+# Mode A/C
+Codes	コード
+start the receiver to see the codes	受信機を起動するとコードが表示されます
+Squawk and altitude, 1090 MHz	スコーク（スクォーク）と高度、1090 MHz
+Mode A is the squawk, Mode C the altitude in 100 ft steps. A reply does not say which of the two it is: a code shows as A/C until it can only be a squawk or is matched to a Mode S aircraft by its squawk or its altitude.	モードAはスコーク、モードCは100フィート刻みの高度です。応答だけではどちらか分かりません。スコークにしかなり得ない場合や、スコークまたは高度でモードS機に対応付けられるまでは、コードはA/Cと表示されます。
