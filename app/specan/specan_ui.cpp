@@ -209,6 +209,8 @@ void feedLeo(const dect2::SpecanTelemetry& t) {
         S.leoLastRun = S.leoFrames.back().tMs;
         S.leoFound = dect2::detectDopplerCarriers(S.leoFrames, dect2::LeoBand{S.leoStartHz, S.leoBinHz});
     }
+}
+
 // Dish alignment: the largest bin within +-5 kHz of the beacon, from this sweep, goes to the peak hold and the 60 s history.
 void feedDish(const dect2::SpecanTelemetry& t) {
     if (t.binHz <= 0 || t.live.empty()) return;

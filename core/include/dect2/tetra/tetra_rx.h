@@ -25,6 +25,7 @@
 #include <string>
 
 namespace dect2 {
+using tetra::SpeechFrameSink;   // tetra_voice.h declares it in dect2::tetra
 
 struct TetraTelemetry;   // tetra_tel.h
 
