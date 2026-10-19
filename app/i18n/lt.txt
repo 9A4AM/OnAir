@@ -3269,3 +3269,25 @@ FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is
 IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	IFKP greičiai: 0,5, 1,0 ir 2,0 (1,95, 3,9 ir 7,8 bodo). Automatinis ieško visų trijų; juosta bet kuriuo greičiu yra 387 Hz pločio.
 Directed chat, 14.105 MHz	Adresuotas pokalbis, 14,105 MHz
 Keyboard chat, 14.083 MHz	Klaviatūros pokalbis, 14,083 MHz
+25 Hz pilot	25 Hz pilotas
+Audio width	Garso juosta
+Auto switches to stereo when the 25 Hz pilot is there. Mono plays L + R on both sides. Stereo uses the quadrature part whatever the pilot says.	Auto perjungia į stereo, kai yra 25 Hz pilotas. Mono groja L + R abiejose pusėse. Stereo naudoja kvadratūrinę dalį nepaisydamas piloto.
+Left and right audio level (dBFS, the last 30 s on the right)	Kairio ir dešiniojo garso lygis (dBFS, dešinėje paskutinės 30 s)
+MONO	MONO
+MW stereo, 531 - 1602 kHz	VB stereo, 531 - 1602 kHz
+Mono	Mono
+Mute the noise when the carrier is weaker than 4 dB over it	Nutildyti triukšmą, kai nešlys mažiau nei 4 dB viršija jį
+NO CARRIER	NĖRA NEŠLIO
+Pilot	Pilotas
+STEREO	STEREO
+Squelch	Triukšmo slopintuvas
+The channel filter, each side of the carrier: 4.5 kHz for 9 kHz channel spacing, 5 kHz for 10 kHz, wider for a quiet band	Kanalo filtras kiekvienoje nešlio pusėje: 4,5 kHz esant 9 kHz kanalų tarpui, 5 kHz esant 10 kHz, platesnis ramiai juostai
+The quadrature part of the carrier (L - R and the pilot), 0 - 60 Hz. A C-QUAM station has a 25 Hz tone at about 5 percent of the carrier here.	Nešlio kvadratūrinė dalis (L - R ir pilotas), 0 - 60 Hz. C-QUAM stoties čia yra 25 Hz tonas, maždaug 5 procentai nešlio.
+carrier to noise	nešlio ir triukšmo santykis
+found	rastas
+modulation	moduliacija
+no carrier yet	nešlio dar nėra
+pilot	pilotas
+pilot checks	piloto patikros
+separation	atskyrimas
+stereo phase	stereo fazė

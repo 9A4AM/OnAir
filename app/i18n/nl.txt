@@ -3269,3 +3269,25 @@ FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is
 IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	IFKP-snelheden: 0,5, 1,0 en 2,0 (1,95, 3,9 en 7,8 baud). Automatisch zoekt naar alle drie; de band is bij elke snelheid 387 Hz breed.
 Directed chat, 14.105 MHz	Gerichte chat, 14,105 MHz
 Keyboard chat, 14.083 MHz	Toetsenbordchat, 14,083 MHz
+25 Hz pilot	25 Hz-pilot
+Audio width	Audiobandbreedte
+Auto switches to stereo when the 25 Hz pilot is there. Mono plays L + R on both sides. Stereo uses the quadrature part whatever the pilot says.	Auto schakelt naar stereo zodra de 25 Hz-pilot er is. Mono speelt L + R aan beide kanten. Stereo gebruikt het kwadratuurdeel ongeacht de pilot.
+Left and right audio level (dBFS, the last 30 s on the right)	Audioniveau links en rechts (dBFS, rechts de laatste 30 s)
+MONO	MONO
+MW stereo, 531 - 1602 kHz	MG-stereo, 531 - 1602 kHz
+Mono	Mono
+Mute the noise when the carrier is weaker than 4 dB over it	Demp de ruis wanneer de draaggolf minder dan 4 dB erboven zit
+NO CARRIER	GEEN DRAAGGOLF
+Pilot	Pilot
+STEREO	STEREO
+Squelch	Squelch
+The channel filter, each side of the carrier: 4.5 kHz for 9 kHz channel spacing, 5 kHz for 10 kHz, wider for a quiet band	Het kanaalfilter, aan elke kant van de draaggolf: 4,5 kHz bij 9 kHz kanaalafstand, 5 kHz bij 10 kHz, breder voor een rustige band
+The quadrature part of the carrier (L - R and the pilot), 0 - 60 Hz. A C-QUAM station has a 25 Hz tone at about 5 percent of the carrier here.	Het kwadratuurdeel van de draaggolf (L - R en de pilot), 0 - 60 Hz. Een C-QUAM-zender heeft hier een toon van 25 Hz op ongeveer 5 procent van de draaggolf.
+carrier to noise	draaggolf-ruisverhouding
+found	gevonden
+modulation	modulatie
+no carrier yet	nog geen draaggolf
+pilot	pilot
+pilot checks	pilotcontroles
+separation	scheiding
+stereo phase	stereofase

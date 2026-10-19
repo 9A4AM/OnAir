@@ -3269,3 +3269,25 @@ FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is
 IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	IFKP 速度:0.5、1.0 和 2.0(1.95、3.9 和 7.8 波特)。自动会寻找全部三种;任何速度下频带宽度都是 387 Hz。
 Directed chat, 14.105 MHz	定向聊天,14.105 MHz
 Keyboard chat, 14.083 MHz	键盘聊天,14.083 MHz
+25 Hz pilot	25 Hz 导频
+Audio width	音频带宽
+Auto switches to stereo when the 25 Hz pilot is there. Mono plays L + R on both sides. Stereo uses the quadrature part whatever the pilot says.	自动:有 25 Hz 导频时切换为立体声。单声道:两侧都播放 L + R。立体声:无论导频如何都使用正交部分。
+Left and right audio level (dBFS, the last 30 s on the right)	左右声道音频电平 (dBFS,右侧为最近 30 秒)
+MONO	单声道
+MW stereo, 531 - 1602 kHz	中波立体声,531 - 1602 kHz
+Mono	单声道
+Mute the noise when the carrier is weaker than 4 dB over it	载波比噪声高出不足 4 dB 时静音
+NO CARRIER	无载波
+Pilot	导频
+STEREO	立体声
+Squelch	静噪
+The channel filter, each side of the carrier: 4.5 kHz for 9 kHz channel spacing, 5 kHz for 10 kHz, wider for a quiet band	信道滤波器,载波两侧各: 9 kHz 间隔用 4.5 kHz,10 kHz 间隔用 5 kHz,安静的频段可更宽
+The quadrature part of the carrier (L - R and the pilot), 0 - 60 Hz. A C-QUAM station has a 25 Hz tone at about 5 percent of the carrier here.	载波的正交部分 (L - R 和导频),0 - 60 Hz。C-QUAM 电台在此有约占载波 5 百分比的 25 Hz 音调。
+carrier to noise	载噪比
+found	已找到
+modulation	调制度
+no carrier yet	尚无载波
+pilot	导频
+pilot checks	导频检查
+separation	分离度
+stereo phase	立体声相位

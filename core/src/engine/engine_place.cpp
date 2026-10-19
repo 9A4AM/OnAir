@@ -167,6 +167,7 @@ void Engine::configureReceiver(int a, double r) {
     case 96: rxMt63_.configure(r); break;
     case 114: rxFsq_.configure(r); break;
     case 117: rxIfkp_.configure(r); break;
+    case 108: rxCq_.configure(r); break;
     case 105: rxMs_.configure(r); break;
     default: break;
     }
@@ -192,6 +193,7 @@ void Engine::muteReceiver(int a, bool m) {
     case 51: rxP25_.setMuted(m); break;
     case 77: rxSame_.setMuted(m); break;   // NOAA SAME: "Listen"
     case 56: rxGeneral_.setMuted(m); break;
+    case 108: rxCq_.setMuted(m); break;
     default: break;   // no sound
     }
 }
@@ -273,6 +275,7 @@ void Engine::placeReceiver(int a, double o, double centreHz, double dialHz, doub
     case 96: rxMt63_.setSignalOffset(o); break;
     case 114: rxFsq_.setSignalOffset(o); break;
     case 117: rxIfkp_.setSignalOffset(o); break;
+    case 108: rxCq_.setSignalOffset(o); break;
     case 105: rxMs_.setSignalOffset(o); rxMs_.setCenterHz(centreHz); break;
     default: break;   // DMR, ADS-B, Mode S uplink: the channel on the centre, nothing to place
     }

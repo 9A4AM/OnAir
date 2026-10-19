@@ -3255,3 +3255,25 @@ FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is
 IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	IFKP sebességek: 0,5, 1,0 és 2,0 (1,95, 3,9 és 7,8 baud). Az automatikus mind a hármat keresi; a sáv minden sebességnél 387 Hz széles.
 Directed chat, 14.105 MHz	Címzett csevegés, 14,105 MHz
 Keyboard chat, 14.083 MHz	Billentyűzetes csevegés, 14,083 MHz
+25 Hz pilot	25 Hz-es pilot
+Audio width	Hangsáv szélessége
+Auto switches to stereo when the 25 Hz pilot is there. Mono plays L + R on both sides. Stereo uses the quadrature part whatever the pilot says.	Az Auto sztereóra vált, ha a 25 Hz-es pilot jelen van. A Mono L + R-t játssza mindkét oldalon. A Sztereó a kvadratúra részt használja a pilottól függetlenül.
+Left and right audio level (dBFS, the last 30 s on the right)	Bal és jobb hangszint (dBFS, jobbra az utolsó 30 mp)
+MONO	MONO
+MW stereo, 531 - 1602 kHz	KH sztereó, 531 - 1602 kHz
+Mono	Mono
+Mute the noise when the carrier is weaker than 4 dB over it	A zaj elnémítása, ha a vivő 4 dB-nél kevésbé van fölötte
+NO CARRIER	NINCS VIVŐ
+Pilot	Pilot
+STEREO	SZTEREÓ
+Squelch	Zajzár
+The channel filter, each side of the carrier: 4.5 kHz for 9 kHz channel spacing, 5 kHz for 10 kHz, wider for a quiet band	A csatornaszűrő a vivő mindkét oldalán: 4,5 kHz 9 kHz-es, 5 kHz 10 kHz-es csatornakiosztásnál, nyugodt sávban szélesebb
+The quadrature part of the carrier (L - R and the pilot), 0 - 60 Hz. A C-QUAM station has a 25 Hz tone at about 5 percent of the carrier here.	A vivő kvadratúra része (L - R és a pilot), 0 - 60 Hz. Egy C-QUAM adón itt egy 25 Hz-es hang van a vivő kb. 5 százalékán.
+carrier to noise	vivő/zaj arány
+found	megtalálva
+modulation	modulációs mélység
+no carrier yet	még nincs vivő
+pilot	pilot
+pilot checks	pilot-ellenőrzések
+separation	csatornaszétválás
+stereo phase	sztereó fázis

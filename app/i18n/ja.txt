@@ -3269,3 +3269,25 @@ FSQ speeds: 1.5, 2, 3, 4.5 and 6 baud. Automatic looks for all five; the band is
 IFKP speeds: 0.5, 1.0 and 2.0 (1.95, 3.9 and 7.8 baud). Automatic looks for all three; the band is 387 Hz wide at every speed.	IFKPの速度: 0.5、1.0、2.0 (1.95、3.9、7.8ボー)。自動は3つすべてを探します。バンド幅はどの速度でも387 Hzです。
 Directed chat, 14.105 MHz	宛先指定チャット、14.105 MHz
 Keyboard chat, 14.083 MHz	キーボードチャット、14.083 MHz
+25 Hz pilot	25 Hz パイロット
+Audio width	音声帯域幅
+Auto switches to stereo when the 25 Hz pilot is there. Mono plays L + R on both sides. Stereo uses the quadrature part whatever the pilot says.	自動は 25 Hz パイロットがあるとステレオに切り替えます。モノは L + R を両側で再生します。ステレオはパイロットに関係なく直交成分を使います。
+Left and right audio level (dBFS, the last 30 s on the right)	左右の音声レベル (dBFS、右側は直近 30 秒)
+MONO	モノ
+MW stereo, 531 - 1602 kHz	中波ステレオ、531 - 1602 kHz
+Mono	モノ
+Mute the noise when the carrier is weaker than 4 dB over it	搬送波が雑音より 4 dB 未満しか強くないときは雑音をミュートする
+NO CARRIER	搬送波なし
+Pilot	パイロット
+STEREO	ステレオ
+Squelch	スケルチ
+The channel filter, each side of the carrier: 4.5 kHz for 9 kHz channel spacing, 5 kHz for 10 kHz, wider for a quiet band	チャンネルフィルタ(搬送波の両側): 9 kHz 間隔なら 4.5 kHz、10 kHz 間隔なら 5 kHz、静かな帯域ではもっと広く
+The quadrature part of the carrier (L - R and the pilot), 0 - 60 Hz. A C-QUAM station has a 25 Hz tone at about 5 percent of the carrier here.	搬送波の直交成分 (L - R とパイロット)、0 - 60 Hz。C-QUAM 局にはここに搬送波の約 5 パーセントの 25 Hz のトーンがあります。
+carrier to noise	搬送波対雑音比
+found	検出
+modulation	変調度
+no carrier yet	搬送波はまだありません
+pilot	パイロット
+pilot checks	パイロット検査
+separation	分離度
+stereo phase	ステレオ位相
