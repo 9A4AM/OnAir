@@ -95,7 +95,7 @@ float freqDigitsImpl(App& a, double& mhzRef, double lo, double hi, const std::fu
     constexpr int kD = 13;   // thirteen digits: up to 1000 GHz (10^12 Hz)
     char buf[24];
     snprintf(buf, sizeof buf, "%013lld", hz);
-    ImGui::PushFont(a.mono, fontSize);
+    ImGui::PushFont(typo::fonts().monoBold ? typo::fonts().monoBold : a.mono, fontSize);
     const ImVec2 cs = ImGui::CalcTextSize("0");
     const float cw = cs.x + 1 * gUi, ch = cs.y;
     ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -219,7 +219,7 @@ bool runButton(bool running, float size, const char* tip) {
 // a collapsible sidebar section; returns whether it is open
 bool section(const char* title, bool openByDefault) {
     ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(1, 1, 1, 0.045f));
-    const bool open = ImGui::CollapsingHeader(trw(title), openByDefault ? ImGuiTreeNodeFlags_DefaultOpen : 0);
+    const bool open = typo::collapsingHeader(trw(title), openByDefault ? ImGuiTreeNodeFlags_DefaultOpen : 0);
     ImGui::PopStyleColor();
     return open;
 }

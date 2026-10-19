@@ -3,6 +3,7 @@
 // tools/credits_data.tsv into credits_data.h; the full notices are in THIRD_PARTY.md. The Contributors tab (people, and a view by mode)
 // is generated from tools/contributors.tsv into contributors_data.h; modeCreditsLine() adds the names to a mode's tooltip.
 #include "../app.h"
+#include "../ui/typography.h"
 #include "credits_data.h"
 #include "contributors_data.h"
 #include <algorithm>
@@ -188,8 +189,8 @@ void creditsWindow(App& a) {
     if (!ImGui::Begin(tr("Credits"), &a.creditsOpen)) { ImGui::End(); return; }
     if (ImGui::BeginTabBar("##credtabs")) {
         const int want = a.creditsTab; a.creditsTab = -1;
-        if (ImGui::BeginTabItem(tr("Contributors"), nullptr, want == 0 ? ImGuiTabItemFlags_SetSelected : 0)) { contributorsTab(); ImGui::EndTabItem(); }
-        if (ImGui::BeginTabItem(tr("Projects and licences"), nullptr, want == 1 ? ImGuiTabItemFlags_SetSelected : 0)) { licencesTab(); ImGui::EndTabItem(); }
+        if (typo::beginTabItem(tr("Contributors"), nullptr, want == 0 ? ImGuiTabItemFlags_SetSelected : 0)) { contributorsTab(); ImGui::EndTabItem(); }
+        if (typo::beginTabItem(tr("Projects and licences"), nullptr, want == 1 ? ImGuiTabItemFlags_SetSelected : 0)) { licencesTab(); ImGui::EndTabItem(); }
         ImGui::EndTabBar();
     }
     ImGui::End();

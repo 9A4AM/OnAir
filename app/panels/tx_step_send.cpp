@@ -2,6 +2,7 @@
 // while it runs), an IQ scatter, peak / RMS meters in dBFS with a clipping lamp, the occupied bandwidth and the sample rate, the Start / Stop and Carrier-tune
 // buttons, the emergency "STOP ALL" and the log.
 #include "tx_state.h"
+#include "../ui/typography.h"
 #include "../ui/icons.h"
 #include <algorithm>
 #include <cmath>
@@ -196,7 +197,7 @@ void stepSend(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxMo
     ImGui::PopStyleColor(3);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Stops the transmission or test, the carrier and any pending start, and gives the radio back."));
 
-    ImGui::SeparatorText(tr("Log"));
+    typo::separatorText(tr("Log"));
     const std::vector<std::string> log = s.session.log();
     if (ImGui::BeginChild("##txlog", ImVec2(0, 100 * gUi), ImGuiChildFlags_Borders)) {
         for (const auto& l : log) ImGui::TextUnformatted(l.c_str());

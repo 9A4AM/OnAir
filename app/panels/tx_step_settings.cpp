@@ -2,6 +2,7 @@
 // Advanced block (tx_params.cpp). The frequency is in the top bar, like the receiver's. Nothing here limits a value: a frequency or level outside the radio's
 // range is sent to the driver as typed, with a note. While a transmission runs only the frequency and the level can be changed, and "Apply" retunes the radio.
 #include "tx_state.h"
+#include "../ui/typography.h"
 #include "../ui/icons.h"
 #include <algorithm>
 #include <cmath>

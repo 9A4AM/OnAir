@@ -1,5 +1,6 @@
 // UAT (978 MHz): aircraft table, FIS-B weather text, message log.
 #include "../panels/photo_links_ui.h"
+#include "../ui/typography.h"
 #include "app.h"
 #include "dect2/uat/uat_rx.h"
 #include "dect2/uat/uat_tel.h"
@@ -74,8 +75,8 @@ void aircraftTable(const dect2::UatTelemetry& t) {
 
 void tab(App& a) {
     const dect2::UatTelemetry& t = a.rx.uat;
-    if (ImGui::BeginTabItem("Aircraft")) { aircraftTable(t); ImGui::EndTabItem(); }
-    if (ImGui::BeginTabItem("FIS-B")) {
+    if (typo::beginTabItem("Aircraft")) { aircraftTable(t); ImGui::EndTabItem(); }
+    if (typo::beginTabItem("FIS-B")) {
         for (const auto& p : t.fisb) {
             ImGui::TextDisabled("%s", p.title.c_str());
             ImGui::PushTextWrapPos(0);
@@ -85,7 +86,7 @@ void tab(App& a) {
         }
         ImGui::EndTabItem();
     }
-    if (ImGui::BeginTabItem("Log")) {
+    if (typo::beginTabItem("Log")) {
         for (auto it = t.framesLog.rbegin(); it != t.framesLog.rend(); ++it) {
             ImGui::TextDisabled("%.1f  %s", it->timeSec, it->kind.c_str());
             ImGui::TextWrapped("%s", it->summary.c_str());

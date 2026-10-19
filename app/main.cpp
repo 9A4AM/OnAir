@@ -17,6 +17,7 @@
 #include <dlfcn.h>
 #endif
 #include "main_internal.h"
+#include "ui/typography.h"
 
 // code runs before the library's (the linker places the program's own objects first), so the check here comes in time.
 #if defined(DECT2_REQUIRES_AVX2) && (defined(__x86_64__) || defined(__i386__)) && (defined(__GNUC__) || defined(__clang__))
@@ -268,7 +269,12 @@ int main(int argc, char** argv) {
 
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = nullptr;
+    {   // the font look saved in View > Font look (Current when never changed); read here, before the fonts load
+        const long v = plat::prefs().getI("uiTypography", 0);
+        typo::setVariant(v == 1 ? typo::Clean : v == 2 ? typo::Compact : typo::Classic);
+    }
     applyTheme();
+    typo::applyStyle(ImGui::GetStyle());
     static ImGuiStyle baseStyle = ImGui::GetStyle();   // the style at scale 1
 
     App app;

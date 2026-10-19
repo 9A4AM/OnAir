@@ -4,6 +4,7 @@
 // an IQ recording (the same as Record IQ) until LOS. TLEs are downloaded from Celestrak or Keplerpass on request, or pasted.
 #include "dect2/common/thread_name.h"
 #include "../app.h"
+#include "../ui/typography.h"
 #include "gallery.h"
 #include "../adsb/adsb_map.h"
 #include "dect2/geo/passes.h"
@@ -546,7 +547,7 @@ void skyPlot(const Row* r, float size) {
 }
 
 void tleSection(App& a) {
-    if (!ImGui::CollapsingHeader(trw("TLE data"), S.tles.empty() ? ImGuiTreeNodeFlags_DefaultOpen : 0)) return;
+    if (!typo::collapsingHeader(trw("TLE data"), S.tles.empty() ? ImGuiTreeNodeFlags_DefaultOpen : 0)) return;
     ImGui::BeginDisabled(gDl.load() == 1);
     if (ImGui::Button(tr(gDl.load() == 1 ? "Downloading..." : "Download TLEs from Celestrak"))) startDownload(false);
     ImGui::SameLine();

@@ -1,6 +1,7 @@
 // View > Data feeds: send what the decoders find to other programs (tar1090 / readsb / VRS, OpenCPN, APRS-IS, acarshub).
 // Every feed is off until the user turns it on; the network work is in core (feeds.cpp).
 #include "../app.h"
+#include "../ui/typography.h"
 #include <cstdio>
 #include <ctime>
 
@@ -124,7 +125,7 @@ void feedsWindow(App& a) {
     ImGui::PopTextWrapPos();
 
     changed |= ImGui::Checkbox(tr("Let other computers connect to the TCP feeds (LAN)"), &c.lan);
-    ImGui::SeparatorText(tr("ADS-B"));
+    typo::separatorText(tr("ADS-B"));
     ImGui::PushID("sbs");
     changed |= ImGui::Checkbox(tr("SBS-1 BaseStation (TCP server)"), &c.on[dect2::kFeedSbs]);
     ImGui::SameLine(); changed |= portField(N_("Port"), c.sbsPort);
@@ -136,7 +137,7 @@ void feedsWindow(App& a) {
     statusLine(dect2::kFeedBeast, true);
     ImGui::PopID();
 
-    ImGui::SeparatorText(tr("AIS"));
+    typo::separatorText(tr("AIS"));
     ImGui::PushID("ais");
     changed |= ImGui::Checkbox(tr("NMEA !AIVDM (UDP)"), &c.on[dect2::kFeedAis]);
     ImGui::SameLine(); changed |= textField("##host", c.aisHost, 0, 120);
@@ -144,7 +145,7 @@ void feedsWindow(App& a) {
     statusLine(dect2::kFeedAis, false);
     ImGui::PopID();
 
-    ImGui::SeparatorText(tr("APRS"));
+    typo::separatorText(tr("APRS"));
     ImGui::PushID("aprsis");
     changed |= ImGui::Checkbox(tr("APRS-IS (receive-only igate)"), &c.on[dect2::kFeedAprsIs]);
     ImGui::Indent();
@@ -161,7 +162,7 @@ void feedsWindow(App& a) {
     statusLine(dect2::kFeedKiss, true);
     ImGui::PopID();
 
-    ImGui::SeparatorText(tr("ACARS and VDL2 (JSON)"));
+    typo::separatorText(tr("ACARS and VDL2 (JSON)"));
     ImGui::PushID("acars");
     changed |= ImGui::Checkbox(tr("ACARS, acarsdec format (UDP)"), &c.on[dect2::kFeedAcars]);
     ImGui::SameLine(); changed |= textField("##host", c.acarsHost, 0, 120);
@@ -176,7 +177,7 @@ void feedsWindow(App& a) {
     ImGui::PopID();
     changed |= textField(N_("Station ID"), c.stationId, 0, 120);
 
-    ImGui::SeparatorText(tr("GNSS, Bluetooth LE, LoRa (UDP JSON / NMEA)"));
+    typo::separatorText(tr("GNSS, Bluetooth LE, LoRa (UDP JSON / NMEA)"));
     ImGui::PushID("gnss");
     changed |= ImGui::Checkbox(tr("GNSS NMEA RMC/GGA (UDP)"), &c.on[dect2::kFeedGnss]);
     ImGui::SameLine(); changed |= textField("##host", c.gnssHost, 0, 120);
@@ -199,7 +200,7 @@ void feedsWindow(App& a) {
     ImGui::TextDisabled("%s", tr("JSON lines (one object a line) unless GNSS, which is NMEA. Off until you turn a feed on. Only modes that already have structured messages are sent."));
     ImGui::PopTextWrapPos();
 
-    ImGui::SeparatorText(tr("PSK Reporter"));
+    typo::separatorText(tr("PSK Reporter"));
     ImGui::SameLine(); ImGui::TextDisabled("(?)");
     if (ImGui::IsItemHovered()) {
         ImGui::BeginTooltip();
@@ -235,7 +236,7 @@ void feedsWindow(App& a) {
     }
     if (pc) { dect2::PskReporter::get().configure(r); savePrefs(a); }
 
-    ImGui::SeparatorText(tr("WSPRnet"));
+    typo::separatorText(tr("WSPRnet"));
     ImGui::SameLine(); ImGui::TextDisabled("(?)");
     if (ImGui::IsItemHovered()) {
         ImGui::BeginTooltip();
@@ -270,7 +271,7 @@ void feedsWindow(App& a) {
     }
     if (wc) { dect2::WsprNet::get().configure(wn); savePrefs(a); }
 
-    ImGui::SeparatorText(tr("Share my radio (rtl_tcp server)"));
+    typo::separatorText(tr("Share my radio (rtl_tcp server)"));
     {
         dect2::ShareConfig& sc = a.share;
         bool sch = false;

@@ -1,6 +1,7 @@
 // The signal's own options in step 2 of the transmit panel: what to say (callsign, text, IDs), where the audio / video / file comes from, and the standard's
 // own choices, one block per kind of signal (TxPayloadKind). Empty fields fall back to the mode's demo signal; nothing here limits what is typed.
 #include "tx_state.h"
+#include "../ui/typography.h"
 #include "dect2/hfdig/hfdig_sstv.h"
 #include <algorithm>
 #include <cmath>
@@ -82,7 +83,7 @@ void analogNfmBox(TxUi& s, bool running) {
 }
 
 void muxIdentity(TxUi& s) {
-    ImGui::SeparatorText(tr("Multiplex"));
+    typo::separatorText(tr("Multiplex"));
     ImGui::SetNextItemWidth(200 * gUi);
     ImGui::InputText(tr("Network name"), s.network, sizeof s.network);
     ImGui::SetNextItemWidth(200 * gUi);
@@ -187,7 +188,7 @@ void tvFilePanel(TxUi& s, const TxModeSpec& mode, bool running) {
 void payloadPanel(TxUi& s, const TxModeSpec& mode, bool running) {
     loadPayloadPrefs(s);
     const std::string id = mode.id ? mode.id : "";
-    ImGui::SeparatorText(tr("What to send"));
+    typo::separatorText(tr("What to send"));
     const TxPayloadKind k = txPayloadKind(id);
     switch (k) {
     case TxPayloadKind::TvFile:

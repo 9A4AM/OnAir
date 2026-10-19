@@ -2,6 +2,7 @@
 // (baud rate, bit stream, 32-bit words against the POCSAG BCH check) and the steady tones heard so far.
 // Receive only. Multitone's own format is not public, so this is a detector: everything is labelled unverified and no message text is shown.
 #include "app.h"
+#include "../ui/typography.h"
 #include "dect2/multitone/multitone_rx.h"
 #include "dect2/multitone/multitone_tel.h"
 #include <algorithm>
@@ -145,7 +146,7 @@ void dataView(App& a) {
         ImGui::PushID((int)b.id);
         char head[160];
         snprintf(head, sizeof head, "%s UTC  %.1f baud  %d bits  %d valid of %d words%s", clock(b.wall).c_str(), b.baud, b.nBits, b.validWords, b.totalWords, b.syncFound ? "  POCSAG sync" : "");
-        if (ImGui::CollapsingHeader(head)) burstDetail(a, b);
+        if (typo::collapsingHeader(head)) burstDetail(a, b);
         ImGui::PopID();
     }
     ImGui::EndChild();

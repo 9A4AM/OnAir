@@ -3,6 +3,7 @@
 // zoom, pan, region), the region's measurements (with a hand-over to DVB-S/S2), and a sweep across a range that stitches a panorama
 // with its own waterfall and a table of the signals found. No decoder.
 #include <fstream>
+#include "../ui/typography.h"
 #include "app.h"
 #include "state/results_export.h"
 #include "gfx/gfx.h"
@@ -677,7 +678,7 @@ void tab(App& a) {
     if (!panel) return;
     ImGui::BeginChild("##sxpanel", ImVec2(0, ph), false);
     if (ImGui::BeginTabBar("##sxtabs")) {
-        if (S.hasRegion && ImGui::BeginTabItem("Region")) {
+        if (S.hasRegion && typo::beginTabItem("Region")) {
             if (live(a)) {
                 sx::SpecView v = view(a);
                 double r0 = toRadio(S.regLo), r1 = toRadio(S.regHi);
@@ -686,7 +687,7 @@ void tab(App& a) {
             } else ImGui::TextDisabled("Start the receiver to measure.");
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Sweep")) { sweepPanel(a, ImGui::GetContentRegionAvail().y); ImGui::EndTabItem(); }
+        if (typo::beginTabItem("Sweep")) { sweepPanel(a, ImGui::GetContentRegionAvail().y); ImGui::EndTabItem(); }
         ImGui::EndTabBar();
     }
     ImGui::EndChild();

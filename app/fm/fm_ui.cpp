@@ -1,5 +1,6 @@
 // FM broadcast radio panels: tuning, status line, station panel with RDS, diagnostic plots and the band scanner.
 #include "app.h"
+#include "../ui/typography.h"
 #include "state/results_export.h"
 #include <chrono>
 
@@ -370,7 +371,7 @@ void fmRadioPanel(App& a) {
     if (live && fm.tmc.seen) {   // RDS-TMC traffic messages, only for a station that carries TMC
         char hd[96];
         snprintf(hd, sizeof hd, "Traffic (TMC) - %zu", fm.tmcMessages.size());
-        if (ImGui::CollapsingHeader(hd, ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (typo::collapsingHeader(hd, ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::PushTextWrapPos(0);
             ImGui::TextDisabled("Table %d%s%s. Locations are shown as codes: the country's location table is not included.", fm.tmc.ltn, fm.tmc.mode == 1 ? ", enhanced mode" : "", "");
             ImGui::PopTextWrapPos();

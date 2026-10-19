@@ -1,5 +1,6 @@
 // View > Antenna rotator: GS-232-compatible rotator, calibration offsets, limits, park.
 #include "../app.h"
+#include "../ui/typography.h"
 #include "dect2/geo/passes.h"
 #include "dect2/source/rotator.h"
 #include "imgui.h"
@@ -301,7 +302,7 @@ void rotatorWindow(App& a) {
 
     changed |= ImGui::Checkbox(tr("Connect on start"), &S.autoConnect);
 
-    if (ImGui::CollapsingHeader(tr("Calibration and limits"), ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (typo::collapsingHeader(tr("Calibration and limits"), ImGuiTreeNodeFlags_DefaultOpen)) {
         changed |= ImGui::InputFloat(tr("Azimuth offset (°)"), &S.azOff, 0.5f, 1.f, "%.1f");
         changed |= ImGui::InputFloat(tr("Elevation offset (°)"), &S.elOff, 0.5f, 1.f, "%.1f");
         ImGui::TextDisabled("%s", tr("Corrected = mechanical + offset. Map bearings use corrected azimuth."));
