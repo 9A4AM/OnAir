@@ -240,6 +240,8 @@ target_include_directories(dect2_plugin PUBLIC core/include sdk/include)
 target_link_libraries(dect2_plugin PUBLIC dect2_automation ${CMAKE_DL_LIBS})
 target_link_libraries(dect2core PUBLIC dect2_plugin)
 add_executable(onair-plugin-host tools/onair_plugin_host.cpp)
+add_executable(kris_samples tools/kris_samples.cpp)   # sample IQ files of the KAAL, KAPP and KAFT transmitters (tools/kris_samples.cpp)
+target_link_libraries(kris_samples PRIVATE dect2core)
 target_link_libraries(onair-plugin-host PRIVATE dect2_plugin)
 # onair-server: OnAir with no window (a Raspberry Pi, a Linux box, a Windows PC without a screen), controlled from a browser; docs/headless-server.md
 add_executable(onair-server server/main.cpp server/server_config.cpp server/server_host.cpp)
