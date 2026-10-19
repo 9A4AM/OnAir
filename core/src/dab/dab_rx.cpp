@@ -134,6 +134,7 @@ struct DabReceiver::Impl {
     // FFT of a window of kTu samples starting at `abs`, derotated by `cfoBins` (carrier offset in bins)
     void windowFft(uint64_t abs, double cfoBins, std::vector<cf32>& out) {
         out.resize(kTu);
+        if (abs < base || abs - base + (uint64_t)kTu > (uint64_t)buf.size()) { std::fill(out.begin(), out.end(), cf32(0, 0)); return; }   // never read outside the buffer
         const cf32* s = at(abs);
         double x = cfoBins * (double)abs / kTu;
         x -= std::floor(x);
@@ -263,7 +264,7 @@ struct DabReceiver::Impl {
     bool processFrame() {
         const uint64_t needEnd = nextU + (uint64_t)kSymbols * kTs + kTu + 256;
         if (base + buf.size() < needEnd) return false;
-        if (nextU < base + 128) { state = 0; return true; }
+        if (nextU < base + (uint64_t)kTg + 64) { state = 0; return true; }   // the cyclic prefix of the first symbol is read from U - kTg: the samples must still be buffered
         uint64_t U = nextU;
         std::vector<cf32> R, tmp;
         const bool wasFresh = fresh;
@@ -314,9 +315,12 @@ struct DabReceiver::Impl {
         // TII: the spectrum of the null symbol of this frame. A window of T_u in its middle stays clear of the end of the frame before and
         // of the echoes that run into the phase reference's guard interval (the null symbol is 608 samples longer than T_u)
         {
-            std::vector<cf32> N;
-            windowFft(U - (uint64_t)kTg - (uint64_t)kTnull + (uint64_t)(kTnull - kTu) / 2, cfo, N);
-            tii.addNull(N, framesDone);
+            const uint64_t back = (uint64_t)kTg + (uint64_t)kTnull - (uint64_t)(kTnull - kTu) / 2;   // how far before U the null window starts
+            if (U >= base + back) {   // just after a lock the buffer may not reach back that far (a read before the buffer crashed on slow starts)
+                std::vector<cf32> N;
+                windowFft(U - back, cfo, N);
+                tii.addNull(N, framesDone);
+            }
         }
         // demodulate all symbols
         std::vector<cf32> prev, cur;
