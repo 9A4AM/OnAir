@@ -194,9 +194,9 @@ BootstrapFind findBootstrap(const cf32* x, size_t n, double maxCfo, double cente
         for (size_t p = 0; p < met.size(); p++) if (met[p] > 0.35 && (p == 0 || met[p] >= met[p - 1]) && (p + 1 == met.size() || met[p] > met[p + 1])) all.push_back({met[p], p});
         std::sort(all.rbegin(), all.rend());
         for (auto& c : all) {
-            bool near = false;
-            for (auto& k : cand) if (std::llabs((long long)k.second - (long long)c.second) < 1500) near = true;
-            if (!near) cand.push_back(c);
+            bool tooClose = false;
+            for (auto& k : cand) if (std::llabs((long long)k.second - (long long)c.second) < 1500) tooClose = true;
+            if (!tooClose) cand.push_back(c);
             if (cand.size() >= 5) break;
         }
     }
