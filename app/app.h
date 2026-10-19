@@ -265,7 +265,7 @@ using SavedChannel = plat::Channel;
 // parts of the window the tour points at
 enum WizTarget { TgNone = 0, TgSwitch, TgToolbar, TgMain, TgRight, TgConst, TgCount };
 
-constexpr int kNumFamilies = 119;   // App::family runs from 0 to kNumFamilies - 1
+constexpr int kNumFamilies = 126;   // App::family runs from 0 to kNumFamilies - 1
 constexpr int kNumSubModes = 32;   // dect2::subModes(): the protocols of HF digital, mesh, pagers, marine and VOR / ILS listed as modes of their own
 constexpr int kNumSlots = kNumFamilies + kNumSubModes;   // what keeps its own frequency and gains: each family, and each protocol entry
 
@@ -936,7 +936,7 @@ extern int kNumModes;
 bool addPluginModeRow(int family, const std::string& name, const std::string& blurb, const std::string& sub);   // appends a row in the PLUGINS group; false when the table is full
 struct ModeRange { const ModeDef* b; const ModeDef* e; const ModeDef* begin() const { return b; } const ModeDef* end() const { return e; } };
 inline ModeRange allModes() { return {kModes, kModes + kNumModes}; }   // for (const auto& m : allModes())
-constexpr int kNumGroups = 15;   // the headings of the mode lists (mode_table.cpp); UI only, never saved by number
+constexpr int kNumGroups = 16;   // the headings of the mode lists (mode_table.cpp); UI only, never saved by number
 extern const char* const kGroupNames[kNumGroups];
 extern const ImU32 kGroupCols[kNumGroups];
 // The screens of a mode added after FM (family 6 and up). Each mode has one in its app/<mode>_ui.cpp and modeui.cpp lists them; the shell calls whichever

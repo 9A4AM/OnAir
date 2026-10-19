@@ -15,7 +15,7 @@ namespace txui {
 bool isVoiceId(const std::string& id) {
     return id == "fm" || id == "airband" || id == "qo100" ||
            id == "m17" || id == "freedv" || id == "dmr" || id == "p25" || id == "nxdn" ||
-           id == "dpmr" || id == "dstar" || id == "tetra";
+           id == "dpmr" || id == "dstar" || id == "tetra" || id == "kaal";
 }
 bool isFtxId(const std::string& id) {
     return id == "ft8" || id == "ft4" || id == "wspr" || id == "ft2" || id == "jt65" ||
@@ -543,6 +543,9 @@ void payloadPanel(TxUi& s, const TxModeSpec& mode, bool running) {
         if (ImGui::InputText(tr("Text"), s.text, sizeof s.text)) saveStr("tx.text", s.text);
         ImGui::TextDisabled("%s", tr("Empty: the demo LoRa / mesh scene."));
         analogNfmBox(s, running);
+        break;
+    case TxPayloadKind::Kaal:
+        kaalPanel(s, running);
         break;
     case TxPayloadKind::Mac:
         ImGui::TextDisabled("%s", tr("D2-MAC test scene (custom video is not wired into this analogue generator)."));

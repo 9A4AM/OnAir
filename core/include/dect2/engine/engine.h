@@ -99,6 +99,7 @@
 #include "dect2/mt63/mt63_rx.h"
 #include "dect2/fsq/fsq_rx.h"
 #include "dect2/ifkp/ifkp_rx.h"
+#include "dect2/kaal/kaal_live.h"
 #include "dect2/cquam/cquam_rx.h"
 #include "dect2/mscatter/mscatter_live.h"
 #include "dect2/rid/rid_rx.h"
@@ -189,7 +190,7 @@ public:
     // 8 = DVB-S/S2, 9 = DTMB, 10 = analog TV, 11 = DMR, 12 = DRM, 13 = ADS-B, 14 = GNSS,
     // 15 = radiosonde, 16 = AIS, 17 = marine, 18 = ACARS, 19 = Inmarsat-C, 20 = Inmarsat Aero, 21 = Iridium, 22 = mesh,
     // 23 = HD Radio, 24 = CDR, 25 = pagers, 26 = APRS / packet, 27 = HF digital, 28 = airband, 29 = VDL Mode 2, 30 = ISM sensors, 32 = VOR / ILS, 33 = M17, 34 = cell towers, 35 = D-STAR, 36 = CW, 37 = HFDL, 38 = PSK31, 39 = JS8Call, 42 = DVB-C, 46 = Orbcomm, 40 = NXDN, 41 = GSM-R, 45 = Mode S uplink, 47 = dPMR, 51 = HF ALE, 48 = TETRA, 49 = MAC, 50 = radio astronomy, 51 = HF ALE, 52 = P25, 53 = Bluetooth LE, 54 = ionospheric sounders
-    static constexpr int kPollSeqSlots = 112;   // pollMode() seqs[] indices; LBJ uses slot 76
+    static constexpr int kPollSeqSlots = 120;   // pollMode() seqs[] indices; LBJ uses slot 76
     void setStandard(int m) { stdMode_ = m; stdReq_ = true; refreshIdle(); }
     int standardMode() const { return stdMode_.load(); }
     int activeStandard() const { return activeStd_.load(); }  // 0 = DVB-T2, 1 = DVB-T, 2 = ATSC, 3 = DAB, 4 = ATSC 3.0, 5 = ISDB-T, 6 = FM, 7 = DVB-S/S2, 8 = DTMB, 9 = analog TV, 10 = DMR, 11 = DRM, 12 = ADS-B, 13 = GNSS, 14 to 27 = radiosonde, AIS, marine, ACARS, Inmarsat-C, Inmarsat Aero, Iridium, mesh, HD Radio, CDR, pagers, APRS / packet, HF digital, airband, VDL Mode 2, ISM sensors, VOR / ILS, M17, 34 = D-STAR, 35 = CW, 36 = HFDL, 37 = PSK31, 38 = JS8Call, 41 = DVB-C, 44 = Mode S uplink, 45 = Orbcomm, 46 = dPMR, 39 = NXDN, 47 = TETRA, 48 = MAC, 49 = radio astronomy, 50 = HF ALE, 51 = P25, 52 = Bluetooth LE, 53 = ionospheric sounders , 54 = QO-100, 55 = Wi-Fi networks, 56 = general receiver (always the standard code minus one)
@@ -390,6 +391,7 @@ public:
     TonesReceiver& tones() { return rxTones_; }   // tone decoders: audio input, the gate, listen (telemetry through latestRx)
     SarsatReceiver& sarsat() { return rxSar_; }   // COSPAS-SARSAT 406 MHz beacons: clear the log (telemetry through latestRx)
     FsqReceiver& fsq() { return rxFsq_; }   // FSQ: speed, own callsign, clear the text (telemetry through latestRx)
+    KaalLiveReceiver& kaal() { return rxKaal_; }   // KAAL: volume, mute (telemetry through latestRx)
     IfkpReceiver& ifkp() { return rxIfkp_; }   // IFKP: speed, clear the text (telemetry through latestRx)
     Mt63Receiver& mt63() { return rxMt63_; }   // MT63: bandwidth and interleave (automatic by default), clear the text (telemetry through latestRx)
     CquamReceiver& cquam() { return rxCq_; }   // AM stereo (C-QUAM): stereo mode, audio bandwidth, squelch, channel offset (telemetry through latestRx)
@@ -663,6 +665,7 @@ private:
     Mt63Receiver rxMt63_;
     FsqReceiver rxFsq_;
     IfkpReceiver rxIfkp_;
+    KaalLiveReceiver rxKaal_;
     CquamReceiver rxCq_;
     MscatterLiveReceiver rxMs_;
     RidReceiver rxRid_;

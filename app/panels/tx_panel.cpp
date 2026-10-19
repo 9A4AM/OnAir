@@ -156,7 +156,7 @@ void drawStatusHeader(App& a, TxUi& s, const DeviceInfo* radio, int conflict, co
     const State st = stateOf(s);
     const bool running = s.session.running();
     const float w = ImGui::GetContentRegionAvail().x;
-    const char* word = st == State::Idle ? tr("Idle") : st == State::Preparing ? tr("Preparing") : st == State::Test ? tr("Test (no RF)") : st == State::Carrier ? tr("Carrier tune") : tr("Transmitting");
+    const char* word = st == State::Idle ? tr("Idle") : st == State::Preparing ? tr("Preparing") : st == State::Test ? (s.sessionFile ? "Writing IQ file" : tr("Test (no RF)")) : st == State::Carrier ? tr("Carrier tune") : tr("Transmitting");
     const ImVec4 col = st == State::Idle ? ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled) : st == State::Preparing ? pal::warnAmber() : st == State::Test ? pal::accent() : kRed;
     const bool live = st == State::Transmitting || st == State::Carrier;
     const float pulse = live ? 0.5f + 0.5f * (float)std::sin(ImGui::GetTime() * 5.0) : 1.f;
