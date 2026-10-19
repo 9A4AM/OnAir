@@ -92,6 +92,7 @@ extern const ModeUi kNrUi;
 extern const ModeUi kGoesUi;
 extern const ModeUi kHrptUi;
 extern const ModeUi kLbjUi;
+extern const ModeUi kSitorUi;
 
 // ---- whole-span decoding ("wide decode"): the families whose receivers can decode everything in the visible span (widespan.h) ----
 bool modeSupportsWideHf(int family) { return family == 25 || family == 34 || family == 36; }   // HF digital, CW, PSK: widespan.h inside the receiver
@@ -188,6 +189,7 @@ const ModeUi* modeUi(int family) {
     case 57: return &kNrUi;
     case 60: return &kGoesUi;
     case 64: return &kHrptUi;
+    case 119: return &kSitorUi;
     default: return family >= 999 ? &kPluginUi : nullptr;   // the Plugins row and every plugin mode (plugin/plugin_app.cpp)
     }
 }
