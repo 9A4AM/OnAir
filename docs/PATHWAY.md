@@ -11,3 +11,5 @@ README: 120 modes, what is new in 0.2.7, Rust in the build steps, Android USB no
 
 ## 2026-10-19 DVB-T2 HEVC VideoToolbox fallback (#203)
 Hardware start guard now begins on an HEVC IRAP NAL (CRA/IDR/BLA), not on the packet key flag, so RASL-led joins are held back. Give-up window is 3 s of input (was 4 s and 60 packets). Build and tests not run (owner on battery); verify on the Mac with the hw_guard test.
+## 2026-10-19 Meteor LRPT capture (#199)
+LRPT (std 61) runs a 2 Msps capture instead of 1 Msps when the radio allows it, so the 150 kHz channel stays inside the window while the pass tracker moves the centre (app/state/app_state.cpp applyBandwidth). Not built or run here; the centre-follow path (app/panels/passes_ui.cpp retuneTo) was already in place.
