@@ -50,6 +50,7 @@
 #include "dect2/dgps/dgps_engine.h"
 #include "dect2/eloran/eloran_engine.h"
 #include "dect2/mpt1327/mpt1327_engine.h"
+#include "dect2/fusion/fusion_rx.h"
 #include "dect2/dvbc/dvbc_tel.h"
 #include "dect2/orbcomm/orbcomm_tel.h"
 #include "dect2/uplink/uplink_tel.h"
@@ -230,6 +231,7 @@ struct RxTelemetry {
     LbjTelemetry lbj;           // valid when standard == 82 (LBJ, engine standard 83)
     ElLoranTelemetry eloran;    // valid when standard == 127 (eLoran / Loran-C, family 126)
     MptTelemetry mpt1327;       // valid when standard == 128 (MPT1327 trunking, family 127)
+    FusionTelemetry fusion;     // valid when standard == 129 (Yaesu Fusion, family 128, stdMode 130)
     DgpsTelemetry dgps;         // valid when standard == 122 (DGPS beacon, engine standard 122)
     struct Dvbt {                // DVB-T only: TPS parameters and the channel decoder's statistics
         bool tpsOk = false, fecSync = false;

@@ -279,6 +279,7 @@ int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
     case 121: return pollStd(rxDgps_, 121, t, seqs[110], &RxTelemetry::dgps);   // DGPS beacons (slot 110)
     case 127: return pollStd(rxEloran_, 127, t, seqs[111], &RxTelemetry::eloran);   // eLoran / Loran-C (slot 111)
     case 128: return pollStd(rxMpt_, 128, t, seqs[112], &RxTelemetry::mpt1327);   // MPT1327 trunking (slot 112)
+    case 129: return pollStd(rxFusion_, 129, t, seqs[117], &RxTelemetry::fusion);   // Yaesu Fusion (slot 117)
     case 82: return pollStd(rxLbj_, 82, t, seqs[76], &RxTelemetry::lbj);
     case 84: return pollStd(rxUat_, 84, t, seqs[78], &RxTelemetry::uat);
     case 83: return pollStd(rxVdl4_, 83, t, seqs[77], &RxTelemetry::vdl4);

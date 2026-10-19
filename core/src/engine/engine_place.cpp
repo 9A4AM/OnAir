@@ -157,6 +157,7 @@ void Engine::configureReceiver(int a, double r) {
     case 121: rxDgps_.configure(r); break;
     case 127: rxEloran_.configure(r); break;
     case 128: rxMpt_.configure(r); break;
+    case 129: rxFusion_.configure(r); break;
     case 84: rxUat_.configure(r); break;
     case 83: rxVdl4_.configure(r); break;
     case 76: rxMt_.configure(r); break;
@@ -188,6 +189,7 @@ void Engine::muteReceiver(int a, bool m) {
     case 30: rxNdb_.setMuted(m); break;
     case 31: rxVor_.setMuted(m); break;
     case 32: rxM17_.setMuted(m); break;
+    case 129: rxFusion_.setMuted(m); break;
     case 34: rxDstar_.setMuted(m); break;
     case 35: rxCw_.setMuted(m); break;
     case 37: rxPsk_.setMuted(m); break;
@@ -270,6 +272,7 @@ void Engine::placeReceiver(int a, double o, double centreHz, double dialHz, doub
     case 121: rxDgps_.setSignalOffset(o); rxDgps_.setCenterHz(centreHz); break;
     case 127: rxEloran_.setSignalOffset(o); rxEloran_.setCenterHz(centreHz); break;
     case 128: rxMpt_.setSignalOffset(o); rxMpt_.setCenterHz(centreHz); break;
+    case 129: rxFusion_.setSignalOffset(o); rxFusion_.setCenterHz(centreHz); break;
     case 84: rxUat_.setSignalOffset(o); break;
     case 83: rxVdl4_.setSignalOffset(o); rxVdl4_.setCenterHz(centreHz); break;
     case 76: rxMt_.setSignalOffset(o); break;
