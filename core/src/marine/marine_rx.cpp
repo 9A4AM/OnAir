@@ -3,6 +3,7 @@
 #include "dect2/marine/marine_rx.h"
 #include "dect2/marine/marine_dsc.h"
 #include "dect2/marine/marine_dsp.h"
+#include "dect2/marine/marine_bands.h"
 #include "dect2/marine/marine_navtex.h"
 #include "dect2/results/results_io.h"
 #include <algorithm>
@@ -39,6 +40,20 @@ Enabled chooseServices(int service, double f) {
 int64_t wallNow() { return dect2::unixNow(); }
 } // namespace
 
+namespace {
+// One more MF/HF DSC channel decoded from the same capture: its own mixer, FSK finder, slicer and decoders
+struct ParChannel {
+    double hz = 0;
+    Front front;
+    Spectrum spec;
+    FskSlicer fsk;
+    DscDecoder dec[2] = {DscDecoder(false, false), DscDecoder(true, false)};
+    std::vector<cf32> base;
+    Spectrum::Fsk info;
+    uint32_t calls = 0;
+};
+}
+
 struct MarineReceiver::Impl {
     std::mutex mu;                 // the processing chain (feed, configure, reset)
     mutable std::mutex telMu;      // the report
@@ -72,6 +87,9 @@ struct MarineReceiver::Impl {
     uint64_t faxLinesSeen = 0, faxDone = 0;
     int prevFaxState = 0;
     bool dscVhfSeen = false;
+    std::vector<std::unique_ptr<ParChannel>> par;
+    std::vector<double> parWant;
+    bool parDirty = false;
     MarineTelemetry tel;           // the report in progress (guarded by telMu)
     double lastNow = 0;            // signal time of the last report (telMu): the kept messages move back by it when the clock starts again
     double fskNoise = 0;
@@ -117,18 +135,21 @@ struct MarineReceiver::Impl {
         say(b);
     }
 
-    void onDsc(const DscCall& c0, bool vhfPath) {
+    void onDsc(const DscCall& c0, bool vhfPath, double carrierHz = -1) {
         // a call that failed its check and names no sender says nothing: noise that happened to pass for a call (a fading fax signal
         // gave one on the VHF path, "Unknown format from ? to ?", and switched the active service away from the fax)
         if (!c0.eccOk && c0.fromMmsi.empty()) return;
         DscCall c = c0;
         c.vhf = vhfPath;
+        c.freqHz = carrierHz >= 0 ? carrierHz : (vhfPath ? 156.525e6 : freqHz.load());
         c.rxSec = secs(); c.rxTime = wallNow();
         if (automation::wants(automation::FDsc)) {   // the automations (automation/engine.h)
             automation::Event ev("dsc.call");
-            ev.at(automation::wallNow(), "Marine", vhfPath ? 156.525e6 : 0);
+            ev.at(automation::wallNow(), "Marine", c.freqHz);
             std::string sum = c.formatName + (c.categoryName.empty() ? "" : ", " + c.categoryName) + (c.distress ? ", " + c.natureName : "");
             ev.str("category", c.distress ? "distress" : c.categoryName).str("from_mmsi", c.fromMmsi).str("to_mmsi", c.to).str("summary", sum);
+            ev.str("kind", c.kind).str("nature", c.nature >= 0 ? c.natureName : "").str("distress_mmsi", c.distressMmsi).str("from_country", c.fromCountry);
+            ev.str("text", c.text);
             if (c.hasPos) ev.num("lat", c.lat).num("lon", c.lon);
             automation::emit(std::move(ev));
         }
@@ -154,10 +175,30 @@ struct MarineReceiver::Impl {
         for (auto& n : nav) n.reset();
         for (auto& d : dsc) d.reset();
         for (auto& d : dscv) d.reset();
-        base.clear(); audio.clear();
+        base.clear(); audio.clear(); parDirty = true;
         inSamples = 0; sinceReport = 0; fskInfo = Spectrum::Fsk();
         lastNavSec = lastDscSec = lastFaxSec = -1e9;
         faxLinesSeen = 0; prevFaxState = 0; faxDirty = true;
+    }
+
+    // the channels of parWant that lie inside the capture, built again after a change of the list, the rate or the dial frequency
+    void rebuildPar() {
+        par.clear();
+        const double dial = freqHz.load();
+        if (rate < marineTuning().minSampleRate - 1 || dial <= 0 || dial > 30e6) return;
+        // the capture is centred where the dial would sit without the offset the radio uses: offsetHz is the dial's place in the input
+        const std::vector<double> in = dscInCapture(parWant, dial, 2.0 * (rate * 0.5 - std::fabs(offsetHz)));
+        for (double f : in) {
+            if (std::fabs(f - dial) < 500.0) continue;       // the main channel
+            auto c = std::make_unique<ParChannel>();
+            c->hz = f;
+            c->front.configure(rate);
+            c->front.setOffsetHz(offsetHz + (f - dial));
+            ParChannel* raw = c.get();
+            for (auto& d : c->dec) d.setCallback([this, raw](const DscCall& call) { raw->calls++; onDsc(call, false, raw->hz); });
+            par.push_back(std::move(c));
+        }
+        parDirty = false;
     }
 
     void applyFaxSettings() {
@@ -184,6 +225,12 @@ void MarineReceiver::Impl::publish() {
     const bool dscLock = dsc[0].locked() || dsc[1].locked();
     const bool dscvLock = dscv[0].locked() || dscv[1].locked();
     tel.navtexLocked = navLock; tel.dscLocked = dscLock || dscvLock;
+    tel.parallel.clear();
+    for (auto& pc : par) {
+        MarineTelemetry::ParInfo pi; pi.hz = pc->hz; pi.fsk = pc->info.found; pi.locked = pc->dec[0].locked() || pc->dec[1].locked(); pi.calls = pc->calls;
+        tel.parallel.push_back(pi);
+        if (pi.locked) tel.dscLocked = true;
+    }
     if (fs.state == 2 && fs.lines > faxLinesSeen) { lastFaxSec = now; }
     if (fs.state >= 1 && fs.state <= 2) lastFaxSec = now;
     if (fs.state == 3 && prevFaxState != 3 && fs.lines > 0) { faxDone++; tel.blocksOk++; }
@@ -234,6 +281,7 @@ void MarineReceiver::configure(double inputRateHz) {
         p_->front.setOffsetHz(p_->offsetHz);
     }
     p_->fax.configure(12000.0);
+    p_->parDirty = true;
     p_->resetAll();
 }
 
@@ -241,6 +289,7 @@ void MarineReceiver::setSignalOffset(double hz) {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->offsetHz = hz;
     p_->front.setOffsetHz(hz);
+    p_->parDirty = true;
 }
 
 bool MarineReceiver::ready() const {
@@ -264,6 +313,7 @@ void MarineReceiver::feed(const cf32* x, size_t n) {
     std::lock_guard<std::mutex> lk(s.mu);
     if (s.rate < marineTuning().minSampleRate - 1) return;
     s.applyFaxSettings();
+    if (s.parDirty) s.rebuildPar();
     const Enabled en = chooseServices(s.service.load(), s.freqHz.load());
     s.base.clear();
     s.front.process(x, n, s.base);
@@ -280,6 +330,16 @@ void MarineReceiver::feed(const cf32* x, size_t n) {
                 if (en.navtex) { s.nav[0].pushBit(v); s.nav[1].pushBit(v); }          // B = 1 = the higher tone
                 if (en.dscHf) { s.dsc[0].pushBit(-v); s.dsc[1].pushBit(-v); }         // M.493: the higher tone is B = 0
             });
+        }
+        for (auto& pc : s.par) {
+            pc->base.clear();
+            pc->front.process(x, n, pc->base);
+            if (pc->base.empty()) continue;
+            if (pc->spec.push(pc->base.data(), pc->base.size())) {
+                pc->info = pc->spec.findFsk(170.0, 600.0);
+                if (pc->info.found) pc->fsk.setCentreHz(pc->info.centreHz);
+            }
+            pc->fsk.process(pc->base.data(), pc->base.size(), [&](float v) { pc->dec[0].pushBit(-v); pc->dec[1].pushBit(-v); });
         }
         if (en.dscVhf) {
             s.vhf.process(b, nb, [&](float v) { s.dscv[0].pushBit(v); s.dscv[1].pushBit(v); });   // 1300 Hz = Y = 1
@@ -308,7 +368,17 @@ bool MarineReceiver::telemetry(MarineTelemetry& out, uint64_t lastSeq) {
 
 void MarineReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 void MarineReceiver::setService(int s) { p_->service = s < 0 || s > 3 ? 0 : s; }
-void MarineReceiver::setFrequencyHz(double hz) { p_->freqHz = hz; }
+void MarineReceiver::setFrequencyHz(double hz) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    if (p_->freqHz.load() != hz) p_->parDirty = true;
+    p_->freqHz = hz;
+}
+void MarineReceiver::setParallelDsc(const std::vector<double>& hz) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    if (hz == p_->parWant) return;
+    p_->parWant = hz;
+    p_->parDirty = true;
+}
 void MarineReceiver::setFaxLpm(int v) { p_->faxLpm = v; p_->faxDirty = true; }
 void MarineReceiver::setFaxIoc(int v) { p_->faxIoc = v; p_->faxDirty = true; }
 void MarineReceiver::setFaxSlantPpm(double v) { p_->faxSlant = v; p_->faxDirty = true; }

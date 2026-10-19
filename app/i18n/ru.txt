@@ -2657,7 +2657,7 @@ The watchlist file could not be read:	Не удалось прочитать ф�
 APRS call signs	Позывные APRS
 Words in messages	Слова в сообщениях
 One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	По одному в строке: шестнадцатеричный адрес ICAO (4840D6), бортовой номер (A6-EDA) или позывной (KLM1023). * в конце означает начало (KLM*). Принимается по ADS-B, ACARS, VDL2 и HFDL.
-One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	По одному в строке: номер MMSI, название судна или позывной. * в конце означает начало (2190*). Принимается по AIS и DSC.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC. The entry DSC distress alerts on every DSC distress call.	По одному в строке: номер MMSI, название судна или позывной. * в конце означает начало (2190*). Принимается по AIS и DSC. Запись DSC distress оповещает о каждом вызове бедствия DSC.
 One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	По одному в строке: позывной. Без SSID (LY1ABC) подходит любой SSID, с SSID (LY1ABC-9) только он.
 One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	По одной в строке: частота в МГц (162.025), с единицей (162025 kHz) или диапазон (144-146). Учитывается всё, что декодировано на ней.
 One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	По одному в строке: слово или фраза (регистр не важен). * в конце означает начало слова (fire*). Поиск идёт в сообщениях пейджеров, ACARS, APRS и другом декодированном тексте.
@@ -3302,3 +3302,45 @@ At the top of the picture	Вверху изображения
 Save .srt and .vtt next to audio recordings	Сохранять .srt и .vtt рядом с аудиозаписями
 Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time	Субтитры: %llu фрагментов, пропущено музыки %llu, пропущено %llu (слишком медленно), скорость %.2f x реального времени
 The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest.	Движок речи медленнее звука: возьмите модель поменьше или меньше потоков процессора. Пропускается самая старая речь, но никогда самая новая.
+#  DSC audit
+category	категория
+from	от
+in distress	терпит бедствие
+unreadable	нечитаемо
+repair	восстановление
+symbols	символы
+DISTRESS	БЕДСТВИЕ
+search calls	поиск вызовов
+saved %s	сохранено %s
+could not write %s	не удалось записать %s
+%d symbols fixed, one rebuilt from the check character	исправлено символов: %d, один восстановлен по контрольному символу
+%d symbols taken from the second copy	символов из второй копии: %d
+In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	В списке судов запись DSC distress оповещает о каждом вызове бедствия DSC, а MMSI — об этой станции.
+#  DSC bands, scan, ship table, map
+DSC scanner	Сканер DSC
+Distress and safety (MF/HF)	Бедствие и безопасность (MF/HF)
+Worldwide calling	Всемирный вызов
+Series A calling	Вызов серии A
+Series B calling	Вызов серии B
+VHF channel 70	Канал 70 VHF
+Scan these channels with this radio	Сканировать эти каналы этим приёмником
+Steps the radio through the channels: the distress channels are visited more often, and a locked decoder or a call keeps the radio on its channel.	Переключает приёмник по каналам: каналы бедствия проверяются чаще, а захваченный декодер или вызов удерживает приёмник на канале.
+Decode the chosen MF/HF channels in the same capture	Декодировать выбранные каналы MF/HF из того же захвата
+Decodes every chosen channel that lies inside the radio's bandwidth at the same time (channels in a group are 0.5 kHz apart, the distress channels are MHz apart). Needs a sample rate of 250 kHz or more.	Одновременно декодирует все выбранные каналы, попадающие в полосу приёмника (каналы в группе разнесены на 0,5 кГц, каналы бедствия – на МГц). Нужна частота дискретизации от 250 кГц.
+scanning:	сканирование:
+extra channels:	дополнительные каналы:
+none inside the capture	нет в пределах захвата
+Ship and coast station names	Названия судов и береговых станций
+entries; ship names, call signs and types are learned from AIS (static data), and your own list can be imported.	записей; названия, позывные и типы судов берутся из AIS (статические данные), можно импортировать и свой список.
+Import list	Импорт списка
+%d records read	прочитано записей: %d
+A TSV or CSV file: MMSI, name, call sign, type, country, location. A header row (mmsi, name, callsign, type, country, station, location, lat, lon) may reorder the columns; lat and lon place coast stations on the map.	Файл TSV или CSV: MMSI, название, позывной, тип, страна, место. Строка заголовка (mmsi, name, callsign, type, country, station, location, lat, lon) может менять порядок столбцов; lat и lon ставят береговые станции на карту.
+Export list	Экспорт списка
+There is no bundled coast station list: no openly licensed one is available, so bring your own file.	Списка береговых станций в комплекте нет: списка с открытой лицензией не существует, используйте свой файл.
+Marine bands	Морские диапазоны
+A click tunes the radio and opens the mode for it.	Щелчок настраивает приёмник и открывает нужный режим.
+Protocols	Протоколы
+distress only	только бедствие
+positions	позиции
+Export KML	Экспорт KML
+Export GPX	Экспорт GPX

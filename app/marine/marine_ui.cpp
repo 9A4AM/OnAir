@@ -7,6 +7,13 @@
 #include "../adsb/adsb_map.h"
 #include "dect2/marine/marine_tel.h"
 #include "dect2/marine/marine_navtex_save.h"
+#include "dect2/marine/marine_mmsi.h"
+#include "dect2/marine/marine_bands.h"
+#include "dect2/marine/marine_dsc_geo.h"
+#include "platform/platform.h"
+#include <fstream>
+#include <map>
+#include <sstream>
 #include "dect2/marine/marine_wefax_stations.h"
 #include "dect2/engine/updater.h"
 #include <algorithm>
@@ -43,6 +50,20 @@ struct State {
     int pushedAuto = -1;
     std::string navSel;              // header + time of the selected NAVTEX message
     std::string dscSelKey;
+    char dscFilter[64] = "";
+    bool namesLoaded = false;             // the ship table (dect2::marine::ShipDb::global()) is read from <data folder>/ship_names.tsv
+    double namesSaved = 0;
+    std::string dbMsg;
+    dect2::marine::DscScan scan;
+    bool scanOn = false;
+    int scanDwell = 4, scanGroups = 1;      // seconds; bit set of DscGroup choices (see kScanSets)
+    bool parOn = false;
+    double scanLastRetune = 0;
+    std::vector<dect2::marine::DscFix> fixes;   // every DSC position heard, for the map and the exports
+    uint64_t fixSeen = 0;
+    std::string mapSel;
+    bool bandOnly = false;
+    std::string dscMsg;
     std::string mapKey;              // the call the small map was last centred on
     adsbmap::View map;
     // the fax picture
@@ -77,6 +98,8 @@ void loadState() {
     S.slant = (float)d.getD("marineSlant", 0.0);
     S.saveNav = d.getB("marineSaveNavtex", true);
     S.map.zoom = 5;
+    S.scanGroups = (int)d.getI("marineScanSets", 1);
+    S.scanDwell = std::max(1, std::min(30, (int)d.getI("marineScanDwell", 4)));
 }
 
 std::string utcText(int64_t t) {
@@ -192,6 +215,73 @@ void navtexView(App& a) {
 
 // ---------------------------------------------------------------- DSC
 
+std::string lowerStr(std::string v) { for (char& ch : v) ch = (char)tolower((unsigned char)ch); return v; }
+
+void loadNames() {
+    if (S.namesLoaded) return;
+    S.namesLoaded = true;
+    for (const char* f : {"/mmsi_names.tsv", "/ship_names.tsv"}) {     // the older list first, the table over it
+        std::ifstream in(std::filesystem::u8path(plat::dataDir() + f), std::ios::binary);
+        if (!in) continue;
+        std::stringstream ss; ss << in.rdbuf();
+        dect2::marine::ShipDb::global().importText(ss.str());
+    }
+    dect2::marine::ShipDb::global().takeDirty();
+}
+
+void saveNamesSoon() {
+    // learned names arrive all the time: write the file at most every 30 s
+    const double now = (double)time(nullptr);
+    if (now - S.namesSaved < 30) return;
+    if (!dect2::marine::ShipDb::global().takeDirty()) return;
+    S.namesSaved = now;
+    const std::string path = plat::dataDir() + "/ship_names.tsv";
+    std::error_code ec;
+    std::filesystem::create_directories(std::filesystem::u8path(plat::dataDir()), ec);
+    std::ofstream out(std::filesystem::u8path(path), std::ios::binary);
+    out << dect2::marine::ShipDb::global().exportTsv();
+}
+
+// the numbers of a call with the name from the user's table, the kind of station and the country
+std::string mmsiLine(const std::string& m, const std::string& type, const std::string& country) {
+    if (m.empty()) return "";
+    std::string r = m;
+    const std::string nm = dect2::marine::ShipDb::global().name(m);
+    if (!nm.empty()) r += "  " + nm;
+    if (!type.empty()) r += "  (" + type + (country.empty() ? "" : ", " + country) + ")";
+    else if (!country.empty()) r += "  (" + country + ")";
+    return r;
+}
+
+bool dscMatches(const DscCall& c, const std::string& needle) {
+    if (needle.empty()) return true;
+    std::string hay = c.text + "|" + c.kind + "|" + c.fromMmsi + "|" + c.to + "|" + c.distressMmsi + "|" + c.fromCountry + "|" + c.toCountry + "|" + c.distressCountry + "|" + c.natureName + "|" + c.telecmdText + "|" + c.posText + "|" +
+                      dect2::marine::ShipDb::global().name(c.fromMmsi) + "|" + dect2::marine::ShipDb::global().name(c.to) + "|" + dect2::marine::ShipDb::global().name(c.distressMmsi);
+    return lowerStr(hay).find(needle) != std::string::npos;
+}
+
+std::string csvCell(const std::string& v) {
+    if (v.find_first_of(",\"\n") == std::string::npos) return v;
+    std::string o = "\"";
+    for (char ch : v) { if (ch == '"') o += '"'; o += ch; }
+    return o + "\"";
+}
+
+std::string dscCsv(const std::vector<DscCall>& calls) {
+    std::string o = "utc,band,kind,category,from,from_name,from_country,to,to_name,to_country,distress_mmsi,nature,lat,lon,position_time_utc,telecommand,freq_rx,freq_tx,eos,check,symbols_lost,symbols_repaired,symbols\n";
+    for (const DscCall& c : calls) {
+        char pos[48] = "", tm[16] = "";
+        if (c.hasPos) snprintf(pos, sizeof pos, "%.5f,%.5f", c.lat, c.lon); else snprintf(pos, sizeof pos, ",");
+        if (c.hasTime) snprintf(tm, sizeof tm, "%02d:%02d", c.utcHour, c.utcMin);
+        std::string sy;
+        for (size_t i = 0; i < c.symbols.size(); i++) { char q[8]; snprintf(q, sizeof q, "%s%d", i ? " " : "", c.symbols[i]); sy += q; }
+        o += csvCell(utcText(c.rxTime)) + "," + (c.vhf ? "VHF" : "MF/HF") + "," + csvCell(c.kind) + "," + csvCell(c.categoryName) + "," + csvCell(c.fromMmsi) + "," + csvCell(dect2::marine::ShipDb::global().name(c.fromMmsi)) + "," + csvCell(c.fromCountry) + "," +
+             csvCell(c.to) + "," + csvCell(dect2::marine::ShipDb::global().name(c.to)) + "," + csvCell(c.toCountry) + "," + csvCell(c.distressMmsi) + "," + csvCell(c.natureName) + "," + pos + "," + tm + "," + csvCell(c.telecmdText) + "," +
+             csvCell(c.freqRx) + "," + csvCell(c.freqTx) + "," + std::to_string(c.eos) + "," + (c.eccOk ? "ok" : "bad") + "," + std::to_string(c.erasures) + "," + std::to_string(c.repaired) + "," + csvCell(sy) + "\n";
+    }
+    return o;
+}
+
 void dscDetail(App& a, const DscCall* c, ImVec2 size) {
     if (!c) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", live(a) ? "click a call" : "start the receiver"); ImGui::PopTextWrapPos(); } return; }
     auto kv = [&](const char* k, const std::string& v) {
@@ -199,12 +289,13 @@ void dscDetail(App& a, const DscCall* c, ImVec2 size) {
         ImGui::TextDisabled("%s", k); kvColumn(96 * gUi);
         ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(v.c_str()); ImGui::PopTextWrapPos(); ImGui::PopFont();
     };
-    if (c->distress) ImGui::TextColored(pal::badRed(), "%s", c->formatName.c_str());
-    else ImGui::TextColored(pal::heading(), "%s", c->formatName.c_str());
-    kv("category", c->categoryName);
-    kv("from", c->fromMmsi.empty() ? "unreadable" : c->fromMmsi);
-    kv("to", c->to);
-    kv("in distress", c->distressMmsi);
+    const std::string head = c->kind.empty() ? c->formatName : c->kind;
+    if (c->distress) ImGui::TextColored(pal::badRed(), "%s", head.c_str());
+    else ImGui::TextColored(pal::heading(), "%s", head.c_str());
+    kv(tr("category"), c->categoryName);
+    kv(tr("from"), c->fromMmsi.empty() ? tr("unreadable") : mmsiLine(c->fromMmsi, c->fromType, c->fromCountry));
+    kv(tr("to"), c->to.size() == 9 && c->to.find_first_not_of("0123456789~") == std::string::npos ? mmsiLine(c->to, c->toType, c->toCountry) : c->to);
+    kv(tr("in distress"), mmsiLine(c->distressMmsi, "", c->distressCountry));
     kv("nature", c->natureName);
     kv("position", c->posText);
     if (c->hasTime) { char b[16]; snprintf(b, sizeof b, "%02d:%02d UTC", c->utcHour, c->utcMin); kv("time", b); }
@@ -215,6 +306,15 @@ void dscDetail(App& a, const DscCall* c, ImVec2 size) {
     char b[64];
     snprintf(b, sizeof b, "%s, %d symbols lost%s", c->eccOk ? "check ok" : "check failed", c->erasures, c->vhf ? ", VHF ch 70" : ", MF/HF");
     kv("received", b);
+    if (c->repaired > 0) {
+        snprintf(b, sizeof b, c->recovered ? tr("%d symbols fixed, one rebuilt from the check character") : tr("%d symbols taken from the second copy"), c->repaired);
+        kv(tr("repair"), b);
+    }
+    if (!c->symbols.empty()) {   // the raw symbols of the information part, like the numbers YADD shows
+        std::string sy;
+        for (size_t i = 0; i < c->symbols.size(); i++) { char q[8]; if (c->symbols[i] < 0) snprintf(q, sizeof q, "%s---", i ? " " : ""); else snprintf(q, sizeof q, "%s%03d", i ? " " : "", c->symbols[i]); sy += q; }
+        kv(tr("symbols"), sy);
+    }
     kv("heard", utcText(c->rxTime) + " UTC");
     if (!c->hasPos) return;
     ImGui::Spacing();
@@ -246,10 +346,32 @@ void dscView(App& a) {
     const dect2::MarineTelemetry& t = a.rx.marine;
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     const float dw = std::min(320.f * gUi, W * 0.32f);
+    loadNames();
     const DscCall* sel = nullptr;
     for (const auto& c : t.dsc) if (dscKey(c) == S.dscSelKey) sel = &c;
     if (!sel && !t.dsc.empty()) sel = &t.dsc.back();
     ImGui::BeginChild("##dsc_l", ImVec2(W - dw - 8 * gUi, H));
+    {   // a distress alert, relay or acknowledgement among the calls kept: a red banner with the newest one
+        const DscCall* d = nullptr;
+        for (const auto& c : t.dsc) if (c.distress && c.eccOk) d = &c;
+        if (d) {
+            ImGui::PushStyleColor(ImGuiCol_Text, pal::badRed());
+            ImGui::TextWrapped("%s: %s", tr("DISTRESS"), d->text.c_str());
+            ImGui::PopStyleColor();
+        }
+    }
+    ImGui::SetNextItemWidth(180 * gUi);
+    ImGui::InputTextWithHint("##dscf", tr("search calls"), S.dscFilter, sizeof S.dscFilter);
+    ImGui::SameLine();
+    if (ImGui::Button(tr("Export CSV")) && !t.dsc.empty()) {
+        const std::string p = saveFileDialog("dsc_calls.csv");
+        if (!p.empty()) { std::ofstream f(std::filesystem::u8path(p), std::ios::binary); f << dscCsv(t.dsc); { char mb[600]; snprintf(mb, sizeof mb, f ? tr("saved %s") : tr("could not write %s"), p.c_str()); S.dscMsg = mb; } }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(tr("Watchlists"))) a.watchlistOpen = true;
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station."));
+    if (!S.dscMsg.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", S.dscMsg.c_str()); }
+    const std::string needle = lowerStr(S.dscFilter);
     // fixed widths that fit the content and a horizontal scroll bar when the pane is narrow, so no column is cut
     const ImGuiTableFlags fl = ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable;
     if (ImGui::BeginTable("##dsc_t", 7, fl, ImVec2(0, ImGui::GetContentRegionAvail().y))) {
@@ -264,6 +386,7 @@ void dscView(App& a) {
         ImGui::TableHeadersRow();
         for (size_t i = t.dsc.size(); i-- > 0;) {    // newest first
             const DscCall& c = t.dsc[i];
+            if (!dscMatches(c, needle)) continue;
             ImGui::TableNextRow();
             if (c.distress) ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg1, IM_COL32(120, 28, 28, 150));
             ImGui::TableNextColumn();
@@ -272,12 +395,12 @@ void dscView(App& a) {
             if (ImGui::Selectable(utcText(c.rxTime).c_str(), sel == &c, ImGuiSelectableFlags_SpanAllColumns)) S.dscSelKey = k;
             ImGui::PopID();
             ImGui::TableNextColumn();
-            std::string nm = c.formatName;
+            std::string nm = c.kind.empty() ? c.formatName : c.kind;
             if (!c.natureName.empty()) nm += ": " + c.natureName;
             if (c.distress) ImGui::TextColored(ImVec4(1.f, 0.55f, 0.5f, 1), "%s", nm.c_str()); else ImGui::TextUnformatted(nm.c_str());
             ImGui::TableNextColumn(); ImGui::TextUnformatted(c.categoryName.c_str());
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(c.fromMmsi.empty() ? "?" : c.fromMmsi.c_str());
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(c.to.c_str());
+            ImGui::TableNextColumn(); { const std::string nm2 = dect2::marine::ShipDb::global().name(c.fromMmsi); const std::string f = (c.fromMmsi.empty() ? std::string("?") : c.fromMmsi) + (nm2.empty() ? "" : " " + nm2); ImGui::TextUnformatted(f.c_str()); if (ImGui::IsItemHovered() && !c.fromCountry.empty()) ImGui::SetTooltip("%s", c.fromCountry.c_str()); }
+            ImGui::TableNextColumn(); { const std::string nm2 = dect2::marine::ShipDb::global().name(c.to); const std::string f = c.to + (nm2.empty() ? "" : " " + nm2); ImGui::TextUnformatted(f.c_str()); if (ImGui::IsItemHovered() && !c.toCountry.empty()) ImGui::SetTooltip("%s", c.toCountry.c_str()); }
             ImGui::TableNextColumn(); if (c.hasPos) ImGui::TextUnformatted(c.posText.c_str()); else ImGui::TextDisabled("-");
             ImGui::TableNextColumn();
             if (c.eccOk) ImGui::TextColored(pal::okGreen(), "ok"); else ImGui::TextColored(pal::badRed(), "bad");
@@ -598,6 +721,8 @@ void panels(App& a) {
 // a protocol entry (NAVTEX, DSC, weather fax): its service, 0 without one
 int subService(const App& a) { const SubMode* sm = curSub(a); return sm ? sm->sel : 0; }
 
+void scanTick(App& a);
+
 void tick(App& a) {
     loadState();
     if (!a.engine.running()) { S.pushedService = S.pushedLpm = S.pushedIoc = S.pushedAuto = -1; S.pushedFreq = -1; S.pushedSlant = 1e9f; return; }
@@ -620,6 +745,9 @@ void tick(App& a) {
     if (S.pushedSlant != S.slant) { r.setFaxSlantPpm(S.slant); S.pushedSlant = S.slant; }
     if (S.pushedAuto != (int)S.autoSlant) { r.setFaxAutoSlant(S.autoSlant); S.pushedAuto = S.autoSlant; }
     marineFaxTexture();
+    loadNames();
+    saveNamesSoon();
+    scanTick(a);
     if (live(a)) uploadFax(a);
     // a picture that ended (the stop tone, or the signal went): keep it for the list on the right
     const int fs = a.rx.marine.fax.state;
@@ -634,6 +762,226 @@ void tick(App& a) {
     S.prevFaxState = fs;
 }
 
+
+// ---------------------------------------------------------------- bands, scan, ship table
+
+std::string hzText(double hz) {
+    char b[48];
+    if (hz <= 0) return "";
+    if (hz < 30e6) snprintf(b, sizeof b, "%.1f kHz", hz / 1e3); else snprintf(b, sizeof b, "%.3f MHz", hz / 1e6);
+    return b;
+}
+
+struct ScanSet { const char* name; unsigned groups; };
+const ScanSet kScanSets[] = {
+    {N_("Distress and safety (MF/HF)"), 1u << (int)dect2::marine::DscGroup::Distress},
+    {N_("Worldwide calling"), (1u << (int)dect2::marine::DscGroup::WorldwideShip) | (1u << (int)dect2::marine::DscGroup::WorldwideCoast)},
+    {N_("Series A calling"), (1u << (int)dect2::marine::DscGroup::SeriesAShip) | (1u << (int)dect2::marine::DscGroup::SeriesACoast)},
+    {N_("Series B calling"), (1u << (int)dect2::marine::DscGroup::SeriesBShip) | (1u << (int)dect2::marine::DscGroup::SeriesBCoast)},
+    {N_("VHF channel 70"), 1u << (int)dect2::marine::DscGroup::Vhf},
+};
+
+std::vector<dect2::marine::DscFreq> chosenChannels() {
+    unsigned mask = 0;
+    for (int i = 0; i < 5; i++) if ((S.scanGroups >> i) & 1) mask |= kScanSets[i].groups;
+    std::vector<dect2::marine::DscFreq> r;
+    for (const auto& f : dect2::marine::dscFrequencies()) if ((mask >> (int)f.group) & 1) r.push_back(f);
+    return r;
+}
+
+void rebuildScan() {
+    std::vector<dect2::marine::DscScan::Entry> l;
+    for (const auto& f : chosenChannels()) l.push_back({f.hz, f.weight});
+    S.scan.setList(l);
+    S.scan.setDwell(S.scanDwell, 20);
+}
+
+// once a second while the Marine screens run: the scanner retunes the radio, the parallel list goes to the receiver
+void scanTick(App& a) {
+    static double lastSec = 0;
+    const double now = (double)time(nullptr);
+    if (now == lastSec) return;
+    lastSec = now;
+    dect2::MarineReceiver& r = a.engine.marine();
+    if (S.parOn && !S.scanOn) {
+        std::vector<double> want;
+        for (const auto& f : chosenChannels()) if (f.hz < 30e6) want.push_back(f.hz);
+        r.setParallelDsc(want);
+    } else {
+        r.setParallelDsc({});
+    }
+    if (!S.scanOn || !live(a)) return;
+    const auto& d = a.rx.marine.dsc;
+    double lastCall = 0;
+    if (!d.empty()) lastCall = (double)d.back().rxTime;
+    double hz = 0;
+    if (S.scan.update(now, a.rx.marine.dscLocked, lastCall, hz)) {
+        tuneFreq(a, hz / 1e6);
+        S.scanLastRetune = now;
+    }
+}
+
+// the positions of the calls kept: new ones are added to the long list the map and the exports use
+void collectFixes(const dect2::MarineTelemetry& t) {
+    if (t.dscCount == S.fixSeen) return;
+    S.fixSeen = t.dscCount;
+    dect2::marine::dscAddFixes(S.fixes, t.dsc);
+}
+
+bool writeText(const std::string& path, const std::string& text) {
+    std::ofstream f(std::filesystem::u8path(path), std::ios::binary);
+    f << text;
+    return (bool)f;
+}
+
+void bandsView(App& a) {
+    loadNames();
+    ImGui::BeginChild("##bands", ImVec2(0, 0));
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextColored(pal::heading(), "%s", tr("DSC scanner"));
+    for (int i = 0; i < 5; i++) {
+        bool on = (S.scanGroups >> i) & 1;
+        if (ImGui::Checkbox(tr(kScanSets[i].name), &on)) { S.scanGroups = on ? (S.scanGroups | (1 << i)) : (S.scanGroups & ~(1 << i)); plat::prefs().setI("marineScanSets", S.scanGroups); rebuildScan(); }
+        if (i < 4) ImGui::SameLine();
+    }
+    if (ImGui::Checkbox(tr("Scan these channels with this radio"), &S.scanOn)) { if (S.scanOn) { S.parOn = false; rebuildScan(); S.scan.restart(); } }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Steps the radio through the channels: the distress channels are visited more often, and a locked decoder or a call keeps the radio on its channel."));
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(90 * gUi);
+    if (ImGui::SliderInt(tr("dwell s"), &S.scanDwell, 1, 30)) { plat::prefs().setI("marineScanDwell", S.scanDwell); rebuildScan(); }
+    if (ImGui::Checkbox(tr("Decode the chosen MF/HF channels in the same capture"), &S.parOn)) { if (S.parOn) S.scanOn = false; }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Decodes every chosen channel that lies inside the radio's bandwidth at the same time (channels in a group are 0.5 kHz apart, the distress channels are MHz apart). Needs a sample rate of 250 kHz or more."));
+    if (S.scanOn) ImGui::TextDisabled("%s %s", tr("scanning:"), hzText(S.scan.current()).c_str());
+    if (S.parOn) {
+        std::string line;
+        for (const auto& pi : a.rx.marine.parallel) line += hzText(pi.hz) + (pi.locked ? " (locked)" : pi.fsk ? " (signal)" : "") + "  ";
+        ImGui::TextDisabled("%s %s", tr("extra channels:"), line.empty() ? tr("none inside the capture") : line.c_str());
+    }
+    ImGui::Spacing();
+    ImGui::TextColored(pal::heading(), "%s", tr("Ship and coast station names"));
+    dect2::marine::ShipDb& db = dect2::marine::ShipDb::global();
+    ImGui::TextDisabled("%zu %s", db.size(), tr("entries; ship names, call signs and types are learned from AIS (static data), and your own list can be imported."));
+    if (ImGui::Button(tr("Import list"))) {
+        const std::string p = openFileDialog();
+        if (!p.empty()) {
+            std::ifstream in(std::filesystem::u8path(p), std::ios::binary);
+            std::stringstream ss; ss << in.rdbuf();
+            char mb[200]; snprintf(mb, sizeof mb, tr("%d records read"), db.importText(ss.str())); S.dbMsg = mb;
+        }
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("A TSV or CSV file: MMSI, name, call sign, type, country, location. A header row (mmsi, name, callsign, type, country, station, location, lat, lon) may reorder the columns; lat and lon place coast stations on the map."));
+    ImGui::SameLine();
+    if (ImGui::Button(tr("Export list"))) {
+        const std::string p = saveFileDialog("ship_names.tsv");
+        if (!p.empty()) { char mb[600]; snprintf(mb, sizeof mb, writeText(p, db.exportTsv()) ? tr("saved %s") : tr("could not write %s"), p.c_str()); S.dbMsg = mb; }
+    }
+    ImGui::SameLine();
+    if (!S.dbMsg.empty()) ImGui::TextDisabled("%s", S.dbMsg.c_str());
+    ImGui::TextDisabled("%s", tr("There is no bundled coast station list: no openly licensed one is available, so bring your own file."));
+    ImGui::Spacing();
+    ImGui::TextColored(pal::heading(), "%s", tr("Marine bands"));
+    ImGui::TextDisabled("%s", tr("A click tunes the radio and opens the mode for it."));
+    ImGui::PopTextWrapPos();
+    const ImGuiTableFlags fl = ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV;
+    if (ImGui::BeginTable("##bandt", 5, fl)) {
+        ImGui::TableSetupColumn(tr("Band"));
+        ImGui::TableSetupColumn(tr("Frequency"));
+        ImGui::TableSetupColumn(tr("Use"));
+        ImGui::TableSetupColumn(tr("Protocols"));
+        ImGui::TableSetupColumn(tr("Notes"));
+        ImGui::TableHeadersRow();
+        int fam = -2; double hz = 0; const char* sub = nullptr;
+        int i = 0;
+        for (const auto& b : dect2::marine::marineBands()) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::PushID(i++);
+            if (ImGui::Selectable(b.band, false, ImGuiSelectableFlags_SpanAllColumns) && (b.hz > 0 || b.family >= 0)) { fam = b.family; hz = b.hz; sub = b.sub; }
+            ImGui::PopID();
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(b.hz > 0 ? hzText(b.hz).c_str() : "-");
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(b.name);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(b.protocols);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(b.notes);
+        }
+        ImGui::EndTable();
+        if (fam != -2) {
+            S.scanOn = false;
+            if (fam >= 0 && fam != 15) selectMode(a, fam);
+            else if (fam == 15 && sub) selectMode(a, 15, sub);
+            if (hz > 0) tuneFreq(a, hz / 1e6);
+        }
+    }
+    ImGui::EndChild();
+}
+
+void mapView(App& a) {
+    const dect2::MarineTelemetry& t = a.rx.marine;
+    loadNames();
+    collectFixes(t);
+    dect2::marine::ShipDb& db = dect2::marine::ShipDb::global();
+    if (ImGui::Checkbox(tr("distress only"), &S.bandOnly)) {}
+    ImGui::SameLine();
+    ImGui::TextDisabled("%zu %s", S.fixes.size(), tr("positions"));
+    ImGui::SameLine();
+    if (ImGui::SmallButton(tr("Export KML")) && !S.fixes.empty()) {
+        const std::string p = saveFileDialog("dsc_positions.kml");
+        if (!p.empty()) { char mb[600]; snprintf(mb, sizeof mb, writeText(p, dect2::marine::dscKml(S.fixes, db)) ? tr("saved %s") : tr("could not write %s"), p.c_str()); S.dscMsg = mb; }
+    }
+    ImGui::SameLine();
+    if (ImGui::SmallButton(tr("Export GPX")) && !S.fixes.empty()) {
+        const std::string p = saveFileDialog("dsc_positions.gpx");
+        if (!p.empty()) { char mb[600]; snprintf(mb, sizeof mb, writeText(p, dect2::marine::dscGpx(S.fixes, db)) ? tr("saved %s") : tr("could not write %s"), p.c_str()); S.dscMsg = mb; }
+    }
+    if (!S.dscMsg.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", S.dscMsg.c_str()); }
+    const ImVec2 sz(ImGui::GetContentRegionAvail().x, std::max(120.f * gUi, ImGui::GetContentRegionAvail().y - 4 * gUi));
+    static bool centred = false;
+    if (!centred && !S.fixes.empty()) { S.map.lat = S.fixes.back().lat; S.map.lon = S.fixes.back().lon; centred = true; }
+    const ImVec2 p0 = ImGui::GetCursorScreenPos();
+    adsbmap::draw(S.map, sz);
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    dl->PushClipRect(p0, ImVec2(p0.x + sz.x, p0.y + sz.y), true);
+    std::map<std::string, std::vector<const dect2::marine::DscFix*>> by;
+    for (const auto& f : S.fixes) if (!S.bandOnly || f.distress) by[f.mmsi].push_back(&f);
+    const ImVec2 mp = ImGui::GetIO().MousePos;
+    std::string hover;
+    for (const auto& kv : by) {
+        ImVec2 prev;
+        bool any = false, dist = false;
+        for (const auto* f : kv.second) dist |= f->distress;
+        const ImU32 col = dist ? IM_COL32(235, 70, 70, 255) : IM_COL32(110, 205, 120, 255);
+        for (const auto* f : kv.second) {
+            const ImVec2 q = adsbmap::project(f->lat, f->lon);
+            if (any) dl->AddLine(prev, q, col, 1.6f);
+            prev = q; any = true;
+            const bool last = f == kv.second.back();
+            dl->AddCircleFilled(q, (last ? 5.f : 3.f) * gUi, col);
+            if (last) dl->AddCircle(q, 9 * gUi, col, 20, 1.6f);
+            if (last && std::fabs(mp.x - q.x) < 10 * gUi && std::fabs(mp.y - q.y) < 10 * gUi) {
+                const std::string nm = db.name(kv.first);
+                const auto info = dect2::marine::mmsiInfo(kv.first);
+                hover = kv.first + (nm.empty() ? "" : "  " + nm) + (info.country.empty() ? "" : "\n" + info.country) + "\n" + f->note + "\n" + utcText(f->time) + " UTC  " + std::to_string(kv.second.size()) + " " + tr("positions");
+            }
+        }
+    }
+    for (const auto& r : db.positioned()) {     // coast stations from the imported list
+        const ImVec2 q = adsbmap::project(r.lat, r.lon);
+        dl->AddRectFilled(ImVec2(q.x - 4 * gUi, q.y - 4 * gUi), ImVec2(q.x + 4 * gUi, q.y + 4 * gUi), IM_COL32(90, 150, 235, 255));
+        if (std::fabs(mp.x - q.x) < 8 * gUi && std::fabs(mp.y - q.y) < 8 * gUi) hover = r.mmsi + "  " + db.name(r.mmsi) + (r.type.empty() ? "" : "\n" + r.type);
+    }
+    dl->PopClipRect();
+    if (!hover.empty() && ImGui::IsMouseHoveringRect(p0, ImVec2(p0.x + sz.x, p0.y + sz.y))) ImGui::SetTooltip("%s", hover.c_str());
+    ImGui::SetCursorScreenPos(ImVec2(p0.x + 6 * gUi, p0.y + 6 * gUi));
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.06f, 0.07f, 0.08f, 0.85f));
+    if (ImGui::Button("+", ImVec2(24 * gUi, 0))) S.map.zoom = std::min(adsbmap::kMaxZoom, S.map.zoom + 1);
+    ImGui::SameLine(0, 2 * gUi);
+    if (ImGui::Button("-", ImVec2(24 * gUi, 0))) S.map.zoom = std::max(adsbmap::kMinZoom, S.map.zoom - 1);
+    ImGui::PopStyleColor();
+    ImGui::SameLine(0, 6 * gUi);
+    adsbmap::tileControls("never the position itself");
+    ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + sz.y));
+    ImGui::Dummy(ImVec2(0, 0));
+}
+
 void tab(App& a) {
     loadState();
     if (const int svc = subService(a)) {   // a protocol entry: its own view and the tuning view
@@ -643,16 +991,17 @@ void tab(App& a) {
             subNav("marv3", k, {"Fax", "Stations", "Tuning"});
             S.view = k == 1 ? 4 : k == 2 ? 3 : 2;
         } else {
-        int k = S.view == 3 ? 1 : 0;
-        subNav("marv1", k, {names[svc], "Tuning"});
-        S.view = k == 1 ? 3 : svc - 1;
+        int k = S.view == 3 ? 1 : S.view == 5 ? 2 : S.view == 6 ? 3 : 0;
+        if (svc == 2) subNav("marv1", k, {names[svc], "Tuning", "Bands", "Map"});
+        else { if (k == 3) k = 0; subNav("marv1", k, {names[svc], "Tuning", "Bands"}); }
+        S.view = k == 1 ? 3 : k == 2 ? 5 : k == 3 ? 6 : svc - 1;
         }
     } else {
     const int act = live(a) ? a.rx.marine.serviceActive : 0;
     if (S.follow && act != S.lastActive && act != 0) S.view = act == 1 ? 0 : act == 3 ? 2 : 1;
     S.lastActive = act;
     const int before = S.view;
-    subNav("marv", S.view, {"NAVTEX", "DSC", "Fax", "Tuning", "Fax stations"});
+    subNav("marv", S.view, {"NAVTEX", "DSC", "Fax", "Tuning", "Fax stations", "Bands", "DSC map"});
     if (S.view != before) S.follow = false;
     ImGui::SameLine(0, 20 * gUi);
     ImGui::TextDisabled("Service"); ImGui::SameLine();
@@ -690,6 +1039,8 @@ void tab(App& a) {
     case 1: dscView(a); break;
     case 2: faxView(a); break;
     case 4: stationsView(a); break;
+    case 5: bandsView(a); break;
+    case 6: mapView(a); break;
     default: tuningPanel(a); break;
     }
 }

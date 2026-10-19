@@ -2,6 +2,7 @@
 // Front end: mix out the signal offset, decimate to about 100 kHz, resample to exactly 96 kHz; each channel is mixed to zero, filtered and
 // decimated to 48 kHz (5 samples per bit). A power detector finds the bursts (they are short and stand alone), each one is cut out of a ring of samples
 // and decoded offline by aisDecodeBurst (ais_phy.cpp). The message layer and the station table are here.
+#include "dect2/marine/marine_mmsi.h"
 #include "dect2/ais/ais_rx.h"
 #include "dect2/dsp/baseband_filter.h"
 #include "dect2/automation/engine.h"
@@ -266,6 +267,10 @@ struct AisReceiver::Impl {
         if (!m.destination.empty() || m.type == 5) v.destination = m.destination;
         if (m.imo) v.imo = m.imo;
         if (m.shipType >= 0) v.shipType = m.shipType;
+        if ((m.type == 5 || m.type == 24) && (!m.name.empty() || !m.callsign.empty() || m.shipType > 0)) {   // static data: the local ship table (DSC and AIS views)
+            char mm[16]; snprintf(mm, sizeof mm, "%09u", (unsigned)m.mmsi);
+            marine::ShipDb::global().learn(mm, v.name, v.callsign, m.shipType > 0 ? aisShipTypeText(m.shipType) : std::string());
+        }
         if (m.dimA || m.dimB || m.dimC || m.dimD) { v.dimA = m.dimA; v.dimB = m.dimB; v.dimC = m.dimC; v.dimD = m.dimD; }
         if (m.type == 5) {
             v.etaMonth = m.etaMonth; v.etaDay = m.etaDay; v.etaHour = m.etaHour; v.etaMin = m.etaMin;

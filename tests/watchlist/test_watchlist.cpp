@@ -56,6 +56,15 @@ void testMatch() {
     au::Event dsc("dsc.call");
     dsc.str("from_mmsi", "219000123").str("to_mmsi", "all");
     CHECK(m(mk(Kind::Ship, {"219000123"}), dsc), "dsc caller");
+    {   // DSC distress: the special entry matches every distress call, nothing else; a watched ship in an acknowledgement matches too
+        au::Event d("dsc.call");
+        d.str("from_mmsi", "002320064").str("to_mmsi", "all ships").str("category", "distress").str("distress_mmsi", "232123456");
+        CHECK(m(mk(Kind::Ship, {"DSC distress"}), d), "dsc distress entry");
+        CHECK(m(mk(Kind::Ship, {"dsc-distress"}), d), "dsc distress entry, spelling");
+        CHECK(!m(mk(Kind::Ship, {"DSC distress"}), dsc), "routine call is no distress");
+        CHECK(m(mk(Kind::Ship, {"232123456"}), d), "ship named in the acknowledgement");
+        CHECK(!m(mk(Kind::Ship, {"DSC distress"}), ais), "ais is no dsc");
+    }
 
     au::Event ap("aprs.packet");
     ap.str("from", "LY1ABC-9").str("to", "APRS").str("info", "test");

@@ -9,6 +9,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace dect2 {
 
@@ -28,6 +29,7 @@ public:
     // ---- controls (any thread)
     void setService(int s);                              // 0 auto (by frequency; all services when the frequency is not known), 1 NAVTEX, 2 DSC, 3 weather fax
     void setFrequencyHz(double hz);                      // the tuned (dial) frequency: picks the service in auto mode and MF/HF or VHF for DSC; 0 = unknown
+    void setParallelDsc(const std::vector<double>& hz);   // extra MF/HF DSC carriers to decode at the same time; those outside the capture are ignored
     void setFaxLpm(int lpm);                             // 60, 90, 120, 240; 0 = detect
     void setFaxIoc(int ioc);                             // 576 or 288; 0 = from the start tone
     void setFaxSlantPpm(double ppm);

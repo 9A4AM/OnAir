@@ -2657,7 +2657,7 @@ The watchlist file could not be read:	Não foi possível ler o arquivo das lista
 APRS call signs	Indicativos APRS
 Words in messages	Palavras em mensagens
 One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Um por linha: um endereço ICAO hexadecimal (4840D6), uma matrícula (A6-EDA) ou um indicativo (KLM1023). Um * no fim corresponde ao início (KLM*). Ouvido por ADS-B, ACARS, VDL2 e HFDL.
-One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Um por linha: um número MMSI, o nome de um navio ou um indicativo. Um * no fim corresponde ao início (2190*). Ouvido por AIS e DSC.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC. The entry DSC distress alerts on every DSC distress call.	Um por linha: um número MMSI, o nome de um navio ou um indicativo. Um * no fim corresponde ao início (2190*). Ouvido por AIS e DSC. A entrada DSC distress alerta em cada chamada de socorro DSC.
 One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Um por linha: um indicativo. Sem SSID (LY1ABC) qualquer SSID corresponde; com SSID (LY1ABC-9) apenas esse.
 One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Uma por linha: uma frequência em MHz (162.025), com unidade (162025 kHz) ou uma faixa (144-146). Conta tudo o que for decodificado nela.
 One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Uma por linha: uma palavra ou frase (sem distinguir maiúsculas). Um * no fim corresponde a inícios de palavra (fire*). Procurado em pagers, ACARS, APRS e outros textos decodificados.
@@ -3302,3 +3302,45 @@ At the top of the picture	No topo da imagem
 Save .srt and .vtt next to audio recordings	Guardar .srt e .vtt junto das gravações de áudio
 Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time	Legendas: %llu partes, %llu de música ignoradas, %llu ignoradas (demasiado lento), velocidade %.2f x tempo real
 The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest.	O motor de voz é mais lento do que o áudio: use um modelo mais pequeno ou menos threads de CPU. A fala mais antiga é ignorada, nunca a mais recente.
+#  DSC audit
+category	categoria
+from	de
+in distress	em perigo
+unreadable	ilegível
+repair	reparo
+symbols	símbolos
+DISTRESS	PERIGO
+search calls	procurar chamadas
+saved %s	guardado %s
+could not write %s	não foi possível escrever %s
+%d symbols fixed, one rebuilt from the check character	%d símbolos corrigidos, um reconstruído a partir do carácter de verificação
+%d symbols taken from the second copy	%d símbolos tomados da segunda cópia
+In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	Numa lista de navios, a entrada DSC distress alerta em cada chamada de socorro DSC; um MMSI alerta para essa estação.
+#  DSC bands, scan, ship table, map
+DSC scanner	Scanner DSC
+Distress and safety (MF/HF)	Socorro e segurança (MF/HF)
+Worldwide calling	Chamada mundial
+Series A calling	Chamada série A
+Series B calling	Chamada série B
+VHF channel 70	Canal 70 VHF
+Scan these channels with this radio	Varrer estes canais com este rádio
+Steps the radio through the channels: the distress channels are visited more often, and a locked decoder or a call keeps the radio on its channel.	Percorre os canais com o rádio: os de socorro são visitados com mais frequência, e um descodificador bloqueado ou uma chamada mantém o rádio no seu canal.
+Decode the chosen MF/HF channels in the same capture	Descodificar os canais MF/HF escolhidos na mesma captura
+Decodes every chosen channel that lies inside the radio's bandwidth at the same time (channels in a group are 0.5 kHz apart, the distress channels are MHz apart). Needs a sample rate of 250 kHz or more.	Descodifica ao mesmo tempo todos os canais escolhidos dentro da largura de banda do rádio (os canais de um grupo distam 0,5 kHz, os de socorro MHz). Requer taxa de amostragem de 250 kHz ou mais.
+scanning:	a varrer:
+extra channels:	canais adicionais:
+none inside the capture	nenhum dentro da captura
+Ship and coast station names	Nomes de navios e estações costeiras
+entries; ship names, call signs and types are learned from AIS (static data), and your own list can be imported.	entradas; nomes, indicativos e tipos de navios são aprendidos do AIS (dados estáticos) e pode importar a sua própria lista.
+Import list	Importar lista
+%d records read	%d registos lidos
+A TSV or CSV file: MMSI, name, call sign, type, country, location. A header row (mmsi, name, callsign, type, country, station, location, lat, lon) may reorder the columns; lat and lon place coast stations on the map.	Um ficheiro TSV ou CSV: MMSI, nome, indicativo, tipo, país, local. Uma linha de cabeçalho (mmsi, name, callsign, type, country, station, location, lat, lon) pode reordenar as colunas; lat e lon colocam as estações costeiras no mapa.
+Export list	Exportar lista
+There is no bundled coast station list: no openly licensed one is available, so bring your own file.	Não há lista de estações costeiras incluída: não existe nenhuma com licença aberta, por isso traga o seu próprio ficheiro.
+Marine bands	Bandas marítimas
+A click tunes the radio and opens the mode for it.	Um clique sintoniza o rádio e abre o modo correspondente.
+Protocols	Protocolos
+distress only	apenas socorro
+positions	posições
+Export KML	Exportar KML
+Export GPX	Exportar GPX

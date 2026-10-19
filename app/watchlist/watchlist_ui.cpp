@@ -178,7 +178,7 @@ const wl::Kind kKindOf[] = {wl::Kind::Aircraft, wl::Kind::Ship, wl::Kind::Aprs, 
 const char* kindHint(wl::Kind k) {
     switch (k) {
     case wl::Kind::Aircraft: return N_("One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.");
-    case wl::Kind::Ship: return N_("One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.");
+    case wl::Kind::Ship: return N_("One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC. The entry DSC distress alerts on every DSC distress call.");
     case wl::Kind::Aprs: return N_("One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.");
     case wl::Kind::Frequency: return N_("One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.");
     case wl::Kind::Words: return N_("One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.");

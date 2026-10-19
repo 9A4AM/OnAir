@@ -1,6 +1,8 @@
 #include "dect2/marine/marine_dsc.h"
+#include "dect2/marine/marine_mmsi.h"
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <cstdio>
 
 namespace dect2 {
@@ -124,6 +126,16 @@ std::string dscMmsiFromSymbols(const int* s) {
     }
     b[9] = 0;                      // the tenth digit is 0 (M.493 section 5.2)
     return b;
+}
+
+std::string dscMmsiLenient(const int* s) {
+    std::string r;
+    char b[4];
+    for (int i = 0; i < 5; i++) {
+        if (s[i] < 0 || s[i] > 99) r += "~~"; else { snprintf(b, sizeof b, "%02d", s[i]); r += b; }
+    }
+    r.resize(9);
+    return r.find_first_not_of('~') == std::string::npos ? std::string() : r;
 }
 
 bool dscMmsiToSymbols(const std::string& m, int out[5]) {
@@ -304,6 +316,24 @@ std::vector<uint8_t> dscFrameBits(const std::vector<int>& body, int eos, int dot
 // ---------------------------------------------------------------------------------------------------------------------------------
 // parsing
 
+// What the call is, from the format specifier, category, first telecommand and the end of sequence (M.493 sections 4 and 6, M.541).
+std::string dscCallKind(const DscCall& c) {
+    const bool ack = c.eos == 122;
+    if (c.format == 112) return "Distress alert";
+    if (c.category == 112 && c.telecmd1 == 110) return c.format == 116 ? "Distress alert acknowledgement" : "Distress alert relay acknowledgement";
+    if (c.category == 112 && c.telecmd1 == 112) return c.format == 116 ? "Distress alert relay (all ships)" : c.format == 102 ? "Distress alert relay (area)" : "Distress alert relay";
+    std::string who = c.format == 116 ? "All ships" : c.format == 102 ? "Area" : c.format == 114 ? "Group" : (c.format == 120 || c.format == 123) ? "Individual" : "";
+    if (who.empty()) return c.formatName;
+    if (c.telecmd1 == 118) return ack ? "Test acknowledgement" : "Test call";
+    if (c.telecmd1 == 121) return "Position update";
+    if (c.telecmd1 == 103) return ack ? "Position reply" : "Position request (polling)";
+    if (ack && c.hasPos) return "Position reply";
+    if (ack) return who + " call acknowledgement";
+    if (c.category == 110) return who + " urgency call";
+    if (c.category == 108) return who + " safety call";
+    return who + " call";
+}
+
 DscCall dscParseCall(const std::vector<int>& b, int eos, bool eccOk, int erasures) {
     DscCall c;
     c.eos = eos; c.eccOk = eccOk; c.erasures = erasures;
@@ -320,7 +350,7 @@ DscCall dscParseCall(const std::vector<int>& b, int eos, bool eccOk, int erasure
         if (c.format == 116) toText = "all ships";
         else if (c.format == 120 || c.format == 114 || c.format == 123) {
             take5(s5);
-            toText = dscMmsiFromSymbols(s5);
+            toText = dscMmsiLenient(s5);
         } else if (c.format == 102) {
             take5(s5);
             bool okd = true; char d[11];
@@ -338,7 +368,7 @@ DscCall dscParseCall(const std::vector<int>& b, int eos, bool eccOk, int erasure
     }
     c.categoryName = dscCategoryName(c.category);
     take5(s5);
-    c.fromMmsi = dscMmsiFromSymbols(s5);
+    c.fromMmsi = dscMmsiLenient(s5);
     auto distressBlock = [&]() {
         c.nature = get(i++);
         c.natureName = dscNatureName(c.nature);
@@ -358,7 +388,7 @@ DscCall dscParseCall(const std::vector<int>& b, int eos, bool eccOk, int erasure
         if (c.category == 112 && (c.telecmd1 == 110 || c.telecmd1 == 112)) {
             c.distress = true;
             int s[5]; take5(s);
-            c.distressMmsi = dscMmsiFromSymbols(s);
+            c.distressMmsi = dscMmsiLenient(s);
             distressBlock();
         } else {
             c.telecmd2 = get(i++);
@@ -389,6 +419,17 @@ DscCall dscParseCall(const std::vector<int>& b, int eos, bool eccOk, int erasure
             if (*n && c.telecmd2 != 126) { if (!t.empty()) t += "; "; t += n; }
         }
         c.telecmdText = t;
+    }
+    c.symbols = b;
+    {
+        const MmsiInfo f = mmsiInfo(c.fromMmsi), d = mmsiInfo(c.distressMmsi);
+        c.fromCountry = f.country; c.fromType = mmsiKindName(f.kind);
+        c.distressCountry = d.country;
+        if (!c.to.empty() && c.to.size() == 9 && c.to.find_first_not_of("0123456789~") == std::string::npos) {
+            const MmsiInfo t = mmsiInfo(c.to);
+            c.toCountry = t.country; c.toType = mmsiKindName(t.kind);
+        }
+        c.kind = dscCallKind(c);
     }
     char line[400];
     std::string pos = c.hasPos ? " at " + c.posText : "";
@@ -432,11 +473,11 @@ void DscDecoder::pushBit(float soft) {
     float cmin = 1.f; for (float c : regConf_) cmin = std::min(cmin, c);
     if (locked_) {
         if (ph != lockPhase_) return;
-        onSymbol(s, cmin);
+        onSymbol(s, cmin, reg_);
         return;
     }
     auto& h = hist_[ph];
-    Sym sy; sy.s = s; sy.conf = cmin;
+    Sym sy; sy.s = s; sy.conf = cmin; sy.raw = reg_;
     h.push_back(sy);
     if (h.size() > 24) h.erase(h.begin());
     // phasing hunt: three symbols of the phasing sequence in their places (M.493 section 3.3)
@@ -457,8 +498,8 @@ void DscDecoder::pushBit(float soft) {
     }
 }
 
-void DscDecoder::onSymbol(int s, float conf) {
-    Sym sy; sy.s = s; sy.conf = conf;
+void DscDecoder::onSymbol(int s, float conf, unsigned raw) {
+    Sym sy; sy.s = s; sy.conf = conf; sy.raw = raw;
     slots_.push_back(sy);
     tryFinish();
 }
@@ -513,37 +554,113 @@ void DscDecoder::tryFinish() {
     bool pend, conf; int alt;
     tok(eosIdx + 1, pend, conf, alt);
     if (pend) return;                         // wait for the retransmission of the ECC
-    // merge
-    std::vector<int> merged;                 // tokens 0 .. eosIdx + 1
-    std::vector<int> altOf;
-    int erasures = 0;
-    for (size_t i = 0; i <= eosIdx + 1; i++) {
-        bool p2, c2; int a2;
-        int m = tok(i, p2, c2, a2);
-        if (i == 0 && m < 0) { bool pp, cc; int aa; m = tok(1, pp, cc, aa); }
-        merged.push_back(m);
-        altOf.push_back(c2 ? a2 : -1);
-        if (m < 0 && i != 1 && i != eosIdx + 1) erasures++;
+    // merge: per information symbol the candidates (the valid copy of the DX place first, then the RX place), then the check character
+    // decides: fewest changes to the first choices that make the even parity right (symbol-level correction with time diversity)
+    struct Cand { std::vector<int> v; float conf = 0; };
+    auto cand = [&](size_t dxs, size_t rxs, Cand& cd) {
+        const Sym* d = dxs < N ? &slots_[dxs] : nullptr;
+        const Sym* r = rxs < N ? &slots_[rxs] : nullptr;
+        if (d && d->s >= 0) { cd.v.push_back(d->s); cd.conf = d->conf; }
+        if (r && r->s >= 0 && (cd.v.empty() || r->s != cd.v[0])) { cd.v.push_back(r->s); if (cd.v.size() == 1) cd.conf = r->conf; }
+        if (cd.v.empty()) {   // no valid copy: unknown (the check character may give it back when it is the only one)
+            cd.conf = 0;
+            return false;
+        }
+        return true;
+    };
+    std::vector<Cand> cands;                // body positions, the check character last
+    std::vector<bool> known;
+    {
+        Cand c0;                            // the format specifier is sent twice in each place: four copies
+        bool k0 = false;
+        for (size_t dxs : {size_t(12), size_t(14)}) {
+            Cand t; const bool ok = cand(dxs, dxs + 5, t);
+            if (ok) { k0 = true; for (int v : t.v) if (std::find(c0.v.begin(), c0.v.end(), v) == c0.v.end()) c0.v.push_back(v); if (c0.conf == 0) c0.conf = t.conf; }
+        }
+        if (!k0) { Cand t; cand(12, 17, t); c0 = t; }
+        cands.push_back(c0); known.push_back(k0);
     }
-    std::vector<int> body;
-    body.push_back(merged[0]);
-    for (size_t i = 2; i < eosIdx; i++) body.push_back(merged[i]);
-    const int eos = merged[eosIdx];
-    const int ecc = merged[eosIdx + 1];
+    for (size_t i = 2; i < eosIdx; i++) { Cand cd; const bool ok = cand(12 + 2 * i, 12 + 2 * i + 5, cd); cands.push_back(cd); known.push_back(ok); }
+    const size_t eccPos = cands.size();
+    { Cand cd; const bool ok = cand(12 + 2 * (eosIdx + 1), 12 + 2 * (eosIdx + 1) + 5, cd); cands.push_back(cd); known.push_back(ok); }
+    const int eos = tok(eosIdx, pend, conf, alt);
+    int erasures = 0;
+    std::vector<size_t> unk;
+    for (size_t k = 0; k < eccPos; k++) if (!known[k]) { erasures++; unk.push_back(k); }
+    std::vector<int> pick(cands.size(), 0);
     bool eccOk = false;
-    if (erasures == 0 && ecc >= 0) {
-        eccOk = dscEcc(body, eos) == ecc;
-        if (!eccOk) {                        // one symbol where the DX and RX copies are valid but differ: try the other copy
-            for (size_t k = 0; k < body.size() && !eccOk; k++) {
-                const size_t ti = k == 0 ? 0 : k + 1;
-                if (altOf[ti] >= 0) {
-                    std::vector<int> b2 = body; b2[k] = altOf[ti];
-                    if (dscEcc(b2, eos) == ecc) { body = b2; eccOk = true; }
-                }
+    int repaired = 0;
+    bool recovered = false;
+    std::vector<int> body(eccPos, -1);
+    auto eccOf = [&](const std::vector<int>& bd) { return dscEcc(bd, eos); };
+    if (known[eccPos] || !cands[eccPos].v.empty()) {
+        // positions that may change, the least certain first
+        std::vector<size_t> order;
+        for (size_t k = 0; k <= eccPos; k++) if (cands[k].v.size() > 1) order.push_back(k);
+        std::stable_sort(order.begin(), order.end(), [&](size_t x, size_t y) { return cands[x].conf < cands[y].conf; });
+        auto build = [&](std::vector<int>& bd, int& ecc) {
+            bd.assign(eccPos, -1);
+            for (size_t k = 0; k < eccPos; k++) if (!cands[k].v.empty()) bd[k] = cands[k].v[(size_t)pick[k]];
+            ecc = cands[eccPos].v.empty() ? -1 : cands[eccPos].v[(size_t)pick[eccPos]];
+        };
+        bool done = false;
+        if (unk.empty()) {
+            // iterative deepening over the number of changed positions (the unknown symbols count as changes of their own)
+            std::vector<size_t> flex = order;
+            const size_t nu = unk.size();
+            for (int maxDev = 0; maxDev <= 3 && !done; maxDev++) {
+                std::function<void(size_t, int)> dfs = [&](size_t idx, int left) {
+                    if (done) return;
+                    if (idx == flex.size()) {
+                        std::vector<int> bd; int ecc;
+                        build(bd, ecc);
+                        for (int v : bd) if (v < 0) return;
+                        if (ecc >= 0 && eccOf(bd) == ecc) { done = true; body = bd; repaired = maxDev - left; }
+                        return;
+                    }
+                    const size_t k = flex[idx];
+                    const bool isUnknown = k < eccPos && !known[k];
+                    for (size_t j = 0; j < cands[k].v.size(); j++) {
+                        const int cost = (j > 0 && !isUnknown) ? 1 : 0;
+                        if (cost > left) break;
+                        pick[k] = (int)j;
+                        dfs(idx + 1, left - cost);
+                        if (done) return;
+                    }
+                    pick[k] = 0;
+                };
+                // positions with one candidate or none are fixed; unknown ones with no candidates make the search empty
+                bool hopeless = false;
+                for (size_t u : unk) if (cands[u].v.empty()) hopeless = true;
+                if (!hopeless) dfs(0, maxDev);
+                (void)nu;
+            }
+            if (done) eccOk = true;
+        }
+        if (!done && unk.size() == 1 && known[eccPos]) {
+            // one symbol lost in both copies and no single wrong bit explains it (or the check refused them): the check character gives it back
+            bool conflicts = false;
+            for (size_t k = 0; k <= eccPos; k++) if (k != unk[0] && cands[k].v.size() > 1) conflicts = true;
+            if (!conflicts) {
+                std::vector<int> bd(eccPos, -1);
+                int x = eos & 127;
+                for (size_t k = 0; k < eccPos; k++) if (k != unk[0]) { bd[k] = cands[k].v[0]; x ^= bd[k] & 127; }
+                x ^= cands[eccPos].v[0] & 127;
+                bd[unk[0]] = x;
+                body = bd; eccOk = true; recovered = true; repaired = 1; done = true;
             }
         }
+        if (!done) {   // nothing fits: show the first choices, the check failed
+            std::fill(pick.begin(), pick.end(), 0);
+            std::vector<int> bd; int ecc;
+            build(bd, ecc);
+            body = bd;
+        }
+    } else {
+        for (size_t k = 0; k < eccPos; k++) body[k] = cands[k].v.empty() ? -1 : cands[k].v[0];
     }
-    DscCall c = dscParseCall(body, eos, eccOk, erasures);
+    DscCall c = dscParseCall(body, eos, eccOk, recovered ? 0 : erasures);
+    c.repaired = repaired; c.recovered = recovered;
     c.vhf = vhf_;
     if (eccOk) ok_++; else bad_++;
     abortLock();

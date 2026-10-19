@@ -2674,7 +2674,7 @@ The watchlist file could not be read:	Het bestand met kijklijsten kon niet worde
 APRS call signs	APRS-roepletters
 Words in messages	Woorden in berichten
 One per line: an ICAO hex address (4840D6), a registration (A6-EDA) or a call sign (KLM1023). A trailing * matches the start (KLM*). Heard by ADS-B, ACARS, VDL2 and HFDL.	Een per regel: een ICAO-hexadres (4840D6), een registratie (A6-EDA) of een roepnaam (KLM1023). Een * aan het eind komt overeen met het begin (KLM*). Gehoord via ADS-B, ACARS, VDL2 en HFDL.
-One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC.	Een per regel: een MMSI-nummer, een scheepsnaam of een roepnaam. Een * aan het eind komt overeen met het begin (2190*). Gehoord via AIS en DSC.
+One per line: an MMSI number, a ship name or a call sign. A trailing * matches the start (2190*). Heard by AIS and DSC. The entry DSC distress alerts on every DSC distress call.	Een per regel: een MMSI-nummer, een scheepsnaam of een roepnaam. Een * aan het eind komt overeen met het begin (2190*). Gehoord via AIS en DSC. De invoer DSC distress waarschuwt bij elke DSC-noodoproep.
 One per line: a call sign. Without an SSID (LY1ABC) every SSID matches; with one (LY1ABC-9) only that one.	Een per regel: een roepnaam. Zonder SSID (LY1ABC) komt elke SSID overeen, met SSID (LY1ABC-9) alleen die ene.
 One per line: a frequency in MHz (162.025), with a unit (162025 kHz) or a range (144-146). Anything decoded on it counts.	Een per regel: een frequentie in MHz (162.025), met een eenheid (162025 kHz) of een bereik (144-146). Alles wat erop wordt gedecodeerd telt mee.
 One per line: a word or a phrase (not case sensitive). A trailing * matches word starts (fire*). Searched in pager, ACARS, APRS and other decoded text.	Een per regel: een woord of zin (hoofdletterongevoelig). Een * aan het eind komt overeen met woordbegin (fire*). Gezocht in pager-, ACARS-, APRS- en andere gedecodeerde teksten.
@@ -3319,3 +3319,45 @@ At the top of the picture	Bovenin het beeld
 Save .srt and .vtt next to audio recordings	Naast audio-opnamen .srt en .vtt opslaan
 Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time	Ondertitels: %llu stukken, %llu muziek overgeslagen, %llu overgeslagen (te traag), snelheid %.2f x realtime
 The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest.	De spraakengine is trager dan het geluid: gebruik een kleiner model of minder CPU-threads. De oudste spraak wordt overgeslagen, nooit de nieuwste.
+#  DSC audit
+category	categorie
+from	van
+in distress	in nood
+unreadable	onleesbaar
+repair	herstel
+symbols	symbolen
+DISTRESS	NOOD
+search calls	oproepen zoeken
+saved %s	opgeslagen %s
+could not write %s	kon %s niet schrijven
+%d symbols fixed, one rebuilt from the check character	%d symbolen hersteld, één opnieuw opgebouwd uit het controleteken
+%d symbols taken from the second copy	%d symbolen uit de tweede kopie genomen
+In a Ships list, the entry DSC distress alerts on every DSC distress call; an MMSI alerts on that station.	In een scheepslijst waarschuwt de invoer DSC distress bij elke DSC-noodoproep; een MMSI waarschuwt voor dat station.
+#  DSC bands, scan, ship table, map
+DSC scanner	DSC-scanner
+Distress and safety (MF/HF)	Nood en veiligheid (MF/HF)
+Worldwide calling	Wereldwijd oproepen
+Series A calling	Oproep serie A
+Series B calling	Oproep serie B
+VHF channel 70	VHF-kanaal 70
+Scan these channels with this radio	Deze kanalen met deze radio aflopen
+Steps the radio through the channels: the distress channels are visited more often, and a locked decoder or a call keeps the radio on its channel.	Stapt de radio langs de kanalen: noodkanalen vaker, en een vergrendelde decoder of een oproep houdt de radio op zijn kanaal.
+Decode the chosen MF/HF channels in the same capture	De gekozen MF/HF-kanalen in dezelfde opname decoderen
+Decodes every chosen channel that lies inside the radio's bandwidth at the same time (channels in a group are 0.5 kHz apart, the distress channels are MHz apart). Needs a sample rate of 250 kHz or more.	Decodeert alle gekozen kanalen binnen de bandbreedte van de radio tegelijk (kanalen in een groep liggen 0,5 kHz uit elkaar, de noodkanalen MHz). Vereist een samplerate van 250 kHz of meer.
+scanning:	scannen:
+extra channels:	extra kanalen:
+none inside the capture	geen binnen de opname
+Ship and coast station names	Namen van schepen en kuststations
+entries; ship names, call signs and types are learned from AIS (static data), and your own list can be imported.	items; scheepsnamen, roepletters en types worden geleerd uit AIS (statische gegevens) en je kunt een eigen lijst importeren.
+Import list	Lijst importeren
+%d records read	%d records gelezen
+A TSV or CSV file: MMSI, name, call sign, type, country, location. A header row (mmsi, name, callsign, type, country, station, location, lat, lon) may reorder the columns; lat and lon place coast stations on the map.	Een TSV- of CSV-bestand: MMSI, naam, roepletters, type, land, plaats. Een kopregel (mmsi, name, callsign, type, country, station, location, lat, lon) kan de kolommen herordenen; lat en lon zetten kuststations op de kaart.
+Export list	Lijst exporteren
+There is no bundled coast station list: no openly licensed one is available, so bring your own file.	Er is geen meegeleverde kuststationlijst: er bestaat er geen met een open licentie, dus breng je eigen bestand mee.
+Marine bands	Maritieme banden
+A click tunes the radio and opens the mode for it.	Een klik stemt de radio af en opent de bijbehorende modus.
+Protocols	Protocollen
+distress only	alleen nood
+positions	posities
+Export KML	KML exporteren
+Export GPX	GPX exporteren

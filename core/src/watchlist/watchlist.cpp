@@ -164,7 +164,7 @@ bool matchList(const List& l, const au::Event& ev, std::string& matched, std::st
         break;
     case Kind::Ship:
         if (startsWith(t, "ais.")) add({"mmsi", "name", "callsign"});
-        else if (startsWith(t, "dsc.")) add({"from_mmsi", "to_mmsi"});
+        else if (startsWith(t, "dsc.")) add({"from_mmsi", "to_mmsi", "distress_mmsi"});
         break;
     case Kind::Aprs:
         if (startsWith(t, "aprs.")) add({"from", "to"});
@@ -199,6 +199,11 @@ bool matchList(const List& l, const au::Event& ev, std::string& matched, std::st
     for (const std::string& raw : l.values) {
         const std::string e = trim(raw);
         if (e.empty()) continue;
+        // "DSC distress" in a ship list: every DSC distress alert, relay or acknowledgement, whoever sends it
+        if (l.kind == Kind::Ship && startsWith(t, "dsc.") && normId(e) == "DSCDISTRESS") {
+            if (field(ev, "category") == "distress") { matched = e; ident = field(ev, "from_mmsi"); return true; }
+            continue;
+        }
         const bool pre = isPrefix(e);
         const std::string body = stripStar(e);
         for (const auto& c : cand) {
