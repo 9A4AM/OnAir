@@ -6,7 +6,7 @@
 
 static int failures = 0;
 #define CHECK(cond, ...) do { if (!(cond)) { failures++; std::printf("FAIL line %d: ", __LINE__); std::printf(__VA_ARGS__); std::printf("\n"); } } while (0)
-static bool near(double a, double b, double tol = 1e-6) { return std::fabs(a - b) <= tol; }
+static bool nearBy(double a, double b, double tol = 1e-6) { return std::fabs(a - b) <= tol; }
 
 using namespace touch;
 

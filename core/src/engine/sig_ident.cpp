@@ -367,9 +367,9 @@ void gate(Work& w, Features& f, double sigBw) {
         std::vector<double> gaps;
         for (size_t i = 1; i < w.runs.size(); i++) gaps.push_back((double)(w.runs[i].first - w.runs[i - 1].first) / w.fsd);
         const double md = median(gaps);
-        size_t near = 0;
-        for (double g : gaps) near += std::fabs(g / md - 1) < 0.1 || std::fabs(g / md - 2) < 0.1 || std::fabs(g / md - 3) < 0.1;
-        if (near * 10 >= gaps.size() * 6) f.burstPeriodMs = md * 1e3;   // regular: most of the gaps are one, two or three periods
+        size_t nearBy = 0;
+        for (double g : gaps) nearBy += std::fabs(g / md - 1) < 0.1 || std::fabs(g / md - 2) < 0.1 || std::fabs(g / md - 3) < 0.1;
+        if (nearBy * 10 >= gaps.size() * 6) f.burstPeriodMs = md * 1e3;   // regular: most of the gaps are one, two or three periods
     }
 }
 
@@ -610,17 +610,17 @@ static void calibrate(Result& R) {
 
 static void applyPriors(Result& R, const Features& f) {
     const double hz = f.rfHz, tol = std::max(6.25e3, 0.5 * f.obwHz);
-    std::vector<const FreqEntry*> near;
+    std::vector<const FreqEntry*> nearBy;
     for (const FreqEntry& e : builtinFrequencies()) {
         const double d = std::fabs((double)e.hz - hz);
-        if (d <= tol || (e.bwHz > 0 && d <= 0.5 * e.bwHz)) near.push_back(&e);
+        if (d <= tol || (e.bwHz > 0 && d <= 0.5 * e.bwHz)) nearBy.push_back(&e);
         else if (e.hz > hz + 2e6) continue;
     }
     for (const FreqEntry* e : near) R.priors.push_back(e->name + " (" + freqModeName(e->mode) + ", " + e->category + ")");
     if (R.priors.size() > 8) R.priors.resize(8);
     for (Candidate& c : R.cands) {
         bool exact = false, family = false;
-        for (const FreqEntry* e : near) {
+        for (const FreqEntry* e : nearBy) {
             if (e->mode == c.subId || (c.subId.empty() && e->mode == c.modeId) || (e->mode == "dvb" && c.modeId == "dvbt")) exact = true;
             else if (!c.modeId.empty() && e->mode == c.modeId) family = true;
         }

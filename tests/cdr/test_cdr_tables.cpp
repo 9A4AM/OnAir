@@ -21,7 +21,7 @@ static bool range(const std::vector<int>& v, int lo, int hi) {
     for (size_t i = 0; i < v.size(); i++) if (v[i] != lo + (int)i) return false;
     return true;
 }
-static bool near(cf32 a, double re, double im) { return std::fabs(a.real() - re) < 1e-5 && std::fabs(a.imag() - im) < 1e-5; }
+static bool nearBy(cf32 a, double re, double im) { return std::fabs(a.real() - re) < 1e-5 && std::fabs(a.imag() - im) < 1e-5; }
 
 int main() {
     // ---- Table 1: the sub-frame always lasts 130560 T; Ts = Tcp + Tu, TB = TBcp + Tu
@@ -96,7 +96,7 @@ int main() {
         const double s10 = 1 / std::sqrt(10.0), s42 = 1 / std::sqrt(42.0);
         CHECK(near(mapBits(a, k16Qam), 3 * s10, 3 * s10) && near(mapBits(b, k16Qam), -3 * s10, -1 * s10) && near(mapBits(c, k16Qam), s10, -s10), "16QAM");
         const uint8_t d[6] = {0, 0, 0, 0, 0, 0}, e[6] = {1, 1, 0, 1, 0, 0}, f[6] = {0, 1, 1, 0, 1, 1}, g[6] = {1, 0, 1, 1, 1, 1};
-        CHECK(near(mapBits(d, k64Qam), 7 * s42, 7 * s42) && near(mapBits(e, k64Qam), -7 * s42, -1 * s42) && near(mapBits(f, k64Qam), 3 * s42, -5 * s42) &&
+        CHECK(nearBy(mapBits(d, k64Qam), 7 * s42, 7 * s42) && nearBy(mapBits(e, k64Qam), -7 * s42, -1 * s42) && nearBy(mapBits(f, k64Qam), 3 * s42, -5 * s42) &&
               near(mapBits(g, k64Qam), -3 * s42, 3 * s42), "64QAM");
         // the demapper inverts the mapper
         std::mt19937 rng(3);

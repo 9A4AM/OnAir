@@ -9,7 +9,7 @@
 using namespace dect2;
 using namespace dect2::rid;
 #include "../common/test_util.h"
-static bool near(double a, double b, double e = 1e-6) { return std::fabs(a - b) <= e; }
+static bool nearBy(double a, double b, double e = 1e-6) { return std::fabs(a - b) <= e; }
 
 int main() {
     {   // Basic ID: protocol version 2, serial number, multirotor
@@ -45,7 +45,7 @@ int main() {
         const uint8_t m[25] = {0x42, 0x05, 0xE0, 0x6B, 0x98, 0x20, 0xD0, 0xF6, 0x10, 0x0F, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0xCC, 0x08, 0x40, 0x67, 0x9A, 0x0E, 0x00};
         Message o;
         CHECK(decodeMessage(m, o) && o.type == System && o.opLocType == 1 && o.classType == 1 && o.opValid, "system");
-        CHECK(near(o.opLat, 54.6860) && near(o.opLon, 25.2770) && near(o.opAlt, 126) && o.category == 1 && o.uaClass == 2 && o.sysTime == 245000000 && o.areaCount == 1,
+        CHECK(nearBy(o.opLat, 54.6860) && nearBy(o.opLon, 25.2770) && nearBy(o.opAlt, 126) && o.category == 1 && o.uaClass == 2 && o.sysTime == 245000000 && o.areaCount == 1,
               "system fields %.6f %.6f %.1f", o.opLat, o.opLon, o.opAlt);
         CHECK(className(o.uaClass) == "C1" && std::string(categoryName(1)) == "open" && std::string(opLocTypeName(1)) == "live GNSS", "system names");
     }
@@ -80,7 +80,7 @@ int main() {
         CHECK(decodeBlock(pk.data(), pk.size(), out) == 4, "pack decode %zu", out.size());
         if (out.size() == 4) {
             CHECK(out[0].idType == 4 && out[0].uaType == 6 && out[0].id == "abc-123", "rt basic");
-            CHECK(out[1].status == 3 && near(out[1].lat, -33.8688) && near(out[1].lon, 151.2093) && near(out[1].altGeo, 50) && near(out[1].height, 12.5) &&
+            CHECK(out[1].status == 3 && nearBy(out[1].lat, -33.8688) && nearBy(out[1].lon, 151.2093) && nearBy(out[1].altGeo, 50) && nearBy(out[1].height, 12.5) &&
                   std::fabs(out[1].speed - 200) < 0.4 && near(out[1].direction, 359) && near(out[1].vspeed, -4) && out[1].timestamp == 35999, "rt location %.2f", out[1].speed);
             CHECK(out[2].opLocType == 2 && out[2].areaCount == 3 && out[2].areaRadius == 250 && near(out[2].areaCeiling, 120) && near(out[2].areaFloor, 0) && near(out[2].opLat, -33.87), "rt system");
             CHECK(out[3].text == "OP-1", "rt operator");

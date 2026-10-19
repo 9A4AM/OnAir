@@ -10,7 +10,7 @@ using namespace dect2;
 using namespace dect2::atvkit;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL: " __VA_ARGS__); printf("\n"); fails++; } } while (0)
-static bool near(double a, double b, double tol) { return std::fabs(a - b) <= tol; }
+static bool nearBy(double a, double b, double tol) { return std::fabs(a - b) <= tol; }
 
 // the colour bars of the decoded picture against the EBU bars
 static double barError(const Run& r, const AtvFormat& f, bool colour, double* worstOut = nullptr) {

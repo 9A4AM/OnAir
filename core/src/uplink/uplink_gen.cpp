@@ -113,12 +113,12 @@ void uplinkScene(double t0, double t1, std::vector<UplinkTx>& out, float mainDb)
             out.push_back(x);
         }
         // roll-calls to aircraft elsewhere, through a sidelobe
-        const uint32_t far[] = {0x40621D, 0x506C3F};
+        const uint32_t farBy[] = {0x40621D, 0x506C3F};
         for (int j = 0; j < 2; j++) {
             const double t = c + 4.8 * (j ? 250 : 120) / 360.0;
             if (t < t0 || t >= t1) continue;
             UplinkTx x; x.sec = t; x.kind = 1; x.p2Db = 0; x.levelDb = mainDb - 18; x.phase = phase(t);
-            x.frame = uf45(4, far[j], 0, 0, 0, sdIis(3, 0));
+            x.frame = uf45(4, farBy[j], 0, 0, 0, sdIis(3, 0));
             out.push_back(x);
         }
     }

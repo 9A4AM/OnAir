@@ -9,7 +9,7 @@ using namespace dect2;
 using namespace dect2::halow;
 #include "../common/test_util.h"
 
-static bool near(double a, double b, double e = 0.006) { return std::fabs(a - b) <= e; }
+static bool nearBy(double a, double b, double e = 0.006) { return std::fabs(a - b) <= e; }
 
 int main() {
     // data tones, pilots, used tones: the 802.11ah clause 23 numbers (24 + 2, 52 + 4, 108 + 6, 234 + 8, 468 + 16)

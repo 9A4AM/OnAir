@@ -59,7 +59,7 @@ int main() {
     CHECK(Engine::secondaryCheck(55, 8, centre, rate, centre + off1, rs1 * 1.4).empty(), "QO-100 + DVB-S: %s", Engine::secondaryCheck(55, 8, centre, rate, centre + off1, rs1 * 1.4).c_str());
     CHECK(Engine::secondaryCheck(18, 8, centre, rate, centre + off1, rs1 * 1.4).find("cannot run as a second mode") != std::string::npos, "ACARS + DVB-S");
     CHECK(Engine::secondaryCheck(1, 8, centre, rate, centre + off1, rs1 * 1.4).find("cannot run as a second mode") != std::string::npos, "DVB-T2 + DVB-S");
-    const std::string far = Engine::secondaryCheck(55, 8, centre, 2e6, centre + 4e6, rs1 * 1.4);
+    const std::string farBy = Engine::secondaryCheck(55, 8, centre, 2e6, centre + 4e6, rs1 * 1.4);
     CHECK(far.find("Msps or more") != std::string::npos, "a carrier outside a 2 Msps capture: '%s'", far.c_str());
 
     Engine e;

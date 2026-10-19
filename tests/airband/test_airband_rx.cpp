@@ -209,9 +209,9 @@ int main() {
     }
     // ---- a channel outside the band is reported, not received
     {
-        AirbandChannel far; far.freqHz = 125.0e6;
+        AirbandChannel farBy; farBy.freqHz = 125.0e6;
         AirbandGenConfig g; g.chans = layout; g.snrDb = 25;
-        const Run r = run(g, 2, {far, list[0]});
+        const Run r = run(g, 2, {farBy, list[0]});
         CHECK(!r.tel.channels[0].inBand && r.tel.channels[1].inBand, "in band flags");
     }
     printf(fails ? "airband rx: %d FAILED\n" : "airband rx: all passed\n", fails);

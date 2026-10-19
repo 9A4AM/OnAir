@@ -7,7 +7,7 @@
 using namespace dect2;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL: " __VA_ARGS__); printf("\n"); fails++; } } while (0)
-static bool near(double a, double b, double tol) { return std::fabs(a - b) <= tol; }
+static bool nearBy(double a, double b, double tol) { return std::fabs(a - b) <= tol; }
 
 int main() {
     // ---- timing, BT.470-6 Table 1 and Table 1-1

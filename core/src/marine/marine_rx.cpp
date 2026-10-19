@@ -17,7 +17,7 @@ namespace dect2 {
 using namespace marine;
 
 namespace {
-bool near(double f, double target, double tol) { return std::fabs(f - target) <= tol; }
+bool nearBy(double f, double target, double tol) { return std::fabs(f - target) <= tol; }
 
 struct Enabled { bool navtex = false, dscHf = false, dscVhf = false, fax = false; };
 
@@ -28,10 +28,10 @@ Enabled chooseServices(int service, double f) {
     if (service == 2) { if (f <= 0) { e.dscHf = e.dscVhf = true; } else if (vhf) e.dscVhf = true; else e.dscHf = true; return e; }
     if (service == 3) { e.fax = true; return e; }
     if (f <= 0) { e.navtex = e.dscHf = e.dscVhf = e.fax = true; return e; }       // auto, frequency unknown: everything
-    if (near(f, 490e3, 1500) || near(f, 518e3, 1500) || near(f, 4209.5e3, 1000)) { e.navtex = true; return e; }
+    if (nearBy(f, 490e3, 1500) || nearBy(f, 518e3, 1500) || nearBy(f, 4209.5e3, 1000)) { e.navtex = true; return e; }
     static const double dscHf[] = {2187.5e3, 4207.5e3, 6312e3, 8414.5e3, 12577e3, 16804.5e3};
-    for (double d : dscHf) if (near(f, d, 1000)) { e.dscHf = true; return e; }
-    if (near(f, 156.525e6, 10e3)) { e.dscVhf = true; return e; }
+    for (double d : dscHf) if (nearBy(f, d, 1000)) { e.dscHf = true; return e; }
+    if (nearBy(f, 156.525e6, 10e3)) { e.dscVhf = true; return e; }
     e.fax = true;
     return e;
 }

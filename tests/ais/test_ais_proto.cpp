@@ -12,7 +12,7 @@ using namespace dect2::ais;
 
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL: " __VA_ARGS__); printf("\n"); fails++; } } while (0)
-static bool near(double a, double b, double tol = 1e-6) { return std::fabs(a - b) <= tol; }
+static bool nearBy(double a, double b, double tol = 1e-6) { return std::fabs(a - b) <= tol; }
 
 // payload of one message from its sentences
 static Bits fromSentences(const std::vector<std::string>& ss) {
@@ -99,10 +99,10 @@ int main() {
         CHECK(near(m.sog, 12.3, 1e-3) && near(m.lon, -123.395383333, 1e-6) && near(m.lat, 48.3816333333, 1e-6), "type 1 position %f %f %f", m.sog, m.lon, m.lat);
         CHECK(near(m.cog, 224, 1e-3) && m.heading == 215 && m.second == 33 && m.cls == AIS_CLASS_A, "type 1 course");
         m = dec({"!AIVDM,1,1,,A,16SteH0P00Jt63hHaa6SagvJ087r,0*42"});
-        CHECK(m.valid && m.type == 1 && m.mmsi == 440348000 && !m.hasRot && near(m.sog, 0) && near(m.lon, -42454920 / 600000.0, 1e-6) && near(m.lat, 25848090 / 600000.0, 1e-6) &&
+        CHECK(m.valid && m.type == 1 && m.mmsi == 440348000 && !m.hasRot && nearBy(m.sog, 0) && nearBy(m.lon, -42454920 / 600000.0, 1e-6) && nearBy(m.lat, 25848090 / 600000.0, 1e-6) &&
               near(m.cog, 93.4, 1e-3) && m.heading == -1, "type 1 second sample");
         m = dec({"!AIVDM,1,1,,A,38Id705000rRVJhE7cl9n;160000,0*40"});
-        CHECK(m.valid && m.type == 3 && m.mmsi == 563808000 && m.navStatus == 5 && near(m.lon, -45796520 / 600000.0, 1e-6) && near(m.lat, 22146000 / 600000.0, 1e-6) &&
+        CHECK(m.valid && m.type == 3 && m.mmsi == 563808000 && m.navStatus == 5 && nearBy(m.lon, -45796520 / 600000.0, 1e-6) && nearBy(m.lat, 22146000 / 600000.0, 1e-6) &&
               near(m.cog, 252.0, 1e-3) && m.heading == 352 && m.second == 35, "type 3");
         m = dec({"!AIVDM,1,1,,B,25Cjtd0Oj;Jp7ilG7=UkKBoB0<06,0*60"});
         CHECK(m.valid && m.type == 2 && m.mmsi == 356302000 && m.heading == 91 && near(m.sog, 13.9, 1e-3), "type 2");
@@ -132,7 +132,7 @@ int main() {
     // ---- 9, 14
     {
         AisMsg m = dec({"!AIVDM,1,1,,A,91b77=h3h00nHt0Q3r@@07000<0b,0*69"});
-        CHECK(m.valid && m.type == 9 && m.mmsi == 111265591 && m.altitudeM == 15 && near(m.sog, 0) && near(m.lon, 7128960 / 600000.0, 1e-6) && near(m.lat, 34667073 / 600000.0, 1e-6) &&
+        CHECK(m.valid && m.type == 9 && m.mmsi == 111265591 && m.altitudeM == 15 && nearBy(m.sog, 0) && nearBy(m.lon, 7128960 / 600000.0, 1e-6) && nearBy(m.lat, 34667073 / 600000.0, 1e-6) &&
               m.second == 28 && m.cls == AIS_CLASS_SAR, "type 9");
         m = dec({"!AIVDM,1,1,,A,>5?Per18=HB1U:1@E=B0m<L,2*51"});
         CHECK(m.valid && m.type == 14 && m.mmsi == 351809000 && m.text == "RCVD YR TEST MSG", "type 14: '%s'", m.text.c_str());
@@ -144,17 +144,17 @@ int main() {
     // ---- 18, 19
     {
         AisMsg m = dec({"!AIVDM,1,1,,A,B52K>;h00Fc>jpUlNV@ikwpUoP06,0*4C"});
-        CHECK(m.valid && m.type == 18 && m.mmsi == 338087471 && near(m.sog, 0.1, 1e-3) && near(m.lon, -74.0721316667, 1e-6) && near(m.lat, 40.68454, 1e-6) &&
+        CHECK(m.valid && m.type == 18 && m.mmsi == 338087471 && nearBy(m.sog, 0.1, 1e-3) && nearBy(m.lon, -74.0721316667, 1e-6) && nearBy(m.lat, 40.68454, 1e-6) &&
               near(m.cog, 79.6, 1e-3) && m.heading == -1 && m.second == 49 && m.cls == AIS_CLASS_B, "type 18");
         m = dec({"!AIVDM,1,1,,B,C5N3SRgPEnJGEBT>NhWAwwo862PaLELTBJ:V00000000S0D:R220,0*0B"});
-        CHECK(m.valid && m.type == 19 && m.mmsi == 367059850 && near(m.sog, 8.7, 1e-3) && near(m.lon, -88.8103916667, 1e-6) && near(m.lat, 29.543695, 1e-6) &&
+        CHECK(m.valid && m.type == 19 && m.mmsi == 367059850 && nearBy(m.sog, 8.7, 1e-3) && nearBy(m.lon, -88.8103916667, 1e-6) && nearBy(m.lat, 29.543695, 1e-6) &&
               near(m.cog, 335.9, 1e-3) && m.second == 46 && m.name == "CAPT.J.RIMES" && m.shipType == 70 && m.dimA == 5 && m.dimB == 21 && m.dimC == 4 && m.dimD == 4, "type 19: '%s'", m.name.c_str());
     }
     // ---- 21 with name extension
     {
         AisMsg m = dec({"!AIVDM,2,1,5,B,E1mg=5J1T4W0h97aRh6ba84<h2d;W:Te=eLvH50```q,0*46", "!AIVDM,2,2,5,B,:D44QDlp0C1DU00,2*36"}, false);
         CHECK(m.valid && m.type == 21 && m.mmsi == 123456789 && m.aidType == 20 && m.name == "CHINA ROSE MURPHY EXPRESS ALERT", "type 21 name: '%s'", m.name.c_str());
-        CHECK(near(m.lon, -73619155 / 600000.0, 1e-6) && near(m.lat, 28752371 / 600000.0, 1e-6) && m.dimA == 5 && m.dimB == 5 && m.dimC == 5 && m.dimD == 5 && m.second == 50 &&
+        CHECK(nearBy(m.lon, -73619155 / 600000.0, 1e-6) && nearBy(m.lat, 28752371 / 600000.0, 1e-6) && m.dimA == 5 && m.dimB == 5 && m.dimC == 5 && m.dimD == 5 && m.second == 50 &&
               !m.offPosition && !m.virtualAid && m.cls == AIS_CLASS_ATON, "type 21 fields");
     }
     // ---- 24 A and B

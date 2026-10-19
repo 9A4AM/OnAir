@@ -13,7 +13,7 @@
 using namespace dect2;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL: " __VA_ARGS__); printf("\n"); fails++; } } while (0)
-static bool near(double a, double b, double tol) { return std::fabs(a - b) <= tol; }
+static bool nearBy(double a, double b, double tol) { return std::fabs(a - b) <= tol; }
 
 static const double kFs = AtvGenerator::kInternalRate;     // 12 Msps: the output at this rate is the internal signal
 
@@ -163,7 +163,7 @@ static void checkColour(const AtvFormat& f, const std::vector<float>& v, const A
             const double sc = 1 - f.setup;
             CHECK(near(sm, f.setup + sc * y, 0.012), "%s line %d bar %d: luminance %.4f, expected %.4f", tag, line, i, sm, f.setup + sc * y);
             CHECK(near(su, sc * u, 0.02) && near(sv * vsign, sc * vv, 0.02), "%s line %d bar %d: chroma U %.3f V %.3f, expected %.3f %.3f (V sign %d)", tag, line, i, su, sv, sc * u, sc * vv, vsign);
-            if (near(sv * vsign, sc * vv, 0.02)) signOk++; else signBad++;
+            if (nearBy(sv * vsign, sc * vv, 0.02)) signOk++; else signBad++;
         }
         tested++;
     }
@@ -270,7 +270,7 @@ static void checkSecam(int sys, int ident, const char* tag) {
             double fm, ab;
             secamTone(v, t0, t1, fm, ab);
             const double expAmp = kSecamM0 * std::abs(atvSecamHfPreEmph(fexp));
-            if (!near(fm, fexp, 20e3)) bad++;
+            if (!nearBy(fm, fexp, 20e3)) bad++;
             CHECK(near(fm, fexp, 20e3), "%s line %d bar %d (%s): subcarrier %.0f Hz, expected %.0f (D' = %.3f)", tag, line, i, isR ? "D'R" : "D'B", fm, fexp, D);
             CHECK(near(ab, expAmp, 0.15 * expAmp + 0.004), "%s line %d bar %d: amplitude %.4f, expected %.4f", tag, line, i, ab, expAmp);
         }

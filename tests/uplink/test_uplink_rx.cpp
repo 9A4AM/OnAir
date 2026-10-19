@@ -146,8 +146,8 @@ int main() {
         int ra = 0;
         for (const auto& t : r.tel.tcas) ra += t.uf == 16 && t.from == 0x4CA2B1 && t.to == 0x3C6586;
         CHECK(ra >= 3, "RA coordination %d", ra);
-        bool far = false;
-        for (const auto& a : r.tel.aircraft) far |= a.addr == 0x40621D;
+        bool farBy = false;
+        for (const auto& a : r.tel.aircraft) farBy |= a.addr == 0x40621D;
         CHECK(far, "roll-call through a sidelobe");
         CHECK(r.tel.blocksBad == 0 || r.tel.blocksBad < r.tel.blocksOk / 50, "bad %llu of %llu", (unsigned long long)r.tel.blocksBad, (unsigned long long)r.tel.blocksOk);
         printf("  scene: %s\n", uplinkSummary(r.tel).c_str());

@@ -167,9 +167,9 @@ struct CodarReceiver::Impl {
             for (int j = jlo + 2; j <= jhi - 2; j++) {
                 const float v = e[(size_t)j];
                 if (v < thr || v < e[(size_t)j - 1] || v < e[(size_t)j + 1] || v < e[(size_t)j - 2] || v < e[(size_t)j + 2]) continue;
-                bool near = false;
-                for (int i = 0; i < np; i++) if (std::abs(pk[i].j - j) < 6) { near = true; break; }   // the sidelobes of a stronger peak
-                if (near) { for (int i = 0; i < np; i++) if (std::abs(pk[i].j - j) < 6 && v > pk[i].e) { pk[i] = {j, v, 0}; } continue; }
+                bool nearBy = false;
+                for (int i = 0; i < np; i++) if (std::abs(pk[i].j - j) < 6) { nearBy = true; break; }   // the sidelobes of a stronger peak
+                if (nearBy) { for (int i = 0; i < np; i++) if (std::abs(pk[i].j - j) < 6 && v > pk[i].e) { pk[i] = {j, v, 0}; } continue; }
                 if (np < kMaxPeaks) pk[np++] = {j, v, 0};
                 else { int w = 0; for (int i = 1; i < np; i++) if (pk[i].e < pk[w].e) w = i; if (v > pk[w].e) pk[w] = {j, v, 0}; }
             }

@@ -90,9 +90,9 @@ static void check(const char* what, const Setup& st, const Run& r, double secs, 
         for (size_t i = 0; i < a.size(); i++) {
             const double t = (double)i / 8000.0;
             if (t < t0) continue;
-            bool in = false, near = false;
-            for (const auto& w : all) { if (t > w.first + 0.1 && t < w.first + w.second - 0.05) in = true; if (t > w.first - 0.3 && t < w.first + w.second + 0.9) near = true; }
-            if (in) inside += (double)a[i] * a[i]; else if (!near) outside += (double)a[i] * a[i];
+            bool in = false, nearBy = false;
+            for (const auto& w : all) { if (t > w.first + 0.1 && t < w.first + w.second - 0.05) in = true; if (t > w.first - 0.3 && t < w.first + w.second + 0.9) nearBy = true; }
+            if (in) inside += (double)a[i] * a[i]; else if (!nearBy) outside += (double)a[i] * a[i];
         }
         const bool ok = matched == (int)want.size() && extra == 0 && inside > 1e-3 * (double)want.size() && outside < 1e-6 + 0.001 * inside;
         if (!ok) {

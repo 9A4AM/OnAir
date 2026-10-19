@@ -154,7 +154,7 @@ int main() {
         c.sources[1].bearingDeg = 108;
         o.method = Method::Bartlett; o.sources = 1;
         auto bres = estimate(covariance(snap(c, 4096)), uca5, LAM, o);
-        int near = 0; for (auto& p : bres.peaks) if (p.value > 0.5 && std::abs(angDiff(p.bearingDeg, 100)) < 20) near++;
+        int nearBy = 0; for (auto& p : bres.peaks) if (p.value > 0.5 && std::abs(angDiff(p.bearingDeg, 100)) < 20) nearBy++;
         CHECK(near <= 1, "Bartlett merges 8 deg sources (%d peaks)", near);
         // MDL source count
         SimConfig c3 = cfg(uca5, 100, 15, 22);

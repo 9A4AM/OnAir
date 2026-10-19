@@ -181,13 +181,13 @@ struct FlarmReceiver::Impl {
         const uint64_t h = hashId(id);
         auto dmod = [](uint32_t a, uint32_t b, uint32_t m) { const uint32_t d = (a - b) & m; return std::min(d, (m + 1) - d); };
         auto isFlagged = [](const flarm::V6& q) { return q.noTrack || q.stealth || q.addrType == flarm::AddrAnonymous; };
-        auto near = [&](const flarm::V6& q, int acType, bool fl, uint32_t la, uint32_t lo) {
+        auto nearBy = [&](const flarm::V6& q, int acType, bool fl, uint32_t la, uint32_t lo) {
             return isFlagged(q) == fl && q.aircraftType == acType && dmod(la, q.lat19, 0x7FFFF) < 4000 && dmod(lo, q.lon20, 0xFFFFF) < 4000;
         };
         const auto rit = rec.find(id);
         if (rit != rec.end()) {                         // a known aircraft: the candidate that agrees with its last packet
             for (const flarm::V6& q : D)
-                if (!isFlagged(q) && near(q, rit->second.a.acType, false, rit->second.lat19, rit->second.lon20)) { apply(q, tn0, c.idx, level); return; }
+                if (!isFlagged(q) && nearBy(q, rit->second.a.acType, false, rit->second.lat19, rit->second.lon20)) { apply(q, tn0, c.idx, level); return; }
         }
         if (privSet.count(h)) {                         // a known privacy-flagged aircraft: only counted
             for (const flarm::V6& q : D) if (isFlagged(q)) { t.privacyPackets++; return; }
@@ -198,7 +198,7 @@ struct FlarmReceiver::Impl {
         if (pit != pending.end()) {
             for (const flarm::V6& q : D)
                 for (const Pending& pd : pit->second)
-                    if (near(q, pd.acType, pd.flagged, pd.lat19, pd.lon20)) {
+                    if (nearBy(q, pd.acType, pd.flagged, pd.lat19, pd.lon20)) {
                         const Pending first = pd;
                         pending.erase(pit);
                         if (isFlagged(q)) { t.privacyPackets += 2; privSet.insert(h); t.privacyFlagged = privSet.size(); return; }   // nothing but a count survives a flagged packet

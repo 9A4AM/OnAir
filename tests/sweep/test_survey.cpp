@@ -58,7 +58,7 @@ int main() {
     // a sweep of a coarser grid lands on the same bins; one outside the range is refused
     Sweep coarse = make(3e9, false, 102.0e6, rng); coarse.binHz = 20e3; coarse.db.resize(500); coarse.floorDb.resize(500);
     CHECK(a.add(coarse), "coarse sweep added");
-    Sweep far = coarse; far.startHz = 500e6;
+    Sweep farBy = coarse; farBy.startHz = 500e6;
     CHECK(!a.add(far), "out-of-range sweep refused");
     // the row cap merges the old rows and keeps the carrier
     SurveyConfig sc; sc.maxRows = 40;

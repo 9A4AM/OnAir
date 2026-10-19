@@ -25,7 +25,7 @@ static CodarTelemetry run(CodarGenConfig c, double secs, double centerHz = 0, Co
     return t;
 }
 
-static const CdStation* near(const CodarTelemetry& t, double offKhz, double bwKhz) {
+static const CdStation* nearBy(const CodarTelemetry& t, double offKhz, double bwKhz) {
     for (const auto& s : t.stations) if (std::fabs(s.offsetKhz - offKhz) < 5 && std::fabs(s.bwKhz - bwKhz) < 0.15 * bwKhz + 2) return &s;
     return nullptr;
 }
@@ -40,9 +40,9 @@ int main() {
         printf("  schedule: %zu radars, %llu sweeps, %llu rejected: %s\n", t.stations.size(), (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad, codarSummary(t).c_str());
         for (const auto& s : t.stations) printf("    #%d off %.1f kHz bw %.1f rate %.1f dir %d period %.3f sweeps %llu snr %.1f\n", s.id, s.offsetKhz, s.bwKhz, s.rateKhzS, s.dir, s.periodSec, (unsigned long long)s.sweeps, s.snrDb);
         CHECK(t.stations.size() == 3, "%zu radars", t.stations.size());
-        const CdStation* a = near(t, -300, 50);
-        const CdStation* b = near(t, 250, 100);
-        const CdStation* d = near(t, 550, 25);
+        const CdStation* a = nearBy(t, -300, 50);
+        const CdStation* b = nearBy(t, 250, 100);
+        const CdStation* d = nearBy(t, 550, 25);
         CHECK(a && b && d, "radars found %d %d %d", a != nullptr, b != nullptr, d != nullptr);
         if (a) {
             CHECK(a->dir == 1 && std::fabs(a->periodSec - 0.5) < 0.02, "radar A dir %d period %.3f", a->dir, a->periodSec);
@@ -65,14 +65,14 @@ int main() {
         CodarGenConfig ci = c;
         ci.radars = codarTestRadars(true);
         const CodarTelemetry t = run(ci, 30, 13.0e6);
-        const CdStation* a = near(t, -300, 50);
+        const CdStation* a = nearBy(t, -300, 50);
         CHECK(a != nullptr, "radar A");
         if (a) {
             printf("  ID: '%s' seen %d times at %.1f wpm, unverified %d\n", a->callsign.c_str(), a->idSeen, a->idWpm, a->idUnverified);
             CHECK(a->callsign == "AB1CD" && a->idUnverified && a->idSeen >= 2, "call sign '%s'", a->callsign.c_str());
             CHECK(std::fabs(a->idWpm - 15) < 3, "wpm %.1f", a->idWpm);
         }
-        const CdStation* b = near(t, 250, 100);
+        const CdStation* b = nearBy(t, 250, 100);
         CHECK(b && b->callsign.empty(), "no ID on radar B");
         CHECK(t.stations.size() == 3, "%zu radars with the ID in the signal", t.stations.size());
     }
@@ -91,7 +91,7 @@ int main() {
             cr.radars.assign(1, codarTestRadars(false)[0]);
             cr.radars[0].offsetHz = fs > 500e3 ? 100e3 : 20e3;
             const CodarTelemetry t = run(cr, 8, 4.5e6);
-            const CdStation* a = near(t, cr.radars[0].offsetHz / 1e3, 50);
+            const CdStation* a = nearBy(t, cr.radars[0].offsetHz / 1e3, 50);
             CHECK(t.stations.size() == 1 && a, "%.0f ksps: %zu radars", fs / 1e3, t.stations.size());
             if (a) CHECK(a->dir == 1 && std::fabs(a->periodSec - 0.5) < 0.03 && a->band == "4.4 - 4.65 MHz", "%.0f ksps: dir %d period %.3f band %s", fs / 1e3, a->dir, a->periodSec, a->band.c_str());
         }

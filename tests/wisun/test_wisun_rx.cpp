@@ -100,10 +100,10 @@ int main() {
         CHECK(t.blocksOk >= frames - 1, "%llu of %zu frames at 15 dB", (unsigned long long)t.blocksOk, frames);
     }
     {   // a slow radio: 2.4 Msps around 921.5 MHz takes in the channels 920.6 - 922.4 MHz only
-        const std::vector<WisunGenFrame> near = wisunTestSchedule(921.5, 0.9);
+        const std::vector<WisunGenFrame> nearBy = wisunTestSchedule(921.5, 0.9);
         WisunGenConfig c;
-        c.rate = 2.4e6; c.snrDb = 25; c.frames = near;
-        const WisunTelemetry t = run(c, scheduleSecs(near));
+        c.rate = 2.4e6; c.snrDb = 25; c.frames = nearBy;
+        const WisunTelemetry t = run(c, scheduleSecs(nearBy));
         printf("  2.4 Msps: %s, %d bins of %.0f kHz, %.1f - %.1f MHz\n", wisunSummary(t).c_str(), t.bins, t.binKhz, t.loMhz, t.hiMhz);
         CHECK(t.blocksOk == near.size() && t.blocksBad == 0, "%llu of %zu frames at 2.4 Msps", (unsigned long long)t.blocksOk, near.size());
         CHECK(t.bins == 8 && t.binKhz == 300, "bins");

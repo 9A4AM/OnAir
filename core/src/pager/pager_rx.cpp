@@ -429,8 +429,8 @@ struct PagerReceiver::Impl {
             }
             if (locked || !carrier) { afcLast = 0; continue; }
             // fast while far off (two blocks in a row agree), slowly once close; an error below 2 kHz is left to the searchers
-            const bool far = std::fabs(f) > 2000 && std::fabs(afcLast) > 2000 && f * afcLast > 0;
-            afcEst = std::max(-30000.0, std::min(30000.0, afcEst + (far ? 0.7 : 0.05) * (afcHz + f - afcEst)));
+            const bool farBy = std::fabs(f) > 2000 && std::fabs(afcLast) > 2000 && f * afcLast > 0;
+            afcEst = std::max(-30000.0, std::min(30000.0, afcEst + (farBy ? 0.7 : 0.05) * (afcHz + f - afcEst)));
             afcLast = f;
             if (std::fabs(afcEst) > 3000) afcHz = afcEst; else if (std::fabs(afcEst) < 1500) afcHz = 0;
             w = -2 * kPi * afcHz / kMidRate;

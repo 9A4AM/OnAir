@@ -67,9 +67,9 @@ std::vector<Peak> findPeaks(const std::vector<float>& d, double f0, double binHz
     std::sort(c.begin(), c.end(), [](const C& a, const C& b) { return a.v > b.v; });
     std::vector<int> taken;
     for (const C& k : c) {
-        bool near = false;
-        for (int t : taken) if (std::abs(t - k.i) < minSep) { near = true; break; }
-        if (near) continue;
+        bool nearBy = false;
+        for (int t : taken) if (std::abs(t - k.i) < minSep) { nearBy = true; break; }
+        if (nearBy) continue;
         taken.push_back(k.i);
         // parabolic interpolation on the dB values
         const double a = d[(size_t)k.i - 1], b = d[(size_t)k.i], cc = d[(size_t)k.i + 1];

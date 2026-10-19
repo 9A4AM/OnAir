@@ -317,9 +317,9 @@ struct TonesReceiver::Impl {
                 for (int r = 0; r < 3; r++) for (int j = 0; j < 23; j++) w[r] |= (uint32_t)b[r * 23 + j] << j;
                 uint32_t m = 0;
                 for (int j = 0; j < 23; j++) if (((w[0] >> j) & 1) + ((w[1] >> j) & 1) + ((w[2] >> j) & 1) >= 2) m |= 1u << j;
-                int dist = 0, near = 0;
-                for (int r = 0; r < 3; r++) { const int d = __builtin_popcount(w[r] ^ m); dist += d; if (d <= 1) near++; }
-                if (near < 2 || dist > 3) continue;
+                int dist = 0, nearBy = 0;
+                for (int r = 0; r < 3; r++) { const int d = __builtin_popcount(w[r] ^ m); dist += d; if (d <= 1) nearBy++; }
+                if (nearBy < 2 || dist > 3) continue;
                 tones::DcsHit h;
                 if (tones::dcsDecode(m, h) && dist < bestDist) { best = h; bestDist = dist; ok = true; }
             }

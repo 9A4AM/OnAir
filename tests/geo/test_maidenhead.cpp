@@ -53,7 +53,7 @@ int main() {
         }
     CHECK(bad == 0, "%d round trips failed", bad);
     // ---- coordinate text
-    auto near = [](double a, double b) { return std::fabs(a - b) < 1e-6; };
+    auto nearBy = [](double a, double b) { return std::fabs(a - b) < 1e-6; };
     CHECK(parseCoordinates("54.687, 25.280", la, lo) && near(la, 54.687) && near(lo, 25.28), "decimal with comma");
     CHECK(parseCoordinates("54.687 25.280", la, lo) && near(la, 54.687) && near(lo, 25.28), "decimal with space");
     CHECK(parseCoordinates("-33.9 151.2", la, lo) && near(la, -33.9) && near(lo, 151.2), "negative");

@@ -12,7 +12,7 @@ using namespace dect2::atvkit;
 using testjobs::jprintf;
 static std::atomic<int> fails{0};
 #define CHECK(c, ...) do { if (!(c)) { jprintf("FAIL: " __VA_ARGS__); jprintf("\n"); fails++; } } while (0)
-static bool near(double a, double b, double tol) { return std::fabs(a - b) <= tol; }
+static bool nearBy(double a, double b, double tol) { return std::fabs(a - b) <= tol; }
 
 static double barError(const Run& r, const AtvFormat& f) {
     if (!r.frame) return 9;

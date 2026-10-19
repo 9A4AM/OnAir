@@ -430,12 +430,12 @@ struct SigfoxRx::Impl {
             // the repetitions come within a few seconds of each other, but not always decoded in time order: carriers on other
             // frequencies are finished at different moments
             std::vector<double>& ts = repSecs[i];
-            bool near = false, same = false;   // same: one transmission seen twice (a wide 600 bit/s signal gives two peaks)
+            bool nearBy = false, same = false;   // same: one transmission seen twice (a wide 600 bit/s signal gives two peaks)
             for (size_t j = 0; j < ts.size(); j++) {
-                near = near || std::fabs(m.sec - ts[j]) <= 20.0;
+                nearBy = nearBy || std::fabs(m.sec - ts[j]) <= 20.0;
                 same = same || (std::fabs(q.freqs[j] - fAbs) < 2e3 && std::fabs(m.sec - ts[j]) < 0.5);
             }
-            if (!near) continue;
+            if (!nearBy) continue;
             if (!same) { q.reps++; q.freqs.push_back(fAbs); ts.push_back(m.sec); q.sec = std::min(q.sec, m.sec); }
             q.wallTime = now;
             q.levelDb = std::max(q.levelDb, m.levelDb);

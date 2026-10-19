@@ -143,7 +143,7 @@ std::vector<AtvCarrier> AtvCarrierSearch::candidates() const {
     // local maxima that rise above the lines around them
     struct Cand { int k; double prom; };
     std::vector<Cand> cs;
-    const int near = bin(24e3), far = bin(90e3);
+    const int nearBy = bin(24e3), farBy = bin(90e3);
     for (int k = 0; k < n; k++) {
         const double f = freqOf(k);
         if (std::fabs(f) < 12e3 || std::fabs(f) > fs_ / 2 - 150e3) continue;
@@ -152,7 +152,7 @@ std::vector<AtvCarrier> AtvCarrierSearch::candidates() const {
         for (int d = -8; d <= 8 && top; d++) if (d != 0 && at(k + d) > v) top = false;
         if (!top) continue;
         double s = 0; int c = 0;
-        for (int d = near; d <= far; d += 2) { s += pw(k + d) + pw(k - d); c += 2; }
+        for (int d = nearBy; d <= farBy; d += 2) { s += pw(k + d) + pw(k - d); c += 2; }
         const double prom = v - 10 * std::log10(s / c);
         if (prom > 9) cs.push_back({k, prom});
     }

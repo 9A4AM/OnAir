@@ -107,12 +107,12 @@ const char* stationTimeZone(int s) {
     switch (s) { case Dcf77: return "CET / CEST"; case Msf: return "UK (GMT / BST)"; case Jjy40: case Jjy60: return "JST"; case Bpm: return "UTC / UT1"; case Bpc: return "CST (UTC+8)"; case Hla: return "KST (UTC+9)"; default: return "UTC"; }
 }
 int stationForKhz(double khz, int pref60) {
-    auto near = [&](double f, double tol) { return std::fabs(khz - f) <= tol; };
-    if (near(77.5, 1.5)) return Dcf77;
-    if (near(40, 1.5)) return Jjy40;
-    if (near(68.5, 1.5)) return Bpc;
-    if (near(60, 1.5)) return pref60 == Msf || pref60 == Wwvb || pref60 == Jjy60 ? pref60 : Msf;
-    for (double f : {2500.0, 5000.0, 10000.0, 15000.0, 20000.0}) if (near(f, 8)) return Wwv;
+    auto nearBy = [&](double f, double tol) { return std::fabs(khz - f) <= tol; };
+    if (nearBy(77.5, 1.5)) return Dcf77;
+    if (nearBy(40, 1.5)) return Jjy40;
+    if (nearBy(68.5, 1.5)) return Bpc;
+    if (nearBy(60, 1.5)) return pref60 == Msf || pref60 == Wwvb || pref60 == Jjy60 ? pref60 : Msf;
+    for (double f : {2500.0, 5000.0, 10000.0, 15000.0, 20000.0}) if (nearBy(f, 8)) return Wwv;
     // CHU removed from the product (#150); 3.33 / 7.85 / 14.67 MHz are not auto-identified.
     return -1;
 }

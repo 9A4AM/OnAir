@@ -48,7 +48,7 @@ struct Sink {
         return s / (double)(b - a) * 32768.0;
     }
 };
-static bool near(double v, double want) { return std::fabs(v - want) < 3 + 0.01 * std::fabs(want); }
+static bool nearBy(double v, double want) { return std::fabs(v - want) < 3 + 0.01 * std::fabs(want); }
 
 static void pushRun(HdcAudio& a, int prog, unsigned seq0, int count, int fill0, int size = 160, bool fillStep = true) {
     for (int i = 0; i < count; i++) {

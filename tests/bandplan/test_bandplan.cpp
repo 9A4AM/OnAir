@@ -20,7 +20,7 @@ static const Band* B(const Plan* p, const char* service, const char* name, int n
     std::printf("FAIL: %s has no band %s %s #%d\n", p->id.c_str(), service, name, nth); failures++;
     return nullptr;
 }
-static bool near(double a, double b, double tol = 1.0) { return std::fabs(a - b) <= tol; }
+static bool nearBy(double a, double b, double tol = 1.0) { return std::fabs(a - b) <= tol; }
 // channel `n` of a numbered raster band is at `hz`
 static void ch(const Band* b, int n, double hz, const char* what) {
     double c = 0;

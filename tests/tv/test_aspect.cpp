@@ -12,7 +12,7 @@ extern "C" {
 
 static int fails = 0;
 #define CHECK(c) do { if (!(c)) { printf("FAIL line %d: %s\n", __LINE__, #c); fails++; } } while (0)
-static bool near(double a, double b) { return std::fabs(a - b) < 1e-3; }
+static bool nearBy(double a, double b) { return std::fabs(a - b) < 1e-3; }
 
 // encodes 8 pictures of w x h with the given SAR into an MPEG-TS file
 static bool makeClip(const std::string& path, int w, int h, AVRational sar) {
@@ -69,16 +69,16 @@ static double decodedAspect(const std::string& path, int& w, int& h) {
 
 int main() {
     using dect2::displayAspect;
-    CHECK(near(displayAspect(720, 576, 64, 45), 16.0 / 9));       // PAL 16:9 anamorphic
-    CHECK(near(displayAspect(720, 576, 16, 15), 4.0 / 3));        // PAL 4:3
-    CHECK(near(displayAspect(1440, 1080, 4, 3), 16.0 / 9));       // HD anamorphic
-    CHECK(near(displayAspect(1920, 1080, 1, 1), 16.0 / 9));
-    CHECK(near(displayAspect(1920, 1080, 0, 0), 16.0 / 9));       // unknown: square pixels
-    CHECK(near(displayAspect(720, 576, 0, 1), 720.0 / 576));
-    CHECK(near(displayAspect(720, 576, -3, 4), 720.0 / 576));
-    CHECK(near(displayAspect(720, 576, 1, 1000), 720.0 / 576));   // absurd SAR ignored
-    CHECK(near(displayAspect(1920, 1088, 1, 1), 1920.0 / 1088));  // coded height: callers pass the cropped size
-    CHECK(near(displayAspect(0, 0, 4, 3), 1.0));
+    CHECK(nearBy(displayAspect(720, 576, 64, 45), 16.0 / 9));       // PAL 16:9 anamorphic
+    CHECK(nearBy(displayAspect(720, 576, 16, 15), 4.0 / 3));        // PAL 4:3
+    CHECK(nearBy(displayAspect(1440, 1080, 4, 3), 16.0 / 9));       // HD anamorphic
+    CHECK(nearBy(displayAspect(1920, 1080, 1, 1), 16.0 / 9));
+    CHECK(nearBy(displayAspect(1920, 1080, 0, 0), 16.0 / 9));       // unknown: square pixels
+    CHECK(nearBy(displayAspect(720, 576, 0, 1), 720.0 / 576));
+    CHECK(nearBy(displayAspect(720, 576, -3, 4), 720.0 / 576));
+    CHECK(nearBy(displayAspect(720, 576, 1, 1000), 720.0 / 576));   // absurd SAR ignored
+    CHECK(nearBy(displayAspect(1920, 1088, 1, 1), 1920.0 / 1088));  // coded height: callers pass the cropped size
+    CHECK(nearBy(displayAspect(0, 0, 4, 3), 1.0));
     int w = 0, h = 0;
     const std::string p1 = tmpPath("dect2_aspect_a.ts"), p2 = tmpPath("dect2_aspect_b.ts");
     if (makeClip(p1, 720, 576, AVRational{64, 45})) {

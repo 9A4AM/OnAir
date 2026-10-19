@@ -271,10 +271,10 @@ struct DvbcReceiver::Impl {
             rateCands.clear();
             for (size_t k = 0; k < fit.size() && k < 8; k++) rateCands.push_back(fit[k].second);
             // then the usual rates near the width (a line can fade under an echo), then the width itself
-            std::vector<double> near;
-            for (double r : kStd) if (std::fabs(r - width) < 0.15 * width && r < fs * 0.95) near.push_back(r);
-            std::sort(near.begin(), near.end(), [&](double x, double y) { return std::fabs(x - width) < std::fabs(y - width); });
-            for (double r : near) if (std::none_of(rateCands.begin(), rateCands.end(), [&](double c) { return std::fabs(c / r - 1) < 3e-4; })) rateCands.push_back(r);
+            std::vector<double> nearBy;
+            for (double r : kStd) if (std::fabs(r - width) < 0.15 * width && r < fs * 0.95) nearBy.push_back(r);
+            std::sort(nearBy.begin(), nearBy.end(), [&](double x, double y) { return std::fabs(x - width) < std::fabs(y - width); });
+            for (double r : nearBy) if (std::none_of(rateCands.begin(), rateCands.end(), [&](double c) { return std::fabs(c / r - 1) < 3e-4; })) rateCands.push_back(r);
             if (rateCands.empty()) rateCands.push_back(width);
         }
         const double man = manualRs.load();

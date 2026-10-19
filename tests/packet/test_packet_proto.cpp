@@ -8,7 +8,7 @@
 #include "dect2/common/mathconst.h"
 using namespace dect2;
 #include "../common/test_util.h"
-static bool near(double a, double b, double tol) { return std::fabs(a - b) <= tol; }
+static bool nearBy(double a, double b, double tol) { return std::fabs(a - b) <= tol; }
 
 static void testCrc() {
     // the CRC-16/X-25 check value of "123456789" is 0x906E

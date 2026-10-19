@@ -13,7 +13,7 @@
 using namespace dect2;
 #include "../common/test_util.h"
 
-static bool near(double v, double want, double tol) { return std::isfinite(v) && std::fabs(v - want) <= tol; }
+static bool nearBy(double v, double want, double tol) { return std::isfinite(v) && std::fabs(v - want) <= tol; }
 
 static void print(const char* what, const IonoScaling& s, const std::vector<IonoTrace>& tr) {
     printf("  %s: geometry %d, %zu traces, foE %.2f%s h'E %.0f, foF1 %.2f, foF2 %.2f%s fxF2 %.2f, h'F %.0f h'F2 %.0f hmF2 %.0f, M3000 %.3f MUF3000 %.2f, "

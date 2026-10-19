@@ -152,7 +152,7 @@ void UplinkReceiver::Impl::process(bool all) {
     while (!all && limit > 0 && mag[limit] > thr) limit--;   // do not cut a pulse in two
     const std::vector<Pulse> ps = pulses(n, thr);
     auto widthOk = [&](const Pulse& p, double lo, double hi) { const double w = p.width(rate); return w >= lo && w <= hi; };
-    auto near = [&](const Pulse& p, double t, double tol) { return std::fabs(us(p.lead) - t) <= tol; };
+    auto nearBy = [&](const Pulse& p, double t, double tol) { return std::fabs(us(p.lead) - t) <= tol; };
     for (size_t i = 0; i < ps.size(); i++) {
         const Pulse& p1 = ps[i];
         if (p1.lead >= limit) break;
@@ -169,14 +169,14 @@ void UplinkReceiver::Impl::process(bool all) {
             if (dt > 24) break;
             if (isUsed(base + (int64_t)std::llround(q.lead))) continue;
             const float rel = db(q.amp) - db(p1.amp);
-            if (!p2 && near(q, t1 + 2.0, 0.2) && widthOk(q, 0.5, 1.15)) p2 = &q;
-            else if (!p6 && near(q, t1 + 3.5, 0.25) && q.width(rate) >= 0.2) {
+            if (!p2 && nearBy(q, t1 + 2.0, 0.2) && widthOk(q, 0.5, 1.15)) p2 = &q;
+            else if (!p6 && nearBy(q, t1 + 3.5, 0.25) && q.width(rate) >= 0.2) {
                 v6 = q;
                 parts.assign(1, &q);
                 for (size_t k = j + 1; k < ps.size() && us(ps[k].lead - v6.trail) < 0.6; k++) { v6.trail = ps[k].trail; parts.push_back(&ps[k]); }
                 if (v6.width(rate) >= 14.5 && v6.width(rate) <= 32) p6 = &v6;
             }
-            else if (!p3 && std::fabs(rel) <= 4 && widthOk(q, 0.5, 1.15) && (near(q, t1 + 8, 0.2) || near(q, t1 + 21, 0.2))) { p3 = &q; acMode = dt < 14 ? 'A' : 'C'; }
+            else if (!p3 && std::fabs(rel) <= 4 && widthOk(q, 0.5, 1.15) && (nearBy(q, t1 + 8, 0.2) || nearBy(q, t1 + 21, 0.2))) { p3 = &q; acMode = dt < 14 ? 'A' : 'C'; }
         }
         if (p2 && p6 && std::fabs(db(p2->amp) - db(p1.amp)) <= 4) {
             markUsed(p1); markUsed(*p2);
@@ -189,7 +189,7 @@ void UplinkReceiver::Impl::process(bool all) {
         for (size_t j = i + 1; j < ps.size(); j++) {
             const Pulse& q = ps[j];
             if (us(q.lead) - t3 > 3) break;
-            if (near(q, t3 + 2.0, 0.2) && widthOk(q, 0.5, 2.0) && std::fabs(db(q.amp) - db(p1.amp)) <= 4 && !isUsed(base + (int64_t)std::llround(q.lead))) { p4 = &q; break; }
+            if (nearBy(q, t3 + 2.0, 0.2) && widthOk(q, 0.5, 2.0) && std::fabs(db(q.amp) - db(p1.amp)) <= 4 && !isUsed(base + (int64_t)std::llround(q.lead))) { p4 = &q; break; }
         }
         markUsed(p1); markUsed(*p3);
         if (p2) markUsed(*p2);

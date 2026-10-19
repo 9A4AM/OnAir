@@ -41,14 +41,14 @@ static PskGenSignal sig(double hz, const std::string& text, double snr, int mode
     return s;
 }
 
-static const PskSignal* near(const PskTelemetry& t, double hz, double tol = 20) {
+static const PskSignal* nearBy(const PskTelemetry& t, double hz, double tol = 20) {
     const PskSignal* b = nullptr;
     for (const auto& s : t.signals) if (std::fabs(s.offsetHz - hz) <= tol && (!b || s.chars > b->chars)) b = &s;
     return b;
 }
 
 static void expect(const char* name, const PskTelemetry& t, double hz, const std::string& want, double tol = 20) {
-    const PskSignal* s = near(t, hz, tol);
+    const PskSignal* s = nearBy(t, hz, tol);
     CHECK(s, "%s: no signal at %.0f Hz (%zu signals)", name, hz, t.signals.size());
     if (!s) return;
     const bool ok = s->text.find(want) != std::string::npos;
@@ -71,7 +71,7 @@ int main() {
         expect("band 1050", t, 1050, "UR RST 599 NAME JOHN");
         expect("band 1500", t, 1500, "DE OK1XX OK1XX");
         expect("band 2200", t, 2200, "TNX FER QSO 73");
-        const PskSignal* s = near(t, 700);
+        const PskSignal* s = nearBy(t, 700);
         if (s) {
             CHECK(!s->lines.empty() && s->lines.front().text.find("CQ CQ CQ") != std::string::npos, "chat log line: %s", s->lines.empty() ? "-" : s->lines.front().text.c_str());
             bool call = false;
@@ -134,7 +134,7 @@ int main() {
         for (double t = 0; t < secs - 1e-9; t += 0.1) { g.generate(x.data(), x.size()); off.feed(x.data(), x.size()); on.feed(x.data(), x.size()); }
         PskTelemetry a, b;
         off.telemetry(a, 0); on.telemetry(b, 0);
-        const PskSignal* sa = near(a, 1000); const PskSignal* sb = near(b, 1000);
+        const PskSignal* sa = nearBy(a, 1000); const PskSignal* sb = nearBy(b, 1000);
         printf("  listen: %zu audio samples in %.0f s, text \"%s\"\n", heard, secs, sb ? sb->text.c_str() : "-");
         CHECK(std::fabs((double)heard - secs * 8000) < 400, "listen audio: %zu samples", heard);
         CHECK(sa && sb && !sa->text.empty() && sa->text == sb->text && a.signals.size() == b.signals.size(), "text with listen differs");

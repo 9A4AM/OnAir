@@ -39,7 +39,7 @@ int main() {
         CHECK(bad == 0, "scrambler: %d bits wrong", bad);
     }
     {   // QPSK on the axes, the first bit the most significant bit of the Gray label
-        auto near = [](std::complex<float> a, float re, float im) { return std::abs(a - std::complex<float>(re, im)) < 1e-4f; };
+        auto nearBy = [](std::complex<float> a, float re, float im) { return std::abs(a - std::complex<float>(re, im)) < 1e-4f; };
         CHECK(near(hfdlPsk(2, 0), 1, 0) && near(hfdlPsk(2, 2), 0, 1) && near(hfdlPsk(2, 3), -1, 0) && near(hfdlPsk(2, 1), 0, -1), "QPSK map");
         const float h = dect2::math::k1OverSqrt2f;
         CHECK(near(hfdlPsk(3, 0), 1, 0) && near(hfdlPsk(3, 4), h, h) && near(hfdlPsk(3, 6), 0, 1) && near(hfdlPsk(3, 1), h, -h), "8PSK map");

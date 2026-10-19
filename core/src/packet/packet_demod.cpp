@@ -102,8 +102,8 @@ void FmFront::blockEnd() {
         cfoEma = haveSnr ? 0.9 * cfoEma + 0.1 * cfo : cfo;
         // fast while far off (two blocks in a row agree), slowly once close, so FM clicks of a weak signal do not move it. Only an error
         // of more than 1.5 kHz is mixed out (released below 1 kHz): a small one does no harm to the demodulators
-        const bool far = std::fabs(cfo) > 1500 && std::fabs(lastBlkCfo) > 1500 && cfo * lastBlkCfo > 0;
-        afcEst = std::max(-afcMaxHz, std::min(afcMaxHz, afcEst + (far ? 0.6 : 0.03) * (afcHz + cfo - afcEst)));
+        const bool farBy = std::fabs(cfo) > 1500 && std::fabs(lastBlkCfo) > 1500 && cfo * lastBlkCfo > 0;
+        afcEst = std::max(-afcMaxHz, std::min(afcMaxHz, afcEst + (farBy ? 0.6 : 0.03) * (afcHz + cfo - afcEst)));
         if (std::fabs(afcEst) > 1500) afcHz = afcEst; else if (std::fabs(afcEst) < 1000) afcHz = 0;
         lastBlkCfo = cfo;
         haveSnr = true;

@@ -11,7 +11,7 @@ using namespace dect2::atvkit;
 using testjobs::jprintf;
 static std::atomic<int> fails{0};
 #define CHECK(c, ...) do { if (!(c)) { jprintf("FAIL: " __VA_ARGS__); jprintf("\n"); fails++; } } while (0)
-static bool near(double a, double b, double tol) { return std::fabs(a - b) <= tol; }
+static bool nearBy(double a, double b, double tol) { return std::fabs(a - b) <= tol; }
 
 static double barError(const Run& r, const AtvFormat& f) {
     if (!r.frame) return 9;
@@ -130,7 +130,7 @@ int main() {
         const double w = barError(r, gp);
         line(nm, r, w);
         CHECK(r.tel.state == 2 && r.tel.colour, "compression %.0f %%: state %d colour %d", comp * 100, r.tel.state, (int)r.tel.colour);
-        CHECK(near(r.tel.syncCompressionPct, comp * 100 * 0.75, 0.15 * comp * 100 + 3) || near(r.tel.syncCompressionPct, comp * 100, 0.15 * comp * 100 + 3),
+        CHECK(nearBy(r.tel.syncCompressionPct, comp * 100 * 0.75, 0.15 * comp * 100 + 3) || nearBy(r.tel.syncCompressionPct, comp * 100, 0.15 * comp * 100 + 3),
               "compression %.0f %%: measured %.1f %%", comp * 100, r.tel.syncCompressionPct);
         CHECK(near(r.tel.syncDepthPct, 26.25 * (1 - comp), 2.0), "compression %.0f %%: sync depth %.1f %%", comp * 100, r.tel.syncDepthPct);
         CHECK(w < (comp < 0.3 ? 0.08 : comp < 0.5 ? 0.12 : 0.18), "compression %.0f %%: bars %.3f", comp * 100, w);

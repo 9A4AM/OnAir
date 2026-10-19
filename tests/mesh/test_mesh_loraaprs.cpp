@@ -23,7 +23,7 @@ using namespace dect2;
 
 #include "../common/test_util.h"
 
-static bool near(double a, double b, double tol = 1e-4) { return std::fabs(a - b) < tol; }
+static bool nearBy(double a, double b, double tol = 1e-4) { return std::fabs(a - b) < tol; }
 
 static MeshDecodeResult aprsOf(const std::string& tnc2) {
     const auto b = loraAprsFrame(tnc2);

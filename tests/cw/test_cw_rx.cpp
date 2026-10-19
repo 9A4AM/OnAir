@@ -40,7 +40,7 @@ static Run run(const std::vector<CwGenSignal>& sigs, double secs, double cfo = 0
     return res;
 }
 
-static const CwSignal* near(const CwTelemetry& t, double hz, double tol = 30) {
+static const CwSignal* nearBy(const CwTelemetry& t, double hz, double tol = 30) {
     const CwSignal* b = nullptr;
     for (const auto& s : t.signals) if (std::fabs(s.offsetHz - hz) <= tol && (!b || s.chars > b->chars)) b = &s;
     return b;
@@ -54,7 +54,7 @@ static CwGenSignal sig(double hz, double wpm, const std::string& text, double sn
 
 // the signal at hz must have sent want at least once, at its speed
 static void expect(const char* name, const CwTelemetry& t, double hz, const std::string& want, double wpm) {
-    const CwSignal* s = near(t, hz);
+    const CwSignal* s = nearBy(t, hz);
     CHECK(s, "%s: no signal at %+.0f Hz (%zu signals)", name, hz, t.signals.size());
     if (!s) return;
     printf("  %-10s %+7.0f Hz %4.1f WPM %4.1f dB  \"%s\"\n", name, s->offsetHz, s->wpm, s->snrDb, s->text.size() > 70 ? s->text.substr(s->text.size() - 70).c_str() : s->text.c_str());
@@ -109,7 +109,7 @@ int main() {
         a.jitter = 0.12; a.dashRatio = 3.5; a.farnsworthWpm = 10;
         const Run r = run({a}, 60);
         expect("hand", r.t, 700, "UR 599 599", 18);
-        const CwSignal* s = near(r.t, 700);
+        const CwSignal* s = nearBy(r.t, 700);
         CHECK(s && s->farnsworth, "Farnsworth flag");
         CHECK(s && s->calls.size() >= 2, "callsigns: %zu", s ? s->calls.size() : 0);
     }

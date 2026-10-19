@@ -721,10 +721,10 @@ struct InmcReceiver::Impl {
             for (double p : ws.prev) if (std::fabs(p - f) < 3000) persistent = true;
             if (!persistent || (int)ch.size() > kMaxExtra) continue;
             if (std::fabs(f - carrierOf(*ch[0])) < 25000.0) continue;
-            bool near = false;
-            for (size_t k = 1; k < ch.size(); k++) if (std::fabs(f - carrierOf(*ch[k])) < 12000.0 || std::fabs(f - ch[k]->offsetHz) < 12000.0) near = true;
-            for (const auto& b : black) if (std::fabs(f - b.f) < 10000.0) near = true;
-            if (near) continue;
+            bool nearBy = false;
+            for (size_t k = 1; k < ch.size(); k++) if (std::fabs(f - carrierOf(*ch[k])) < 12000.0 || std::fabs(f - ch[k]->offsetHz) < 12000.0) nearBy = true;
+            for (const auto& b : black) if (std::fabs(f - b.f) < 10000.0) nearBy = true;
+            if (nearBy) continue;
             const int id = nextId++;
             ch.push_back(makeChan(f, id));
             ids.push_back(id);

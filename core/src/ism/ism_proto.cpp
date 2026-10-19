@@ -198,11 +198,11 @@ IsmGuess ismClassify(const IsmTrain& t) {
     std::vector<float> gIn;
     for (float x : gw) if (x < med * 6 + 1) gIn.push_back(x); else g.gapUs = std::max(g.gapUs, x);
     const auto pc = clusters(pw), gc = clusters(gIn);
-    auto near = [](float a, float b) { return std::fabs(a - b) <= 0.25f * std::max(a, b) + 2; };
+    auto nearBy = [](float a, float b) { return std::fabs(a - b) <= 0.25f * std::max(a, b) + 2; };
     if (pc.size() == 1 && gc.size() == 2) { g.code = "PPM"; g.shortUs = gc[0]; g.longUs = gc[1]; g.bits = (int)gIn.size(); }
     else if (pc.size() == 2 && gc.size() <= 2 && !near(pc[1], 2 * pc[0]) ) { g.code = "PWM"; g.shortUs = pc[0]; g.longUs = pc[1]; g.bits = (int)pw.size(); }
-    else if (pc.size() <= 2 && gc.size() <= 2 && near(pc[0], gc.empty() ? pc[0] : gc[0]) &&
-             (pc.size() < 2 || near(pc[1], 2 * pc[0])) && (gc.size() < 2 || near(gc[1], 2 * gc[0]))) {
+    else if (pc.size() <= 2 && gc.size() <= 2 && nearBy(pc[0], gc.empty() ? pc[0] : gc[0]) &&
+             (pc.size() < 2 || nearBy(pc[1], 2 * pc[0])) && (gc.size() < 2 || nearBy(gc[1], 2 * gc[0]))) {
         g.code = "Manchester"; g.shortUs = pc[0]; g.longUs = 2 * pc[0];
         float total = 0;
         for (float x : pw) total += x;

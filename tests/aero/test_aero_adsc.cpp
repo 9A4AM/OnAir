@@ -16,7 +16,7 @@ using namespace dect2;
 
 #include "../common/test_util.h"
 
-static bool near(double a, double b, double tol) { return std::fabs(a - b) <= tol; }
+static bool nearBy(double a, double b, double tol) { return std::fabs(a - b) <= tol; }
 
 static void textPos(const char* label, const char* text, double lat, double lon, double tol, int alt) {
     AeroPosition p;

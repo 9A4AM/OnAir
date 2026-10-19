@@ -232,9 +232,9 @@ struct MultitoneReceiver::Impl {
                 const double a = std::log(avg[(size_t)k - 1] + 1e-30), b = std::log(avg[(size_t)k] + 1e-30), c = std::log(avg[(size_t)k + 1] + 1e-30);
                 const double den = a - 2 * b + c, off = den != 0 ? 0.5 * (a - c) / den : 0;
                 const float hz = (float)((k + std::max(-0.5, std::min(0.5, off))) * binHz);
-                bool near = false;
-                for (float h : tx.lineHz) if (std::fabs(h - hz) < 30) near = true;
-                if (near) continue;
+                bool nearBy = false;
+                for (float h : tx.lineHz) if (std::fabs(h - hz) < 30) nearBy = true;
+                if (nearBy) continue;
                 tx.lineHz.push_back(hz);
                 tx.lineDb.push_back((float)(10 * std::log10(q.first / med)));
             }
@@ -254,9 +254,9 @@ struct MultitoneReceiver::Impl {
                 for (int k = k0; k <= k1; k++) { tot += p[(size_t)k]; if (p[(size_t)k] > p[(size_t)pk]) pk = k; }
                 std::vector<float> bandp(p.begin() + k0, p.begin() + k1 + 1);
                 const double med = std::max((double)pctF(bandp, 0.5), 1e-30);
-                double near = 0;
-                for (int j = -3; j <= 3; j++) if (pk + j >= 0 && pk + j <= kFftN / 2) near += p[(size_t)(pk + j)];
-                bool tone = tot > 0 && 10 * std::log10(p[(size_t)pk] / med) >= 15 && near / tot >= 0.4 && pk > k0 + 1 && pk < k1 - 1;
+                double nearBy = 0;
+                for (int j = -3; j <= 3; j++) if (pk + j >= 0 && pk + j <= kFftN / 2) nearBy += p[(size_t)(pk + j)];
+                bool tone = tot > 0 && 10 * std::log10(p[(size_t)pk] / med) >= 15 && nearBy / tot >= 0.4 && pk > k0 + 1 && pk < k1 - 1;
                 double hz = 0;
                 if (tone) {
                     const double a = std::log(p[(size_t)pk - 1] + 1e-30), b = std::log(p[(size_t)pk] + 1e-30), c = std::log(p[(size_t)pk + 1] + 1e-30);

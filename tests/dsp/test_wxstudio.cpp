@@ -65,8 +65,8 @@ int main() {
     MapImage gib = blank(40, 40, -7, 37, 0.05, 0);
     drawVectors(gib, kVecCoast, 0xFFFFFFFFu);
     const int gx = (int)std::floor((-5.9 + 7) / 0.05), gy = (int)std::floor((37 - 36) / 0.05);
-    bool near = false;
-    for (int dy = -2; dy <= 2; dy++) for (int dx = -2; dx <= 2; dx++) if (gib.rgba[((size_t)(gy + dy) * gib.w + gx + dx) * 4]) near = true;
+    bool nearBy = false;
+    for (int dy = -2; dy <= 2; dy++) for (int dx = -2; dx <= 2; dx++) if (gib.rgba[((size_t)(gy + dy) * gib.w + gx + dx) * 4]) nearBy = true;
     CHECK(near, "Gibraltar coast");
     // a map crossing the antimeridian still draws (no streak across it)
     MapImage am = blank(200, 50, 170, 70, 0.1, 0);

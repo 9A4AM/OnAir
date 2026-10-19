@@ -301,17 +301,17 @@ struct CellReceiver::Impl {
             std::sort(pr.begin(), pr.end(), [](const cell::LtePssProbe& a, const cell::LtePssProbe& b) { return a.db > b.db; });
             std::vector<double> kept;
             for (const auto& p : pr) {
-                bool near = false;
-                for (double k : kept) if (std::fabs(k - p.offsetHz) < 1.4e6) near = true;
-                if (near) continue;
+                bool nearBy = false;
+                for (double k : kept) if (std::fabs(k - p.offsetHz) < 1.4e6) nearBy = true;
+                if (nearBy) continue;
                 kept.push_back(p.offsetHz);
                 addCand(p.offsetHz, true);
             }
             // the spectrum's blocks too, where no PSS point stood out near them (the probe looks at 20 ms only)
             for (const auto& c : car) {
-                bool near = false;
-                for (double k : kept) if (std::fabs(k - c.freqHz) < 1.4e6) near = true;
-                if (!near) addCand(c.freqHz, true);
+                bool nearBy = false;
+                for (double k : kept) if (std::fabs(k - c.freqHz) < 1.4e6) nearBy = true;
+                if (!nearBy) addCand(c.freqHz, true);
             }
         } else for (const auto& c : car) addCand(c.freqHz, true);
         std::vector<std::pair<Cand, std::vector<cell::LteCellResult>>> found;

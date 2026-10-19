@@ -194,9 +194,9 @@ FskResult sliceFsk(const std::vector<float>& disc, double rate) {
     if (hi - lo < 0.12) return r;                         // under about 1 kHz peak to peak at 48 kHz: not FSK
     const double mid = 0.5 * (lo + hi), hyst = 0.15 * (hi - lo);
     {   // two-level data sits near its two levels; a tone (a sine) spends only about 43% of its time beyond 75% of its swing
-        size_t far = 0;
-        for (float v : disc) if (std::fabs(v - mid) > 0.375 * (hi - lo)) far++;
-        if ((double)far / (double)disc.size() < 0.6) return r;
+        size_t farBy = 0;
+        for (float v : disc) if (std::fabs(v - mid) > 0.375 * (hi - lo)) farBy++;
+        if ((double)farBy / (double)disc.size() < 0.6) return r;
     }
     const std::vector<double> e = findEdges(disc, rate, mid, hyst);
     double baud = 0, coh = 0;

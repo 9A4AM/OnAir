@@ -483,9 +483,9 @@ struct Js8Receiver::Impl {
             const std::vector<Cand> cs = d.candidates(j.x, s0);
             int got = 0;
             for (const Cand& c : cs) {
-                bool near = false;   // a signal already decoded here
-                for (const auto& o : out) if (std::fabs(o.hz - (c.fb + kCentreHz)) < 2 * d.baud && std::fabs(o.dt - (c.s - s0) / kFs) < 0.5) near = true;
-                if (near) continue;
+                bool nearBy = false;   // a signal already decoded here
+                for (const auto& o : out) if (std::fabs(o.hz - (c.fb + kCentreHz)) < 2 * d.baud && std::fabs(o.dt - (c.s - s0) / kFs) < 0.5) nearBy = true;
+                if (nearBy) continue;
                 SlotDecoder::Result r = d.tryDecode(j.x, c);
                 if (!r.ok) { bad++; continue; }
                 const std::string chars = js8::bitsToChars(r.msg72) + char('0' + r.flags);
