@@ -147,7 +147,9 @@ void KaalLiveReceiver::feed(const cf32* x, size_t n) {
     kaal::BeaconFields f;
     std::string text;
     while (m.brx.poll(f, text)) {
-        m.bf = f; m.btext = text; m.beaconValid = true; m.beacons++;
+        const bool sameStation = m.beaconValid && m.bf.callsign == f.callsign;
+        if (!text.empty() || !sameStation) m.btext = text;   // a header-only frame (every 2 s) must not wipe the bio of the last full frame (every 10 s)
+        m.bf = f; m.beaconValid = true; m.beacons++;
         m.beaconAtSec = m.rate > 0 ? (double)m.samples / m.rate : 0;
         std::function<void(const std::string&)> lg;
         { std::lock_guard<std::mutex> pk(m.pubMu); lg = m.log; }

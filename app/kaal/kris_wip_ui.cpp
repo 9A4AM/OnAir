@@ -85,11 +85,13 @@ void sumKavb(const App&, std::string& l1, std::string& l2) { l1 = "KAVB (WIP)"; 
 void sumKapp(const App&, std::string& l1, std::string& l2) { l1 = "KAPP (WIP)"; l2 = "packets, 100 kHz: no receiver yet"; }
 void sumKaft(const App&, std::string& l1, std::string& l2) { l1 = "KAFT (WIP)"; l2 = "files, 200 kHz - 1 MHz: no receiver yet"; }
 
+void statusWip(App& a) { ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("State"); ImGui::SameLine(); ImGui::TextUnformatted(a.engine.running() ? "work in progress: no receiver yet" : "stopped"); }
+
 } // namespace
 
 extern const ModeUi kKavbUi;
-const ModeUi kKavbUi = {.sideTitle = "PROFILES", .tabName = "KAVB", .tabIcon = Ic::Tv, .tab = tabKavb, .summary = sumKavb};
+const ModeUi kKavbUi = {.sideTitle = "PROFILES", .tabName = "KAVB", .tabIcon = Ic::Tv, .tab = tabKavb, .status = statusWip, .summary = sumKavb};
 extern const ModeUi kKappUi;
-const ModeUi kKappUi = {.sideTitle = "PROFILES", .tabName = "KAPP", .tabIcon = Ic::Signal, .tab = tabKapp, .summary = sumKapp};
+const ModeUi kKappUi = {.sideTitle = "PROFILES", .tabName = "KAPP", .tabIcon = Ic::Signal, .tab = tabKapp, .status = statusWip, .summary = sumKapp};
 extern const ModeUi kKaftUi;
-const ModeUi kKaftUi = {.sideTitle = "PROFILES", .tabName = "KAFT", .tabIcon = Ic::Signal, .tab = tabKaft, .summary = sumKaft};
+const ModeUi kKaftUi = {.sideTitle = "PROFILES", .tabName = "KAFT", .tabIcon = Ic::Signal, .tab = tabKaft, .status = statusWip, .summary = sumKaft};

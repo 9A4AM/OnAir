@@ -46,6 +46,13 @@ void summary(const App& a, std::string& l1, std::string& l2) {
     if (live(a)) l2 = dect2::dmeSummary(a.rx.dme);
 }
 
+void status(App& a) {
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("State");
+    ImGui::SameLine();
+    ImGui::TextUnformatted(live(a) ? dect2::dmeSummary(a.rx.dme).c_str() : (a.engine.running() ? "starting" : "stopped"));
+}
+
 } // namespace
 
 extern const ModeUi kDmeUi;
@@ -54,5 +61,6 @@ const ModeUi kDmeUi = {
     .tabName = "DME",
     .tabIcon = Ic::Signal,
     .tab = tab,
+    .status = status,
     .summary = summary,
 };

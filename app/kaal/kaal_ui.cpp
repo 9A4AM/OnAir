@@ -13,6 +13,18 @@ namespace {
 
 bool live(const App& a) { return a.rx.standard == 123; }   // the engine reports its standard code minus one
 
+// the status bar: only what KAAL has (no video, TS or guide lamps): lock, decoded voice, a valid beacon
+void status(App& a) {
+    const bool run = a.engine.running(), lv = live(a);
+    const KaalTelemetry& k = a.rx.kaal;
+    lamp("Lock", !run || !lv ? 0 : k.state == 2 ? 1 : k.state == 1 ? 2 : 0); flowNext(12 * gUi);
+    lamp("Voice", !run || !lv ? 0 : k.dataValid ? (k.blocksOk > 4 * k.blocksBad ? 1 : 2) : 0, (int)Ic::Speaker); flowNext(12 * gUi);
+    lamp("Beacon", !run || !lv ? 0 : k.beaconValid ? (k.beaconAgeSec < 25 ? 1 : 2) : 0); flowNext(12 * gUi);
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("State"); ImGui::SameLine();
+    ImGui::TextUnformatted(lv ? dect2::kaalSummary(k).c_str() : (run ? "starting" : "stopped"));
+}
+
 const char* stateName(int s) { return s == 2 ? "locked" : s == 1 ? "searching" : "no samples"; }
 
 std::string position(double lat, double lon) {
@@ -97,6 +109,7 @@ const ModeUi kKaalUi = {
     .tabName = "KAAL",
     .tabIcon = Ic::Speaker,
     .tab = tab,
+    .status = status,
     .summary = summary,
     .tick = tick,
 };
