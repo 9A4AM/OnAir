@@ -10,6 +10,7 @@
     ]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room", "Lobby"] }],
-  "observability": { "enabled": true }
-  // Not deployed. Before deploying: `wrangler secret put ROOM_SECRET` (32+ random bytes, base64) and add a route / custom domain.
+  "observability": { "enabled": true },
+  "routes": [{ "pattern": "rooms.on-air.dev", "custom_domain": true }]
+  // ROOM_SECRET (32+ random bytes, base64) is a Worker secret: `wrangler secret put ROOM_SECRET`.
 }
