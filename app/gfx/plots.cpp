@@ -168,6 +168,10 @@ void channelWidthPopup(App& a) {
         ImGui::SameLine();
         if (ImGui::RadioButton(tr("6 MHz (Cuba)"), a.dtmbBwMhz == 6) && a.dtmbBwMhz != 6) setDtmbBandwidth(a, 6);
         ImGui::TextDisabled("%s", tr("Set by the country: there is nothing to measure it from. A receiver set to the wrong width finds nothing."));
+    } else if (a.family == 55) {
+        ImGui::TextUnformatted("Demodulator");
+        generalDemodPicker();
+        ImGui::TextDisabled("%s", "The width follows the filter preset in the receiver controls under the spectrum.");
     } else if (a.family == 6) {
         ImGui::TextUnformatted(tr("Follows the symbol rate: symbol rate x (1 + roll-off)."));
         ImGui::TextDisabled("%s", tr("Choose automatic or a manual symbol rate in the tuner to change it."));
@@ -199,8 +203,9 @@ void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const char* yLa
     gBwBtnW = 0;
     const ChanWidth cw = channelWidth(a);
     if (cw.mhz <= 0) return;
-    char b[64];
-    snprintf(b, sizeof b, "BW %s%s###bwbtn", widthText(cw.mhz).c_str(), cw.hasAuto ? (cw.manual ? " manual" : " auto") : "");
+    char b[64], demodTag[16] = "";
+    if (a.family == 55) snprintf(demodTag, sizeof demodTag, "%s  ", generalDemodLabel());   // the general receiver's demodulator, before the width
+    snprintf(b, sizeof b, "%sBW %s%s###bwbtn", demodTag, widthText(cw.mhz).c_str(), cw.hasAuto ? (cw.manual ? " manual" : " auto") : "");
     const ImVec2 sz = ImGui::CalcTextSize(b, nullptr, true);
     const float w = sz.x + 2 * ImGui::GetStyle().FramePadding.x, m = 4 * gUi;
     if (plotSize.x < w + 2 * m + ImGui::CalcTextSize(yLabel).x + 12 * gUi || plotSize.y < sz.y + 2 * m) return;   // no room
@@ -213,7 +218,8 @@ void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const char* yLa
     if (ImGui::SmallButton(b)) ImGui::OpenPopup("##bwpop");
     ImGui::PopStyleColor(2);
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("%s\n\n%s", tr(cw.settable ? "Channel width: the band the receiver works with (the light band).\nClick to choose automatic or a manual width."
+        ImGui::SetTooltip("%s\n\n%s", a.family == 55 ? "Demodulator (NFM, WFM, AM, USB, LSB, CW) and the width of the light band.\nClick to choose the demodulator."
+                                      : tr(cw.settable ? "Channel width: the band the receiver works with (the light band).\nClick to choose automatic or a manual width."
                                       : "Channel width: the band the receiver works with (the light band), set by the standard."),
                           tr("Zoom: mouse wheel (both axes), Ctrl+wheel (frequency), Shift+wheel (level).\nCtrl+PageUp / PageDown: step the view by one screen in frequency. Double click: reset."));
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMax().y + 2 * gUi), ImGuiCond_Appearing, ImVec2(1, 0));   // under the button, right-aligned
