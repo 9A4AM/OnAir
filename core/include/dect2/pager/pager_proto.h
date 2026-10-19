@@ -48,6 +48,7 @@ public:
 private:
     void finish(std::vector<PagerMessage>& out);
     bool have_ = false, damaged_ = false;
+    int gap_ = 0;                                  // unrepaired message words since the last good one (20 bits each)
     uint32_t ric_ = 0;
     int fn_ = 0, fixedBits_ = 0;
     std::vector<uint8_t> bits_;

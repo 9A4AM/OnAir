@@ -73,9 +73,10 @@ std::vector<uint8_t> pocsagBits(const std::vector<PocsagPage>& pages, int preamb
     return out;
 }
 
-void PocsagParser::reset() { have_ = false; damaged_ = false; bits_.clear(); ok = fixed = failed = 0; }
+void PocsagParser::reset() { have_ = false; damaged_ = false; gap_ = 0; bits_.clear(); ok = fixed = failed = 0; }
 
 void PocsagParser::finish(std::vector<PagerMessage>& out) {
+    gap_ = 0;                                       // a gap at the end of a page is not message text
     if (!have_) return;
     have_ = false;
     PagerMessage m = newMessage();
@@ -101,8 +102,9 @@ void PocsagParser::flush(std::vector<PagerMessage>& out) { finish(out); }
 void PocsagParser::word(uint32_t raw, int slot, std::vector<PagerMessage>& out) {
     const PocsagWord c = pocsagClassify(raw);
     if (c.kind == PocsagWord::Failed) {
+        // a message word we cannot repair keeps the page open: its 20 bits become a gap, filled in when a later message word arrives
         failed++;
-        if (have_) { damaged_ = true; finish(out); }
+        if (have_) { damaged_ = true; gap_++; }
         return;
     }
     if (c.fixed) fixed++; else ok++;
@@ -115,6 +117,7 @@ void PocsagParser::word(uint32_t raw, int slot, std::vector<PagerMessage>& out) 
         fixedBits_ = c.bits;
         bits_.clear();
     } else if (have_) {
+        for (; gap_ > 0; gap_--) for (int i = 0; i < 20; i++) bits_.push_back(0);     // keeps the later bits where they belong
         for (int i = 19; i >= 0; i--) bits_.push_back((uint8_t)((c.a >> i) & 1));
         fixedBits_ += c.bits;
     }
