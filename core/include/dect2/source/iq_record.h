@@ -10,6 +10,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 namespace dect2 {
@@ -46,7 +47,8 @@ class IqRecorder {
 public:
     ~IqRecorder() { stop(); }
     // SigMF metadata (<name>.sigmf-meta next to the recording, and <name>.sigmf-data as a hard link to the same data so that IQEngine pairs them) for the next start()
-    void setSigmf(bool on, double centerHz = 0) { sigmf_ = on; centerHz_ = centerHz; }
+    // description: the sidecar's description (the mode id the recording was made in, read back by the recording library)
+    void setSigmf(bool on, double centerHz = 0, std::string description = "") { sigmf_ = on; centerHz_ = centerHz; sigmfDesc_ = std::move(description); }
     // Opens the file (creating its folder) and starts the writer thread. Only CS8 and CF32 can be recorded.
     bool start(const std::string& path, FileFormat fmt, double rateHz, std::string& err);
     void stop();
@@ -75,7 +77,7 @@ private:
     void* file_ = nullptr;   // FILE*
     bool sigmf_ = false;
     double centerHz_ = 0;
-    std::string sigmfPath_, sigmfWhen_;
+    std::string sigmfPath_, sigmfWhen_, sigmfDesc_;
     void writeSigmf(bool final);
 };
 

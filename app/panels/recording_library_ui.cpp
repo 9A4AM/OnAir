@@ -1,0 +1,160 @@
+// The recording library: the recordings in the recordings folder, with what their sidecars say (length, rate, centre frequency and the mode
+// they were made in) and two actions per row. Open makes the recording the IQ file source; Re-analyse does the same and then opens the
+// chosen mode (by default the one the recording was made in). Opened from the "Library" button in the diagnostics row. Lists only the
+// sidecars and file headers, never the samples; deletes and moves nothing.
+#include "../app.h"
+#include "dect2/source/iq_file.h"
+#include "dect2/source/source.h"
+#include <cstdio>
+#include <ctime>
+#include <map>
+#include <string>
+#include <vector>
+
+namespace {
+
+struct LibState {
+    bool open = false;
+    std::string dir;
+    std::vector<RecordingListing> rows;   // read from the folder when the window opens and on Refresh
+    std::map<std::string, int> pick;      // per recording (by path): the mode index for Re-analyse; -1 = the mode in use
+};
+LibState gLib;
+
+void reload(const std::string& dir) {
+    gLib.dir = dir;
+    gLib.rows = listRecordingFiles(dir);
+}
+
+// the mode a recording names in its sidecar, as an index into kModes; -1 when there is none or this build has no such mode
+int defaultPick(const RecordingListing& r) { return r.mode.empty() ? -1 : scanModeIndex(r.mode); }
+
+int pickFor(const RecordingListing& r) {
+    auto it = gLib.pick.find(r.path);
+    return it != gLib.pick.end() ? it->second : defaultPick(r);
+}
+
+std::string dateText(int64_t t) {
+    if (t <= 0) return "";
+    const std::time_t tt = (std::time_t)t;
+    std::tm tm{};
+#ifdef _WIN32
+    localtime_s(&tm, &tt);
+#else
+    localtime_r(&tt, &tm);
+#endif
+    char b[32];
+    strftime(b, sizeof b, "%Y-%m-%d %H:%M", &tm);
+    return b;
+}
+
+std::string lengthText(double s) {
+    if (s <= 0) return "";
+    const int t = (int)(s + 0.5);
+    char b[32];
+    if (t >= 3600) snprintf(b, sizeof b, "%d:%02d:%02d", t / 3600, (t / 60) % 60, t % 60);
+    else snprintf(b, sizeof b, "%d:%02d", t / 60, t % 60);
+    return b;
+}
+
+// The recording becomes the IQ file source, with the same settings the source's Open button sets. False (and the reason in the log) when
+// the receiver runs or the file cannot be read.
+bool openAsSource(App& a, const RecordingListing& r) {
+    if (a.engine.running()) { a.engine.log("stop the receiver before opening a recording"); return false; }
+    int fileIdx = -1;
+    for (int i = 0; i < (int)a.devices.size(); i++) if (a.devices[i].kind == DeviceInfo::File) { fileIdx = i; break; }
+    if (fileIdx < 0) { a.engine.log("no IQ file source in this build"); return false; }
+    IqFileInfo info; std::string err;
+    a.file.offsetBytes = 0; a.file.endBytes = 0; a.file.bigEndian = false;
+    if (probeIqFile(r.path, info, err)) {   // a SigMF or WAV: its own rate, centre, sample format and start
+        a.file.path = info.dataPath; a.file.format = info.format; a.file.bigEndian = info.bigEndian;
+        a.file.offsetBytes = info.offsetBytes; a.file.endBytes = info.endBytes;
+        if (info.sampleRate > 0) a.file.sampleRate = info.sampleRate;
+        if (info.centerHz > 0) a.freqMhz = info.centerHz / 1e6;
+    } else if (!err.empty()) { a.engine.log(err); return false; }
+    else {   // a raw file without a sidecar: the rate and the format its name says
+        a.file.path = r.path; a.file.format = guessFormat(r.path);
+        const double g = guessSampleRate(r.path);
+        if (g > 0) a.file.sampleRate = g;
+    }
+    a.devIdx = fileIdx;
+    a.engine.log("IQ file: " + r.fileName);
+    return true;
+}
+
+void reanalyse(App& a, const RecordingListing& r, int pick) {
+    if (!openAsSource(a, r)) return;
+    if (pick >= 0 && pick < kNumModes) {
+        selectMode(a, kModes[pick].family, kModes[pick].subId);
+        a.engine.log(std::string("recording set to re-analyse in ") + kModes[pick].name + ": press Start");
+    } else a.engine.log("recording set to re-analyse in the mode in use: press Start");
+}
+
+} // namespace
+
+// The button in the diagnostics row, and its window while it is open.
+void recordingLibraryUi(App& a) {
+    const std::string dir = plat::dataDir() + "/recordings";
+    if (ImGui::SmallButton("Library")) {
+        gLib.open = !gLib.open;
+        if (gLib.open) reload(dir);
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "The recordings in the recordings folder: open one as the source, or re-analyse it in a mode");
+    if (!gLib.open) return;
+    ImGui::SetNextWindowSize(ImVec2(900 * gUi, 440 * gUi), ImGuiCond_FirstUseEver);
+    if (!ImGui::Begin("Recording library###reclib", &gLib.open)) { ImGui::End(); return; }
+    if (ImGui::Button("Refresh")) reload(dir);
+    ImGui::SameLine();
+    ImGui::TextDisabled("%s", dir.c_str());
+    if (gLib.rows.empty()) {
+        ImGui::TextDisabled("%s", "No recordings in this folder yet. Record IQ from the diagnostics row, or put a SigMF or WAV file here.");
+    } else if (ImGui::BeginTable("##reclib", 9, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY)) {
+        ImGui::TableSetupColumn("File", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Date");
+        ImGui::TableSetupColumn("Length");
+        ImGui::TableSetupColumn("Rate");
+        ImGui::TableSetupColumn("Centre");
+        ImGui::TableSetupColumn("Recorded in");
+        ImGui::TableSetupColumn("Re-analyse in");
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupScrollFreeze(0, 1);
+        ImGui::TableHeadersRow();
+        for (size_t i = 0; i < gLib.rows.size(); i++) {
+            const RecordingListing& r = gLib.rows[i];
+            ImGui::TableNextRow();
+            ImGui::PushID((int)i);
+            ImGui::TableSetColumnIndex(0);
+            ImGui::TextUnformatted(r.fileName.c_str());
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", r.path.c_str());
+            ImGui::TableSetColumnIndex(1);
+            ImGui::TextUnformatted(dateText(r.modified).c_str());
+            ImGui::TableSetColumnIndex(2);
+            ImGui::TextUnformatted(lengthText(r.seconds).c_str());
+            ImGui::TableSetColumnIndex(3);
+            if (r.sampleRate > 0) { char b[32]; snprintf(b, sizeof b, "%.3f Msps", r.sampleRate / 1e6); ImGui::TextUnformatted(b); }
+            ImGui::TableSetColumnIndex(4);
+            if (r.centerHz > 0) { char b[32]; snprintf(b, sizeof b, "%.3f MHz", r.centerHz / 1e6); ImGui::TextUnformatted(b); }
+            ImGui::TableSetColumnIndex(5);
+            ImGui::TextUnformatted(r.mode.c_str());
+            ImGui::TableSetColumnIndex(6);
+            const int pick = pickFor(r);
+            ImGui::SetNextItemWidth(160 * gUi);
+            const std::string label = pick >= 0 && pick < kNumModes ? kModes[pick].name : "(mode in use)";
+            if (ImGui::BeginCombo("##pick", label.c_str())) {
+                if (ImGui::Selectable("(mode in use)", pick < 0)) gLib.pick[r.path] = -1;
+                for (int m = 0; m < kNumModes; m++) if (ImGui::Selectable(kModes[m].name, m == pick)) gLib.pick[r.path] = m;
+                ImGui::EndCombo();
+            }
+            ImGui::TableSetColumnIndex(7);
+            if (ImGui::SmallButton("Open")) openAsSource(a, r);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Makes this recording the IQ file source (press Start to play it)");
+            ImGui::TableSetColumnIndex(8);
+            if (ImGui::SmallButton("Re-analyse")) reanalyse(a, r, pickFor(r));
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Opens this recording as the source in the chosen mode (press Start to analyse it)");
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+    ImGui::End();
+}

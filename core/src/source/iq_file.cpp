@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <chrono>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -130,6 +131,60 @@ bool probeIqFile(const std::string& path, IqFileInfo& out, std::string& err) {
     }
     if (endsWith(path, ".wav")) return probeWav(path, out, err);
     return false;
+}
+
+std::vector<RecordingListing> listRecordingFiles(const std::string& dir) {
+    std::vector<RecordingListing> out;
+    std::error_code ec;
+    const std::filesystem::path d = fsPath(dir);
+    if (!std::filesystem::is_directory(d, ec)) return out;
+    static const char* const kRaw[] = {".cs8", ".cu8", ".cf32", ".ci16", ".cu16", ".wav"};
+    std::vector<std::string> names;
+    for (std::filesystem::directory_iterator it(d, ec), end; !ec && it != end; it.increment(ec))
+        if (it->is_regular_file(ec)) names.push_back(it->path().filename().string());
+    // a recording with a .sigmf-meta is listed once, by the meta; its data (the hard link, or the .sigmf-data) and the raw copy are skipped
+    std::map<std::string, bool> metaBase;
+    for (const std::string& n : names) if (endsWith(n, ".sigmf-meta")) metaBase[n.substr(0, n.size() - strlen(".sigmf-meta"))] = true;
+    for (const std::string& n : names) {
+        const bool meta = endsWith(n, ".sigmf-meta");
+        if (!meta) {
+            if (endsWith(n, ".sigmf-data")) continue;   // listed by its meta, or not a recording without one
+            bool raw = false;
+            for (const char* e : kRaw) if (endsWith(n, e)) raw = true;
+            if (!raw) continue;
+            const std::string base = n.substr(0, n.find_last_of('.'));
+            if (metaBase.count(base)) continue;
+        }
+        const std::string path = (d / n).string();
+        RecordingListing r;
+        r.fileName = n; r.path = path; r.sigmf = meta;
+        IqFileInfo info; std::string err;
+        std::string dataPath = path;
+        if (probeIqFile(path, info, err)) {
+            r.format = info.format; r.sampleRate = info.sampleRate; r.centerHz = info.centerHz; r.mode = info.description;
+            dataPath = info.dataPath;
+            const uint64_t size = std::filesystem::file_size(fsPath(dataPath), ec);
+            ec.clear();
+            const uint64_t end = info.endBytes ? info.endBytes : size;
+            if (end > info.offsetBytes && r.sampleRate > 0) r.seconds = (double)((end - info.offsetBytes) / bytesPerSample(r.format)) / r.sampleRate;
+        } else {
+            if (!err.empty() || meta) continue;   // a WAV or SigMF that cannot be played: not listed
+            r.format = guessFormat(path);          // a raw file: the rate and format its name says
+            r.sampleRate = guessSampleRate(path);
+            const uint64_t size = std::filesystem::file_size(fsPath(path), ec);
+            ec.clear();
+            if (r.sampleRate > 0) r.seconds = (double)(size / bytesPerSample(r.format)) / r.sampleRate;
+        }
+        const auto ft = std::filesystem::last_write_time(fsPath(path), ec);
+        if (!ec) {
+            const auto sys = std::chrono::time_point_cast<std::chrono::seconds>(ft - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
+            r.modified = (int64_t)sys.time_since_epoch().count();
+        }
+        ec.clear();
+        out.push_back(r);
+    }
+    std::sort(out.begin(), out.end(), [](const RecordingListing& a, const RecordingListing& b) { return a.modified > b.modified; });
+    return out;
 }
 
 const char* sigmfDatatype(FileFormat fmt, bool be) {
