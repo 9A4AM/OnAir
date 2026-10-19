@@ -2,6 +2,7 @@
 // Windows: the standard Open/Save dialogs, settings in %APPDATA%\\OnAir\\settings.conf.
 #include "platform.h"
 #include "dect2/common/png.h"
+#include <algorithm>
 #include <atomic>
 #include <cstdio>
 #include <filesystem>
@@ -24,6 +25,7 @@
 #include <direct.h>
 #else
 #include <unistd.h>
+#include <sys/wait.h>
 #endif
 
 namespace plat {
@@ -166,6 +168,90 @@ bool postRequest(const std::string& url, const std::string& body, const std::str
     std::remove(hdrFile.c_str());
     return rc == 0;
 #endif
+}
+
+// curl exit codes: 6 host not found, 7 cannot connect, 28 timed out, 35/51/58/60 TLS
+HttpResult httpRequest(const std::string& method, const std::string& url, const std::string& body, const std::string& userAgent, int timeoutSec) {
+    static std::atomic<unsigned> counter{0};
+    HttpResult r;
+    const std::string base = cacheDir() + "/http_" + std::to_string(counter++ % 1000);
+    const std::string inFile = base + ".in", outFile = base + ".out", hdrFile = base + ".hdr";
+    const bool post = method == "POST", head = method == "HEAD";
+    const std::string to = std::to_string(std::max(1, timeoutSec));
+#ifdef _WIN32
+    if (post) {
+        FILE* f = _wfopen(wide(inFile).c_str(), L"wb");
+        if (!f) { r.net = 4; r.detail = "cannot write a temporary file"; return r; }
+        fwrite(body.data(), 1, body.size(), f);
+        fclose(f);
+    }
+    wchar_t sys[MAX_PATH + 1] = {0};
+    std::wstring exe = GetSystemDirectoryW(sys, MAX_PATH) ? std::wstring(sys) + L"\\curl.exe" : std::wstring(L"curl.exe");
+    if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) exe = L"curl.exe";
+    std::wstring line = L"\"" + exe + L"\" -sS --max-time " + wide(to) + L" -A \"" + wide(userAgent) + L"\" " + (head ? L"-I " : L"") +
+                        (post ? L"-H \"Content-Type: application/json\" --data-binary @\"" + wide(inFile) + L"\" " : std::wstring()) +
+                        L"-D \"" + wide(hdrFile) + L"\" -o \"" + (head ? std::wstring(L"NUL") : wide(outFile)) + L"\" \"" + wide(url) + L"\"";
+    STARTUPINFOW si{};
+    si.cb = sizeof si;
+    PROCESS_INFORMATION pi{};
+    DWORD rcw = 1;
+    if (CreateProcessW(nullptr, line.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {
+        if (WaitForSingleObject(pi.hProcess, (timeoutSec + 3) * 1000) != WAIT_OBJECT_0) TerminateProcess(pi.hProcess, 28);
+        GetExitCodeProcess(pi.hProcess, &rcw);
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+    }
+    const int rc = (int)rcw;
+    auto slurp = [&](const std::string& path, size_t cap) {
+        std::string o;
+        FILE* f = _wfopen(wide(path).c_str(), L"rb");
+        if (f) { char b[4096]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0 && o.size() < cap) o.append(b, n); fclose(f); }
+        DeleteFileW(wide(path).c_str());
+        return o;
+    };
+    if (post) DeleteFileW(wide(inFile).c_str());
+#else
+    if (post) {
+        FILE* f = fopen(inFile.c_str(), "wb");
+        if (!f) { r.net = 4; r.detail = "cannot write a temporary file"; return r; }
+        fwrite(body.data(), 1, body.size(), f);
+        fclose(f);
+    }
+    auto q = [](const std::string& s) { std::string o = "'"; for (char c : s) { if (c == '\'') o += "'\\''"; else o += c; } return o + "'"; };
+    const std::string cmd = "curl -sS --max-time " + to + " -A " + q(userAgent) + (head ? " -I" : "") +
+                            (post ? " -H 'Content-Type: application/json' --data-binary @" + q(inFile) : std::string()) +
+                            " -D " + q(hdrFile) + " -o " + (head ? std::string("/dev/null") : q(outFile)) + " " + q(url) + " 2>/dev/null";
+    const int st = system(cmd.c_str());
+    const int rc = st == -1 ? 1 : (WIFEXITED(st) ? WEXITSTATUS(st) : 1);
+    auto slurp = [&](const std::string& path, size_t cap) {
+        std::string o;
+        FILE* f = fopen(path.c_str(), "rb");
+        if (f) { char b[4096]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0 && o.size() < cap) o.append(b, n); fclose(f); }
+        std::remove(path.c_str());
+        return o;
+    };
+    if (post) std::remove(inFile.c_str());
+#endif
+    const std::string hdr = slurp(hdrFile, 16384);
+    if (!head) r.body = slurp(outFile, 65536);
+    // the last status line (a redirect or a 100-continue puts earlier ones before it)
+    for (size_t p = 0; p < hdr.size();) {
+        size_t e = hdr.find('\n', p);
+        if (e == std::string::npos) e = hdr.size();
+        if (hdr.compare(p, 5, "HTTP/") == 0) {
+            const size_t sp = hdr.find(' ', p);
+            if (sp != std::string::npos && sp < e) r.status = std::atoi(hdr.c_str() + sp + 1);
+        }
+        p = e + 1;
+    }
+    if (rc == 0 && r.status > 0) return r;
+    r.status = 0;
+    if (rc == 6 || rc == 5) { r.net = 1; r.detail = "host name not found"; }
+    else if (rc == 7) { r.net = 2; r.detail = "connection refused or unreachable"; }
+    else if (rc == 28) { r.net = 3; r.detail = "timed out"; }
+    else if (rc != 0) { r.net = 4; r.detail = "curl error " + std::to_string(rc); }
+    else { r.net = 4; r.detail = "no HTTP status in the answer"; }
+    return r;
 }
 bool postJson(const std::string& url, const std::string& json, const std::string& userAgent) { return postImpl(url, json, userAgent, nullptr); }
 bool postJsonReply(const std::string& url, const std::string& json, const std::string& userAgent, std::string& reply) { return postImpl(url, json, userAgent, &reply); }
