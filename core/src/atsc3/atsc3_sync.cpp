@@ -1,5 +1,5 @@
-#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
 #include "dect2/common/thread_name.h"
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
 #include <arm_neon.h>
 #endif
 #include "dect2/atsc3/atsc3_sync.h"

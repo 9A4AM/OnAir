@@ -410,7 +410,7 @@ void scannerLoadList(App& a, const std::vector<ScanSeed>& list) {
 void scannerWindow(App& a) {
     load();
     tick(a);
-    if (a.scannerOpen) window(a);
+    if (a.scannerOpen) ::window(a);   // the file-local window(), not dect2::window (common/window.h)
     if (S.dirty && !ImGui::IsAnyItemActive()) save(a);
 }
 
