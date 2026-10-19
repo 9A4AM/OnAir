@@ -8,6 +8,7 @@
 #include "dect2/audio/mp3_enc.h"
 #include "dect2/source/iq_record.h"
 #include "../app.h"
+#include "../transcribe/transcribe_app.h"
 #include "../clips/clips_ui.h"
 #include "dect2/source/converter.h"
 #include "dect2/engine/updater.h"
@@ -220,6 +221,7 @@ void audioRecordUi(App& a) {
     } else if (a.audioRecWasActive) {
         a.audioRecWasActive = false;
         a.audioRecDonePath = rs.path;
+        tx::captionsRecordStop(rs.path);   // name.srt / name.vtt next to the recording when auto subtitles ran
         char b[96];
         snprintf(b, sizeof b, "audio recorded: %.1f s in %d file(s), %s, to ", rs.seconds, rs.files, sizeText(rs.bytes).c_str());
         if (rs.files > 0) a.engine.log(std::string(b) + rs.path);
@@ -247,7 +249,7 @@ void audioRecordUi(App& a) {
             o.tag = tag;
             const std::string path = plat::dataDir() + "/recordings/" + dect2::AudioRecorder::fileName(dect2::recordingModeId(m), hz, o.format);
             std::string err;
-            if (rec.start(path, o, err)) { a.audioRecDonePath.clear(); a.audioRecMode = m; a.audioRecFreq = a.freqMhz; }
+            if (rec.start(path, o, err)) { tx::captionsRecordStart(); a.audioRecDonePath.clear(); a.audioRecMode = m; a.audioRecFreq = a.freqMhz; }
             else a.engine.log("audio recording failed: " + err);
         }
         ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(p0.x + ImGui::GetStyle().FramePadding.x + 2.2f * sp, p0.y + ImGui::GetItemRectSize().y * 0.5f), 3.2f * gUi, can ? ImGui::GetColorU32(pal::badRed()) : IM_COL32(120, 80, 78, 255));

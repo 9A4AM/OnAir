@@ -3289,3 +3289,33 @@ pilot	piloto
 pilot checks	comprobaciones del piloto
 separation	separación
 stereo phase	fase estéreo
+
+# auto subtitles (captions)
+Generating captions from the sound	Generando subtítulos a partir del sonido
+Captions	Subtítulos
+Save SRT	Guardar SRT
+Save VTT	Guardar VTT
+behind real time (%.1f x): the oldest speech is skipped	por detrás del tiempo real (%.1f x): se omite la voz más antigua
+speed %.2f x real time	velocidad %.2f x tiempo real
+music skipped %llu	música omitida: %llu
+auto captions	subtítulos automáticos
+Captions made on your computer from the speech you hear, with the offline speech model (View > Transcripts > Settings). Nothing is sent anywhere.	Subtítulos creados en su ordenador a partir de la voz que oye, con el modelo de voz sin conexión (Ver > Transcripciones > Ajustes). No se envía nada.
+Station's own subtitles	Subtítulos propios de la emisora
+Generated from speech	Generados a partir de la voz
+Both	Ambos
+Generated where the station has none	Generados cuando la emisora no tiene
+Auto subtitles (captions)	Subtítulos automáticos (captions)
+Captions from the speech of the sound you hear: FM and AM broadcast, DAB, TV audio, amateur and digital voice. They are made here with the offline speech model, shown on the receiver, and kept only in memory (and in .srt / .vtt files if you save them). Music is skipped. Off until you turn it on.	Subtítulos a partir de la voz del sonido que oye: radio FM y AM, DAB, audio de TV, radioaficionados y voz digital. Se crean aquí con el modelo de voz sin conexión, se muestran en el receptor y solo se guardan en memoria (y en archivos .srt / .vtt si los guarda). La música se omite. Desactivado hasta que lo active.
+Make captions	Crear subtítulos
+TV subtitles	Subtítulos de TV
+As spoken	Tal como se dice
+English translation	Traducción al inglés
+Caption text	Texto de los subtítulos
+Tick Translate to English above (multilingual model) to get translated captions.	Marque arriba Traducir al inglés (modelo multilingüe) para obtener subtítulos traducidos.
+Caption size, percent	Tamaño de los subtítulos, en porcentaje
+Background, percent	Fondo, en porcentaje
+Lines	Líneas
+At the top of the picture	Arriba en la imagen
+Save .srt and .vtt next to audio recordings	Guardar .srt y .vtt junto a las grabaciones de audio
+Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time	Subtítulos: %llu fragmentos, %llu de música omitidos, %llu omitidos (demasiado lento), velocidad %.2f x tiempo real
+The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest.	El motor de voz es más lento que el audio: use un modelo más pequeño o menos hilos de CPU. Se omite la voz más antigua, nunca la más reciente.

@@ -76,6 +76,7 @@ struct SourceInfo {
     std::string mode;              // "airband", "marine", "audio"
     std::string channel;           // "118.700 Tower"
     std::string domain = "aviation";   // picks the prompt: "aviation", "marine", "general"
+    bool rejectMusic = false;      // skip transmissions with no speech rhythm (music, tones): captions of broadcast sound
 };
 
 struct TranscriberStats {
@@ -83,6 +84,7 @@ struct TranscriberStats {
     uint64_t dropped = 0;          // thrown away because the queue was full
     uint64_t done = 0;             // transcribed (text kept or not)
     uint64_t kept = 0, filtered = 0, errors = 0;
+    uint64_t musicSkipped = 0;     // transmissions left out because they were music or a tone, not speech
     uint64_t translated = 0, translateSkipped = 0;   // translation passes done / skipped by the performance guard
     size_t queued = 0;
     bool busy = false;
@@ -121,6 +123,7 @@ private:
     void workerLoop();
     void startWorkers();
     void stopWorkers();
+    bool takeSegment(Src& s, VoiceSegment&& g, std::vector<Job>& ready);   // false: music, counted and dropped
     std::string promptFor(const SourceInfo& s) const;
 
     TranscriptStore& store_;

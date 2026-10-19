@@ -3289,3 +3289,33 @@ pilot	pilot
 pilot checks	kontrole pilota
 separation	separacja
 stereo phase	faza stereo
+
+# auto subtitles (captions)
+Generating captions from the sound	Tworzenie napisów z dźwięku
+Captions	Napisy
+Save SRT	Zapisz SRT
+Save VTT	Zapisz VTT
+behind real time (%.1f x): the oldest speech is skipped	za czasem rzeczywistym (%.1f x): najstarsza mowa jest pomijana
+speed %.2f x real time	szybkość %.2f x czasu rzeczywistego
+music skipped %llu	pominięta muzyka: %llu
+auto captions	napisy automatyczne
+Captions made on your computer from the speech you hear, with the offline speech model (View > Transcripts > Settings). Nothing is sent anywhere.	Napisy tworzone na Twoim komputerze z słyszanej mowy za pomocą modelu mowy działającego offline (Widok > Transkrypcje > Ustawienia). Nic nie jest wysyłane.
+Station's own subtitles	Własne napisy stacji
+Generated from speech	Wygenerowane z mowy
+Both	Oba
+Generated where the station has none	Wygenerowane, gdy stacja ich nie ma
+Auto subtitles (captions)	Napisy automatyczne (captions)
+Captions from the speech of the sound you hear: FM and AM broadcast, DAB, TV audio, amateur and digital voice. They are made here with the offline speech model, shown on the receiver, and kept only in memory (and in .srt / .vtt files if you save them). Music is skipped. Off until you turn it on.	Napisy z mowy w słyszanym dźwięku: radio FM i AM, DAB, dźwięk telewizyjny, krótkofalarstwo i cyfrowa mowa. Powstają tu za pomocą modelu mowy offline, są pokazywane przy odbiorniku i trzymane tylko w pamięci (oraz w plikach .srt / .vtt, jeśli je zapiszesz). Muzyka jest pomijana. Wyłączone, dopóki tego nie włączysz.
+Make captions	Twórz napisy
+TV subtitles	Napisy TV
+As spoken	Tak jak powiedziano
+English translation	Tłumaczenie na angielski
+Caption text	Tekst napisów
+Tick Translate to English above (multilingual model) to get translated captions.	Zaznacz powyżej Tłumacz na angielski (model wielojęzyczny), aby otrzymać przetłumaczone napisy.
+Caption size, percent	Rozmiar napisów, w procentach
+Background, percent	Tło, w procentach
+Lines	Wiersze
+At the top of the picture	Na górze obrazu
+Save .srt and .vtt next to audio recordings	Zapisuj .srt i .vtt obok nagrań dźwięku
+Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time	Napisy: %llu fragmentów, %llu muzyki pominięto, %llu pominięto (zbyt wolno), szybkość %.2f x czasu rzeczywistego
+The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest.	Silnik mowy jest wolniejszy niż dźwięk: użyj mniejszego modelu lub mniej wątków procesora. Pomijana jest najstarsza mowa, nigdy najnowsza.

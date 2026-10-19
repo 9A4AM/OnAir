@@ -1,5 +1,6 @@
 // the TV side: player, service list, programme guide, teletext
 #include "../app.h"
+#include "../transcribe/transcribe_app.h"
 #include "dect2/audio/ac4_dec.h"
 
 #include <cctype>
@@ -427,6 +428,7 @@ void playerTab(App& a) {
         flowNext();
     }
     subsControls(a);
+    tx::captionsControls(a);
     flowBreak();
     tvRecordRow(a);
     flowBreak();

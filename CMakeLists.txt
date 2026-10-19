@@ -287,7 +287,7 @@ if(DECT2_BUNDLE_CODEC2 AND NOT MSVC)
   add_dependencies(dect2core onair_codec2)
 endif()
 # Live transcripts: transcript store and exports, callsign reader, voice segmenter, models list and download, the transcriber (docs/TRANSCRIBE.md)
-target_sources(dect2core PRIVATE core/src/transcribe/transcript.cpp core/src/transcribe/callsign.cpp core/src/transcribe/segmenter.cpp core/src/transcribe/models.cpp core/src/transcribe/transcriber.cpp core/src/transcribe/audio_tap.cpp)
+target_sources(dect2core PRIVATE core/src/transcribe/transcript.cpp core/src/transcribe/callsign.cpp core/src/transcribe/segmenter.cpp core/src/transcribe/models.cpp core/src/transcribe/transcriber.cpp core/src/transcribe/audio_tap.cpp core/src/transcribe/captions.cpp)
 # whisper.cpp (MIT, ggml authors): speech to text for the live transcripts (docs/TRANSCRIBE.md). Only the CPU back end of ggml is vendored
 # (third_party/whisper); no model is shipped, the user downloads one or drops a file in the models folder.
 option(DECT2_WITH_WHISPER "Speech to text (whisper.cpp) for the live transcripts of airband and marine voice" ON)

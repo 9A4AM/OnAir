@@ -7,6 +7,7 @@
 #include "dect2/common/u8file.h"
 #include "dect2/engine/updater.h"
 #include "dect2/transcribe/audio_tap.h"
+#include "dect2/transcribe/captions.h"
 #include "dect2/transcribe/models.h"
 #include "dect2/transcribe/transcriber.h"
 #include "i18n/i18n.h"
@@ -22,6 +23,10 @@
 #include <cstring>
 #include <ctime>
 #include <filesystem>
+#include <fstream>
+#include <memory>
+#include <set>
+#include <sstream>
 #include <map>
 #include <mutex>
 #include <thread>
@@ -46,12 +51,24 @@ struct Cfg {
     bool translate = false;     // also keep an English translation of foreign speech (multilingual model)
     int threads = 2;            // CPU budget: threads of the speech engine
     int days = 7;               // retention
+    // auto subtitles
+    bool cap = false;           // master switch for captions (separate from the transcripts: nothing is kept in a file)
+    std::set<int> capModes;     // the standards it runs for (empty: none)
+    int capSource = 3;          // dect2::CaptionSource: TV subtitles from the station / generated / both / generated only where the station sends none
+    int capSize = 100, capBg = 75, capLines = 2;
+    bool capTop = false;
+    int capShow = 0;            // 0 as spoken, 1 English translation when there is one, 2 both
+    bool capSave = true;        // save .srt and .vtt next to an audio recording
     bool loaded = false;
 };
 Cfg C;
 
 dect2::TranscriptStore gStore;
 dect2::Transcriber gTr(gStore);
+dect2::TranscriptStore gCapStore;             // captions: in memory only, never written to a file, never shared
+dect2::Transcriber gCap(gCapStore);
+std::map<int, std::unique_ptr<dect2::CaptionTrack>> gTracks;   // per receiver (guarded by gMu)
+struct CapCtx { bool valid = false; int rx = 0, std = -1; double freqHz = 0; } gCapCtx;
 dect2::ModelDownloader gDl;
 bool gWindowOpen = false;
 bool gStarted = false;
@@ -90,12 +107,26 @@ void load() {
     C.translate = d.getB("txTranslate", false);
     C.threads = (int)std::max(1L, std::min(8L, d.getI("txThreads", 2)));
     C.days = (int)std::max(1L, std::min(365L, d.getI("txDays", 7)));
+    C.cap = d.getB("capOn", false);
+    {
+        std::stringstream ss(d.getS("capModes", ""));
+        std::string t;
+        while (std::getline(ss, t, ',')) if (!t.empty() && dect2::captionStandardEligible(atoi(t.c_str()))) C.capModes.insert(atoi(t.c_str()));
+    }
+    C.capSource = (int)std::max(0L, std::min(3L, d.getI("capSource", 3)));
+    C.capSize = (int)d.getI("capSize", 100); C.capBg = (int)d.getI("capBg", 75); C.capLines = (int)d.getI("capLines", 2);
+    C.capTop = d.getB("capTop", false);
+    C.capShow = (int)std::max(0L, std::min(2L, d.getI("capShow", 0)));
+    C.capSave = d.getB("capSave", true);
 }
 void save() {
     Rx1 r;
     plat::Prefs& d = plat::prefs();
     d.setB("txEnabled", C.enabled); d.setB("txAirband", C.airband); d.setB("txMarine", C.marine); d.setB("txOther", C.other);
     d.setS("txModel", C.model); d.setS("txLang", C.lang); d.setB("txTranslate", C.translate); d.setI("txThreads", C.threads); d.setI("txDays", C.days);
+    d.setB("capOn", C.cap); d.setI("capSource", C.capSource); d.setI("capSize", C.capSize); d.setI("capBg", C.capBg); d.setI("capLines", C.capLines);
+    d.setB("capTop", C.capTop); d.setI("capShow", C.capShow); d.setB("capSave", C.capSave);
+    { std::string m; for (int k : C.capModes) m += (m.empty() ? "" : ",") + std::to_string(k); d.setS("capModes", m); }
     d.flush();
 }
 
@@ -131,6 +162,18 @@ void applyConfig() {
     c.queueMax = 6;
     gTr.configure(c);
     gStore.setLimits(20000, C.days);
+    dect2::TranscribeConfig k = gCap.config();   // captions: the same language and CPU budget, one worker, no music, a short queue (late captions are useless)
+    k.enabled = C.cap;
+    k.workers = 1;
+    k.threads = C.threads;
+    k.language = C.lang;
+    k.translate = C.translate;
+    k.queueMax = 3;
+    k.segmenter.rejectMusic = true;
+    k.segmenter.maxSec = 12;     // shorter pieces: the first words show up sooner
+    k.segmenter.hangSec = 0.5;
+    gCap.configure(k);
+    gCapStore.setLimits(2000, 1);
 }
 
 // ---------------------------------------------------------------- the taps
@@ -146,7 +189,14 @@ void onAirband(int rxId, int chan, const float* x, size_t n) {
     gTr.feed(si, x, n, 8000, wallMs());
 }
 
+void onCaptionSound(const float* mono, size_t n, int rate);
+
 void onSound(const float* mono, size_t n, int rate) {
+    onCaptionSound(mono, n, rate);
+    {
+        std::lock_guard<std::mutex> lk(gMu);
+        if (!gCtx.valid) return;
+    }
     dect2::SourceInfo si;
     {
         std::lock_guard<std::mutex> lk(gMu);
@@ -154,6 +204,24 @@ void onSound(const float* mono, size_t n, int rate) {
         si.key = 0x7000000000000LL; si.freqHz = gCtx.freqHz; si.mode = gCtx.mode; si.channel = gCtx.channel; si.domain = gCtx.domain;
     }
     gTr.feed(si, mono, n, rate, wallMs());
+}
+
+// the sound of the receiver being heard, for the captions: the audio clock first, then the speech
+void onCaptionSound(const float* mono, size_t n, int rate) {
+    dect2::SourceInfo si;
+    dect2::CaptionTrack* tk = nullptr;
+    {
+        std::lock_guard<std::mutex> lk(gMu);
+        if (!gCapCtx.valid) return;
+        auto& t = gTracks[gCapCtx.rx];
+        if (!t) t = std::make_unique<dect2::CaptionTrack>();
+        tk = t.get();
+        si.key = 0x7100000000000LL + gCapCtx.rx; si.freqHz = gCapCtx.freqHz; si.mode = "captions"; si.channel = "cap:" + std::to_string(gCapCtx.rx);
+        si.domain = "general"; si.rejectMusic = true;
+    }
+    const int64_t now = wallMs();
+    tk->onAudio(n, rate, now);
+    gCap.feed(si, mono, n, rate, now);
 }
 
 // the aircraft on the screens, by the keys a spoken callsign or registration gives
@@ -190,7 +258,7 @@ void startLoad(const std::string& file) {
 }
 
 void ensureBackend() {
-    const std::string want = (C.enabled && modelPresent(C.model)) ? modelFile(C.model) : "";
+    const std::string want = ((C.enabled || C.cap) && modelPresent(C.model)) ? modelFile(C.model) : "";
     if (gLoadState.load() == 2) {
         std::lock_guard<std::mutex> lk(gMu);
         if (gPending) {
@@ -198,11 +266,12 @@ void ensureBackend() {
             gBackendEnglishOnly = gBackend->englishOnly();
             gLoadedFile = gLoadingFile;
             gTr.setBackend(gBackend);
+            gCap.setBackend(gBackend);
         }
     }
     if (want.empty()) {
-        if (gBackend) { gTr.setBackend(nullptr); gBackend.reset(); gLoadedFile.clear(); }
-        if (!C.enabled && gLoadState.load() == 3) gLoadState = 0;
+        if (gBackend) { gTr.setBackend(nullptr); gCap.setBackend(nullptr); gBackend.reset(); gLoadedFile.clear(); }
+        if (!C.enabled && !C.cap && gLoadState.load() == 3) gLoadState = 0;
         return;
     }
     if (gLoadState.load() == 1) return;
@@ -216,7 +285,12 @@ bool backendReady() { return gBackend != nullptr; }
 bool& windowOpen() { return gWindowOpen; }
 
 bool indicator(std::string& text) {
-    if (!C.enabled || !backendReady()) return false;
+    if (!backendReady()) return false;
+    if (!C.enabled) {
+        if (!C.cap) return false;
+        text = tr("Generating captions from the sound");
+        return true;
+    }
     std::string what;
     if (C.airband) what = "airband";
     if (C.marine) what += (what.empty() ? "" : ", ") + std::string("marine");
@@ -241,6 +315,14 @@ void tick(App& first) {
             const auto it = gAircraft.find(h.key);
             return it == gAircraft.end() ? std::string() : it->second;
         });
+        gCap.setOnEntry([](const dect2::TranscriptEntry& e) {
+            int rx = 0;
+            if (e.channel.compare(0, 4, "cap:") != 0) return;
+            rx = atoi(e.channel.c_str() + 4);
+            std::lock_guard<std::mutex> lk(gMu);
+            const auto it = gTracks.find(rx);
+            if (it != gTracks.end() && it->second) it->second->add(e);
+        });
         applyConfig();
     }
     static double last = 0;
@@ -252,8 +334,8 @@ void tick(App& first) {
     static bool lastEnabled = false;
     static int lastThreads = 0;
     static std::string lastLang;
-    static bool lastTr = false;
-    if (lastEnabled != C.enabled || lastThreads != C.threads || lastLang != C.lang || lastTr != C.translate) { lastTr = C.translate; lastEnabled = C.enabled; lastThreads = C.threads; lastLang = C.lang; applyConfig(); }
+    static bool lastTr = false, lastCap = false;
+    if (lastEnabled != C.enabled || lastThreads != C.threads || lastLang != C.lang || lastTr != C.translate || lastCap != C.cap) { lastCap = C.cap; lastTr = C.translate; lastEnabled = C.enabled; lastThreads = C.threads; lastLang = C.lang; applyConfig(); }
     ensureBackend();
     if (gDl.state() == dect2::ModelDownloader::State::Done) {
         const std::string id = gDl.modelId();
@@ -298,6 +380,18 @@ void tick(App& first) {
     bool sink = false;
     {
         std::lock_guard<std::mutex> lk(gMu);
+        // captions: the receiver being heard, when its mode is ticked
+        const CapCtx old = gCapCtx;
+        gCapCtx.valid = false;
+        if (C.cap && backendReady()) if (App* h = receiverHeard()) if (h->engine.running() && C.capModes.count(h->rx.standard) && dect2::captionStandardEligible(h->rx.standard)) {
+            gCapCtx.valid = true; gCapCtx.rx = h->rxId; gCapCtx.std = h->rx.standard; gCapCtx.freqHz = h->freqMhz * 1e6;
+        }
+        if (old.valid && (!gCapCtx.valid || old.rx != gCapCtx.rx || old.std != gCapCtx.std || std::fabs(old.freqHz - gCapCtx.freqHz) > 1.0)) {
+            // another station: the pending speech goes, the cues start again
+            gCap.endSource(0x7100000000000LL + old.rx, wallMs());
+            const auto it = gTracks.find(old.rx);
+            if (it != gTracks.end() && it->second) it->second->reset();
+        }
         gCtx.valid = false;
         if (ready && (C.marine || C.other)) {
             if (App* h = receiverHeard()) if (h->engine.running()) {
@@ -307,7 +401,7 @@ void tick(App& first) {
                 gCtx.freqHz = h->freqMhz * 1e6;
             }
         }
-        sink = gCtx.valid;
+        sink = gCtx.valid || gCapCtx.valid;
     }
     if (sink && !gSinkOn) { dect2::AudioTap::instance().setSink(onSound); gSinkOn = true; }
     else if (!sink && gSinkOn) { dect2::AudioTap::instance().setSink(nullptr); gSinkOn = false; gTr.endSource(0x7000000000000LL, wallMs()); }
@@ -318,6 +412,8 @@ void shutdown() {
     for (App* r : receiversAll()) if (r && gTapOn[r->rxId]) { r->engine.airband().setChannelTap(nullptr); gTapOn[r->rxId] = false; }
     gTr.configure([&] { auto c = gTr.config(); c.enabled = false; return c; }());
     gTr.setBackend(nullptr);
+    gCap.configure([&] { auto c = gCap.config(); c.enabled = false; return c; }());
+    gCap.setBackend(nullptr);
     gBackend.reset();
     if (gLoadTh.joinable()) gLoadTh.join();
     gDl.cancel();
@@ -690,8 +786,9 @@ void windowPanel(App& a) {
     ImGui::SameLine();
     if (ImGui::SmallButton(U.settings ? tr("Hide settings") : tr("Settings and speech model"))) U.settings = !U.settings;
     if (U.settings || !C.enabled || !backendReady()) {
-        ImGui::BeginChild("##txset", ImVec2(0, (U.settings ? 330.f : 150.f) * gUi), true);
+        ImGui::BeginChild("##txset", ImVec2(0, (U.settings ? 460.f : 150.f) * gUi), true);
         settingsPanel();
+        captionsSettings(a);
         ImGui::EndChild();
     }
     refreshRows();
@@ -786,6 +883,240 @@ void windowPanel(App& a) {
     }
     modelPopups();
     ImGui::End();
+}
+
+
+// ---------------------------------------------------------------- auto subtitles
+
+namespace {
+
+bool isTvStandard(int s) { return s == 0 || s == 1 || s == 3 || s == 4 || s == 6 || s == 7 || s == 8 || s == 40 || s == 47; }
+
+dect2::CaptionTrack* trackOf(int rx) {   // gMu held by the caller
+    const auto it = gTracks.find(rx);
+    return it == gTracks.end() ? nullptr : it->second.get();
+}
+
+std::string capLine(const dect2::CaptionCue& c) {
+    if (C.capShow == 1 && !c.translation.empty()) return c.translation;
+    if (C.capShow == 2 && !c.translation.empty()) return c.text + "\n" + c.translation;
+    return c.text;
+}
+
+bool writeText(const std::string& path, const std::string& body) {
+    std::error_code ec;
+    std::filesystem::create_directories(std::filesystem::path(dect2::u8file(path)).parent_path(), ec);
+    std::ofstream f(dect2::u8file(path), std::ios::binary);
+    if (!f) return false;
+    f << body;
+    return (bool)f;
+}
+
+// cue lines wrapped to a width, drawn in a box on the draw list; bottom (or top) of the area
+void drawCues(ImDrawList* dl, ImVec2 a0, ImVec2 asz, const std::vector<dect2::CaptionCue>& cues, bool forceTop = false) {
+    dect2::CaptionStyle st = dect2::CaptionStyle{C.capSize, C.capBg, C.capTop, C.capLines}.clamped();
+    if (forceTop) st.top = true;   // next to the station's own subtitles, which sit at the bottom
+    const float fs = ImGui::GetFontSize() * (float)st.sizePct / 100.f * std::max(1.f, asz.y / (260.f * gUi) * 0.6f);
+    const float maxW = asz.x * 0.9f;
+    ImFont* font = ImGui::GetFont();
+    std::vector<std::string> lines;
+    for (const auto& c : cues) lines.push_back(capLine(c));
+    std::vector<ImVec2> sz;
+    float h = 0, w = 0;
+    for (const auto& l : lines) {
+        const ImVec2 t = font->CalcTextSizeA(fs, FLT_MAX, maxW, l.c_str());
+        sz.push_back(t); h += t.y + 4 * gUi; w = std::max(w, t.x);
+    }
+    if (lines.empty()) return;
+    const float pad = 8 * gUi;
+    float y = st.top ? a0.y + asz.y * 0.05f : a0.y + asz.y * 0.95f - h - pad;
+    const float x0 = a0.x + (asz.x - w) * 0.5f;
+    dl->AddRectFilled(ImVec2(x0 - pad, y - pad * 0.5f), ImVec2(x0 + w + pad, y + h + pad * 0.5f), IM_COL32(0, 0, 0, (int)(255 * st.bgAlpha / 100.f)), 6 * gUi);
+    for (size_t i = 0; i < lines.size(); i++) {
+        const float x = a0.x + (asz.x - sz[i].x) * 0.5f;
+        dl->AddText(font, fs, ImVec2(x + 1, y + 1), IM_COL32(0, 0, 0, 200), lines[i].c_str(), nullptr, maxW);
+        dl->AddText(font, fs, ImVec2(x, y), IM_COL32(255, 255, 255, 255), lines[i].c_str(), nullptr, maxW);
+        y += sz[i].y + 4 * gUi;
+    }
+}
+
+std::vector<dect2::CaptionCue> visibleFor(int rx) {
+    std::lock_guard<std::mutex> lk(gMu);
+    dect2::CaptionTrack* t = trackOf(rx);
+    return t ? t->visible((size_t)std::max(1, std::min(4, C.capLines))) : std::vector<dect2::CaptionCue>();
+}
+
+std::string exportNow(App& a, int rx, bool vtt) {
+    dect2::CaptionTrack* t;
+    std::vector<dect2::CaptionCue> none;
+    std::string body;
+    {
+        std::lock_guard<std::mutex> lk(gMu);
+        t = trackOf(rx);
+        if (!t || t->size() == 0) return "";
+        body = vtt ? t->vtt(0, 0, C.capShow) : t->srt(0, 0, C.capShow);
+    }
+    char nm[128];
+    const time_t tt = time(nullptr);
+    struct tm tmv;
+#ifdef _WIN32
+    localtime_s(&tmv, &tt);
+#else
+    localtime_r(&tt, &tmv);
+#endif
+    char ts[32]; strftime(ts, sizeof ts, "%Y%m%d-%H%M%S", &tmv);
+    snprintf(nm, sizeof nm, "/captions/onair_captions_%.3fMHz_%s.%s", a.freqMhz, ts, vtt ? "vtt" : "srt");
+    const std::string path = plat::dataDir() + nm;
+    return writeText(path, body) ? path : "";
+}
+
+}  // namespace
+
+bool captionsActive() { load(); return C.cap && backendReady(); }
+bool captionsWanted(int standard) { load(); return C.cap && C.capModes.count(standard) && dect2::captionStandardEligible(standard); }
+bool captionsIsTv(int standard) { return isTvStandard(standard); }
+bool captionsShowBroadcast() { load(); return dect2::showBroadcastSubs((dect2::CaptionSource)C.capSource); }
+
+void captionsOverlay(App& a, ImDrawList* dl, ImVec2 p0, ImVec2 size, bool broadcastPresent) {
+    load();
+    if (!captionsActive() || !captionsWanted(a.rx.standard)) return;
+    if (!dect2::showGeneratedSubs((dect2::CaptionSource)C.capSource, broadcastPresent)) return;
+    drawCues(dl, p0, size, visibleFor(a.rxId), C.capSource == 2 && broadcastPresent);
+}
+
+void captionsWindow(App& a) {
+    (void)a;
+    load();
+    if (!captionsActive()) return;
+    App* h = receiverHeard();
+    if (!h || !h->engine.running()) return;
+    const int std_ = h->rx.standard;
+    if (!captionsWanted(std_) || isTvStandard(std_)) return;
+    const dect2::CaptionStyle st = dect2::CaptionStyle{C.capSize, C.capBg, C.capTop, C.capLines}.clamped();
+    bool open = true;
+    char id[64];
+    snprintf(id, sizeof id, "%s###caption%d", tr("Captions"), h->rxId);
+    ImGui::SetNextWindowSize(ImVec2(560 * gUi, 110 * gUi), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetMainViewport()->Pos.x + 80 * gUi, ImGui::GetMainViewport()->Pos.y + ImGui::GetMainViewport()->Size.y - 220 * gUi), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowBgAlpha((float)st.bgAlpha / 100.f);
+    if (ImGui::Begin(id, &open, ImGuiWindowFlags_NoCollapse)) {
+        const auto cues = visibleFor(h->rxId);
+        const dect2::TranscriberStats ts = gCap.stats();
+        ImGui::SetWindowFontScale((float)st.sizePct / 100.f);
+        ImGui::PushTextWrapPos(0);
+        if (cues.empty()) ImGui::TextDisabled("%s", (ts.busy || ts.queued) ? tr("working ...") : tr("listening ..."));
+        for (const auto& c : cues) {
+            ImGui::TextUnformatted(capLine(c).c_str());
+        }
+        ImGui::PopTextWrapPos();
+        ImGui::SetWindowFontScale(1.f);
+        ImGui::Separator();
+        if (ImGui::SmallButton(tr("Save SRT"))) { const std::string p = exportNow(*h, h->rxId, false); h->engine.log(p.empty() ? "captions: nothing to save yet" : "captions saved to " + p); }
+        ImGui::SameLine();
+        if (ImGui::SmallButton(tr("Save VTT"))) { const std::string p = exportNow(*h, h->rxId, true); h->engine.log(p.empty() ? "captions: nothing to save yet" : "captions saved to " + p); }
+        ImGui::SameLine();
+        ImGui::TextDisabled(ts.avgRtf > 1.0 ? tr("behind real time (%.1f x): the oldest speech is skipped") : tr("speed %.2f x real time"), ts.avgRtf);
+        if (ts.musicSkipped) { ImGui::SameLine(); ImGui::TextDisabled(tr("music skipped %llu"), (unsigned long long)ts.musicSkipped); }
+    }
+    ImGui::End();
+    if (!open) { C.capModes.erase(std_); save(); }
+}
+
+void captionsControls(App& a) {
+    load();
+    const int std_ = a.rx.standard;
+    if (!dect2::captionStandardEligible(std_)) return;
+    flowNext();
+    bool on = C.cap && C.capModes.count(std_);
+    if (ImGui::Checkbox(tr("auto captions"), &on)) {
+        if (on) { C.capModes.insert(std_); C.cap = true; } else C.capModes.erase(std_);
+        save(); applyConfig();
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Captions made on your computer from the speech you hear, with the offline speech model (View > Transcripts > Settings). Nothing is sent anywhere."));
+    if (isTvStandard(std_) && on) {
+        flowNext();
+        ImGui::SetNextItemWidth(230 * gUi);
+        const char* names[] = {tr("Station's own subtitles"), tr("Generated from speech"), tr("Both"), tr("Generated where the station has none")};
+        if (ImGui::BeginCombo("##capsrc", names[C.capSource])) {
+            for (int i = 0; i < 4; i++) if (ImGui::Selectable(names[i], i == C.capSource)) { C.capSource = i; save(); }
+            ImGui::EndCombo();
+        }
+    }
+}
+
+void captionsSettings(App& a) {
+    (void)a;
+    load();
+    ImGui::Spacing();
+    if (!ImGui::TreeNode(tr("Auto subtitles (captions)"))) return;
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextDisabled("%s", tr("Captions from the speech of the sound you hear: FM and AM broadcast, DAB, TV audio, amateur and digital voice. They are made here with the offline speech model, shown on the receiver, and kept only in memory (and in .srt / .vtt files if you save them). Music is skipped. Off until you turn it on."));
+    ImGui::PopTextWrapPos();
+    bool ch = false;
+    ch |= ImGui::Checkbox(tr("Make captions"), &C.cap);
+    ImGui::BeginDisabled(!C.cap);
+    ImGui::TextUnformatted(tr("Modes"));
+    int col = 0;
+    for (int s : dect2::captionStandards()) {
+        bool on = C.capModes.count(s) != 0;
+        if (ImGui::Checkbox((std::string(dect2::captionStandardName(s)) + "##capm" + std::to_string(s)).c_str(), &on)) { if (on) C.capModes.insert(s); else C.capModes.erase(s); ch = true; }
+        if (++col % 3) ImGui::SameLine(); 
+    }
+    if (col % 3) ImGui::NewLine();
+    ImGui::SetNextItemWidth(260 * gUi);
+    const char* srcs[] = {tr("Station's own subtitles"), tr("Generated from speech"), tr("Both"), tr("Generated where the station has none")};
+    if (ImGui::BeginCombo(tr("TV subtitles"), srcs[C.capSource])) {
+        for (int i = 0; i < 4; i++) if (ImGui::Selectable(srcs[i], i == C.capSource)) { C.capSource = i; ch = true; }
+        ImGui::EndCombo();
+    }
+    const char* shows[] = {tr("As spoken"), tr("English translation"), tr("Both")};
+    ImGui::SetNextItemWidth(260 * gUi);
+    if (ImGui::BeginCombo(tr("Caption text"), shows[C.capShow])) {
+        for (int i = 0; i < 3; i++) if (ImGui::Selectable(shows[i], i == C.capShow)) { C.capShow = i; ch = true; }
+        ImGui::EndCombo();
+    }
+    if (C.capShow && !C.translate) ImGui::TextColored(pal::warnAmber(), "%s", tr("Tick Translate to English above (multilingual model) to get translated captions."));
+    ImGui::SetNextItemWidth(160 * gUi);
+    ch |= ImGui::SliderInt(tr("Caption size, percent"), &C.capSize, 60, 250);
+    ImGui::SetNextItemWidth(160 * gUi);
+    ch |= ImGui::SliderInt(tr("Background, percent"), &C.capBg, 0, 100);
+    ImGui::SetNextItemWidth(160 * gUi);
+    ch |= ImGui::SliderInt(tr("Lines"), &C.capLines, 1, 4);
+    ch |= ImGui::Checkbox(tr("At the top of the picture"), &C.capTop);
+    ch |= ImGui::Checkbox(tr("Save .srt and .vtt next to audio recordings"), &C.capSave);
+    ImGui::EndDisabled();
+    if (ch) { C.capSize = dect2::CaptionStyle{C.capSize, C.capBg, C.capTop, C.capLines}.clamped().sizePct; save(); applyConfig(); }
+    const dect2::TranscriberStats ts = gCap.stats();
+    ImGui::TextDisabled(tr("Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time"), (unsigned long long)ts.segments, (unsigned long long)ts.musicSkipped, (unsigned long long)ts.dropped, ts.avgRtf);
+    if (ts.avgRtf > 1.0) ImGui::TextColored(pal::warnAmber(), "%s", tr("The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest."));
+    ImGui::TreePop();
+}
+
+void captionsRecordStart() {
+    std::lock_guard<std::mutex> lk(gMu);
+    if (!gCapCtx.valid) return;
+    if (dect2::CaptionTrack* t = trackOf(gCapCtx.rx)) t->markOrigin();
+}
+
+void captionsRecordStop(const std::string& recordingPath) {
+    load();
+    if (!C.cap || !C.capSave || recordingPath.empty()) return;
+    std::string srt, vtt;
+    {
+        std::lock_guard<std::mutex> lk(gMu);
+        dect2::CaptionTrack* t = nullptr;
+        if (gCapCtx.valid) t = trackOf(gCapCtx.rx);
+        if (!t || t->size() == 0) return;
+        const double o = t->origin();
+        srt = t->srt(o, 0, C.capShow);
+        vtt = t->vtt(o, 0, C.capShow);
+    }
+    if (srt.empty()) return;
+    std::string base = recordingPath;
+    const size_t dot = base.find_last_of('.'), sl = base.find_last_of("/\\");
+    if (dot != std::string::npos && (sl == std::string::npos || dot > sl)) base.resize(dot);
+    writeText(base + ".srt", srt);
+    writeText(base + ".vtt", vtt);
 }
 
 }  // namespace tx

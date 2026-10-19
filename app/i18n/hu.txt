@@ -3275,3 +3275,33 @@ pilot	pilot
 pilot checks	pilot-ellenőrzések
 separation	csatornaszétválás
 stereo phase	sztereó fázis
+
+# auto subtitles (captions)
+Generating captions from the sound	Feliratok készítése a hangból
+Captions	Feliratok
+Save SRT	SRT mentése
+Save VTT	VTT mentése
+behind real time (%.1f x): the oldest speech is skipped	lemarad a valós időtől (%.1f x): a legrégebbi beszédet kihagyja
+speed %.2f x real time	sebesség: %.2f x valós idő
+music skipped %llu	kihagyott zene: %llu
+auto captions	automatikus feliratok
+Captions made on your computer from the speech you hear, with the offline speech model (View > Transcripts > Settings). Nothing is sent anywhere.	A számítógépén, a hallott beszédből, a kapcsolat nélküli beszédmodellel készített feliratok (Nézet > Átiratok > Beállítások). Semmi sem kerül elküldésre.
+Station's own subtitles	Az adó saját feliratai
+Generated from speech	Beszédből készített
+Both	Mindkettő
+Generated where the station has none	Készített, ha az adónak nincs
+Auto subtitles (captions)	Automatikus feliratok (captions)
+Captions from the speech of the sound you hear: FM and AM broadcast, DAB, TV audio, amateur and digital voice. They are made here with the offline speech model, shown on the receiver, and kept only in memory (and in .srt / .vtt files if you save them). Music is skipped. Off until you turn it on.	Feliratok a hallott hang beszédéből: FM- és AM-rádió, DAB, tévéhang, rádióamatőr és digitális beszéd. Itt készülnek a kapcsolat nélküli beszédmodellel, a vevőn jelennek meg, és csak a memóriában maradnak (illetve .srt / .vtt fájlban, ha elmenti). A zenét kihagyja. Kikapcsolva, amíg be nem kapcsolja.
+Make captions	Feliratok készítése
+TV subtitles	TV-feliratok
+As spoken	Ahogy elhangzott
+English translation	Angol fordítás
+Caption text	Felirat szövege
+Tick Translate to English above (multilingual model) to get translated captions.	Jelölje be fent az Angolra fordítás lehetőséget (többnyelvű modell) a lefordított feliratokhoz.
+Caption size, percent	Feliratméret, százalékban
+Background, percent	Háttér, százalékban
+Lines	Sorok
+At the top of the picture	A kép tetején
+Save .srt and .vtt next to audio recordings	Hangfelvételek mellé .srt és .vtt mentése
+Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time	Feliratok: %llu darab, %llu zene kihagyva, %llu kihagyva (túl lassú), sebesség: %.2f x valós idő
+The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest.	A beszédfelismerő lassabb a hangnál: használjon kisebb modellt vagy kevesebb CPU-szálat. A legrégebbi beszédet hagyja ki, sosem a legújabbat.

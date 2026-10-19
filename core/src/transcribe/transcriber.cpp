@@ -209,6 +209,14 @@ std::string Transcriber::promptFor(const SourceInfo& s) const {
     return p;
 }
 
+bool Transcriber::takeSegment(Src& s, VoiceSegment&& g, std::vector<Job>& ready) {   // mu_ is held
+    if (g.music) { st_.musicSkipped++; return false; }
+    Job j;
+    j.src = s.info; j.seg = std::move(g); j.turn = ++s.turn;
+    ready.push_back(std::move(j));
+    return true;
+}
+
 void Transcriber::feed(const SourceInfo& src, const float* mono, size_t n, int rate, int64_t wallMs) {
     std::vector<Job> ready;
     {
@@ -217,13 +225,14 @@ void Transcriber::feed(const SourceInfo& src, const float* mono, size_t n, int r
         if (src_.size() > 64)
             for (auto it = src_.begin(); it != src_.end();) it = (it->first != src.key && (!it->second.seg || !it->second.seg->active())) ? src_.erase(it) : std::next(it);
         Src& s = src_[src.key];
-        if (!s.seg || s.rate != rate) { s.seg = std::make_unique<VoiceSegmenter>(rate, cfg_.segmenter); s.rate = rate; }
+        if (!s.seg || s.rate != rate) {
+            SegmenterOptions so = cfg_.segmenter;
+            so.rejectMusic = so.rejectMusic || src.rejectMusic;
+            s.seg = std::make_unique<VoiceSegmenter>(rate, so);
+            s.rate = rate;
+        }
         s.info = src;
-        s.seg->push(mono, n, wallMs, [&](VoiceSegment&& g) {
-            Job j;
-            j.src = s.info; j.seg = std::move(g); j.turn = ++s.turn;
-            ready.push_back(std::move(j));
-        });
+        s.seg->push(mono, n, wallMs, [&](VoiceSegment&& g) { takeSegment(s, std::move(g), ready); });
     }
     for (auto& j : ready) submit(std::move(j));
 }
@@ -235,11 +244,7 @@ void Transcriber::endSource(int64_t key, int64_t wallMs) {
         auto it = src_.find(key);
         if (it == src_.end() || !it->second.seg) return;
         Src& s = it->second;
-        s.seg->flush(wallMs, [&](VoiceSegment&& g) {
-            Job j;
-            j.src = s.info; j.seg = std::move(g); j.turn = ++s.turn;
-            ready.push_back(std::move(j));
-        });
+        s.seg->flush(wallMs, [&](VoiceSegment&& g) { takeSegment(s, std::move(g), ready); });
     }
     for (auto& j : ready) submit(std::move(j));
 }
@@ -335,6 +340,7 @@ void Transcriber::process(Job& j) {
     if (!r.ok || !why.empty()) return;
     TranscriptEntry e;
     e.wall = j.seg.startMs / 1000;
+    e.startMs = j.seg.startMs;
     e.freqHz = j.src.freqHz;
     e.mode = j.src.mode;
     e.channel = j.src.channel;

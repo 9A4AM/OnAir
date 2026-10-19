@@ -33,6 +33,40 @@ std::vector<float> resampleMono(const float* x, size_t n, int inRate, int outRat
     return y;
 }
 
+void speechEnvelopeFeatures(const std::vector<float>& e, float& syllabic, float& stdDb) {
+    syllabic = 0; stdDb = 0;
+    const size_t n = e.size();
+    if (n < 16) return;
+    double mx = -200;
+    for (float v : e) mx = std::max(mx, (double)v);
+    std::vector<double> d(n);
+    double mean = 0;
+    for (size_t i = 0; i < n; i++) { d[i] = std::max((double)e[i], mx - 40.0); mean += d[i]; }
+    mean /= (double)n;
+    double var = 0;
+    for (auto& v : d) { v -= mean; var += v * v; }
+    var /= (double)n;
+    stdDb = (float)std::sqrt(var);
+    if (var < 1e-9) return;
+    const double pi = 3.14159265358979323846;
+    double band = 0, all = 0;
+    for (double f = 0.5; f <= 25.0; f += 0.25) {   // a Hann-windowed DFT of the level at these frequencies (50 blocks per second)
+        double re = 0, im = 0;
+        for (size_t i = 0; i < n; i++) {
+            const double w = 0.5 - 0.5 * std::cos(2 * pi * (double)i / (double)(n - 1));
+            const double ph = 2 * pi * f * (double)i / 50.0;
+            re += d[i] * w * std::cos(ph);
+            im -= d[i] * w * std::sin(ph);
+        }
+        const double pw = re * re + im * im;
+        all += pw;
+        if (f >= 2.0 && f <= 8.0) band += pw;
+    }
+    syllabic = all > 0 ? (float)(band / all) : 0.f;
+}
+
+bool looksLikeSpeech(float syllabic, float stdDb) { return stdDb >= 3.0f && syllabic >= 0.25f; }
+
 VoiceSegmenter::VoiceSegmenter(int inRate, const SegmenterOptions& o) : rate_(std::max(1000, inRate)), o_(o) {
     blk_ = std::max<size_t>(8, (size_t)(rate_ / 50));
     part_.reserve(blk_);
@@ -70,6 +104,7 @@ void VoiceSegmenter::block(const float* x, size_t n, int64_t endMs, const std::f
             pre_.clear();
             seg_.insert(seg_.end(), x, x + n);
             voicedBlocks_ = 1; quietRun_ = 0; sumPow_ = p;
+            env_.assign(1, (float)db);
             startMs_ = endMs - (int64_t)((double)n * 1000.0 / rate_);
         } else {
             pre_.insert(pre_.end(), x, x + n);
@@ -78,6 +113,7 @@ void VoiceSegmenter::block(const float* x, size_t n, int64_t endMs, const std::f
         return;
     }
     seg_.insert(seg_.end(), x, x + n);
+    if (o_.rejectMusic && env_.size() < 4000) env_.push_back((float)db);
     if (voice) { voicedBlocks_++; quietRun_ = 0; sumPow_ += p; }
     else quietRun_++;
     const double blockSec = (double)n / rate_;
@@ -96,6 +132,12 @@ void VoiceSegmenter::finish(int64_t endMs, bool cut, const std::function<void(Vo
         s.levelDb = (float)(10 * std::log10(sumPow_ / (double)voicedBlocks_ + 1e-12));
         s.startMs = startMs_;
         s.cut = cut;
+        if (o_.rejectMusic && voiced >= o_.musicMinSec) {
+            std::vector<float> e = env_;
+            if (quietRun_ < e.size()) e.resize(e.size() - quietRun_);
+            speechEnvelopeFeatures(e, s.syllabic, s.stdDb);
+            s.music = !looksLikeSpeech(s.syllabic, s.stdDb);
+        }
         // drop most of the hang, keep a little tail
         const size_t tail = (size_t)(0.25 * rate_);
         const size_t quiet = (size_t)((double)quietRun_ * (double)blk_);
@@ -110,6 +152,7 @@ void VoiceSegmenter::finish(int64_t endMs, bool cut, const std::function<void(Vo
     }
     seg_.clear();
     pre_.clear();
+    env_.clear();
     voicedBlocks_ = quietRun_ = 0;
     sumPow_ = 0;
     if (cut) {   // a transmission longer than the limit goes on as the next one

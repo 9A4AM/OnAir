@@ -542,6 +542,7 @@ float menuBar(App& a) {
     creditsWindow(a);
     tx::windowPanel(a);
     reportProblemWindow(a);
+    tx::captionsWindow(a);
     return menuH;
 }
 

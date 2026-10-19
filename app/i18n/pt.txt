@@ -3272,3 +3272,33 @@ pilot	piloto
 pilot checks	verificações do piloto
 separation	separação
 stereo phase	fase estéreo
+
+# auto subtitles (captions)
+Generating captions from the sound	A criar legendas a partir do som
+Captions	Legendas
+Save SRT	Guardar SRT
+Save VTT	Guardar VTT
+behind real time (%.1f x): the oldest speech is skipped	atrás do tempo real (%.1f x): a fala mais antiga é ignorada
+speed %.2f x real time	velocidade %.2f x tempo real
+music skipped %llu	música ignorada: %llu
+auto captions	legendas automáticas
+Captions made on your computer from the speech you hear, with the offline speech model (View > Transcripts > Settings). Nothing is sent anywhere.	Legendas criadas no seu computador a partir da fala que ouve, com o modelo de voz offline (Ver > Transcrições > Definições). Nada é enviado.
+Station's own subtitles	Legendas próprias da emissora
+Generated from speech	Geradas a partir da fala
+Both	Ambas
+Generated where the station has none	Geradas quando a emissora não tem
+Auto subtitles (captions)	Legendas automáticas (captions)
+Captions from the speech of the sound you hear: FM and AM broadcast, DAB, TV audio, amateur and digital voice. They are made here with the offline speech model, shown on the receiver, and kept only in memory (and in .srt / .vtt files if you save them). Music is skipped. Off until you turn it on.	Legendas a partir da fala do som que ouve: rádio FM e AM, DAB, som de TV, radioamadores e voz digital. São criadas aqui com o modelo de voz offline, mostradas no recetor e guardadas só na memória (e em ficheiros .srt / .vtt se as guardar). A música é ignorada. Desligado até o ativar.
+Make captions	Criar legendas
+TV subtitles	Legendas de TV
+As spoken	Como foi dito
+English translation	Tradução para inglês
+Caption text	Texto das legendas
+Tick Translate to English above (multilingual model) to get translated captions.	Marque acima Traduzir para inglês (modelo multilingue) para obter legendas traduzidas.
+Caption size, percent	Tamanho das legendas, em percentagem
+Background, percent	Fundo, em percentagem
+Lines	Linhas
+At the top of the picture	No topo da imagem
+Save .srt and .vtt next to audio recordings	Guardar .srt e .vtt junto das gravações de áudio
+Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time	Legendas: %llu partes, %llu de música ignoradas, %llu ignoradas (demasiado lento), velocidade %.2f x tempo real
+The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest.	O motor de voz é mais lento do que o áudio: use um modelo mais pequeno ou menos threads de CPU. A fala mais antiga é ignorada, nunca a mais recente.

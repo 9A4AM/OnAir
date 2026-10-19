@@ -3289,3 +3289,33 @@ pilot	导频
 pilot checks	导频检查
 separation	分离度
 stereo phase	立体声相位
+
+# auto subtitles (captions)
+Generating captions from the sound	正在根据声音生成字幕
+Captions	字幕
+Save SRT	保存 SRT
+Save VTT	保存 VTT
+behind real time (%.1f x): the oldest speech is skipped	落后于实时(%.1f 倍):最早的语音将被跳过
+speed %.2f x real time	速度:实时的 %.2f 倍
+music skipped %llu	已跳过音乐:%llu
+auto captions	自动字幕
+Captions made on your computer from the speech you hear, with the offline speech model (View > Transcripts > Settings). Nothing is sent anywhere.	字幕由您的电脑根据所听到的语音、使用离线语音模型生成(查看 > 转写 > 设置)。不会发送任何内容。
+Station's own subtitles	电台自带字幕
+Generated from speech	根据语音生成
+Both	两者
+Generated where the station has none	电台没有字幕时生成
+Auto subtitles (captions)	自动字幕(captions)
+Captions from the speech of the sound you hear: FM and AM broadcast, DAB, TV audio, amateur and digital voice. They are made here with the offline speech model, shown on the receiver, and kept only in memory (and in .srt / .vtt files if you save them). Music is skipped. Off until you turn it on.	根据所听声音中的语音生成字幕:FM 和 AM 广播、DAB、电视伴音、业余无线电和数字语音。它们由离线语音模型在本机生成,显示在接收机上,只保存在内存中(如果您保存,也会写入 .srt / .vtt 文件)。音乐会被跳过。在您打开之前保持关闭。
+Make captions	生成字幕
+TV subtitles	电视字幕
+As spoken	按原话
+English translation	英文翻译
+Caption text	字幕文字
+Tick Translate to English above (multilingual model) to get translated captions.	请勾选上方的“翻译为英语”(需要多语言模型)以获得翻译字幕。
+Caption size, percent	字幕大小(百分比)
+Background, percent	背景(百分比)
+Lines	行数
+At the top of the picture	画面顶部
+Save .srt and .vtt next to audio recordings	在音频录音旁保存 .srt 和 .vtt
+Captions: %llu pieces, %llu music skipped, %llu skipped (too slow), speed %.2f x real time	字幕:%llu 段,跳过音乐 %llu,跳过 %llu(太慢),速度:实时的 %.2f 倍
+The speech engine is slower than the audio: use a smaller model or fewer CPU threads. The oldest speech is skipped, never the newest.	语音引擎比音频慢:请使用更小的模型或更少的 CPU 线程。最早的语音会被跳过,绝不会跳过最新的。
