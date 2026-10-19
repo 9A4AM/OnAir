@@ -5,6 +5,7 @@
 #include "dect2/dsp/baseband_filter.h"
 #include "ui2_internal.h"
 #include "ui_common.h"
+#include "../state/workspace.h"
 #ifdef _WIN32
 #define NOMINMAX
 #include <windows.h>
@@ -473,6 +474,8 @@ float menuBar(App& a) {
         if (ImGui::BeginMenu(tr("File"))) {
             if (ImGui::MenuItem(tr(running ? "Stop receiver" : "Start receiver"), "Space")) { if (running) a.engine.stop(); else startReceiver(a); }
             ImGui::Separator();
+            workspaceMenu(a);
+            ImGui::Separator();
             if (ImGui::MenuItem(tr("Exit program"), "Alt+F4")) { if (gWindow) glfwSetWindowShouldClose(gWindow, GLFW_TRUE); }
             ImGui::EndMenu();
         }
@@ -513,6 +516,7 @@ float menuBar(App& a) {
         menuBarRight(a);
         ImGui::EndMainMenuBar();
     }
+    workspaceDialogs(a);
     creditsWindow(a);
     tx::windowPanel(a);
     return menuH;

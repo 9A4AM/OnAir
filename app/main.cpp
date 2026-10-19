@@ -17,6 +17,7 @@
 #include <dlfcn.h>
 #endif
 #include "main_internal.h"
+#include "state/workspace.h"
 
 // code runs before the library's (the linker places the program's own objects first), so the check here comes in time.
 #if defined(DECT2_REQUIRES_AVX2) && (defined(__x86_64__) || defined(__i386__)) && (defined(__GNUC__) || defined(__clang__))
@@ -212,6 +213,7 @@ static void shotReport(App& app) {
 
 // orderly shutdown: transmitter quiet, receivers stopped, results saved, windows and back end closed
 static void shutdownApp(App& app, gfx::Backend* gfxBackend, GLFWwindow* window) {
+    workspaceSessionEnd(app);   // the last-session file is marked clean first: the state is the one at exit
     delete gDiscord;   // clears the status and joins its thread
     txShutdown();      // the transmitter goes quiet before anything else is closed
     pluginShutdown();  // plugin threads and helper processes end, the crash marker goes
@@ -292,6 +294,7 @@ int main(int argc, char** argv) {
     double frameNext = 0, lastInputT = 0;
     while (!glfwWindowShouldClose(window)) {
         appResultsSave(app);   // every 30 s: the lists the screens keep themselves (the engine saves its own on a thread)
+        workspaceSessionTick(app);   // every few seconds: the last-session file (crash restore)
         discordTick(app);
         {
             paceFrame(window, app, o, frameNext, lastInputT);
