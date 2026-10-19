@@ -1222,6 +1222,10 @@ if(DECT2_BUILD_TESTS)
   target_link_libraries(test_aspect PRIVATE dect2core)
   add_test(NAME aspect COMMAND test_aspect)
 
+  add_executable(test_queue_cap tests/tv/test_queue_cap.cpp)
+  target_link_libraries(test_queue_cap PRIVATE dect2core)
+  add_test(NAME queue_cap COMMAND test_queue_cap)
+
   add_executable(test_teletext tests/tv/test_teletext.cpp)
   target_link_libraries(test_teletext PRIVATE dect2core)
   add_test(NAME teletext COMMAND test_teletext)
