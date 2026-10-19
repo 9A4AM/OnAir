@@ -7,15 +7,17 @@ namespace dect2 {
 
 class HwStartGuard {
 public:
-    static constexpr double kGiveUpSec = 4.0;      // seconds of feeding without a single returned picture
-    static constexpr int kGiveUpPackets = 60;      // ...and at least this many packets fed (a slow stream gets more time)
+    static constexpr double kGiveUpSec = 3.0;      // seconds of input fed without a single returned picture (issue #203)
+    static constexpr int kGiveUpPackets = 25;      // ...and at least this many packets fed (about half a second at 50 fps)
     static constexpr int kMaxFetchFails = 5;       // pictures decoded by the GPU that could not be copied out
 
     void arm(double nowSec) { armed_ = nowSec; }
-    // a video packet arrived; returns true if it should be submitted to the GPU decoder
-    bool feed(bool keyframe, double nowSec) {
+    // a video packet arrived; returns true if it should be submitted to the GPU decoder.
+    // `irap`: the access unit is a random-access point (HEVC CRA/IDR/BLA, or a key frame for other codecs). A RASL or
+    // trailing picture with no IRAP before it must not start the session: the GPU rejects it and never recovers.
+    bool feed(bool irap, double nowSec) {
         if (!started_) {
-            if (!keyframe) { skipped_++; return false; }   // wait for an IRAP: the GPU drops everything before it anyway
+            if (!irap) { skipped_++; return false; }   // wait for an IRAP: the GPU drops everything before it anyway
             started_ = true; t0_ = nowSec;
         }
         fed_++;

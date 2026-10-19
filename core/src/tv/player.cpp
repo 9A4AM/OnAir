@@ -418,6 +418,19 @@ static enum AVPixelFormat pickHw(AVCodecContext*, const enum AVPixelFormat* fmts
 static std::atomic<bool> gHwVideoBroken{false};   // set when hardware decoding produced pictures that could not be fetched: software from then on
 #endif
 
+// True when an HEVC access unit (Annex B, as carried in MPEG-TS) holds a random-access picture (NAL types 16..23: BLA, IDR, CRA).
+// The packet's key flag is not enough: RASL/trailing pictures can be flagged too, and a GPU session started on one never recovers.
+[[maybe_unused]] static bool hevcHasIrap(const uint8_t* d, int n) {
+    for (int i = 0; i + 3 < n; i++) {
+        if (d[i] == 0 && d[i + 1] == 0 && d[i + 2] == 1) {
+            const int type = (d[i + 3] >> 1) & 0x3F;
+            if (type >= 16 && type <= 23) return true;
+            i += 2;
+        }
+    }
+    return false;
+}
+
 void Player::threadMain() {
     setThreadPriority(ThreadPriority::High);
     av_log_set_level(getenv("DECT2_PLAYDEBUG") ? AV_LOG_ERROR : AV_LOG_FATAL); // damaged streams make the H.264 decoder very chatty
@@ -905,9 +918,10 @@ void Player::threadMain() {
                     suspect = true; if (getenv("DECT2_PLAYDEBUG")) fprintf(stderr, "[play] transport loss on the video stream: pictures are suspect until a clean keyframe\n"); }   // the demuxer read past lost transport packets: pictures from here on are suspect
                 if (hw) {
                     // GPU decoding: start on a keyframe; if the GPU stays silent for seconds, switch this service to the CPU decoder
-                    if (!hwGuard.feed((pkt->flags & AV_PKT_FLAG_KEY) != 0, hwNow())) { av_packet_unref(pkt); continue; }
+                    const bool irap = vctx->codec_id == AV_CODEC_ID_HEVC ? hevcHasIrap(pkt->data, pkt->size) : (pkt->flags & AV_PKT_FLAG_KEY) != 0;
+                    if (!hwGuard.feed(irap, hwNow())) { av_packet_unref(pkt); continue; }
                     if (hwGuard.giveUp(hwNow())) {
-                        fprintf(stderr, "player: hardware video decoding produced no picture (%d packets fed, %d held back before a keyframe): using software decoding\n", hwGuard.fed(), hwGuard.skipped());
+                        fprintf(stderr, "player: hardware video decoding gave no picture after %.1f s (%d packets fed, %d held back before a random-access picture): switching to software decoding\n", hwNow(), hwGuard.fed(), hwGuard.skipped());
                         hwFallback_ = true; restart_ = true;
                         av_packet_unref(pkt);
                         continue;
