@@ -46,6 +46,22 @@ struct FakeSys : UsbFdSys {
     int reset(int) override { return 0; }
     int clearHalt(int, uint8_t) override { return 0; }
     int detachKernel(int, unsigned) override { detached++; return -ENODATA; }
+    // a fake URB queue: a ring of buffers filled with a counter, ending with -streamEnd (an errno) after streamLimit buffers when set
+    int streamLimit = 0, streamEnd = 0, streamStarts = 0, streamStops = 0, streamRecycled = 0, streamServed = 0, streamNoSys = 0, inQueue = 0;
+    std::vector<std::vector<uint8_t>> bufs;
+    int streamStart(int, uint8_t ep, int n, int len, void** h) override {
+        if (streamNoSys) return -ENOSYS;
+        if (ep != 0x81) return -EINVAL;
+        streamStarts++; bufs.assign((size_t)n, std::vector<uint8_t>((size_t)len)); inQueue = n; *h = this; return 0;
+    }
+    int streamRead(void*, uint8_t** d, int* len, uint32_t) override {
+        if (streamLimit && streamServed >= streamLimit) return streamEnd ? -streamEnd : -ETIMEDOUT;
+        auto& b = bufs[(size_t)(streamServed % (int)bufs.size())];
+        for (auto& x : b) x = (uint8_t)streamServed;
+        streamServed++; *d = b.data(); *len = (int)b.size(); return 0;
+    }
+    int streamRecycle(void*, uint8_t*) override { streamRecycled++; return 0; }
+    void streamStop(void*) override { streamStops++; }
 };
 
 int main() {
@@ -121,6 +137,22 @@ int main() {
         printf("open on a silent fake: %d\n", r);
         if (r == 0 && dev) rtlfd::close(dev);
         CHECK(rtlfd::open(&dev, 5) < 0);
+
+        // the sample stream: transfers kept in flight, blocks of at least 64 KiB handed to the callback, the loop ending on cancel / unplug
+        struct Ctx { size_t bytes = 0, calls = 0, minCall = ~(size_t)0; rtlfd::Dev* dev; size_t stopAt; };
+        Ctx cx; rtlfd::Dev dv(usbFdList("rtlsdr")[0]); cx.dev = &dv; cx.stopAt = 300000;
+        auto cb = [](unsigned char*, uint32_t n, void* c) {
+            auto* x = static_cast<Ctx*>(c);
+            x->bytes += n; x->calls++;
+            if (x->stopAt && x->bytes >= x->stopAt) rtlfd::cancelAsync(x->dev);
+        };
+        CHECK(rtlfd::readAsync(&dv, cb, &cx, 0, 0) == 0 && cx.bytes >= 300000 && cx.calls >= 1 && sys.streamStarts == 1 && sys.streamStops == 1);
+        CHECK(sys.streamRecycled == sys.streamServed && cx.bytes / cx.calls >= 65536);   // every buffer given back; no tiny callbacks
+        sys.streamLimit = sys.streamServed + 10; sys.streamEnd = ENODEV; cx.stopAt = 0;   // the radio is unplugged
+        CHECK(rtlfd::readAsync(&dv, cb, &cx, 0, 0) == kUsbNoDevice && sys.streamStops == 2);
+        sys.streamLimit = sys.streamServed; sys.streamEnd = 0; sys.streamNoSys = 1; sys.calls = 0; sys.failAt = 0;   // no queue available: block-by-block reads
+        cx.stopAt = cx.bytes + 100000;
+        CHECK(rtlfd::readAsync(&dv, cb, &cx, 0, 65536) == 0 && sys.streamStarts == 2 && sys.calls > 0);
     }
 #endif
     printf(failures ? "usb_fd: %d FAILED\n" : "usb_fd: ok\n", failures);
