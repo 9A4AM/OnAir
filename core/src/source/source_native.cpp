@@ -44,6 +44,15 @@ std::vector<DeviceInfo> listNativeDevices(std::string& err) {
     } catch (const std::exception& e) {
         err = std::string("native radios: ") + e.what();
     }
+    // An RX888 MkII is a Cypress FX3 (04b4:00f1), the USB ID LimeSuite also takes for a LimeSDR-USB, and it reports the same serial. The RX888
+    // driver names that radio, so the LimeSDR entries with its serial are dropped: otherwise the first radio in the list (the Lime) is the
+    // one started, and its "initialisation failed" is what the user sees for an RX888.
+    std::vector<std::string> rx888Serials;
+    for (const auto& d : out) if (d.board == "rx888" && !d.serial.empty()) rx888Serials.push_back(d.serial);
+    if (!rx888Serials.empty())
+        out.erase(std::remove_if(out.begin(), out.end(), [&](const DeviceInfo& d) {
+            return d.board == "lime" && std::find(rx888Serials.begin(), rx888Serials.end(), d.serial) != rx888Serials.end();
+        }), out.end());
     return out;
 }
 
