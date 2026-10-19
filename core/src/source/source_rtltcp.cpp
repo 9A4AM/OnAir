@@ -74,7 +74,10 @@ protected:
         int port = 0;
         if (!splitHostPort(addr_, host, port)) { err = "rtl_tcp: bad address " + addr_ + " (host:port)"; openFailure_ = OpenFailure::Final; return false; }
         std::string e;
-        const sock_t k = tcpConnect(host, port, isLoopbackHost(host) ? kLocalConnectMs : kConnectMs, e);
+        // one retry when nothing answered in time: a local server that is still starting its radio can accept a moment later (#201)
+        const int connectMs = isLoopbackHost(host) ? kLocalConnectMs : kConnectMs;
+        sock_t k = tcpConnect(host, port, connectMs, e);
+        if (k == kBadSock && e.find("no answer") != std::string::npos) k = tcpConnect(host, port, connectMs, e);
         if (k == kBadSock) { err = "rtl_tcp: " + e; openFailure_ = OpenFailure::Retry; return false; }
         sock_ = k;
         sockRecvTimeout(sock_, kGreetingMs);
