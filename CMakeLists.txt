@@ -157,7 +157,7 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${ONAIR_ROOT}/dat
 target_sources(dect2core PRIVATE core/src/airports/airports.cpp)
 target_sources(dect2core PRIVATE core/src/sweep/station_health.cpp core/src/source/agc.cpp)   # station and antenna health report (docs/STATION_HEALTH.md)
 # The modes added after FM (DVB-S/S2, DTMB, analog TV, DMR, DRM, ADS-B): every core/src/<mode>/*.cpp belongs to its mode, so a mode can add files without editing this list
-  set(DECT2_MODES fsq ifkp cquam selfcal dvbs dtmb atv dmr drm adsb gnss dab sonde ais marine acars inmc aero iridium mesh hdr cdr pager packet hfdig airband vdl2 ism vor ils m17 cell cw dstar hfdl nxdn gsmr psk js8 specx wb specan dvbc dpmr orbcomm uplink tetra tetrapol ale mac astro p25 ble iono qo100 wifi general time rid meteor nr cubesat ccsds goes globalstar vdes hrpt zigbee flarm hfbeacon dji nbiot halow codar datawell same multitone loraraw ant dect elektro ndb lbj eczas vdl4 uat wisun fpv wmbus tones sarsat mt63 zwave mscatter)
+  set(DECT2_MODES fsq ifkp cquam selfcal dvbs dtmb atv dmr drm adsb gnss dab sonde ais marine acars inmc aero iridium mesh hdr cdr pager packet hfdig airband vdl2 ism vor ils m17 cell cw dstar hfdl nxdn gsmr psk js8 specx wb specan dvbc dpmr orbcomm uplink tetra tetrapol ale mac astro p25 ble iono qo100 wifi general time rid meteor nr cubesat ccsds goes globalstar vdes hrpt zigbee flarm hfbeacon dji nbiot halow codar datawell same multitone loraraw ant dect elektro ndb lbj eczas dme vdl4 uat wisun fpv wmbus tones sarsat mt63 zwave mscatter)
 target_sources(dect2core PRIVATE core/src/tv/ts_proto_rs.cpp core/src/common/text_charset_rs.cpp core/src/tv/dvb_text.cpp core/src/tv/dvb_text_rs.cpp core/src/tv/teletext_rs.cpp core/src/tv/dvbsub_rs.cpp core/src/tv/epg.cpp core/src/tv/subtitle_export.cpp core/src/tv/recorder.cpp core/src/tv/timeshift.cpp core/src/tv/playback.cpp)   # MPEG-TS parsing layer (C++ or the Rust crate onair_ts) and the TV recorder (guide, schedule, timeshift, playback) (C++ or the Rust crate onair_ts)
 target_sources(dect2core PRIVATE core/src/fec/fec_proto.cpp core/src/fec/fec_proto_rs.cpp)   # Reed-Solomon (DVB-T, ATSC, DAB), DVB-T2 BCH and the LDPC tables (the Rust crate onair_fec), the K = 7 Viterbi decoder (C++)
 target_sources(dect2core PRIVATE core/src/files/files_proto_rs.cpp)   # CSV, SigMF, WAV, TLE, SQLite pages, results container (the Rust crate onair_files)
@@ -564,6 +564,9 @@ if(DECT2_BUILD_TESTS)
   target_link_libraries(test_sync PRIVATE dect2core)
   enable_testing()
   add_test(NAME sync COMMAND test_sync)
+  add_executable(test_dme tests/dme/test_dme.cpp)
+  target_link_libraries(test_dme PRIVATE dect2core)
+  add_test(NAME dme COMMAND test_dme)
 
   add_executable(test_l1 tests/t2/test_l1.cpp)
   target_link_libraries(test_l1 PRIVATE dect2core)
