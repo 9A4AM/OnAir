@@ -316,6 +316,8 @@ void applyBandwidth(App& a) {
             a.tune.bandwidthMhz = 14; a.tune.sampleRate = 20e6; a.tune.basebandFilterHz = 16e6;
         } else if (mt->stdMode == 22 && meshSampleRate(a) > mt->sampleRate) {   // Mesh: 2.4 GHz LoRa (812.5 / 1625 kHz) needs more
             a.tune.sampleRate = meshSampleRate(a); a.tune.basebandFilterHz = 0.875 * a.tune.sampleRate;
+        } else if (mt->stdMode == 61) {   // Meteor-M LRPT: a 2 Msps capture keeps the 150 kHz channel inside the window while the tracker moves the centre
+            a.tune.sampleRate = 2e6; a.tune.basebandFilterHz = 0;
         } else if (mt->stdMode == 14) {   // GNSS: the rate of the tune (L1 / E1, BeiDou B1I, ...)
             a.tune.sampleRate = gnssAutoRate(a.freqMhz);
             if (a.tune.sampleRate > 2 * mt->basebandHz) a.tune.basebandFilterHz = 0.8 * a.tune.sampleRate;
