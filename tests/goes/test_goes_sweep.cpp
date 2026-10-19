@@ -19,11 +19,12 @@ struct Case {
     double toneDb = -200;        // a continuous interferer, this many dB above the signal
     double iqGain = 1, iqSkewDeg = 0;   // I/Q imbalance of the radio
     double toneHz = 300e3;      // where the interferer is
+    bool nrzm = false;          // differentially (NRZ-M) coded frame bits, as the real GOES-19 HRIT sends them (found in a 2026 recording)
 };
 
 static bool run(const Case& c) {
     GoesGenConfig g;
-    g.rate = c.rate; g.snrDb = c.snr; g.cfoHz = c.cfo; g.sroPpm = c.ppm; g.rolloff = c.rolloff; g.fillFrames = 12; g.seed = 9; g.invertG2 = c.invG2; g.dualBasis = !c.conventional;
+    g.rate = c.rate; g.snrDb = c.snr; g.cfoHz = c.cfo; g.sroPpm = c.ppm; g.rolloff = c.rolloff; g.fillFrames = 12; g.seed = 9; g.invertG2 = c.invG2; g.dualBasis = !c.conventional; g.nrzm = c.nrzm;
     GoesGenerator gen(g);
     GoesReceiver rx;
     rx.configure(c.rate);
@@ -85,6 +86,10 @@ int main() {
         {"2.4M G2 plain, swapped, -50 kHz",             2.4e6, 6,   -50e3, 0,   0.3, true,  false, false, 2.0, 0},
         {"2.4M conventional-basis Reed-Solomon",        2.4e6, 8,   20e3,  0,   0.3, false, false, true, 2.0, 0, true},
         {"2.4M conventional RS, Es/N0 4 dB, swapped",   2.4e6, 4,   -20e3, 0,   0.3, true,  false, true, 2.5, 0, true},
+        {"2.4M NRZ-M coded frames",                      2.4e6, 8,   0,     0,   0.3, false, false, true, 2.0, 0, false, 0, -200, 1, 0, 300e3, true},
+        {"2.4M NRZ-M, Es/N0 4 dB, -440 Hz, 2 ppm",       2.4e6, 4,   -440,  2,   0.3, false, false, true, 3.0, 0, false, 0, -200, 1, 0, 300e3, true},
+        {"2.4M NRZ-M, G2 plain, swapped, negated, +45 kHz", 2.4e6, 6, 45e3, 0,  0.3, true,  true,  false, 2.5, 0, false, 0, -200, 1, 0, 300e3, true},
+        {"2.4M NRZ-M conventional-basis RS, 30 kHz",     2.4e6, 6,   30e3,  0,   0.3, false, false, true, 2.5, 0, true, 0, -200, 1, 0, 300e3, true},
     };
     const Case more[] = {
         {"2.4M Es/N0 2 dB",                             2.4e6, 2,   15e3,  5,   0.3, false, false, true, 5.0, 0},

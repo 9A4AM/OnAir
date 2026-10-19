@@ -190,6 +190,7 @@ struct GoesGenerator::Impl {
     int fillLeft = 0;
     bool once = false;
     meteor::ConvEncoder enc;
+    uint8_t nrzPrev = 0;
     std::vector<float> sym;       // BPSK symbols from index symBase
     int64_t symBase = 0, symNext = 0;
     uint64_t frames = 0;
@@ -224,7 +225,9 @@ struct GoesGenerator::Impl {
         for (int i = 0; i < meteor::kCaduBytes; i++)
             for (int b = 7; b >= 0; b--) {
                 uint8_t s0, s1;
-                enc.push((cadu[i] >> b) & 1, s0, s1);
+                uint8_t in = (cadu[i] >> b) & 1;
+                if (c.nrzm) { in ^= nrzPrev; nrzPrev = in; }     // NRZ-M: a 1 is a change of level
+                enc.push(in, s0, s1);
                 if (c.invertG2) s1 ^= 1;                       // CCSDS sends G2 inverted
                 sym.push_back(s0 ? -1.f : 1.f);
                 sym.push_back(s1 ? -1.f : 1.f);

@@ -111,7 +111,9 @@ struct GoesReceiver::Impl {
     int alignParity = 0;
     float firstOfPair = 0;
     meteor::Viterbi27 vit;
-    uint64_t asmPattern = 0;
+    uint64_t asmPattern = 0, asmPatternNrz = 0;   // the sync word through the convolutional encoder, as sent plainly / NRZ-M coded
+    bool nrzm = false;                    // the frame bits are differentially coded (GOES-19 HRIT): the decoded bit is the change of the code bit
+    uint8_t nrzPrev = 0;
     // bits -> frames
     int fstate = 0;                       // 0 search, 1 collect, 2 check the sync word
     uint32_t reg = 0;
@@ -135,6 +137,11 @@ struct GoesReceiver::Impl {
 
     Impl() {
         asmPattern = meteor::encodedAsm();
+        {
+            meteor::ConvEncoder e;
+            uint8_t x = 0;
+            for (int i = 31; i >= 0; i--) { uint8_t a, b; x ^= (uint8_t)(meteor::kAsm >> i & 1); e.push(x, a, b); asmPatternNrz = asmPatternNrz << 2 | (uint64_t)a << 1 | b; }
+        }
         asmb.onLog = [this](const std::string& s) { addLog(s, false); };
         asmb.onFile = [this](const std::vector<uint8_t>& f, int vc, int ap) {
             std::function<void(const std::vector<uint8_t>&, int, int)> cb;
@@ -305,19 +312,21 @@ struct GoesReceiver::Impl {
         nextSearch = symIdx + (int64_t)kFrameSyms * (fstate == 0 ? 2 : 4);
         if (fstate != 0 || (int64_t)syncBuf.size() < need || acq) return;
         // the 52 code bits of the sync word that do not depend on the encoder state, as +-1 for each G2 polarity
-        float pat[2][64];
-        for (int j = 0; j < 64; j++) {
-            const int bit = (int)((asmPattern >> (63 - j)) & 1);
-            pat[0][j] = bit ? 1.f : -1.f;
-            pat[1][j] = (bit ^ (j & 1)) ? 1.f : -1.f;
-        }
+        // (plain, and NRZ-M coded: a differentially coded stream only differs by a sign, which the search ignores)
+        float pat[4][64];
+        for (int j = 0; j < 64; j++)
+            for (int d = 0; d < 2; d++) {
+                const int bit = (int)(((d ? asmPatternNrz : asmPattern) >> (63 - j)) & 1);
+                pat[d * 2][j] = bit ? 1.f : -1.f;
+                pat[d * 2 + 1][j] = (bit ^ (j & 1)) ? 1.f : -1.f;
+            }
         double norm = 0;
         for (float v : syncBuf) norm += std::fabs(v);
         norm /= (double)syncBuf.size();
         double best = 0;
         int bo = 0, bg = 0;
         for (int o = 0; o < kFrameSyms; o++)
-            for (int g = 0; g < 2; g++) {
+            for (int g = 0; g < 4; g++) {
                 double sc = 0;
                 for (int m = 0; m < kSyncFrames; m++) {
                     const float* s = syncBuf.data() + o + (size_t)m * kFrameSyms;
@@ -331,7 +340,9 @@ struct GoesReceiver::Impl {
         if (q < 0.45) return;
         const int64_t start = syncBase + bo;
         symSync = true;
-        g2inv = bg == 1;
+        g2inv = (bg & 1) == 1;
+        if (nrzm != (bg >= 2)) { nrzm = bg >= 2; addLog(nrzm ? "GOES HRIT: differential (NRZ-M) coded frames" : "GOES HRIT: frames coded without NRZ-M", true); }
+        nrzPrev = 0;
         alignParity = (int)(start & 1);
         vit.reset(); vit.out().clear();
         fstate = 0; reg = 0; regBits = 0;
@@ -354,6 +365,7 @@ struct GoesReceiver::Impl {
 
     // ---- decoded bits: the sync word and the 1020 bytes behind it
     void frameBit(uint8_t bit) {
+        if (nrzm) { const uint8_t d = (uint8_t)(bit ^ nrzPrev); nrzPrev = bit; bit = d; }
         if (fstate == 0) {
             reg = reg << 1 | bit;
             if (++regBits < 32) return;
