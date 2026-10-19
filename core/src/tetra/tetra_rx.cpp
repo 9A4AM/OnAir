@@ -130,7 +130,7 @@ SlotFit fitSlot(const std::vector<cf32>& dd, long s) {
 
 // ---------------------------------------------------------------- one carrier
 
-CarrierDecode decodeCarrier(const cf32* x, size_t n, int kMcc, int kMnc, int kCc) {
+CarrierDecode decodeCarrier(const cf32* x, size_t n, int kMcc, int kMnc, int kCc, SpeechFrameSink* sink) {
     CarrierDecode out;
     if (n < (size_t)kSlotSamples * 8) return out;
     // matched filter
@@ -259,6 +259,7 @@ CarrierDecode decodeCarrier(const cf32* x, size_t n, int kMcc, int kMnc, int kCc
         const long a = ((a0 + (long)i - syncSlot) % (60L * 72) + 60L * 72) % (60L * 72);
         tn = (int)(a % 4) + 1; fn = (int)((a / 4) % 18) + 1;
     };
+    std::vector<std::vector<float>> traffic;
     for (size_t i = 0; i < slots.size(); i++) {
         const Slot& sl = slots[i];
         if (sl.f.mid < 0.5f || sl.f.total < 1.0f) continue;
@@ -285,11 +286,33 @@ CarrierDecode decodeCarrier(const cf32* x, size_t n, int kMcc, int kMnc, int kCc
         if (sl.f.type == Burst::Sync) block(llr.data() + kSbBkn2, kSchHd);
         else if (sl.f.type == Burst::NormalHalf) { block(llr.data() + kNbBkn1, kSchHd); block(llr.data() + kNbBkn2, kSchHd); }
         else {
-            if (usage >= 4) { out.trafficSlots++; continue; }   // a traffic channel: never decoded
+            if (usage >= 4) {   // a traffic channel: handled after the signalling of the capture is known (encryption check first)
+                out.trafficSlots++;
+                std::vector<float> t(432);
+                std::copy(llr.begin() + kNbBkn1, llr.begin() + kNbBkn1 + 216, t.begin());
+                std::copy(llr.begin() + kNbBkn2, llr.begin() + kNbBkn2 + 216, t.begin() + 216);
+                traffic.push_back(std::move(t));
+                continue;
+            }
             float f[432];
             std::copy(llr.begin() + kNbBkn1, llr.begin() + kNbBkn1 + 216, f);
             std::copy(llr.begin() + kNbBkn2, llr.begin() + kNbBkn2 + 216, f + 216);
             block(f, kSchF);
+        }
+    }
+    if (!traffic.empty()) {
+        // Encryption state of the cell from this capture: known only when clear MAC-RESOURCE signalling was read; any encrypted
+        // PDU or an advertised air interface encryption service means encrypted. Unknown counts as encrypted.
+        CallEncryption ce;
+        for (const auto& m : out.macs) {
+            if (m.resources > 0) ce.known = true;
+            if (m.encrypted > 0) ce.encMode = 1;
+            if (m.sysinfo && m.si.bsService >= 0 && (m.si.bsService & kSvcAirEncryption)) ce.cellOffersEncryption = true;
+        }
+        for (const auto& t : traffic) {
+            const VoiceVerdict v = processTrafficBurst(t.data(), t.data() + 216, scr, ce, sink);
+            out.voiceStatus = voiceVerdictText(v);
+            if (v == VoiceVerdict::Passed) out.voicePassed++; else out.voiceNotDecoded++;
         }
     }
     return out;
