@@ -20,3 +20,6 @@ Branch codec-loader-213. Generic loader for speech codecs the user installs (TET
 
 ## 2026-10-19 HFDL shared first-stage decimation and speed benchmark
 Branch hfdl-fast-028 (from 0.2.8). HfdlReceiver::feed low-passes and decimates a wide capture once before the channels (F = floor(rate / (1.2 x (span + 8 kHz))), only for F >= 2, i.e. 64 MHz and up; 16 and 32 MHz unchanged). Output at 64 MHz is not bit-identical to before. New benchmark tests/hfdl/test_hfdl_speed.cpp (hfdl_speed): 2 s at 16/32/64 MHz, prints wall time per second of input, CI limit 1.0. Not built or run on this Mac; verified by reading only.
+
+## 2026-10-19 HFDL shared FFT channeliser for 32 and 64 MHz captures
+Branch hfdl-channeliser-028 (0.2.8 + hfdl-opt-028 + hfdl-fast-028). Above 16.5 MHz with at least 4 channels in band, HfdlReceiver runs one weighted-overlap-add filter bank (N bins of 32-64 kHz, 4N-tap Kaiser prototype, hop N/2, sub-band rate 2 rate/N) on the analysis thread and each channel takes the nearest bin plus a residual mixer at the sub-band rate; cost ~ input rate, not rate x channels. Up to 16 MHz the per-channel path is unchanged. Not run on this machine (CI): tests hfdl_speed (16/32/64 MHz, old vs new at 32 MHz) and hfdl_chan (3 bursts in a 32 MHz capture, same frame count as the old path).

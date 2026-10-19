@@ -40,6 +40,7 @@ public:
     // The messages, aircraft and ground stations stay through reset(), configure() and retunes: only clearResults() empties them
     void clearResults();
     void setParallel(bool on);                           // channels in parallel on the shared pool (default) or one after the other; same results either way (tests)
+    void setChanneliser(int mode);                       // tests: 0 = the per-channel path, 1 = the shared FFT channeliser, -1 (default) = by the rule (wide captures, see hfdl_rx.cpp)
     std::string saveResults() const;                     // for the results file (results_io.h)
     bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);

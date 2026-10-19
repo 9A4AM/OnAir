@@ -1,6 +1,7 @@
 // HFDL receiver (hfdl_rx.h)
 #include "dect2/hfdl/hfdl_rx.h"
 #include "dect2/dsp/rrc.h"
+#include "dect2/dsp/fftutil.h"
 #include "dect2/automation/engine.h"
 #include "dect2/common/threadpool.h"
 #include "dect2/results/results_io.h"
@@ -36,6 +37,15 @@ constexpr double kDefCentre = 8.9e6;
 // shared first stage (setup()): the output covers the channels' span with this margin, and a channel is this far (Hz) wide beyond its dial
 constexpr double kDecimMargin = 1.2;
 constexpr double kChanEdgeHz = 4000;
+// Shared FFT channeliser (setup(), channelise()). Selection rule, by the capture rate and the channels in band: it is used when
+// rate > kChanMinRate AND at least kChanMinChans channels are in band. The per-channel path costs about rate x channels (a mixer and a CIC
+// integrator per channel on every input sample); up to 16 MHz that is what it always was and stays bit-identical, above it (32 MHz holds
+// about the whole 19 MHz station table) the cost grows 4 to 5 times and the analysis thread falls behind, so one filter bank does the
+// per-sample work once for all channels (cost ~ rate, whatever the number of channels).
+constexpr double kChanMinRate = 16.5e6;
+constexpr int kChanMinChans = 4;
+constexpr double kChanMaxBinHz = 64000;   // sub-band spacing B = rate / N, N a power of two: B in (32, 64] kHz; the sub-band rate is 2 B
+constexpr int kChanFold = 4;               // prototype length = kChanFold x N taps
 using cd = std::complex<double>;
 
 using dect2::dsp::rrc;
@@ -70,7 +80,7 @@ std::vector<double> hfdlChannelsNear(double c, double half) {
 
 struct HfdlReceiver::Impl {
     struct Chan {
-        double dial = 0; double offHz = 0; int gsId = 0; bool inBand = false;
+        double dial = 0; double offHz = 0; int gsId = 0; bool inBand = false; int slot = -1;   // slot: the channeliser's bin slot
         cd ph{1, 0}, rot{1, 0}; int phN = 0;
         int D = 1; cd i1{0, 0}, i2{0, 0}, c1{0, 0}, c2{0, 0}; int dcnt = 0;
         std::vector<cf32> fh; size_t fpos = 0; int M = 1, mcnt = 0;
@@ -107,6 +117,20 @@ struct HfdlReceiver::Impl {
     std::vector<cf32> dhist, dz, dout;
     cd mixPh{1, 0}, mixRot{1, 0};
     int mixN = 0, dcnt = 0;
+    // shared FFT channeliser (cz): a weighted-overlap-add analysis filter bank, N bins of rate / N Hz, hop N / 2 (so each bin's stream runs at 2 rate / N,
+    // twice its spacing: a channel is taken from the nearest bin, its residual offset is at most B / 2 and the 3.4 kHz channel stays inside the bin's pass-band)
+    bool cz = false;
+    int czForce = -1;                         // tests: 0 per-channel path, 1 channeliser, -1 by the rule
+    int cN = 0, cH = 0, cL = 0;
+    double cB = 0, cRate = 0;                 // bin spacing, sub-band rate
+    std::vector<float> cw;                    // prototype low-pass, L = kChanFold x N taps, unit DC gain
+    std::vector<cf32> cbuf;                   // input not yet consumed (sanitised)
+    std::vector<Fft> cfft;
+    std::vector<std::vector<cf32>> ctmp;
+    std::vector<int> cbinOf;                  // per bin: its slot in cband, -1 if unused
+    std::vector<int> cbins;                   // the bins used, by slot
+    std::vector<std::vector<cf32>> cband;      // per slot, the frames of this feed() (already de-rotated by the hop phase)
+    int64_t cm = 0;                           // frames made so far
 
     double nowSec() const { return rate > 0 ? (double)nIn / rate : 0; }
     // mu held: the clock starts again (configure), the kept lists move back with it
@@ -121,6 +145,7 @@ struct HfdlReceiver::Impl {
         rebuild = false;
         ch.clear();
         F = 1; shiftHz = 0; dfir.clear();
+        cz = false; cbuf.clear(); cfft.clear(); ctmp.clear(); cbinOf.clear(); cbins.clear(); cband.clear(); cm = 0;
         if (rate < 1) return;
         const double c = center > 0 ? center : kDefCentre;
         const double half = rate / 2 - 3000;
@@ -128,8 +153,13 @@ struct HfdlReceiver::Impl {
         // Shared first stage, wide captures only: the capture is low-passed and decimated once, before the channels, and the channels run at rate / F.
         // Decided by the output rate: rate / F must cover the span of the channels (the station table or the list, whichever is wider) with
         // kDecimMargin, so F >= 2 needs a capture of about 2.4 times that span (64 MHz, not 32 MHz). Up to 16 MHz and at 32 MHz F is 1: no change.
+        {   // the channeliser rule (see kChanMinRate): decided by the rate and by how many channels are in band
+            int nIn = 0;
+            for (double f : list) if (std::fabs(f + kHfdlCarrierHz - c + offset) < half) nIn++;
+            cz = rate >= 1e6 && (czForce < 0 ? (rate > kChanMinRate && nIn >= kChanMinChans) : czForce > 0);
+        }
         double passHz = 0;
-        if (!list.empty()) {
+        if (!list.empty() && !cz) {
             double lo = 1e300, hi = -1e300;
             for (double f : list) { const double o = f + kHfdlCarrierHz - c + offset; lo = std::min(lo, o); hi = std::max(hi, o); }
             const double span = std::max(tableSpanHz(), hi - lo);
@@ -137,7 +167,25 @@ struct HfdlReceiver::Impl {
             const int Fd = (int)std::floor(rate / passHz);
             if (Fd >= 2) { F = Fd; shiftHz = 0.5 * (lo + hi); }
         }
-        const double rW = rate / F;                   // the rate of the channel chains (rate itself when F == 1)
+        if (cz) {
+            cN = 1; while (rate / cN > kChanMaxBinHz) cN <<= 1;
+            cH = cN / 2; cL = kChanFold * cN; cB = rate / cN; cRate = 2 * cB;
+            // Kaiser-windowed sinc, cut-off B (half way between the pass edge B / 2 + 4 kHz and the first alias, 2 B minus that edge), beta 6 (about 63 dB)
+            cw.assign((size_t)cL, 0.f);
+            auto i0 = [](double x) { double t = 1, sum = 1; for (int k = 1; k < 40; k++) { t *= (x / (2 * k)) * (x / (2 * k)); sum += t; } return sum; };
+            const double beta = 6.0, fc = cB / rate;           // cycles per input sample
+            double acc = 0;
+            for (int i = 0; i < cL; i++) {
+                const double m = i - (cL - 1) / 2.0, r = 2.0 * i / (cL - 1) - 1.0;
+                const double sinc = m == 0 ? 2 * fc : std::sin(2 * M_PI * fc * m) / (M_PI * m);
+                const double v = sinc * i0(beta * std::sqrt(std::max(0.0, 1 - r * r))) / i0(beta);
+                cw[(size_t)i] = (float)v; acc += v;
+            }
+            for (auto& v : cw) v = (float)(v / acc);
+            for (int t = 0; t < 8; t++) { cfft.emplace_back(cN); ctmp.emplace_back((size_t)cN); }
+            cbinOf.assign((size_t)cN, -1);
+        }
+        const double rW = cz ? cRate : rate / F;      // the rate of the channel chains (rate itself when F == 1; the sub-band rate with the channeliser)
         const double halfW = rW / 2 - 3000;
         if (F > 1) {
             // cut-off at rW / 2 (the output's Nyquist) with the transition centred on it: flat to passHz / 2, down by the stop band from rW - passHz / 2
@@ -163,9 +211,16 @@ struct HfdlReceiver::Impl {
             const int khz = (int)std::lround(f / 1e3);
             k.gsId = std::fabs(f - khz * 1e3) < 1 ? hfdlStationOnKhz(khz) : 0;
             const double offIn = f + kHfdlCarrierHz - c + offset;   // the dial as it is in the input (the near-DC rule of process() uses it)
-            const double off = offIn - shiftHz;                    // in the channel rate's band (shiftHz is 0 when F == 1)
+            double off = offIn - shiftHz;                          // in the channel rate's band (shiftHz is 0 when F == 1)
             k.offHz = offIn;
-            k.inBand = std::fabs(off) < halfW;
+            k.inBand = cz ? std::fabs(offIn) < rate / 2 - 3000 : std::fabs(off) < halfW;
+            if (cz && k.inBand) {                                  // the nearest bin; what is left over is shifted at the sub-band rate
+                const int b = (int)std::lround(offIn / cB);
+                const int bi = ((b % cN) + cN) % cN;
+                if (cbinOf[(size_t)bi] < 0) { cbinOf[(size_t)bi] = (int)cbins.size(); cbins.push_back(bi); }
+                k.slot = cbinOf[(size_t)bi];
+                off = offIn - b * cB;
+            }
             k.rot = std::polar(1.0, -2 * M_PI * off / rW);
             k.D = D; k.M = M;
             k.fh.assign((size_t)taps, cf32(0, 0));
@@ -174,8 +229,48 @@ struct HfdlReceiver::Impl {
             k.info.freqHz = f; k.info.gsId = k.gsId; k.info.inBand = k.inBand;
             ch.push_back(std::move(k));
         }
+        cband.assign(cbins.size(), {});
         tel.inputRate = rate;
         tel.centerHz = center;
+    }
+
+    // The shared channeliser (cz): consumes the input, leaves the frames of every used bin in cband[slot] (all the same length, returned).
+    // Frame m is sum_n x[mH + n] w[n] e^{-j 2 pi k n / N} (folded to N points, one FFT), times e^{j pi k m} that the hop of N / 2 leaves behind.
+    size_t channelise(const cf32* x, size_t n) {
+        const size_t old = cbuf.size();
+        cbuf.resize(old + n);
+        for (size_t i = 0; i < n; i++) {
+            cf32 v = x[i];
+            if (!std::isfinite(v.real()) || !std::isfinite(v.imag())) v = cf32(0, 0);
+            cbuf[old + i] = v;
+        }
+        const size_t frames = cbuf.size() >= (size_t)cL ? (cbuf.size() - (size_t)cL) / (size_t)cH + 1 : 0;
+        for (auto& o : cband) o.assign(frames, cf32(0, 0));
+        if (!frames) return 0;
+        const size_t T = std::min<size_t>(cfft.size(), frames);
+        auto job = [&](size_t t) {
+            const size_t f0 = frames * t / T, f1 = frames * (t + 1) / T;
+            cf32* tmp = ctmp[t].data();
+            for (size_t f = f0; f < f1; f++) {
+                const cf32* in = cbuf.data() + f * (size_t)cH;
+                for (int j = 0; j < cN; j++) {
+                    cf32 acc(0, 0);
+                    for (int q = 0; q < kChanFold; q++) acc += in[j + q * cN] * cw[(size_t)(j + q * cN)];
+                    tmp[j] = acc;
+                }
+                cfft[t].forward(tmp);
+                const bool odd = ((cm + (int64_t)f) & 1) != 0;
+                for (size_t s = 0; s < cbins.size(); s++) {
+                    const cf32 v = tmp[cbins[s]];
+                    cband[s][f] = (odd && (cbins[s] & 1)) ? -v : v;
+                }
+            }
+        };
+        if (parallel && T > 1 && frames >= 16) ThreadPool::shared().parallelFor(T, job);
+        else for (size_t t = 0; t < T; t++) job(t);
+        cbuf.erase(cbuf.begin(), cbuf.begin() + (std::ptrdiff_t)(frames * (size_t)cH));
+        cm += (int64_t)frames;
+        return frames;
     }
 
     // ------------------------------------------------ front end
@@ -673,16 +768,18 @@ void HfdlReceiver::feed(const cf32* x, size_t n) {
     const cf32* in = x;
     size_t nin = n;
     if (I.F > 1) { I.decimate(x, n, I.dout); in = I.dout.data(); nin = I.dout.size(); }
+    // the shared channeliser (cz): each channel takes the frames of its bin, at the sub-band rate
+    if (I.cz) nin = I.channelise(x, n);
     auto job = [&](size_t j) {
         Impl::Chan& k = *act[j];
         for (size_t i = 0; i < nin; i++) {
-            cf32 v = in[i];
+            cf32 v = I.cz ? I.cband[(size_t)k.slot][i] : in[i];
             if (!std::isfinite(v.real()) || !std::isfinite(v.imag())) v = cf32(0, 0);
             I.push(k, v);
         }
         I.process(k);
     };
-    if (I.parallel && act.size() > 1 && nin >= 4096) ThreadPool::shared().parallelFor(act.size(), job);
+    if (I.parallel && act.size() > 1 && (I.cz ? n : nin) >= 4096) ThreadPool::shared().parallelFor(act.size(), job);
     else for (size_t j = 0; j < act.size(); j++) job(j);
     {
         std::lock_guard<std::mutex> lk(I.mu);
@@ -698,6 +795,7 @@ void HfdlReceiver::feed(const cf32* x, size_t n) {
     I.seq++;
 }
 
+void HfdlReceiver::setChanneliser(int mode) { std::lock_guard<std::mutex> lk(p_->mu); if (p_->czForce != mode) { p_->czForce = mode; p_->rebuild = true; } }
 void HfdlReceiver::setParallel(bool on) { std::lock_guard<std::mutex> lk(p_->mu); p_->parallel = on; }
 
 void HfdlReceiver::clearResults() {
