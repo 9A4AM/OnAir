@@ -97,6 +97,7 @@
 #include "dect2/kaal/kaal_tel.h"
 #include "dect2/cquam/cquam_tel.h"
 #include "dect2/mscatter/mscatter_tel.h"
+#include "dect2/ardop/ardop_tel.h"
 #include "dect2/rid/rid_tel.h"
 #include "dect2/meteor/meteor_tel.h"
 #include "dect2/nr/nr_tel.h"
@@ -201,6 +202,7 @@ struct RxTelemetry {
     IfkpTelemetry ifkp;       // valid when standard == 117 (IFKP)
     KaalTelemetry kaal;       // valid when standard == 123 (KAAL, engine standard 124)
     CquamTelemetry cquam;     // valid when standard == 108 (AM stereo, C-QUAM)
+    ArdopTelemetry ardop;     // valid when standard == 130 (ARDOP, family 129)
     EczasTelemetry eczas;     // valid when standard == 86 (e-Czas, 225 kHz Poland)
     MsTelemetry mscatter;     // valid when standard == 105 (meteor scatter)
     DmeTelemetry dme;         // valid when standard == 123 (DME, engine standard 123)

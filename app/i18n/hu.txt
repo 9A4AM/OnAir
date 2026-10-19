@@ -3347,3 +3347,30 @@ distress only	csak vészhívás
 positions	pozíciók
 Export KML	KML exportálása
 Export GPX	GPX exportálása
+
+# ARDOP
+ARDOP has no calling frequency: every gateway publishes its own dial frequency. These buttons only jump to the digital part of each band.	Az ARDOP-nak nincs hívófrekvenciája: minden átjáró saját tárcsázási frekvenciát tesz közzé. Ezek a gombok csak az egyes sávok digitális részére ugranak.
+CRC or Reed-Solomon failed	CRC vagy Reed-Solomon hiba
+Called	Hívott
+Count	Darab
+Detail	Részletek
+Last	Utolsó
+Last heard	Utoljára hallva
+Locator	Lokátor
+Reed-Solomon corrections	Reed-Solomon javítások
+S/N %d dB, quality %d/100	S/N %d dB, minőség %d/100
+Session	Munkamenet
+Station	Állomás
+Winlink HF, 14.103 MHz	Winlink KH, 14,103 MHz
+bytes	bájt
+bytes corrected	bájt javítva
+data frames	adatkeretek
+failed	sikertelen
+header only (PSK, QAM or 600 baud data)	csak fejléc (PSK, QAM vagy 600 baudos adat)
+leader %d ms	előzetes jel %d ms
+no data yet	még nincs adat
+no stations yet	még nincs állomás
+other modulations	egyéb modulációk
+quality %d/100	minőség %d/100
+tone offset	hangeltérés
+unreadable	olvashatatlan

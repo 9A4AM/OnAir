@@ -103,6 +103,8 @@
 #include "dect2/kaal/kaal_live.h"
 #include "dect2/cquam/cquam_rx.h"
 #include "dect2/mscatter/mscatter_live.h"
+#include "dect2/ardop/ardop_rx.h"
+#include "dect2/ardop/ardop_rx.h"
 #include "dect2/rid/rid_rx.h"
 #include "dect2/meteor/meteor_rx.h"
 #include "dect2/nr/nr_rx.h"
@@ -398,6 +400,7 @@ public:
     FsqReceiver& fsq() { return rxFsq_; }   // FSQ: speed, own callsign, clear the text (telemetry through latestRx)
     KaalLiveReceiver& kaal() { return rxKaal_; }   // KAAL: volume, mute (telemetry through latestRx)
     IfkpReceiver& ifkp() { return rxIfkp_; }   // IFKP: speed, clear the text (telemetry through latestRx)
+    ArdopReceiver& ardop() { return rxArd_; }   // ARDOP: clear the frames, Listen (telemetry through latestRx)
     Mt63Receiver& mt63() { return rxMt63_; }   // MT63: bandwidth and interleave (automatic by default), clear the text (telemetry through latestRx)
     CquamReceiver& cquam() { return rxCq_; }   // AM stereo (C-QUAM): stereo mode, audio bandwidth, squelch, channel offset (telemetry through latestRx)
     EczasLiveReceiver& eczas() { return rxEcz_; }   // e-Czas (225 kHz, Poland): audio input, receiver position, clear the log (telemetry through latestRx)
@@ -678,6 +681,7 @@ private:
     IfkpReceiver rxIfkp_;
     KaalLiveReceiver rxKaal_;
     CquamReceiver rxCq_;
+    ArdopReceiver rxArd_;
     MscatterLiveReceiver rxMs_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;

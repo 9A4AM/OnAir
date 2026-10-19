@@ -3361,3 +3361,30 @@ distress only	nur Notrufe
 positions	Positionen
 Export KML	KML exportieren
 Export GPX	GPX exportieren
+
+# ARDOP
+ARDOP has no calling frequency: every gateway publishes its own dial frequency. These buttons only jump to the digital part of each band.	ARDOP hat keine Anruffrequenz: jedes Gateway veröffentlicht seine eigene Dial-Frequenz. Diese Tasten springen nur in den digitalen Teil des jeweiligen Bandes.
+CRC or Reed-Solomon failed	CRC oder Reed-Solomon fehlgeschlagen
+Called	Angerufen
+Count	Anzahl
+Detail	Einzelheiten
+Last	Zuletzt
+Last heard	Zuletzt gehört
+Locator	Locator
+Reed-Solomon corrections	Reed-Solomon-Korrekturen
+S/N %d dB, quality %d/100	S/N %d dB, Qualität %d/100
+Session	Sitzung
+Station	Station
+Winlink HF, 14.103 MHz	Winlink-KW, 14,103 MHz
+bytes	Bytes
+bytes corrected	Bytes korrigiert
+data frames	Datenrahmen
+failed	fehlgeschlagen
+header only (PSK, QAM or 600 baud data)	nur Kopfteil (PSK-, QAM- oder 600-Baud-Daten)
+leader %d ms	Vorlauf %d ms
+no data yet	noch keine Daten
+no stations yet	noch keine Stationen
+other modulations	andere Modulationen
+quality %d/100	Qualität %d/100
+tone offset	Tonabweichung
+unreadable	unlesbar

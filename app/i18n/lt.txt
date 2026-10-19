@@ -3361,3 +3361,30 @@ distress only	tik pagalbos šauksmai
 positions	pozicijos
 Export KML	Eksportuoti KML
 Export GPX	Eksportuoti GPX
+
+# ARDOP
+ARDOP has no calling frequency: every gateway publishes its own dial frequency. These buttons only jump to the digital part of each band.	ARDOP neturi šaukimo dažnio: kiekvienas šliuzas skelbia savo dažnį. Šie mygtukai tik peršoka į kiekvieno diapazono skaitmeninę dalį.
+CRC or Reed-Solomon failed	CRC arba Reed-Solomon nepavyko
+Called	Šaukta
+Count	Kiekis
+Detail	Išsamiau
+Last	Paskutinis
+Last heard	Paskutinį kartą girdėta
+Locator	Lokatorius
+Reed-Solomon corrections	Reed-Solomon pataisymai
+S/N %d dB, quality %d/100	S/N %d dB, kokybė %d/100
+Session	Seansas
+Station	Stotis
+Winlink HF, 14.103 MHz	Winlink HF, 14,103 MHz
+bytes	baitai
+bytes corrected	baitai ištaisyti
+data frames	duomenų kadrai
+failed	nepavyko
+header only (PSK, QAM or 600 baud data)	tik antraštė (PSK, QAM arba 600 baudų duomenys)
+leader %d ms	pradžios signalas %d ms
+no data yet	dar nėra duomenų
+no stations yet	dar nėra stočių
+other modulations	kitos moduliacijos
+quality %d/100	kokybė %d/100
+tone offset	tono nuokrypis
+unreadable	neįskaitoma

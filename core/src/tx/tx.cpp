@@ -122,6 +122,7 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("fsq", "FSQ", 115, "makeFsqSynth", kOpt, kUnv),
         mk("ifkp", "IFKP", 118, "makeIfkpSynth", kOpt, kUnv),
         mk("cquam", "AM stereo (C-QUAM)", 109, "makeCquamSynth", kOpt, kUnv),
+        mk("ardop", "ARDOP", 131, "makeArdopSynth", kOpt, kUnv),
         mk("zwave", "Z-Wave", 100, "makeZwaveSynth", kOpt, kUnv),
         mk("mscatter", "Meteor scatter", 106, "makeMscatterSynth", kOpt, kUnv),
         mk("vorils", "VOR / ILS", 32, "makeVorSynth", kOpt, kUnv),
