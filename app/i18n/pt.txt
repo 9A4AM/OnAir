@@ -2460,6 +2460,15 @@ Host PIN (to moderate on the room page):	PIN do anfitrião (para moderar na pág
 Go live (Live rooms)...	Entrar ao vivo (Salas ao vivo)...
 Could not create the room	Não foi possível criar a sala
 Lost the connection to the rooms server	Ligação ao servidor de salas perdida
+The live rooms server is not available yet.	O servidor das salas ao vivo ainda não está disponível.
+No internet connection.	Sem ligação à Internet.
+The live rooms server did not answer in time.	O servidor das salas ao vivo não respondeu a tempo.
+The live rooms server is full right now. Try again later.	O servidor das salas ao vivo está cheio neste momento. Tente novamente mais tarde.
+Too many rooms were started from here. Try again in a few minutes.	Foram iniciadas demasiadas salas a partir daqui. Tente novamente dentro de alguns minutos.
+The live rooms server refused the request.	O servidor das salas ao vivo recusou o pedido.
+The live rooms server sent an answer OnAir does not understand.	O servidor das salas ao vivo enviou uma resposta que o OnAir não compreende.
+Checking the live rooms server...	A verificar o servidor das salas ao vivo...
+Check the live rooms server again	Verificar novamente o servidor das salas ao vivo
 Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Salas ao vivo: enquanto estiver ao vivo, qualquer pessoa com o link da sala pode ver a cascata deste recetor, o modo e a frequência sintonizada, e conversar entre si. A lista de salas na web também mostra o título. Nada é enviado antes de carregar em Entrar ao vivo e nada é guardado depois de a sala terminar. A sua localização, o seu nome e o áudio nunca são enviados.
 Room title	Título da sala
 Also show decoded ACARS text in the room (public)	Mostrar também o texto ACARS descodificado na sala (público)

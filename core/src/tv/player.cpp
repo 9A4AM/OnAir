@@ -1,4 +1,5 @@
 #include "dect2/tv/player.h"
+#include "dect2/tv/hw_guard.h"
 #include "dect2/tv/conceal.h"
 
 extern "C" {
@@ -146,7 +147,7 @@ void Player::select(int sid) {
         recWriter_.close();
         recFilter_.select(sid);
         ring_.clear(); pcrIdx_.clear(); cursor_ = 0; shifted_ = paused_ = false; pcrPid_ = -1;
-        sid_ = sid;
+        sid_ = sid; hwFallback_ = false;
         filter_.select(sid);
         in_.clear();
         lossMarks_.clear(); pushed_ = consumed_ = 0; videoPid_ = -1; draAudio_ = false;
@@ -488,10 +489,8 @@ void Player::threadMain() {
                 const char* swEnv = getenv("DECT2_SWVIDEO");
                 // (the user switch and the environment override); a picture size that is not known yet (the stream was joined before its first parameter
                 // sets) rules hardware decoding out, because it cannot be opened without it: the software decoder learns the size from the stream
-                const bool hwOk = hwAllowed_ && !(swEnv && *swEnv) && fmt->streams[vIdx]->codecpar->width > 0 && fmt->streams[vIdx]->codecpar->height > 0;
+                const bool hwOk = hwAllowed_ && !hwFallback_ && !(swEnv && *swEnv) && fmt->streams[vIdx]->codecpar->width > 0 && fmt->streams[vIdx]->codecpar->height > 0;
                 // damaged streams: let the decoder conceal missing slices and keep outputting pictures instead of waiting for a keyframe
-                vctx->flags |= AV_CODEC_FLAG_OUTPUT_CORRUPT;
-                vctx->flags2 |= AV_CODEC_FLAG2_SHOW_ALL;
 #ifdef __APPLE__   // hardware decoding: VideoToolbox (macOS) or Direct3D 11 (Windows); VAAPI for Linux is still to do (software decoding is used there)
                 if (hwOk && av_hwdevice_ctx_create(&hwdev, AV_HWDEVICE_TYPE_VIDEOTOOLBOX, nullptr, nullptr, 0) >= 0) {
                     vctx->hw_device_ctx = av_buffer_ref(hwdev);
@@ -509,6 +508,9 @@ void Player::threadMain() {
                 (void)hwOk;
 #endif
                 if (hwdev) av_buffer_unref(&hwdev);
+                // (software only: the GPU decoders drop undecodable leading pictures themselves, and SHOW_ALL would push RASL pictures
+                // that lack their IRAP into them)
+                if (!hw) { vctx->flags |= AV_CODEC_FLAG_OUTPUT_CORRUPT; vctx->flags2 |= AV_CODEC_FLAG2_SHOW_ALL; }
                 vctx->thread_count = hw ? 2 : 4;
                 if (avcodec_open2(vctx, c, nullptr) < 0) {
                     avcodec_free_context(&vctx);
@@ -576,6 +578,9 @@ void Player::threadMain() {
         bool vSusValid = false; double vSusNext = 0;   // the same for picture timestamps
         bool susValid = false; double susD = 0, susNext = 0;   // an audio timestamp jump waiting for the next frame to confirm it
         bool firstVideo = true;
+        HwStartGuard hwGuard; const auto hwT0 = std::chrono::steady_clock::now();
+        auto hwNow = [&]() { return std::chrono::duration<double>(std::chrono::steady_clock::now() - hwT0).count(); };
+        hwGuard.arm(0);
         bool sawClean = false;   // a picture without missing references has come out of the video decoder since it was opened
 
         auto convertVideo = [&](AVFrame* f) {
@@ -586,7 +591,7 @@ void Player::threadMain() {
 #ifdef __APPLE__
             if (f->format == AV_PIX_FMT_VIDEOTOOLBOX) {
                 av_frame_unref(sw);
-                if (av_hwframe_transfer_data(sw, f, 0) < 0) return;
+                if (av_hwframe_transfer_data(sw, f, 0) < 0) { hwGuard.fetchFailed(); return; }
                 sw->pts = f->pts; sw->best_effort_timestamp = f->best_effort_timestamp;
                 sw->colorspace = f->colorspace; sw->color_range = f->color_range;
                 src = sw;
@@ -703,10 +708,18 @@ void Player::threadMain() {
                 if (!actx && !I.wallValid) { I.wallValid = true; I.wallPts = vf->pts; I.wallT0 = nowSec() + 0.35; }
             }
             const bool keyframe = (f->flags & AV_FRAME_FLAG_KEY) != 0;
+            // queue cap from the frame rate and the picture size; over the cap the late pictures go first, then the newest (never the next due)
+            auto trimQ = [&](const std::shared_ptr<VideoFrame>& pic) {
+                const size_t cap = videoQueueCap(vFrameDur > 0 ? 1.0 / vFrameDur : 25.0, pic->y.size() + pic->uv.size() + pic->rgba.size());
+                if (I.vq.size() <= cap) return;
+                double clk = 0; const bool have = clockNow(clk);
+                const size_t n = trimVideoQueue(I.vq, cap, clk, have);
+                if (n) { std::lock_guard<std::mutex> sl(I.smu); I.st.late += n; }
+            };
             auto pushPlain = [&](const std::shared_ptr<VideoFrame>& p) {
                 std::lock_guard<std::mutex> lk(I.vmu);
                 I.vq.push_back(p);
-                while (I.vq.size() > 80) { I.vq.pop_front(); std::lock_guard<std::mutex> sl(I.smu); I.st.late++; }
+                trimQ(p);
             };
             auto flushHeld = [&]() { for (auto& h : held) { pushPlain(h); lastVf = h; } held.clear(); suspect = false; };
             if (suspect && conceal_ && !getenv("DECT2_NOREPAIR") && vf->rgba.empty()) {
@@ -759,7 +772,7 @@ void Player::threadMain() {
             lastVf = vf;
             std::lock_guard<std::mutex> lk(I.vmu);
             I.vq.push_back(vf);
-            while (I.vq.size() > 80) { I.vq.pop_front(); std::lock_guard<std::mutex> sl(I.smu); I.st.late++; }
+            trimQ(vf);
         };
 
         auto pushAudio = [&](AVFrame* f) {
@@ -889,8 +902,19 @@ void Player::threadMain() {
                         held.insert(held.begin(), back.begin(), back.end());
                     }
                     suspect = true; if (getenv("DECT2_PLAYDEBUG")) fprintf(stderr, "[play] transport loss on the video stream: pictures are suspect until a clean keyframe\n"); }   // the demuxer read past lost transport packets: pictures from here on are suspect
+                if (hw) {
+                    // GPU decoding: start on a keyframe; if the GPU stays silent for seconds, switch this service to the CPU decoder
+                    if (!hwGuard.feed((pkt->flags & AV_PKT_FLAG_KEY) != 0, hwNow())) { av_packet_unref(pkt); continue; }
+                    if (hwGuard.giveUp(hwNow())) {
+                        fprintf(stderr, "player: hardware video decoding produced no picture (%d packets fed, %d held back before a keyframe): using software decoding\n", hwGuard.fed(), hwGuard.skipped());
+                        hwFallback_ = true; restart_ = true;
+                        av_packet_unref(pkt);
+                        continue;
+                    }
+                }
                 if (avcodec_send_packet(vctx, pkt) >= 0)
                     while (avcodec_receive_frame(vctx, frame) >= 0) {
+                        hwGuard.gotPicture();
                         { std::lock_guard<std::mutex> lk(I.smu); I.st.decoded++; }
                         convertVideo(frame);
                         av_frame_unref(frame);

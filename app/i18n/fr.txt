@@ -2477,6 +2477,15 @@ Host PIN (to moderate on the room page):	PIN de l'hôte (pour modérer sur la pa
 Go live (Live rooms)...	Passer en direct (salles en direct)...
 Could not create the room	Impossible de créer la salle
 Lost the connection to the rooms server	Connexion au serveur de salles perdue
+The live rooms server is not available yet.	Le serveur des salles en direct n'est pas encore disponible.
+No internet connection.	Pas de connexion Internet.
+The live rooms server did not answer in time.	Le serveur des salles en direct n'a pas répondu à temps.
+The live rooms server is full right now. Try again later.	Le serveur des salles en direct est plein pour le moment. Réessayez plus tard.
+Too many rooms were started from here. Try again in a few minutes.	Trop de salles ont été lancées depuis ici. Réessayez dans quelques minutes.
+The live rooms server refused the request.	Le serveur des salles en direct a refusé la requête.
+The live rooms server sent an answer OnAir does not understand.	Le serveur des salles en direct a envoyé une réponse qu'OnAir ne comprend pas.
+Checking the live rooms server...	Vérification du serveur des salles en direct...
+Check the live rooms server again	Revérifier le serveur des salles en direct
 Live rooms: while you are live, anyone with the room link can watch this receiver's waterfall, the mode and the frequency you are tuned to, and chat with each other. The room list on the web also shows its title. Nothing is sent before you press Go live, and nothing is stored after the room ends. Your location, your name and the audio are never sent.	Salles en direct : tant que vous êtes en direct, toute personne ayant le lien de la salle peut voir la cascade de ce récepteur, le mode et la fréquence réglée, et discuter avec les autres. La liste des salles sur le web affiche aussi son titre. Rien n'est envoyé avant d'appuyer sur Passer en direct, et rien n'est conservé après la fin de la salle. Votre position, votre nom et l'audio ne sont jamais envoyés.
 Room title	Titre de la salle
 Also show decoded ACARS text in the room (public)	Afficher aussi le texte ACARS décodé dans la salle (public)

@@ -237,13 +237,8 @@ static std::vector<RadioSetting> sdrplaySettings(unsigned char hw) {
 
 // The analogue IF filter: the narrowest that holds the channel and what the app wants its filter to pass (a narrow channel can sit off the
 // radio's centre), but never wider than the sample rate
-static sp::Bw_MHzT sdrplayBandwidth(double channelHz, double filterHz, double rate) {
-    static const sp::Bw_MHzT bws[] = {sp::BW_0_200, sp::BW_0_300, sp::BW_0_600, sp::BW_1_536, sp::BW_5_000, sp::BW_6_000, sp::BW_7_000, sp::BW_8_000};
-    const double want = std::max(channelHz, filterHz);
-    size_t i = 0;
-    while (i + 1 < 8 && (int)bws[i] * 1e3 < want * 0.999) i++;
-    while (i > 0 && (int)bws[i] * 1e3 > rate * 1.001) i--;
-    return bws[i];
+static sp::Bw_MHzT sdrplayBandwidth(double channelHz, double filterHz, double rate, double offCentreHz) {
+    return sp::ifBandwidth(channelHz, filterHz, rate, offCentreHz);
 }
 
 // ------------------------------------------------------------------ the source
@@ -362,7 +357,9 @@ protected:
             requested_ = s.sampleRate;
             checkRate(s.sampleRate, err);
         }
-        const sp::Bw_MHzT bw = sdrplayBandwidth(s.bandwidthMhz * 1e6, s.basebandFilterHz, rate_);
+        double offHz = 0;   // the engine tunes a narrow-channel mode this far above the channel (engine_tune.cpp): the IF filter must hold the channel there
+        { auto it = s.radio.find("tune_offset_hz"); if (it != s.radio.end()) offHz = atof(it->second.c_str()); }
+        const sp::Bw_MHzT bw = sdrplayBandwidth(s.bandwidthMhz * 1e6, s.basebandFilterHz, rate_, offHz);
         if (bw != ch.tunerParams.bwType) { ch.tunerParams.bwType = bw; why |= sp::Update_Tuner_BwType; }
         // the RSPs are specified for 1 kHz (RSP1: 10 kHz) to 2 GHz: asked as is outside that, with a note (the API says if it refuses)
         const double fMin = dev_.hwVer == sp::kRsp1 ? 10e3 : 1e3;

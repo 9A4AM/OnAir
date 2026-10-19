@@ -54,6 +54,11 @@ bool postJson(const std::string& url, const std::string& json, const std::string
 bool postRequest(const std::string& url, const std::string& body, const std::string& contentType, const std::vector<std::string>& headers, const std::string& userAgent);
 // The same, and the response body (up to 64 KB) in reply. The Live rooms feature needs the room id and token the server answers with.
 bool postJsonReply(const std::string& url, const std::string& json, const std::string& userAgent, std::string& reply);
+// One HTTP request that tells why it failed. method "GET", "HEAD" or "POST" (body sent as JSON). status is the HTTP status (0 when there was no
+// answer); net says why there was none: 0 an answer came, 1 the host name was not found, 2 no connection (offline, refused, unreachable), 3 timed out,
+// 4 anything else (TLS ...). detail is a short technical text for the log. body is the answer (up to 64 KB).
+struct HttpResult { int status = 0; int net = 0; std::string body; std::string detail; };
+HttpResult httpRequest(const std::string& method, const std::string& url, const std::string& body, const std::string& userAgent, int timeoutSec);
 // Starts a program with arguments and does not wait for it. No shell is ever involved: every argument stays one argument. False and err when it did not start.
 bool spawnProgram(const std::string& program, const std::vector<std::string>& args, std::string& err);
 // A desktop notification (Notification Center on macOS, a toast on Windows, notify-send on Linux when installed). False when the system could not show one.
