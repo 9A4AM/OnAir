@@ -180,6 +180,7 @@ static void classicShell(App& a, ImVec2 disp) {
 // the windows over the interface (passes, images, scanner, tours, feeds, map, rotator) and the per-frame ticks of the shared services
 static void floatingWindows(App& a, ImVec2 disp) {
     passesWindow(a);
+    satnogsWindow(a);
     dfWindow(a);
     passiveRadarWindow(a);
     rfiWindow(a);

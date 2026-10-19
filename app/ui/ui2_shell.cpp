@@ -400,6 +400,7 @@ static void viewMenu(App& a) {
         }
         ImGui::Separator();
         if (ImGui::MenuItem(tr("Passes"), nullptr, &a.passesOpen)) {}
+        ImGui::MenuItem(tr("SatNOGS transmitters"), nullptr, &a.satnogsOpen);
         ImGui::MenuItem(tr("Direction finder"), nullptr, &a.dfOpen);
         ImGui::MenuItem(tr("Interference hunter"), nullptr, &a.rfiOpen);
         ImGui::MenuItem(tr("Passive radar"), nullptr, &a.passiveRadarOpen);

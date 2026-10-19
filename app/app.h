@@ -287,6 +287,7 @@ struct App {
     bool dfOpen = false;                // the direction finder window (View > Direction finder; app/df)
     bool rfiOpen = false;               // the interference hunter window (View > Interference hunter; app/rfi)
     bool passiveRadarOpen = false;      // the passive radar window (View > Passive radar; app/radar)
+    bool satnogsOpen = false;           // the SatNOGS DB transmitter list (View > SatNOGS transmitters)
     bool passesOpen = false;            // the satellite pass planner window (View > Passes)
     bool stationHealthOpen = false;     // the station health report window (View > Station health; app/panels/station_health_ui.cpp)
     bool sweepOpen = false;             // the sweep scanner window (View > Sweep scanner)
@@ -718,6 +719,7 @@ void rfiWindow(App& a);                             // rfi_ui.cpp: the interfere
 void passiveRadarWindow(App& a);                    // passive_ui.cpp: the passive radar window (a.passiveRadarOpen), every frame
 void dfWindow(App& a);                              // df_ui.cpp: the direction finder window (a.dfOpen), every frame
 bool dfMapLine(const App& a, DfMapLine& out);       // df_ui.cpp: the current bearing as a map line, only when the user chose to share it and it is fresh and confident
+void satnogsWindow(App& a);                        // satnogs_ui.cpp: the SatNOGS DB transmitter browser window (a.satnogsOpen), every frame
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
 void memoryWindow(App& a);                         // memory_ui.cpp: the Memory window (a.memoryOpen), the Ctrl+M key, the scan of the flagged memories, every frame
 void packsWindow(App& a);                           // packs_ui.cpp: the Data packs window (a.packsOpen), every frame
