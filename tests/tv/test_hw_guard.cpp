@@ -31,6 +31,18 @@ int main() {
         CHECK(!g.giveUp(4));
         CHECK(g.giveUp(8.5));
     }
+    {   // issue #203: the GPU takes the start but returns nothing; 3 s of input is enough to switch to software
+        HwStartGuard g; g.arm(0);
+        CHECK(g.feed(true, 0.0));
+        for (int i = 1; i <= 31; i++) g.feed(false, 0.1 * i);   // 3.1 s, 32 packets
+        CHECK(g.giveUp(3.1));
+    }
+    {   // a RASL-led start (no IRAP) is held back like any other non-random-access packet
+        HwStartGuard g; g.arm(0);
+        CHECK(!g.feed(false, 0.0));
+        CHECK(!g.feed(false, 0.02));
+        CHECK(g.feed(true, 0.04));
+    }
     {   // copy-out failures with no picture shown
         HwStartGuard g; g.arm(0); g.feed(true, 0);
         for (int i = 0; i < 4; i++) g.fetchFailed();
