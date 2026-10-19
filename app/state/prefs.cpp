@@ -72,6 +72,7 @@ int fixIsdbtBw(int v) { return v == 0 || v == 7 || v == 8 ? v : 6; }
 int fixRegion(int v) { return v == 1 || v == 2 ? v : 0; }
 int fixDeemph(int v) { return v == 75 ? 75 : 50; }
 int fixChanKhz(int v) { return v > 0 ? std::min(300, std::max(100, v)) : 0; }
+int fixTone(int v) { return std::max(-6, std::min(6, v)); }
 int fixRecFormat(int v) { return v == 1 ? 1 : 0; }
 
 // Every plain setting, in the order of the settings file's sections. Keys are the names stored on disk: never rename one.
@@ -101,6 +102,8 @@ const std::vector<PrefKey>& keyTable() {
         num("tuningMode", AT(a.tuningMode), 0, 0, 1, true),
         flagI("fmMono", AT(a.fmMono), false),
         numFix("fmDeemph", AT(a.fmDeemph), 50, fixDeemph),
+        numFix("fmBass", AT(a.fmBass), 0, fixTone), numFix("fmTreble", AT(a.fmTreble), 0, fixTone),
+        flagI("fmWarm", AT(a.fmWarm), false),
         numFix("fmRegion", AT(a.fmRegion), 0, fixRegion),
         numFix("fmChanKhz", AT(a.fmChanKhz), 0, fixChanKhz),
         flagI("pagerNarrow", AT(a.pagerNarrow), false), flagI("packetNarrow", AT(a.packetNarrow), false),

@@ -2,6 +2,7 @@
 #include "app.h"
 #include "state/results_export.h"
 #include <chrono>
+#include <climits>
 
 bool freqStepArrow(const char* id, ImGuiDir dir);
 
@@ -148,6 +149,11 @@ void fmHistory(App& a) {
     }
     { static int lastMono = -1; const int mono = a.fmMono ? 1 : 0; if (a.fmMode && (mono != lastMono || (a.engine.running() && !wasRunning))) { a.engine.fm().setMono(a.fmMono); lastMono = mono; } }
     if (a.fmMode && (a.fmDeemph != lastDe || (a.engine.running() && !wasRunning))) { a.engine.fm().setDeemphasis(a.fmDeemph); lastDe = a.fmDeemph; }
+    {   // the tone control: pushed when a control changes (the key is unique for the values in range)
+        static int lastTone = INT_MIN;
+        const int key = ((a.fmBass * 16) + a.fmTreble) * 2 + (a.fmWarm ? 1 : 0);
+        if (a.fmMode && (key != lastTone || (a.engine.running() && !wasRunning))) { a.engine.fm().setTone(a.fmBass, a.fmTreble, a.fmWarm); lastTone = key; }
+    }
     {   // the RDS / RBDS choice follows the tuned frequency under Auto: pushed when the setting or the tenth of a MHz changes
         static long lastRegion = -1;
         const long key = a.fmRegion * 100000L + std::lround(a.freqMhz * 10);
@@ -358,6 +364,16 @@ void fmRadioPanel(App& a) {
             ImGui::EndCombo();
         }
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("The treble boost the station adds before sending. Wrong setting: dull (75 on a 50 station) or harsh (the other way round) sound.");
+        // the tone control, off at 0 dB: bass and treble shelves, and Warm (a gentle cut above 6 kHz for a sharp-sounding station)
+        ImGui::TableNextRow(); ImGui::TableNextColumn(); iconInline(Ic::Sliders, iconDim(), 0.9f); ImGui::SameLine(0, 5 * gUi); ImGui::TextDisabled("Bass"); ImGui::TableNextColumn();
+        ImGui::SetNextItemWidth(-1);
+        if (ImGui::SliderInt("##fmbass", &a.fmBass, -6, 6, "%+d dB")) savePrefs(a);
+        ImGui::TableNextRow(); ImGui::TableNextColumn(); iconInline(Ic::Sliders, iconDim(), 0.9f); ImGui::SameLine(0, 5 * gUi); ImGui::TextDisabled("Treble"); ImGui::TableNextColumn();
+        ImGui::SetNextItemWidth(-1);
+        if (ImGui::SliderInt("##fmtreble", &a.fmTreble, -6, 6, "%+d dB")) savePrefs(a);
+        ImGui::TableNextRow(); ImGui::TableNextColumn(); iconInline(Ic::Sliders, iconDim(), 0.9f); ImGui::SameLine(0, 5 * gUi); ImGui::TextDisabled("Warm"); ImGui::TableNextColumn();
+        if (ImGui::Checkbox("##fmwarm", &a.fmWarm)) savePrefs(a);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Warm: a gentle cut above 6 kHz (3 dB) for a station that sounds sharp or hissy. Bass and treble are off at 0 dB; with all three off the sound is unchanged.");
         ImGui::TableNextRow(); ImGui::TableNextColumn();
         if (iconFlat(a.muted ? Ic::Mute : Ic::Speaker, a.muted ? "Unmute" : "Mute")) { a.muted = !a.muted; }
         ImGui::SameLine(0, 5 * gUi); ImGui::TextDisabled("Volume"); ImGui::TableNextColumn();
