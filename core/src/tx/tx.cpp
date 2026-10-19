@@ -17,6 +17,7 @@
 #include "dect2/hfdig/hfdig_freedv.h"
 #include "dect2/isdbt/isdbt_gen.h"
 #include "dect2/m17/m17_codec2.h"
+#include "dect2/kaal/kaal_txgen.h"
 #include "dect2/engine/mode_tuning.h"
 #include "dect2/t2/t2.h"
 #include "dect2/t2/t2gen.h"
@@ -177,6 +178,7 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("ndb", "NDB beacons", 31, "makeNdbSynth", kOpt, kUnv),
         mk("elektro", "Elektro-L", 82, "makeElektroSynth", kOpt, kUnv),
         mk("lbj", "LBJ", 83, "makeLbjSynth", kOpt, kUnv),
+        mk("kaal", "KAAL", 124, "makeKaalTxGenerator (kaal::VoiceTx: 16 kbit/s voice codec, 16-QAM LDPC, beacon slice)", "callsign, grid, position, power, bio text, beacon on or off; the voice from a microphone or a WAV file", kUnv, 0, 48000, false, 48000),
     };
 }
 }
@@ -275,6 +277,7 @@ TxPayloadKind txPayloadKind(const std::string& id) {
     if (id == "uplink") return TxPayloadKind::Uplink;
     if (id == "mesh") return TxPayloadKind::Mesh;
     if (id == "mac") return TxPayloadKind::Mac;
+    if (id == "kaal") return TxPayloadKind::Kaal;
     if (id == "vdl4" || id == "uat" || id == "wisun" || id == "zwave") return TxPayloadKind::SatScene;   // demo-traffic generators, no custom message
     return TxPayloadKind::SatScene;   // never a generic callsign dump; unknown ids are treated as a test scene
 }
@@ -308,6 +311,7 @@ std::string txVocoderNote(const TxModeSpec& m) {
 bool txModeNeedsAudio(const TxModeSpec& m, const TxRequest& r) {
     if (r.carrierTune) return false;
     const std::string id = m.id ? m.id : "";
+    if (id == "kaal") return true;   // the speech comes from the audio input
     if (r.analogVoice) return true;
     if (id == "qo100" && r.variant == 1) return false;
     if (id == "fm" || id == "airband" || id == "qo100") return true;
@@ -592,6 +596,7 @@ static SynthConfig cleanSynth(const SynthConfig& c, int stdMode) {
 }
 
 std::unique_ptr<TxGenerator> makeTxGenerator(const TxModeSpec& m, const TxRequest& r, double rateHz, std::string& err) {
+    if (m.stdMode == 124) return makeKaalTxGenerator(r, rateHz > 0 ? rateHz : m.nominalRateHz, err);   // KAAL: its own transmitter chain at the radio's rate
     const SynthConfig s = cleanSynth(r.synth, m.stdMode);
     std::unique_ptr<TxGenerator> g;
     double native = 0;
@@ -921,6 +926,11 @@ bool TxSession::start(std::unique_ptr<TxSink> sink, const TxRequest& r, const Tx
         }
         audio_->setMuted(req_.audioMute);
         audio_->setGain(req_.micGain > 0 ? req_.micGain : 1.f);
+        if (audio_->kind() == AudioIn::File && sink_->name() == "IQ file" && audio_->fileSeconds() > 0) {   // into a file: the audio file is sent once, then the file is closed
+            req_.loop = false;
+            req_.onceSeconds = audio_->fileSeconds() + 1.5;
+            note("IQ file: the audio file is sent once");
+        }
         req_.pullAudio = [this](float* st, int n) { return audio_ ? audio_->read(st, n) : 0; };
     }
     if (!req_.carrierTune && mode->stdMode == 10 && req_.videoSrc > 0) {

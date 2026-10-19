@@ -120,6 +120,11 @@ void loadPayloadPrefs(TxUi& s) {
     snprintf(s.text, sizeof s.text, "%s", p.getS("tx.text", "").c_str());
     s.offsetMhz = p.getD("tx.offsetMhz", 0);
     s.dryRun = p.getB("tx.dryRun", false);
+    s.destKind = p.getI("tx.destKind", 0) == 1 ? 1 : 0;
+    snprintf(s.ifPath, sizeof s.ifPath, "%s", p.getS("tx.ifPath", "").c_str());
+    s.ifFormat = std::max(0, std::min(kIqFileFormats - 1, (int)p.getI("tx.ifFormat", 0)));
+    s.ifRateHz = p.getD("tx.ifRateHz", 48000);
+    if (!(s.ifRateHz > 0)) s.ifRateHz = 48000;
     // recent: "id,mhz,gain;id,mhz,gain"
     const std::string rec = p.getS("tx.recent", "");
     size_t pos = 0;
@@ -168,12 +173,18 @@ TxRequest makeReq(const TxUi& s, const TxModeSpec& mode, bool carrier) {
     r.tune.centerHz = s.freqMhz * 1e6;
     r.tune.offsetHz = s.offsetMhz * 1e6;
     r.tune.sampleRate = s.autoSampleRate ? 0 : s.sampleRateMsps * 1e6;
+    if (s.destKind == 1 && s.ifRateHz > 0) r.tune.sampleRate = s.ifRateHz;   // an IQ file: the rate the user chose
     r.tune.gainDb = s.gainDb;
     r.tune.ampOn = s.ampOn;
     r.tune.channel = s.txCh < 0 ? 0 : s.txCh;
     r.callsign = s.callsign;
     r.grid = s.grid;
     r.text = s.text[0] ? s.text : s.rdsRt;
+    if (std::string(mode.id) == "kaal") {
+        r.text = r.text.substr(0, 100);
+        r.opt["kaal.powerDbm"] = s.kaalPower;
+        r.opt["kaal.beacon"] = s.kaalBeacon ? 1.0 : 0.0;
+    }
     r.dest = s.dest;
     r.path = s.path;
     r.file = s.file;
@@ -224,22 +235,35 @@ TxRequest makeReq(const TxUi& s, const TxModeSpec& mode, bool carrier) {
 // Everything needed to press Start is there: a mode, and (unless this is a test) a radio that no receiver holds
 bool canStart(App&, TxUi& s, const DeviceInfo* radio, int conflict, const TxModeSpec* mode) {
     (void)s;
-    return mode && (s.dryRun || (radio && conflict == 0));
+    return mode && (noRadio(s) || (radio && conflict == 0));
 }
 
 bool startTx(App& a, TxUi& s, const DeviceInfo* radio, const TxModeSpec* mode, bool carrier) {
     s.error.clear();
     s.info.clear();
-    if (!s.autoSampleRate && (!std::isfinite(s.sampleRateMsps) || s.sampleRateMsps <= 0)) {
+    const bool toFile = s.destKind == 1;
+    if (!s.autoSampleRate && !toFile && (!std::isfinite(s.sampleRateMsps) || s.sampleRateMsps <= 0)) {
         s.error = tr("Manual TX sample rate must be greater than zero.");
         return false;
     }
-    if (!s.dryRun && !plat::basePrefs().getB("txNoticeAccepted", false)) { s.askNotice = true; return false; }
+    if (!s.dryRun && !toFile && !plat::basePrefs().getB("txNoticeAccepted", false)) { s.askNotice = true; return false; }   // the radio notice is for a radio, not for a file
     std::string err;
     TxRequest req = makeReq(s, *mode, carrier);
     std::unique_ptr<TxSink> sink;
     TxRateLimits lim;
-    if (s.dryRun) {   // no radio, no claim, no map suspension: the generator runs at the radio's rate into a paced null sink
+    if (toFile) {   // an IQ file: no radio, no claim, no map suspension
+        IqFileTxConfig fc;
+        fc.format = (IqFileFormat)std::max(0, std::min(kIqFileFormats - 1, s.ifFormat));
+        fc.centerHz = req.tune.centerHz;
+        const bool fileAudio = txModeNeedsAudio(*mode, req) && !carrier && req.audioSrc == 1;
+        fc.paced = !fileAudio && s.loop;   // a WAV file (or a one-pass transmission) is written as fast as it is made; the rest at its own speed
+        fc.description = mode->id ? mode->id : "";
+        fc.path = iqFilePath(s.ifPath, iqFileBaseName(mode->id ? mode->id : "tx", req.tune.centerHz, req.tune.sampleRate), fc.format);
+        s.ifCounters = std::make_shared<IqFileTxCounters>();
+        fc.counters = s.ifCounters;
+        s.ifPathUsed = fc.path;
+        sink = makeIqFileTxSink(fc);
+    } else if (s.dryRun) {   // no radio, no claim, no map suspension: the generator runs at the radio's rate into a paced null sink
         sink = makeNullTxSink();
         if (radio) lim = TxRateLimits{radio->txMinRateHz, radio->txMaxRateHz};
     } else {
@@ -251,18 +275,20 @@ bool startTx(App& a, TxUi& s, const DeviceInfo* radio, const TxModeSpec* mode, b
         mapPauseForTransmit(a);   // before the radio is keyed, so this frame cannot post what the receiver hears from it
     }
     if (s.session.start(std::move(sink), req, lim, err)) {
-        s.radioName = s.dryRun ? std::string(tr("test (no RF)")) : radio->name; s.modeName = mode->name; s.freqSent = req.tune.centerHz;
+        s.radioName = toFile ? std::string("IQ file ") + s.ifPathUsed : s.dryRun ? std::string(tr("test (no RF)")) : radio->name;
+        s.modeName = mode->name; s.freqSent = req.tune.centerHz;
         s.fileNote = s.session.stats().fileNote;
         s.carrierOnly = carrier;
-        s.sessionDry = s.dryRun;
+        s.sessionDry = s.dryRun || toFile;
+        s.sessionFile = toFile;
         s.startedAt = ImGui::GetTime();
         s.appliedMhz = s.freqMhz; s.appliedGain = s.gainDb;
         if (!carrier) pushRecent(s, mode->id, s.freqMhz, s.gainDb);
-        a.engine.log(std::string(s.dryRun ? "transmit test (no RF): " : "transmit: ") + (carrier ? "carrier tune " : "") + mode->name + " on " + s.radioName + " at " + std::to_string(s.freqMhz) + " MHz");
+        a.engine.log(std::string(toFile ? "transmit into an IQ file: " : s.dryRun ? "transmit test (no RF): " : "transmit: ") + (carrier ? "carrier tune " : "") + mode->name + " on " + s.radioName + " at " + std::to_string(s.freqMhz) + " MHz");
         return true;
     }
     s.error = err;
-    if (!s.session.running()) { release(s); if (!s.dryRun) mapTransmitAbort(a); }
+    if (!s.session.running()) { release(s); if (!s.dryRun && !toFile) mapTransmitAbort(a); }
     return false;
 }
 
@@ -271,7 +297,7 @@ void stopTx(App& a, TxUi& s, const char* why) {
     const bool was = s.session.running() || s.claimed;
     s.session.stop();
     release(s);
-    s.radioName.clear(); s.carrierOnly = false; s.carrierHeld = false; s.sessionDry = false; s.pendingStart = false; s.pendingCarrier = false;
+    s.radioName.clear(); s.carrierOnly = false; s.carrierHeld = false; s.sessionDry = false; s.sessionFile = false; s.pendingStart = false; s.pendingCarrier = false;
     if (was) a.engine.log(std::string("transmit: stopped ") + why);
 }
 
@@ -332,11 +358,12 @@ void txTick(App&) {
         s.carrierOnly = false;
         if (!s.sessionDry) mapTransmitEnded();
         s.sessionDry = false;
+        s.sessionFile = false;
     }
     if (!s.session.running()) return;
     char b[220];
     const TxSession::Stats st = s.session.stats();
-    snprintf(b, sizeof b, "%s   %s   %.6f MHz   %.0f s", s.sessionDry ? tr("TEST - NO RF") : tr("TRANSMITTING"), s.modeName.c_str(), s.freqSent / 1e6, st.seconds);
+    snprintf(b, sizeof b, "%s   %s   %.6f MHz   %.0f s", s.sessionFile ? "WRITING IQ FILE" : s.sessionDry ? tr("TEST - NO RF") : tr("TRANSMITTING"), s.modeName.c_str(), s.freqSent / 1e6, st.seconds);
     ImDrawList* dl = ImGui::GetForegroundDrawList();
     const ImVec2 ts = ImGui::CalcTextSize(b);
     const float pad = 8 * gUi;

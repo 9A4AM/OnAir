@@ -232,6 +232,7 @@ void AudioIn::setMuted(bool m) { p_->muted.store(m); }
 void AudioIn::setGain(float g) { p_->gain.store(g); }
 float AudioIn::peak() const { return p_->peak.load(); }
 uint64_t AudioIn::overruns() const { return p_->overrun.load(); }
+double AudioIn::fileSeconds() const { return kind_ == File && rate_ > 0 ? (double)(p_->file.size() / 2) / (double)rate_ : 0.0; }
 
 int AudioIn::readAvailable(float* stereo, int n) {
     if (n <= 0) return 0;

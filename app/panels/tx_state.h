@@ -4,6 +4,8 @@
 #pragma once
 #include "../app.h"
 #include "dect2/tx/tx.h"
+#include "dect2/tx/tx_iqfile.h"
+#include <memory>
 #include <atomic>
 #include <future>
 #include <map>
@@ -84,6 +86,19 @@ struct TxUi {
     bool linkRx = false;                     // the transmit frequency follows the receiver's
     bool pttHold = false;                    // voice: transmit only while the PTT button is held
     bool pttDown = false;
+    // the destination of the signal: 0 a radio, 1 an IQ file (no radio is opened or claimed, no radio-only notice applies)
+    int destKind = 0;
+    char ifPath[512] = {};                   // the folder (or a file name without extension) the IQ file goes to
+    int ifFormat = 0;                        // IqFileFormat
+    double ifRateHz = 48000;                 // the sample rate of the file: the signal is made (or resampled) at this rate
+    bool sessionFile = false;                // the running session writes a file
+    std::string ifPathUsed;                  // the data file of the running or last session
+    std::shared_ptr<IqFileTxCounters> ifCounters;   // bytes and samples written, kept by the sink
+    // KAAL: the identity beacon and the power written in it (callsign, grid, latitude and longitude, bio text are the shared fields above)
+    bool kaalBeacon = true;
+    double kaalPower = 10;
+    bool kaalLoaded = false;
+    std::string kaalSaved;
 };
 
 TxUi& ui();                                            // the one transmit state
@@ -96,6 +111,7 @@ void chooseMode(App& a, TxUi& s, const TxModeSpec& m); // a mode chosen for tran
 std::vector<int> txRadios(const App& a);               // indices of the radios that can transmit
 int rxHolder(const DeviceInfo& d);                     // the receiver holding a radio (0 none)
 void release(TxUi& s);                                 // gives the claimed radio back
+inline bool noRadio(const TxUi& s) { return s.dryRun || s.destKind == 1; }   // a test or an IQ file: no radio is opened or claimed
 void loadPayloadPrefs(TxUi& s);                        // callsign, grid, text, offset, recent list from the settings
 void saveStr(const char* key, const char* v);        // one text into the settings
 void saveRecent(const TxUi& s);                        // writes the recent list
@@ -106,6 +122,7 @@ const std::vector<PDef>& paramsFor(TxUi& s, const TxModeSpec& m);
 void paramsEnter(TxUi& s, const TxModeSpec& m);        // the mode was chosen: defaults, then the values it had last time
 void paramsApply(const TxUi& s, TxRequest& r);         // the values into the request
 void advancedPanel(TxUi& s, const TxModeSpec& mode, bool running);
+void audioSourceRow(TxUi& s, bool running);            // the audio input: microphone, WAV / MP3 file, tone, silence (tx_payload_ui.cpp)
 bool isVoiceId(const std::string& id);
 bool isFtxId(const std::string& id);
 bool isKbdId(const std::string& id);
@@ -115,6 +132,8 @@ const DeviceInfo* bindRadio(App& a, TxUi& s, int& conflict);        // the chose
 bool canStart(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxModeSpec* mode);   // everything needed to press Start is there
 bool startTx(App& a, TxUi& s, const DeviceInfo* radio, const TxModeSpec* mode, bool carrier);
 void stopTx(App& a, TxUi& s, const char* why);         // stops, gives the radio back, logs why
+void destinationPanel(TxUi& s, const TxModeSpec& mode, bool running);   // Radio or IQ file, the folder, the format, the rate and what has been written (tx_ui.cpp)
+void kaalPanel(TxUi& s, bool running);                // KAAL: callsign, grid, position, power, bio text, beacon (kaal_tx_ui.cpp)
 void txNoticePopup(TxUi& s);                           // the one-time notice before the first transmission
 
 // the panel (tx_panel.cpp): the top bar is txTopBar (app.h); the body has the signal list, the Basic block with Advanced folded, and the preview

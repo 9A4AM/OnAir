@@ -91,6 +91,7 @@
 #include "dect2/mt63/mt63_tel.h"
 #include "dect2/fsq/fsq_tel.h"
 #include "dect2/ifkp/ifkp_tel.h"
+#include "dect2/kaal/kaal_tel.h"
 #include "dect2/cquam/cquam_tel.h"
 #include "dect2/mscatter/mscatter_tel.h"
 #include "dect2/rid/rid_tel.h"
@@ -195,6 +196,7 @@ struct RxTelemetry {
     Mt63Telemetry mt63;       // valid when standard == 96 (MT63)
     FsqTelemetry fsq;         // valid when standard == 114 (FSQ)
     IfkpTelemetry ifkp;       // valid when standard == 117 (IFKP)
+    KaalTelemetry kaal;       // valid when standard == 123 (KAAL, engine standard 124)
     CquamTelemetry cquam;     // valid when standard == 108 (AM stereo, C-QUAM)
     EczasTelemetry eczas;     // valid when standard == 86 (e-Czas, 225 kHz Poland)
     MsTelemetry mscatter;     // valid when standard == 105 (meteor scatter)

@@ -35,6 +35,7 @@ public:
     int readAvailable(float* stereo, int n);
     uint64_t overruns() const;     // frames the capture ring had no room for (the reader was too slow)
     float peak() const;            // 0 .. 1, decays; for a meter
+    double fileSeconds() const;    // kind File: the length of the loaded file in seconds (0 for the other kinds)
     int sampleRate() const { return rate_; }
     bool running() const { return running_; }
     Kind kind() const { return kind_; }

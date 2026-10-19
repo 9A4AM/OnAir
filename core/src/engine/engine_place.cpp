@@ -169,6 +169,7 @@ void Engine::configureReceiver(int a, double r) {
     case 96: rxMt63_.configure(r); break;
     case 114: rxFsq_.configure(r); break;
     case 117: rxIfkp_.configure(r); break;
+    case 123: rxKaal_.configure(r); break;
     case 108: rxCq_.configure(r); break;
     case 105: rxMs_.configure(r); break;
     default: break;
@@ -196,6 +197,7 @@ void Engine::muteReceiver(int a, bool m) {
     case 77: rxSame_.setMuted(m); break;   // NOAA SAME: "Listen"
     case 56: rxGeneral_.setMuted(m); break;
     case 108: rxCq_.setMuted(m); break;
+    case 123: rxKaal_.setMuted(m); break;
     default: break;   // no sound
     }
 }

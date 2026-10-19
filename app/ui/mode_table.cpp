@@ -152,6 +152,10 @@ static const ModeDef kBuiltinModes[] = {
     {41, "Spectrum explorer", 13, IM_COL32(70, 100, 120, 255), "Spectrum explorer: look around the band, measure carriers (bandwidth, power, SNR, symbol rate), sweep a range, LNB offsets, bookmarks; no decoder", "Spectrum explorer: look, measure and sweep", N_("Spectrum, waterfall, sweep"), ImVec4(0.55f, 0.80f, 0.95f, 1), nullptr, "spectrum analyzer analyser sweep waterfall measure bandwidth lnb survey scan"},
     {42, "Spectrum analyser", 13, IM_COL32(70, 100, 140, 255), "Wide sweeping spectrum analyser (1 - 6000 MHz in about a second with a HackRF): live, peak-hold and averaged traces, waterfall, markers, band overlay, CSV export", "Spectrum analyser: fast wide sweeps with markers and band labels", N_("Sweep, 1 - 6000 MHz"), ImVec4(0.55f, 0.75f, 0.98f, 1), nullptr, "spectrum analyser analyzer sweep hackrf_sweep wideband scan peak hold waterfall rf survey"},
     {999, "Plugins", 14, IM_COL32(100, 110, 130, 255), "Plugins: add decoders and actions without rebuilding OnAir; installed plugins, their permissions and logs", "Plugins: manage the decoder and action plugins you installed", N_("Add-ons"), ImVec4(0.66f, 0.72f, 0.86f, 1), nullptr, "plugins plugin add-on addon extension sdk"},
+    {122, "KAAL", 15, IM_COL32(176, 120, 72, 255), "KAAL: a 10 kHz wide digital voice and station-identity link (16 kbit/s voice codec, 16-QAM with LDPC, a sweep signature and a beacon side channel). Receive plays the speech and shows the last beacon (callsign, grid, position, power, text); transmit takes a microphone or a WAV file, to a radio or an IQ file", "KAAL: digital voice with a station beacon, receive and transmit", "KAAL, 10 kHz voice", ImVec4(0.96f, 0.72f, 0.46f, 1), nullptr, "kaal kris custom voice digital beacon callsign grid ldpc 16qam sweep"},
+    {123, "KAVB (WIP)", 15, IM_COL32(150, 112, 80, 255), "KAVB (WIP): the video mode of the KAAL family, 1 to 2 MHz wide. Work in progress: only the specification exists, no receiver or transmitter yet", "KAVB: KAAL video, 1-2 MHz wide (work in progress)", "KAVB, 1-2 MHz video", ImVec4(0.90f, 0.70f, 0.50f, 1), nullptr, "kavb kris custom video wip"},
+    {124, "KAPP (WIP)", 15, IM_COL32(150, 112, 80, 255), "KAPP (WIP): the packet mode of the KAAL family, 100 kHz wide. Work in progress: only the specification exists, no receiver or transmitter yet", "KAPP: KAAL packet data, 100 kHz wide (work in progress)", "KAPP, 100 kHz packets", ImVec4(0.90f, 0.70f, 0.50f, 1), nullptr, "kapp kris custom packet data wip"},
+    {125, "KAFT (WIP)", 15, IM_COL32(150, 112, 80, 255), "KAFT (WIP): the file transfer mode of the KAAL family, 200 kHz, 500 kHz or 1 MHz wide. Work in progress: only the specification exists, no receiver or transmitter yet", "KAFT: KAAL file transfer, 200 kHz to 1 MHz wide (work in progress)", "KAFT, 200 kHz - 1 MHz files", ImVec4(0.90f, 0.70f, 0.50f, 1), nullptr, "kaft kris custom file transfer wip"},
 };
 
 // The table the program uses: the built-in rows, then the rows of the installed plugins' modes (addPluginModeRow, at start and after an install).
@@ -174,11 +178,12 @@ bool addPluginModeRow(int family, const std::string& name, const std::string& bl
     kModes[kNumModes++] = ModeDef{family, n, 14, IM_COL32(90, 104, 128, 255), b, b, sb, ImVec4(0.66f, 0.76f, 0.94f, 1)};
     return true;
 }
-const char* const kGroupNames[kNumGroups] = {N_("TV"), N_("BROADCAST RADIO"), N_("AVIATION"), N_("MARITIME"), N_("SATELLITE & NAVIGATION"), N_("TWO-WAY RADIO"), N_("CELLULAR & RAIL"), N_("PAGERS"), N_("IoT & SENSORS"), N_("WEATHER & SCIENCE"), N_("AMATEUR - DIGITAL"), N_("AMATEUR - VOICE & PACKET"), N_("HF UTILITY"), N_("GENERAL & TOOLS"), N_("PLUGINS")};
+const char* const kGroupNames[kNumGroups] = {N_("TV"), N_("BROADCAST RADIO"), N_("AVIATION"), N_("MARITIME"), N_("SATELLITE & NAVIGATION"), N_("TWO-WAY RADIO"), N_("CELLULAR & RAIL"), N_("PAGERS"), N_("IoT & SENSORS"), N_("WEATHER & SCIENCE"), N_("AMATEUR - DIGITAL"), N_("AMATEUR - VOICE & PACKET"), N_("HF UTILITY"), N_("GENERAL & TOOLS"), N_("PLUGINS"), "Kris custom modes"};
 // a thin accent per group heading in the mode lists (UI only: nothing stores a group number)
 const ImU32 kGroupCols[kNumGroups] = {
     IM_COL32(92, 188, 220, 255), IM_COL32(92, 210, 148, 255), IM_COL32(132, 160, 240, 255), IM_COL32(80, 170, 210, 255),
     IM_COL32(186, 150, 236, 255), IM_COL32(150, 206, 104, 255), IM_COL32(226, 168, 112, 255), IM_COL32(214, 206, 96, 255),
     IM_COL32(110, 214, 196, 255), IM_COL32(120, 150, 230, 255), IM_COL32(218, 130, 214, 255), IM_COL32(236, 128, 140, 255),
     IM_COL32(204, 176, 132, 255), IM_COL32(150, 162, 178, 255),
-    IM_COL32(150, 170, 210, 255)};
+    IM_COL32(150, 170, 210, 255),
+    IM_COL32(236, 160, 84, 255)};

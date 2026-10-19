@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include "../platform/platform.h"
 
 using namespace txui;
 
@@ -27,7 +28,7 @@ std::string rangeText(double lo, double hi) {
 // the radio choice and what to tell when there is none (receive-only radios are named with the reason)
 void radioRow(App& a, TxUi& s, const DeviceInfo*& radio, bool running) {
     const std::vector<int> radios = txRadios(a);
-    ImGui::BeginDisabled(running || s.dryRun);
+    ImGui::BeginDisabled(running || noRadio(s));
     ImGui::SetNextItemWidth(std::max(160.f * gUi, ImGui::GetContentRegionAvail().x - 150 * gUi));
     if (ImGui::BeginCombo(tr("Transmit radio"), radio ? radio->name.c_str() : tr("Choose a radio to transmit with."))) {
         for (int i : radios) {
@@ -40,7 +41,7 @@ void radioRow(App& a, TxUi& s, const DeviceInfo*& radio, bool running) {
         ImGui::EndCombo();
     }
     ImGui::EndDisabled();
-    if (radios.empty() && !s.dryRun) {
+    if (radios.empty() && !noRadio(s)) {
         banner(Note::Info, tr("No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list. The test below needs no radio."));
         int shown = 0;
         for (const auto& d : a.devices) {
@@ -56,7 +57,7 @@ void rangeNote(TxUi& s, const DeviceInfo* radio) {
     if (!radio) return;
     const std::string r = rangeText(radio->minFreqHz, radio->maxFreqHz);
     if (!r.empty()) ImGui::TextDisabled(tr("radio range %s"), r.c_str());
-    if (!s.dryRun) {
+    if (!noRadio(s)) {
         const std::string note = txRangeInfo(*radio, s.freqMhz * 1e6);
         if (!note.empty()) banner(Note::Info, note.c_str());
     }
@@ -100,6 +101,59 @@ void levelRow(TxUi& s, const DeviceInfo* radio) {
 
 namespace txui {
 
+// Where the signal goes: a radio, or an IQ file (no radio is opened or claimed, none of the radio notices apply). The folder, the format and the sample
+// rate of the file, and what has been written so far.
+void destinationPanel(TxUi& s, const TxModeSpec& mode, bool running) {
+    plat::Prefs& pr = plat::basePrefs();
+    ImGui::BeginDisabled(running);
+    const char* dn[] = {"Radio", "IQ file"};
+    ImGui::SetNextItemWidth(160 * gUi);
+    if (ImGui::BeginCombo("Destination", dn[s.destKind == 1 ? 1 : 0])) {
+        for (int i = 0; i < 2; i++) if (ImGui::Selectable(dn[i], s.destKind == i)) { s.destKind = i; pr.setI("tx.destKind", i); }
+        ImGui::EndCombo();
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Radio sends the signal to the transmit radio. IQ file writes the same IQ to a file instead: no radio is needed.");
+    if (s.destKind == 1) {
+        ImGui::SetNextItemWidth(std::max(160.f * gUi, ImGui::GetContentRegionAvail().x - 190 * gUi));
+        if (ImGui::InputText("Folder##ifp", s.ifPath, sizeof s.ifPath)) pr.setS("tx.ifPath", s.ifPath);
+        ImGui::SameLine();
+        if (ImGui::Button("Browse...##ifp")) { const std::string d = plat::openFolderDialog(); if (!d.empty()) { snprintf(s.ifPath, sizeof s.ifPath, "%s", d.c_str()); pr.setS("tx.ifPath", s.ifPath); } }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "The folder for the file. The name is made from the mode, the frequency, the rate and the time. Empty: the current folder.");
+        ImGui::SetNextItemWidth(250 * gUi);
+        const int fi = std::max(0, std::min(kIqFileFormats - 1, s.ifFormat));
+        if (ImGui::BeginCombo("Format", iqFileFormatName((IqFileFormat)fi))) {
+            for (int i = 0; i < kIqFileFormats; i++) if (ImGui::Selectable(iqFileFormatName((IqFileFormat)i), fi == i)) { s.ifFormat = i; pr.setI("tx.ifFormat", i); }
+            ImGui::EndCombo();
+        }
+        int nr = 0;
+        const double* rates = iqFileRates(nr);
+        char cur[48];
+        snprintf(cur, sizeof cur, "%g ksps", s.ifRateHz / 1e3);
+        ImGui::SetNextItemWidth(160 * gUi);
+        if (ImGui::BeginCombo("Sample rate", cur)) {
+            for (int i = 0; i < nr; i++) {
+                if (rates[i] < mode.minRateHz - 1) continue;   // below what the mode's generator works at
+                char lab[48];
+                snprintf(lab, sizeof lab, "%g ksps", rates[i] / 1e3);
+                if (ImGui::Selectable(lab, std::fabs(s.ifRateHz - rates[i]) < 1)) { s.ifRateHz = rates[i]; pr.setD("tx.ifRateHz", s.ifRateHz); }
+            }
+            ImGui::EndCombo();
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "The sample rate of the file. The signal is made at this rate (or resampled to it). The centre frequency written to a SigMF file is the frequency above.");
+        ImGui::TextDisabled("%s", "A microphone is written at its own speed; a WAV file is written as fast as it is made and the file is closed at its end.");
+    }
+    ImGui::EndDisabled();
+    if (s.destKind == 1 && (running || s.ifCounters)) {
+        const IqFileTxCounters* c = s.ifCounters.get();
+        if (c) {
+            const double mb = (double)c->bytes.load() / 1048576.0;
+            const double sec = c->seconds();
+            ImGui::Text("%s %.2f MB, %d:%02d.%d", running ? "Writing:" : "Written:", mb, (int)sec / 60, (int)sec % 60, (int)(sec * 10) % 10);
+            if (!s.ifPathUsed.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", s.ifPathUsed.c_str()); }
+        }
+    }
+}
+
 // The Basic block: radio, level, what to send; then Advanced (folded)
 void stepSettings(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxModeSpec* mode, bool running) {
     if (!mode) { ImGui::TextDisabled("%s", tr("Choose a signal in the list.")); return; }
@@ -108,15 +162,15 @@ void stepSettings(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const 
     ImGui::EndDisabled();
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels show what would go out."));
 
+    destinationPanel(s, *mode, running);
     radioRow(a, s, radio, running);
-    if (conflict && !s.dryRun) {
+    if (conflict && !noRadio(s)) {
         char b[400];
         snprintf(b, sizeof b, tr("%s is in use by RX %d, and this radio cannot receive and transmit at the same time. Choose another radio for transmitting, or stop that receiver first."), radio->name.c_str(), conflict);
         banner(Note::Warn, b);
     }
-    rangeNote(s, radio);
-    levelRow(s, radio);
-    if (running) {   // a running radio can be retuned: the frequency and the level are live
+    if (s.destKind != 1) { rangeNote(s, radio); levelRow(s, radio); }
+    if (running && s.destKind != 1) {   // a running radio can be retuned: the frequency and the level are live
         const bool differs = std::fabs(s.freqMhz - s.appliedMhz) > 1e-9 || std::fabs(s.gainDb - s.appliedGain) > 1e-3f;
         ImGui::BeginDisabled(!differs);
         if (ImGui::Button(tr("Apply frequency and level now"))) {
