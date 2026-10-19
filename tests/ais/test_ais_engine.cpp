@@ -3,6 +3,7 @@
 #include "dect2/ais/ais_gen.h"
 #include "dect2/engine/engine.h"
 #include "dect2/engine/engine_testkit.h"
+#include "../common/ci_slack.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
