@@ -33,6 +33,9 @@ constexpr double kNearDcHz = 2500.0;
 constexpr int kL = 12;               // feed-forward taps each side, half a symbol apart
 constexpr int kNb = 6;               // feedback taps
 constexpr double kDefCentre = 8.9e6;
+// shared first stage (setup()): the output covers the channels' span with this margin, and a channel is this far (Hz) wide beyond its dial
+constexpr double kDecimMargin = 1.2;
+constexpr double kChanEdgeHz = 4000;
 using cd = std::complex<double>;
 
 using dect2::dsp::rrc;
@@ -47,6 +50,13 @@ cf32 cubicAt(const std::vector<cf32>& x, double pos) {
 }
 
 std::string hex6(uint32_t a) { char b[8]; snprintf(b, sizeof b, "%06X", a & 0xFFFFFF); return b; }
+
+// the width of the station table's dials, Hz (lowest to highest dial)
+double tableSpanHz() {
+    double lo = 1e300, hi = -1e300;
+    for (const auto& s : hfdlStations()) for (int k : s.khz) { lo = std::min(lo, k * 1e3); hi = std::max(hi, k * 1e3); }
+    return hi >= lo ? hi - lo : 0;
+}
 
 } // namespace
 
@@ -89,6 +99,13 @@ struct HfdlReceiver::Impl {
     bool parallel = true;                     // false: the channels run one after the other on the caller (tests)
     std::map<uint32_t, uint32_t> acIcao;      // gs << 8 | ac id -> ICAO
     std::map<int, bool> logged;
+    // shared first stage (setup(), decimate()): F == 1 is the channel path as it was, nothing below is used
+    int F = 1;
+    double shiftHz = 0;                       // F > 1: the input is mixed by -shiftHz, so the channels sit around the middle of the band
+    std::vector<float> dfir;                  // its anti-alias low-pass
+    std::vector<cf32> dhist, dz, dout;
+    cd mixPh{1, 0}, mixRot{1, 0};
+    int mixN = 0, dcnt = 0;
 
     double nowSec() const { return rate > 0 ? (double)nIn / rate : 0; }
     // mu held: the clock starts again (configure), the kept lists move back with it
@@ -102,12 +119,33 @@ struct HfdlReceiver::Impl {
     void setup() {
         rebuild = false;
         ch.clear();
+        F = 1; shiftHz = 0; dfir.clear();
         if (rate < 1) return;
         const double c = center > 0 ? center : kDefCentre;
         const double half = rate / 2 - 3000;
         std::vector<double> list = want.empty() ? hfdlChannelsNear(c, std::max(0.0, half * 0.95)) : want;
-        const int D = std::max(1, (int)std::floor(rate / 28800));
-        const double r1 = rate / D;
+        // Shared first stage, wide captures only: the capture is low-passed and decimated once, before the channels, and the channels run at rate / F.
+        // Decided by the output rate: rate / F must cover the span of the channels (the station table or the list, whichever is wider) with
+        // kDecimMargin, so F >= 2 needs a capture of about 2.4 times that span (64 MHz, not 32 MHz). Up to 16 MHz and at 32 MHz F is 1: no change.
+        double passHz = 0;
+        if (!list.empty()) {
+            double lo = 1e300, hi = -1e300;
+            for (double f : list) { const double o = f + kHfdlCarrierHz - c + offset; lo = std::min(lo, o); hi = std::max(hi, o); }
+            const double span = std::max(tableSpanHz(), hi - lo);
+            passHz = kDecimMargin * (span + 2 * kChanEdgeHz);
+            const int Fd = (int)std::floor(rate / passHz);
+            if (Fd >= 2) { F = Fd; shiftHz = 0.5 * (lo + hi); }
+        }
+        const double rW = rate / F;                   // the rate of the channel chains (rate itself when F == 1)
+        const double halfW = rW / 2 - 3000;
+        if (F > 1) {
+            // cut-off at rW / 2 (the output's Nyquist) with the transition centred on it: flat to passHz / 2, down by the stop band from rW - passHz / 2
+            dfir = bbf::design(BasebandFilterCfg(), rW, rW - passHz, rate).h;
+            dhist.assign(dfir.size() - 1, cf32(0, 0));
+            mixPh = cd(1, 0); mixRot = std::polar(1.0, -2 * M_PI * shiftHz / rate); mixN = 0; dcnt = 0;
+        }
+        const int D = std::max(1, (int)std::floor(rW / 28800));
+        const double r1 = rW / D;
         const int M = std::max(1, (int)std::floor(r1 / kFs));
         const BbDesign bd = bbf::design(bbf, 3400, 2000, r1);   // default: 3.4 kHz Blackman, as before
         fir = bd.h;
@@ -123,10 +161,11 @@ struct HfdlReceiver::Impl {
             k.dial = f;
             const int khz = (int)std::lround(f / 1e3);
             k.gsId = std::fabs(f - khz * 1e3) < 1 ? hfdlStationOnKhz(khz) : 0;
-            const double off = f + kHfdlCarrierHz - c + offset;
-            k.offHz = off;
-            k.inBand = std::fabs(off) < half;
-            k.rot = std::polar(1.0, -2 * M_PI * off / rate);
+            const double offIn = f + kHfdlCarrierHz - c + offset;   // the dial as it is in the input (the near-DC rule of process() uses it)
+            const double off = offIn - shiftHz;                    // in the channel rate's band (shiftHz is 0 when F == 1)
+            k.offHz = offIn;
+            k.inBand = std::fabs(off) < halfW;
+            k.rot = std::polar(1.0, -2 * M_PI * off / rW);
             k.D = D; k.M = M;
             k.fh.assign((size_t)taps, cf32(0, 0));
             k.r2 = r1 / M;
@@ -139,6 +178,30 @@ struct HfdlReceiver::Impl {
     }
 
     // ------------------------------------------------ front end
+    // Shared first stage (F > 1 only, see setup()): mixes the input by -shiftHz, low-passes it and keeps every F-th sample, once for all channels.
+    // Its output is not bit-identical to the full-rate path (the filter is not ideal), so the decoded messages of a wide capture may differ slightly.
+    void decimate(const cf32* x, size_t n, std::vector<cf32>& out) {
+        const size_t L = dfir.size();
+        dz.resize(L - 1 + n);
+        std::copy(dhist.begin(), dhist.end(), dz.begin());
+        for (size_t i = 0; i < n; i++) {
+            cf32 v = x[i];
+            if (!std::isfinite(v.real()) || !std::isfinite(v.imag())) v = cf32(0, 0);
+            cd y(v.real(), v.imag());
+            y *= mixPh; mixPh *= mixRot;
+            if (++mixN >= 4096) { mixPh /= std::abs(mixPh); mixN = 0; }
+            dz[L - 1 + i] = cf32((float)y.real(), (float)y.imag());
+        }
+        out.clear();
+        for (size_t i = 0; i < n; i++) {
+            if (++dcnt < F) continue;
+            dcnt = 0;
+            cf32 acc(0, 0);
+            for (size_t j = 0; j < L; j++) acc += dz[i + L - 1 - j] * dfir[j];
+            out.push_back(acc);
+        }
+        dhist.assign(dz.begin() + (std::ptrdiff_t)n, dz.begin() + (std::ptrdiff_t)(n + L - 1));
+    }
     void push(Chan& k, cf32 v) {
         const cd y = cd(v.real(), v.imag()) * k.ph;
         k.ph *= k.rot;
@@ -596,16 +659,20 @@ void HfdlReceiver::feed(const cf32* x, size_t n) {
     // messages, serial numbers and log lines are those of a sequential run.
     std::vector<Impl::Chan*> act;
     for (auto& k : I.ch) if (k.inBand) act.push_back(&k);
+    // the shared first stage for a wide capture (F > 1): the channels take its output, at rate / F
+    const cf32* in = x;
+    size_t nin = n;
+    if (I.F > 1) { I.decimate(x, n, I.dout); in = I.dout.data(); nin = I.dout.size(); }
     auto job = [&](size_t j) {
         Impl::Chan& k = *act[j];
-        for (size_t i = 0; i < n; i++) {
-            cf32 v = x[i];
+        for (size_t i = 0; i < nin; i++) {
+            cf32 v = in[i];
             if (!std::isfinite(v.real()) || !std::isfinite(v.imag())) v = cf32(0, 0);
             I.push(k, v);
         }
         I.process(k);
     };
-    if (I.parallel && act.size() > 1 && n >= 4096) ThreadPool::shared().parallelFor(act.size(), job);
+    if (I.parallel && act.size() > 1 && nin >= 4096) ThreadPool::shared().parallelFor(act.size(), job);
     else for (size_t j = 0; j < act.size(); j++) job(j);
     {
         std::lock_guard<std::mutex> lk(I.mu);
