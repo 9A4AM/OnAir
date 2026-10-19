@@ -1176,5 +1176,7 @@ void tourMark(const char* id, ImVec2 lo, ImVec2 hi);   // tour.cpp: report where
 void wizEnter(App& a, int step);
 void setupWizardOpen(App& a);                        // wizard.cpp: (re)start the setup wizard
 void setupWizard(App& a, ImVec2 disp);               // wizard.cpp: the window, each frame
+void listenWizardOpen(App& a);                       // listen_wizard.cpp: "Get me listening" (Help menu, or a start with no source configured)
+void listenWizard(App& a, ImVec2 disp);              // listen_wizard.cpp: the window, each frame
 #include "dect2/engine/device_claims.h"
 #include "state/receivers.h"

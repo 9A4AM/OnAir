@@ -500,6 +500,7 @@ float menuBar(App& a) {
             if (ImGui::MenuItem(tr("Credits"))) { a.creditsOpen = true; a.creditsTab = 0; }
             ImGui::Separator();
             if (ImGui::MenuItem(tr("Setup wizard"))) setupWizardOpen(a);
+            if (ImGui::MenuItem(tr("Get me listening"))) listenWizardOpen(a);
             if (ImGui::MenuItem(tr("Guided tour"))) tourStart(a);
             ImGui::Separator();
             if (ImGui::MenuItem(tr("Documentation"))) dect2::openUrl("https://on-air.dev/docs/");

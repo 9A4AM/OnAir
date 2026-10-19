@@ -57,6 +57,11 @@ void startApp(App& app, int argc) {
     refreshDevices(app);
     for (int i = 0; i < (int)app.devices.size(); i++)
         if (app.devices[i].isRadio()) { app.devIdx = i; break; }
+    {   // "Get me listening": a start with no source configured (no radio, none remembered), unless the user said not to show it
+        bool sourceSet = !plat::prefs().getS("devName", "").empty();
+        for (const DeviceInfo& d : app.devices) if (d.isRadio()) sourceSet = true;
+        if (argc == 1 && !setupPending && !sourceSet && !plat::prefs().getB("listenWizardHide", false)) listenWizardOpen(app);
+    }
     if (app.devices.size() == 2) {
 #ifdef _WIN32
         app.engine.log("no radio found - plug it in and press the refresh button next to the source. A HackRF needs the WinUSB driver on Windows: install it once with Zadig (zadig.akeo.ie), choosing the HackRF and the driver WinUSB. Until then use the synthetic signal or an IQ file.");
