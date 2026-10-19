@@ -55,3 +55,7 @@ npx wrangler deploy
 ## Tests
 
 `cd web/rooms && npm test` (tokens, cleaning, moderation, rate limits, push parsing, Room and Lobby behaviour on a fake Durable Object state, Worker routes). Not covered: real WebSocket hibernation behaviour and the browser pages, which need a deployed or `wrangler dev` instance.
+
+## When the server is not reachable
+
+Before the consent window opens, the app does one GET of the origin (3 s timeout, off the UI thread, good answers cached for 10 minutes). If the server is missing (host name not found, HTTP 404/5xx) Go live is greyed out with a tooltip ("The live rooms server is not available yet." plus the technical reason) until the next start or Server > Check the live rooms server again. Offline, timeout, room cap (503 full), rate limit (429) and refusals each get their own message; the technical reason is also on stderr ("live rooms: ...").
