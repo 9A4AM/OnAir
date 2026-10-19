@@ -661,9 +661,10 @@ private:
 };
 
 namespace {
-// The entry of the Pluto at uri. probe: a board on the network is asked which firmware it runs (not for one the user typed in: an address
-// that does not answer would hold up the listing; its firmware is learnt when it is opened)
-DeviceInfo plutoEntry(const std::string& uri, const std::string& desc, bool probe) {
+// The entry of the Pluto at uri. probe: the entry comes from a scan (its name says so). userAdded: the user added this address (Add network
+// radio). A board on the network is asked which firmware it runs only when plutoProbeAllowed says so; otherwise its firmware is learnt
+// when it is opened (#215: a network board nobody added is not contacted during listing or scanning)
+DeviceInfo plutoEntry(const std::string& uri, const std::string& desc, bool probe, bool userAdded) {
     DeviceInfo d;
     d.kind = DeviceInfo::Native;
     d.board = "pluto";
@@ -695,8 +696,8 @@ DeviceInfo plutoEntry(const std::string& uri, const std::string& desc, bool prob
         auto t = gTezuka.find(uri);
         if (t != gTezuka.end()) { tez = t->second; known = true; }
     }
-    // a board on the network can be asked which firmware it runs without taking anything from a receiver (a USB one is learnt when opened)
-    if (probe && !known && uri.rfind("ip:", 0) == 0 && iio().context_get_attr_value && !iio().v1) {
+    // a board on the network the user added can be asked which firmware it runs without taking anything from a receiver (a USB one is learnt when opened)
+    if (plutoProbeAllowed(uri, userAdded) && !known && iio().context_get_attr_value && !iio().v1) {
         if (IioApi::iio_context* c = iio().create_context_from_uri(uri.c_str())) {
             tez = isTezukaFw(iio().context_get_attr_value(c, "fw_version"));
             iio().context_destroy(c);
@@ -728,17 +729,21 @@ DeviceInfo plutoEntry(const std::string& uri, const std::string& desc, bool prob
 
 // a Pluto the user added by address (Add network radio): over a real network, also at 192.168.2.1 (a Pluto+ on Ethernet), so no USB 2 limit
 double plutoLinkRate(const std::string& uri) { return usbLinkRate(uri); }
-DeviceInfo plutoDevice(const std::string& uri) { DeviceInfo d = plutoEntry(uri, "", false); d.steadyRateHz = 0; return d; }
+// The entry of a Pluto the user added by address: not asked for its firmware while listing (it is learnt when opened)
+DeviceInfo plutoDevice(const std::string& uri) { DeviceInfo d = plutoEntry(uri, "", false, false); d.steadyRateHz = 0; return d; }
+
+// Only a Pluto the user added by address may be asked which firmware it runs, and only an "ip:" one. A scan never asks a network board (#215)
+bool plutoProbeAllowed(const std::string& uri, bool userAdded) { return userAdded && uri.rfind("ip:", 0) == 0; }
 
 void listPluto(std::vector<DeviceInfo>& out) {
     if (!iio().ok && !iio().v1) return;
     auto add = [&](const std::string& uri, const std::string& desc) {
         for (const auto& d : out) if (d.board == "pluto" && d.nativeArgs == uri) return;
-        out.push_back(plutoEntry(uri, desc, true));
+        out.push_back(plutoEntry(uri, desc, true, false));   // a scan result: never a network probe
     };
-    // USB, plus the boards that announce themselves on the network (mDNS). A libiio built without DNS-SD fails the whole "usb:ip" scan, and
-    // libiio 0.19 knows only one backend per scan: then USB alone
-    for (const char* backends : {"usb:ip", "usb"}) {
+    // USB only. The network boards are not scanned for (mDNS, "usb:ip"): a network Pluto is listed when the user adds its address (Add network
+    // radio), so no network device is contacted just by listing (#215)
+    for (const char* backends : {"usb"}) {
         IioApi::iio_scan_context* sc = iio().v1 ? nullptr : iio().create_scan_context(backends, 0);
         if (!sc) continue;
         IioApi::iio_context_info** info = nullptr;

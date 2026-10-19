@@ -609,6 +609,8 @@ std::unique_ptr<IqSource> makeSdrplay(const DeviceInfo& d);
 DeviceInfo plutoDevice(const std::string& uri);
 // the steady rate (DeviceInfo::steadyRateHz) of a Pluto found at uri: 4 Msps on USB, 3 on its USB-gadget network address, 0 elsewhere
 double plutoLinkRate(const std::string& uri);
+// whether listing may ask the Pluto at uri which firmware it runs: only an "ip:" address the user added (never a scanned one, #215)
+bool plutoProbeAllowed(const std::string& uri, bool userAdded);
 DeviceInfo rtlTcpDevice(const std::string& host, int port);
 std::unique_ptr<IqSource> makeRtlTcp(const DeviceInfo& d);
 // An rtl_tcp greeting (12 bytes): any 4 printable characters ("RTL0", rsp_tcp's, ...), a tuner type and a gain count. other: not an RTL-SDR
