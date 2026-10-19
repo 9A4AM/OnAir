@@ -282,6 +282,7 @@ struct App {
     int wizTour = -1;           // the guided tour on screen (index in tour::tours), -1 for the first-run tour
     int creditsTab = 0;         // 0 Contributors, 1 Projects and licences (the tab the Credits window opens on)
     bool creditsOpen = false;   // the Credits window (Help menu, the "by: ..." button)
+    bool kaalOpen = false;      // Custom modes > KAAL (WIP) text window (app/ui/ui2_shell.cpp)
     bool reportOpen = false;    // Help > Report a problem (app/panels/report_problem.cpp)
     bool galleryOpen = false;           // the picture gallery (View > Images)
     bool dfOpen = false;                // the direction finder window (View > Direction finder; app/df)
