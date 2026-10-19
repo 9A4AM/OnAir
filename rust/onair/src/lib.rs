@@ -20,6 +20,7 @@ pub use onair_engine as engine;
 pub use onair_fec as fec;
 pub use onair_files as files;
 pub use onair_hfdl as hfdl;
+pub use onair_kris as kris;
 pub use onair_mesh as mesh;
 pub use onair_net as net;
 pub use onair_nxdn as nxdn;
