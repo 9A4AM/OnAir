@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include <cstdio>   // TEMP-DIAG
 #include "dect2/common/crc.h"
 #include "dect2/common/mathconst.h"
 
@@ -379,6 +380,7 @@ BurstResult receiveBurst(const std::vector<cf32>& x) {
         const int tt = tau - (80 + kFft);
         if (!symbolAt(tt, kZcSym[0], Y1)) continue;
         const float c = zcCoherence(Y1, Z1, 0);
+        std::fprintf(stderr, "TEMP-DIAG cand dt=%d tau=%d cpM=%.4f zc1cand=%.4f (no threshold here, argmax)\n", dt, tau, (double)bestM, (double)c);
         if (c > bestC) { bestC = c; t0 = tt; f1 = fc; }
     }
     r.timing = t0;
@@ -424,6 +426,7 @@ BurstResult receiveBurst(const std::vector<cf32>& x) {
     r.zc1 = zcCoherence(V[kZcSym[0]], Z1, 0);
     r.zc2 = zcCoherence(V[kZcSym[1]], Z2, 0);
     r.zc = r.zc1 > 0.3f && r.zc2 > 0.3f;
+    std::fprintf(stderr, "TEMP-DIAG decide t0=%d zc1=%.4f zc2=%.4f thr=0.3 accepted=%d\n", t0, (double)r.zc1, (double)r.zc2, (int)r.zc);
     if (!r.zc) return r;
     // 3. channel from the two Zadoff-Chu symbols; the common phase step between them carries any offset left
     std::vector<cf32> H1(kCarriers), H2(kCarriers);
