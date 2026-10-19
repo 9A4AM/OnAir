@@ -281,6 +281,7 @@ struct App {
     bool wizOpen = false, wizStart = false, wizAcked = false;
     int creditsTab = 0;         // 0 Contributors, 1 Projects and licences (the tab the Credits window opens on)
     bool creditsOpen = false;   // the Credits window (Help menu, the "by: ..." button)
+    bool reportOpen = false;    // Help > Report a problem (app/panels/report_problem.cpp)
     bool galleryOpen = false;           // the picture gallery (View > Images)
     bool dfOpen = false;                // the direction finder window (View > Direction finder; app/df)
     bool rfiOpen = false;               // the interference hunter window (View > Interference hunter; app/rfi)
@@ -1082,6 +1083,8 @@ struct DiagInput {
 };
 std::string buildDiagnostics(const DiagInput& in);   // plain text, no ImGui
 std::string diagnosticsText(App& a);
+void systemInfoText(std::string& os, std::string& cpu, std::string& gpu);   // diag_ui.cpp: this computer's OS, CPU and graphics names
+bool writeZipFile(const std::string& path, const std::vector<std::pair<std::string, std::string>>& files);   // diag_ui.cpp: a zip, entries stored
 void radioMessagesUi(App& a, bool vertical);
 // radio_ui.cpp: the "Radio settings" of the selected radio (only the ones it has): a collapsible section in a side panel (vertical), a
 // button with a popup in a one-line bar. A change reaches a running radio at once (a retune, or a restart for one that takes effect at open)
