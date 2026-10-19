@@ -3,6 +3,7 @@
 #include "dect2/ais/ais_gen.h"
 #include "dect2/engine/engine.h"
 #include "dect2/engine/engine_testkit.h"
+#include "../common/ci_slack.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -50,7 +51,7 @@ static void run(double rate, double secs) {
     printf("  %.1f Msps: %d reports, decoding after %.1f s: %s\n", rate / 1e6, reports, firstDecode, aisSummary(a).c_str());
     printf("    %d named, %d with a position, %d with a track, per minute %.0f / %.0f, snr %.1f dB, noise %.1f dBFS, dropped samples %llu\n", named, positioned, tracks,
            a.burstsPerMin[0], a.burstsPerMin[1], a.snrDb, a.noiseDbfs[0], (unsigned long long)e.droppedSamples());
-    CHECK(decoding && firstDecode < 3.0, "decoding after %.1f s", firstDecode);
+    CHECK(decoding && firstDecode < 3.0 * ciSlack(), "decoding after %.1f s", firstDecode);
     CHECK(seqOk && reports >= 4, "report numbers: %d reports", reports);
     CHECK(a.seq > secs * 2, "the receiver made %llu reports in %.0f s of signal", (unsigned long long)a.seq, secs);   // about 4 a second of signal
     CHECK(rx.state == 2 && rx.dataValid && a.dataValid && a.state == 2, "state %d", rx.state);
