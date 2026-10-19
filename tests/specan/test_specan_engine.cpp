@@ -41,7 +41,8 @@ int main() {
     const SpecanTelemetry& s = rx.specan;
     printf("  %d reports: %s; %d steps, %zu bins of %.0f Hz, gaps %llu\n", reports, specanSummary(s).c_str(), s.steps, s.live.size(), s.binHz,
            (unsigned long long)s.blocksBad);
-    CHECK(reports >= 2 && wrong == 0 && s.native, "%d reports, %d wrong, native %d", reports, wrong, s.native);
+    // the engine can finish all four sweeps before the first poll (a fast Mac), so one report is enough; the loop has already waited for 4 sweeps
+    CHECK(reports >= 1 && rx.specan.blocksOk >= 4 && wrong == 0 && s.native, "%d reports, %d wrong, native %d", reports, wrong, s.native);
     CHECK(rx.rateOk, "rate");
     if (!s.live.empty()) {
         SaGrid g = saMakeGrid(s.loHz, s.loHz + s.binHz * s.live.size(), s.binHz);
