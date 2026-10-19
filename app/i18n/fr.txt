@@ -1584,7 +1584,6 @@ Memory and frequencies	Mémoire et fréquences
 Receivers	Récepteurs
 Audio	Audio
 Server and support	Serveur et soutien
-Done	Terminé
 Take the guided tour	Faire la visite guidée
 Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Choisissez la radio ou l'enregistrement qui fournit les échantillons. Record IQ enregistre le signal brut pour le relire plus tard.
 Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Réglez ici la fréquence, la bande et la fréquence d'échantillonnage. Le gain et l'AGC fixent le niveau d'entrée ; Second mode décode un autre mode à partir de la même capture.
@@ -3280,7 +3279,6 @@ Mute the noise when the carrier is weaker than 4 dB over it	Couper le bruit quan
 NO CARRIER	PAS DE PORTEUSE
 Pilot	Pilote
 STEREO	STÉRÉO
-Squelch	Squelch
 The channel filter, each side of the carrier: 4.5 kHz for 9 kHz channel spacing, 5 kHz for 10 kHz, wider for a quiet band	Le filtre de canal, de chaque côté de la porteuse : 4,5 kHz pour un espacement de 9 kHz, 5 kHz pour 10 kHz, plus large pour une bande calme
 The quadrature part of the carrier (L - R and the pilot), 0 - 60 Hz. A C-QUAM station has a 25 Hz tone at about 5 percent of the carrier here.	La partie en quadrature de la porteuse (L - R et le pilote), 0 - 60 Hz. Une station C-QUAM a ici un ton de 25 Hz à environ 5 pour cent de la porteuse.
 carrier to noise	rapport porteuse/bruit

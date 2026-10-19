@@ -1584,7 +1584,6 @@ Memory and frequencies	Geheugen en frequenties
 Receivers	Ontvangers
 Audio	Audio
 Server and support	Server en steun
-Done	Klaar
 Take the guided tour	Rondleiding starten
 Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Kies de radio of opname die de samples levert. Record IQ slaat het ruwe signaal op voor latere weergave.
 Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Stel hier frequentie, band en samplefrequentie in. Gain en AGC bepalen het ingangsniveau; Tweede modus decodeert een andere modus uit dezelfde opname.
@@ -3280,7 +3279,6 @@ Mute the noise when the carrier is weaker than 4 dB over it	Demp de ruis wanneer
 NO CARRIER	GEEN DRAAGGOLF
 Pilot	Pilot
 STEREO	STEREO
-Squelch	Squelch
 The channel filter, each side of the carrier: 4.5 kHz for 9 kHz channel spacing, 5 kHz for 10 kHz, wider for a quiet band	Het kanaalfilter, aan elke kant van de draaggolf: 4,5 kHz bij 9 kHz kanaalafstand, 5 kHz bij 10 kHz, breder voor een rustige band
 The quadrature part of the carrier (L - R and the pilot), 0 - 60 Hz. A C-QUAM station has a 25 Hz tone at about 5 percent of the carrier here.	Het kwadratuurdeel van de draaggolf (L - R en de pilot), 0 - 60 Hz. Een C-QUAM-zender heeft hier een toon van 25 Hz op ongeveer 5 procent van de draaggolf.
 carrier to noise	draaggolf-ruisverhouding

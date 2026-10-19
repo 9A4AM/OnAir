@@ -1584,7 +1584,6 @@ Memory and frequencies	Atmintis ir dažniai
 Receivers	Imtuvai
 Audio	Garsas
 Server and support	Serveris ir parama
-Done	Atlikta
 Take the guided tour	Pradėti gidą
 Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Pasirinkite radiją arba įrašą, kuris teikia atskaitas. Record IQ išsaugo neapdorotą signalą vėlesniam atkūrimui.
 Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Čia nustatomas dažnis, juosta ir atskaitų dažnis. Stiprinimas ir AGC nustato įėjimo lygį; Antras režimas iš to paties įrašo dekoduoja kitą režimą.
@@ -3280,7 +3279,6 @@ Mute the noise when the carrier is weaker than 4 dB over it	Nutildyti triukšmą
 NO CARRIER	NĖRA NEŠLIO
 Pilot	Pilotas
 STEREO	STEREO
-Squelch	Triukšmo slopintuvas
 The channel filter, each side of the carrier: 4.5 kHz for 9 kHz channel spacing, 5 kHz for 10 kHz, wider for a quiet band	Kanalo filtras kiekvienoje nešlio pusėje: 4,5 kHz esant 9 kHz kanalų tarpui, 5 kHz esant 10 kHz, platesnis ramiai juostai
 The quadrature part of the carrier (L - R and the pilot), 0 - 60 Hz. A C-QUAM station has a 25 Hz tone at about 5 percent of the carrier here.	Nešlio kvadratūrinė dalis (L - R ir pilotas), 0 - 60 Hz. C-QUAM stoties čia yra 25 Hz tonas, maždaug 5 procentai nešlio.
 carrier to noise	nešlio ir triukšmo santykis

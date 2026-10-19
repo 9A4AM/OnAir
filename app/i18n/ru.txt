@@ -1567,7 +1567,6 @@ Memory and frequencies	Память и частоты
 Receivers	Приёмники
 Audio	Звук
 Server and support	Сервер и поддержка
-Done	Готово
 Take the guided tour	Запустить обзор
 Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Выберите радио или запись, которая поставляет отсчёты. Record IQ сохраняет исходный сигнал для последующего воспроизведения.
 Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Здесь задаются частота, диапазон и частота дискретизации. Усиление и АРУ определяют входной уровень; Второй режим декодирует другой режим из той же записи.
@@ -3263,7 +3262,6 @@ Mute the noise when the carrier is weaker than 4 dB over it	Заглушить �
 NO CARRIER	НЕТ НЕСУЩЕЙ
 Pilot	Пилот
 STEREO	СТЕРЕО
-Squelch	Шумоподавитель
 The channel filter, each side of the carrier: 4.5 kHz for 9 kHz channel spacing, 5 kHz for 10 kHz, wider for a quiet band	Фильтр канала по каждую сторону несущей: 4,5 кГц при сетке 9 кГц, 5 кГц при 10 кГц, шире для тихого диапазона
 The quadrature part of the carrier (L - R and the pilot), 0 - 60 Hz. A C-QUAM station has a 25 Hz tone at about 5 percent of the carrier here.	Квадратурная часть несущей (L - R и пилот), 0 - 60 Гц. У станции C-QUAM здесь тон 25 Гц примерно в 5 процентов от несущей.
 carrier to noise	отношение несущая/шум

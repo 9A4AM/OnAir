@@ -1584,7 +1584,6 @@ Memory and frequencies	メモリと周波数
 Receivers	受信機
 Audio	オーディオ
 Server and support	サーバーとサポート
-Done	完了
 Take the guided tour	ガイドツアーを開始
 Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	サンプルを供給する無線機または録音を選びます。Record IQ は生の信号を保存し、後で再生できます。
 Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	ここで周波数、バンド、サンプルレートを設定します。ゲインと AGC は入力レベルを決め、セカンドモードは同じ受信データから別のモードをデコードします。
@@ -3280,7 +3279,6 @@ Mute the noise when the carrier is weaker than 4 dB over it	搬送波が雑音�
 NO CARRIER	搬送波なし
 Pilot	パイロット
 STEREO	ステレオ
-Squelch	スケルチ
 The channel filter, each side of the carrier: 4.5 kHz for 9 kHz channel spacing, 5 kHz for 10 kHz, wider for a quiet band	チャンネルフィルタ(搬送波の両側): 9 kHz 間隔なら 4.5 kHz、10 kHz 間隔なら 5 kHz、静かな帯域ではもっと広く
 The quadrature part of the carrier (L - R and the pilot), 0 - 60 Hz. A C-QUAM station has a 25 Hz tone at about 5 percent of the carrier here.	搬送波の直交成分 (L - R とパイロット)、0 - 60 Hz。C-QUAM 局にはここに搬送波の約 5 パーセントの 25 Hz のトーンがあります。
 carrier to noise	搬送波対雑音比

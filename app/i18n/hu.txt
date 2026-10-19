@@ -1570,7 +1570,6 @@ Memory and frequencies	Memória és frekvenciák
 Receivers	Vevők
 Audio	Hang
 Server and support	Szerver és támogatás
-Done	Kész
 Take the guided tour	Útmutató indítása
 Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Válassza ki a mintákat szolgáltató rádiót vagy felvételt. A Record IQ elmenti a nyers jelet a későbbi lejátszáshoz.
 Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Itt állítható be a frekvencia, a sáv és a mintavételi sebesség. Az erősítés és az AGC a bemeneti szintet szabja meg; a Második mód ugyanabból a felvételből dekódol egy másik módot.
@@ -3266,7 +3265,6 @@ Mute the noise when the carrier is weaker than 4 dB over it	A zaj elnémítása,
 NO CARRIER	NINCS VIVŐ
 Pilot	Pilot
 STEREO	SZTEREÓ
-Squelch	Zajzár
 The channel filter, each side of the carrier: 4.5 kHz for 9 kHz channel spacing, 5 kHz for 10 kHz, wider for a quiet band	A csatornaszűrő a vivő mindkét oldalán: 4,5 kHz 9 kHz-es, 5 kHz 10 kHz-es csatornakiosztásnál, nyugodt sávban szélesebb
 The quadrature part of the carrier (L - R and the pilot), 0 - 60 Hz. A C-QUAM station has a 25 Hz tone at about 5 percent of the carrier here.	A vivő kvadratúra része (L - R és a pilot), 0 - 60 Hz. Egy C-QUAM adón itt egy 25 Hz-es hang van a vivő kb. 5 százalékán.
 carrier to noise	vivő/zaj arány

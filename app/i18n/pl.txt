@@ -1584,7 +1584,6 @@ Memory and frequencies	Pamięć i częstotliwości
 Receivers	Odbiorniki
 Audio	Dźwięk
 Server and support	Serwer i wsparcie
-Done	Gotowe
 Take the guided tour	Uruchom przewodnik
 Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Wybierz radio lub nagranie, które dostarcza próbki. Record IQ zapisuje surowy sygnał do późniejszego odtworzenia.
 Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Tu ustawisz częstotliwość, pasmo i częstotliwość próbkowania. Wzmocnienie i AGC wyznaczają poziom wejściowy; Drugi tryb dekoduje inny tryb z tego samego zapisu.
@@ -3280,7 +3279,6 @@ Mute the noise when the carrier is weaker than 4 dB over it	Wycisz szum, gdy no�
 NO CARRIER	BRAK NOŚNEJ
 Pilot	Pilot
 STEREO	STEREO
-Squelch	Blokada szumów
 The channel filter, each side of the carrier: 4.5 kHz for 9 kHz channel spacing, 5 kHz for 10 kHz, wider for a quiet band	Filtr kanału po każdej stronie nośnej: 4,5 kHz przy rozstawie kanałów 9 kHz, 5 kHz przy 10 kHz, szerszy dla spokojnego pasma
 The quadrature part of the carrier (L - R and the pilot), 0 - 60 Hz. A C-QUAM station has a 25 Hz tone at about 5 percent of the carrier here.	Część kwadraturowa nośnej (L - R i pilot), 0 - 60 Hz. Stacja C-QUAM ma tu ton 25 Hz o około 5 procentach nośnej.
 carrier to noise	stosunek nośnej do szumu

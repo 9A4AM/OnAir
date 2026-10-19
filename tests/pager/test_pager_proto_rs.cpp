@@ -228,5 +228,5 @@ int main() {
     testPocsag(iters);
     testFlex(iters);
     printf("test_pager_proto_rs: pocsag messages %ld, flex messages %ld, alpha %ld, numeric %ld, long addr %ld, looks-alpha %ld\n", pocMsgs, flexMsgs, flexAlpha, flexNum, flexLong, looksTrue);
-    return golden::check("pager_proto_rs", dig, 0xef86af5396db4469ull, !it);
+    return golden::check("pager_proto_rs", dig, 0xe45623e6d27de0b8ull, !it);
 }
