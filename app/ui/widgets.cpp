@@ -3,6 +3,7 @@
 #include "typography.h"
 #include "touch.h"
 #include "command_palette.h"
+#include "imgui_internal.h"
 
 // Frequency step arrows: one step on press, then after 0.40 s one more step every 0.08 s.
 // At most one step per frame so a hitch does not jump many channels.
@@ -66,6 +67,12 @@ bool tabItem(const char* name, Ic icon) {
     paletteNoteTab(name);                          // the command palette lists the tabs of this frame
     if (gTightTabs) ImGui::PopStyleVar();
     const ImVec2 r0 = ImGui::GetItemRectMin(), r1 = ImGui::GetItemRectMax();
+    // ImGui's selected overline is inset at both ends by the tab rounding, so it stops short of the tab's corners:
+    // the selected tab gets a flat bar across its whole width instead
+    if (open) if (const ImGuiTabBar* tb = ImGui::GetCurrentTabBar()) if (tb->Flags & ImGuiTabBarFlags_DrawSelectedOverline) {
+        const float ov = ImGui::GetStyle().TabBarOverlineSize;
+        ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(r0.x, r0.y + 1.f), ImVec2(r1.x, r0.y + 1.f + ov), ImGui::GetColorU32(ImGuiCol_TabSelectedOverline));
+    }
     if (!pal::dev()) icons::draw(icon, ImVec2(r0.x + ImGui::GetStyle().FramePadding.x + iconSize() * 0.5f + 1.f, (r0.y + r1.y) * 0.5f), iconSize() * 0.92f,
                 open ? IM_COL32(255, 255, 255, 255) : IM_COL32(140, 154, 170, 255));
     return open;

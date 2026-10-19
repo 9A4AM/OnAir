@@ -218,7 +218,8 @@ static void toolbarGain(App& a, bool vertical, bool running, bool& retune) {
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Keeps the front end at the best operating point for the mode: a healthy ADC level, the noise above the ADC's own, strong neighbours kept out. It moves the LNA and VGA (the amp only if you allow it with the gear button) and holds still while a decoder is locked.\nTouching a gain control turns it off."));
     ImGui::SameLine(0, 4 * gUi);
     agcGear(a);
-    if (vertical) ImGui::SameLine(0, 14 * gUi); else flowNext();
+    if (vertical) sameLineIf(std::max(ImGui::CalcTextSize(tr("Auto-tune")).x, ImGui::CalcTextSize(tr("Stop tune")).x) + 2.f * ImGui::GetStyle().FramePadding.x, 14 * gUi);   // side panel: Auto-tune beside AGC only if it fits the panel
+    else flowNext();
     if (a.sweep.active()) {
         if (ImGui::Button(tr("Stop tune"))) { a.sweep = GainSweep(); }
     } else if (ImGui::Button(tr("Auto-tune")) && running) {
