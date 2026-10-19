@@ -18,6 +18,13 @@ struct Step {
     const char* text;
 };
 
+// A short guided tour from Help > Guided tours: its own steps, drawn the same way as the first-run tour.
+struct Tour {
+    const char* title;
+    const Step* steps;
+    int n;
+};
+
 #ifndef N_
 #define N_(s) s
 #define TOUR_UNDEF_N_
@@ -50,12 +57,58 @@ inline const Step* steps(int* n) {
     if (n) *n = (int)(sizeof kSteps / sizeof *kSteps);
     return kSteps;
 }
+
+// The four guided tours of the Help menu, in menu order. Each step points at a part the interface already reports with tourMark.
+inline const Tour* tours(int* n) {
+    static const Step kFirst[] = {
+        {"source", N_("Source"),
+         N_("Pick the radio or recording that supplies the samples. Nothing is received until a source is chosen.")},
+        {"modes", N_("Mode"),
+         N_("The mode decides what is decoded. Use the search box to find one by name.")},
+        {"tuning", N_("Tuning"),
+         N_("Enter the frequency and sample rate here. Gain and AGC set the input level.")},
+        {"audio", N_("Listen"),
+         N_("Listen plays the demodulated sound. Volume and mute are on this strip.")},
+    };
+    static const Step kSpectrum[] = {
+        {"spectrum", N_("Spectrum and waterfall"),
+         N_("The top shows the spectrum, and the waterfall scrolls its history below. Click a signal to tune to it.")},
+        {"tuning", N_("Sample rate"),
+         N_("The sample rate sets how wide the spectrum is. A wider view shows more signals at once.")},
+        {"view", N_("Layout"),
+         N_("View switches the layout and the text size. Each layout arranges the spectrum and the panels differently.")},
+    };
+    static const Step kRecording[] = {
+        {"source", N_("Record the samples"),
+         N_("Record IQ saves the raw signal to a file for later playback.")},
+        {"audio", N_("Record the sound"),
+         N_("Record audio saves the sound you hear to a file. Volume and mute are on the same strip.")},
+    };
+    static const Step kScanning[] = {
+        {"view", N_("Open a scanner"),
+         N_("View opens the Sweep scanner for a fast wideband sweep, and the Scanner, which is experimental, that steps through a list of frequencies.")},
+        {"memory", N_("Frequencies"),
+         N_("Memory stores frequencies with their mode and settings. Frequencies lists what is on air, per mode.")},
+        {"spectrum", N_("Peak hold"),
+         N_("Peak hold keeps the strongest level seen on each frequency, so short bursts stay visible while scanning.")},
+    };
+    static const Tour kTours[] = {
+        {N_("First steps"), kFirst, (int)(sizeof kFirst / sizeof *kFirst)},
+        {N_("Waterfall and spectrum"), kSpectrum, (int)(sizeof kSpectrum / sizeof *kSpectrum)},
+        {N_("Recording"), kRecording, (int)(sizeof kRecording / sizeof *kRecording)},
+        {N_("Scanning"), kScanning, (int)(sizeof kScanning / sizeof *kScanning)},
+    };
+    if (n) *n = (int)(sizeof kTours / sizeof *kTours);
+    return kTours;
+}
 #ifdef TOUR_UNDEF_N_
 #undef N_
 #undef TOUR_UNDEF_N_
 #endif
 
-inline int count() { int n = 0; steps(&n); return n; }
+// the steps of a tour, or of the first-run tour when t is null
+inline const Step* stepsOf(const Tour* t, int* n) { if (!t) return steps(n); if (n) *n = t->n; return t->steps; }
+inline int count(const Tour* t = nullptr) { int n = 0; stepsOf(t, &n); return n; }
 
 // Rectangles reported by the interface; a rectangle counts as present when it was reported this frame or the one before.
 class Anchors {
@@ -71,20 +124,23 @@ private:
     std::map<std::string, std::pair<Rect, long>> m_;
 };
 
-inline bool shown(const Anchors& a, long frame, int i) { int n = count(); return i >= 0 && i < n && a.has(steps(nullptr)[i].anchor, frame); }
+inline bool shown(const Anchors& a, long frame, int i, const Tour* t = nullptr) { return i >= 0 && i < count(t) && a.has(stepsOf(t, nullptr)[i].anchor, frame); }
 
 // The step after (dir = 1) or before (dir = -1) `cur` that can be shown; -1 when there is none. cur = -1 starts from the beginning.
-inline int next(const Anchors& a, long frame, int cur, int dir) {
-    const int n = count();
-    for (int i = cur + (dir > 0 ? 1 : -1); i >= 0 && i < n; i += dir) if (shown(a, frame, i)) return i;
+inline int next(const Anchors& a, long frame, int cur, int dir, const Tour* t = nullptr) {
+    const int n = count(t);
+    for (int i = cur + (dir > 0 ? 1 : -1); i >= 0 && i < n; i += dir) if (shown(a, frame, i, t)) return i;
     return -1;
 }
-inline int visibleCount(const Anchors& a, long frame) { int c = 0; for (int i = 0; i < count(); i++) c += shown(a, frame, i); return c; }
+inline int visibleCount(const Anchors& a, long frame, const Tour* t = nullptr) { int c = 0; for (int i = 0; i < count(t); i++) c += shown(a, frame, i, t); return c; }
 // 1-based position of step `cur` among the steps that are shown
-inline int position(const Anchors& a, long frame, int cur) { int c = 0; for (int i = 0; i <= cur && i < count(); i++) c += shown(a, frame, i); return c; }
+inline int position(const Anchors& a, long frame, int cur, const Tour* t = nullptr) { int c = 0; for (int i = 0; i <= cur && i < count(t); i++) c += shown(a, frame, i, t); return c; }
 
 // Preference key of "the tour has been seen". It keeps the key of the earlier tour, so nobody sees it again after an update.
 inline const char* prefKey() { return "wizardDone"; }
+// The guided tour last left (its index in tours(), -1 once it is finished) and the step it was on.
+inline const char* prefKeyTour() { return "guidedTour"; }
+inline const char* prefKeyStep() { return "guidedStep"; }
 
 // Whether the tour opens by itself at start-up: first start only (not after an update), not with command-line arguments, and after the setup
 inline bool autoStart(bool noArgs, bool done, bool setupPending) { return noArgs && !done && !setupPending; }

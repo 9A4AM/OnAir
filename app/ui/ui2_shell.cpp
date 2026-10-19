@@ -5,6 +5,7 @@
 #include "dect2/dsp/baseband_filter.h"
 #include "ui2_internal.h"
 #include "ui_common.h"
+#include "tour_logic.h"
 #ifdef _WIN32
 #define NOMINMAX
 #include <windows.h>
@@ -500,7 +501,14 @@ float menuBar(App& a) {
             if (ImGui::MenuItem(tr("Credits"))) { a.creditsOpen = true; a.creditsTab = 0; }
             ImGui::Separator();
             if (ImGui::MenuItem(tr("Setup wizard"))) setupWizardOpen(a);
-            if (ImGui::MenuItem(tr("Guided tour"))) tourStart(a);
+            if (ImGui::BeginMenu(tr("Guided tours"))) {
+                if (ImGui::MenuItem(tr("Overview"))) tourStart(a);
+                ImGui::Separator();
+                int nt = 0;
+                const tour::Tour* ts = tour::tours(&nt);
+                for (int i = 0; i < nt; i++) if (ImGui::MenuItem(tr(ts[i].title))) tourStartTour(a, i);
+                ImGui::EndMenu();
+            }
             ImGui::Separator();
             if (ImGui::MenuItem(tr("Documentation"))) dect2::openUrl("https://on-air.dev/docs/");
             if (ImGui::MenuItem(tr("Troubleshooting"))) dect2::openUrl("https://on-air.dev/docs/troubleshooting/");

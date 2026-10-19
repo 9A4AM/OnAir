@@ -61,6 +61,28 @@ int main() {
     CHECK(!tour::autoStart(false, false, false), "not with command-line arguments");
     CHECK(!tour::autoStart(true, false, true), "after the setup");
 
+    // the guided tours of the Help menu: four of them, each step points at a reported part and reads like the first-run tour
+    int nt = 0;
+    const tour::Tour* ts = tour::tours(&nt);
+    CHECK(nt == 4, "four guided tours, got %d", nt);
+    for (int t = 0; t < nt; t++) {
+        CHECK(ts[t].title && *ts[t].title && ts[t].n >= 2 && ts[t].n <= 4, "tour %d: a title and 2 to 4 steps", t);
+        CHECK(tour::count(&ts[t]) == ts[t].n, "tour %d: count", t);
+        for (int i = 0; i < ts[t].n; i++) {
+            const tour::Step& s = ts[t].steps[i];
+            CHECK(s.anchor && *s.anchor && s.title && *s.title && s.text && *s.text, "tour %d step %d is complete", t, i);
+            CHECK(anchors.count(s.anchor) == 1, "tour %d step %d: anchor %s is an interface part", t, i, s.anchor);
+            CHECK(!std::strchr(s.text, '!') && !std::strchr(s.text, '%'), "tour %d step %d: no exclamation marks or format codes", t, i);
+            int sentences = 0;
+            for (const char* c = s.text; *c; c++) sentences += *c == '.' && (c[1] == ' ' || c[1] == 0);
+            CHECK(sentences >= 1 && sentences <= 2, "tour %d step %d: one or two sentences, got %d", t, i, sentences);
+        }
+    }
+    // a guided tour shows only its own steps
+    tour::Anchors reg2;
+    for (int i = 0; i < ts[1].n; i++) reg2.set(ts[1].steps[i].anchor, tour::Rect{0, 0, 10, 10}, f);
+    CHECK(tour::visibleCount(reg2, f, &ts[1]) == ts[1].n && tour::next(reg2, f, -1, +1, &ts[1]) == 0 && tour::next(reg2, f, ts[1].n - 1, +1, &ts[1]) == -1, "a guided tour counts its own steps");
+
     std::printf(failures ? "FAILED: %d\n" : "tour: ok\n", failures);
     return failures ? 1 : 0;
 }

@@ -1,4 +1,4 @@
-// The first-run tour: a short sequence of steps, each dimming the window except the part it describes, with a small flat callout next to it.
+// The tours: the first-run tour (the whole window, in order) and the four short guided tours of Help > Guided tours. Each step dims the window except the part it describes, with a small flat callout next to it.
 // The steps and the rules are in tour_logic.h (tested); the parts of the window report themselves with tourMark() every frame, and a step whose
 // part is not on screen (another layout, a mode without it) is skipped.
 #include "../app.h"
@@ -7,19 +7,36 @@
 namespace {
 tour::Anchors gAnchors;
 bool gNoMore = true;   // "Don't show again": on by default; unticked, the tour comes back at the next start
+int gLastStep = -99;   // the step of a guided tour last written to prefs (-99: none yet)
+
+// the tour on screen: null for the first-run tour
+const tour::Tour* curTour(const App& a) { return a.wizTour < 0 ? nullptr : tour::tours(nullptr) + a.wizTour; }
+
+// the step of a guided tour goes to prefs, so starting that tour again resumes there
+void rememberStep(App& a) {
+    if (a.wizTour < 0 || a.wizStep == gLastStep) return;
+    gLastStep = a.wizStep;
+    plat::prefs().setI(tour::prefKeyTour(), a.wizTour);
+    plat::prefs().setI(tour::prefKeyStep(), a.wizStep);
+    plat::prefs().flush();
+}
 }
 
 void tourMark(const char* id, ImVec2 lo, ImVec2 hi) {
     gAnchors.set(id, tour::Rect{lo.x, lo.y, hi.x, hi.y}, ImGui::GetFrameCount());
 }
 
-static void tourClose(App& a) {
+static void tourClose(App& a, bool done = false) {
     a.wizOpen = false;
+    if (a.wizTour >= 0) {   // a guided tour: finishing forgets the place, skipping keeps it so the tour resumes there
+        if (done) { plat::prefs().setI(tour::prefKeyTour(), -1); plat::prefs().flush(); }
+        return;
+    }
     if (gNoMore) { plat::prefs().setB(tour::prefKey(), true); plat::prefs().flush(); }
 }
 
 void wizEnter(App& a, int step) {
-    a.wizStep = std::max(0, std::min(tour::count() - 1, step));
+    a.wizStep = std::max(0, std::min(tour::count(curTour(a)) - 1, step));
     a.wizStepT = ImGui::GetTime();
 }
 
@@ -35,6 +52,7 @@ void wizAction(App& a, int step) {
 }
 
 void tourStart(App& a) {
+    a.wizTour = -1;   // the first-run tour
     a.wizOpen = true;
     a.wizX = -1;
     a.wizStep = -1;   // resolved on the first frame, when the anchors are known
@@ -42,27 +60,44 @@ void tourStart(App& a) {
     gNoMore = true;
 }
 
+void tourStartTour(App& a, int which) {
+    int nt = 0;
+    const tour::Tour* ts = tour::tours(&nt);
+    if (which < 0 || which >= nt) return;
+    a.wizTour = which;
+    a.wizOpen = true;
+    a.wizX = -1;
+    // resume where this tour was left, when it was the one last started and not finished
+    int at = -1;
+    if (plat::prefs().getI(tour::prefKeyTour(), -1) == which) at = (int)plat::prefs().getI(tour::prefKeyStep(), -1);
+    a.wizStep = at >= 0 && at < tour::count(&ts[which]) ? at : -1;
+    a.wizStepT = ImGui::GetTime();
+    gLastStep = -99;
+}
+
 void wizard(App& a, ImVec2 disp) {
     if (!a.wizOpen) return;
     const long frame = ImGui::GetFrameCount();
+    const tour::Tour* T = curTour(a);   // null: the first-run tour
     // the parts of the layouts that already report their rectangle through the older table
     auto legacy = [&](const char* id, int tg) { if (!gAnchors.has(id, frame) && a.tgMax[tg].x > a.tgMin[tg].x) tourMark(id, a.tgMin[tg], a.tgMax[tg]); };
     legacy("modes", TgSwitch); legacy("spectrum", TgMain); legacy("panel", TgRight);
-    if (a.touchUi) for (int i = 0; i < tour::count(); i++) tourMark(tour::steps(nullptr)[i].anchor, ImVec2(0, 0), disp);   // the touch shell has no such parts: every step is a centred card
-    if (tour::visibleCount(gAnchors, frame) == 0) {   // nothing to point at yet (the first frames) or at all (a layout without these parts)
+    if (a.touchUi) for (int i = 0; i < tour::count(T); i++) tourMark(tour::stepsOf(T, nullptr)[i].anchor, ImVec2(0, 0), disp);   // the touch shell has no such parts: every step is a centred card
+    if (tour::visibleCount(gAnchors, frame, T) == 0) {   // nothing to point at yet (the first frames) or at all (a layout without these parts)
         if (ImGui::GetTime() - a.wizStepT > 1.0) tourClose(a);
         return;
     }
     if (ImGui::GetTime() - a.wizStepT < 0.3) return;   // a moment for every part to report itself (some are drawn after this call)
-    if (a.wizStep < 0) a.wizStep = tour::next(gAnchors, frame, -1, +1);   // the first step that can be shown
-    if (!tour::shown(gAnchors, frame, a.wizStep)) {   // the part went away (a resized window, another layout): the next one
-        const int n = tour::next(gAnchors, frame, a.wizStep, +1);
-        if (n < 0) { const int p = tour::next(gAnchors, frame, a.wizStep, -1); if (p < 0) { tourClose(a); return; } a.wizStep = p; }
+    if (a.wizStep < 0) a.wizStep = tour::next(gAnchors, frame, -1, +1, T);   // the first step that can be shown
+    if (!tour::shown(gAnchors, frame, a.wizStep, T)) {   // the part went away (a resized window, another layout): the next one
+        const int n = tour::next(gAnchors, frame, a.wizStep, +1, T);
+        if (n < 0) { const int p = tour::next(gAnchors, frame, a.wizStep, -1, T); if (p < 0) { tourClose(a); return; } a.wizStep = p; }
         else a.wizStep = n;
     }
-    const tour::Step& st = tour::steps(nullptr)[a.wizStep];
-    const int pos = tour::position(gAnchors, frame, a.wizStep), total = tour::visibleCount(gAnchors, frame);
-    const bool first = tour::next(gAnchors, frame, a.wizStep, -1) < 0, last = tour::next(gAnchors, frame, a.wizStep, +1) < 0;
+    rememberStep(a);
+    const tour::Step& st = tour::stepsOf(T, nullptr)[a.wizStep];
+    const int pos = tour::position(gAnchors, frame, a.wizStep, T), total = tour::visibleCount(gAnchors, frame, T);
+    const bool first = tour::next(gAnchors, frame, a.wizStep, -1, T) < 0, last = tour::next(gAnchors, frame, a.wizStep, +1, T) < 0;
     const float u = gUi;
     ImGuiIO& io = ImGui::GetIO();
     ImDrawList* fg = ImGui::GetForegroundDrawList();
@@ -117,6 +152,11 @@ void wizard(App& a, ImVec2 disp) {
     ImGui::PopStyleVar(3);
     ImGui::PopStyleColor(2);
 
+    if (T) {   // the name of the guided tour, above its steps
+        ImGui::PushStyleColor(ImGuiCol_Text, pal::accent());
+        ImGui::TextUnformatted(tr(T->title));
+        ImGui::PopStyleColor();
+    }
     char idx[24];
     snprintf(idx, sizeof idx, "%d / %d", pos, total);
     ImGui::TextUnformatted(tr(st.title));
@@ -134,8 +174,10 @@ void wizard(App& a, ImVec2 disp) {
     ImGui::PopTextWrapPos();
     ImGui::Dummy(ImVec2(0, 6 * u));
 
-    ImGui::Checkbox(tr("Don't show again"), &gNoMore);
-    ImGui::Dummy(ImVec2(0, 2 * u));
+    if (!T) {   // the first-run tour only: a guided tour is started on purpose, so it has no "don't show again"
+        ImGui::Checkbox(tr("Don't show again"), &gNoMore);
+        ImGui::Dummy(ImVec2(0, 2 * u));
+    }
     const float bh = a.touchUi ? 40.f * u : 0.f;
     bool goBack = false, goNext = false, skip = false;
     ImGui::BeginDisabled(first);
@@ -143,7 +185,7 @@ void wizard(App& a, ImVec2 disp) {
     ImGui::EndDisabled();
     ImGui::SameLine();
     ImGui::PushStyleColor(ImGuiCol_Button, pal::accent(0.45f));
-    if (ImGui::Button(last ? tr("Done") : tr("Next"), ImVec2(80 * u, bh))) goNext = true;
+    if (ImGui::Button(last ? tr("Finish") : tr("Next"), ImVec2(80 * u, bh))) goNext = true;
     ImGui::PopStyleColor();
     if (!last) {
         ImGui::SameLine(0, 14 * u);
@@ -160,6 +202,6 @@ void wizard(App& a, ImVec2 disp) {
         if (ImGui::IsKeyPressed(ImGuiKey_Escape)) skip = true;
     }
     if (skip) { tourClose(a); return; }
-    if (goBack) { const int n = tour::next(gAnchors, frame, a.wizStep, -1); if (n >= 0) wizEnter(a, n); }
-    else if (goNext) { const int n = tour::next(gAnchors, frame, a.wizStep, +1); if (n >= 0) wizEnter(a, n); else tourClose(a); }
+    if (goBack) { const int n = tour::next(gAnchors, frame, a.wizStep, -1, T); if (n >= 0) wizEnter(a, n); }
+    else if (goNext) { const int n = tour::next(gAnchors, frame, a.wizStep, +1, T); if (n >= 0) wizEnter(a, n); else tourClose(a, true); }
 }

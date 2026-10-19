@@ -279,6 +279,7 @@ struct App {
     char netKey[32] = "";
     // first-run tour (wizard.inc)
     bool wizOpen = false, wizStart = false, wizAcked = false;
+    int wizTour = -1;           // the guided tour on screen (index in tour::tours), -1 for the first-run tour
     int creditsTab = 0;         // 0 Contributors, 1 Projects and licences (the tab the Credits window opens on)
     bool creditsOpen = false;   // the Credits window (Help menu, the "by: ..." button)
     bool galleryOpen = false;           // the picture gallery (View > Images)
@@ -1172,6 +1173,7 @@ void wizEnter(App& a, int step);
 void wizAction(App& a, int step);   // tour.cpp: step 2 starts the synthetic demo signal (the DECT2_DEMO test hook)
 void wizard(App& a, ImVec2 disp);                      // tour.cpp: the first-run tour, each frame
 void tourStart(App& a);                                // tour.cpp: (re)start the tour from the first step
+void tourStartTour(App& a, int which);                 // tour.cpp: start one of the Help > Guided tours (resumes where it was left)
 void tourMark(const char* id, ImVec2 lo, ImVec2 hi);   // tour.cpp: report where a part of the window is this frame (the tour points at it)
 void wizEnter(App& a, int step);
 void setupWizardOpen(App& a);                        // wizard.cpp: (re)start the setup wizard
