@@ -201,6 +201,13 @@ std::string openFileDialog() {
     return {};
 }
 
+std::string openFolderDialog() {
+    NSOpenPanel* p = [NSOpenPanel openPanel];
+    p.canChooseFiles = NO; p.canChooseDirectories = YES; p.canCreateDirectories = YES; p.allowsMultipleSelection = NO;
+    if ([p runModal] == NSModalResponseOK) return std::string(p.URL.path.UTF8String);
+    return {};
+}
+
 std::string saveFileDialog(const char* name) {
     NSSavePanel* p = [NSSavePanel savePanel];
     p.nameFieldStringValue = [NSString stringWithUTF8String:name];

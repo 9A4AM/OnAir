@@ -11,6 +11,7 @@ void showFatalError(const char* title, const char* text);
 
 std::string openFileDialog();
 std::string saveFileDialog(const char* defaultName);
+std::string openFolderDialog();   // an existing folder; empty when cancelled or no dialog is available (type the path then)
 
 // Saved settings. Keys are short names; values are stored per platform (NSUserDefaults on macOS, a text file elsewhere).
 struct Channel { double freqMhz = 0, bwMhz = 8; std::string name, mode; float snrDb = 0; int nServices = 0; bool favourite = false; };

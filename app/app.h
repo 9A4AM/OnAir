@@ -829,6 +829,8 @@ void syncRadioSettings(App& a);
 void saveRadioSettings(const App& a);
 std::string openFileDialog();
 std::string saveFileDialog(const char* name);
+void wfExportRow(App& a, double now);   // gfx/wf_export.cpp: a row the waterfall took, for a running PNG export
+void wfExportPopup(App& a);             // gfx/wf_export.cpp: the Start / Stop block of the waterfall popup
 void loadPrefs(App& a);
 void loadFeedPrefs(App& a);         // feeds_ui.cpp: the data feed settings, and starts the ones that are on
 void saveFeedPrefs(const App& a);
