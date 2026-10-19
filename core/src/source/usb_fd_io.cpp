@@ -8,7 +8,7 @@
 
 namespace dect2 {
 namespace {
-struct Urb { usbdevfs_urb u{}; std::vector<uint8_t> buf; bool inFlight = false; };
+struct Urb { std::vector<uint8_t> buf; bool inFlight = false; usbdevfs_urb u{}; };   // usbdevfs_urb ends in a flexible array: it must be the last member
 struct Stream { int fd = -1; uint8_t ep = 0; std::vector<Urb> urbs; int inFlight = 0; };
 
 struct LinuxSys : UsbFdSys {

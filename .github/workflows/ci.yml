@@ -5,7 +5,7 @@ name: CI
 
 on:
   push:
-    branches: ['0.2.7']
+    branches: ['main', '0.2.8']
   workflow_dispatch:
 
 # A newer push cancels the run still going for an older one.
