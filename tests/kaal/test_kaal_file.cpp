@@ -40,7 +40,7 @@ static std::string makeFile() {
     auto gen = makeKaalTxGenerator(r, 48000, err);
     if (!gen) return std::string();
     std::vector<cf32> x(2327040);   // 48.48 s: whole 4-frame blocks (3840 samples) and station-ID sweep cycles (581760 samples), 1163520 together and sweep periods, so the file loops without a jump (as the sample files)
-    for (size_t i = 0; i < x.size(); i += 4800) gen->generate(x.data() + i, 4800);
+    for (size_t i = 0; i < x.size(); i += 4800) gen->generate(x.data() + i, std::min<size_t>(4800, x.size() - i));   // 2327040 is not a multiple of 4800: a full last chunk wrote 960 samples past the vector
     float pk = 0;
     for (const cf32& v : x) pk = std::max(pk, std::max(std::fabs(v.real()), std::fabs(v.imag())));
     for (cf32& v : x) v *= 0.8f / pk;   // as the sample files: peak at 0.8 of full scale
