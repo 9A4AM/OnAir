@@ -175,7 +175,9 @@ void Engine::configureReceiver(int a, double r) {
     case 117: rxIfkp_.configure(r); break;
     case 123: rxKaal_.configure(r); break;
     case 132: rxKait_.configure(r); break;
+    case 134: rxKaws_.configure(r); break;
     case 125: rxKapp_.configure(r); break;
+    case 124: rxKavb_.configure(r); break;
     case 126: rxKaft_.configure(r); break;
     case 108: rxCq_.configure(r); break;
     case 105: rxMs_.configure(r); break;
@@ -306,6 +308,7 @@ void Engine::placeReceiver(int a, double o, double centreHz, double dialHz, doub
     case 145: rxSb_.setSignalOffset(o); rxSb_.setCenterHz(centreHz); break;
     case 130: rxLtr_.setSignalOffset(o); rxLtr_.setCenterHz(centreHz); break;
     case 131: rxEdacs_.setSignalOffset(o); rxEdacs_.setCenterHz(centreHz); break;
+    case 134: rxKaws_.setSignalOffset(o); break;
     default: break;   // DMR, ADS-B, Mode S uplink: the channel on the centre, nothing to place
     }
 }

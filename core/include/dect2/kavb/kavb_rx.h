@@ -33,6 +33,7 @@ struct RxFrame {
     double startSample = 0.0;       // stream index (fractional) of the first preamble symbol
     int eqPasses = 0;               // decision-directed equaliser passes used (0 = the one-tap equaliser was enough)
     bool chirpRemoved = false;
+    std::vector<cf> dataSyms;       // up to 400 equalised data symbols (for a constellation display)
     bool chirpCancelled = false;    // the symbol-domain residual sweep cancellation made a failed block decode
 };
 

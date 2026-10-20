@@ -550,11 +550,17 @@ void payloadPanel(TxUi& s, const TxModeSpec& mode, bool running) {
     case TxPayloadKind::Kait:
         kaitPanel(s, running);
         break;
+    case TxPayloadKind::Kavb:
+        kavbPanel(s, running);
+        break;
     case TxPayloadKind::Kapp:
         kappPanel(s, running);
         break;
     case TxPayloadKind::Kaft:
         kaftPanel(s, running);
+        break;
+    case TxPayloadKind::Kaws:
+        kawsPanel(s, running);
         break;
     case TxPayloadKind::Mac:
         ImGui::TextDisabled("%s", tr("D2-MAC test scene (custom video is not wired into this analogue generator)."));

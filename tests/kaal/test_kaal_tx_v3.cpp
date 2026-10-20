@@ -12,7 +12,7 @@ using namespace dect2::kaal;
 
 static std::vector<std::complex<float>> makeIq(int kb, const std::vector<int16_t>& x, size_t chunk, const char* call) {
     VoiceTx tx;
-    tx.configure(48000);
+    tx.configure(kb >= 24 ? 96000 : 48000);   // 24 / 32 kbit/s: 16 ksym/s, the same stream at twice the speed; the receiver reads it as 48 kHz
     CHECK(tx.setBitrate(kb), "setBitrate %d", kb);
     if (call) tx.setSweepCallsign(call);
     std::vector<std::complex<float>> all, buf(5000);
@@ -27,11 +27,12 @@ int main() {
     const std::vector<int16_t> pcm = kaalrx::testPcm(16000 * 20);   // 20 s of speech-like signal
     for (int kb : {12, 16, 24, 32}) {
         const auto iq = makeIq(kb, pcm, 777, "OH2XYZ/MM");
-        const double ratio = (double)iq.size() / 48000.0 / 20.0;
+        const double rateHz = kb >= 24 ? 96000.0 : 48000.0;
+        const double ratio = (double)iq.size() / rateHz / 20.0;   // air time in real seconds (a 16 ksym/s stream is 96000 samples a second)
         const double want = kaalAirTimeRatio(kb);
-        printf("%d kbit/s: %zu IQ samples = %.2f s for 20 s of speech, air time ratio %.3f (model %.2f)\n", kb, iq.size(), iq.size() / 48000.0, ratio, want);
+        printf("%d kbit/s: %zu IQ samples = %.2f s for 20 s of speech, air time ratio %.3f (model %.2f)\n", kb, iq.size(), iq.size() / rateHz, ratio, want);
         CHECK(ratio > want - 0.01 && ratio < want + 0.03, "%d: air time ratio %.3f, expected about %.2f", kb, ratio, want);
-        if (kb == 12 || kb == 16) CHECK(ratio <= 1.03, "%d kbit/s must be real time (air time <= audio time + the tail): %.3f", kb, ratio);
+        CHECK(ratio <= 1.03, "%d kbit/s must be real time (air time <= audio time + the tail): %.3f", kb, ratio);
         // the receiver on the transmitter's own signal
         VoiceRx rx;
         rx.configure(48000.0);

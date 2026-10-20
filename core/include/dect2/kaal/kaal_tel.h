@@ -16,6 +16,7 @@ struct KaalTelemetry {
     bool dataValid = false;
     uint64_t blocksOk = 0, blocksBad = 0;   // good and bad frames
     double inputRate = 0, timeSec = 0;
+    int symRate = 8000;            // 8000 (12 / 16 kbit/s voice, about 10 kHz wide) or 16000 (24 / 32 kbit/s, about 20 kHz wide), from the width of the spectrum
     // the last valid beacon (station identity frame)
     bool beaconValid = false;
     uint64_t beacons = 0;          // valid beacon frames so far
@@ -36,7 +37,7 @@ inline std::string kaalSummary(const KaalTelemetry& t) {
     if (t.state == 1) return "KAAL: searching";
     if (t.beaconValid) snprintf(b, sizeof b, "KAAL: locked, %s %s", t.callsign.c_str(), t.grid.c_str());
     else if (t.sweepIdValid) snprintf(b, sizeof b, "KAAL: locked, %s (sweep ID)", t.sweepId.c_str());
-    else snprintf(b, sizeof b, "KAAL: locked, SNR %.0f dB", (double)t.snrDb);
+    else snprintf(b, sizeof b, "KAAL: locked, %d ksym/s, SNR %.0f dB", t.symRate / 1000, (double)t.snrDb);
     return b;
 }
 

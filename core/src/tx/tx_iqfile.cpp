@@ -27,7 +27,7 @@ const char* iqFileFormatName(IqFileFormat f) {
 }
 
 const double* iqFileRates(int& count) {
-    static const double kR[] = {48000, 96000, 192000, 250000, 500000, 1000000, 2000000, 2400000, 4000000, 8000000, 10000000, 20000000};
+    static const double kR[] = {12000, 48000, 96000, 192000, 250000, 500000, 1000000, 2000000, 2400000, 4000000, 8000000, 10000000, 20000000};
     count = (int)(sizeof kR / sizeof *kR);
     return kR;
 }

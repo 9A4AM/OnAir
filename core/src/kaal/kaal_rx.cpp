@@ -396,11 +396,11 @@ void findTimingConst(const std::vector<cd>& mf, double& tau0) {
     tau0 = (double)p + parabola(E[(p - 1 + kSps) % kSps], E[p], E[(p + 1) % kSps]);
     tau0 = pymod(tau0, kSps);
 }
-void trackTiming(const std::vector<cd>& mf, double& tau0, double& eps) {
+bool trackTiming(const std::vector<cd>& mf, double& tau0, double& eps) {   // false: no block had any power (silence, NaN)
     const size_t blk = (size_t)kSym * kSps / 4;
     const size_t nb = mf.size() / blk;
     eps = 0;
-    if (nb < 4) { findTimingConst(mf, tau0); return; }
+    if (nb < 4) { findTimingConst(mf, tau0); return true; }
     std::vector<double> pw(nb);
     double pmax = 0;
     for (size_t b = 0; b < nb; b++) {
@@ -429,15 +429,17 @@ void trackTiming(const std::vector<cd>& mf, double& tau0, double& eps) {
         polyfit1(cs, ph, slope, icpt);
         if (std::fabs(slope) * (cs.back() - cs.front()) < 0.5) constant = true;
     }
+    if (taus.empty()) return false;
     if (constant) {
         const double ref = taus[0];
         double dev = 0;
         for (double t : taus) dev += pymod(t - ref + kSps / 2.0, kSps) - kSps / 2.0;
         tau0 = pymod(ref + dev / (double)taus.size(), kSps);
-        return;
+        return true;
     }
     tau0 = pymod(icpt, kSps);
     eps = slope;
+    return true;
 }
 
 // Differential-correlation preamble metric at symbol j (0 .. n-32).
@@ -642,7 +644,7 @@ struct VoiceRx::Impl {
                 const cd v = x[i];
                 for (size_t k = 0; k < nt; k++) mfb[i + k] += v * tp[k];
             }
-            trackTiming(mfb, s.tau0, s.eps);
+            if (!trackTiming(mfb, s.tau0, s.eps)) return false;
             const double stp = kSps * (1.0 + s.eps);
             const int64_t nsym = (int64_t)(((double)mfb.size() - 8.0 - s.tau0) / stp);
             if (nsym < kRtFrameSymbols + 40) return false;
