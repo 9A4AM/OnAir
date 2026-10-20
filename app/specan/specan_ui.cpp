@@ -9,6 +9,7 @@
 #include "dect2/specan/specan_dsp.h"
 #include "dect2/specan/specan_rx.h"
 #include "dect2/specan/specan_tel.h"
+#include "dect2/specan/specan_res.h"
 #include <algorithm>
 #include <cmath>
 #include <atomic>
@@ -26,7 +27,7 @@ namespace {
 struct State {
     float loMhz = 1, hiMhz = 6000;
     int preset = 0;
-    int rbw = 4;                  // index in kRbw
+    double rbwHz = 100e3;         // the resolution asked for: one of the bin widths the rate allows (dect2::saBinChoices)
     int avgN = 8;
     bool showLive = true, showPeak = true, showAvg = false, persist = false, bands = true, spurs = true;
     float refDb = 0, rangeDb = 100;
@@ -77,8 +78,15 @@ struct State {
 };
 State S;
 std::mutex& autoMu() { static std::mutex m; return m; }
-const double kRbw[] = {2.8e3, 5e3, 10e3, 25e3, 100e3, 250e3, 500e3, 1e6};
-const char* const kRbwName[] = {"2.8 kHz", "5 kHz", "10 kHz", "25 kHz", "100 kHz", "250 kHz", "500 kHz", "1 MHz"};
+// a bin width as text: the real value, since the FFT size is a power of two and only some widths exist
+std::string rbwText(double hz) {
+    char t[32];
+    if (hz >= 1e6) snprintf(t, sizeof t, "%.2f MHz", hz / 1e6);
+    else if (hz >= 100e3) snprintf(t, sizeof t, "%.0f kHz", hz / 1e3);
+    else if (hz >= 1e3) snprintf(t, sizeof t, "%.2f kHz", hz / 1e3);
+    else snprintf(t, sizeof t, "%.0f Hz", hz);
+    return t;
+}
 
 std::string sizeText(size_t b) {
     char t[32];
@@ -138,7 +146,7 @@ bool live(const App& a) { return a.rx.standard == 43 && !a.rx.specan.live.empty(
 void pushSettings(App& a, bool rangeChanged) {
     auto& r = a.engine.specan();
     r.setRange(S.loMhz * 1e6, S.hiMhz * 1e6);
-    r.setBinHz(kRbw[S.rbw]);
+    r.setBinHz(S.rbwHz);
     r.setAveraging(S.avgN);
     r.setRemoveSpurs(S.spurs);
     a.tune.synth.modeVal[0] = S.loMhz;
@@ -285,8 +293,18 @@ void controls(App& a) {
     flowNext(10 * gUi);
     ImGui::TextDisabled("RBW"); ImGui::SameLine();
     ImGui::SetNextItemWidth(90 * gUi);
-    if (ImGui::Combo("##sarbw", &S.rbw, kRbwName, 8)) other = true;
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Resolution: the FFT bin width (the HackRF sweep goes no finer than about 2.8 kHz; the finest bins are slow over a wide range)");
+    {
+        const auto& tt = a.rx.specan;
+        const bool nat = tt.inputRate > 0 ? tt.native : true;   // before the first sweep: the HackRF's own
+        std::vector<double> ch = dect2::saBinChoices(tt.inputRate, nat);
+        ch.erase(std::remove_if(ch.begin(), ch.end(), [](double h) { return h > 1.05e6; }), ch.end());
+        const double applied = dect2::saPickRes(S.rbwHz, tt.inputRate, nat).binHz;
+        if (ImGui::BeginCombo("##sarbw", rbwText(applied).c_str())) {
+            for (double h : ch) if (ImGui::Selectable(rbwText(h).c_str(), std::fabs(h - applied) < 1e-6 * h)) { S.rbwHz = h; other = true; }
+            ImGui::EndCombo();
+        }
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Resolution: the FFT bin width, the real value. The FFT size is a power of two, so the widths follow the sample rate (the HackRF sweep: 20 MHz / 4096 = 4.88 kHz is the finest; the finest bins are slow over a wide range)");
     flowNext(10 * gUi);
     ImGui::TextDisabled("Avg"); ImGui::SameLine();
     ImGui::SetNextItemWidth(80 * gUi);
