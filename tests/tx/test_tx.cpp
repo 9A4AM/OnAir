@@ -890,6 +890,7 @@ static TxPayloadKind expectedKind(const std::string& id) {
     if (id == "kapp") return TxPayloadKind::Kapp;
     if (id == "kaft") return TxPayloadKind::Kaft;
     if (id == "kait") return TxPayloadKind::Kait;
+    if (id == "kavb") return TxPayloadKind::Kavb;
     if (id == "kaws") return TxPayloadKind::Kaws;
     if (id == "vdl4" || id == "uat" || id == "wisun" || id == "zwave") return TxPayloadKind::SatScene;
     // modes that were once refused: a generic test scene, no custom message
