@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <sys/stat.h>
@@ -383,14 +384,10 @@ std::string dsmccSafePath(const std::string& p) {
     return out.empty() ? "file" : out;
 }
 
-static bool mkdirs(const std::string& path) {
-    std::string cur;
-    for (size_t i = 0; i <= path.size(); i++) {
-        if (i == path.size() || path[i] == '/') { if (!cur.empty() && cur != "/") mkdir(cur.c_str(), 0755); }
-        if (i < path.size()) cur += path[i];
-    }
-    struct stat st;
-    return stat(path.c_str(), &st) == 0;
+static bool mkdirs(const std::string& path) {   // std::filesystem: POSIX mkdir(path, mode) does not exist on MinGW
+    std::error_code ec;
+    std::filesystem::create_directories(std::filesystem::path(path), ec);
+    return std::filesystem::is_directory(std::filesystem::path(path), ec);
 }
 
 static std::string htmlEsc(const std::string& s) {
