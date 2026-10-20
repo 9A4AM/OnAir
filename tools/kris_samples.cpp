@@ -74,7 +74,7 @@ static std::vector<float> readWav16kMono(const std::string& path) {
     return out;
 }
 
-static void kaalVoice(const std::string& dir, const std::string& name, const std::vector<float>& pcm16k) {
+static void kaalVoice(const std::string& dir, const std::string& name, const std::vector<float>& pcm16k, int kbit = 16) {
     // 16 kHz to the 48 kHz stereo the generator pulls: linear interpolation (the transmitter low-passes at 7 kHz anyway)
     uint64_t pulled = 0;
     TxRequest r;
@@ -85,6 +85,7 @@ static void kaalVoice(const std::string& dir, const std::string& name, const std
     r.text = "KAAL sample: " + name;
     r.opt["kaal.powerDbm"] = 20;
     r.opt["kaal.beacon"] = 1;
+    r.opt["kaal.bitrate"] = kbit;
     r.pullAudio = [&](float* st, int n) {
         for (int i = 0; i < n; i++, pulled++) {
             // the sentence repeats with a second of silence between, so a looping player does not run out of speech
@@ -102,7 +103,7 @@ static void kaalVoice(const std::string& dir, const std::string& name, const std
     const size_t n = 2327040;
     std::vector<cf32> x(n);
     for (size_t i = 0; i < n; i += 4800) gen->generate(x.data() + i, std::min<size_t>(4800, n - i));
-    writeAll(dir, "KAAL_" + name, 48000, x, "kaal");
+    writeAll(dir, "KAAL_" + name + (kbit == 16 ? "" : "_" + std::to_string(kbit) + "kbps"), 48000, x, "kaal");
 }
 
 static void addNoise(std::vector<cf32>& x, double snrDb, std::mt19937_64& rng) {
@@ -208,6 +209,7 @@ int main(int argc, char** argv) {
         const std::vector<float> pcm = readWav16kMono(argv[i]);
         if (pcm.empty()) { fprintf(stderr, "cannot read %s\n", argv[i]); g_ok = false; continue; }
         kaalVoice(out + "/KAAL", nm, pcm);
+        if (i == 2) for (int kb : {12, 24, 32}) kaalVoice(out + "/KAAL", nm, pcm, kb);   // the first voice at the other three bitrates
     }
     // low / mid / high profiles at a fixed channel quality
     kappProfile(out + "/KAPP", 1, 12.0, "low");

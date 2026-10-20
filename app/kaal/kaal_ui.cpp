@@ -55,6 +55,8 @@ void tab(App& a) {
     row("frames", b);
     snprintf(b, sizeof b, "%.1f dB", (double)t.snrDb);
     row("SNR", b);
+    snprintf(b, sizeof b, "%d ksym/s (%s)", t.symRate / 1000, t.symRate >= 16000 ? "24 / 32 kbit/s, about 20 kHz wide" : "12 / 16 kbit/s, about 10 kHz wide");
+    row("Symbol rate", b);
     snprintf(b, sizeof b, "%+.1f Hz", t.cfoHz);
     row("CFO", b);
     snprintf(b, sizeof b, "%.1f dB", (double)t.sweepDb);
@@ -137,13 +139,13 @@ void kaalPanel(TxUi& s, bool running) {
         s.kaalBitrate = (int)p.getD("tx.kaal.bitrate", 16);
         if (s.kaalBitrate != 12 && s.kaalBitrate != 16 && s.kaalBitrate != 24 && s.kaalBitrate != 32) s.kaalBitrate = 16;
     }
-    ImGui::TextWrapped("%s", "KAAL: digital voice, 10 kHz wide. The speech of the audio input below is coded and sent with the identity beacon. "
+    ImGui::TextWrapped("%s", "KAAL: digital voice, 10 kHz wide (20 kHz at 24 and 32 kbit/s). The speech of the audio input below is coded and sent with the identity beacon. "
                               "Empty callsign and grid send the demo identity ONAIR / AA00aa. OnAir sets no limit on the frequency or the power.");
     ImGui::BeginDisabled(running);
     {
         static const int kRates[4] = {12, 16, 24, 32};
-        static const char* const kNames[4] = {"12 kbit/s (real time, most robust)", "16 kbit/s (real time)", "24 kbit/s (2x air time, not for a live microphone)",
-                                              "32 kbit/s (2x air time, not for a live microphone)"};
+        static const char* const kNames[4] = {"12 kbit/s (real time, 8 ksym/s, most robust)", "16 kbit/s (real time, 8 ksym/s)", "24 kbit/s (real time, 16 ksym/s, 20 kHz wide)",
+                                              "32 kbit/s (real time, 16 ksym/s, 20 kHz wide)"};
         int cur = 1;
         for (int i = 0; i < 4; i++) if (kRates[i] == s.kaalBitrate) cur = i;
         ImGui::SetNextItemWidth(330 * gUi);

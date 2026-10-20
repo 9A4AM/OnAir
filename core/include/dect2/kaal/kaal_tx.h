@@ -23,7 +23,7 @@ constexpr double kTxBeaconDb = -10.0;   // beacon slice level relative to the da
 constexpr double kTxDataPowerRt = 166.4 / 160.0 / 6.0;
 
 // v3 transmitter air time per second of speech. 12 and 16 kbit/s fill one 160-symbol frame (20 ms) per codec frame: exactly real time.
-// 24 and 32 kbit/s need two frames per codec frame: 2.0, i.e. half real time at 8000 symbols/s (a live microphone would underrun; fine for
+// 24 and 32 kbit/s need two frames per codec frame and go out at 16000 symbols/s (the same stream at twice the speed, about 20 kHz wide): 1.0 too. (formerly 2.0: files only; fine for
 // files, recordings and test signals). 0 = the legacy v0.1 format (25.25 ms per 20 ms, 1.2625).
 double kaalAirTimeRatio(int kbit);
 

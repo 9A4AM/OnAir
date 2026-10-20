@@ -12,6 +12,8 @@
 using namespace dect2;
 #include "../common/test_util.h"
 
+static int gBitrate = 16;
+
 static TxRequest request() {
     static uint64_t pulled = 0;
     TxRequest r;
@@ -22,6 +24,7 @@ static TxRequest request() {
     r.text = "Hi, I am testing KAAL.";
     r.opt["kaal.powerDbm"] = 20;
     r.opt["kaal.beacon"] = 1;
+    r.opt["kaal.bitrate"] = gBitrate;
     pulled = 0;
     r.pullAudio = [](float* st, int n) {
         for (int i = 0; i < n; i++, pulled++) {
@@ -54,7 +57,7 @@ struct ClockError {
     }
 };
 
-struct Result { bool locked = false; double lockAt = -1; int lost = 0; uint64_t ok = 0, bad = 0; std::string bio; double cfo = 0, beaconAt = -1, bioAt = -1; };
+struct Result { bool locked = false; double lockAt = -1; int lost = 0; uint64_t ok = 0, bad = 0; std::string bio; double cfo = 0, beaconAt = -1, bioAt = -1; int symRate = 0; };
 
 // txRate: the rate the transmit framework gives the generator (a HackRF); rxRate: what the receiving radio runs (an RTL-SDR); the receiver gets 8-bit samples
 // with a DC spike at the tune centre. cfoHz is the offset of the receiver's tune from the transmitter's carrier (the signal is at +cfoHz in the receiver).
@@ -104,8 +107,8 @@ static Result run(double txRate, double rxRate, double cfoHz, double ppm, double
         if (rx.telemetry(t, sq)) {
             sq = t.seq;
             if (t.state == 2 && !res.locked) { res.locked = true; res.lockAt = t.timeSec; }
-            else if (res.locked && t.state != 2) res.lost++;
-            res.ok = t.blocksOk; res.bad = t.blocksBad; res.cfo = t.cfoHz;
+            else if (res.locked && t.state != 2 && t.timeSec > 15) res.lost++;   // before that the receiver may search again once (carrier refine, block alignment)
+            res.ok = t.blocksOk; res.bad = t.blocksBad; res.cfo = t.cfoHz; res.symRate = t.symRate;
             if (t.beaconValid && res.beaconAt < 0) res.beaconAt = t.timeSec;
             if (t.beaconValid && !t.text.empty() && res.bio.empty()) { res.bio = t.text; res.bioAt = t.timeSec; }
         }
@@ -128,27 +131,33 @@ static int engineRun(const char* path, double cfo) {
 
 int main(int argc, char** argv) {
     if (argc >= 3 && std::string(argv[1]) == "engine") return engineRun(argv[2], argc > 3 ? atof(argv[3]) : 3000);
-    if (argc == 7) {   // tx rx cfo ppm secs eightBit: one case, for looking into a failure
+    if (argc == 8) gBitrate = atoi(argv[7]);
+    if (argc == 7 || argc == 8) {   // tx rx cfo ppm secs eightBit: one case, for looking into a failure
         const Result r = run(atof(argv[1]), atof(argv[2]), atof(argv[3]), atof(argv[4]), atof(argv[5]), atoi(argv[6]) != 0);
         printf("lock %d at %.1f s, lost %d, ok %llu bad %llu, cfo %.0f, beacon %.1f bio %.1f\n", (int)r.locked, r.lockAt, r.lost, (unsigned long long)r.ok, (unsigned long long)r.bad, r.cfo, r.beaconAt, r.bioAt);
         return 0;
     }
     // HackRF transmit at 2 Msps (and 10 Msps once), RTL-SDR receive at 2.4 and 2.048 Msps (the second is a non-integer ratio to 48 kHz), 8-bit samples
-    struct Case { double tx, rx, cfo, ppm; };
+    struct Case { double tx, rx, cfo, ppm; int kb; };
     const Case cases[] = {
-        {2e6, 2.4e6, 0, 0},      {2e6, 2.4e6, 1500, 2},   {2e6, 2.4e6, -1500, -2},  {2e6, 2.048e6, 1500, 1}, {2e6, 2.048e6, -1500, -1}, {2e6, 2.048e6, 0, 0},
-        {2e6, 2.4e6, 3000, 5},   {2e6, 2.4e6, -3000, -5}, {2e6, 2.4e6, 4000, 0},    {2e6, 2.4e6, -4000, 0},  {2e6, 2.4e6, 7000, 0},
-        {10e6, 2.4e6, 2500, 3},
+        {2e6, 2.4e6, 0, 0, 16},      {2e6, 2.4e6, 1500, 2, 16},   {2e6, 2.4e6, -1500, -2, 16},  {2e6, 2.048e6, 1500, 1, 16}, {2e6, 2.048e6, -1500, -1, 16}, {2e6, 2.048e6, 0, 0, 16},
+        {2e6, 2.4e6, 3000, 5, 16},   {2e6, 2.4e6, -3000, -5, 16}, {2e6, 2.4e6, 4000, 0, 16},    {2e6, 2.4e6, -4000, 0, 16},  {2e6, 2.4e6, 7000, 0, 16},
+        {10e6, 2.4e6, 2500, 3, 16},
+        {2e6, 2.4e6, 0, 0, 12},      {2e6, 2.048e6, -1500, -1, 12}, {2e6, 2.4e6, 4000, 2, 12},
+        {2e6, 2.4e6, 0, 0, 24},      {2e6, 2.4e6, 1500, 2, 24},   {2e6, 2.048e6, -1500, -1, 24}, {2e6, 2.4e6, 4000, 0, 24}, {2e6, 2.4e6, -4000, -2, 24}, {2e6, 2.048e6, 3000, 1, 24},
+        {2e6, 2.4e6, 0, 0, 32},      {2e6, 2.048e6, 1500, 1, 32}, {2e6, 2.4e6, -4000, 0, 32},  {2e6, 2.4e6, 4000, 2, 32},
     };
     for (const Case& c : cases) {
-        const Result r = run(c.tx, c.rx, c.cfo, c.ppm, 26, true);
-        printf("tx %.3f Msps rx %.3f Msps cfo %6.0f ppm %3.0f: lock %d at %.1f s, lost %d, frames ok %llu bad %llu, cfo read %.0f, beacon at %.1f s, bio at %.1f s\n", c.tx / 1e6, c.rx / 1e6, c.cfo, c.ppm, (int)r.locked,
-               r.lockAt, r.lost, (unsigned long long)r.ok, (unsigned long long)r.bad, r.cfo, r.beaconAt, r.bioAt);
+        gBitrate = c.kb;
+        const Result r = run(c.tx, c.rx, c.cfo, c.ppm, c.kb >= 24 ? 14 : 36, true);   // the narrow formats take their time to show the bio (one full frame in five)
+        printf("%2d kbit/s tx %.3f Msps rx %.3f Msps cfo %6.0f ppm %3.0f: lock %d at %.1f s, lost %d, frames ok %llu bad %llu, cfo read %.0f, %d ksym/s, beacon at %.1f s, bio at %.1f s\n", c.kb, c.tx / 1e6,
+               c.rx / 1e6, c.cfo, c.ppm, (int)r.locked, r.lockAt, r.lost, (unsigned long long)r.ok, (unsigned long long)r.bad, r.cfo, r.symRate / 1000, r.beaconAt, r.bioAt);
         fflush(stdout);
-        CHECK(r.locked && r.lost == 0, "tx %.0f rx %.0f cfo %.0f: lock %d lost %d", c.tx, c.rx, c.cfo, (int)r.locked, r.lost);
-        CHECK(r.ok > 300 && r.bad * 20 < r.ok + 1, "tx %.0f rx %.0f cfo %.0f: frames ok %llu bad %llu", c.tx, c.rx, c.cfo, (unsigned long long)r.ok, (unsigned long long)r.bad);
-        CHECK(r.beaconAt > 0 && r.beaconAt < 12, "tx %.0f rx %.0f cfo %.0f: first beacon at %.1f s", c.tx, c.rx, c.cfo, r.beaconAt);
-        CHECK(!r.bio.empty(), "tx %.0f rx %.0f cfo %.0f: no bio", c.tx, c.rx, c.cfo);
+        CHECK(r.locked && r.lost == 0 && r.lockAt < 12, "%d kbit/s tx %.0f rx %.0f cfo %.0f: lock %d at %.1f lost %d", c.kb, c.tx, c.rx, c.cfo, (int)r.locked, r.lockAt, r.lost);
+        CHECK(r.ok > 300 && r.bad * 20 < r.ok + 1, "%d kbit/s rx %.0f cfo %.0f: frames ok %llu bad %llu", c.kb, c.rx, c.cfo, (unsigned long long)r.ok, (unsigned long long)r.bad);
+        CHECK(r.symRate == (c.kb >= 24 ? 16000 : 8000), "%d kbit/s: symbol rate read %d", c.kb, r.symRate);
+        CHECK(r.beaconAt > 0 && r.beaconAt < 14, "%d kbit/s cfo %.0f: first beacon at %.1f s", c.kb, c.cfo, r.beaconAt);
+        CHECK(!r.bio.empty(), "%d kbit/s cfo %.0f: no bio", c.kb, c.cfo);
     }
     return testSummary("kaal_chain");
 }
