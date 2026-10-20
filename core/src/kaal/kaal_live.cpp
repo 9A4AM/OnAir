@@ -27,12 +27,19 @@ struct KaalLiveReceiver::Impl {
     double rate = 0;
     // The input goes to 48 kHz here, then a coarse carrier search (the two radios' oscillators differ by up to several kHz at UHF, more than the
     // receiver's own capture range): the centre of the 8 kHz wide signal in the averaged spectrum is mixed to 0 Hz while the receiver is not locked
-    RationalResampler rs;
+    // The working rate is 96 kHz: a signal of 8 ksym/s (12 / 16 kbit/s voice) is decimated to 48 kHz for the receivers; one of 16 ksym/s (24 / 32 kbit/s,
+    // about 20 kHz wide) goes to them as it is, read as a 48 kHz stream: the whole format is the same one at twice the speed, so the receivers
+    // need no other change. Which of the two it is comes from the width of the spectrum.
+    static constexpr int kN = 2048;          // spectrum bins of the 96 kHz stream
+    static constexpr double kWR = 96000.0;
+    RationalResampler rs, dec;
     bool resampling = false;
-    std::vector<cf32> y48;
-    Fft fft{1024};
+    bool wide = false;                       // 16 ksym/s
+    bool isWideDec = false;
+    std::vector<cf32> y96, m48;
+    Fft fft{kN};
     std::vector<float> win;
-    std::vector<cf32> seg;                   // the segment being filled (1024 samples), hop 512
+    std::vector<cf32> seg;                   // the segment being filled (kN samples), hop kN / 2
     std::vector<double> psd;
     int psdCount = 0;
     double carrier = 0;                      // Hz: the carrier offset taken out
@@ -88,93 +95,134 @@ struct KaalLiveReceiver::Impl {
         audioOut->write(stereo.data(), (int)(stereo.size() / 2));
     }
 
-    void coarseDecide() {
-        // the window of 8 kHz (-6 dB width of the 8 ksym/s RRC signal) with the most power
-        const int W = (int)std::lround(8000.0 / 48000.0 * 1024.0);   // bins
-        std::vector<double> sm(1024, 0.0);
-        double tot = 0;
-        for (int b = 0; b < 1024; b++) tot += psd[(size_t)b];
-        if (tot <= 0) return;
-        double best = -1, sum = 0;
-        int bestC = 0;
-        std::vector<double> sc(1024);
-        for (int b = 0; b < W; b++) sum += psd[(size_t)b];
-        for (int c = 0; c < 1024; c++) {   // window [c - W/2, c + W/2) wrapped
+    // best window of Wbins bins of the averaged spectrum: its sum, its centre bin, and how far it stands above the median window (the noise)
+    struct Win { double best = 0, med = 0; int c = 0; };
+    Win bestWindow(int Wbins) const {
+        Win w;
+        std::vector<double> sc((size_t)kN);
+        double best = -1;
+        for (int c = 0; c < kN; c++) {
             double acc = 0;
-            for (int k = -W / 2; k < W - W / 2; k++) acc += psd[(size_t)((c + k + 1024) & 1023)];
+            for (int k = -Wbins / 2; k < Wbins - Wbins / 2; k++) acc += psd[(size_t)((c + k + kN) & (kN - 1))];
             sc[(size_t)c] = acc;
-            if (acc > best) { best = acc; bestC = c; }
+            if (acc > best) { best = acc; w.c = c; }
         }
         std::vector<double> sorted(sc);
-        std::nth_element(sorted.begin(), sorted.begin() + 512, sorted.end());
-        const double med = sorted[512];
-        contrastDb = med > 0 ? 10 * std::log10(best / med) : 0;
-        if (contrastDb < 5.0) return;   // no signal of this width
-        // the left edge of the signal: where the spectrum rises to -6 dB of its flat top (an 8 ksym/s root-raised-cosine signal is 6 dB down at +-4 kHz,
-        // its Nyquist frequency). The right edge is not used: the beacon slice sits on it (4.5 kHz above the centre). A weighted mean of the bins
-        // in the window gives the start, the crossing is found with a little smoothing and interpolated
-        const int ext = (int)std::lround(2500.0 / 48000.0 * 1024.0);
-        const double meanIn = best / (double)W;
-        const double lvl = 0.25 * meanIn;
-        auto sp = [&](int k) { double a = 0; for (int j = -2; j <= 2; j++) a += psd[(size_t)((k + j + 2048) & 1023)]; return a / 5.0; };
-        int kk = bestC - W / 2 - ext;
-        const int kEnd = bestC;
-        while (kk < kEnd && sp(kk) < lvl) kk++;
-        double cb;
+        std::nth_element(sorted.begin(), sorted.begin() + kN / 2, sorted.end());
+        w.best = best; w.med = sorted[(size_t)kN / 2];
+        return w;
+    }
+
+    void coarseDecide() {
+        const double binHz = kWR / kN;
+        double tot = 0;
+        for (int b = 0; b < kN; b++) tot += psd[(size_t)b];
+        if (tot <= 0) return;
+        // two hypotheses: the signal is 8 kHz wide (-6 dB width of the 8 ksym/s RRC signal) or 16 kHz wide (16 ksym/s). A narrow signal fills the 8 kHz
+        // window and only half of the 16 kHz one, so its contrast is 3 dB higher in the first; a wide one gives about the same in both
+        const int W8 = (int)std::lround(8000.0 / binHz), W16 = (int)std::lround(16000.0 / binHz);
+        const Win a = bestWindow(W8), b = bestWindow(W16);
+        const double c8 = a.med > 0 ? a.best / a.med : 0, c16 = b.med > 0 ? b.best / b.med : 0;
+        contrastDb = 10 * std::log10(std::max(c8, c16) + 1e-30);
+        if (contrastDb < 5.0) return;   // no signal
+        // the width: the smallest window that holds 90 % of the power above the noise floor (the median bin). A narrow signal is about 8 kHz by that
+        // measure, a wide one 16 kHz; the line between them is 11.5 kHz. It works with a noiseless signal (a recording) and with a noisy one
+        std::vector<double> ex((size_t)kN);
         {
-            const double p1 = sp(kk), p0 = sp(kk - 1);
-            const double frac = p1 > p0 ? std::max(0.0, std::min(1.0, (lvl - p0) / (p1 - p0))) : 0.0;
-            const double left = (double)(kk - 1) + frac;                  // bins
-            cb = left + 4333.0 / 48000.0 * 1024.0;                        // the centre is 4.33 kHz above the -6 dB point (the PSD is the raised cosine, 25 % at 4.33 kHz)
+            std::vector<double> srt(psd);
+            std::nth_element(srt.begin(), srt.begin() + kN / 2, srt.end());
+            const double floorP = srt[(size_t)kN / 2];
+            double tx = 0;
+            for (int k = 0; k < kN; k++) { ex[(size_t)k] = std::max(0.0, psd[(size_t)k] - floorP); tx += ex[(size_t)k]; }
+            if (tx <= 0) return;
+            bool wideSig = false;
+            for (int Wb = (int)std::lround(5000.0 / binHz); Wb <= (int)std::lround(30000.0 / binHz); Wb += 6) {
+                double acc = 0, bestW = 0;
+                for (int k = 0; k < Wb; k++) acc += ex[(size_t)k];
+                bestW = acc;
+                for (int c = 1; c < kN; c++) { acc += ex[(size_t)((c + Wb - 1) & (kN - 1))] - ex[(size_t)(c - 1)]; bestW = std::max(bestW, acc); }
+                if (bestW >= 0.9 * tx) { wideSig = (double)Wb * binHz > 11500.0; break; }
+            }
+            isWideDec = wideSig;
         }
-        double hz = cb * 48000.0 / 1024.0;
-        if (hz >= 24000.0) hz -= 48000.0;
-        if (!decided || std::fabs(hz - carrier) > 600.0) {   // a new carrier: what was gathered under the old one is useless, start the search again
+        const bool isWide = isWideDec;
+        const Win& w = isWide ? b : a;
+        const int Wb = isWide ? W16 : W8;
+        const double edgeHz = isWide ? 8667.0 : 4333.0;   // the centre is this far above the -6 dB point of the left edge (the PSD is the raised cosine, 25 % there)
+        // the left edge of the signal: where the spectrum rises to -6 dB of its flat top. The right edge is not used: the beacon slice sits on it.
+        const int ext = (int)std::lround((isWide ? 5000.0 : 2500.0) / binHz);
+        const double meanIn = w.best / (double)Wb;
+        const double lvl = 0.25 * meanIn;
+        auto sp = [&](int k) { double acc = 0; for (int j = -2; j <= 2; j++) acc += psd[(size_t)((k + j + 2 * kN) & (kN - 1))]; return acc / 5.0; };
+        int kk = w.c - Wb / 2 - ext;
+        while (kk < w.c && sp(kk) < lvl) kk++;
+        const double p1 = sp(kk), p0 = sp(kk - 1);
+        const double frac = p1 > p0 ? std::max(0.0, std::min(1.0, (lvl - p0) / (p1 - p0))) : 0.0;
+        const double cb = (double)(kk - 1) + frac + edgeHz / binHz;
+        double hz = cb * binHz;
+        if (hz >= kWR / 2) hz -= kWR;
+        if (!decided || isWide != wide || std::fabs(hz - carrier) > 600.0) {   // a new carrier or width: what was gathered under the old one is useless
             carrier = hz;
             decided = true;
-            vrx.configure(48000.0);
-            brx.configure(48000.0);
+            wide = isWide;
+            configureReceivers();
         }
     }
 
-    // one block of 48 kHz samples: DC block, spectrum, mix, the receivers
-    void process48(const cf32* x, size_t n) {
-        const double dph = 2 * 3.141592653589793 * carrier / 48000.0;
-        std::vector<cf32>& z = y48;
+    void configureReceivers() {
+        vrx.configure(48000.0);
+        brx.configure(48000.0);
+        scan.configure(48000.0);
+        scanWasFed = false;
+        dec.reset();
+    }
+
+    // one block of 96 kHz samples: DC block, spectrum, mix, then (8 ksym/s) decimation to 48 kHz and the receivers
+    void process96(const cf32* x, size_t n) {
+        const double dph = 2 * 3.141592653589793 * carrier / kWR;
         std::vector<cf32> mixed(n);
         for (size_t i = 0; i < n; i++) {
-            dcm += (x[i] - dcm) * 0.0008f;
-            const cf32 v = x[i] - dcm;
+            const cf32 v = x[i];   // no DC blocker: a signal on the tune centre has real content at 0 Hz (silent speech frames especially); the receiver removes the mean itself
             seg.push_back(v);
-            if (seg.size() == 1024) {
-                std::vector<cf32> f(1024);
-                for (int k = 0; k < 1024; k++) f[(size_t)k] = seg[(size_t)k] * win[(size_t)k];
+            if (seg.size() == (size_t)kN) {
+                std::vector<cf32> f((size_t)kN);
+                for (int k = 0; k < kN; k++) f[(size_t)k] = seg[(size_t)k] * win[(size_t)k];
                 fft.forward(f.data());
-                const double a = psdCount ? 0.04 : 1.0;
-                for (int k = 0; k < 1024; k++) psd[(size_t)k] += a * ((double)std::norm(f[(size_t)k]) - psd[(size_t)k]);
+                const double al = psdCount ? 0.04 : 1.0;
+                for (int k = 0; k < kN; k++) psd[(size_t)k] += al * ((double)std::norm(f[(size_t)k]) - psd[(size_t)k]);
                 psdCount++;
-                seg.erase(seg.begin(), seg.begin() + 512);
+                seg.erase(seg.begin(), seg.begin() + kN / 2);
             }
             mixPhase -= dph;
             if (mixPhase < -6.283185307179586) mixPhase += 6.283185307179586;
             if (mixPhase > 6.283185307179586) mixPhase -= 6.283185307179586;
             mixed[i] = v * cf32((float)std::cos(mixPhase), (float)std::sin(mixPhase));
         }
-        (void)z;
-        vrx.feed(mixed.data(), n);
+        sinceDecision += n;
+        if (!locked && sinceDecision >= 48000 && psdCount > 20) { sinceDecision = 0; coarseDecide(); }
+        const cf32* p = mixed.data();
+        size_t m = n;
+        if (!wide) {
+            m48.clear();
+            dec.process(mixed.data(), n, m48);
+            p = m48.data(); m = m48.size();
+        }
+        if (m == 0) return;
+        std::vector<cf32> st(p, p + m);
+        vrx.feed(st.data(), m);
         if (fine != 0.0) {   // the beacon receiver has little capture range: it gets the signal with the voice receiver's own carrier estimate taken out too
             const double dpf = 2 * 3.141592653589793 * fine / 48000.0;
-            for (size_t i = 0; i < n; i++) {
+            for (size_t i = 0; i < m; i++) {
                 finePhase -= dpf;
                 if (finePhase < -6.283185307179586) finePhase += 6.283185307179586;
                 if (finePhase > 6.283185307179586) finePhase -= 6.283185307179586;
-                mixed[i] *= cf32((float)std::cos(finePhase), (float)std::sin(finePhase));
+                st[i] *= cf32((float)std::cos(finePhase), (float)std::sin(finePhase));
             }
         }
-        brx.feed(mixed.data(), n);
+        brx.feed(st.data(), m);
         {   // the sweep-only scanner reads the signals the voice receiver cannot lock to
             const bool vlocked = vrx.stats().locked;
-            if (!vlocked) { scan.feed(mixed.data(), n); scanWasFed = true; }
+            if (!vlocked) { scan.feed(st.data(), m); scanWasFed = true; }
             else if (scanWasFed) { scan.reset(); scanWasFed = false; }
             kaal::SweepIdResult ir;
             while (scan.poll(ir)) {
@@ -184,22 +232,18 @@ struct KaalLiveReceiver::Impl {
                 if (lg) lg("KAAL sweep ID " + ir.callsign);
             }
         }
-        sinceDecision += n;
-        if (!locked && sinceDecision >= 24000 && psdCount > 20) { sinceDecision = 0; coarseDecide(); }
     }
 
     void startStream() {
-        resampling = std::fabs(rate - 48000.0) > 1e-6;
-        if (resampling) resampling = rs.configure(rate, 48000.0);
+        resampling = std::fabs(rate - kWR) > 1e-6;
+        if (resampling) resampling = rs.configure(rate, kWR);
         if (resampling) rs.reset();
-        win.resize(1024);
-        for (int k = 0; k < 1024; k++) win[(size_t)k] = (float)(0.5 - 0.5 * std::cos(2 * 3.141592653589793 * k / 1024));
-        seg.clear(); psd.assign(1024, 0.0); psdCount = 0; carrier = 0; fine = 0; finePhase = 0; decided = false; refined = false; badRestarts = 0; mixPhase = 0; dcm = cf32(0, 0); locked = false; sinceDecision = 0;
-        vrx.configure(48000.0);
-        brx.configure(48000.0);
-        scan.configure(48000.0);
+        dec.configure(kWR, 48000.0);
+        win.resize((size_t)kN);
+        for (int k = 0; k < kN; k++) win[(size_t)k] = (float)(0.5 - 0.5 * std::cos(2 * 3.141592653589793 * k / kN));
+        seg.clear(); psd.assign((size_t)kN, 0.0); psdCount = 0; carrier = 0; fine = 0; finePhase = 0; decided = false; refined = false; badRestarts = 0; mixPhase = 0; dcm = cf32(0, 0); locked = false; sinceDecision = 0; wide = false;
+        configureReceivers();
         scanId = kaal::SweepIdResult();
-        scanWasFed = false;
         samples = 0; nextReport = (uint64_t)(0.25 * rate); level = 0; lastSample = 0;
         beaconValid = false; beacons = 0; beaconAtSec = 0; btext.clear(); bf = kaal::BeaconFields();
         wasLocked = false;
@@ -214,7 +258,7 @@ struct KaalLiveReceiver::Impl {
             // The coarse estimate (the spectrum edge) is good to a few hundred hertz; the receiver measures what is left to a few hertz at lock. Take it
             // out of the mixer and search once more: with no carrier error left the frames and the beacon decode cleanly.
             refined = true;
-            carrier += (double)st.cfoHz;
+            carrier += (double)st.cfoHz * (wide ? 2.0 : 1.0);   // the receiver reads a wide signal at half its frequencies
             vrx.configure(48000.0);
             brx.configure(48000.0);
             fine = 0; locked = false;
@@ -223,8 +267,8 @@ struct KaalLiveReceiver::Impl {
             if (lg) lg("KAAL carrier refined to " + std::to_string((long)std::lround(carrier)) + " Hz");
             return;
         }
-        if (st.locked && refined && badRestarts < 4 && st.framesGood + st.framesBad >= 60 && st.framesBad * 100 > 15 * (st.framesGood + st.framesBad)) {
-            // locked, but a sixth of the frames fail: the block alignment chosen from the window it happened to gather was the wrong one. A later window
+        if (st.locked && refined && badRestarts < 4 && st.framesGood + st.framesBad >= 100 && st.framesBad * 100 > 6 * (st.framesGood + st.framesBad)) {
+            // locked, but more than one frame in sixteen fails: the block alignment chosen from the window it happened to gather was the wrong one. A later window
             // may pick the right one: search again (the carrier is already right)
             badRestarts++;
             vrx.configure(48000.0);
@@ -234,7 +278,7 @@ struct KaalLiveReceiver::Impl {
         }
         locked = st.locked;
         if (!st.locked) fine = 0.0; else if (fine == 0.0 || std::fabs((double)st.cfoHz - fine) > 3.0) fine = (double)st.cfoHz;
-        t.cfoHz = st.cfoHz + carrier; t.snrDb = st.snrDb; t.sweepDb = st.sweepDb;
+        t.cfoHz = st.cfoHz * (wide ? 2.0 : 1.0) + carrier; t.symRate = wide ? 16000 : 8000; t.snrDb = st.snrDb; t.sweepDb = st.sweepDb;
         t.audioLevel = level;
         level *= 0.7f;
         t.blocksOk = st.framesGood; t.blocksBad = st.framesBad;
@@ -297,11 +341,11 @@ void KaalLiveReceiver::feed(const cf32* x, size_t n) {
     std::lock_guard<std::mutex> lk(m.feedMu);
     if (!m.ready) return;
     if (m.resampling) {
-        m.y48.clear();
-        m.rs.process(x, n, m.y48);
-        if (!m.y48.empty()) m.process48(m.y48.data(), m.y48.size());
+        m.y96.clear();
+        m.rs.process(x, n, m.y96);
+        if (!m.y96.empty()) m.process96(m.y96.data(), m.y96.size());
     } else {
-        m.process48(x, n);
+        m.process96(x, n);
     }
     m.samples += n;
     m.pcm.resize(4096);
@@ -351,7 +395,7 @@ ModeTuning kaalTuning() {
     t.minMhz = 0.1; t.maxMhz = 6000; t.defMhz = 433.0;   // modeTuning() opens the range to any frequency; the signal is 10 kHz wide
     t.sampleRate = 240000;        // the radio rate asked for (5 times 48 kHz); the receiver resamples to 48 kHz itself
     t.basebandHz = 0;
-    t.bandwidthMhz = 0.012;
+    t.bandwidthMhz = 0.024;   // 24 / 32 kbit/s voice is 20 kHz wide
     t.minSampleRate = 48000;
     t.tuneOffsetHz = 0;
     return t;

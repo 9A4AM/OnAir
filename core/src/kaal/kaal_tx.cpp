@@ -21,9 +21,9 @@ constexpr int kHistSyms = kRrcSpan + 1;        // symbols that overlap one outpu
 // Streaming windowed-sinc resampler for complex samples (48 kHz in, outRate out).
 class Resampler {
 public:
-    void configure(double outRate) {
-        ratio_ = 48000.0 / outRate;
-        fc_ = 0.97 * std::min(1.0, outRate / 48000.0);
+    void configure(double outRate, double inRate = 48000.0) {
+        ratio_ = inRate / outRate;
+        fc_ = 0.97 * std::min(1.0, outRate / inRate);
         // the kernel at kPhases fractional positions (nearest phase: a timing error of at most 1 / 2048 of an input sample, below -70 dB for this signal)
         tab_.assign((size_t)(kPhases + 1) * 2 * kH, 0.f);
         for (int p = 0; p <= kPhases; p++) {
@@ -77,7 +77,7 @@ private:
 
 double kaalAirTimeRatio(int kbit) {
     if (kbit == 12 || kbit == 16) return 1.0;
-    if (kbit == 24 || kbit == 32) return 2.0;
+    if (kbit == 24 || kbit == 32) return 1.0;   // two frames per codec frame, but at 16 ksym/s: 10 ms each
     return (double)kFrameSymbols / (double)kRtFrameSymbols;   // legacy: 202 / 160 symbols per 20 ms
 }
 
@@ -87,6 +87,14 @@ struct VoiceTx::Impl {
     std::vector<std::vector<uint8_t>> words;   // v3: coded 480-bit words waiting for a 4-word block
     std::array<uint8_t, kIdCycle> idSyms{};    // v3: the sweep variant of every period of the ID cycle (all 0 = plain up sweep)
     double outRate = 48000;
+    // 24 and 32 kbit/s go out at 16 ksym/s: the stream made here (48 kHz, 6 samples per symbol) is the same one played at twice the speed, so its
+    // notional rate is 96 kHz and the output is about 20 kHz wide
+    double inRate = 48000;
+    void applyRate() {
+        inRate = bitrate >= 24 ? 96000.0 : 48000.0;
+        resample = std::fabs(outRate - inRate) > 1e-6;
+        if (resample) rs.configure(outRate, inRate);
+    }
     bool resample = false;
     Resampler rs;
     KaalCodec codec;
@@ -282,8 +290,7 @@ VoiceTx::~VoiceTx() { delete p_; }
 
 void VoiceTx::configure(double sampleRate) {
     p_->outRate = sampleRate > 0 ? sampleRate : 48000.0;
-    p_->resample = std::fabs(p_->outRate - kFs) > 1e-6;
-    if (p_->resample) p_->rs.configure(p_->outRate);
+    p_->applyRate();
     p_->reset();
     p_->out.clear();
     p_->head = 0;
@@ -303,6 +310,7 @@ bool VoiceTx::setBitrate(int kbit) {
     if (kbit != 0 && !KaalCodec3::validBitrate(kbit)) return false;
     p_->bitrate = kbit;
     if (kbit) p_->codec3 = KaalCodec3(kbit);
+    p_->applyRate();
     p_->reset();
     p_->out.clear();
     p_->head = 0;
