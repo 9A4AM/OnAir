@@ -50,6 +50,7 @@ EXPORT uint32_t rtlsdr_get_device_count(void) { return 1; }
 EXPORT const char* rtlsdr_get_device_name(uint32_t) { return "Generic RTL2832U"; }
 EXPORT int rtlsdr_get_device_usb_strings(uint32_t, char* m, char* p, char* s) {   // ---- radios: rtl.v4 = an RTL-SDR Blog V4, rtl.v3 = a Blog V3, rtl.v4l = a Blog V4 Lite
     const bool v4 = fake_state("rtl.v4") == 1, v3 = fake_state("rtl.v3") == 1, v4l = fake_state("rtl.v4l") == 1;
+    if (fake_state("rtl.dxp") == 1) { strcpy(m, "DXPATROL"); strcpy(p, "DXpatrol SDR"); strcpy(s, "DXP00001"); return 0; }   // rtl.dxp = a DXpatrol SDR
     strcpy(m, v4 || v3 || v4l ? "RTLSDRBlog" : "Realtek"); strcpy(p, v4 ? "Blog V4" : v3 ? "Blog V3" : v4l ? "Blog V4L" : "RTL2838UHIDIR"); strcpy(s, "00000001"); return 0;
 }
 EXPORT int rtlsdr_open(rtl_dev** d, uint32_t) { if (const int r = rtlOpenRefusal()) return r; if (getenv("FAKE_RTL_OPEN_FAIL")) return -6; *d = new rtl_dev; return 0; }   // ---- start failure: the app shows the error of a failed start

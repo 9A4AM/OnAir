@@ -118,8 +118,18 @@ std::string mhz(double hz) {
 //   direct sampling below 24 MHz, tuner_r82xx.c upconverts below 28.8 MHz).
 // - the RTL-SDR Blog V3 ("RTLSDRBlog" / "Blog V3") has its HF input on the RTL2832U's Q branch: direct sampling below 24 MHz.
 // - any other dongle has no HF input unless it was modified (the user can pick the I or Q input in the radio settings)
-enum RtlModel { kGeneric, kBlogV3, kBlogV4 };
+// - the DXpatrol SDR (an RTL2832U dongle, 100 kHz to 2 GHz) has a shortwave antenna input on the Q branch: direct sampling below 28 MHz. USB
+//   strings are matched on "dxpatrol" (any case, spaces and dashes ignored); the radio settings can also force it ("Treat as DXpatrol SDR")
+enum RtlModel { kGeneric, kBlogV3, kBlogV4, kDxPatrol };
+bool looksLikeDxpatrol(const std::string& s) {
+    std::string t;
+    for (char c : s) if (c != ' ' && c != '-' && c != '_') t += (char)tolower((unsigned char)c);
+    return t.find("dxpatrol") != std::string::npos;
+}
+constexpr double kDxpDirectBelowHz = 28e6, kDxpMinHz = 0.1e6, kDxpMaxRate = 3.2e6;
+double directBelow(RtlModel m) { return m == kDxPatrol ? kDxpDirectBelowHz : kDirectBelowHz; }
 RtlModel rtlModelFromStrings(const std::string& v, const std::string& p) {
+    if (looksLikeDxpatrol(v) || looksLikeDxpatrol(p)) return kDxPatrol;
     if ((v == "RTLSDRBlog" && (p == "Blog V4" || p == "Blog V4L")) || p.find("RTL-SDR Blog V4") != std::string::npos) return kBlogV4;
     if ((v == "RTLSDRBlog" && p == "Blog V3") || p.find("RTL-SDR Blog V3") != std::string::npos) return kBlogV3;
     return kGeneric;
@@ -144,7 +154,7 @@ void refineRtlModel(RtlApi::rtlsdr_dev_t* dev, uint32_t usbIndex, int tuner, Rtl
 }
 
 // Auto direct sampling: the V3's Q-branch HF input below 24 MHz
-bool directCapable(int tuner, RtlModel m) { return (tuner == kR820T || tuner == kR828D) && m == kBlogV3 && rtl().set_direct_sampling; }
+bool directCapable(int tuner, RtlModel m) { return (tuner == kR820T || tuner == kR828D) && (m == kBlogV3 || m == kDxPatrol) && rtl().set_direct_sampling; }
 // librtlsdr's offset tuning (no DC spike) works with the E4000 and Fitipower tuners only; on an R820T/R828D the RTL-SDR Blog library even
 // switches the antenna power with it (rtlsdr_set_offset_tuning), so it is never called there
 bool offsetCapable(int tuner) { return (tuner == kE4000 || tuner == kFC0012 || tuner == kFC0013 || tuner == kFC2580) && rtl().set_offset_tuning; }
@@ -152,7 +162,12 @@ bool offsetCapable(int tuner) { return (tuner == kE4000 || tuner == kFC0012 || t
 // The settings of the radio's entry (TuneSettings::radio)
 std::vector<RadioSetting> rtlSettings(int tuner, RtlModel m) {
     std::vector<RadioSetting> v = {ppmSetting(1)};   // librtlsdr takes whole ppm
-    if (m != kBlogV4 && rtl().set_direct_sampling)
+    if (m == kDxPatrol && rtl().set_direct_sampling)
+        v.push_back(choiceSetting("ds", "HF input (direct sampling)",
+                                  "The DXpatrol's shortwave antenna input is sampled directly by the RTL2832U (Q branch), 0.1 to 28 MHz; the VHF-and-up input uses the tuner.\n"
+                                  "Auto: the HF input below 28 MHz, the tuner above. On: the HF input below 28 MHz whatever the frequency band says. Off: never (tuner only, from 24 MHz).",
+                                  {"auto", "q", "off"}, {"Auto", "On", "Off"}, "auto"));
+    else if (m != kBlogV4 && rtl().set_direct_sampling)
         v.push_back(choiceSetting("ds", "Direct sampling (HF)",
                                   "Below 24 MHz the tuner cannot receive: the RTL2832U can sample an HF antenna on one of its inputs directly.\n"
                                   "Auto: the Q input below 24 MHz on every dongle but the RTL-SDR Blog V4 (which upconverts HF itself); a stock dongle has no HF input, so\nthe signal may be weak or absent unless it is modified.\n"
@@ -160,6 +175,8 @@ std::vector<RadioSetting> rtlSettings(int tuner, RtlModel m) {
                                   {"auto", "off", "i", "q"}, {"Auto", "Off", "I input", "Q input"}, "auto"));
     if (offsetCapable(tuner))
         v.push_back(boolSetting("offset", "Offset tuning", "Tunes the E4000/FC00xx tuner off the centre and shifts back digitally: no DC spike in the middle\n(not with direct sampling)."));
+    if (m != kBlogV4 && m != kBlogV3)
+        v.push_back(boolSetting("dxp", "Treat as DXpatrol SDR", "For a DXpatrol that shows up under a generic name: use its HF input (direct sampling, Q branch) below 28 MHz and the 100 kHz lower limit.\n(Tick it on the radio list entry of the DXpatrol; takes effect on the next start.)", m == kDxPatrol));
     return v;
 }
 
@@ -171,7 +188,7 @@ void tunerRange(int tuner, RtlModel m, double& lo, double& hi) {
     case kFC0012: lo = 22e6; hi = 948.6e6; break;
     case kFC0013: lo = 22e6; hi = 1100e6; break;
     case kFC2580: lo = 146e6; hi = 924e6; break;
-    case kR820T: case kR828D: lo = (m == kBlogV4 || directCapable(tuner, m)) ? 0.5e6 : kDirectBelowHz; hi = 1766e6; break;
+    case kR820T: case kR828D: lo = m == kDxPatrol && directCapable(tuner, m) ? kDxpMinHz : (m == kBlogV4 || directCapable(tuner, m)) ? 0.5e6 : kDirectBelowHz; hi = 1766e6; break;
     default: lo = hi = 0;
     }
 }
@@ -214,9 +231,10 @@ protected:
         model_ = rtlModel(index);
         tuner_ = rtl().get_tuner_type ? rtl().get_tuner_type(dev_) : kTunerUnknown;
         refineRtlModel(dev_, index, tuner_, model_);
+        if (model_ == kGeneric && radioFlag(s, "dxp")) model_ = kDxPatrol;   // the user said so
         v4_ = model_ == kBlogV4;
         fprintf(stderr, "RTL-SDR: %s librtlsdr, model %s, tuner %d, Blog HF upconverter in driver: %s\n",
-                rtl().lib.path.c_str(), v4_ ? "V4" : model_ == kBlogV3 ? "V3" : "generic", tuner_,
+                rtl().lib.path.c_str(), v4_ ? "V4" : model_ == kBlogV3 ? "V3" : model_ == kDxPatrol ? "DXpatrol" : "generic", tuner_,
                 rtl().blogLib ? "yes" : "no");
         fflush(stderr);
         tunerRange(tuner_, model_, lo_, hi_);
@@ -231,7 +249,7 @@ protected:
         if (!dev_) return false;
         if (!live) {
             // a TV channel cannot be squeezed into what a dongle delivers: say so instead of streaming a useless rate
-            if (s.sampleRate > 3.2e6) {
+            if (s.sampleRate > 3.2e6) {   // (the DXpatrol is sold for up to 3.2 Msps, the same ceiling)
                 char b[200];
                 snprintf(b, sizeof b, "RTL-SDR gives at most 3.2 Msps; %s needs about %.0f Msps: use a faster radio", familyOf(s), s.sampleRate / 1e6);
                 err = b;
@@ -239,7 +257,7 @@ protected:
                 return false;
             }
             // stable rates are 225-300 kHz and 0.9-3.2 MHz; above about 2.56 MHz most dongles drop samples
-            double want = std::min(s.sampleRate > 0 ? s.sampleRate : 2.048e6, 2.56e6);
+            double want = std::min(s.sampleRate > 0 ? s.sampleRate : 2.048e6, model_ == kDxPatrol ? kDxpMaxRate : 2.56e6);
             if (want < 900001 && (want > 300000 || want <= 225000)) want = 900001;   // librtlsdr refuses 225 kHz and below as well
             if (const int r = rtl().set_sample_rate(dev_, (uint32_t)std::lround(want)); r < 0) {
                 err = "RTL-SDR: the sample rate of " + mhz(want) + " Msps was refused (error " + std::to_string(r) + ")";
@@ -257,22 +275,24 @@ protected:
         const std::string mode = radioOption(s, "ds", "auto");
         int ds = 0;   // librtlsdr: 0 off, 1 I input, 2 Q input
         const bool canDirect = !v4_ && rtl().set_direct_sampling;
-        if (mode == "i" || mode == "q") ds = canDirect && f < kDirectBelowHz ? (mode == "i" ? 1 : 2) : 0;
+        const double dsBelow = directBelow(model_);
+        const double dsLo = model_ == kDxPatrol ? kDxpMinHz : 0.5e6;
+        if (mode == "i" || mode == "q") ds = canDirect && f < dsBelow ? (mode == "i" ? 1 : 2) : 0;
         else if (mode != "off") {
             // R828D / V4: never auto direct sampling (no HF on the Q branch; HF needs the Blog upconverter in set_center_freq).
             if (v4_ || tuner_ == kR828D) ds = 0;
-            else ds = canDirect && f < kDirectBelowHz ? 2 : 0;
+            else ds = canDirect && f < dsBelow ? 2 : 0;
         }
         if (v4_ && !rtl().blogLib && f < kDirectBelowHz)
             addNote(err, "this dongle is an RTL-SDR Blog V4: HF needs librtlsdr from rtl-sdr-blog (the stock osmocom library does not switch the upconverter). Install the Blog driver or use an OnAir build that bundles it");
         // nothing here refuses a frequency: the driver is asked as is. Outside what the dongle is specified for it gets a note.
         const bool r82 = tuner_ == kR820T || tuner_ == kR828D;
-        const double specLo = ds ? 0.5e6 : v4_ ? lo_ : r82 ? (model_ == kBlogV3 && canDirect && mode != "off" ? 0.5e6 : kDirectBelowHz) : lo_;
+        const double specLo = ds ? dsLo : v4_ ? lo_ : r82 ? ((model_ == kBlogV3 || model_ == kDxPatrol) && canDirect && mode != "off" ? dsLo : kDirectBelowHz) : lo_;
         if (hi_ > 0 && (f > hi_ || f < specLo)) {
-            const std::string where = ds ? "direct sampling reaches from 0.5 MHz" : v4_ || f >= kDirectBelowHz ? "" : "direct sampling is " + std::string(canDirect ? "off" : "not available in this library");
+            const std::string where = ds ? "direct sampling reaches from " + mhz(dsLo) + " MHz" : v4_ || f >= kDirectBelowHz ? "" : "direct sampling is " + std::string(canDirect ? "off" : "not available in this library");
             addNote(err, "this RTL-SDR is specified for " + mhz(specLo) + " to " + mhz(hi_) + " MHz" + (where.empty() ? std::string() : " (" + where + ")") + ": the driver may not reach " + mhz(f) + " MHz or the signal may be weak or absent");
         }
-        if (ds && model_ != kBlogV3 && model_ != kBlogV4)
+        if (ds && model_ != kBlogV3 && model_ != kBlogV4 && model_ != kDxPatrol)
             addNote(err, "below 24 MHz this dongle samples its Q input directly; a stock RTL-SDR has no HF input, so the signal may be weak or absent unless it is modified (the radio settings can pick the I input)");
         if (ds != ds_) {
             rtl().set_direct_sampling(dev_, ds);
@@ -401,10 +421,12 @@ void listRtl(std::vector<DeviceInfo>& out) {
         d.nativeArgs = std::to_string(i);
         d.serial = trimmed(serial, sizeof serial);
         std::string label = trimmed(product, sizeof product);
-        if (label.empty()) { const char* nm = rtl().get_device_name(i); label = nm ? nm : "RTL-SDR"; }
+        const RtlModel model = rtlModel(i);
+        if (model == kDxPatrol) label = "DXpatrol SDR (RTL2832U)";
+        else if (label.empty()) { const char* nm = rtl().get_device_name(i); label = nm ? nm : "RTL-SDR"; }
         d.name = label + (d.serial.empty() ? "" : " " + d.serial) + " (native, experimental)";
-        d.maxRateHz = 2.56e6; d.minRateHz = 0.9e6;
-        d.rateRanges = {{0.225001e6, 0.3e6}, {0.900001e6, 2.56e6}};   // librtlsdr refuses 0.3 to 0.9 Msps (and above 3.2); faster than 2.56 drops samples
+        d.maxRateHz = model == kDxPatrol ? kDxpMaxRate : 2.56e6; d.minRateHz = 0.9e6;
+        d.rateRanges = {{0.225001e6, 0.3e6}, {0.900001e6, model == kDxPatrol ? kDxpMaxRate : 2.56e6}};   // librtlsdr refuses 0.3 to 0.9 Msps (and above 3.2); faster than 2.56 drops samples
         d.gainMinDb = 0; d.gainMaxDb = 49.6;
         int tuner = -1;
         const std::string key = d.nativeArgs + "/" + label + "/" + d.serial;
@@ -422,7 +444,6 @@ void listRtl(std::vector<DeviceInfo>& out) {
                 gTuner[key] = tuner;
             }
         }
-        const RtlModel model = rtlModel(i);
         tunerRange(tuner, model, d.minFreqHz, d.maxFreqHz);
         d.hasBiasTee = rtl().set_bias_tee != nullptr;
         d.settings = rtlSettings(tuner, model);
