@@ -2,8 +2,10 @@
 // carousel found on its PID in a transport stream, the file tree, saving to a folder (paths cleaned), and damaged sections.
 #include "dect2/dvbs/dvbs_ip.h"
 #include "dect2/tv/dsmcc.h"
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <sys/stat.h>
@@ -64,7 +66,7 @@ int main() {
             // saving to a folder
             const std::string dir = "/tmp/dvbs_dsmcc_test";
             std::system(("rm -rf " + dir).c_str());
-            mkdir(dir.c_str(), 0755);
+            { std::error_code ec; std::filesystem::create_directories(dir, ec); }   // POSIX mkdir(path, mode) does not exist on MinGW
             CHECK(d.extractTo(dir) == files.size(), "files saved");
             {
                 std::ifstream gi(dir + "/index.html");
