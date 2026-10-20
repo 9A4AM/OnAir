@@ -3289,3 +3289,17 @@ pilot	piloto
 pilot checks	comprobaciones del piloto
 separation	separación
 stereo phase	fase estéreo
+contact lines	líneas de contacto
+A line between the two stations of a contact, drawn from the decoded messages: the great circle from the caller to the station called.	Una línea entre las dos estaciones de un contacto, dibujada a partir de los mensajes decodificados: el círculo máximo desde quien llama hasta la estación llamada.
+show contact lines	mostrar líneas de contacto
+fade with age	desvanecer con la edad
+highlight completed contacts	resaltar contactos completados
+only the selected station	solo la estación seleccionada
+line labels	etiquetas de línea
+colour by band	color por banda
+colour by time	color por tiempo
+keep lines for (min)	mantener líneas durante (min)
+deselect	deseleccionar
+click a station on the map to select it	haz clic en una estación del mapa para seleccionarla
+%zu stations by their locators, %zu contact lines	%zu estaciones por su locator, %zu líneas de contacto
+%d stations at the centre of their grid squares, %zu contact lines	%d estaciones en el centro de sus cuadrículas, %zu líneas de contacto

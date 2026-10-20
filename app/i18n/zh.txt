@@ -3289,3 +3289,17 @@ pilot	导频
 pilot checks	导频检查
 separation	分离度
 stereo phase	立体声相位
+contact lines	通联连线
+A line between the two stations of a contact, drawn from the decoded messages: the great circle from the caller to the station called.	根据解码消息绘制的通联双方电台之间的连线：从呼叫方到被呼叫电台的大圆路径。
+show contact lines	显示通联连线
+fade with age	随时间淡化
+highlight completed contacts	突出显示已完成的通联
+only the selected station	仅所选电台
+line labels	连线标签
+colour by band	按波段着色
+colour by time	按时间着色
+keep lines for (min)	连线保留时间（分钟）
+deselect	取消选择
+click a station on the map to select it	点击地图上的电台以选中
+%zu stations by their locators, %zu contact lines	按网格定位的 %zu 个电台，%zu 条通联连线
+%d stations at the centre of their grid squares, %zu contact lines	位于网格中心的 %d 个电台，%zu 条通联连线

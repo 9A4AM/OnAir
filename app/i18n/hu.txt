@@ -3275,3 +3275,17 @@ pilot	pilot
 pilot checks	pilot-ellenőrzések
 separation	csatornaszétválás
 stereo phase	sztereó fázis
+contact lines	kapcsolatvonalak
+A line between the two stations of a contact, drawn from the decoded messages: the great circle from the caller to the station called.	Vonal egy kapcsolat két állomása között, a dekódolt üzenetekből rajzolva: a főkör a hívótól a hívott állomásig.
+show contact lines	kapcsolatvonalak mutatása
+fade with age	halványodás az életkorral
+highlight completed contacts	befejezett kapcsolatok kiemelése
+only the selected station	csak a kijelölt állomás
+line labels	vonalfeliratok
+colour by band	szín sáv szerint
+colour by time	szín idő szerint
+keep lines for (min)	vonalak megtartása (perc)
+deselect	kijelölés törlése
+click a station on the map to select it	kattints egy állomásra a térképen a kijelöléshez
+%zu stations by their locators, %zu contact lines	%zu állomás a lokátoruk szerint, %zu kapcsolatvonal
+%d stations at the centre of their grid squares, %zu contact lines	%d állomás a rácsnégyzetük közepén, %zu kapcsolatvonal

@@ -6,6 +6,8 @@
 #include "dect2/hfdig/hfdig_ftx.h"
 #include "dect2/hfdig/hfdig_rx.h"
 #include "dect2/hfdig/hfdig_tel.h"
+#include "dect2/map/contact_graph.h"
+#include "../map/contact_lines.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -133,14 +135,28 @@ void mapView(App& a, const dect2::HfdigFtxTelemetry& f, ImVec2 size) {
     const double lat0 = S.map.lat, lon0 = S.map.lon;
     adsbmap::draw(S.map, size);
     if (S.map.lat != lat0 || S.map.lon != lon0) S.mapFollow = false;
+    const auto& co = contactlines::options();
     ImDrawList* dl = ImGui::GetWindowDrawList();
     dl->PushClipRect(p0, ImVec2(p0.x + size.x, p0.y + size.y), true);
+    size_t nLines = 0;
+    if (co.lines) {
+        // the contacts of the messages shown, up to the newest one
+        dect2::ContactGraph g(co.keepMin * 60.0);
+        double now = 0;
+        for (const auto& d : f.decodes) if (shown(d)) now = std::max(now, d.slotUtc);
+        for (const auto& d : f.decodes) if (shown(d) && d.slotUtc >= now - co.keepMin * 60.0) g.add(d.slotUtc, d.msg, d.mode, d.dialHz, d.grid);
+        g.expire(now);
+        ImVec2 click;
+        if (adsbmap::clickedAt(click)) contactlines::pickAt(g, click);
+        nLines = contactlines::draw(dl, g, now, S.map.lon);
+    }
     for (const auto& p : pts) {
         const ImVec2 q = adsbmap::project(p.lat, p.lon);
         if (q.x < p0.x - 60 || q.y < p0.y - 30 || q.x > p0.x + size.x + 60 || q.y > p0.y + size.y + 30) continue;
         const ImVec4 c = modeColour(p.mode);
         const ImU32 col = ImGui::ColorConvertFloat4ToU32(c);
         dl->AddCircleFilled(q, 4.5f * gUi, col);
+        contactlines::markSelected(dl, p.call, q);
         dl->AddCircle(q, 4.5f * gUi, p.cq ? IM_COL32(120, 230, 140, 255) : IM_COL32(0, 0, 0, 150), 16, p.cq ? 1.8f : 1.f);
         const ImVec2 ts = ImGui::CalcTextSize(p.call.c_str());
         const ImVec2 lp(q.x + 8 * gUi, q.y - ts.y * 0.5f - 2 * gUi);
@@ -157,10 +173,13 @@ void mapView(App& a, const dect2::HfdigFtxTelemetry& f, ImVec2 size) {
     if (ImGui::Button("fit")) S.mapFollow = true;
     ImGui::PopStyleColor();
     ImGui::SameLine(0, 6 * gUi);
+    contactlines::controls();
+    ImGui::SameLine(0, 6 * gUi);
     adsbmap::tileControls("never the locators themselves");
     plat::prefs().setI("ftxZoom", S.map.zoom);
     ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + size.y - ImGui::GetTextLineHeight() - 6 * gUi));
     if (pts.empty()) adsbmap::legend(size.x, "no locators heard yet");
+    else if (co.lines) adsbmap::legend(size.x, tr("%zu stations by their locators, %zu contact lines"), pts.size(), nLines);
     else adsbmap::legend(size.x, "%zu stations by their locators (the middle of the square)", pts.size());
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
     ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
