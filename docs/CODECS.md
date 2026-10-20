@@ -132,12 +132,14 @@ The open-source **nrsc5** project (<https://github.com/theori-io/nrsc5>) decodes
 (`support/faad2-hdc-support.patch`). If you build that patched FAAD2 as a shared library, OnAir loads it and plays the program you select on
 the right (HD1, HD2, HD3 ...), with the volume and mute of the program. Steps (about five minutes):
 
+The patch matches FAAD2 **2.11.2**; with a newer FAAD2 some hunks fail and the build stops with `call to undeclared function 'IS_HDC'` (issue #222). The `--branch 2.11.2` in the steps below keeps it working.
+
 **macOS.**
 
 ```
 brew install cmake git
 git clone https://github.com/theori-io/nrsc5
-git clone https://github.com/knik0/faad2
+git clone --branch 2.11.2 https://github.com/knik0/faad2   # 2.11.2: the nrsc5 patch does not apply to newer FAAD2
 cd faad2
 patch -p1 < ../nrsc5/support/faad2-hdc-support.patch
 mkdir build && cd build
@@ -151,7 +153,7 @@ cp libfaad_hdc*.dylib "$HOME/Library/Application Support/OnAir/codecs/"
 ```
 sudo apt install git patch cmake build-essential     # or your distribution's equivalent
 git clone https://github.com/theori-io/nrsc5
-git clone https://github.com/knik0/faad2
+git clone --branch 2.11.2 https://github.com/knik0/faad2   # 2.11.2: the nrsc5 patch does not apply to newer FAAD2
 cd faad2
 patch -p1 < ../nrsc5/support/faad2-hdc-support.patch
 mkdir build && cd build
@@ -165,7 +167,7 @@ cp libfaad_hdc.so* ~/.local/share/onair/codecs/
 ```
 pacman -S --needed git patch mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make
 git clone https://github.com/theori-io/nrsc5
-git clone https://github.com/knik0/faad2
+git clone --branch 2.11.2 https://github.com/knik0/faad2   # 2.11.2: the nrsc5 patch does not apply to newer FAAD2
 cd faad2
 patch -p1 < ../nrsc5/support/faad2-hdc-support.patch
 mkdir build && cd build
