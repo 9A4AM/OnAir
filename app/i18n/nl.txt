@@ -3289,3 +3289,7 @@ pilot	pilot
 pilot checks	pilotcontroles
 separation	scheiding
 stereo phase	stereofase
+Colour by altitude	Kleur op hoogte
+Track width (px)	Sporbreedte (px)
+Never drop silent aircraft	Stille vliegtuigen nooit verwijderen
+Drop after (s)	Verwijderen na (s)

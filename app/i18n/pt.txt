@@ -3272,3 +3272,7 @@ pilot	piloto
 pilot checks	verificações do piloto
 separation	separação
 stereo phase	fase estéreo
+Colour by altitude	Cor por altitude
+Track width (px)	Largura do rasto (px)
+Never drop silent aircraft	Nunca remover aviões sem sinal
+Drop after (s)	Remover após (s)

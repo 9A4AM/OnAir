@@ -3289,3 +3289,7 @@ pilot	Pilot
 pilot checks	Pilotprüfungen
 separation	Trennung
 stereo phase	Stereophase
+Colour by altitude	Nach Höhe einfärben
+Track width (px)	Spurbreite (px)
+Never drop silent aircraft	Stumme Flugzeuge nie entfernen
+Drop after (s)	Entfernen nach (s)

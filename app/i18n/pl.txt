@@ -3289,3 +3289,7 @@ pilot	pilot
 pilot checks	kontrole pilota
 separation	separacja
 stereo phase	faza stereo
+Colour by altitude	Kolor wg wysokości
+Track width (px)	Grubość śladu (px)
+Never drop silent aircraft	Nigdy nie usuwaj milczących samolotów
+Drop after (s)	Usuń po (s)

@@ -3289,3 +3289,7 @@ pilot	pilotas
 pilot checks	piloto patikros
 separation	atskyrimas
 stereo phase	stereo fazė
+Colour by altitude	Spalvinti pagal aukštį
+Track width (px)	Trasos storis (px)
+Never drop silent aircraft	Niekada nešalinti tylinčių orlaivių
+Drop after (s)	Šalinti po (s)

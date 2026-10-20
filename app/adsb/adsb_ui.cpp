@@ -50,6 +50,9 @@ void loadState() {
     S.jamLayer = d.getB("adsbGpsJam", false);
     S.units.sys = d.getI("adsbUnits", 0) == 1 ? dect2::adsbu::System::Metric : dect2::adsbu::System::Aviation;
     S.units.spd = d.getI("adsbSpeedUnit", 0) == 1 ? dect2::adsbu::Speed::MS : dect2::adsbu::Speed::KmH;
+    S.disp.altColour = d.getB(dect2::adsbd::kPrefAltColour, true);
+    S.disp.trackWidth = dect2::adsbd::clampTrackWidth((int)d.getI(dect2::adsbd::kPrefTrackWidth, dect2::adsbd::kDefaultTrackWidth));
+    S.disp.dropSec = dect2::adsbd::clampDropSec((int)d.getI(dect2::adsbd::kPrefDropSec, dect2::adsbd::kDefaultDropSec));
     S.map.lat = S.refLat; S.map.lon = S.refLon;
     S.srcText = d.getS("adsbSources", "");
     for (char& c : S.srcText) if (c == '|') c = '\n';
@@ -107,9 +110,11 @@ void tick(App& a) {
     if (run) {
         if (!S.wasRunning) {
             a.engine.adsb().setCorrection(S.correction);
+            S.pushedDrop = -1;
             S.pushedLat = S.pushedLon = 1e9;   // receiver may have been running in another tab: push antenna position again
         }
         syncAdsbReference(a);
+        if (S.pushedDrop != S.disp.dropSec) { a.engine.adsb().setDropSec(dect2::adsbd::trackerDropSec(S.disp.dropSec)); S.pushedDrop = S.disp.dropSec; }
     }
     if (run && (!S.srcPushed || S.pushedSrc != S.srcText || S.pushedAny != S.srcAny)) {
         std::vector<std::string> v;

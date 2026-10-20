@@ -41,6 +41,33 @@ void unitsControls() {
     if (ch) { plat::prefs().setI("adsbUnits", S.units.metric() ? 1 : 0); plat::prefs().setI("adsbSpeedUnit", S.units.spd == au::Speed::MS ? 1 : 0); plat::prefs().flush(); }
 }
 
+// "Display": altitude colours, the width of the track lines, and when a silent aircraft leaves the table and the map
+void displayControls() {
+    namespace ad = dect2::adsbd;
+    if (ImGui::Button(tr("Display"))) ImGui::OpenPopup("##adsbdisp");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("How the map and the table show the aircraft: altitude colours, track width, and when to drop an aircraft that is no longer heard"));
+    if (!ImGui::BeginPopup("##adsbdisp")) return;
+    bool ch = false;
+    if (ImGui::Checkbox(tr("Colour by altitude"), &S.disp.altColour)) ch = true;
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Aircraft and their tracks: low is warm, high is cool, on the ground is grey. Off: white, grey when the signal is old."));
+    ImGui::SetNextItemWidth(140 * gUi);
+    if (ImGui::SliderInt(tr("Track width (px)"), &S.disp.trackWidth, ad::kMinTrackWidth, ad::kMaxTrackWidth)) { S.disp.trackWidth = ad::clampTrackWidth(S.disp.trackWidth); ch = true; }
+    bool never = S.disp.dropSec == 0;
+    if (ImGui::Checkbox(tr("Never drop silent aircraft"), &never)) { S.disp.dropSec = never ? 0 : ad::kDefaultDropSec; ch = true; }
+    if (!never) {
+        int sec = S.disp.dropSec;
+        ImGui::SetNextItemWidth(140 * gUi);
+        if (ImGui::InputInt(tr("Drop after (s)"), &sec, 10, 60)) { S.disp.dropSec = std::max(ad::kMinDropSec, ad::clampDropSec(sec)); ch = true; }
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("An aircraft that has not been heard for this long leaves the table and the map. Never keeps them until the list is cleared (the table holds at most 2000)."));
+    if (ch) {
+        plat::Prefs& p = plat::prefs();
+        p.setB(ad::kPrefAltColour, S.disp.altColour); p.setI(ad::kPrefTrackWidth, S.disp.trackWidth); p.setI(ad::kPrefDropSec, S.disp.dropSec);
+        p.flush();
+    }
+    ImGui::EndPopup();
+}
+
 std::string typeText(const AdsbAircraft& ac) {
     if (ac.category.size() < 2) return "";
     const int set = ac.category[0] - 'A', ca = ac.category[1] - '0';
@@ -69,6 +96,7 @@ void aircraftTable(App& a, bool compact) {
         resexp::saveButton(x, "adsb", note, "svadsb");
         ImGui::SameLine();
         unitsControls();
+        ImGui::SameLine(); displayControls();
         if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
     }
     if (!ImGui::BeginTable(compact ? "##acs" : "##acf", cols, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;

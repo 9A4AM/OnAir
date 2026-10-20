@@ -37,6 +37,7 @@ struct AdsbOptions {
     int fixBits = 1;             // error correction: 0 off, 1 one bit, 2 up to two bits (taken from the least certain bits only)
     bool fixUnknown = false;     // also accept a repaired DF11 / 17 / 18 from an address that has not been heard cleanly
     double expirySec = 60;       // an aircraft that is silent for this long leaves the table
+    double dropSec = 0;          // when set: this is the time to leave the table (the display option; expirySec still limits how long a fix is trusted)
 };
 
 // One aircraft update that comes decoded (an SBS / BaseStation line from another receiver)

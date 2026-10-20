@@ -3289,3 +3289,7 @@ pilot	パイロット
 pilot checks	パイロット検査
 separation	分離度
 stereo phase	ステレオ位相
+Colour by altitude	高度で色分け
+Track width (px)	航跡の太さ (px)
+Never drop silent aircraft	受信が途絶えた機体を消さない
+Drop after (s)	消去までの時間 (秒)

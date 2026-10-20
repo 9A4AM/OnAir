@@ -95,13 +95,9 @@ void radar(App& a, ImVec2 size) {
 
 // altitude colours, as on the flight-tracking sites: low and warm, high and cool
 ImU32 altColour(const AdsbAircraft& ac, float alpha = 1.f) {
-    static const float stops[5][3] = {{0.95f, 0.50f, 0.20f}, {0.55f, 0.85f, 0.40f}, {0.30f, 0.85f, 0.75f}, {0.35f, 0.60f, 0.95f}, {0.72f, 0.52f, 0.95f}};
     if (ac.emergency) return IM_COL32(235, 70, 70, (int)(255 * alpha));
-    if (ac.ground) return IM_COL32(140, 144, 148, (int)(255 * alpha));
-    float v = ac.hasAlt ? std::max(0.f, std::min(3.999f, ac.altFt / 10000.f)) : 1.5f;
-    const int i = (int)v; const float f = v - i;
-    auto c = [&](int k) { return (int)(255 * (stops[i][k] + (stops[i + 1][k] - stops[i][k]) * f)); };
-    return IM_COL32(c(0), c(1), c(2), (int)(255 * alpha));
+    const dect2::adsbd::Rgb c = dect2::adsbd::altRgb(ac.hasAlt, ac.altFt, ac.ground);
+    return IM_COL32(c.r, c.g, c.b, (int)(255 * alpha));
 }
 
 // an airliner seen from above, nose to the heading
@@ -141,13 +137,21 @@ static void drawTrails(ImDrawList* dl, const AdsbTelemetry& t) {
     for (const auto& ac : t.aircraft) {   // trails first, so the icons sit on top
         if (!ac.hasPos || ac.track.size() < 2) continue;
         const ImU32 trail = adsbmap::acColour(adsbmap::AcSrc::Adsb, ac.posAgeSec, 0.55f);
+        const bool stale = ac.posAgeSec > adsbmap::acStaleSec(adsbmap::AcSrc::Adsb);
+        const bool alt = S.disp.altColour && !stale;   // a silent aircraft greys, as its icon does
+        const float w = (float)S.disp.trackWidth * gUi;
+        auto seg = [&](const AdsbTrackPoint& tp) {
+            if (!alt) return trail;
+            const dect2::adsbd::Rgb c = dect2::adsbd::altRgb(tp.hasAlt, tp.altFt(), tp.ground);
+            return IM_COL32(c.r, c.g, c.b, 140);
+        };
         ImVec2 prev = adsbmap::project(ac.track[0].lat, ac.track[0].lon);
         for (size_t i = 1; i < ac.track.size(); i++) {
             const ImVec2 q = adsbmap::project(ac.track[i].lat, ac.track[i].lon);
-            if (std::fabs(ac.track[i].lat - ac.track[i - 1].lat) < 2 && std::fabs(ac.track[i].lon - ac.track[i - 1].lon) < 2) dl->AddLine(prev, q, trail, 1.8f);   // a jump is a bad fix, not a flight
+            if (std::fabs(ac.track[i].lat - ac.track[i - 1].lat) < 2 && std::fabs(ac.track[i].lon - ac.track[i - 1].lon) < 2) dl->AddLine(prev, q, seg(ac.track[i]), w);   // a jump is a bad fix, not a flight
             prev = q;
         }
-        if (std::fabs(ac.track.back().lat - ac.lat) < 2 && std::fabs(ac.track.back().lon - ac.lon) < 2) dl->AddLine(prev, adsbmap::project(ac.lat, ac.lon), trail, 1.8f);
+        if (std::fabs(ac.track.back().lat - ac.lat) < 2 && std::fabs(ac.track.back().lon - ac.lon) < 2) dl->AddLine(prev, adsbmap::project(ac.lat, ac.lon), alt ? altColour(ac, 0.55f) : trail, w);
     }
     for (const auto& ac : t.aircraft) {   // a couple of minutes ahead at the last speed, like the path on the flight-tracking sites
         if (!ac.hasPos || !ac.hasHeading || !ac.hasSpeed || ac.speedKt < 30 || ac.ground) continue;
@@ -208,7 +212,8 @@ static void drawAircraft(ImDrawList* dl, const AdsbTelemetry& t, ImVec2 p0, ImVe
         const ImVec2 q = est ? adsbmap::project(pe.lat, pe.lon) : adsbmap::project(ac.lat, ac.lon);
         if (q.x < p0.x - 40 || q.y < p0.y - 40 || q.x > p0.x + size.x + 40 || q.y > p0.y + size.y + 40) continue;
         const bool sel = ac.icao == S.sel;
-        const ImU32 fill = ac.emergency ? ImGui::ColorConvertFloat4ToU32(pal::badRed()) : adsbmap::acColour(adsbmap::AcSrc::Adsb, ac.posAgeSec);
+        const bool stale = ac.posAgeSec > adsbmap::acStaleSec(adsbmap::AcSrc::Adsb);
+        const ImU32 fill = ac.emergency ? ImGui::ColorConvertFloat4ToU32(pal::badRed()) : (S.disp.altColour && !stale) ? altColour(ac) : adsbmap::acColour(adsbmap::AcSrc::Adsb, ac.posAgeSec);
         { float hdg = 0.f; drawPlane(dl, q, planeHeadingDeg(ac, hdg) ? hdg : 0.f, (sel ? 14.f : 12.f) * gUi, fill, sel); }
         if (est) { pospred::drawPredictionMarks(dl, pe, q, fill, gPred.ellipses); pospred::hoverTooltip(pe, q); }
         if (acarslog::count(ac.icao) > 0) dl->AddCircleFilled(ImVec2(q.x + 8 * gUi, q.y - 8 * gUi), 3.f * gUi, IM_COL32(245, 160, 40, 255));   // it has sent ACARS messages
@@ -270,6 +275,8 @@ static void mapCorner(App& a, ImVec2 p0, ImVec2 size, bool wrongRef, double area
     ImGui::PopStyleColor();
     ImGui::SameLine(0, 6 * gUi);
     unitsControls();
+    ImGui::SameLine(0, 6 * gUi);
+    displayControls();
     ImGui::SameLine(0, 6 * gUi);
     if (ImGui::Checkbox("winds aloft", &S.winds)) { plat::prefs().setB("adsbWinds", S.winds); plat::prefs().flush(); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Wind arrows (downwind) at the aircraft, coloured by altitude: derived from Comm-B 5,0 + 6,0 replies, or reported in 4,4.");
