@@ -887,6 +887,9 @@ static TxPayloadKind expectedKind(const std::string& id) {
     if (id == "mesh") return TxPayloadKind::Mesh;
     if (id == "mac") return TxPayloadKind::Mac;
     if (id == "kaal") return TxPayloadKind::Kaal;
+    if (id == "kait") return TxPayloadKind::Kait;
+    if (id == "kapp") return TxPayloadKind::Kapp;
+    if (id == "kaft") return TxPayloadKind::Kaft;
     if (id == "kapp") return TxPayloadKind::Kapp;
     if (id == "kaft") return TxPayloadKind::Kaft;
     if (id == "vdl4" || id == "uat" || id == "wisun" || id == "zwave") return TxPayloadKind::SatScene;

@@ -3387,7 +3387,6 @@ no stations yet	dar nėra stočių
 other modulations	kitos moduliacijos
 quality %d/100	kokybė %d/100
 tone offset	tono nuokrypis
-unreadable	neįskaitoma
 # GOES DCS
 Copies the reports as CSV: id, time, platform address, channel, frequency, bit rate, coding, level, data format, parity errors, data.	Nukopijuoja ataskaitas kaip CSV: id, laikas, platformos adresas, kanalas, dažnis, bitų sparta, kodavimas, lygis, duomenų formatas, lyginumo klaidos, duomenys.
 Appends every report to goes_dcs.csv in the data folder, also when nobody watches the screen.	Prideda kiekvieną ataskaitą prie goes_dcs.csv duomenų aplanke, net kai niekas nežiūri į ekraną.

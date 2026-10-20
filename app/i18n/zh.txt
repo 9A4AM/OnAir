@@ -3387,7 +3387,6 @@ no stations yet	暂无电台
 other modulations	其他调制
 quality %d/100	质量 %d/100
 tone offset	音调偏差
-unreadable	无法读取
 # GOES DCS
 Copies the reports as CSV: id, time, platform address, channel, frequency, bit rate, coding, level, data format, parity errors, data.	将报告复制为CSV:编号、时间、平台地址、信道、频率、比特率、编码、电平、数据格式、奇偶校验错误、数据。
 Appends every report to goes_dcs.csv in the data folder, also when nobody watches the screen.	把每份报告追加到数据文件夹中的goes_dcs.csv,即使没有人看屏幕也会记录。
