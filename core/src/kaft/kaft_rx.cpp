@@ -55,23 +55,6 @@ cf interp(const std::vector<cf>& x, double pos) {
     return cf(re, im);
 }
 
-std::vector<cf> matchedFilter(const std::vector<cf>& d) {
-    const std::vector<float>& h = rrcFilter();
-    const long T = (long)h.size(), c = (T - 1) / 2, N = (long)d.size();
-    std::vector<cf> out((size_t)N);
-    for (long n = 0; n < N; n++) {
-        const long k0 = std::max<long>(0, c - n), k1 = std::min<long>(T - 1, N - 1 - n + c);
-        float re = 0, im = 0;
-        for (long k = k0; k <= k1; k++) {
-            const cf& v = d[(size_t)(n + k - c)];
-            re += h[(size_t)k] * v.real();
-            im += h[(size_t)k] * v.imag();
-        }
-        out[(size_t)n] = cf(re, im);
-    }
-    return out;
-}
-
 // correlation of the interpolated symbol-rate samples starting at tau with the preamble, derotated by f (Hz)
 double preambleRho(const std::vector<cf>& mf, double tau, double fHz, const std::vector<cf>& pre, double symRate) {
     cd c = 0;
@@ -103,6 +86,100 @@ FrameReceiver::FrameReceiver(const FrameReceiverConfig& cfg) : cfg_(cfg) {
         longest = std::max(longest, (double)syms * kSps * down_[w] / up_[w]);
     }
     minProcess_ = (size_t)(longest * 1.2) + 4096;
+    for (int w = 0; w < kNumWidths; w++) {   // the windowed-sinc taps of resample() (kaft_frame.cpp), once
+        const int up = up_[w], down = down_[w];
+        const int mx = std::max(up, down), H = 6 * mx;
+        tapH_[w] = H;
+        tap_[w].assign((size_t)(2 * H + 1), 0.f);
+        for (int d = -H; d <= H; d++) {
+            const double xx = (double)d / mx;
+            const double sinc = d == 0 ? 1.0 : std::sin(kPi * xx) / (kPi * xx);
+            const double win = 0.42 + 0.5 * std::cos(kPi * (double)d / H) + 0.08 * std::cos(2.0 * kPi * (double)d / H);
+            tap_[w][(size_t)(d + H)] = (float)((double)up / mx * sinc * win);
+        }
+    }
+}
+
+namespace {
+int64_t floorDivI(int64_t a, int64_t b) { int64_t q = a / b; if ((a % b != 0) && ((a < 0) != (b < 0))) q--; return q; }
+}
+
+void FrameReceiver::extendDec(int w, bool final) {
+    const int64_t up = up_[w], down = down_[w], H = tapH_[w];
+    const int64_t endAbs = (int64_t)base_ + (int64_t)in_.size();   // exclusive
+    std::vector<cf>& d = dec_[w];
+    const int64_t m0 = decSt_[w] + (int64_t)d.size();
+    int64_t m1;   // exclusive
+    if (final) m1 = floorDivI(endAbs * up, down);
+    else m1 = floorDivI((endAbs - 1) * up - H, down) + 1;
+    if (m1 <= m0) return;
+    const size_t oldN = d.size();
+    d.resize(oldN + (size_t)(m1 - m0));
+    const float* tap = tap_[w].data();
+    for (int64_t m = m0; m < m1; m++) {
+        const int64_t pos = m * down;
+        int64_t k0 = floorDivI(pos - H + up - 1, up), k1 = floorDivI(pos + H, up);
+        k0 = std::max<int64_t>(k0, (int64_t)base_);
+        k1 = std::min<int64_t>(k1, endAbs - 1);
+        float re = 0, im = 0;
+        for (int64_t k = k0; k <= k1; k++) {
+            const float t = tap[pos - k * up + H];
+            const cf& x = in_[(size_t)(k - (int64_t)base_)];
+            re += t * x.real();
+            im += t * x.imag();
+        }
+        d[oldN + (size_t)(m - m0)] = cf(re, im);
+    }
+}
+
+void FrameReceiver::extendMf(int w, bool final) {
+    const std::vector<float>& h = rrcFilter();
+    const long T = (long)h.size(), c = (T - 1) / 2;
+    const std::vector<cf>& d = dec_[w];
+    std::vector<cf>& mf = mf_[w];
+    const long N = (long)d.size();
+    const long n0 = (long)mf.size();
+    const long n1 = final ? N : N - c;
+    if (n1 <= n0) return;
+    mf.resize((size_t)n1);
+    const float* x = reinterpret_cast<const float*>(d.data());
+    for (long n = n0; n < n1; n++) {
+        float re, im;
+        if (n >= c && n + c < N) {   // the filter is symmetric: one multiplication per pair of taps
+            re = h[(size_t)c] * x[2 * n];
+            im = h[(size_t)c] * x[2 * n + 1];
+            const float* hp = h.data() + c;
+            const float* xp = x + 2 * n;
+            const float* xm = x + 2 * n;
+            float r2 = 0.f, i2 = 0.f;
+            for (long j = 1; j <= c; j++) {
+                r2 += hp[j] * (xp[2 * j] + xm[-2 * j]);
+                i2 += hp[j] * (xp[2 * j + 1] + xm[-2 * j + 1]);
+            }
+            re += r2;
+            im += i2;
+        } else {
+            re = 0.f; im = 0.f;
+            const long k0 = std::max<long>(0, c - n), k1 = std::min<long>(T - 1, N - 1 - n + c);
+            for (long k = k0; k <= k1; k++) {
+                re += h[(size_t)k] * x[2 * (n + k - c)];
+                im += h[(size_t)k] * x[2 * (n + k - c) + 1];
+            }
+        }
+        mf[(size_t)n] = cf(re, im);
+    }
+}
+
+// drops the converted streams in front of the input that was dropped (a margin stays for the filters and the interpolator)
+void FrameReceiver::trimFront() {
+    for (int w = 0; w < kNumWidths; w++) {
+        const int64_t keepFrom = floorDivI((int64_t)base_ * up_[w], down_[w]) - 128;
+        int64_t n = std::min<int64_t>(keepFrom - decSt_[w], (int64_t)std::min(mf_[w].size(), dec_[w].size()));
+        if (n <= 0) continue;
+        dec_[w].erase(dec_[w].begin(), dec_[w].begin() + n);
+        mf_[w].erase(mf_[w].begin(), mf_[w].begin() + n);
+        decSt_[w] += n;
+    }
 }
 
 void FrameReceiver::push(const cf* x, size_t n) {
@@ -123,15 +200,14 @@ void FrameReceiver::process(bool final) {
     sinceProcess_ = 0;
     if (in_.empty()) return;
     std::vector<Cand> cands;
-    std::vector<cf> mfs[kNumWidths];
+    double off[kNumWidths] = {0, 0, 0};   // input position (relative to in_[0]) of mf_[w][0]
     for (int w = 0; w < kNumWidths; w++) {
         if (cfg_.forceWidth >= 0 && cfg_.forceWidth != w) continue;
-        {
-            const std::vector<cf> dec = cfg_.resample ? cfg_.resample(in_, up_[w], down_[w]) : resample(in_, up_[w], down_[w]);
-            mfs[w] = matchedFilter(dec);
-        }
-        const std::vector<cf>& mf = mfs[w];
+        extendDec(w, final);
+        extendMf(w, final);
+        const std::vector<cf>& mf = mf_[w];
         const double inPerOwn = (double)down_[w] / (double)up_[w];
+        off[w] = (double)decSt_[w] * inPerOwn - (double)base_;
         const size_t n = mf.size();
         if (n < kWin + kLag + 16) continue;
         // lag-251 autocorrelation with running sums
@@ -153,14 +229,40 @@ void FrameReceiver::process(bool final) {
             const std::vector<cf>& pre = preambleSymbols((Width)w);
             const double symRate = kWidths[w].symRate;
             const double fs = kSps * symRate;
-            const double f1 = -std::arg(bestP) * fs / (2.0 * kPi * (double)kLag);
             long lo = (long)best - 12, hi = (long)best + 12;
             lo = std::max<long>(lo, 4);
             if ((size_t)hi + (size_t)kSps * (size_t)(kPreambleSyms - 1) + 16 >= n) {
                 c.incomplete = true;
-                c.posIn = ((double)best + 4.0) * inPerOwn;
+                c.posIn = ((double)best + 4.0) * inPerOwn + off[w];
                 cands.push_back(c);
                 return;
+            }
+            // coarse carrier offset from blocks of 16 symbols: the powers of the block correlations (insensitive to the rotation) pick the timing, the phase
+            // between neighbouring blocks gives the offset (unambiguous to +-symRate/32), whatever the lag-251 phase says
+            double f1 = -std::arg(bestP) * fs / (2.0 * kPi * (double)kLag);
+            {
+                constexpr int kB = 16, kNb = kPreambleSyms / kB;
+                double bestBlk = -1;
+                for (long t = lo; t <= hi; t++) {
+                    cd b[kNb];
+                    double tot = 0;
+                    for (int j = 0; j < kNb; j++) {
+                        cd acc = 0;
+                        for (int i = 0; i < kB; i++) {
+                            const size_t k = (size_t)(j * kB + i);
+                            const cf& sv = mf[(size_t)t + (size_t)kSps * k];
+                            acc += cd(sv.real(), sv.imag()) * std::conj(cd(pre[k].real(), pre[k].imag()));
+                        }
+                        b[j] = acc;
+                        tot += std::norm(acc);
+                    }
+                    if (tot > bestBlk) {
+                        bestBlk = tot;
+                        cd d = 0;
+                        for (int j = 0; j + 1 < kNb; j++) d += b[j + 1] * std::conj(b[j]);
+                        f1 = std::arg(d) / (double)kB * symRate / (2.0 * kPi);
+                    }
+                }
             }
             // integer search with the coarse offset removed
             double bestV = -1;
@@ -184,23 +286,31 @@ void FrameReceiver::process(bool final) {
             }
             // carrier offset from the two repeats, symbol-rate samples
             std::vector<cf> s(pre.size());
-            for (size_t i = 0; i < pre.size(); i++) s[i] = interp(mf, tau + (double)kSps * (double)i);
+            for (size_t i = 0; i < pre.size(); i++) {
+                const cf v = interp(mf, tau + (double)kSps * (double)i);
+                const double ph = -2.0 * kPi * f1 * (double)i / symRate;   // the coarse offset out, so that the repeats only have the residual to show
+                s[i] = v * cf((float)std::cos(ph), (float)std::sin(ph));
+            }
             cd p2 = 0;
             for (size_t i = 0; i + kLagSyms < pre.size(); i++)
                 p2 += cd(s[i].real(), s[i].imag()) * std::conj(cd(s[i + kLagSyms].real(), s[i + kLagSyms].imag()));
-            const double f2 = -std::arg(p2) * symRate / (2.0 * kPi * (double)kLagSyms);
+            const double f2 = f1 - std::arg(p2) * symRate / (2.0 * kPi * (double)kLagSyms);
             const double rho = preambleRho(mf, tau, f2, pre, symRate);
             if (rho < (double)cfg_.verifyThreshold) return;
             c.tau = tau;
             c.cfoHz = (float)f2;
             c.rho = (float)rho;
-            c.posIn = tau * inPerOwn;
+            c.posIn = tau * inPerOwn + off[w];
             cands.push_back(c);
         };
+        // Digital silence (exact zeros between frames, as in a recorded file made without noise): the differences of the running sums are then
+        // rounding residue of both numerator and denominator, and their ratio would come out large. A window is only looked at when its energy is
+        // a real share of the average.
+        const double eFloor = 1e-6 * (e[n] / (double)n) * (double)kWin;
         for (size_t s = 0; s < nS; s++) {
             const cd P = cs[s + kWin] - cs[s];
             const double e1 = e[s + kWin] - e[s], e2 = e[s + kLag + kWin] - e[s + kLag];
-            const double m = std::abs(P) / std::sqrt(std::max(e1 * e2, 1e-30));
+            const double m = (e1 < eFloor || e2 < eFloor) ? 0.0 : std::abs(P) / std::sqrt(std::max(e1 * e2, 1e-30));
             if (m > (double)cfg_.detectThreshold) {
                 if (!inRun) { inRun = true; best = s; bestM = m; bestP = P; }
                 else if (m > bestM) { best = s; bestM = m; bestP = P; }
@@ -228,7 +338,8 @@ void FrameReceiver::process(bool final) {
         }
         RxFrame f;
         double endIn = 0;
-        const Status st = decodeAt(c.w, mfs[c.w], c, f, endIn);
+        const Status st = decodeAt(c.w, mf_[c.w], c, f, endIn);
+        endIn += off[c.w];
         if (st == Status::Incomplete) {
             if (!final) { stalled = true; stallPos = c.posIn; break; }
             continue;
@@ -252,6 +363,7 @@ void FrameReceiver::process(bool final) {
     dropTo = std::min(dropTo, in_.size());
     in_.erase(in_.begin(), in_.begin() + (long)dropTo);
     base_ += dropTo;
+    trimFront();
 }
 
 FrameReceiver::Status FrameReceiver::decodeAt(int w, const std::vector<cf>& mf, const Cand& c, RxFrame& out, double& endIn) const {

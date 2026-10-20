@@ -102,6 +102,8 @@
 #include "dect2/ifkp/ifkp_rx.h"
 #include "dect2/kaal/kaal_live.h"
 #include "dect2/kait/kait_live.h"
+#include "dect2/kapp/kapp_live.h"
+#include "dect2/kaft/kaft_live.h"
 #include "dect2/cquam/cquam_rx.h"
 #include "dect2/modeac/modeac_live.h"
 #include "dect2/mscatter/mscatter_live.h"
@@ -406,6 +408,8 @@ public:
     FsqReceiver& fsq() { return rxFsq_; }   // FSQ: speed, own callsign, clear the text (telemetry through latestRx)
     KaalLiveReceiver& kaal() { return rxKaal_; }   // KAAL: volume, mute (telemetry through latestRx)
     KaitLiveReceiver& kait() { return rxKait_; }   // KAIT: picture bursts (telemetry through latestRx)
+    KappLiveReceiver& kapp() { return rxKapp_; }   // KAPP: clear the packet list (telemetry through latestRx)
+    KaftLiveReceiver& kaft() { return rxKaft_; }   // KAFT: the folder received files are saved to, clear the list (telemetry through latestRx)
     IfkpReceiver& ifkp() { return rxIfkp_; }   // IFKP: speed, clear the text (telemetry through latestRx)
     ArdopReceiver& ardop() { return rxArd_; }   // ARDOP: clear the frames, Listen (telemetry through latestRx)
     Mt63Receiver& mt63() { return rxMt63_; }   // MT63: bandwidth and interleave (automatic by default), clear the text (telemetry through latestRx)
@@ -693,6 +697,8 @@ private:
     IfkpReceiver rxIfkp_;
     KaalLiveReceiver rxKaal_;
     KaitLiveReceiver rxKait_;
+    KappLiveReceiver rxKapp_;
+    KaftLiveReceiver rxKaft_;
     CquamReceiver rxCq_;
     ArdopReceiver rxArd_;
     MscatterLiveReceiver rxMs_;

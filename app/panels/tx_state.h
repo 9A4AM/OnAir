@@ -103,6 +103,16 @@ struct TxUi {
     int kaitProfile = 0;
     bool kaitLoaded = false;
     std::string kaitSaved;
+    // KAPP: the profile (0 .. 8), the passes of the one-way transmission, and a file to send instead of the text
+    int kappProfile = 2, kappPasses = 2;
+    char kappFile[512] = {};
+    bool kappLoaded = false;
+    std::string kappSaved;
+    // KAFT: the profile (0 .. 9), the width (0 1 MHz, 1 500 kHz, 2 200 kHz), the passes, and the file to send
+    int kaftProfile = 2, kaftWidth = 2, kaftPasses = 2;
+    char kaftFile[512] = {};
+    bool kaftLoaded = false;
+    std::string kaftSaved;
 };
 
 TxUi& ui();                                            // the one transmit state
@@ -137,6 +147,8 @@ bool canStart(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxMo
 bool startTx(App& a, TxUi& s, const DeviceInfo* radio, const TxModeSpec* mode, bool carrier);
 void stopTx(App& a, TxUi& s, const char* why);         // stops, gives the radio back, logs why
 void destinationPanel(TxUi& s, const TxModeSpec& mode, bool running);   // Radio or IQ file, the folder, the format, the rate and what has been written (tx_ui.cpp)
+void kappPanel(TxUi& s, bool running);                // KAPP: callsign, message or file, profile, passes (kapp_ui.cpp)
+void kaftPanel(TxUi& s, bool running);                // KAFT: callsign, file, width, profile, passes (kaft_ui.cpp)
 void kaalPanel(TxUi& s, bool running);                // KAAL: callsign, grid, position, power, bio text, beacon (kaal_tx_ui.cpp)
 void kaitPanel(TxUi& s, bool running);                // KAIT: callsign, picture file, profile (app/kait/kait_ui.cpp)
 std::string kaitPictureFile(const std::string& path); // the file the KAIT generator reads: PNG / PPM as they are, other pictures converted to a PPM

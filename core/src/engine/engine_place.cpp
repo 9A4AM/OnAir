@@ -175,6 +175,8 @@ void Engine::configureReceiver(int a, double r) {
     case 117: rxIfkp_.configure(r); break;
     case 123: rxKaal_.configure(r); break;
     case 132: rxKait_.configure(r); break;
+    case 125: rxKapp_.configure(r); break;
+    case 126: rxKaft_.configure(r); break;
     case 108: rxCq_.configure(r); break;
     case 105: rxMs_.configure(r); break;
     case 142: rxGd_.configure(r); break;

@@ -54,11 +54,11 @@ struct ProfileInfo {
     kris::Mod mod;
     kris::LdpcRate rate;
     double rateValue;
-    double reqEsN0Db;   // spec table, an estimate (Shannon + 1.5 dB)
+    double reqEsN0Db;   // FER ~1e-2. P0 and P1 are measured (LDPC n = 7680, AWGN, max-log, 50 iterations, 600 codewords, 0.25 dB steps): BPSK 1/4 -0.75 dB, QPSK 1/4 +2.25 dB; the others are the spec table, an estimate (Shannon + 1.5 dB), optimistic
 };
 inline constexpr ProfileInfo kProfiles[kNumProfiles] = {
-    {0, "P0 BPSK 1/4", kris::Mod::Bpsk, kris::LdpcRate::R1_4, 0.25, -1.0},
-    {1, "P1 QPSK 1/4", kris::Mod::Qpsk, kris::LdpcRate::R1_4, 0.25, -2.3},
+    {0, "P0 BPSK 1/4", kris::Mod::Bpsk, kris::LdpcRate::R1_4, 0.25, -0.75},
+    {1, "P1 QPSK 1/4", kris::Mod::Qpsk, kris::LdpcRate::R1_4, 0.25, 2.25},
     {2, "P2 QPSK 1/2", kris::Mod::Qpsk, kris::LdpcRate::R1_2, 0.5, 1.5},
     {3, "P3 QPSK 3/4", kris::Mod::Qpsk, kris::LdpcRate::R3_4, 0.75, 4.1},
     {4, "P4 16-QAM 3/4", kris::Mod::Qam16, kris::LdpcRate::R3_4, 0.75, 10.0},

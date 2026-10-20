@@ -42,10 +42,8 @@ private:
 
 ModeTuning kaalTuning();
 
-// The three work-in-progress modes of the "Kris custom modes" group: only the tuning (width, rate) exists so that the app can select and tune them.
-// They have no receiver, no transmitter and no engine case. Engine standards 125, 126 and 127.
+// KAVB, the one work-in-progress mode left in the "Kris custom modes" group: only the tuning (width, rate) exists so that the app can select and tune it.
+// It has no receiver, no transmitter and no engine case. Engine standard 125. (KAPP, engine standard 126, is kapp/kapp_live.h; KAFT, 127, kaft/kaft_live.h.)
 ModeTuning kavbTuning();
-ModeTuning kappTuning();
-ModeTuning kaftTuning();
 
 } // namespace dect2

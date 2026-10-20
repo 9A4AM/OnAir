@@ -19,6 +19,8 @@
 #include "dect2/m17/m17_codec2.h"
 #include "dect2/kaal/kaal_txgen.h"
 #include "dect2/kait/kait_txgen.h"
+#include "dect2/kapp/kapp_txgen.h"
+#include "dect2/kaft/kaft_txgen.h"
 #include "dect2/engine/mode_tuning.h"
 #include "dect2/t2/t2.h"
 #include "dect2/t2/t2gen.h"
@@ -185,6 +187,8 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("lbj", "LBJ", 83, "makeLbjSynth", kOpt, kUnv),
         mk("kait", "KAIT", 133, "makeKaitTxGenerator (kait::planBurst: wavelet image stream in layers, 10 s burst, sweeps, pilots)", "callsign, a PNG or PPM picture (empty: the demo picture), profile 0 balanced / 1 robust / 2 quality / 3 direct", kUnv, 0, 632000, false, 400000),
         mk("kaal", "KAAL", 124, "makeKaalTxGenerator (kaal::VoiceTx: 16 kbit/s voice codec, 16-QAM LDPC, beacon slice)", "callsign, grid, position, power, bio text, beacon on or off; the voice from a microphone or a WAV file", kUnv, 0, 48000, false, 48000),
+        mk("kapp", "KAPP", 126, "makeKappTxGenerator (kapp::buildBurst: BPSK to 1024-QAM LDPC bursts of selective-repeat blocks, sent one-way and repeated)", "callsign, message text or a file, profile 0 to 8, passes", kUnv, 0, 250000, false, 125000),
+        mk("kaft", "KAFT", 127, "makeKaftTxGenerator (kaft::buildBurst: OPEN, data frames of LDPC blocks with CRC-32, FINISH; one-way and repeated)", "callsign, file, width 200 kHz / 500 kHz / 1 MHz, profile 0 to 9, passes", kUnv, 0, 2.4e6, false, 250000),
     };
 }
 }
@@ -285,6 +289,8 @@ TxPayloadKind txPayloadKind(const std::string& id) {
     if (id == "mac") return TxPayloadKind::Mac;
     if (id == "kaal") return TxPayloadKind::Kaal;
     if (id == "kait") return TxPayloadKind::Kait;
+    if (id == "kapp") return TxPayloadKind::Kapp;
+    if (id == "kaft") return TxPayloadKind::Kaft;
     if (id == "vdl4" || id == "uat" || id == "wisun" || id == "zwave") return TxPayloadKind::SatScene;   // demo-traffic generators, no custom message
     return TxPayloadKind::SatScene;   // never a generic callsign dump; unknown ids are treated as a test scene
 }
@@ -314,6 +320,8 @@ std::string txVocoderNote(const TxModeSpec& m) {
         return "TETRA ACELP is not encoded here. Colour code and IDs are shown; the downlink test pattern is sent. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.";
     return {};
 }
+
+bool txModeFinite(const TxModeSpec& m) { return m.id && (std::string(m.id) == "kapp" || std::string(m.id) == "kaft"); }
 
 bool txModeNeedsAudio(const TxModeSpec& m, const TxRequest& r) {
     if (r.carrierTune) return false;
@@ -427,6 +435,7 @@ public:
     CarrierGate(std::unique_ptr<TxGenerator> inner, std::atomic<bool>* flag, double rate)
         : inner_(std::move(inner)), flag_(flag), rate_(rate) {}
     double sampleRate() const override { return inner_ ? inner_->sampleRate() : rate_; }
+    bool finished() const override { return inner_ && inner_->finished() && !carrier_; }   // a finite transmission ends the session; a carrier tune keeps it
     void generate(cf32* out, size_t n) override {
         const bool want = flag_ && flag_->load(std::memory_order_relaxed);
         if (want == carrier_ && fade_ >= kFade) {
@@ -603,6 +612,8 @@ static SynthConfig cleanSynth(const SynthConfig& c, int stdMode) {
 }
 
 std::unique_ptr<TxGenerator> makeTxGenerator(const TxModeSpec& m, const TxRequest& r, double rateHz, std::string& err) {
+    if (m.stdMode == 126) return makeKappTxGenerator(r, rateHz > 0 ? rateHz : m.nominalRateHz, err);   // KAPP: its own burst transmitter at the radio's rate
+    if (m.stdMode == 127) return makeKaftTxGenerator(r, rateHz > 0 ? rateHz : m.nominalRateHz, err);   // KAFT: its own file transmitter at the radio's rate
     if (m.stdMode == 124) return makeKaalTxGenerator(r, rateHz > 0 ? rateHz : m.nominalRateHz, err);   // KAAL: its own transmitter chain at the radio's rate
     if (m.stdMode == 133) return makeKaitTxGenerator(r, rateHz > 0 ? rateHz : m.nominalRateHz, err);   // KAIT: a picture burst at the radio's rate
     const SynthConfig s = cleanSynth(r.synth, m.stdMode);
@@ -1025,6 +1036,7 @@ void TxSession::generatorLoop() {
             if (stop_ || senderDone_) break;
             q_.push_back(std::move(blk));
             cvOut_.notify_one();
+            if (gen_->finished()) break;   // a finite transmission (KAPP, KAFT) has made its last sample
         }
     } catch (const std::exception& e) {
         fail(std::string("the generator stopped: ") + e.what());

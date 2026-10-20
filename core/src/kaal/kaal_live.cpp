@@ -191,19 +191,4 @@ ModeTuning kavbTuning() {
     t.sampleRate = 2.4e6; t.bandwidthMhz = 2.0; t.minSampleRate = 2e6;
     return t;
 }
-ModeTuning kappTuning() {
-    ModeTuning t;
-    t.stdMode = 126; t.id = "kapp"; t.name = "KAPP (WIP)";
-    t.minMhz = 30; t.maxMhz = 6000; t.defMhz = 433;
-    t.sampleRate = 250000; t.bandwidthMhz = 0.1; t.minSampleRate = 125000;
-    return t;
-}
-ModeTuning kaftTuning() {
-    ModeTuning t;
-    t.stdMode = 127; t.id = "kaft"; t.name = "KAFT (WIP)";
-    t.minMhz = 100; t.maxMhz = 6000; t.defMhz = 1290;
-    t.sampleRate = 2.4e6; t.bandwidthMhz = 1.0; t.minSampleRate = 1.25e6;
-    return t;
-}
-
 } // namespace dect2

@@ -23,6 +23,7 @@ struct RxBurst {
     float snrDb = 0.f;                // Es/N0 from the preamble and header
     float cfoHz = 0.f;                // carrier offset
     uint64_t startSample = 0;         // absolute index (internal rate) of the first preamble symbol
+    std::vector<cf> symbols;          // up to 400 of the equalised data symbols (evenly spread over the burst), for a constellation display
     bool isAck() const { return (flags & kFlagAck) != 0; }
     int blocksOk() const {
         int n = 0;
@@ -65,6 +66,14 @@ private:
     void extendFilter();
     bool scanForPeak();
     float metricAt(size_t n) const;
+    // Carrier offsets beyond the +-315 Hz that one Zadoff-Chu half tolerates (up to +-5 kHz): the preamble is also correlated in blocks of 8 symbols whose
+    // powers are added (the blocks are short enough not to lose the signal to the rotation), then the offset is read from the phase between neighbouring blocks.
+    bool blockSums(size_t n, std::complex<double>* b) const;
+    double blockMetricHalf(size_t n) const;   // blocks of the first half, noise-only mean 1
+    double blockMetricFull(size_t n) const;   // all blocks, noise-only mean 1
+    double blockOmega(size_t n) const;        // carrier offset in rad per symbol from the block phases
+    double cohMetric(size_t n, double wh) const;   // coherent correlation of the whole preamble with the offset removed
+    void refinePeak(size_t coarse);           // sets peak_, frac_ and wh_
     float corrHalf(size_t n, int half) const;
     void decodeAtPeak();
     cf symAt(double pos) const;
@@ -81,6 +90,7 @@ private:
     size_t peak_ = 0;
     double frac_ = 0.0;
     size_t needMf_ = 0;
+    double wh_ = 0.0;             // offset of the burst at the peak (rad per symbol), removed before the rest of the decoder
     std::function<void(const RxBurst&)> cb_;
     std::vector<RxBurst> queue_;
     RxStats st_;
