@@ -1,6 +1,7 @@
 // The Memory panel: the frequencies the user keeps with their mode and settings. A window (View > Memory, Ctrl+M), an optional tab of the main
 // screen, and the "M" menu of the quick list. The model and the files are in core (dect2/channels/memory_bank.h), what is captured from and
 // applied to a receiver in memory_options.cpp, the edit dialog in memory_edit.cpp.
+#include <string>
 #include "memory_ui.h"
 #include "../state/results_export.h"
 #include "../ui/ui_common.h"
@@ -361,7 +362,7 @@ void memoryMenu(App& a) {
 }
 
 void memoryToolbarButton(App& a) {
-    if (ImGui::SmallButton("M##memtb")) ImGui::OpenPopup("##memquick");
+    if (ImGui::SmallButton((std::string(tr("Memory")) + "##memtb").c_str())) ImGui::OpenPopup("##memquick");
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Memories: the frequencies you keep, with mode and settings (Ctrl+M)"));
     if (ImGui::BeginPopup("##memquick")) {
         if (ImGui::MenuItem(tr("Memory panel..."), "Ctrl+M", a.memoryOpen)) a.memoryOpen = !a.memoryOpen;
