@@ -84,3 +84,6 @@ New mode satbeacon (family 107, active 108, std 109, worktree dvbs-028). Built f
 
 ## 2026-10-18 TV sat beacon decoder: decoded view
 Renamed from Satellite beacon and moved to the TV group. The frames were analysed word by word over all 512 frames of the recording: sync FAF320, byte 3 FE, counter byte 4, last byte = sum8 of the others (512/512), byte 15 a 1.000 Hz seconds counter, byte 122 a copy of the counter, constants (00 00 1E A3 2B), FB fill, ~20 commutated words, ~60 samples; no ASCII, date, orbit or transponder table. Meanings are the maker's, so the Decoded view shows raw, grouped words with a confidence; the satellite is estimated (BSAT-4b 110E, 214 kHz off) from DecSAT's table of published Ku beacons (data ported, notice kept). DecSAT's status file also says the word meanings are open.
+
+## 2026-10-20 Docs for 0.2.8
+Branch docs-028. README: 142 modes (rows of app/ui/mode_table.cpp on pub/0.2.8 plus the pending mode branches, minus the Plugins entry), what is new in 0.2.8, KA family section, credits (Arclamp DecSAT, ffishman PR #217, mbelib-neo). docs/CODECS.md: merged codec-doc-028, TETRA and Fusion (id ysf) plug-ins, nothing-patented rule, KA codecs. Release notes and website text prepared outside the repo.
