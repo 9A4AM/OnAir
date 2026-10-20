@@ -24,6 +24,18 @@ public:
     void configure(double outRate) {
         ratio_ = 48000.0 / outRate;
         fc_ = 0.97 * std::min(1.0, outRate / 48000.0);
+        // the kernel at kPhases fractional positions (nearest phase: a timing error of at most 1 / 2048 of an input sample, below -70 dB for this signal)
+        tab_.assign((size_t)(kPhases + 1) * 2 * kH, 0.f);
+        for (int p = 0; p <= kPhases; p++) {
+            const double f = (double)p / kPhases;
+            for (int j = 0; j < 2 * kH; j++) {
+                const double x = f - (double)(j - kH + 1);   // pos - i with i = i0 - kH + 1 + j and pos = i0 + f
+                const double a = fc_ * x;
+                const double sinc = std::fabs(a) < 1e-9 ? 1.0 : std::sin(kPi * a) / (kPi * a);
+                const double w = 0.5 + 0.5 * std::cos(kPi * x / kH);
+                tab_[(size_t)p * 2 * kH + (size_t)j] = (float)(fc_ * sinc * w);
+            }
+        }
         reset();
     }
     void reset() { buf_.assign(kH, cf(0, 0)); base_ = -kH; pos_ = 0; }
@@ -32,18 +44,14 @@ public:
         while (true) {
             const int64_t i0 = (int64_t)std::floor(pos_);
             if (i0 + kH >= base_ + (int64_t)buf_.size()) break;
-            double ar = 0, ai = 0;
-            for (int64_t i = i0 - kH + 1; i <= i0 + kH; i++) {
-                const double x = pos_ - (double)i;
-                const double a = fc_ * x;
-                const double sinc = std::fabs(a) < 1e-9 ? 1.0 : std::sin(kPi * a) / (kPi * a);
-                const double w = 0.5 + 0.5 * std::cos(kPi * x / kH);
-                const double k = fc_ * sinc * w;
-                const cf& v = buf_[(size_t)(i - base_)];
-                ar += k * v.real();
-                ai += k * v.imag();
-            }
-            out.emplace_back((float)ar, (float)ai);
+            int p = (int)std::lround((pos_ - (double)i0) * kPhases);
+            int64_t ii = i0;
+            if (p >= kPhases) { p = 0; ii++; }
+            const float* k = &tab_[(size_t)p * 2 * kH];
+            const cf* v = &buf_[(size_t)(ii - kH + 1 - base_)];
+            float ar = 0, ai = 0;
+            for (int j = 0; j < 2 * kH; j++) { ar += k[j] * v[j].real(); ai += k[j] * v[j].imag(); }
+            out.emplace_back(ar, ai);
             pos_ += ratio_;
         }
         const int64_t keep = (int64_t)std::floor(pos_) - kH;
@@ -58,10 +66,12 @@ public:
         reset();
     }
 private:
-    static constexpr int kH = 16;   // kernel half width in input samples
+    static constexpr int kH = 16;        // kernel half width in input samples
+    static constexpr int kPhases = 2048;
     double ratio_ = 1, fc_ = 0.97, pos_ = 0;
     int64_t base_ = -kH;
     std::vector<cf> buf_;
+    std::vector<float> tab_;
 };
 }  // namespace
 

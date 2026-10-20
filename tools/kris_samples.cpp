@@ -78,7 +78,6 @@ static std::vector<float> readWav16kMono(const std::string& path) {
 
 static void kaalVoice(const std::string& dir, const std::string& name, const std::vector<float>& pcm16k) {
     // 16 kHz to the 48 kHz stereo the generator pulls: linear interpolation (the transmitter low-passes at 7 kHz anyway)
-    const size_t total48 = pcm16k.size() * 3;
     uint64_t pulled = 0;
     TxRequest r;
     r.modeId = "kaal";
@@ -90,7 +89,8 @@ static void kaalVoice(const std::string& dir, const std::string& name, const std
     r.opt["kaal.beacon"] = 1;
     r.pullAudio = [&](float* st, int n) {
         for (int i = 0; i < n; i++, pulled++) {
-            const size_t k = (size_t)(pulled / 3);
+            // the sentence repeats with a second of silence between, so a looping player does not run out of speech
+            const size_t per = pcm16k.size() + 16000, k = (size_t)(pulled / 3) % per;
             const float a = k < pcm16k.size() ? pcm16k[k] : 0.f, b = k + 1 < pcm16k.size() ? pcm16k[k + 1] : 0.f;
             const float v = a + (b - a) * (float)(pulled % 3) / 3.f;
             st[2 * i] = st[2 * i + 1] = v;
@@ -100,7 +100,8 @@ static void kaalVoice(const std::string& dir, const std::string& name, const std
     std::string err;
     auto gen = makeKaalTxGenerator(r, 48000, err);
     if (!gen) { fprintf(stderr, "kaal: %s\n", err.c_str()); g_ok = false; return; }
-    const size_t n = (size_t)((double)total48 * 1.27) + 48000 * 2;   // the voice takes about 1.26 times its length on air
+    // 2 327 040 samples (48.48 s) = a whole number of 4-frame blocks (3840 samples) and of station-ID sweep cycles (24 periods of 24240 samples): the file loops without a jump
+    const size_t n = 2327040;
     std::vector<cf32> x(n);
     for (size_t i = 0; i < n; i += 4800) gen->generate(x.data() + i, std::min<size_t>(4800, n - i));
     writeAll(dir, "KAAL_" + name, 48000, x, "kaal");

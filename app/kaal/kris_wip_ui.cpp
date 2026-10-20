@@ -60,6 +60,8 @@ void panel(App& a, const Wip& w) {
 void tabKavb(App& a) { panel(a, kavb()); }
 void sumKavb(const App&, std::string& l1, std::string& l2) { l1 = "KAVB (WIP)"; l2 = "video, 1-2 MHz: no receiver yet"; }
 
+void statusWip(App& a) { ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("State"); ImGui::SameLine(); ImGui::TextUnformatted(a.engine.running() ? "work in progress: no receiver yet" : "stopped"); }
+
 } // namespace
 
 extern const ModeUi kKavbUi;

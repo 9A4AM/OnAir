@@ -195,7 +195,17 @@ void statusBar(App& a) {
         if (lost) ImGui::TextColored(pal::warnAmber(), tr("Network radio: %llu samples lost (underruns)"), (unsigned long long)lost);
     }
     // flowEnd(): the last group of the status line wraps too
-    if (const ModeUi* mu = modeUi(a.family)) if (mu->status) { mu->status(a); flowEnd(); return; }
+    if (const ModeUi* mu = modeUi(a.family)) {
+        if (mu->status) { mu->status(a); flowEnd(); return; }
+        if (mu->tabName && !mu->stream) {   // a mode that is not a TV mode and has no status line of its own: the state and its summary, never the DVB lamps (P1, L1, TS, Video)
+            std::string l1, l2;
+            if (mu->summary) mu->summary(a, l1, l2);
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextDisabled("State"); ImGui::SameLine();
+            ImGui::TextUnformatted(!a.engine.running() ? "stopped" : l2.empty() ? "running" : l2.c_str());
+            flowEnd(); return;
+        }
+    }
     if (a.dabMode) { dabStatus(a); flowEnd(); return; }
     if (a.fmMode) { fmStatus(a); flowEnd(); return; }
     if (a.atsc3Mode) { atsc3Status(a); flowEnd(); return; }
