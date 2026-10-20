@@ -46,7 +46,7 @@ void Engine::watchRadio() {
             // a HackRF is reopened below and the native radios reopen themselves; a SoapySDR (SoapyRemote too), Hamlib or audio radio does not
             const bool reopens = lastDev_.kind == DeviceInfo::HackRF || lastDev_.kind == DeviceInfo::Native;
             log(!reopens ? "radio stopped sending samples - press Stop and Start to open it again"
-                : lastDev_.isNetwork() ? "network radio stopped sending samples - waiting for its server to come back"
+                : lastNetwork_.load() ? "network radio stopped sending samples - waiting for its server to come back"
                 : "radio stopped sending samples (unplugged?) - waiting for it to come back");
         }
         return;
@@ -125,7 +125,7 @@ void Engine::checkDelivery() {
         if (now - lastRadioLogNs_.load() > 10000000000LL) {
             lastRadioLogNs_ = now;
             char b[240];
-            if (lastDev_.isNetwork())
+            if (lastNetwork_.load())
                 snprintf(b, sizeof b, "the radio did not deliver %.0f ms of signal (%.2f s in all): its network link or server could not keep up. Try a wired connection or a lower sample rate",
                          1000 * step / srcRate_, radioMissing_.load() / srcRate_);
             else
@@ -150,7 +150,7 @@ void Engine::checkDelivery() {
 SampleLoss Engine::sampleLoss() const {
     SampleLoss l;
     l.live = live_.load();
-    l.network = lastDev_.isNetwork();
+    l.network = lastNetwork_.load();
     const double r = std::max(1.0, srcRate_);   // the ring holds the radio's samples (before any resampling)
     l.radioSec = radioMissing_.load() / r;
     l.cpuSec = (double)ring_.dropped() / r;

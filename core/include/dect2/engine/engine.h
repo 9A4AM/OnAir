@@ -840,6 +840,7 @@ private:
     TuneSettings radioTune(const TuneSettings& t) const;  // what the radio is tuned to: the user's frequency plus the mode's tuneOffsetHz
     mutable std::mutex tuneMu_;                 // lastDev_ / lastTune_: what to reopen the radio with
     DeviceInfo lastDev_;
+    std::atomic<bool> lastNetwork_{false};   // lastDev_.isNetwork(), set with lastDev_; read without tuneMu_ by sampleLoss() (interface thread) and watchRadio()
     TuneSettings lastTune_;
     std::chrono::steady_clock::time_point lastSamples_{}, nextReconnect_{}, lastSkipLog_{}, lostSince_{};
     uint64_t skippedSamples_ = 0, skipEvents_ = 0;   // analysis thread only
