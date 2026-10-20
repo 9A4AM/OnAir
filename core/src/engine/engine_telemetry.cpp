@@ -302,6 +302,8 @@ int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
     case 142: return pollStd(rxGd_, 142, t, seqs[119], &RxTelemetry::goesdcs);
     case 143: return pollStd(rxModeAc_, 143, t, seqs[120], &RxTelemetry::modeac);   // Mode A/C (slot 120)
     case 144: return pollStd(rxBt_, 144, t, seqs[121], &RxTelemetry::bletrk);   // BLE tracker detector (slot 121)
+    case 130: return pollStd(rxLtr_, 130, t, seqs[126], &RxTelemetry::ltr);     // LTR control channel (slot 126)
+    case 131: return pollStd(rxEdacs_, 131, t, seqs[127], &RxTelemetry::edacs); // EDACS control channel (slot 127)
     default: return -1;
     }
 }
