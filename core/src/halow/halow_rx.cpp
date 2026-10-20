@@ -95,6 +95,20 @@ struct HalowReceiver::Impl {
                 subs.push_back(std::move(sb));
             }
         }
+        // the same for 2 MHz channels (a 2 MHz primary of a 4 / 8 / 16 MHz BSS, or a 2 MHz BSS off the centre): 2 MHz grid positions every 0.5 MHz, the whole 2 MHz channel inside the passband
+        if (subScan.load() && offset == 0 && (widthMask.load() & 2) && rate >= 4e6 - 1) {
+            int n = 0;
+            for (double hz = 0.5e6; hz + 1.1e6 <= 0.4 * rate && n < 16; hz += 0.5e6, n += 2) for (double sgn : {-1.0, 1.0}) {
+                Sub sb;
+                sb.hz = sgn * hz;
+                sb.step = std::polar(1.0, -2 * math::kPi * sb.hz / rate);
+                sb.chain = std::make_unique<HalowChain>(rate, 4e6, std::vector<int>{W2});
+                sb.chain->setWidthMask(2);
+                const double h = sb.hz;
+                sb.chain->onEvent = [this, h](const HalowEvent& e) { curSubHz = h; onEvent(e); curSubHz = 0; };
+                subs.push_back(std::move(sb));
+            }
+        }
     }
 
     // The tables and the frame log stay through resets: Clear and a loaded file reach the feed thread's copy through these requests (mu)
@@ -251,6 +265,25 @@ struct HalowReceiver::Impl {
                 n.ccf = f.ccf; n.opClass = f.opClass; n.opWidthMhz = f.opWidthMhz; n.primaryWidthMhz = f.primaryWidthMhz; n.basicMcs = f.basicMcsOneSs;
                 const double m = chanMhz(f.opClass, f.ccf);
                 if (m > 0) n.freqMhz = m;
+            }
+            if (f.hasOp) { const double pm = chanMhz(f.opClass, f.primary); if (pm > 0) n.primaryMhz = pm; }
+            if (!f.vendorIes.empty()) {
+                std::string s;
+                for (const std::string& o : f.vendorIes) {
+                    uint8_t a[6] = {};
+                    unsigned x[3] = {};
+                    if (sscanf(o.c_str(), "%2x:%2x:%2x", &x[0], &x[1], &x[2]) == 3) for (int k = 0; k < 3; k++) a[k] = (uint8_t)x[k];
+                    const char* v = wifi::vendorOf(a);
+                    const bool wfa = x[0] == 0x50 && x[1] == 0x6F && x[2] == 0x9A;
+                    if (!s.empty()) s += ", ";
+                    s += o;
+                    if (wfa) s += " Wi-Fi Alliance"; else if (v && *v && strcmp(v, "local")) { s += " "; s += v; }
+                }
+                n.vendorIe = s;
+                if (n.vendor.empty() || n.vendor == "local") for (const std::string& o : f.vendorIes) {
+                    uint8_t a[6] = {}; unsigned x[3] = {};
+                    if (sscanf(o.c_str(), "%2x:%2x:%2x", &x[0], &x[1], &x[2]) == 3) { for (int k = 0; k < 3; k++) a[k] = (uint8_t)x[k]; const char* v = wifi::vendorOf(a); if (v && *v && strcmp(v, "local")) { n.vendor = v; break; } }
+                }
             }
             if (f.hasCap) n.longPreamble = f.longPreamble ? 1 : 0;
             if (f.hasCountry) n.country = f.country;

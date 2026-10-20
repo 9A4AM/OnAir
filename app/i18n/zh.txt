@@ -3289,3 +3289,5 @@ pilot	导频
 pilot checks	导频检查
 separation	分离度
 stereo phase	立体声相位
+primary channel at	主信道位于
+vendor elements	厂商元素

@@ -3272,3 +3272,5 @@ pilot	пилот
 pilot checks	проверки пилота
 separation	разделение
 stereo phase	фаза стерео
+primary channel at	основной канал на
+vendor elements	элементы производителя

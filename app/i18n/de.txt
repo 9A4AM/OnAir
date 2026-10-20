@@ -3289,3 +3289,5 @@ pilot	Pilot
 pilot checks	Pilotprüfungen
 separation	Trennung
 stereo phase	Stereophase
+primary channel at	Primärkanal bei
+vendor elements	Herstellerelemente

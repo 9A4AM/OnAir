@@ -3289,3 +3289,5 @@ pilot	piloto
 pilot checks	comprobaciones del piloto
 separation	separación
 stereo phase	fase estéreo
+primary channel at	canal primario en
+vendor elements	elementos de fabricante

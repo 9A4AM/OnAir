@@ -3289,3 +3289,5 @@ pilot	pilotas
 pilot checks	piloto patikros
 separation	atskyrimas
 stereo phase	stereo fazė
+primary channel at	pagrindinis kanalas ties
+vendor elements	gamintojo elementai

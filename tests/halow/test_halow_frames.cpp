@@ -39,6 +39,16 @@ int main() {
         const auto mb = makeMgmtBeacon(b);
         CHECK(std::equal(mac, mac + 6, mb.begin() + 10) && std::equal(mac, mac + 6, mb.begin() + 16) && mb[4] == 0xFF && mb[9] == 0xFF, "beacon: broadcast DA, SA and BSSID");
     }
+    {   // vendor specific elements: the OUI is listed (Morse Micro systems add one), none when absent
+        Frame r0; { const auto f = makeS1gBeacon(b); parseFrame(f.data(), f.size() - 4, r0); }
+        CHECK(r0.vendorIes.empty(), "no vendor element when none is sent");
+        BssSpec v = b; v.vendorOui[0] = 0x0C; v.vendorOui[1] = 0xBF; v.vendorOui[2] = 0x74;
+        for (int k = 0; k < 2; k++) {
+            const auto f = k ? makeMgmtBeacon(v) : makeS1gBeacon(v);
+            Frame r;
+            CHECK(fcsOk(f.data(), f.size()) && parseFrame(f.data(), f.size() - 4, r) && r.vendorIes.size() == 1 && r.vendorIes[0] == "0C:BF:74" && r.hasSsid, "vendor element 0C:BF:74 (%s)", k ? "management beacon" : "S1G beacon");
+        }
+    }
     // the basic MCS map and the long preamble flag
     for (int m = 0; m < 3; m++) { b.maxMcsOneSs = m; b.longPreamble = m != 1; const auto f = makeS1gBeacon(b); Frame r; parseFrame(f.data(), f.size() - 4, r); CHECK(r.basicMcsOneSs == m && r.longPreamble == (m != 1), "MCS map %d", m); }
     {   // short beacon: only the fixed fields and the compressed SSID

@@ -3289,3 +3289,5 @@ pilot	pilot
 pilot checks	kontrole pilota
 separation	separacja
 stereo phase	faza stereo
+primary channel at	kanał główny przy
+vendor elements	elementy producenta

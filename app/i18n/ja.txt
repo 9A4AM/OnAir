@@ -3289,3 +3289,5 @@ pilot	パイロット
 pilot checks	パイロット検査
 separation	分離度
 stereo phase	ステレオ位相
+primary channel at	プライマリチャネル
+vendor elements	ベンダー要素

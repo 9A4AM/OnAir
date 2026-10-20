@@ -3275,3 +3275,5 @@ pilot	pilot
 pilot checks	pilot-ellenőrzések
 separation	csatornaszétválás
 stereo phase	sztereó fázis
+primary channel at	elsődleges csatorna:
+vendor elements	gyártói elemek

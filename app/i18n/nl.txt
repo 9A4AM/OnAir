@@ -3289,3 +3289,5 @@ pilot	pilot
 pilot checks	pilotcontroles
 separation	scheiding
 stereo phase	stereofase
+primary channel at	primair kanaal op
+vendor elements	fabrikantelementen
