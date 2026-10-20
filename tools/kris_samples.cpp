@@ -98,8 +98,8 @@ static void kaalVoice(const std::string& dir, const std::string& name, const std
     std::string err;
     auto gen = makeKaalTxGenerator(r, 48000, err);
     if (!gen) { fprintf(stderr, "kaal: %s\n", err.c_str()); g_ok = false; return; }
-    // 2 424 000 samples (50.5 s) = a whole number of 4-frame blocks (6464 samples) and of sweep periods (24000): the file loops without a jump
-    const size_t n = 2424000;
+    // 2 327 040 samples (48.48 s) = a whole number of 4-frame blocks (3840 samples) and of station-ID sweep cycles (24 periods of 24240 samples): the file loops without a jump
+    const size_t n = 2327040;
     std::vector<cf32> x(n);
     for (size_t i = 0; i < n; i += 4800) gen->generate(x.data() + i, std::min<size_t>(4800, n - i));
     writeAll(dir, "KAAL_" + name, 48000, x, "kaal");

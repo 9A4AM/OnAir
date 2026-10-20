@@ -39,7 +39,7 @@ static std::string makeFile() {
     std::string err;
     auto gen = makeKaalTxGenerator(r, 48000, err);
     if (!gen) return std::string();
-    std::vector<cf32> x(2424000);   // 50.5 s: whole blocks and sweep periods, so the file loops without a jump (as the sample files)
+    std::vector<cf32> x(2327040);   // 48.48 s: whole 4-frame blocks (3840 samples) and station-ID sweep cycles (581760 samples), 1163520 together and sweep periods, so the file loops without a jump (as the sample files)
     for (size_t i = 0; i < x.size(); i += 4800) gen->generate(x.data() + i, 4800);
     float pk = 0;
     for (const cf32& v : x) pk = std::max(pk, std::max(std::fabs(v.real()), std::fabs(v.imag())));
@@ -85,7 +85,7 @@ int main() {
             if (getenv("KAAL_TRACE")) printf("t %.2f state %d ok %llu bad %llu snr %.1f cfo %.0f\n", rx.kaal.timeSec, rx.kaal.state, (unsigned long long)rx.kaal.blocksOk, (unsigned long long)rx.kaal.blocksBad, (double)rx.kaal.snrDb, rx.kaal.cfoHz);
             if (rx.kaal.state == 2 && !locked) { locked = true; tLock = rx.kaal.timeSec; }
             if (rx.kaal.beaconValid) beacon = true;
-            if (rx.kaal.timeSec > (getenv("KAAL_SECS") ? atof(getenv("KAAL_SECS")) : 16)) break;
+            if (rx.kaal.timeSec > (getenv("KAAL_SECS") ? atof(getenv("KAAL_SECS")) : 26)) break;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
@@ -127,10 +127,10 @@ int main() {
                 if (lr.telemetry(t, sq)) {
                     sq = t.seq; states++;
                     if (t.state == 2) wasLocked = 1;
-                    else if (wasLocked && t.state != 2 && t.timeSec > 5) { lostAfterLock++; }
+                    else if (wasLocked && t.state != 2 && t.timeSec > 20) { lostAfterLock++; }
                 }
             }
-        printf("two passes of %.1f s: %d reports, lock lost %d times after the first lock (wrap at %.1f s), frames ok %llu bad %llu\n", wrapAt, states, lostAfterLock, wrapAt, (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad);
+        printf("two passes of %.2f s: %d reports, lock lost %d times after the first lock (wrap at %.1f s), frames ok %llu bad %llu\n", wrapAt, states, lostAfterLock, wrapAt, (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad);
         CHECK(wasLocked, "the direct feed never locked");
         CHECK(lostAfterLock == 0, "the lock was lost %d times (the file wrap)", lostAfterLock);
     }

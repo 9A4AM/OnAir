@@ -41,7 +41,8 @@ struct KaalLiveReceiver::Impl {
     bool locked = false;
     uint64_t sinceDecision = 0;
     double contrastDb = 0;
-    bool decided = false;
+    bool decided = false, refined = false;
+    int badRestarts = 0;
     double fine = 0, finePhase = 0;          // the voice receiver's residual carrier (Hz), once it is locked
     bool ready = false;
     uint64_t samples = 0, nextReport = 0, seq = 0;
@@ -193,7 +194,7 @@ struct KaalLiveReceiver::Impl {
         if (resampling) rs.reset();
         win.resize(1024);
         for (int k = 0; k < 1024; k++) win[(size_t)k] = (float)(0.5 - 0.5 * std::cos(2 * 3.141592653589793 * k / 1024));
-        seg.clear(); psd.assign(1024, 0.0); psdCount = 0; carrier = 0; fine = 0; finePhase = 0; decided = false; mixPhase = 0; dcm = cf32(0, 0); locked = false; sinceDecision = 0;
+        seg.clear(); psd.assign(1024, 0.0); psdCount = 0; carrier = 0; fine = 0; finePhase = 0; decided = false; refined = false; badRestarts = 0; mixPhase = 0; dcm = cf32(0, 0); locked = false; sinceDecision = 0;
         vrx.configure(48000.0);
         brx.configure(48000.0);
         scan.configure(48000.0);
@@ -209,6 +210,28 @@ struct KaalLiveReceiver::Impl {
         KaalTelemetry t;
         t.seq = ++seq;
         t.state = st.locked ? 2 : samples ? 1 : 0;
+        if (st.locked && !refined && std::fabs((double)st.cfoHz) > 15.0) {
+            // The coarse estimate (the spectrum edge) is good to a few hundred hertz; the receiver measures what is left to a few hertz at lock. Take it
+            // out of the mixer and search once more: with no carrier error left the frames and the beacon decode cleanly.
+            refined = true;
+            carrier += (double)st.cfoHz;
+            vrx.configure(48000.0);
+            brx.configure(48000.0);
+            fine = 0; locked = false;
+            std::function<void(const std::string&)> lg;
+            { std::lock_guard<std::mutex> pk(pubMu); lg = log; }
+            if (lg) lg("KAAL carrier refined to " + std::to_string((long)std::lround(carrier)) + " Hz");
+            return;
+        }
+        if (st.locked && refined && badRestarts < 4 && st.framesGood + st.framesBad >= 60 && st.framesBad * 100 > 15 * (st.framesGood + st.framesBad)) {
+            // locked, but a sixth of the frames fail: the block alignment chosen from the window it happened to gather was the wrong one. A later window
+            // may pick the right one: search again (the carrier is already right)
+            badRestarts++;
+            vrx.configure(48000.0);
+            brx.configure(48000.0);
+            fine = 0; locked = false;
+            return;
+        }
         locked = st.locked;
         if (!st.locked) fine = 0.0; else if (fine == 0.0 || std::fabs((double)st.cfoHz - fine) > 3.0) fine = (double)st.cfoHz;
         t.cfoHz = st.cfoHz + carrier; t.snrDb = st.snrDb; t.sweepDb = st.sweepDb;

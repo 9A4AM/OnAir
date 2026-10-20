@@ -35,7 +35,7 @@ int main() {
     }
     printf("engine on the chain recording: lock at %.1f s, beacon at %.1f s, bio at %.1f s, frames ok %llu bad %llu, cfo %.0f Hz\n", lockAt, beaconAt, bioAt,
            (unsigned long long)rx.kaal.blocksOk, (unsigned long long)rx.kaal.blocksBad, rx.kaal.cfoHz);
-    CHECK(lockAt > 0 && lockAt < 6, "lock at %.1f s", lockAt);
+    CHECK(lockAt > 0 && lockAt < 10, "lock at %.1f s", lockAt);
     CHECK(beaconAt > 0 && beaconAt < 12, "beacon at %.1f s", beaconAt);
     CHECK(rx.kaal.blocksOk > 500 && rx.kaal.blocksBad * 20 < rx.kaal.blocksOk, "frames ok %llu bad %llu", (unsigned long long)rx.kaal.blocksOk, (unsigned long long)rx.kaal.blocksBad);
     e.stop();
