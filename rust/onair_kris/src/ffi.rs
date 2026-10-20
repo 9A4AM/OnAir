@@ -2,7 +2,7 @@
 //! bits are one per byte. A null pointer or a bad size gives -1.
 #![allow(clippy::missing_safety_doc)]
 
-use crate::{conv, ldpc};
+use crate::{conv, erasure, ldpc};
 
 /// ABI version of this module's C interface.
 #[no_mangle]
@@ -133,5 +133,39 @@ mod tests {
             assert_eq!(d, bits);
             assert_eq!(onair_kris_viterbi(3, l.as_ptr(), 56, 1, d.as_mut_ptr()), -1);
         }
+    }
+}
+
+/// KAVB FEC groups (erasure code over GF(256)): parity cells of `g` data cells. `data` is g * cell_len bytes, `parity` receives p * cell_len bytes. 0, or -1 (bad size, null).
+#[no_mangle]
+pub unsafe extern "C" fn onair_kris_erasure_encode(g: i32, p: i32, cell_len: i32, data: *const u8, parity: *mut u8) -> i32 {
+    if g <= 0 || p < 0 || cell_len <= 0 || data.is_null() || (p > 0 && parity.is_null()) {
+        return -1;
+    }
+    let (g, p, l) = (g as usize, p as usize, cell_len as usize);
+    let d = core::slice::from_raw_parts(data, g * l);
+    let mut empty: [u8; 0] = [];
+    let o: &mut [u8] = if p > 0 { core::slice::from_raw_parts_mut(parity, p * l) } else { &mut empty };
+    if erasure::encode(g, p, l, d, o) {
+        0
+    } else {
+        -1
+    }
+}
+
+/// KAVB FEC groups: `cells` is (g + p) * cell_len bytes, `present` g + p flags (non-zero = received). Missing data cells are rebuilt in place. 0 when every data cell is
+/// available afterwards, -1 when fewer than g cells are present or the arguments are bad.
+#[no_mangle]
+pub unsafe extern "C" fn onair_kris_erasure_recover(g: i32, p: i32, cell_len: i32, cells: *mut u8, present: *const u8) -> i32 {
+    if g <= 0 || p < 0 || cell_len <= 0 || cells.is_null() || present.is_null() {
+        return -1;
+    }
+    let (g, p, l) = (g as usize, p as usize, cell_len as usize);
+    let c = core::slice::from_raw_parts_mut(cells, (g + p) * l);
+    let pr = core::slice::from_raw_parts(present, g + p);
+    if erasure::recover(g, p, l, c, pr) {
+        0
+    } else {
+        -1
     }
 }

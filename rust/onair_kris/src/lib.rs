@@ -8,6 +8,7 @@
 extern crate alloc;
 
 pub mod conv;
+pub mod erasure;
 pub mod ldpc;
 pub mod xorshift;
 
