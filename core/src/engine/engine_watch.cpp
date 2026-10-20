@@ -56,7 +56,8 @@ void Engine::watchRadio() {
         if (now - lastSamples_ < milliseconds(500)) {
             radioLost_ = false;
             holdDelivery(1000);   // the reconnect gap is not a loss of the link
-            resetReq_ = true;     // the receiver starts again from the new samples, as after a HackRF reconnect
+            // no receiver reset: the decoders resynchronise on the new samples by themselves (as after a catch-up jump), and what they
+            // already know (Meshtastic nodes, ADS-B aircraft, the DAB ensemble...) stays, instead of being found and announced again
             char b[96];
             snprintf(b, sizeof b, "radio is sending samples again, after %.1f s", duration<double>(lastSamples_ - lostSince_).count());
             log(b);
