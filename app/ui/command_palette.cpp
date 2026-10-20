@@ -24,7 +24,7 @@ int gTabFrame = -1;
 // View-menu panels: each is a bool of App that its menu item toggles
 struct Panel { const char* name; bool App::*on; };
 const Panel kPanels[] = {
-    {"Passes", &App::passesOpen}, {"Direction finder", &App::dfOpen}, {"Interference hunter", &App::rfiOpen},
+    {"Passes", &App::passesOpen}, {"SatNOGS transmitters", &App::satnogsOpen}, {"Direction finder", &App::dfOpen}, {"Interference hunter", &App::rfiOpen},
     {"Passive radar", &App::passiveRadarOpen}, {"Images", &App::galleryOpen}, {"Data feeds...", &App::feedsOpen},
     {"Messages...", &App::msgdbOpen}, {"Protocol lab...", &App::protolabOpen}, {"Watchlists...", &App::watchlistOpen},
     {"Automations...", &App::automationOpen}, {"Plugins...", &App::pluginsOpen}, {"Memory...", &App::memoryOpen},
