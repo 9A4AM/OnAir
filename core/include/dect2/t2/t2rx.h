@@ -97,6 +97,7 @@
 #include "dect2/fsq/fsq_tel.h"
 #include "dect2/ifkp/ifkp_tel.h"
 #include "dect2/kaal/kaal_tel.h"
+#include "dect2/kait/kait_tel.h"
 #include "dect2/cquam/cquam_tel.h"
 #include "dect2/modeac/modeac_tel.h"
 #include "dect2/mscatter/mscatter_tel.h"
@@ -206,6 +207,7 @@ struct RxTelemetry {
     FsqTelemetry fsq;         // valid when standard == 114 (FSQ)
     IfkpTelemetry ifkp;       // valid when standard == 117 (IFKP)
     KaalTelemetry kaal;       // valid when standard == 123 (KAAL, engine standard 124)
+    KaitTelemetry kait;       // valid when standard == 132 (KAIT, engine standard 133)
     CquamTelemetry cquam;     // valid when standard == 108 (AM stereo, C-QUAM)
     ArdopTelemetry ardop;     // valid when standard == 141 (ARDOP, family 140)
     ModeAcTelemetry modeac;   // valid when standard == 143 (Mode A/C, family 142)

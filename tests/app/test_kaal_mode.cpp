@@ -2,6 +2,7 @@
 // KAFT (125, 127) in the group "Kris custom modes": the mode-table rows, the group, the modeui cases, the panel strings, the engine wiring, the transmit
 // registration and the IQ-file destination are in the sources. Text checks only, so it builds without the app.
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <string>

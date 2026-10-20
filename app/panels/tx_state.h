@@ -99,6 +99,10 @@ struct TxUi {
     double kaalPower = 10;
     bool kaalLoaded = false;
     std::string kaalSaved;
+    // KAIT: the profile (0 balanced, 1 robust, 2 quality, 3 direct); the callsign and the picture file are the shared fields above
+    int kaitProfile = 0;
+    bool kaitLoaded = false;
+    std::string kaitSaved;
 };
 
 TxUi& ui();                                            // the one transmit state
@@ -134,6 +138,8 @@ bool startTx(App& a, TxUi& s, const DeviceInfo* radio, const TxModeSpec* mode, b
 void stopTx(App& a, TxUi& s, const char* why);         // stops, gives the radio back, logs why
 void destinationPanel(TxUi& s, const TxModeSpec& mode, bool running);   // Radio or IQ file, the folder, the format, the rate and what has been written (tx_ui.cpp)
 void kaalPanel(TxUi& s, bool running);                // KAAL: callsign, grid, position, power, bio text, beacon (kaal_tx_ui.cpp)
+void kaitPanel(TxUi& s, bool running);                // KAIT: callsign, picture file, profile (app/kait/kait_ui.cpp)
+std::string kaitPictureFile(const std::string& path); // the file the KAIT generator reads: PNG / PPM as they are, other pictures converted to a PPM
 void txNoticePopup(TxUi& s);                           // the one-time notice before the first transmission
 
 // the panel (tx_panel.cpp): the top bar is txTopBar (app.h); the body has the signal list, the Basic block with Advanced folded, and the preview

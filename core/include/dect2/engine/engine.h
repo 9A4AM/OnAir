@@ -101,6 +101,7 @@
 #include "dect2/fsq/fsq_rx.h"
 #include "dect2/ifkp/ifkp_rx.h"
 #include "dect2/kaal/kaal_live.h"
+#include "dect2/kait/kait_live.h"
 #include "dect2/cquam/cquam_rx.h"
 #include "dect2/modeac/modeac_live.h"
 #include "dect2/mscatter/mscatter_live.h"
@@ -404,6 +405,7 @@ public:
     SarsatReceiver& sarsat() { return rxSar_; }   // COSPAS-SARSAT 406 MHz beacons: clear the log (telemetry through latestRx)
     FsqReceiver& fsq() { return rxFsq_; }   // FSQ: speed, own callsign, clear the text (telemetry through latestRx)
     KaalLiveReceiver& kaal() { return rxKaal_; }   // KAAL: volume, mute (telemetry through latestRx)
+    KaitLiveReceiver& kait() { return rxKait_; }   // KAIT: picture bursts (telemetry through latestRx)
     IfkpReceiver& ifkp() { return rxIfkp_; }   // IFKP: speed, clear the text (telemetry through latestRx)
     ArdopReceiver& ardop() { return rxArd_; }   // ARDOP: clear the frames, Listen (telemetry through latestRx)
     Mt63Receiver& mt63() { return rxMt63_; }   // MT63: bandwidth and interleave (automatic by default), clear the text (telemetry through latestRx)
@@ -690,6 +692,7 @@ private:
     FsqReceiver rxFsq_;
     IfkpReceiver rxIfkp_;
     KaalLiveReceiver rxKaal_;
+    KaitLiveReceiver rxKait_;
     CquamReceiver rxCq_;
     ArdopReceiver rxArd_;
     MscatterLiveReceiver rxMs_;

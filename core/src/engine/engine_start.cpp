@@ -485,6 +485,8 @@ void Engine::configureDataReceivers(const DeviceInfo& dev, const TuneSettings& t
     rxIfkp_.setLogCallback([this](const std::string& s) { log(s); });
     rxKaal_.configure(rate_);
     rxKaal_.setLogCallback([this](const std::string& s) { log(s); });
+    rxKait_.configure(rate_);
+    rxKait_.setLogCallback([this](const std::string& s) { log(s); });
     rxCq_.configure(rate_);
     rxCq_.setLogCallback([this](const std::string& s) { log(s); });
     rxArd_.configure(rate_);

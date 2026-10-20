@@ -297,6 +297,7 @@ int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
     case 114: return pollStd(rxFsq_, 114, t, seqs[108], &RxTelemetry::fsq);
     case 117: return pollStd(rxIfkp_, 117, t, seqs[109], &RxTelemetry::ifkp);
     case 123: return pollStd(rxKaal_, 123, t, seqs[116], &RxTelemetry::kaal);
+    case 132: return pollStd(rxKait_, 132, t, seqs[132], &RxTelemetry::kait);   // KAIT picture bursts (slot 132)
     case 108: return pollStd(rxCq_, 108, t, seqs[104], &RxTelemetry::cquam);
     case 105: return pollStd(rxMs_, 105, t, seqs[101], &RxTelemetry::mscatter);
     case 142: return pollStd(rxGd_, 142, t, seqs[119], &RxTelemetry::goesdcs);
