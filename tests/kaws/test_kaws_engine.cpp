@@ -49,7 +49,7 @@ struct Run {
 
 // The request's signal at `rate` (plus `ifHz` of intermediate frequency and `cfoHz` of carrier offset) with noise at snrDb in 2.4 kHz, into the receiver on the UTC
 // grid; the stream starts 3 s before the first slot window... then runs until the slot of `profile` has been searched.
-static Run run(const TxRequest& req, int profile, double rate, double ifHz, double cfoHz, double snrDb, bool withSignal = true) {
+static Run run(const TxRequest& req, int profile, double rate, double ifHz, double cfoHz, double snrDb, bool withSignal = true, double extraSec = 0) {
     Run out;
     std::string err;
     auto gen = makeKawsTxGenerator(req, rate, err);
@@ -65,7 +65,7 @@ static Run run(const TxRequest& req, int profile, double rate, double ifHz, doub
     std::mt19937 rng(11);
     std::normal_distribution<float> nd(0.f, 1.f);
     const int slotSec = kaws::kProfiles[profile].slotSec;
-    const double streamSec = 3.0 + slotSec + 6.0;
+    const double streamSec = 3.0 + slotSec + 6.0 + extraSec;
     const size_t total = (size_t)(streamSec * rate);
     const double dph = 2 * 3.141592653589793 * (ifHz + cfoHz) / rate;
     double ph = 0;
@@ -207,6 +207,13 @@ int main() {
         const Run r = run(chatReq(0, "HELLO KAWS P0"), 0, 250000, 0, 30, -8.0);
         printf("P0 chat, first slot: messages %llu, blocks %llu/%llu, lattice %d (stat %.1f), slots %llu\n", (unsigned long long)r.t.messages, (unsigned long long)r.t.blocksOk, (unsigned long long)r.t.blocksBad, (int)r.t.latticeSeen[0], (double)r.t.latticeStat[0], (unsigned long long)r.t.slotsTried);
         CHECK(r.t.blocksOk == 1 && r.t.blocksBad == 0 && r.t.messages == 0 && r.t.profile == 0, "P0 chat: the first block alone, no message yet");
+    }
+
+    // ---- a two-block P0 chat message: the blocks come in two slots 240 s apart and the message completes with the second
+    {
+        const Run r = run(chatReq(0, "HELLO KAWS P0"), 0, 250000, 0, 30, INFINITY, true, 240.0);
+        printf("P0 chat, both slots: messages %llu, blocks %llu/%llu\n", (unsigned long long)r.t.messages, (unsigned long long)r.t.blocksOk, (unsigned long long)r.t.blocksBad);
+        CHECK(r.t.messages == 1 && !r.t.chats.empty() && r.t.chats[0].text == "HELLO KAWS P0", "P0 chat completes across two slots (%llu messages, %llu blocks)", (unsigned long long)r.t.messages, (unsigned long long)r.t.blocksOk);
     }
 
     // ---- a full beacon (P3)

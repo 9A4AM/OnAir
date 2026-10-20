@@ -73,29 +73,36 @@ bool ArqReceiver::onBlock(int K, const Bits& block) {
     return true;
 }
 
+// The message length is read from the frame header. At P0 block 0 holds only 104 bits, which is shorter than the header of a chat frame, so the length is
+// read from the blocks 0, 1, ... joined (consecutive blocks present from 0), and the message is complete when the joined bits reach the length.
+static bool joinBlocks(const std::map<int, Bits>& payloads, Bits& joined, size_t& bits) {
+    joined.clear();
+    bits = 0;
+    for (int i = 0;; i++) {
+        auto it = payloads.find(i);
+        if (it == payloads.end()) return false;
+        joined.insert(joined.end(), it->second.begin(), it->second.end());
+        bits = expectedMessageBits(joined);
+        if (bits && joined.size() >= bits) return true;
+    }
+}
+
 bool ArqReceiver::complete(uint8_t id) const {
     auto it = rx_.find(id);
     if (it == rx_.end()) return false;
-    const Msg& m = it->second;
-    auto b0 = m.payloads.find(0);
-    if (b0 == m.payloads.end()) return false;
-    size_t bits = expectedMessageBits(b0->second);
-    if (!bits) return false;
-    size_t usable = (size_t)(m.K - kBlockOverhead);
-    size_t need = (bits + usable - 1) / usable;
-    for (size_t i = 0; i < need; i++)
-        if (!m.payloads.count((int)i)) return false;
-    return true;
+    Bits joined;
+    size_t bits;
+    return joinBlocks(it->second.payloads, joined, bits);
 }
 
 Bits ArqReceiver::message(uint8_t id) const {
-    Bits out;
-    if (!complete(id)) return out;
-    const Msg& m = rx_.at(id);
-    size_t bits = expectedMessageBits(m.payloads.at(0));
-    for (auto& kv : m.payloads) out.insert(out.end(), kv.second.begin(), kv.second.end());
-    out.resize(bits);
-    return out;
+    auto it = rx_.find(id);
+    if (it == rx_.end()) return {};
+    Bits joined;
+    size_t bits;
+    if (!joinBlocks(it->second.payloads, joined, bits)) return {};
+    joined.resize(bits);
+    return joined;
 }
 
 Ack ArqReceiver::makeAck(uint8_t id, double snrDb) const {

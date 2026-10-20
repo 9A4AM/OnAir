@@ -243,7 +243,7 @@ struct KawsLiveReceiver::Impl {
         if (!r.sync || (int)r.blocks.size() != n) r = r1, n = 1;
         // a burst of this profile was found: a try of another profile on the same burst is not a failure
         for (auto it = pendingBad.begin(); it != pendingBad.end();) {
-            if (std::fabs(it->burstUtc - burstUtc) < 6.0) it = pendingBad.erase(it); else ++it;
+            if (it->burstUtc > burstUtc - 6.0 && it->burstUtc < burstUtc + (double)burstSamples(p, n) / kBaseRate) it = pendingBad.erase(it); else ++it;
         }
         int lastGood = -1;
         std::vector<int> ok((size_t)n, 0);
