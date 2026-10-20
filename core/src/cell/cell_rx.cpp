@@ -138,7 +138,7 @@ const char* lteOperatorName(int mcc, int mnc) {
         {250, 1, "MTS"}, {250, 2, "MegaFon"}, {250, 20, "Tele2"}, {250, 99, "Beeline"},
         {257, 1, "A1"}, {257, 2, "MTS"}, {257, 4, "life:)"},
         {255, 1, "Vodafone"}, {255, 3, "Kyivstar"}, {255, 6, "lifecell"},
-        {310, 260, "T-Mobile"}, {310, 410, "AT&T"}, {311, 480, "Verizon"},
+        {310, 260, "T-Mobile"}, {310, 410, "AT&T"}, {311, 480, "Verizon"}, {313, 100, "FirstNet"},
     };
     for (const auto& o : t) if (o.mcc == mcc && o.mnc == mnc) return o.name;
     return "";

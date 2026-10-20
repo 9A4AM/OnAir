@@ -4,6 +4,7 @@
 #include "app.h"
 #include "state/results_export.h"
 #include "../adsb/adsb_map.h"
+#include "dect2/cell/cell_filter.h"
 #include "dect2/nr/nr_phy.h"
 #include "dect2/nr/nr_rx.h"
 #include "dect2/nr/nr_tel.h"
@@ -33,9 +34,19 @@ struct State {
     uint64_t blocksAt = 0;
     adsbmap::View map;
     bool fitted = false;
+    char hide[48] = {};           // "Hide bands": NR band numbers left out of the list and the export (#164)
+    float minRsrp = -120;         // dBFS; at the bottom of the slider: no limit
+    bool mibOnly = false;
 };
 State S;
 
+dect2::NrFilter filterNow() {
+    dect2::NrFilter f;
+    f.hideBands = dect2::parseBandList(S.hide);
+    f.minRsrpDb = S.minRsrp <= -120 ? -200.f : S.minRsrp;
+    f.mibOnly = S.mibOnly;
+    return f;
+}
 bool live(const App& a) { return a.rx.standard == 58; }
 
 std::string ago(int64_t t) {
@@ -104,14 +115,24 @@ void scanBar(App& a) {
     flowNext(10 * gUi);
     if (ImGui::SmallButton("Clear")) a.engine.nr().clearCells();
     flowNext(10 * gUi);
+    ImGui::TextDisabled("Hide bands"); ImGui::SameLine(); ImGui::SetNextItemWidth(90 * gUi); ImGui::InputTextWithHint("##nbhide", "e.g. 41 79", S.hide, sizeof S.hide);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("NR band numbers whose cells are left out of the list and the export (bands overlap, so a frequency can be named for the wrong band).");
+    flowNext(10 * gUi);
+    ImGui::TextDisabled("Min RSRP"); ImGui::SameLine(); ImGui::SetNextItemWidth(90 * gUi); ImGui::SliderFloat("##nbmin", &S.minRsrp, -120, -20, S.minRsrp <= -120 ? "off" : "%.0f dBFS");
+    flowNext(10 * gUi);
+    ImGui::Checkbox("MIB read##nbmib", &S.mibOnly);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Lists only cells whose PBCH decoded (not those known from the synchronisation signals alone).");
+    flowNext(10 * gUi);
     {
         static std::string note;
         resexp::Table t; t.cols = {"time", "frequency_hz", "mode", "band", "gscn", "pci", "ssb_khz", "beams", "sfn", "sib1_scheduled", "rsrp_db", "rsrq_db", "sinr_db"};
         const std::string now = resexp::stamp();
-        for (const auto& c : a.rx.nr.cells)
+        for (const auto& c : a.rx.nr.cells) {
+            if (!dect2::nrCellPasses(c, filterNow())) continue;
             t.add({now, resexp::num(c.freqHz, 0), "5G NR", bandText(c), c.gscn > 0 ? std::to_string(c.gscn) : "", std::to_string(c.pci), std::to_string(c.scsKhz),
                    c.hasMib ? std::to_string(c.beams.size()) : "", c.hasMib ? std::to_string(c.sfn) : "", c.hasMib ? (c.sib1Scheduled ? "yes" : "no") : "",
                    resexp::num(c.rsrpDb, 1), resexp::num(c.rsrqDb, 1), resexp::num(c.sinrDb, 1)});
+        }
         resexp::saveButton(t, "nr", note, "svnr");
         if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
     }
@@ -130,6 +151,7 @@ void cellTable(App& a) {
     ImGui::TableHeadersRow();
     for (size_t i = 0; i < t.cells.size(); i++) {
         const auto& c = t.cells[i];
+        if (!dect2::nrCellPasses(c, filterNow())) continue;
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
         char l[64]; snprintf(l, sizeof l, "%s##nc%zu", bandText(c).c_str(), i);
