@@ -185,5 +185,29 @@ int main() {
             CHECK(t.nets.size() == 1 && t.nets[0].ssid == "MorseNet" && t.nets[0].security == "WPA3-SAE" && t.blocksBad == 0, "dial %+.1f MHz: %zu networks, %llu good", dial / 1e6, t.nets.size(), (unsigned long long)t.blocksOk);
         }
     }
+    {   // 2 MHz beacons off the centre (a 2 MHz primary of a wider BSS), vendor element and the primary channel frequency of the S1G Operation element
+        struct T { double dial, rate; } tt[] = {{-0.5e6, 4e6}, {0.5e6, 4e6}, {-1.0e6, 6e6}, {1.0e6, 6e6}, {-1.5e6, 8e6}, {1.5e6, 8e6}};
+        for (const T& e : tt) {
+            BssSpec b;
+            const uint8_t mac[6] = {0x02, 0x11, 0x22, 1, 2, 3};
+            memcpy(b.bssid, mac, 6); b.ssid = "Wide2"; b.security = Wpa3Sae; b.opWidthMhz = 4; b.primaryWidthMhz = 2;
+            b.opClass = 3; b.ccf = 16; b.primary = 7; b.vendorOui[0] = 0x0C; b.vendorOui[1] = 0xBF; b.vendorOui[2] = 0x74;
+            HalowGenFrame f;
+            f.psdu = makeS1gBeacon(b); f.width = W2; f.mcs = 0;
+            HalowGenConfig c;
+            c.rate = e.rate; c.snrDb = 30; c.dialOffsetHz = e.dial; c.frames = {f, f, f, f, f, f};
+            HalowGenerator g(c);
+            HalowReceiver r;
+            r.configure(e.rate);
+            r.setCenterHz(905e6);
+            std::vector<cf32> buf(16384);
+            for (size_t done = 0; done < (size_t)(0.6 * e.rate); done += buf.size()) { g.generate(buf.data(), buf.size()); r.feed(buf.data(), buf.size()); }
+            r.flush();
+            HalowTelemetry t;
+            r.telemetry(t, 0);
+            CHECK(t.nets.size() == 1 && t.nets[0].ssid == "Wide2" && t.blocksBad == 0, "2 MHz dial %+.1f MHz: %zu networks, %llu good", e.dial / 1e6, t.nets.size(), (unsigned long long)t.blocksOk);
+            if (t.nets.size() == 1) CHECK(t.nets[0].vendorIe.find("0C:BF:74") == 0 && std::fabs(t.nets[0].primaryMhz - (902.0 + 0.5 * 7)) < 1e-6, "vendor '%s', primary %.1f MHz", t.nets[0].vendorIe.c_str(), t.nets[0].primaryMhz);
+        }
+    }
     return testSummary("halow modes");
 }

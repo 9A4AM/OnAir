@@ -16,6 +16,8 @@ constexpr size_t kHlPpsHist = 120;     // seconds of packets-per-second history
 struct HlNet {
     std::string bssid;                 // "AA:BB:CC:DD:EE:FF"
     std::string vendor;                // from the OUI, "" unknown
+    std::string vendorIe;              // OUIs of the vendor specific elements, with the maker's name where known ("0C:BF:74 Morse Micro"), "" none
+    double primaryMhz = 0;             // centre of the 1 MHz primary channel from the S1G Operation element (class start + 0.5 MHz x primary number), 0 unknown
     std::string ssid;                  // "" when only the compressed form (comp) was sent
     bool hasSsid = false;
     bool hidden = false;               // an empty SSID element

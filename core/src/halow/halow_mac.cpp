@@ -52,6 +52,7 @@ void addBodyIes(std::vector<uint8_t>& v, const BssSpec& b, bool withSsid, bool w
         putLe(r, 0x00C0, 2);                         // capabilities (management frame protection)
         addIe(v, 48, r);
     }
+    if (b.vendorOui[0] | b.vendorOui[1] | b.vendorOui[2]) addIe(v, 221, {b.vendorOui[0], b.vendorOui[1], b.vendorOui[2], 0x01, 0x00});   // vendor specific: OUI and a short body
     if (b.raw) addIe(v, 180, {0x01, 0x00, 0x00, 0x00, 0x10, 0x00});   // RAW parameter set (unverified layout: only its presence is read)
     if (b.twt) addIe(v, 216, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});   // TWT (presence only)
     std::vector<uint8_t> cap(15, 0);                 // S1G Capabilities: B0 = long preamble supported, nothing else is read
@@ -191,6 +192,10 @@ void parseIes(const uint8_t* p, size_t n, Frame& f) {
         else if (id == 5 && len >= 3) { f.hasTim = true; f.dtimCount = b[0]; f.dtimPeriod = b[1]; f.timBytes = len - 3; }
         else if (id == 7 && len >= 2) { f.hasCountry = true; f.country.assign(reinterpret_cast<const char*>(b), 2); }
         else if (id == 32 && len >= 1) f.txPowerDbm = b[0];
+        else if (id == 221 && len >= 3) {   // vendor specific (9.4.2.24): the first three octets are the OUI
+            char o[16]; snprintf(o, sizeof o, "%02X:%02X:%02X", b[0], b[1], b[2]);
+            if (std::find(f.vendorIes.begin(), f.vendorIes.end(), o) == f.vendorIes.end() && f.vendorIes.size() < 8) f.vendorIes.push_back(o);
+        }
         else if (id == 180) f.hasRaw = true;
         else if (id == 216) f.hasTwt = true;
         else if (id == 217 && len >= 1) { f.hasCap = true; f.longPreamble = b[0] & 1; }

@@ -224,6 +224,8 @@ std::string detailOf(const dect2::HlNet& n) {
     if (n.rateMbps > 0) { snprintf(b, sizeof b, ", MCS %d, %d %s, %.2f Mbit/s, SNR %.0f dB", n.mcs, n.nss, tr("stream(s)"), n.rateMbps, n.snrDb); s += b; }
     if (n.opClass) { snprintf(b, sizeof b, "\n%s %d, %s %d, %s %d MHz", tr("class"), n.opClass, tr("channel"), n.ccf, tr("operating width"), n.opWidthMhz); s += b; }
     if (n.primaryWidthMhz) { snprintf(b, sizeof b, ", %s %d MHz", tr("primary"), n.primaryWidthMhz); s += b; }
+    if (n.primaryMhz > 0) { snprintf(b, sizeof b, ", %s %.1f MHz", tr("primary channel at"), n.primaryMhz); s += b; }
+    if (!n.vendorIe.empty()) s += std::string("\n") + tr("vendor elements") + " " + n.vendorIe;
     if (!n.country.empty()) s += "\n" + std::string(tr("country")) + " " + n.country;
     if (n.dtimPeriod) { snprintf(b, sizeof b, ", DTIM %d", n.dtimPeriod); s += b; }
     if (n.txPowerDbm >= 0) { snprintf(b, sizeof b, ", %s %d dBm", tr("power constraint"), n.txPowerDbm); s += b; }

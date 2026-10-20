@@ -3474,3 +3474,5 @@ Save JSON	Сохранить JSON
 saved to	сохранено в
 Value	Значение
 Raw	Сырое
+primary channel at	основной канал на
+vendor elements	элементы производителя

@@ -9,6 +9,7 @@
 #include "../adsb/adsb_map.h"
 #include "dect2/cell/cell_ocid.h"
 #include "dect2/cell/cell_rx.h"
+#include "dect2/cell/cell_filter.h"
 #include "dect2/cell/cell_tel.h"
 #include <algorithm>
 #include <cmath>
@@ -46,6 +47,9 @@ struct State {
     bool keyLoaded = false, showKey = false, fitted = false;
     char key[128] = {};
     std::unique_ptr<dect2::OcidLookup> ocid;
+    char find[48] = {};           // operator / PLMN / eNB / TAC / PCI search
+    float minRsrp = -120;         // dBFS; at the bottom of the slider: no limit
+    bool confirmedOnly = false, identifiedOnly = false, hideBarred = false, collapse = false;
     char hide[48] = {};           // "Hide bands": band numbers whose cells are left out of the list and the export (#164)
 };
 State S;
@@ -58,9 +62,20 @@ std::vector<int> hiddenBands() {
     }
     return v;
 }
-bool hidden(const dect2::CellTower& c) {
-    const std::vector<int> h = hiddenBands();
-    return !h.empty() && c.band > 0 && std::find(h.begin(), h.end(), c.band) != h.end();
+// the list filters of the "Filter" row: hidden bands, text, level, band confirmed by SIB1, identified, barred, duplicates (core/include/dect2/cell/cell_filter.h)
+dect2::CellFilter filterNow() {
+    dect2::CellFilter f;
+    f.hideBands = hiddenBands();
+    f.text = S.find;
+    f.minRsrpDb = S.minRsrp <= -120 ? -200.f : S.minRsrp;
+    f.confirmedBandOnly = S.confirmedOnly; f.identifiedOnly = S.identifiedOnly; f.hideBarred = S.hideBarred; f.collapseDuplicates = S.collapse;
+    return f;
+}
+// the cells to list for this frame (indices into the telemetry)
+std::vector<size_t>& shown(const dect2::CellTelemetry& t) {
+    static std::vector<size_t> v;
+    v = dect2::filterCells(t.cells, filterNow());
+    return v;
 }
 // "B66 (also B4, B25)"; a band taken from the frequency alone is "B1? (or B4, B10)" until SIB1 has been read
 std::string bandText(const dect2::CellTower& c) {
@@ -153,7 +168,9 @@ ImU32 opColour(const dect2::CellTower& c, int alpha) {   // one colour per opera
 
 std::string opText(const dect2::CellTower& c) {
     if (!c.hasSib1 || c.plmns.empty()) return "-";
-    return c.op.empty() ? c.plmns[0] : c.plmns[0] + " " + c.op;
+    std::string s = c.op.empty() ? c.plmns[0] : c.plmns[0] + " " + c.op;
+    if (c.plmns.size() > 1) s += " +" + std::to_string(c.plmns.size() - 1);   // shared network: the other PLMNs are in the detail line
+    return s;
 }
 
 void makePlan(const App& a) {
@@ -230,12 +247,29 @@ void scanBar(App& a) {
     ImGui::TextDisabled("Hide bands"); ImGui::SameLine(); ImGui::SetNextItemWidth(90 * gUi); ImGui::InputTextWithHint("##cbhide", "e.g. 14 28", S.hide, sizeof S.hide);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Band numbers whose cells are left out of the list and the export (a cell is shown in the first band that holds its frequency\nuntil its SIB1 is read; an unwanted band can be hidden here).");
     flowNext(10 * gUi);
+    ImGui::TextDisabled("Search"); ImGui::SameLine(); ImGui::SetNextItemWidth(110 * gUi); ImGui::InputTextWithHint("##cbfind", "operator, 310-410, eNB", S.find, sizeof S.find);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Lists only cells whose operator, any of their PLMNs (a cell can broadcast several, such as 310-410 and 313-100), eNB, TAC, cell id or PCI contains this text.");
+    flowNext(10 * gUi);
+    ImGui::TextDisabled("Min RSRP"); ImGui::SameLine(); ImGui::SetNextItemWidth(90 * gUi); ImGui::SliderFloat("##cbmin", &S.minRsrp, -120, -20, S.minRsrp <= -120 ? "off" : "%.0f dBFS");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Leaves out cells weaker than this (the radio's own scale, not calibrated dBm). At the left end the limit is off.");
+    flowNext(10 * gUi);
+    ImGui::Checkbox("Band known##cbconf", &S.confirmedOnly);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Lists only cells whose band SIB1 confirmed. Until then the band is the first one that holds the frequency, which is why overlapping bands can look wrong.");
+    flowNext(10 * gUi);
+    ImGui::Checkbox("Identified##cbid", &S.identifiedOnly);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Lists only cells whose SIB1 was read (operator, eNB, TAC known).");
+    flowNext(10 * gUi);
+    ImGui::Checkbox("Not barred##cbbar", &S.hideBarred);
+    flowNext(10 * gUi);
+    ImGui::Checkbox("One per cell##cbdup", &S.collapse);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("A cell heard on two frequencies (same PLMN and cell id) is listed once, at its stronger frequency.");
+    flowNext(10 * gUi);
     {
         static std::string note;
         resexp::Table t; t.cols = {"time", "frequency_hz", "mode", "operator", "band", "earfcn", "pci", "enb", "sector", "tac", "width_mhz", "rsrp_db", "rsrq_db"};
         const std::string now = resexp::stamp();
-        for (const auto& c : a.rx.cell.cells) {
-            if (hidden(c)) continue;
+        for (const size_t ci : shown(a.rx.cell)) {
+            const auto& c = a.rx.cell.cells[ci];
             t.add({now, resexp::num(c.freqHz, 0), "LTE", opText(c), c.band ? std::to_string(c.band) : "", c.earfcn >= 0 ? std::to_string(c.earfcn) : "", std::to_string(c.pci),
                    c.hasSib1 ? std::to_string(c.enb) : "", c.hasSib1 ? std::to_string(c.sector) : "", c.hasSib1 ? std::to_string(c.tac) : "",
                    c.hasMib ? resexp::num(c.nRb * 0.2, 1) : "", resexp::num(c.rsrpDb, 1), resexp::num(c.rsrqDb, 1)});
@@ -257,9 +291,8 @@ void cellTable(App& a) {
     if (wide) for (const char* h : {"Operator", "Band", "EARFCN", "MHz", "PCI", "eNB / sector", "TAC", "Width", "RSRP", "RSRQ", "Seen", "Location"}) ImGui::TableSetupColumn(h);
     else for (const char* h : {"Operator", "Band", "EARFCN", "PCI", "eNB / sector", "RSRP", "Location"}) ImGui::TableSetupColumn(h);
     ImGui::TableHeadersRow();
-    for (size_t i = 0; i < t.cells.size(); i++) {
+    for (const size_t i : shown(t)) {
         const auto& c = t.cells[i];
-        if (hidden(c)) continue;
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
         char l[96]; snprintf(l, sizeof l, "%s##c%zu", wide ? opText(c).c_str() : (c.hasSib1 && !c.plmns.empty() ? c.plmns[0].c_str() : "-"), i);
@@ -296,8 +329,18 @@ void detail(App& a) {
                 c.phichDur ? "extended" : "normal", c.phichRes, c.sfn);
     ImGui::Text("RSRP %.1f dBFS, RSRQ %.1f dB, SINR %.1f dB, offset %+.0f Hz", c.rsrpDb, c.rsrqDb, c.sinrDb, c.cfoHz);
     if (c.hasSib1) {
-        std::string pl; for (const auto& p : c.plmns) pl += p + " ";
+        std::string pl;
+        for (size_t k = 0; k < c.plmns.size(); k++) {   // every PLMN the cell broadcasts, with the operator name where the table has it
+            int mc = 0, mn = 0; char tail = 0;
+            const char* nm = sscanf(c.plmns[k].c_str(), "%d-%d%c", &mc, &mn, &tail) == 2 ? dect2::lteOperatorName(mc, mn) : "";
+            pl += c.plmns[k] + (nm && *nm ? std::string(" ") + nm : std::string()) + (k + 1 < c.plmns.size() ? ", " : " ");
+        }
         ImGui::Text("SIB1: %s(%s) TAC %u, cell id %u (eNB %u, sector %d)%s", pl.c_str(), dect2::lteCountry(c.mcc), c.tac, c.cellId, c.enb, c.sector, c.barred ? ", barred" : "");
+    }
+    {   // SIB types 10, 11 and 12 in the scheduling list: the cell can broadcast warnings (ETWS / CMAS); their content is not decoded
+        bool etws = false, cmas = false;
+        for (const auto& s : c.sched) for (int b : s.sibs) { if (b == 10 || b == 11) etws = true; if (b == 12) cmas = true; }
+        if (etws || cmas) ImGui::TextDisabled("%s%s%s", etws ? "scheduled: SIB10/11 (ETWS earthquake and tsunami warning)" : "", etws && cmas ? "; " : "", cmas ? "SIB12 (CMAS / public warning)" : "");
     }
     if (c.hasSib2) ImGui::Text("SIB2: reference signal %d dBm, p-b %d, UL %s", c.refSignalPowerDbm, c.pb, c.ulEarfcn >= 0 ? std::to_string(c.ulEarfcn).c_str() : "default spacing");
     if (c.hasSib3) ImGui::Text("SIB3: priority %d, hysteresis %d dB", c.prio, c.qHystDb);

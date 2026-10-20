@@ -39,6 +39,7 @@ struct BssSpec {
     int txPowerDbm = -1;                 // power constraint element when >= 0
     bool longPreamble = true;            // S1G Capabilities: long preamble supported
     int maxMcsOneSs = 2;                 // basic MCS map, one stream: 0 MCS 0-2, 1 MCS 0-7, 2 MCS 0-9
+    uint8_t vendorOui[3] = {};           // a vendor specific element (221) with this OUI when not all zero (Morse Micro and others add one)
     bool rates = false;                  // supported rates element (management frames; S1G beacons carry none)
 };
 void appendFcs(std::vector<uint8_t>& f);
@@ -77,6 +78,7 @@ struct Frame {
     bool hasRaw = false, hasTwt = false;
     int txPowerDbm = -1;                 // power constraint
     std::vector<float> ratesMbps;        // supported rates
+    std::vector<std::string> vendorIes;  // OUIs "AA:BB:CC" of the vendor specific elements (221), the Wi-Fi Alliance's 50:6F:9A and the Microsoft 00:50:F2 ones included
     bool protectedFrame = false, qos = false;
     std::string summary;
 };

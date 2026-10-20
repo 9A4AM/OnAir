@@ -3491,3 +3491,5 @@ Save JSON	Zapisz JSON
 saved to	zapisano w
 Value	Wartość
 Raw	Surowe
+primary channel at	kanał główny przy
+vendor elements	elementy producenta

@@ -3491,3 +3491,5 @@ Save JSON	JSON opslaan
 saved to	opgeslagen in
 Value	Waarde
 Raw	Ruw
+primary channel at	primair kanaal op
+vendor elements	fabrikantelementen

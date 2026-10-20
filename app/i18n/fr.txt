@@ -3491,3 +3491,5 @@ Save JSON	Enregistrer en JSON
 saved to	enregistré dans
 Value	Valeur
 Raw	Brut
+primary channel at	canal principal à
+vendor elements	éléments constructeur

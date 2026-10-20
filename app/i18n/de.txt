@@ -3491,3 +3491,5 @@ Save JSON	JSON speichern
 saved to	gespeichert in
 Value	Wert
 Raw	Rohwert
+primary channel at	Primärkanal bei
+vendor elements	Herstellerelemente

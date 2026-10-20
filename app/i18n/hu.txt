@@ -3477,3 +3477,5 @@ Save JSON	JSON mentése
 saved to	mentve ide:
 Value	Érték
 Raw	Nyers
+primary channel at	elsődleges csatorna:
+vendor elements	gyártói elemek

@@ -3491,3 +3491,5 @@ Save JSON	JSON を保存
 saved to	保存先
 Value	値
 Raw	生値
+primary channel at	プライマリチャネル
+vendor elements	ベンダー要素

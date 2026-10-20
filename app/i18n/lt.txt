@@ -3491,3 +3491,5 @@ Save JSON	Įrašyti JSON
 saved to	įrašyta į
 Value	Reikšmė
 Raw	Neapdorota
+primary channel at	pagrindinis kanalas ties
+vendor elements	gamintojo elementai

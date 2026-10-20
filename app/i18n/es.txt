@@ -3491,3 +3491,5 @@ Save JSON	Guardar JSON
 saved to	guardado en
 Value	Valor
 Raw	Crudo
+primary channel at	canal primario en
+vendor elements	elementos de fabricante

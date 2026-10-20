@@ -3491,3 +3491,5 @@ Save JSON	保存 JSON
 saved to	已保存到
 Value	值
 Raw	原始值
+primary channel at	主信道位于
+vendor elements	厂商元素

@@ -58,7 +58,9 @@ band is full of traffic (measured on a laptop: 0.7 - 1.0 of real time with a PPD
 
 ## Sub-channel scan
 
-A 1 MHz PPDU can sit anywhere in a wider capture: a Morse Micro or other 2 / 4 / 8 MHz BSS sends its beacons on the 1 MHz primary channel, not at the centre of the BSS. With the dial on the centre and 1 MHz tried, extra 1 MHz-only chains, each behind its own mixer, look at the 1 MHz grid around the centre as far as the radio's rate holds a whole channel: +-0.5 MHz from 3 Msps, +-1.5 from 6 Msps, +-2.5 from 8 Msps. The network's frequency is then centre + that offset. Test: `test_halow_modes` (1 MHz beacon at six dial offsets, dial not set). Not done: a coarse scan of arbitrary offsets, and 2 MHz channels off the centre.
+A 1 MHz PPDU can sit anywhere in a wider capture: a Morse Micro or other 2 / 4 / 8 MHz BSS sends its beacons on the 1 MHz primary channel, not at the centre of the BSS. With the dial on the centre and 1 MHz tried, extra 1 MHz-only chains, each behind its own mixer, look at the 1 MHz grid around the centre as far as the radio's rate holds a whole channel: +-0.5 MHz from 3 Msps, +-1.5 from 6 Msps, +-2.5 from 8 Msps. The network's frequency is then centre + that offset. Test: `test_halow_modes` (1 MHz beacon at six dial offsets, dial not set). The same is done for 2 MHz channels (a 2 MHz primary of a 4 / 8 / 16 MHz BSS): 2 MHz-only chains every 0.5 MHz around the centre, from 4 Msps (`test_halow_modes`, six dial offsets). Not done: a coarse scan of arbitrary offsets.
+
+`HlNet.primaryMhz` is the 1 MHz primary channel from the S1G Operation element; `HlNet.vendorIe` lists the OUIs of vendor specific elements (221), shown in the network tooltip.
 
 ## Not supported
 

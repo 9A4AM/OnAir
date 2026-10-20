@@ -3474,3 +3474,5 @@ Save JSON	Salva JSON
 saved to	salvato in
 Value	Valore
 Raw	Grezzo
+primary channel at	canale primario a
+vendor elements	elementi del produttore
