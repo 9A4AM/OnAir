@@ -155,12 +155,12 @@ std::vector<std::vector<uint8_t>> fragmentIpv4(const std::vector<uint8_t>& d, si
 }
 
 uint32_t crc32Msb(const uint8_t* p, size_t n, uint32_t init) {
-    static uint32_t t[256];
-    static bool have = false;
-    if (!have) {
-        for (uint32_t v = 0; v < 256; v++) { uint32_t c = v << 24; for (int i = 0; i < 8; i++) c = (c & 0x80000000u) ? (c << 1) ^ 0x04C11DB7u : c << 1; t[v] = c; }
-        have = true;
-    }
+    // built once, thread-safely (a plain flag raced when two receiver threads made their first CRC together)
+    static const std::array<uint32_t, 256> t = [] {
+        std::array<uint32_t, 256> a{};
+        for (uint32_t v = 0; v < 256; v++) { uint32_t c = v << 24; for (int i = 0; i < 8; i++) c = (c & 0x80000000u) ? (c << 1) ^ 0x04C11DB7u : c << 1; a[v] = c; }
+        return a;
+    }();
     uint32_t c = init;
     for (size_t i = 0; i < n; i++) c = (c << 8) ^ t[((c >> 24) ^ p[i]) & 255];
     return c;
