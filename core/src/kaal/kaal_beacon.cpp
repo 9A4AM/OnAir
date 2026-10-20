@@ -381,32 +381,80 @@ struct BeaconSliceRx::Impl {
             const double metric = std::sqrt(pk) / e;
             if (metric > bestMetric) { bestMetric = metric; bestKind = kind; bestM = pm0; bestC = pc; }
         }
-        const cd ph = std::polar(1.0, -std::arg(bestC));
+        const std::vector<double> wsync = syncWord(bestKind == 1);
         const size_t avail = (N - 1 - bestM) / spsD + 1;   // symbols from the sync start
         const size_t nAvail = avail > sync ? avail - sync : 0;
-        auto softAt = [&](size_t i) { return (float)(std::complex<double>(mf[bestM + (sync + i) * spsD]) * ph).real(); };
-        size_t nInfo = kBeaconHeaderBits;
-        if (bestKind == 1) {
-            const size_t probe = kBeaconHeaderBits + 40;
-            if (nAvail < 4 * probe) return Wait;
-            std::vector<float> r(4 * probe);
-            for (size_t i = 0; i < r.size(); i++) r[i] = softAt(i);
-            const std::vector<uint8_t> pb = beaconViterbi(r.data(), probe, probe);
-            unsigned n = 0;
-            for (int i = 146; i < 154; i++) n = (n << 1) | pb[i];
-            if (n > kBeaconMaxText) { dropMf(bestM + sync * spsD); return Dropped; }
-            nInfo = kBeaconHeaderBits + (n ? 8 * n + 32 : 0);
+        const double symRate = (double)kBeaconSymRate;
+        // The residual carrier offset: the two halves of the sync word give it (to +-15 Hz); the frame is 0.7 s long, so a few hertz are several turns of phase.
+        // The estimate and its neighbours are tried one after the other, each with its own static phase; the CRC says which one is right.
+        cd c1(0, 0), c2(0, 0);
+        for (size_t i = 0; i < sync; i++) {
+            const cd v = cd(mf[bestM + i * spsD]) * wsync[i];
+            (i < sync / 2 ? c1 : c2) += v;
         }
-        const size_t steps = nInfo + kK - 1, need = 4 * steps;
-        if (nAvail < need) return Wait;
-        std::vector<float> r(need);
-        for (size_t i = 0; i < need; i++) r[i] = softAt(i);
-        const std::vector<uint8_t> bits = beaconViterbi(r.data(), steps, nInfo);
-        Out o;
-        if (decodeBeaconBits(bits, o.f, o.text)) {
-            ready.push_back(o);
-            dropMf(bestM + (sync + need) * spsD);
-            return Found;
+        const double dfEst = std::arg(c2 * std::conj(c1)) / (2 * kPi * ((double)(sync / 2) / symRate));
+        // no correction first (a clean carrier, and a noisy estimate must not spoil a good frame), then the estimate and its neighbours
+        std::vector<double> cand = {0.0, dfEst, dfEst + 1, dfEst - 1, dfEst + 2, dfEst - 2, dfEst + 3.5, dfEst - 3.5, dfEst + 5, dfEst - 5};
+        // pass 0: as they are; pass 1 (full frames only): with the carrier error measured over the header, when pass 0 found nothing
+        for (int pass = 0; pass < (bestKind == 1 ? 2 : 1); pass++)
+        for (double df : cand) {
+            auto rot = [&](size_t i) { return std::polar(1.0, -2 * kPi * df * (double)i / symRate); };
+            auto stat = [&]() {
+                cd acc(0, 0);
+                for (size_t i = 0; i < sync; i++) acc += cd(mf[bestM + i * spsD]) * rot(i) * wsync[i];
+                return std::polar(1.0, -std::arg(acc));
+            };
+            cd ph = stat();
+            auto softAt = [&](size_t i) { return (float)(std::complex<double>(mf[bestM + (sync + i) * spsD]) * rot(sync + i) * ph).real(); };
+            bool refined = false;
+            if (pass == 1 && nAvail >= 4 * kBeaconHeaderBits + 80) {
+                // A full frame is 3.4 s long: a carrier error of a fraction of a hertz is turns of phase by its end. The header at its start (CRC-16) is
+                // decoded first; if it is right its bits are known symbols, and the carrier error is measured over them (the sync word and 680 symbols)
+                std::vector<float> rh(4 * (kBeaconHeaderBits + 40));
+                for (size_t i = 0; i < rh.size(); i++) rh[i] = softAt(i);
+                const std::vector<uint8_t> hb = beaconViterbi(rh.data(), kBeaconHeaderBits + 40, kBeaconHeaderBits + 40);
+                size_t pp = kHdrFieldBits;
+                if (crc16(hb.data(), kHdrFieldBits) == get(hb, pp, 16)) {
+                    std::vector<uint8_t> hdr(hb.begin(), hb.begin() + kBeaconHeaderBits);
+                    const std::vector<uint8_t> coded = beaconConvEncode(hdr);
+                    const size_t M = sync + 4 * (size_t)kBeaconHeaderBits;
+                    std::vector<cd> z(M);
+                    for (size_t i = 0; i < M; i++) {
+                        const double sym = i < sync ? wsync[i] : 1.0 - 2.0 * coded[i - sync];
+                        z[i] = cd(mf[bestM + i * spsD]) * rot(i) * sym;
+                    }
+                    const size_t L = 128;
+                    cd S(0, 0);
+                    for (size_t i = 0; i + L < M; i++) S += z[i + L] * std::conj(z[i]);
+                    df += std::arg(S) / (2 * kPi * (double)L / symRate);
+                    ph = stat();
+                    refined = true;
+                }
+            }
+            if (pass == 1 && !refined) continue;
+            size_t nInfo = kBeaconHeaderBits;
+            if (bestKind == 1) {
+                const size_t probe = kBeaconHeaderBits + 40;
+                if (nAvail < 4 * probe) return Wait;
+                std::vector<float> r(4 * probe);
+                for (size_t i = 0; i < r.size(); i++) r[i] = softAt(i);
+                const std::vector<uint8_t> pb = beaconViterbi(r.data(), probe, probe);
+                unsigned n = 0;
+                for (int i = 146; i < 154; i++) n = (n << 1) | pb[i];
+                if (n > kBeaconMaxText) continue;
+                nInfo = kBeaconHeaderBits + (n ? 8 * n + 32 : 0);
+            }
+            const size_t steps = nInfo + kK - 1, need = 4 * steps;
+            if (nAvail < need) return Wait;
+            std::vector<float> r(need);
+            for (size_t i = 0; i < need; i++) r[i] = softAt(i);
+            const std::vector<uint8_t> bits = beaconViterbi(r.data(), steps, nInfo);
+            Out o;
+            if (decodeBeaconBits(bits, o.f, o.text)) {
+                ready.push_back(o);
+                dropMf(bestM + (sync + need) * spsD);
+                return Found;
+            }
         }
         dropMf(bestM + sync * spsD);
         return Dropped;
