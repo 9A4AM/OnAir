@@ -107,7 +107,21 @@ void Receiver::process(const std::complex<float>* iq, size_t n, double fs) {
         mean += f[k];
     }
     mean /= (double)m;
-    st_.carrierOffsetHz = mean;
+    // The data is MSK, so the instantaneous frequency sits on two clusters either side of the carrier: the carrier is the
+    // midpoint of the two cluster means. The split point is refined (k-means) until it settles, so an unbalanced bit
+    // pattern (a long run of one tone) does not pull the estimate away like a plain mean does.
+    {
+        double split = mean, mid = mean;
+        for (int it = 0; it < 12; it++) {
+            double hi = 0, lo = 0; size_t nh = 0, nl = 0;
+            for (size_t k = 0; k < m; k++) { if (f[k] >= split) { hi += f[k]; nh++; } else { lo += f[k]; nl++; } }
+            if (!nh || !nl) { mid = mean; break; }
+            mid = 0.5 * (hi / (double)nh + lo / (double)nl);
+            if (std::fabs(mid - split) < 1e-6) break;
+            split = mid;
+        }
+        st_.carrierOffsetHz = mid;
+    }
 
     // Bit timing: integrate the offset-corrected frequency over each bit for every start phase and keep the phase
     // with the largest total magnitude (the MSK tones move the frequency to one side or the other every bit).
