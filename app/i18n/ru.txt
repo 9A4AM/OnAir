@@ -3272,7 +3272,6 @@ pilot	пилот
 pilot checks	проверки пилота
 separation	разделение
 stereo phase	фаза стерео
-<<<<<<< HEAD
 
 # auto subtitles (captions)
 Generating captions from the sound	Создание субтитров из звука
@@ -3477,9 +3476,23 @@ Value	Значение
 Raw	Сырое
 primary channel at	основной канал на
 vendor elements	элементы производителя
-=======
 Colour by altitude	Цвет по высоте
 Track width (px)	Толщина трека (px)
 Never drop silent aircraft	Не удалять молчащие самолёты
 Drop after (s)	Удалить через (с)
->>>>>>> pub/adsb-specan-028
+=======
+contact lines	линии связей
+A line between the two stations of a contact, drawn from the decoded messages: the great circle from the caller to the station called.	Линия между двумя станциями связи, построенная по декодированным сообщениям: большой круг от вызывающей станции к вызываемой.
+show contact lines	показывать линии связей
+fade with age	бледнеть со временем
+highlight completed contacts	выделять завершённые связи
+only the selected station	только выбранная станция
+line labels	подписи линий
+colour by band	цвет по диапазону
+colour by time	цвет по времени
+keep lines for (min)	хранить линии (мин)
+deselect	снять выбор
+click a station on the map to select it	щёлкните станцию на карте, чтобы выбрать её
+%zu stations by their locators, %zu contact lines	%zu станций по локаторам, %zu линий связи
+%d stations at the centre of their grid squares, %zu contact lines	%d станций в центре своих квадратов, %zu линий связи
+>>>>>>> pub/map-contacts-028

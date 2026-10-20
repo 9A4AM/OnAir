@@ -2,6 +2,7 @@
 // the newest frames marked, then four views: every frame decoded (UTC, submode, SNR, DT, Hz, text), the messages put together from
 // their frames (directed messages, free text, relays), the stations heard (call, grid, SNR, last heard), and their grids on a map.
 #include "app.h"
+#include "../map/contact_lines.h"
 #include "gfx/gfx.h"
 #include "../adsb/adsb_map.h"
 #include "dect2/js8/js8_proto.h"
@@ -237,6 +238,18 @@ void mapView(App& a) {
     ImDrawList* dl = ImGui::GetWindowDrawList();
     dl->PushClipRect(p0, ImVec2(p0.x + size.x, p0.y + size.y), true);
     npos = 0;
+    size_t nLines = 0;
+    if (on && contactlines::options().lines) {   // who talks to whom: the directed messages between two stations
+        const auto& co = contactlines::options();
+        dect2::ContactGraph g(co.keepMin * 60.0);
+        double now = 0;
+        for (const auto& d : a.rx.js8.decodes) now = std::max(now, d.slotUtc);
+        for (const auto& d : a.rx.js8.decodes) if (d.slotUtc >= now - co.keepMin * 60.0) g.add(d.slotUtc, d.text, 0, 0, d.grid);
+        g.expire(now);
+        ImVec2 click;
+        if (adsbmap::clickedAt(click)) contactlines::pickAt(g, click);
+        nLines = contactlines::draw(dl, g, now, S.map.lon);
+    }
     if (on)
         for (const auto& v : st) {
             if (!v.hasPos) continue;
@@ -245,6 +258,7 @@ void mapView(App& a) {
             const float r = 5.f * gUi;
             dl->AddCircleFilled(q, r, v.cq ? IM_COL32(240, 180, 80, 255) : IM_COL32(90, 200, 220, 255));
             dl->AddCircle(q, r, IM_COL32(0, 0, 0, 160), 16, 1.f);
+            contactlines::markSelected(dl, v.call, q);
             const ImVec2 ts = ImGui::CalcTextSize(v.call.c_str());
             const ImVec2 lp(q.x + 10 * gUi, q.y - ts.y * 0.5f - 2 * gUi);
             dl->AddRectFilled(lp, ImVec2(lp.x + ts.x + 8 * gUi, lp.y + ts.y + 4 * gUi), IM_COL32(10, 12, 14, 210), 2.f);
@@ -260,11 +274,14 @@ void mapView(App& a) {
     if (ImGui::Button("fit##js8")) S.mapFollow = true;
     ImGui::PopStyleColor();
     ImGui::SameLine(0, 6 * gUi);
+    contactlines::controls();
+    ImGui::SameLine(0, 6 * gUi);
     adsbmap::tileControls("never the position itself");
     plat::prefs().setI("js8Zoom", S.map.zoom);
     ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + size.y - ImGui::GetTextLineHeight() - 6 * gUi));
     if (!on) adsbmap::legend(size.x, "start the receiver");
     else if (npos == 0) adsbmap::legend(size.x, "no grids yet (heartbeats and CQs send them)");
+    else if (contactlines::options().lines) adsbmap::legend(size.x, tr("%d stations at the centre of their grid squares, %zu contact lines"), npos, nLines);
     else adsbmap::legend(size.x, "%d stations at the centre of their grid squares", npos);
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
     ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"

@@ -3289,7 +3289,6 @@ pilot	pilotas
 pilot checks	piloto patikros
 separation	atskyrimas
 stereo phase	stereo fazė
-<<<<<<< HEAD
 
 # auto subtitles (captions)
 Generating captions from the sound	Kuriami subtitrai iš garso
@@ -3494,9 +3493,23 @@ Value	Reikšmė
 Raw	Neapdorota
 primary channel at	pagrindinis kanalas ties
 vendor elements	gamintojo elementai
-=======
 Colour by altitude	Spalvinti pagal aukštį
 Track width (px)	Trasos storis (px)
 Never drop silent aircraft	Niekada nešalinti tylinčių orlaivių
 Drop after (s)	Šalinti po (s)
->>>>>>> pub/adsb-specan-028
+=======
+contact lines	ryšio linijos
+A line between the two stations of a contact, drawn from the decoded messages: the great circle from the caller to the station called.	Linija tarp dviejų ryšio stočių, nubrėžta iš iškoduotų pranešimų: didysis apskritimas nuo šaukiančiosios iki šaukiamos stoties.
+show contact lines	rodyti ryšio linijas
+fade with age	blukti su amžiumi
+highlight completed contacts	paryškinti užbaigtus ryšius
+only the selected station	tik pasirinkta stotis
+line labels	linijų užrašai
+colour by band	spalva pagal juostą
+colour by time	spalva pagal laiką
+keep lines for (min)	laikyti linijas (min.)
+deselect	atšaukti pasirinkimą
+click a station on the map to select it	spustelėkite stotį žemėlapyje, kad ją pasirinktumėte
+%zu stations by their locators, %zu contact lines	%zu stočių pagal lokatorius, %zu ryšio linijų
+%d stations at the centre of their grid squares, %zu contact lines	%d stočių savo kvadratų viduryje, %zu ryšio linijų
+>>>>>>> pub/map-contacts-028

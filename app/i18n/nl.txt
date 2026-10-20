@@ -3289,7 +3289,6 @@ pilot	pilot
 pilot checks	pilotcontroles
 separation	scheiding
 stereo phase	stereofase
-<<<<<<< HEAD
 
 # auto subtitles (captions)
 Generating captions from the sound	Ondertitels maken van het geluid
@@ -3494,9 +3493,23 @@ Value	Waarde
 Raw	Ruw
 primary channel at	primair kanaal op
 vendor elements	fabrikantelementen
-=======
 Colour by altitude	Kleur op hoogte
 Track width (px)	Sporbreedte (px)
 Never drop silent aircraft	Stille vliegtuigen nooit verwijderen
 Drop after (s)	Verwijderen na (s)
->>>>>>> pub/adsb-specan-028
+=======
+contact lines	contactlijnen
+A line between the two stations of a contact, drawn from the decoded messages: the great circle from the caller to the station called.	Een lijn tussen de twee stations van een contact, getekend uit de gedecodeerde berichten: de grootcirkel van de oproeper naar het opgeroepen station.
+show contact lines	contactlijnen tonen
+fade with age	vervagen met de leeftijd
+highlight completed contacts	voltooide contacten markeren
+only the selected station	alleen het gekozen station
+line labels	lijnlabels
+colour by band	kleur per band
+colour by time	kleur per tijd
+keep lines for (min)	lijnen bewaren (min)
+deselect	selectie opheffen
+click a station on the map to select it	klik op een station op de kaart om het te kiezen
+%zu stations by their locators, %zu contact lines	%zu stations op hun locator, %zu contactlijnen
+%d stations at the centre of their grid squares, %zu contact lines	%d stations in het midden van hun vak, %zu contactlijnen
+>>>>>>> pub/map-contacts-028

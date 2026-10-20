@@ -3289,7 +3289,6 @@ pilot	pilot
 pilot checks	kontrole pilota
 separation	separacja
 stereo phase	faza stereo
-<<<<<<< HEAD
 
 # auto subtitles (captions)
 Generating captions from the sound	Tworzenie napisów z dźwięku
@@ -3494,9 +3493,23 @@ Value	Wartość
 Raw	Surowe
 primary channel at	kanał główny przy
 vendor elements	elementy producenta
-=======
 Colour by altitude	Kolor wg wysokości
 Track width (px)	Grubość śladu (px)
 Never drop silent aircraft	Nigdy nie usuwaj milczących samolotów
 Drop after (s)	Usuń po (s)
->>>>>>> pub/adsb-specan-028
+=======
+contact lines	linie łączności
+A line between the two stations of a contact, drawn from the decoded messages: the great circle from the caller to the station called.	Linia między dwiema stacjami łączności, narysowana z zdekodowanych wiadomości: koło wielkie od wywołującego do wywołanej stacji.
+show contact lines	pokaż linie łączności
+fade with age	blednij z wiekiem
+highlight completed contacts	wyróżnij zakończone łączności
+only the selected station	tylko wybrana stacja
+line labels	etykiety linii
+colour by band	kolor według pasma
+colour by time	kolor według czasu
+keep lines for (min)	trzymaj linie przez (min)
+deselect	odznacz
+click a station on the map to select it	kliknij stację na mapie, aby ją wybrać
+%zu stations by their locators, %zu contact lines	%zu stacji według lokatorów, %zu linii łączności
+%d stations at the centre of their grid squares, %zu contact lines	%d stacji w środku swoich kwadratów, %zu linii łączności
+>>>>>>> pub/map-contacts-028

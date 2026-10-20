@@ -3289,7 +3289,6 @@ pilot	Pilot
 pilot checks	Pilotprüfungen
 separation	Trennung
 stereo phase	Stereophase
-<<<<<<< HEAD
 
 # auto subtitles (captions)
 Generating captions from the sound	Untertitel aus dem Ton werden erzeugt
@@ -3494,9 +3493,23 @@ Value	Wert
 Raw	Rohwert
 primary channel at	Primärkanal bei
 vendor elements	Herstellerelemente
-=======
 Colour by altitude	Nach Höhe einfärben
 Track width (px)	Spurbreite (px)
 Never drop silent aircraft	Stumme Flugzeuge nie entfernen
 Drop after (s)	Entfernen nach (s)
->>>>>>> pub/adsb-specan-028
+=======
+contact lines	Kontaktlinien
+A line between the two stations of a contact, drawn from the decoded messages: the great circle from the caller to the station called.	Eine Linie zwischen den beiden Stationen eines Kontakts, aus den dekodierten Nachrichten gezeichnet: der Großkreis vom Rufenden zur gerufenen Station.
+show contact lines	Kontaktlinien zeigen
+fade with age	mit dem Alter verblassen
+highlight completed contacts	abgeschlossene Kontakte hervorheben
+only the selected station	nur die gewählte Station
+line labels	Linienbeschriftung
+colour by band	Farbe nach Band
+colour by time	Farbe nach Zeit
+keep lines for (min)	Linien behalten für (Min.)
+deselect	abwählen
+click a station on the map to select it	Station auf der Karte anklicken, um sie zu wählen
+%zu stations by their locators, %zu contact lines	%zu Stationen nach ihren Lokatoren, %zu Kontaktlinien
+%d stations at the centre of their grid squares, %zu contact lines	%d Stationen in der Mitte ihrer Gitterfelder, %zu Kontaktlinien
+>>>>>>> pub/map-contacts-028
