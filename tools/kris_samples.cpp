@@ -1,7 +1,7 @@
-// Writes sample IQ files of the KAAL, KAPP, KAFT and KAIT transmitters through the transmit IQ-file sink (tx_iqfile.h):
+// Writes sample IQ files of the KAAL, KAPP, KAFT, KAIT and KAWS transmitters through the transmit IQ-file sink (tx_iqfile.h):
 //   kris_samples <out folder> [<folder with 16 kHz mono voice WAV files for KAAL, one per file>]
 // Per signal: a two-channel 16-bit WAV (I left, Q right, opens in SDR++), a SigMF cf32 and a SigMF ci16 file. The rates are the transmitters' own:
-// KAAL 48 ksps, KAPP 320 ksps (the 640 ksps internal rate halved), KAFT 4 samples per symbol (640 ksps, 1.6 Msps, 3.2 Msps for 200 kHz, 500 kHz, 1 MHz), KAIT 632 ksps (4 samples per symbol, 10 s picture burst).
+// KAAL 48 ksps, KAPP 320 ksps (the 640 ksps internal rate halved), KAFT 4 samples per symbol (640 ksps, 1.6 Msps, 3.2 Msps for 200 kHz, 500 kHz, 1 MHz), KAIT 632 ksps (4 samples per symbol, 10 s picture burst), KAWS 12 ksps (a P0 chat burst and a P3 beacon, upper-sideband audio as IQ).
 #include "dect2/kaal/kaal_txgen.h"
 #include "dect2/kaft/kaft_frame.h"
 #include "dect2/kaft/kaft_rx.h"
@@ -9,6 +9,10 @@
 #include "dect2/kapp/kapp_frame.h"
 #include "dect2/kait/kait_frame.h"
 #include "dect2/kait/kait_rx.h"
+#include "dect2/kaws/kaws_frame.h"
+#include "dect2/kaws/kaws_phy.h"
+#include "dect2/kaws/kaws_sched.h"
+#include "dect2/kaws/kaws_txgen.h"
 #include "dect2/tx/tx.h"
 #include "dect2/tx/tx_iqfile.h"
 #include <cmath>
@@ -155,6 +159,51 @@ static void kappProfile(const std::string& dir, int p, double snrDb, const char*
 }
 
 
+// KAWS: one burst of the HF weak-signal mode as the complex upper-sideband signal at 12 ksps (the real part is the audio of a 12 kHz sound card), made by the
+// transmit generator. The file starts on a UTC slot line (the burst begins 1.5 s into it), noise at snrDb in 2.4 kHz. KAWS is simulation-only: these
+// files are made by the simulator, not recorded from a radio. kind 0 chat (block 1 of 2 at P0: a P0 chat message needs two slots), 1 short beacon.
+static void kawsSample(const std::string& dir, int kind, int profile, double snrDb, const char* label) {
+    TxRequest r;
+    r.modeId = "kaws";
+    r.callsign = "LY1TST";
+    r.grid = "KO24RM";
+    r.dest = "CQ";
+    r.text = "KAWS TEST MESSAGE FROM LY1TST";
+    r.opt["kaws.kind"] = kind;
+    r.opt["kaws.profile"] = profile;
+    r.opt["kaws.repeat"] = 1;
+    r.opt["kaws.utc"] = 1.8e9;
+    r.opt["kaws.msgid"] = 1;
+    std::string err;
+    auto g = makeKawsTxGenerator(r, 12000, err);
+    if (!g) { fprintf(stderr, "kaws: %s\n", err.c_str()); g_ok = false; return; }
+    std::vector<cf32> all, blk(12000);
+    while (!g->finished() && all.size() < 12000u * 400) { g->generate(blk.data(), blk.size()); all.insert(all.end(), blk.begin(), blk.end()); }
+    double ps = 0;
+    size_t a = 0, b = all.size();
+    while (a < b && std::abs(all[a]) < 1e-4f) a++;
+    while (b > a && std::abs(all[b - 1]) < 1e-4f) b--;
+    for (size_t i = a; i < b; i++) ps += std::norm(all[i]);
+    ps /= (double)std::max<size_t>(1, b - a);
+    std::mt19937_64 rng(2000 + (unsigned)profile + 10u * (unsigned)kind);
+    std::normal_distribution<float> nd(0.f, 1.f);
+    const float sd = (float)std::sqrt(ps * 12000.0 / (2400.0 * std::pow(10.0, snrDb / 10.0)) / 2.0);
+    for (cf32& v : all) v += cf32(sd * nd(rng), sd * nd(rng));
+    {   // check: the physical layer decodes the file
+        std::vector<float> audio(all.size());
+        for (size_t i = 0; i < all.size(); i++) audio[i] = all[i].real();
+        const std::vector<kaws::cf> iq = kaws::fromAudio12k(audio);
+        const kaws::RxBurst rb = kaws::receiveBurst(profile, 1, iq, 0, kaws::kSearchHi);
+        uint8_t mi = 0, ix = 0;
+        kaws::Bits pl;
+        const bool ok = rb.sync && rb.iters[0] >= 0 && kaws::parseBlock(kaws::kProfiles[profile].K, rb.blocks[0], mi, ix, pl);
+        printf("check KAWS P%d kind %d: preamble %d, first block %s, SNR estimate %.1f dB\n", profile, kind, (int)rb.sync, ok ? "ok" : "NOT decoded", rb.snrDb);
+    }
+    char nm[64];
+    snprintf(nm, sizeof nm, "KAWS_P%d_%s_%s", profile, kind == 0 ? "chat" : "beacon", label);
+    writeAll(dir, nm, 12000, all, "kaws");
+}
+
 // KAIT: one 10 s picture burst (the synthetic 1080p test picture) with noise at snrDb in the 190 kHz band, half a second of noise before and after
 static void kaitSample(const std::string& dir, int profile, double snrDb, const char* label) {
     const kait::BurstPlan plan = kait::planBurst(kait::syntheticPicture(), "LY1TST", profile);
@@ -239,6 +288,8 @@ int main(int argc, char** argv) {
     kappProfile(out + "/KAPP", 1, 12.0, "low");
     kappProfile(out + "/KAPP", 4, 22.0, "mid");
     kappProfile(out + "/KAPP", 7, 34.0, "high");
+    kawsSample(out + "/KAWS", 0, 0, -12.0, "weak");
+    kawsSample(out + "/KAWS", 1, 3, 3.0, "mid");
     kaitSample(out + "/KAIT", 1, -4.0, "weak");
     kaitSample(out + "/KAIT", 0, 9.0, "mid");
     kaftProfile(out + "/KAFT", kaft::Width::W200k, 1, 12.0, "low");

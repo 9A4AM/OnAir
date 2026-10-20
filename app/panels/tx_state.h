@@ -105,6 +105,10 @@ struct TxUi {
     bool kaitLoaded = false;
     std::string kaitSaved;
     // KAPP: the profile (0 .. 8), the passes of the one-way transmission, and a file to send instead of the text
+    // KAWS: kind (0 chat, 1 short beacon, 2 full beacon), profile (0 .. 5; 6 and 7 are voice), passes, wait for the slot; callsign, grid, recipient (dest), text are the shared fields
+    int kawsKind = 0, kawsProfile = 3, kawsPasses = 2, kawsEirp = 30;
+    bool kawsAlign = true, kawsLoaded = false;
+    std::string kawsSaved;
     int kappProfile = 2, kappPasses = 2;
     char kappFile[512] = {};
     bool kappLoaded = false;
@@ -148,6 +152,7 @@ bool canStart(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxMo
 bool startTx(App& a, TxUi& s, const DeviceInfo* radio, const TxModeSpec* mode, bool carrier);
 void stopTx(App& a, TxUi& s, const char* why);         // stops, gives the radio back, logs why
 void destinationPanel(TxUi& s, const TxModeSpec& mode, bool running);   // Radio or IQ file, the folder, the format, the rate and what has been written (tx_ui.cpp)
+void kawsPanel(TxUi& s, bool running);                // KAWS: callsign, recipient, message, kind, profile, passes, slot timing (app/kaws/kaws_ui.cpp)
 void kappPanel(TxUi& s, bool running);                // KAPP: callsign, message or file, profile, passes (kapp_ui.cpp)
 void kaftPanel(TxUi& s, bool running);                // KAFT: callsign, file, width, profile, passes (kaft_ui.cpp)
 void kaalPanel(TxUi& s, bool running);                // KAAL: callsign, grid, position, power, bio text, beacon (kaal_tx_ui.cpp)

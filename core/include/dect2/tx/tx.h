@@ -76,7 +76,7 @@ enum class TxPayloadKind {
     Ftx, Rtty, Keyboard, Cw, Psk, Js8, Hamdrm, Sstv, Freedv,
     Pager, Packet, Ais, AdsB, VoiceFm, VoiceAir, VoiceDigital, Qo100,
     Marine, AcarsFamily, Sonde, Same, Ale, VorIls, LoraRaw, Dect,
-    CubeSat, WeatherScene, SatScene, Flarm, Zigbee, Dji, HfBeacon, Vdes, Uplink, Mesh, Mac, Kaal, Kait, Kapp, Kaft
+    CubeSat, WeatherScene, SatScene, Flarm, Zigbee, Dji, HfBeacon, Vdes, Uplink, Mesh, Mac, Kaal, Kait, Kapp, Kaft, Kaws
 };
 TxPayloadKind txPayloadKind(const std::string& id);
 
@@ -176,7 +176,7 @@ bool txCanEncodeVoice(const TxModeSpec& m);
 // Plain words for the panel: encode path, or why live encode is off (AMBE/IMBE decode-only, library missing). Empty when not a voice mode.
 std::string txVocoderNote(const TxModeSpec& m);
 bool txModeNeedsAudio(const TxModeSpec& m, const TxRequest& r);
-// A mode whose generator ends by itself (a message or a file sent a set number of times: KAPP, KAFT). Into an IQ file it is written as fast as it is made.
+// A mode whose generator ends by itself (a message or a file sent a set number of times: KAPP, KAFT, KAWS). Into an IQ file it is written as fast as it is made.
 bool txModeFinite(const TxModeSpec& m);
 
 // FT8 / FT4 / WSPR / JT* message built from callsign, grid, dest, text and kind. Empty when those fields are empty (the demo stations are used).

@@ -190,6 +190,13 @@ TxRequest makeReq(const TxUi& s, const TxModeSpec& mode, bool carrier) {
         r.opt["kapp.profile"] = s.kappProfile;
         r.opt["kapp.repeat"] = s.kappPasses;
     }
+    if (std::string(mode.id) == "kaws") {
+        r.opt["kaws.kind"] = s.kawsKind;
+        r.opt["kaws.profile"] = s.kawsProfile;
+        r.opt["kaws.repeat"] = s.kawsPasses;
+        r.opt["kaws.eirp"] = s.kawsEirp;
+        r.opt["kaws.align"] = s.kawsAlign ? 1.0 : 0.0;
+    }
     if (std::string(mode.id) == "kaft") {
         r.opt["kaft.profile"] = s.kaftProfile;
         r.opt["kaft.width"] = s.kaftWidth;

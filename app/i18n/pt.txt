@@ -3370,6 +3370,7 @@ no stations yet	ainda sem estações
 other modulations	outras modulações
 quality %d/100	qualidade %d/100
 tone offset	desvio de tom
+unreadable	ilegíveis
 # GOES DCS
 Copies the reports as CSV: id, time, platform address, channel, frequency, bit rate, coding, level, data format, parity errors, data.	Copia os relatórios como CSV: id, hora, endereço da plataforma, canal, frequência, taxa de bits, codificação, nível, formato dos dados, erros de paridade, dados.
 Appends every report to goes_dcs.csv in the data folder, also when nobody watches the screen.	Acrescenta cada relatório a goes_dcs.csv na pasta de dados, mesmo quando ninguém olha o ecrã.

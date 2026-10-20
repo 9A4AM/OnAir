@@ -132,7 +132,7 @@ void destinationPanel(TxUi& s, const TxModeSpec& mode, bool running) {
         ImGui::SetNextItemWidth(160 * gUi);
         if (ImGui::BeginCombo("Sample rate", cur)) {
             for (int i = 0; i < nr; i++) {
-                if (rates[i] < mode.minRateHz - 1) continue;   // below what the mode's generator works at
+                if (rates[i] < mode.minRateHz - 1 || (rates[i] < 13000 && mode.minRateHz <= 0)) continue;   // below what the mode's generator works at
                 char lab[48];
                 snprintf(lab, sizeof lab, "%g ksps", rates[i] / 1e3);
                 if (ImGui::Selectable(lab, std::fabs(s.ifRateHz - rates[i]) < 1)) { s.ifRateHz = rates[i]; pr.setD("tx.ifRateHz", s.ifRateHz); }
