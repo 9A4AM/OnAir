@@ -48,6 +48,26 @@ const char* stdName(int s) { return s == 1 ? "DVB-S" : s == 2 ? "DVB-S2" : s == 
 std::string fmt(const char* f, double v) { char b[48]; snprintf(b, sizeof b, f, v); return b; }
 std::string cnt(uint64_t v) { return std::to_string((unsigned long long)v); }
 
+// Eb/N0 per information bit: Es/N0 less 10 log10 of the bits a symbol carries (modulation times code rate; DVB-S also times 188/204 for the Reed-Solomon code)
+bool ebN0(const DvbsTelemetry& t, double& out) {
+    int bps = 0;
+    const std::string& m = t.modulationName;
+    if (m.find("BPSK") != std::string::npos) bps = 1;
+    else if (m.find("QPSK") != std::string::npos) bps = 2;
+    else if (m.find("8PSK") != std::string::npos) bps = 3;
+    else if (m.find("256APSK") != std::string::npos) bps = 8;
+    else if (m.find("128APSK") != std::string::npos) bps = 7;
+    else if (m.find("64APSK") != std::string::npos) bps = 6;
+    else if (m.find("32APSK") != std::string::npos) bps = 5;
+    else if (m.find("16APSK") != std::string::npos) bps = 4;
+    int a = 0, b = 0;
+    if (!bps || sscanf(t.codeRate.c_str(), "%d/%d", &a, &b) != 2 || a <= 0 || b <= 0) return false;
+    double r = (double)a / b;
+    if (t.standard == 1) r *= 188.0 / 204.0;
+    out = t.snrDb - 10.0 * std::log10(bps * r);
+    return true;
+}
+
 // How far the Es/N0 is above the quasi error free point of table 13 of EN 302 307-1 (DVB-S2) or tables 20a and 20c of EN 302 307-2 (DVB-S2X).
 // False when it cannot be said.
 bool margin(const DvbsTelemetry& t, double& m) {
@@ -142,6 +162,8 @@ void statusRows(App& a, const DvbsTelemetry& t, bool on, bool run, bool standalo
     flowBreak();
     if (t.lockCarrier) {
         ro("Es/N0", fmt("%.1f dB", t.snrDb));
+        double eb;
+        if (ebN0(t, eb)) ro("Eb/N0", fmt("%.1f dB", eb));
         double m;
         if (margin(t, m)) ro("Margin", fmt("%+.1f dB", m), m >= 1.0 ? pal::okGreen() : m >= 0 ? pal::accent() : pal::badRed());
         if (standalone) ro("Offset", fmt("%+.0f kHz", t.cfoHz / 1e3));
@@ -271,6 +293,209 @@ void panels(App& a) {
 
 // ---------------------------------------------------------------------------------------------- Receiver tab
 
+// the input streams of the carrier: what each ISI carries, at which MODCODs and how fast (a multistream carrier interleaves several)
+void streamsSection(App& a, const DvbsTelemetry& t) {
+    if (t.streams.empty() || (t.streams.size() == 1 && t.streams[0].content == "transport stream")) return;
+    ImGui::Spacing();
+    ImGui::TextColored(pal::accent(), t.streams.size() > 1 ? "INPUT STREAMS (MULTISTREAM)" : "INPUT STREAM");
+    if (ImGui::BeginTable("##dvbsstreams", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX)) {
+        ImGui::TableSetupColumn("ISI"); ImGui::TableSetupColumn("carries"); ImGui::TableSetupColumn("mode"); ImGui::TableSetupColumn("frames"); ImGui::TableSetupColumn("MODCODs"); ImGui::TableSetupColumn("rate"); ImGui::TableSetupColumn("");
+        ImGui::TableHeadersRow();
+        ImGui::PushFont(a.mono, 0);
+        for (const auto& d : t.streams) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); if (d.single) ImGui::TextUnformatted("-"); else ImGui::Text("%d", d.isi);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(d.content.c_str());
+            ImGui::TableNextColumn(); ImGui::Text("%s%s%s", d.ccm ? "CCM" : "ACM/VCM", d.issyi ? ", ISSY" : "", d.hem ? ", HEM" : "");
+            ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)d.frames);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(d.modcods.c_str());
+            ImGui::TableNextColumn(); ImGui::Text("%.1f kbit/s", d.bps / 1e3);
+            ImGui::TableNextColumn(); if (d.decoded) ImGui::TextColored(pal::accent(), "decoded as TS");
+        }
+        ImGui::PopFont();
+        ImGui::EndTable();
+    }
+}
+
+// ---------------------------------------------------------------------------------------------- survey of the carriers, symbol file
+// A wide capture can hold many carriers: the list shows every one found in the spectrum; "Decode" makes the receiver work on that one. The symbol file is for other tools.
+bool g_symDumpOn = false;
+
+void carriersSection(App& a, const DvbsTelemetry& t) {
+    if (t.carriers.empty() && !g_symDumpOn && t.symbolDumpPath.empty()) return;
+    ImGui::Spacing();
+    ImGui::TextColored(pal::accent(), "CARRIERS IN THE SPECTRUM");
+    if (t.carriers.size() > 1 || t.carrierPicked) {
+        if (ImGui::BeginTable("##dvbscarriers", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX)) {
+            ImGui::TableSetupColumn("offset"); ImGui::TableSetupColumn("symbol rate"); ImGui::TableSetupColumn("roll-off"); ImGui::TableSetupColumn("level"); ImGui::TableSetupColumn("C/N"); ImGui::TableSetupColumn("");
+            ImGui::TableHeadersRow();
+            ImGui::PushFont(a.mono, 0);
+            int id = 0;
+            for (const auto& c : t.carriers) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::Text("%+.3f MHz", c.centerHz / 1e6);
+                ImGui::TableNextColumn(); ImGui::Text("%.3f Msym/s", c.rateHz / 1e6);
+                ImGui::TableNextColumn(); if (c.rollOff > 0) ImGui::Text("%.2f", c.rollOff); else ImGui::TextUnformatted("-");
+                ImGui::TableNextColumn(); ImGui::Text("%.1f dB", c.levelDb);
+                ImGui::TableNextColumn(); ImGui::Text("%.1f dB", c.snrDb);
+                ImGui::TableNextColumn();
+                ImGui::PushID(id++);
+                if (c.selected) ImGui::TextColored(pal::accent(), "decoding");
+                else if (ImGui::SmallButton("Decode")) a.engine.dvbs().selectCarrier(true, c.centerHz);
+                ImGui::PopID();
+            }
+            ImGui::PopFont();
+            ImGui::EndTable();
+        }
+        if (t.carrierPicked && ImGui::SmallButton("Back to the carrier nearest the centre")) a.engine.dvbs().selectCarrier(false, 0);
+    }
+    bool on = g_symDumpOn;
+    if (ImGui::Checkbox("Write the symbols to a file", &on)) {
+        g_symDumpOn = on;
+        a.engine.dvbs().setSymbolDump(on ? plat::dataDir() + "/dvbs_symbols.cf32" : std::string());
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Every recovered symbol (after timing and carrier recovery) as interleaved float32 I/Q, up to 512 MB, to dvbs_symbols.cf32 in the data folder. Open it in GNU Radio, inspectrum or numpy to look at an unknown modulation.");
+    if (!t.symbolDumpPath.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s  %.1f Msym", t.symbolDumpPath.c_str(), (double)t.symbolDumpCount / 1e6); }
+}
+
+// ---------------------------------------------------------------------------------------------- carrier identification (DVB-CID, ETSI TS 103 129)
+bool g_cidOn = false;
+
+void cidSection(App& a, const DvbsTelemetry& t) {
+    if (!live(a) || !t.lockSpectrum) return;
+    ImGui::Spacing();
+    ImGui::TextColored(pal::accent(), "CARRIER ID (DVB-CID)");
+    bool on = g_cidOn;
+    if (ImGui::Checkbox("Look for the carrier identification signal", &on)) { g_cidOn = on; a.engine.dvbs().setCidSearch(on); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "A low-level spread-spectrum signal under the carrier that names the uplink modulator (TS 103 129). It needs a long observation (a frame lasts 36 s at 112 kchip/s) and a steady signal; it uses some processing.");
+    if (!t.cid.on) return;
+    const DvbsCid& c = t.cid;
+    if (!c.acquired && !c.haveGuid) { ImGui::TextDisabled("searching (up to a few minutes)"); return; }
+    ImGui::Text("%s  %+.0f Hz from the carrier centre, %.1f dB per bit, %llu bits, %llu frames%s", c.acquired ? "tracking" : "lost", c.offsetHz, c.snrDb, (unsigned long long)c.bits, (unsigned long long)c.frames, c.badFrames ? (", " + std::to_string(c.badFrames) + " not decoded").c_str() : "");
+    if (c.haveGuid) {
+        ImGui::PushFont(a.mono, 0);
+        ImGui::Text("unique identifier  %s", c.guid.c_str());
+        if (!c.mac.empty()) ImGui::Text("MAC address        %s", c.mac.c_str());
+        if (c.havePosition) ImGui::Text("position           %.4f, %.4f", c.latitude, c.longitude);
+        if (!c.telephone.empty()) ImGui::Text("telephone          %s", c.telephone.c_str());
+        if (!c.text.empty()) ImGui::Text("text               %s", c.text.c_str());
+        ImGui::PopFont();
+    }
+}
+
+// ---------------------------------------------------------------------------------------------- IP data (GSE, MPE, ULE)
+// What the IP traffic of the signal looks like: hosts, ports, protocols, volume, the terminals of an ACM outbound. Payloads are never shown or decoded; a flow whose
+// UDP checksums fail and PDUs that read as random bytes are marked as encrypted. Optionally every IP packet is written to a PCAP file (link type RAW).
+bool g_ipPcapOn = false;
+std::string g_ipSaved;
+
+void ipSection(App& a, const DvbsTelemetry& t) {
+    const DvbsIpTel& ip = t.ip;
+    if (!ip.active && ip.gseFields == 0 && t.gseFrames == 0) return;
+    ImGui::Spacing();
+    ImGui::TextColored(pal::accent(), "IP DATA");
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextColored(pal::warnAmber(), "Satellite IP links can carry other people's private traffic. You are responsible for what the law where you live allows you to receive and keep. "
+                                        "Nothing encrypted or scrambled is decoded here, and payloads are never shown: only addresses, ports, protocols and counts.");
+    ImGui::PopTextWrapPos();
+    char b[200];
+    snprintf(b, sizeof b, "%s  |  %llu packets, %.1f MB  (IPv4 %llu, IPv6 %llu)  |  %llu GSE data fields%s", ip.source.empty() ? "no IP found yet" : ip.source.c_str(), (unsigned long long)ip.packets, (double)ip.bytes / 1e6,
+             (unsigned long long)ip.ipv4, (unsigned long long)ip.ipv6, (unsigned long long)ip.gseFields, ip.reassembled ? ("  |  " + std::to_string(ip.reassembled) + " IPv4 datagrams reassembled").c_str() : "");
+    ImGui::TextUnformatted(b);
+    bool on = g_ipPcapOn;
+    if (ImGui::Checkbox("Write a PCAP file", &on)) {
+        g_ipPcapOn = on;
+        a.engine.dvbs().setIpPcap(on ? plat::dataDir() + "/dvbs_ip.pcap" : std::string());
+        g_ipSaved = on ? plat::dataDir() + "/dvbs_ip.pcap" : std::string();
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Every IP packet found is appended to dvbs_ip.pcap in the data folder (libpcap, link type RAW), also with this window hidden. Open it in Wireshark.");
+    ImGui::SameLine();
+    if (ImGui::Button("Clear")) a.engine.dvbs().clearIp();
+    if (!ip.pcapPath.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s  %llu packets, %.1f MB", ip.pcapPath.c_str(), (unsigned long long)ip.pcapPackets, (double)ip.pcapBytes / 1e6); }
+    if (!ip.protocols.empty()) {
+        std::string l = "protocols: ";
+        for (size_t i = 0; i < ip.protocols.size() && i < 8; i++) l += (i ? ", " : "") + ip.protocols[i].first + " " + std::to_string(ip.protocols[i].second);
+        ImGui::TextDisabled("%s", l.c_str());
+    }
+    auto ports = [&](const char* nm, const std::vector<std::pair<std::string, uint64_t>>& v) {
+        if (v.empty()) return;
+        std::string l = std::string(nm) + " destination ports: ";
+        for (size_t i = 0; i < v.size() && i < 8; i++) l += (i ? ", " : "") + v[i].first + " (" + std::to_string(v[i].second) + ")";
+        ImGui::TextDisabled("%s", l.c_str());
+    };
+    ports("UDP", ip.udpPorts); ports("TCP", ip.tcpPorts);
+    if (ip.encryptedFlows) ImGui::TextColored(pal::warnAmber(), "%zu of %zu flows have good headers but failing UDP checksums: encrypted in transit, not decoded.", ip.encryptedFlows, ip.flowCount);
+    if (!ip.otherPdus.empty()) {
+        std::string l = "other GSE PDUs by protocol type: ";
+        for (size_t i = 0; i < ip.otherPdus.size() && i < 6; i++) l += (i ? ", " : "") + ip.otherPdus[i].first + "h x" + std::to_string(ip.otherPdus[i].second);
+        ImGui::TextDisabled("%s", l.c_str());
+        if (ip.otherEntropy >= 0) {
+            if (ip.otherEncrypted) ImGui::TextColored(pal::warnAmber(), "They read as random bytes (%.2f bits per byte): link encryption, not decoded.", ip.otherEntropy);
+            else ImGui::TextDisabled("%.2f bits per byte: a format, not ciphertext.", ip.otherEntropy);
+        }
+    }
+    if (!ip.flows.empty() && ImGui::BeginTable("##dvbsipflows", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX, ImVec2(0, 160 * gUi))) {
+        ImGui::TableSetupScrollFreeze(0, 1);
+        ImGui::TableSetupColumn("source"); ImGui::TableSetupColumn("destination"); ImGui::TableSetupColumn("proto"); ImGui::TableSetupColumn("packets"); ImGui::TableSetupColumn("bytes"); ImGui::TableSetupColumn("");
+        ImGui::TableHeadersRow();
+        ImGui::PushFont(a.mono, 0);
+        for (const auto& f : ip.flows) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); if (f.sport >= 0) ImGui::Text("%s:%d", f.src.c_str(), f.sport); else ImGui::TextUnformatted(f.src.c_str());
+            ImGui::TableNextColumn(); if (f.dport >= 0) ImGui::Text("%s:%d", f.dst.c_str(), f.dport); else ImGui::TextUnformatted(f.dst.c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(f.protocol.c_str());
+            ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)f.packets);
+            ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)f.bytes);
+            ImGui::TableNextColumn(); if (f.encrypted) ImGui::TextColored(pal::warnAmber(), "encrypted");
+        }
+        ImGui::PopFont();
+        ImGui::EndTable();
+    }
+    if (!ip.media.empty()) {
+        ImGui::TextDisabled("multicast streams in the traffic: %zu", ip.media.size());
+        if (ImGui::BeginTable("##dvbsipmedia", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX)) {
+            ImGui::TableSetupColumn("address"); ImGui::TableSetupColumn("kind"); ImGui::TableSetupColumn("codec"); ImGui::TableSetupColumn("packets"); ImGui::TableSetupColumn("rate"); ImGui::TableSetupColumn("what it carries");
+            ImGui::TableHeadersRow();
+            ImGui::PushFont(a.mono, 0);
+            for (const auto& m : ip.media) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::Text("%s:%d", m.dst.c_str(), m.port);
+                ImGui::TableNextColumn(); ImGui::TextUnformatted(m.kind.c_str());
+                ImGui::TableNextColumn(); ImGui::TextUnformatted(m.codec.c_str());
+                ImGui::TableNextColumn(); ImGui::Text("%llu%s", (unsigned long long)m.packets, m.lost ? (" (" + std::to_string(m.lost) + " lost)").c_str() : "");
+                ImGui::TableNextColumn(); ImGui::Text("%.0f kbit/s", m.kbps);
+                ImGui::TableNextColumn();
+                std::string w;
+                for (size_t i = 0; i < m.services.size() && i < 6; i++) w += (i ? ", " : "") + m.services[i];
+                if (m.scrambled) w += (w.empty() ? "" : "; ") + std::string("scrambled: only labelled");
+                ImGui::TextUnformatted(w.c_str());
+            }
+            ImGui::PopFont();
+            ImGui::EndTable();
+        }
+    }
+    for (const auto& d : ip.sdp) ImGui::TextDisabled("announcement: \"%s\"%s%s  %s  %s  (%llu times, from %s)", d.name.c_str(), d.info.empty() ? "" : " - ", d.info.c_str(), d.address.c_str(), d.media.c_str(), (unsigned long long)d.seen, d.source.c_str());
+    if (!ip.labels.empty()) {
+        ImGui::TextDisabled("GSE labels (terminals of an outbound): %zu, with the MODCODs each is sent in", ip.labelCount);
+        if (ImGui::BeginTable("##dvbsiplabels", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX, ImVec2(0, 140 * gUi))) {
+            ImGui::TableSetupScrollFreeze(0, 1);
+            ImGui::TableSetupColumn("label"); ImGui::TableSetupColumn("PDUs"); ImGui::TableSetupColumn("bytes"); ImGui::TableSetupColumn("addresses"); ImGui::TableSetupColumn("MODCODs");
+            ImGui::TableHeadersRow();
+            ImGui::PushFont(a.mono, 0);
+            for (const auto& l : ip.labels) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::TextUnformatted(l.label.c_str());
+                ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)l.pdus);
+                ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)l.bytes);
+                ImGui::TableNextColumn(); { std::string s; for (size_t i = 0; i < l.addrs.size(); i++) s += (i ? ", " : "") + l.addrs[i]; ImGui::TextUnformatted(s.c_str()); }
+                ImGui::TableNextColumn(); ImGui::TextUnformatted(l.modcods.c_str());
+            }
+            ImGui::PopFont();
+            ImGui::EndTable();
+        }
+    }
+}
+
 void receiver(App& a) {
     const DvbsTelemetry& t = a.rx.dvbs;
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
@@ -366,6 +591,10 @@ void receiver(App& a) {
         for (size_t i = 0; i < rows; i++) { ImGui::TableNextRow(); cell(L, i); cell(R, i); }
         ImGui::EndTable();
     }
+    carriersSection(a, t);
+    cidSection(a, t);
+    streamsSection(a, t);
+    ipSection(a, t);
     ImGui::Spacing();
     ImGui::TextColored(pal::accent(), "NOTES");
     ImGui::PushTextWrapPos(0);
@@ -373,6 +602,7 @@ void receiver(App& a) {
     if (S.searchSince >= 0 && ImGui::GetTime() - S.searchSince > 10)
         ImGui::TextColored(pal::warnAmber(), "No carrier found. Most often the LNB is on the other polarisation (13 V vertical, 18 V horizontal) or the other band (22 kHz tone), or the dish is off target.");
     if (!t.signalNote.empty()) ImGui::TextUnformatted(t.signalNote.c_str());
+    if (!t.superframe.empty()) ImGui::TextUnformatted(t.superframe.c_str());
     ImGui::TextDisabled("DVB-S2X: the MODCODs of EN 302 307-2 table 17a and the VL-SNR frames of table 18a (set 1 and 2, PLS codes 129 and 131) are decoded; the low roll-offs 0.15, 0.10 and 0.05 are signalled and followed. Superframes (Annex E) and bundled channels are not decoded.");
     if (t.standard == 3) ImGui::TextUnformatted("A DVB-S2X signal was recognised.");
     ImGui::TextDisabled("Margin is measured against the ideal-demodulator Es/N0 of EN 302 307-1 table 13 (DVB-S2X: EN 302 307-2 tables 20a and 20c, 50 LDPC iterations): a real receiver needs a little more.");

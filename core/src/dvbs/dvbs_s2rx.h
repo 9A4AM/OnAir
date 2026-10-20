@@ -4,6 +4,7 @@
 #pragma once
 #include "dect2/dvbs/dvbs_s2.h"
 #include "dvbs_s2hunt.h"
+#include <map>
 #include <atomic>
 #include <cstdint>
 #include <functional>
@@ -14,7 +15,18 @@
 namespace dect2 {
 namespace dvbs {
 
+// one input stream of the carrier (told apart by the ISI of a multistream carrier; a single stream is 0), as its BBHEADERs describe it
+struct S2StreamStat {
+    int isi = 0;
+    bool single = true, ccm = true, issyi = false, npd = false, hem = false;
+    int tsGs = 3, upl = 0, sync = 0;
+    uint64_t frames = 0, tsPackets = 0;
+    std::map<int, uint64_t> modcods;           // frames by mod * 1000 + rate * 2 + short
+    double bps = 0, winBits = 0;               // useful bit rate (DFL) over the last couple of seconds of signal
+};
+
 struct S2Stats {
+    std::map<int, S2StreamStat> streams;       // by ISI
     uint64_t framesSeen = 0, framesDummy = 0;
     int vlMode = -1;                           // mode (dvbs_vlsnr.h) of the last VL-SNR frame, -1 none
     uint64_t framesVl = 0, vlShiftSwitches = 0;
@@ -51,9 +63,14 @@ public:
     void setSymbolRate(double hz) { symbolRate_ = hz; }
     void setPlCode(int n) { plCode_ = n; }
     void setIsi(int isi) { isiSel_ = isi; }
+    // The carrier has super-frames (Annex E) with the type-A pilots on: their symbols are taken out before the PLFRAMEs reach this receiver, and the PLHEADER's pilot
+    // bit says the pilots are the super-frame's own, so the PLFRAMEs have none: the frame length is that of a frame without pilots.
+    void setSuperframePilots(bool on) { sfPil_ = on; }
     void setBlocking(bool b) { blocking_ = b; }
     void setComputeMode(int m);                    // 0 CPU, 1 GPU, 2 auto: where the LDPC decoder runs
     void setPacketCallback(std::function<void(const uint8_t*, size_t, double)> cb);
+    // BBFRAMEs that carry a generic stream (GSE): the BBHEADER (10 bytes) and the data field as bytes, the frame's MODCOD parts (modulation, code rate, short frame) and TS/GS
+    void setDataFieldCallback(std::function<void(const uint8_t* bbframe, size_t n, int mod, int rate, bool shortFrame, int tsGs)> cb);
     void setLogCallback(std::function<void(const std::string&)> cb);
     // Starts at the header the hunt found in `win` (n symbols; copied). The frame work runs on a thread of its own: start() and push() only queue symbols
     // (push() drops a block when the thread is far behind, unless setBlocking(true)). The first thing the thread does is the frequency search over the
@@ -75,6 +92,7 @@ private:
     std::unique_ptr<Impl> p_;
     double symbolRate_ = 1e6;
     std::atomic<int> plCode_{-1}, isiSel_{-1};
+    std::atomic<bool> sfPil_{false};
     std::atomic<bool> blocking_{false};
     std::atomic<bool> tracking_{false}, lost_{false}, inverted_{false};
 };

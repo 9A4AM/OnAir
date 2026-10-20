@@ -182,6 +182,7 @@ void Engine::configureReceiver(int a, double r) {
     case 142: rxGd_.configure(r); break;
     case 143: rxModeAc_.configure(r); break;
     case 144: rxBt_.configure(r); break;
+    case 145: rxSb_.configure(r); break;
     case 130: rxLtr_.configure(r); break;
     case 131: rxEdacs_.configure(r); break;
     default: break;
@@ -302,6 +303,7 @@ void Engine::placeReceiver(int a, double o, double centreHz, double dialHz, doub
     case 142: rxGd_.setSignalOffset(o); rxGd_.setCenterHz(centreHz); break;
     case 143: rxModeAc_.setSignalOffset(o); break;
     case 144: rxBt_.setSignalOffset(o); rxBt_.setCenterHz(centreHz); break;
+    case 145: rxSb_.setSignalOffset(o); rxSb_.setCenterHz(centreHz); break;
     case 130: rxLtr_.setSignalOffset(o); rxLtr_.setCenterHz(centreHz); break;
     case 131: rxEdacs_.setSignalOffset(o); rxEdacs_.setCenterHz(centreHz); break;
     default: break;   // DMR, ADS-B, Mode S uplink: the channel on the centre, nothing to place

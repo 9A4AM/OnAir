@@ -1,5 +1,6 @@
 // DVB-S and DVB-S2 transmitter chains, see dvbs_tx.h.
 #include "dect2/dvbs/dvbs_tx.h"
+#include "dvbs_sf.h"
 #include "dect2/dvbt/dvbt.h"
 #include "dvbs_vlsnr.h"
 #include <algorithm>
@@ -71,8 +72,26 @@ public:
     TxS2(const DvbsTxConfig& c, std::function<void(uint8_t*)> ts) : c_(c), ts_(std::move(ts)) {}
     void generate(cf32* out, size_t n) override {
         for (size_t i = 0; i < n; i++) {
+            if (c_.superframe >= 0) {   // the super-frame's own symbols (SOSF, SFFI, super-frame pilots) between those of the PLFRAMEs
+                if (sfSyms_.empty()) buildSf();
+                const SfPart part = sfPart((size_t)sfPos_, c_.sfPilots);
+                if (part != SfPart::Payload) { out[i] = sfSyms_[(size_t)sfPos_]; sfPos_ = (sfPos_ + 1) % kSfl; continue; }
+                sfPos_ = (sfPos_ + 1) % kSfl;
+            }
             while (pos_ >= frame_.size()) nextFrame();
             out[i] = frame_[pos_++];
+        }
+    }
+    void buildSf() {
+        SfScrambler ref(0), pay(0);
+        sfSyms_.assign((size_t)kSfl, cf32(0, 0));
+        const auto sosf = sfSosfSymbols(0, ref);
+        const auto sffi = sfSffiSymbols(c_.superframe, pay);
+        std::copy(sosf.begin(), sosf.end(), sfSyms_.begin());
+        std::copy(sffi.begin(), sffi.end(), sfSyms_.begin() + kSosfLen);
+        for (int k = kSfPilotAfter; k < kSfl; k += kSfPilotPeriod) {
+            const auto pl = sfPilotSymbols(0, ref, (size_t)k);
+            std::copy(pl.begin(), pl.end(), sfSyms_.begin() + k);
         }
     }
     uint64_t packetsSent() const override { return packets_; }
@@ -114,6 +133,35 @@ private:
         h.ccm = !c_.vcm; h.npd = c_.npd; h.upl = upBits; h.dfl = dfl;
         h.syncd = upBitPos_ == 0 ? 0 : upBits - upBitPos_;
         if (h.syncd >= dfl) h.syncd = 65535;
+        const bool gseFrame = c_.gseField && (!c_.mis || (misToggle_++ & 1));
+        h.sis = !c_.mis; h.isi = c_.mis ? (gseFrame ? 1 : 0) : 0;
+        if (gseFrame) {
+            h.tsGs = c_.hem ? 2 : 1; h.upl = 0; h.syncd = 0; h.npd = false; h.hem = c_.hem;
+            std::vector<uint8_t> f;
+            if (c_.hem) {
+                const size_t need = (size_t)dfl / 8;
+                while (hemBuf_.size() < need + 16) { auto more = c_.gseField(4096); if (more.empty()) break; hemBuf_.insert(hemBuf_.end(), more.begin(), more.end()); }
+                // the first packet that starts in this field (hemNext_ counts from the start of hemBuf_)
+                size_t at = hemNext_;
+                h.syncd = 65535;
+                if (at < need) h.syncd = (int)(at * 8);
+                f.assign(hemBuf_.begin(), hemBuf_.begin() + (long)std::min(need, hemBuf_.size()));
+                // advance the packet start past this field
+                size_t nx = hemNext_;
+                while (nx < need && nx + 2 <= hemBuf_.size()) {
+                    const size_t len = 2 + (size_t)(((hemBuf_[nx] << 8) | hemBuf_[nx + 1]) & 0x0FFF);
+                    if (len == 2 && (hemBuf_[nx] & 0xF0) == 0) { nx = need; break; }   // padding
+                    nx += len;
+                }
+                hemBuf_.erase(hemBuf_.begin(), hemBuf_.begin() + (long)std::min(need, hemBuf_.size()));
+                hemNext_ = nx >= need ? nx - need : 0;
+            } else f = c_.gseField((size_t)dfl / 8);
+            f.resize((size_t)dfl / 8, 0);
+            s2BuildBbHeader(h, bb.data());
+            for (int i = 0; i < dfl; i++) bb[80 + (size_t)i] = (f[(size_t)i >> 3] >> (7 - (i & 7))) & 1;
+            s2BbScramble(bb.data(), kbch);
+            return;
+        }
         s2BuildBbHeader(h, bb.data());
         for (int i = 0; i < dfl; i++) {
             if (cur_.empty()) { nextUp(cur_); upBitPos_ = 0; }
@@ -128,6 +176,8 @@ private:
         int mod = c_.mod, rate = c_.rate;
         bool sh = c_.shortFrame, pil = c_.pilots;
         if (c_.vcm) { const VcmStep& v = kVcm[vcmPos_++ % kVcm.size()]; mod = v.mod; rate = v.rate; sh = v.shortFrame; pil = v.pilots; }
+        bool pilHdr = pil;
+        if (c_.superframe >= 0 && c_.sfPilots) { pilHdr = true; pil = false; }   // the super-frame pilots stand in for the PLFRAME's own
         frame_.clear();
         pos_ = 0;
         if (c_.dummyEvery > 0 && ++sinceDummy_ > c_.dummyEvery) {
@@ -149,7 +199,7 @@ private:
         // PLFRAME: header, then the slots with a pilot block after every 16 slots (but not at the end), all scrambled except the header
         const int total = s2FrameSymbols(d, pil);
         frame_.resize(total);
-        s2PlHeader(s2Modcod(mod, rate), sh, pil, frame_.data());
+        s2PlHeader(s2Modcod(mod, rate), sh, pilHdr, frame_.data());
         const auto& rn = s2ScramblingRn(c_.plScramble);
         int o = 90, si = 0, i = 0;
         for (int slot = 0; slot < d.slots; slot++) {
@@ -173,6 +223,11 @@ private:
     }
 
     DvbsTxConfig c_;
+    int misToggle_ = 0;
+    int sfPos_ = 0;
+    std::vector<cf32> sfSyms_;
+    std::vector<uint8_t> hemBuf_;
+    size_t hemNext_ = 0;
     std::function<void(uint8_t*)> ts_;
     std::vector<cf32> frame_;
     size_t pos_ = 0;

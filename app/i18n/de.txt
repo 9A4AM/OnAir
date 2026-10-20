@@ -3464,3 +3464,30 @@ How long a tracker must stay with the receiver before the alert.	Wie lange ein T
 Near level	Nahpegel
 The averaged level from which a tracker counts as near. The radio's level, not a calibrated distance.	Der gemittelte Pegel, ab dem ein Tracker als nah gilt. Der Pegel des Funkgeräts, keine kalibrierte Entfernung.
 Trackers, 2.4 GHz	Tracker, 2,4 GHz
+# Satellite beacon
+Telemetry	Telemetrie
+start the receiver to see the beacon	Empfänger starten, um die Bake zu sehen
+No narrow carrier found. Tune so that the beacon lies inside the capture: a Ku-band beacon seen through an LNB is usually within a few hundred kHz of the centre.	Kein schmalbandiger Träger gefunden. So abstimmen, dass die Bake im Mitschnitt liegt: eine Ku-Band-Bake am LNB liegt meist wenige hundert kHz von der Mitte entfernt.
+Appends the carrier measurements and every frame to satellite_beacon.csv in the data folder, also when nobody watches the screen.	Hängt die Trägermessungen und jeden Frame an satellite_beacon.csv im Datenordner an, auch wenn niemand auf den Bildschirm schaut.
+Copies the learned frames as hex lines.	Kopiert die gelernten Frames als Hex-Zeilen.
+capture spectrum (dB over the noise): the narrow lines are carriers	Spektrum des Mitschnitts (dB über dem Rauschen): die schmalen Linien sind Träger
+phase modulation of the carrier (dB over the floor): the telemetry tones stand out	Phasenmodulation des Trägers (dB über dem Grundrauschen): die Telemetrietöne ragen heraus
+No telemetry: the carrier is not phase modulated, or the tones are too weak.	Keine Telemetrie: Der Träger ist nicht phasenmoduliert, oder die Töne sind zu schwach.
+Errors	Fehler
+template	Vorlage
+fixed bits	feste Bits
+subcarrier	Hilfsträger
+bit rate	Bitrate
+other lines	andere Linien
+A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	Eine Satellitenbake ist ein Träger, manchmal mit Telemetrie phasenmoduliert, mit dem Bodenstationen die Strecke messen. Der Träger wird nach Frequenz und Pegel verfolgt; die Telemetrie wird als rohe Frames wiedergewonnen, die Framelänge wird aus ihrer Wiederholung gelernt. Der Aufbau der Frames eines bestimmten Satelliten wird nicht dekodiert.
+The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	Das Testsignal ist ein Träger 236 kHz neben der Mitte, der wie ein LNB driftet, mit einem zweiten Träger 545 kHz darüber und 4800 bit/s Biphase-Telemetrie auf einem 48-kHz-Hilfsträger in Frames zu 256 Bytes.
+Carrier, drift, telemetry frames	Träger, Drift, Telemetrie-Frames
+# TV sat beacon decoder: decoded view
+decoded	dekodiert
+estimated	geschätzt
+unknown meaning	Bedeutung unbekannt
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	dekodiert: an den Daten geprüft. geschätzt: abgeleitet, der Grund steht im Tooltip. Bedeutung unbekannt: unverändert gezeigt; was ein Wort bedeutet, bestimmt der Satellitenhersteller und wird nie geraten.
+Save JSON	JSON speichern
+saved to	gespeichert in
+Value	Wert
+Raw	Rohwert

@@ -9,6 +9,9 @@
 #include "dect2/kapp/kapp_frame.h"
 #include "dect2/kait/kait_frame.h"
 #include "dect2/kait/kait_rx.h"
+#include "dect2/kavb/kavb_av.h"
+#include "dect2/kavb/kavb_phy.h"
+#include "dect2/kavb/kavb_rx.h"
 #include "dect2/tx/tx.h"
 #include "dect2/tx/tx_iqfile.h"
 #include <cmath>
@@ -178,6 +181,42 @@ static void kaitSample(const std::string& dir, int profile, double snrDb, const 
     writeAll(dir, nm, kait::kInternalRate, all, "kait");
 }
 
+// KAVB: one burst of synthetic video / audio packets (profile A = id 0, D = id 3; FEC profile 1), about 1.5 s, with noise (Es/N0 snrDb) and 0.1 s of noise before and after.
+// The payload is synthetic (AV1 and Opus are not integrated); our own receiver decodes the file's samples as a check. Sample rate = 4 x symbol rate.
+static void kavbSample(const std::string& dir, int profileId, double snrDb) {
+    using namespace dect2::kavb;
+    const Profile p = profileOf(profileId, false);
+    const int fec = 1;
+    Packetiser pk(p, fec);
+    const BitBudget bb = bitBudget(p, fec);
+    SyntheticAv src(bb.forVideo * 0.9, 30.0, 96000.0, 1200);
+    AvPacket a;
+    while (src.timeSec() < 1.5) { src.next(a); pk.push(a); }
+    const auto frames = pk.takeFrames(true);
+    const Transmitter tx(profileId);
+    const std::vector<cf> iq = tx.modulate(frames, fec, 0, 0, 0);
+    const double rate = p.symRate * kSps;
+    const size_t pad = (size_t)(0.1 * rate);
+    std::vector<cf> all(pad + iq.size() + pad, cf(0, 0));
+    std::copy(iq.begin(), iq.end(), all.begin() + (long)pad);
+    std::mt19937_64 rng(5000 + (unsigned)profileId);
+    const double sd = std::sqrt(kSps / std::pow(10.0, snrDb / 10.0) / 2.0);   // data power 1 per sample, Es/N0 as in tests/kavb
+    std::normal_distribution<double> g(0.0, sd);
+    for (cf& s : all) s += cf((float)g(rng), (float)g(rng));
+    {
+        Receiver rx;
+        int ok = 0;
+        const auto fr = rx.push(all.data(), all.size());
+        for (const auto& x : fr) ok += x.allOk;
+        printf("check KAVB profile %c at Es/N0 %.0f dB: %zu frames sent, %zu received, %d fully ok\n", p.name, snrDb, frames.size(), fr.size(), ok);
+        if (fr.size() != frames.size() || ok != (int)frames.size()) g_ok = false;
+    }
+    std::vector<cf32> x(all.begin(), all.end());
+    char nm[64];
+    snprintf(nm, sizeof nm, "KAVB_P%c_%.0fksym", p.name, p.symRate / 1000.0);
+    writeAll(dir, nm, rate, x, "kavb");
+}
+
 static void kaftProfile(const std::string& dir, kaft::Width w, int p, double snrDb, const char* label) {
     std::mt19937_64 rng(2000 + (unsigned)p * 7 + (unsigned)w);
     const kaft::WidthInfo& wi = kaft::widthInfo(w);
@@ -235,16 +274,21 @@ int main(int argc, char** argv) {
         if (pcm.empty()) { fprintf(stderr, "cannot read %s\n", argv[i]); g_ok = false; continue; }
         kaalVoice(out + "/KAAL", nm, pcm);
     }
+    const char* only = std::getenv("KRIS_ONLY");   // e.g. KRIS_ONLY=KAVB writes only that folder's files
+    auto want = [&](const char* n) { return !only || !*only || std::strstr(only, n); };
     // low / mid / high profiles at a fixed channel quality
-    kappProfile(out + "/KAPP", 1, 12.0, "low");
-    kappProfile(out + "/KAPP", 4, 22.0, "mid");
-    kappProfile(out + "/KAPP", 7, 34.0, "high");
-    kaitSample(out + "/KAIT", 1, -4.0, "weak");
-    kaitSample(out + "/KAIT", 0, 9.0, "mid");
-    kaftProfile(out + "/KAFT", kaft::Width::W200k, 1, 12.0, "low");
-    kaftProfile(out + "/KAFT", kaft::Width::W500k, 4, 24.0, "mid");
-    kaftProfile(out + "/KAFT", kaft::Width::W1M, 1, 12.0, "low");
-    kaftProfile(out + "/KAFT", kaft::Width::W1M, 4, 24.0, "mid");
-    kaftProfile(out + "/KAFT", kaft::Width::W1M, 8, 36.0, "high");
+    if (want("KAPP")) kappProfile(out + "/KAPP", 1, 12.0, "low");
+    if (want("KAPP")) kappProfile(out + "/KAPP", 4, 22.0, "mid");
+    if (want("KAPP")) kappProfile(out + "/KAPP", 7, 34.0, "high");
+    if (want("KAIT")) kaitSample(out + "/KAIT", 0, 20.0, "20dB");
+    if (want("KAIT")) kaitSample(out + "/KAIT", 0, 8.0, "8dB");
+    if (want("KAIT")) kaitSample(out + "/KAIT", 0, -3.0, "m3dB");
+    if (want("KAVB")) kavbSample(out + "/KAVB", 0, 25.0);
+    if (want("KAVB")) kavbSample(out + "/KAVB", 3, 25.0);
+    if (want("KAFT")) kaftProfile(out + "/KAFT", kaft::Width::W200k, 1, 12.0, "low");
+    if (want("KAFT")) kaftProfile(out + "/KAFT", kaft::Width::W500k, 4, 24.0, "mid");
+    if (want("KAFT")) kaftProfile(out + "/KAFT", kaft::Width::W1M, 1, 12.0, "low");
+    if (want("KAFT")) kaftProfile(out + "/KAFT", kaft::Width::W1M, 4, 24.0, "mid");
+    if (want("KAFT")) kaftProfile(out + "/KAFT", kaft::Width::W1M, 8, 36.0, "high");
     return g_ok ? 0 : 1;
 }

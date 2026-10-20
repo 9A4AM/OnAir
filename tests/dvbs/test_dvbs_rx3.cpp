@@ -141,6 +141,63 @@ int main() {
         printf("adjacent carrier: %llu good packets, %llu damaged, %s\n", (unsigned long long)good, (unsigned long long)bad, dvbsSummary(t).c_str());
     }
 
+    // ---- survey of a wide capture: two carriers off the centre, listed with their symbol rates, and either one chosen to be decoded
+    for (int pickHi = 0; pickHi < 2; pickHi++) {
+        DvbsSignalConfig a;
+        a.tx.standard = 2; a.tx.mod = kQpsk; a.tx.rate = 5; a.tx.symbolRate = 2e6; a.sampleRate = 10e6; a.snrDb = 14; a.cfoHz = -3e6;
+        DvbsSignalConfig b = a;
+        b.cfoHz = 3e6; b.tx.symbolRate = 1.5e6; b.tx.mod = k8psk; b.tx.rate = 4; b.seed = 9;
+        uint64_t pn = 0;
+        a.ts = [&pn](uint8_t* p) { testPacket(pn++, p); };
+        uint64_t pn2 = 0;
+        b.ts = [&pn2](uint8_t* p) { testPacket(pn2++, p); };
+        DvbsSignal sa(a), sb(b);
+        DvbsReceiver rx;
+        rx.setBlocking(true);
+        rx.configure(10e6);
+        rx.selectCarrier(true, pickHi ? 3e6 : -3e6);
+        const std::string dumpPath = "/tmp/dvbs_symdump_test.cf32";
+        rx.setSymbolDump(dumpPath);
+        uint64_t good = 0, bad = 0;
+        rx.setPacketCallback([&](const uint8_t* p, size_t n, double) {
+            for (size_t i = 0; i < n; i++, p += 188) {
+                const uint64_t idx = ((uint64_t)p[4] << 24) | ((uint64_t)p[5] << 16) | ((uint64_t)p[6] << 8) | p[7];
+                uint8_t ex[188]; testPacket(idx, ex);
+                if (memcmp(p, ex, 188) == 0) good++; else bad++;
+            }
+        });
+        std::vector<cf32> x(65536), y(65536);
+        for (int k = 0; k < 200; k++) {
+            sa.generate(x.data(), x.size()); sb.generate(y.data(), y.size());
+            for (size_t i = 0; i < x.size(); i++) {
+                cf32 v = x[i] + y[i];
+                auto q = [](float f) { return std::round(std::min(127.f, std::max(-128.f, f * 128.f))) / 128.f; };
+                x[i] = cf32(q(v.real()), q(v.imag()));
+            }
+            rx.feed(x.data(), x.size());
+        }
+        rx.flush();
+        DvbsTelemetry t;
+        rx.telemetry(t, 0);
+        const double want = pickHi ? 1.5e6 : 2e6;
+        for (const auto& c : t.carriers) printf("  carrier %+.0f Hz  %.0f Bd  roll %.2f  %.1f dB  C/N %.1f%s\n", c.centerHz, c.rateHz, c.rollOff, c.levelDb, c.snrDb, c.selected ? "  <-" : "");
+        CHECK(t.carriers.size() == 2, "survey: %zu carriers listed", t.carriers.size());
+        if (t.carriers.size() == 2) {
+            CHECK(std::fabs(t.carriers[0].centerHz + 3e6) < 60e3 && std::fabs(t.carriers[0].rateHz / 2e6 - 1) < 0.04, "survey: first carrier %.0f Hz, %.0f Bd", t.carriers[0].centerHz, t.carriers[0].rateHz);
+            CHECK(std::fabs(t.carriers[1].centerHz - 3e6) < 60e3 && std::fabs(t.carriers[1].rateHz / 1.5e6 - 1) < 0.04, "survey: second carrier %.0f Hz, %.0f Bd", t.carriers[1].centerHz, t.carriers[1].rateHz);
+        }
+        CHECK(good > 800 && bad == 0 && std::fabs(t.symbolRate / want - 1) < 0.03, "picked %s carrier: %llu good, %llu damaged, %.0f Bd", pickHi ? "upper" : "lower", (unsigned long long)good, (unsigned long long)bad, t.symbolRate);
+        rx.setSymbolDump(std::string());
+        {
+            FILE* f = fopen(dumpPath.c_str(), "rb");
+            long sz = 0;
+            if (f) { fseek(f, 0, SEEK_END); sz = ftell(f); fclose(f); }
+            remove(dumpPath.c_str());
+            CHECK(sz > 8 * 200000 && (uint64_t)sz == t.symbolDumpCount * 8, "symbol file: %ld bytes, %llu symbols reported", sz, (unsigned long long)t.symbolDumpCount);
+        }
+        printf("survey, picked %s: %zu carriers, %llu good packets, %.3f Msym/s\n", pickHi ? "upper" : "lower", t.carriers.size(), (unsigned long long)good, t.symbolRate / 1e6);
+    }
+
     printf(fails ? "dvbs rx3: FAILED (%d)\n" : "dvbs rx3: ok\n", fails);
     return fails ? 1 : 0;
 }

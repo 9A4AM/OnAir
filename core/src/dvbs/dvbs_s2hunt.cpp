@@ -34,7 +34,8 @@ struct Ref {
 };
 const Ref& ref() { static Ref r; return r; }
 
-int codeLength(int code) { return s2PlsFrameSymbols(code); }
+thread_local bool g_sfPilots = false;
+int codeLength(int code) { return s2PlsFrameSymbols(g_sfPilots && s2PlsKind(code) == 0 ? (code & ~1) : code); }
 
 struct HdrFit {
     int code = -1, code2 = -1;
@@ -120,7 +121,8 @@ double refineG(const cf32* v, const HdrFit& f, double step) {
 
 } // namespace
 
-S2HuntResult s2Hunt(const cf32* z, size_t n) {
+S2HuntResult s2Hunt(const cf32* z, size_t n, bool sfPilots) {
+    g_sfPilots = sfPilots;
     S2HuntResult best;
     if (n < 4000) return best;
     const Ref& R = ref();

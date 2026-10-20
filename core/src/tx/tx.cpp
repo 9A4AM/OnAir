@@ -131,6 +131,7 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("goesdcs", "GOES DCS", 143, "makeGoesDcsSynth", kOpt, kUnv),
         mk("modeac", "Mode A/C", 144, "makeModeAcSynth", kOpt, kUnv),
         mk("bletracker", "BLE tracker detector", 145, "makeBletrkSynth", kOpt, kUnv),
+        mk("satbeacon", "TV sat beacon decoder", 146, "makeSatbeaconSynth", kOpt, kUnv),
         mk("vorils", "VOR / ILS", 32, "makeVorSynth", kOpt, kUnv),
         mk("m17", "M17", 33, "makeM17Synth", kOpt, kUnv),
         mk("dstar", "D-STAR", 35, "makeDstarSynth", kOpt, kUnv),

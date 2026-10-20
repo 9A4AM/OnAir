@@ -111,6 +111,7 @@
 #include "dect2/ardop/ardop_rx.h"
 #include "dect2/goesdcs/goesdcs_live.h"
 #include "dect2/bletrk/bletrk_live.h"
+#include "dect2/satbeacon/satbeacon_live.h"
 #include "dect2/rid/rid_rx.h"
 #include "dect2/meteor/meteor_rx.h"
 #include "dect2/nr/nr_rx.h"
@@ -420,6 +421,7 @@ public:
     GoesDcsReceiver& goesdcs() { return rxGd_; }   // GOES DCS: CSV log file, carrier threshold, clear the lists (telemetry through latestRx)
     ModeAcReceiver& modeac() { return rxModeAc_; }   // Mode A/C replies: reference position, code confirmation and expiry, clear (telemetry through latestRx)
     BletrkLiveReceiver& bletrk() { return rxBt_; }   // BLE tracker detector: alert time, near level, own trackers, clear (telemetry through latestRx)
+    SatbeaconLiveReceiver& satbeacon() { return rxSb_; }   // satellite beacon: CSV log file (telemetry through latestRx)
     MscatterLiveReceiver& mscatter() { return rxMs_; }   // meteor scatter: threshold, CSV log file, clear the list (telemetry through latestRx)
     WisunReceiver& wisun() { return rxWs_; }   // Wi-SUN FAN: region, clear the tables (telemetry through latestRx)
     LoraRawReceiver& loraraw() { return rxLr_; }   // LoRa (raw): settings, clear the frame log (telemetry through latestRx)
@@ -482,6 +484,8 @@ public:
     void setWideSelected(int carrierId) { wide_.setSelected(carrierId); }   // the carrier whose sound plays and whose detail shows (0: the best locked)
     static bool wideSupported(int analysisMode) { return WideModes::supports(analysisMode); }
     void clearAllResults();                              // the lists of every mode at once (the top bar's Clear all)
+    // the files of the DSM-CC carousels of the stream received, saved to dir/pid_XXXX/path (clear broadcast data); returns the number of files written
+    size_t saveCarouselFiles(const std::string& dir) { std::lock_guard<std::mutex> lk(tsMu_); return demux_.saveCarouselFiles(dir); }
     void clearResults(int stdMode);                      // the Clear of a mode's screen: every list of its receiver
     int loadResults(const std::string& dir);             // the lists of the last run (a file of another build is discarded); the receivers restored
     int saveResults(const std::string& dir);             // the receivers whose lists changed since the last save (or load); the files written
@@ -705,6 +709,7 @@ private:
     GoesDcsReceiver rxGd_;
     ModeAcReceiver rxModeAc_;
     BletrkLiveReceiver rxBt_;
+    SatbeaconLiveReceiver rxSb_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;

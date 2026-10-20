@@ -34,7 +34,7 @@ int main() {
 
     // 3. FEC-B sequence "CQ DE" then FIGS '5' then LTRS 'T': 8 characters, no errors.
     {
-        const uint8_t codes[] = {L_C, L_Q, L_SP, L_D, L_E, L_FIGS, kFive, L_LTRS, L_T};
+        const uint8_t codes[] = {L_C, L_Q, L_SP, L_D, L_E, L_SP, L_FIGS, kFive, L_LTRS, L_T};
         SitorDecoder dec(SitorDecoder::Mode::FecB);
         for (uint8_t c : codes) dec.push(sitorFecBEncode(c));
         CHECK(dec.text() == "CQ DE 5T", "FEC-B text \"%s\"", dec.text().c_str());

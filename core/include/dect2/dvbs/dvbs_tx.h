@@ -27,6 +27,14 @@ struct DvbsTxConfig {
                                     // and 11/45 spreading 2, 6..8 BPSK 1/5 4/15 1/3 short; see dvbs_vlsnr.h); mod, rate and pilots are not used then
     int vlDummyEvery = 0;           // VL-SNR: a dummy PLFRAME after this many data frames (0 = never)
     int vlScrShift = 0;             // VL-SNR: where the scrambling sequence starts, 0 = it counts from the end of the PLS header, -900 = from the end of the VL-SNR header
+    // S2: the BBFRAMEs carry a generic continuous stream (GSE) instead of a transport stream: the data field comes from `gseField(bytes)` (zero padded, which
+    // reads as GSE padding), TS/GS = 01, no user packets
+    std::function<std::vector<uint8_t>(size_t bytes)> gseField;
+    bool hem = false;               // S2X: GSE in high-efficiency mode: `gseField` then returns whole GSE packets (no padding), which are sliced across BBFRAMEs, SYNCD pointing at the
+                                    // first packet that starts in a data field, TS/GS = 10 and the CRC-8 of the BBHEADER XOR 1
+    int superframe = -1;            // S2X: lay the PLFRAMEs into super-frames of this format (0 S2X, 1 S2 legacy; -1 none), see dvbs_sf.h
+    bool sfPilots = false;          // with a super-frame: the type-A super-frame pilots are on (the PLFRAMEs then carry none of their own, their PLHEADER pilot bit says so)
+    bool mis = false;               // S2: a multistream carrier: the frames alternate between ISI 0 (the transport stream) and ISI 1 (the generic stream of `gseField`)
     bool npd = false;               // S2: delete null packets from the transport stream and send the count in the DNP byte (clause 5.1.3, annex D.3)
 };
 

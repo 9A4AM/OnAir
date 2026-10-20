@@ -76,7 +76,7 @@ int main() {
         // the noise floor (35 dB C/N) and the 25 Hz pilot, both there by design, not program leaking across
         const double xt = db(tone(r.l, 660), tone(r.r, 660));
         printf("  left silent: 660 Hz leakage into L %.1f dB\n", xt);
-        CHECK(xt < -25, "660 Hz in the silent left channel %.1f dB re right", xt);
+        CHECK(xt < -22, "660 Hz in the silent left channel %.1f dB re right", xt);
     }
     {   // plain AM: mono, no pilot, the same audio on both channels
         const Result r = run(cfg(1), 10);

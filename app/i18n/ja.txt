@@ -3464,3 +3464,30 @@ How long a tracker must stay with the receiver before the alert.	警報の前に
 Near level	近さのレベル
 The averaged level from which a tracker counts as near. The radio's level, not a calibrated distance.	トラッカーを近いと見なす平均レベル。無線機のレベルであり、校正された距離ではありません。
 Trackers, 2.4 GHz	トラッカー、2.4 GHz
+# Satellite beacon
+Telemetry	テレメトリ
+start the receiver to see the beacon	受信を開始するとビーコンが表示されます
+No narrow carrier found. Tune so that the beacon lies inside the capture: a Ku-band beacon seen through an LNB is usually within a few hundred kHz of the centre.	狭帯域の搬送波が見つかりません。ビーコンがキャプチャ内に入るように同調してください。LNB で受信する Ku バンドのビーコンは、通常、中心から数百 kHz 以内にあります。
+Appends the carrier measurements and every frame to satellite_beacon.csv in the data folder, also when nobody watches the screen.	搬送波の測定値とすべてのフレームを、画面を見ていなくてもデータフォルダーの satellite_beacon.csv に追記します。
+Copies the learned frames as hex lines.	学習したフレームを16進の行としてコピーします。
+capture spectrum (dB over the noise): the narrow lines are carriers	キャプチャのスペクトル（雑音に対する dB）：細い線が搬送波です
+phase modulation of the carrier (dB over the floor): the telemetry tones stand out	搬送波の位相変調（フロアに対する dB）：テレメトリのトーンが際立ちます
+No telemetry: the carrier is not phase modulated, or the tones are too weak.	テレメトリなし：搬送波が位相変調されていないか、トーンが弱すぎます。
+Errors	エラー
+template	テンプレート
+fixed bits	固定ビット
+subcarrier	副搬送波
+bit rate	ビットレート
+other lines	他のライン
+A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	衛星ビーコンは、地上局が回線を測定するために使う搬送波で、テレメトリで位相変調されていることもあります。搬送波は周波数とレベルで追跡され、テレメトリは生のフレームとして復元され、フレーム長はその繰り返しから学習されます。個々の衛星のフレーム構造はデコードしません。
+The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	テストシグナルは、中心から 236 kHz 離れて LNB のようにドリフトする搬送波で、その 545 kHz 上に第2の搬送波があり、48 kHz の副搬送波に 4800 bit/s のバイフェーズ・テレメトリが 256 バイトのフレームで載っています。
+Carrier, drift, telemetry frames	搬送波、ドリフト、テレメトリフレーム
+# TV sat beacon decoder: decoded view
+decoded	デコード済み
+estimated	推定
+unknown meaning	意味は不明
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	デコード済み：データで確認済み。推定：推論した値で、理由はマウスを重ねると表示されます。意味は不明：そのまま表示しています。ワードの意味は衛星メーカーのもので、推測はしません。
+Save JSON	JSON を保存
+saved to	保存先
+Value	値
+Raw	生値

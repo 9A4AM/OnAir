@@ -141,7 +141,7 @@ void Engine::configureTvReceivers(const DeviceInfo& dev, const TuneSettings& tun
     rxFm_.setStationFinder(lastDev_.kind == DeviceInfo::File || lastDev_.kind == DeviceInfo::Synthetic);   // a live radio stays on the frequency tuned: a weak station is not traded for a strong neighbour
     if (stdMode_.load() == 7 && !rxFm_.ready()) log("FM needs a sample rate of at least 500 ksps");
     rxDvbs_.configure(rate_);
-    rxDvbs_.setPacketCallback([this](const uint8_t* pk, size_t n, double secs) { onTsPackets(pk, n, secs); });   // runs on the receiver thread
+    rxDvbs_.setPacketCallback([this](const uint8_t* pk, size_t n, double secs) { rxDvbs_.feedTs(pk, n); onTsPackets(pk, n, secs); });   // runs on the receiver thread
     rxDvbs_.setLogCallback([this](const std::string& s) { log(s); });
     rxDtmb_.configure(rate_, tune.bandwidthMhz);
     rxDtmb_.setPacketCallback([this](const uint8_t* pk, size_t n, double secs) { onTsPackets(pk, n, secs); });   // runs on the receiver thread
@@ -237,6 +237,8 @@ void Engine::placeNarrowReceivers(const DeviceInfo& dev, const TuneSettings& tun
         rxArd_.setSignalOffset(o);
         rxZw_.setDialHz(tune.centerHz);
         rxZw_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);
+        rxSb_.setSignalOffset(o);
+        rxSb_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // for the CSV and the screen
         rxMs_.setSignalOffset(o);
         rxGd_.setSignalOffset(o);
         rxGd_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // for the channel numbers and the CSV
@@ -502,6 +504,8 @@ void Engine::configureDataReceivers(const DeviceInfo& dev, const TuneSettings& t
     rxWmb_.setLogCallback([this](const std::string& s) { log(s); });
     rxModeAc_.configure(rate_);
     rxModeAc_.setLogCallback([this](const std::string& s) { log(s); });
+    rxSb_.configure(rate_);
+    rxSb_.setLogCallback([this](const std::string& s) { log(s); });
     rxMs_.configure(rate_);
     rxBt_.configure(rate_);
     rxMs_.setLogCallback([this](const std::string& s) { log(s); });

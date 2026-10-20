@@ -3464,3 +3464,30 @@ How long a tracker must stay with the receiver before the alert.	Hoe lang een tr
 Near level	Nabijheidsniveau
 The averaged level from which a tracker counts as near. The radio's level, not a calibrated distance.	Het gemiddelde niveau vanaf waar een tracker als dichtbij geldt. Het niveau van de radio, geen gekalibreerde afstand.
 Trackers, 2.4 GHz	Trackers, 2,4 GHz
+# Satellite beacon
+Telemetry	Telemetrie
+start the receiver to see the beacon	start de ontvanger om de bakenzender te zien
+No narrow carrier found. Tune so that the beacon lies inside the capture: a Ku-band beacon seen through an LNB is usually within a few hundred kHz of the centre.	Geen smalle draaggolf gevonden. Stem af zodat het baken in de opname valt: een Ku-band baken via een LNB zit meestal enkele honderden kHz van het midden.
+Appends the carrier measurements and every frame to satellite_beacon.csv in the data folder, also when nobody watches the screen.	Voegt de draaggolfmetingen en elk frame toe aan satellite_beacon.csv in de gegevensmap, ook als niemand naar het scherm kijkt.
+Copies the learned frames as hex lines.	Kopieert de geleerde frames als hex-regels.
+capture spectrum (dB over the noise): the narrow lines are carriers	spectrum van de opname (dB boven de ruis): de smalle lijnen zijn draaggolven
+phase modulation of the carrier (dB over the floor): the telemetry tones stand out	fasemodulatie van de draaggolf (dB boven de ruisvloer): de telemetrietonen steken uit
+No telemetry: the carrier is not phase modulated, or the tones are too weak.	Geen telemetrie: de draaggolf is niet fasegemoduleerd, of de tonen zijn te zwak.
+Errors	Fouten
+template	sjabloon
+fixed bits	vaste bits
+subcarrier	hulpdraaggolf
+bit rate	bitsnelheid
+other lines	andere lijnen
+A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	Een satellietbaken is een draaggolf, soms met telemetrie fasegemoduleerd, waarmee grondstations de verbinding meten. De draaggolf wordt gevolgd in frequentie en niveau; de telemetrie wordt teruggewonnen als ruwe frames en de framelengte wordt uit hun herhaling geleerd. De opbouw van de frames van een bepaalde satelliet wordt niet gedecodeerd.
+The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	Het testsignaal is een draaggolf 236 kHz naast het midden, die driftt als een LNB, met een tweede draaggolf 545 kHz erboven en 4800 bit/s biphase-telemetrie op een hulpdraaggolf van 48 kHz, in frames van 256 bytes.
+Carrier, drift, telemetry frames	Draaggolf, drift, telemetrieframes
+# TV sat beacon decoder: decoded view
+decoded	gedecodeerd
+estimated	geschat
+unknown meaning	betekenis onbekend
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	gedecodeerd: aan de gegevens getoetst. geschat: afgeleid, de reden staat in de tooltip. betekenis onbekend: ongewijzigd getoond; wat een woord betekent bepaalt de satellietbouwer en wordt nooit geraden.
+Save JSON	JSON opslaan
+saved to	opgeslagen in
+Value	Waarde
+Raw	Ruw

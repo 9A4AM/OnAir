@@ -3464,3 +3464,30 @@ How long a tracker must stay with the receiver before the alert.	Cuánto tiempo 
 Near level	Nivel de cercanía
 The averaged level from which a tracker counts as near. The radio's level, not a calibrated distance.	El nivel promediado a partir del cual un rastreador cuenta como cercano. El nivel de la radio, no una distancia calibrada.
 Trackers, 2.4 GHz	Rastreadores, 2,4 GHz
+# Satellite beacon
+Telemetry	Telemetría
+start the receiver to see the beacon	inicie el receptor para ver la baliza
+No narrow carrier found. Tune so that the beacon lies inside the capture: a Ku-band beacon seen through an LNB is usually within a few hundred kHz of the centre.	No se encontró ninguna portadora estrecha. Sintonice de modo que la baliza quede dentro de la captura: una baliza de banda Ku vista a través de un LNB suele estar a unos cientos de kHz del centro.
+Appends the carrier measurements and every frame to satellite_beacon.csv in the data folder, also when nobody watches the screen.	Añade las mediciones de la portadora y cada trama a satellite_beacon.csv en la carpeta de datos, incluso cuando nadie mira la pantalla.
+Copies the learned frames as hex lines.	Copia las tramas aprendidas como líneas hexadecimales.
+capture spectrum (dB over the noise): the narrow lines are carriers	espectro de la captura (dB sobre el ruido): las líneas estrechas son portadoras
+phase modulation of the carrier (dB over the floor): the telemetry tones stand out	modulación de fase de la portadora (dB sobre el piso de ruido): destacan los tonos de telemetría
+No telemetry: the carrier is not phase modulated, or the tones are too weak.	Sin telemetría: la portadora no está modulada en fase o los tonos son demasiado débiles.
+Errors	Errores
+template	plantilla
+fixed bits	bits fijos
+subcarrier	subportadora
+bit rate	velocidad de bits
+other lines	otras líneas
+A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	Una baliza de satélite es una portadora, a veces modulada en fase con telemetría, que las estaciones terrestres usan para medir el enlace. Se sigue la portadora en frecuencia y nivel; la telemetría se recupera como tramas en bruto y la longitud de trama se aprende de su repetición. La estructura de las tramas de un satélite concreto no se decodifica.
+The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	La señal de prueba es una portadora a 236 kHz del centro, con deriva como un LNB, con una segunda portadora 545 kHz por encima y telemetría bifase de 4800 bit/s en una subportadora de 48 kHz, en tramas de 256 bytes.
+Carrier, drift, telemetry frames	Portadora, deriva, tramas de telemetría
+# TV sat beacon decoder: decoded view
+decoded	decodificado
+estimated	estimado
+unknown meaning	significado desconocido
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	decodificado: comprobado con los datos. estimado: deducido, el motivo aparece al pasar el cursor. significado desconocido: se muestra tal cual; el significado de una palabra lo decide el fabricante del satélite y nunca se adivina.
+Save JSON	Guardar JSON
+saved to	guardado en
+Value	Valor
+Raw	Crudo

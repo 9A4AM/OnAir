@@ -89,7 +89,7 @@ void s2Demap(const cf32* sym, int n, int mod, int rate, float sigma2, float* llr
 
 // ---- BBHEADER (clause 5.1.6)
 struct S2BbHeader {
-    int tsGs = 3;              // 3 transport stream, 0 generic packetized, 1 generic continuous, 2 reserved
+    int tsGs = 3;              // 3 transport stream, 0 generic packetized, 1 generic continuous, 2 GSE-HEM (S2X; reserved in EN 302 307-1)
     bool sis = true;           // single input stream
     bool ccm = true;           // constant coding and modulation (false: ACM or VCM)
     bool issyi = false, npd = false;
@@ -97,6 +97,7 @@ struct S2BbHeader {
     int isi = 0;
     int upl = 188 * 8, dfl = 0, sync = 0x47, syncd = 0;
     bool crcOk = false;
+    bool hem = false;          // high efficiency mode: the CRC-8 is XORed with 1 (EN 302 307-2 clause 5.1.6)
 };
 void s2BuildBbHeader(const S2BbHeader& h, uint8_t* bits80);       // one bit per byte
 bool s2ParseBbHeader(const uint8_t* bits80, S2BbHeader& h);        // false when the CRC-8 does not match

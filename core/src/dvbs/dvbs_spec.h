@@ -30,6 +30,8 @@ public:
     void setStride(size_t stride) { stride_ = stride; }
     int segments() const { return segs_; }
     SpectrumResult analyse() const;
+    std::vector<SpectrumResult> analyseAll(int maxCarriers = 16) const;   // every carrier found, by frequency
+    void setPick(bool on, double hz) { pick_ = on; pickHz_ = hz; }       // analyse() returns the carrier nearest hz instead of the one nearest the centre
     // Averaged spectrum in dB, `points` bins over the whole input rate, fft shifted (index points/2 = 0 Hz), peak held at 0 dB at the maximum
     void display(std::vector<float>& db, int points) const;
     double fs() const { return fs_; }
@@ -43,11 +45,14 @@ private:
     std::vector<float> win_, re_, im_;
     std::vector<cf32> part_;      // a segment being collected
     int segs_ = 0;
+    bool pick_ = false;
+    double pickHz_ = 0;
     size_t stride_ = 0, skip_ = 0;
 };
 
 // The part of analyse() that works on an averaged spectrum (shifted, linear power), exposed for tests
-SpectrumResult analysePsd(const std::vector<double>& psd, double fs, int segments = 64);
+SpectrumResult analysePsd(const std::vector<double>& psd, double fs, int segments = 64, double pickHz = 0, bool pick = false);
+std::vector<SpectrumResult> analyseAllPsd(const std::vector<double>& psd, double fs, int segments = 64, int maxCarriers = 16);
 
 } // namespace dvbs
 } // namespace dect2

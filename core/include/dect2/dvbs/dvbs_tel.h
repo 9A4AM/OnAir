@@ -8,6 +8,87 @@
 
 namespace dect2 {
 
+// IP data carried by the signal (GSE, and MPE or ULE in the transport stream): see dvbs_ip.h. Only headers, counts and addresses: never payload.
+struct DvbsIpFlow {
+    std::string src, dst, protocol;
+    int sport = -1, dport = -1;
+    uint64_t packets = 0, bytes = 0;
+    bool encrypted = false;          // the headers are good but the UDP checksums fail: the payload was changed in transit (link encryption); not decoded
+};
+struct DvbsIpLabel {                 // a GSE label: a terminal's address on an outbound
+    std::string label;
+    uint64_t pdus = 0, bytes = 0, ip = 0;
+    std::vector<std::string> addrs;
+    std::string modcods;             // "QPSK 5/6 41 %, 16APSK 3/4 59 %": where the bytes went (the terminal's link as the hub sees it)
+};
+struct DvbsMediaFlow {               // a multicast stream found in the IP traffic
+    std::string dst, src, kind, codec;
+    int port = 0;
+    uint64_t packets = 0, bytes = 0, lost = 0;
+    double kbps = 0;
+    std::vector<std::string> services;   // MPEG-TS flows: the programmes found in them (names from their SDT), with their stream kinds
+    bool scrambled = false;              // transport packets of the flow are scrambled: only labelled
+};
+struct DvbsSdp {                     // an announcement (SAP/SDP)
+    std::string name, info, address, source, media;   // media: "audio 5004 (MPEG audio), video 5006 (H.264)"
+    uint64_t seen = 0;
+};
+struct DvbsIpTel {
+    bool active = false;             // IP packets are being decoded
+    std::string source;              // "GSE (standard)", "GSE (length incl. header)", "GSE blind search", "MPE", "ULE", ... (several joined)
+    uint64_t gseFields = 0, packets = 0, bytes = 0, ipv4 = 0, ipv6 = 0, fragments = 0, reassembled = 0, mpePackets = 0, ulePackets = 0;
+    std::vector<std::pair<std::string, uint64_t>> protocols, udpPorts, tcpPorts;   // by name or port, most packets first
+    std::vector<DvbsIpFlow> flows;   // the biggest, by bytes
+    size_t flowCount = 0, encryptedFlows = 0;
+    std::vector<std::pair<std::string, uint64_t>> otherPdus;   // non-IP GSE PDUs by protocol type
+    double otherEntropy = -1;        // bits per byte of those (negative: not judged yet)
+    bool otherEncrypted = false;     // they read as random bytes: ciphertext, not decoded
+    std::vector<DvbsIpLabel> labels; // the busiest GSE labels
+    std::vector<DvbsMediaFlow> media;   // multicast RTP and MPEG-TS streams
+    std::vector<DvbsSdp> sdp;           // SAP/SDP announcements (session names)
+    size_t labelCount = 0;
+    std::string pcapPath;            // the PCAP file being written ("" none)
+    uint64_t pcapPackets = 0, pcapBytes = 0;
+};
+
+// One input stream of a DVB-S2 carrier (a multistream carrier interleaves several, told apart by the ISI)
+struct DvbsStream {
+    int isi = 0;                     // 0 for a single stream
+    bool single = true;
+    bool decoded = false;            // the transport stream that is being decoded (the ISI choice)
+    std::string content;             // "transport stream", "GSE", "GSE-HEM", "GSE-Lite", "transport packets in a generic stream (sync BBh)", "12-byte packets (sync 00h)"
+    bool ccm = true, issyi = false, npd = false, hem = false;
+    uint64_t frames = 0;
+    std::string modcods;             // "QPSK 1/3 100 %"
+    double bps = 0;                  // useful bit rate (DFL)
+};
+
+// One carrier in the survey of the input spectrum
+struct DvbsCarrier {
+    double centerHz = 0;     // offset from the centre of the input
+    double rateHz = 0;       // symbol rate from the -3 dB width
+    double rollOff = 0;      // 0: not measured
+    float snrDb = 0;         // plateau over the noise floor
+    float levelDb = 0;       // plateau level relative to the strongest carrier (0 dB = strongest)
+    bool selected = false;   // the receiver works on this one
+};
+
+// DVB-CID: the carrier identification signal under the host carrier (ETSI TS 103 129)
+struct DvbsCid {
+    bool on = false;            // looking for it
+    bool acquired = false;
+    double offsetHz = 0;        // against the host carrier's centre
+    float snrDb = 0;            // despread, per bit
+    uint64_t bits = 0, frames = 0, badFrames = 0;
+    double clockPpm = 0;
+    bool haveGuid = false;
+    std::string guid;           // "CC:XX:...:XX"
+    std::string mac;            // the MAC address the identifier encapsulates, if it does
+    bool havePosition = false;
+    double latitude = 0, longitude = 0;
+    std::string telephone, text;
+};
+
 struct DvbsTelemetry {
     // ---- the part every mode has: the engine copies it into RxTelemetry; keep these members and what they mean
     uint64_t seq = 0;            // grows with every report and never restarts (not even after reset())
@@ -73,6 +154,15 @@ struct DvbsTelemetry {
     double psdSpanHz = 0;                    // the width psdDb covers
     double carrierLoHz = 0, carrierHiHz = 0; // the -3 dB edges of the carrier in the spectrum, relative to the centre (0, 0 when not found)
     std::vector<float> merHistory;           // MER of the last frames or blocks of symbols, oldest first
+    DvbsIpTel ip;                            // IP data in the stream
+    std::string superframe;                  // the super-frames found (Annex E): format, pilots, count; empty when none
+    std::vector<DvbsStream> streams;         // the input streams of a DVB-S2 carrier
+    DvbsCid cid;                             // carrier identification, when looked for
+    std::vector<DvbsCarrier> carriers;       // every carrier seen in the spectrum (survey), by frequency
+    std::string symbolDumpPath;              // the symbol file being written (empty: none)
+    uint64_t symbolDumpCount = 0;            // symbols written
+    bool carrierPicked = false;              // the user chose a carrier from the survey
+    double carrierPickHz = 0;                // ... at this offset
 };
 
 // One line for the command line and the log

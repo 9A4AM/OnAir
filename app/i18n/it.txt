@@ -3447,3 +3447,30 @@ How long a tracker must stay with the receiver before the alert.	Per quanto temp
 Near level	Livello di vicinanza
 The averaged level from which a tracker counts as near. The radio's level, not a calibrated distance.	Il livello medio da cui un tracker conta come vicino. Il livello della radio, non una distanza calibrata.
 Trackers, 2.4 GHz	Tracker, 2,4 GHz
+# Satellite beacon
+Telemetry	Telemetria
+start the receiver to see the beacon	avvia il ricevitore per vedere il faro
+No narrow carrier found. Tune so that the beacon lies inside the capture: a Ku-band beacon seen through an LNB is usually within a few hundred kHz of the centre.	Nessuna portante stretta trovata. Sintonizza in modo che il faro cada nella cattura: un faro in banda Ku visto attraverso un LNB si trova di solito a poche centinaia di kHz dal centro.
+Appends the carrier measurements and every frame to satellite_beacon.csv in the data folder, also when nobody watches the screen.	Aggiunge le misure della portante e ogni frame a satellite_beacon.csv nella cartella dei dati, anche quando nessuno guarda lo schermo.
+Copies the learned frames as hex lines.	Copia i frame appresi come righe esadecimali.
+capture spectrum (dB over the noise): the narrow lines are carriers	spettro della cattura (dB sul rumore): le righe strette sono portanti
+phase modulation of the carrier (dB over the floor): the telemetry tones stand out	modulazione di fase della portante (dB sul fondo): i toni di telemetria emergono
+No telemetry: the carrier is not phase modulated, or the tones are too weak.	Nessuna telemetria: la portante non è modulata in fase o i toni sono troppo deboli.
+Errors	Errori
+template	modello
+fixed bits	bit fissi
+subcarrier	sottoportante
+bit rate	velocità in bit
+other lines	altre righe
+A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	Un faro satellitare è una portante, a volte modulata in fase con telemetria, che le stazioni a terra usano per misurare il collegamento. La portante viene seguita in frequenza e livello; la telemetria viene recuperata come frame grezzi e la lunghezza del frame viene appresa dalla loro ripetizione. La struttura dei frame di un dato satellite non viene decodificata.
+The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	Il segnale di prova è una portante a 236 kHz dal centro, che deriva come un LNB, con una seconda portante 545 kHz sopra e telemetria bifase a 4800 bit/s su una sottoportante a 48 kHz, in frame da 256 byte.
+Carrier, drift, telemetry frames	Portante, deriva, frame di telemetria
+# TV sat beacon decoder: decoded view
+decoded	decodificato
+estimated	stimato
+unknown meaning	significato sconosciuto
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	decodificato: verificato sui dati. stimato: dedotto, il motivo appare al passaggio del mouse. significato sconosciuto: mostrato com'è; il significato di una parola è del costruttore del satellite e non viene mai indovinato.
+Save JSON	Salva JSON
+saved to	salvato in
+Value	Valore
+Raw	Grezzo

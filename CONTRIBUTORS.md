@@ -4,7 +4,7 @@ OnAir exists because of the people below: they sent fixes, reported bugs, shared
 
 In the program: Help, Credits, tab Contributors. To add someone, edit `tools/contributors.tsv` and run `python3 tools/gen_credits.py`.
 
-## People (81)
+## People (82)
 
 | Who | What | Kind | Where | Reference |
 |---|---|---|---|---|
@@ -18,6 +18,8 @@ In the program: Help, Credits, tab Contributors. To add someone, edit `tools/con
 | [andriux26](https://github.com/andriux26) | Editable TLE source list, Keplerpass download | pull request | Satellite passes | [fb4a52aa](https://github.com/adswill/OnAir/commit/fb4a52aa), [4b277a93](https://github.com/adswill/OnAir/commit/4b277a93) |
 | [andriux26](https://github.com/andriux26) | Lithuanian network radio dialog | translation | Languages | [992e89fc](https://github.com/adswill/OnAir/commit/992e89fc) |
 | [ar8001](https://github.com/ar8001) | DVB-T/T2 not locked on Airspy Mini | bug report | DVB | [#163](https://github.com/adswill/OnAir/issues/163) |
+| [Arclamp (CasualArclamp)](https://github.com/CasualArclamp) | DecSAT, a satellite receiver: its published description of PCM/PSK/PM satellite beacons (bi-phase data on a subcarrier, IRIG 106 and CCSDS sync words, the minor frame counter) identified the format of the recorded beacon, and its table of published Ku-band beacons is used to estimate the satellite; reference for the DVB-S work | idea | TV sat beacon decoder | [cc7a56e1](https://github.com/adswill/OnAir/commit/cc7a56e1), [e235347b](https://github.com/adswill/OnAir/commit/e235347b) |
+| [Arclamp (CasualArclamp)](https://github.com/CasualArclamp) | DecSAT's GSE and IP crates and its MPE extractor (GSE variants and their automatic choice, vendor CRC trailer, IP validation, fragments, flow statistics, PCAP, MPE) ported to C++ for IP data over DVB-S/S2; allowed by the author | pull request | DVB-S/S2 | [a38b6ecd](https://github.com/adswill/OnAir/commit/a38b6ecd) |
 | [Axpelle](https://github.com/Axpelle) | NAVTEX, airband range and weak WEFAX reports | bug report | NAVTEX; Airband; Weather fax | [#25](https://github.com/adswill/OnAir/issues/25), [#42](https://github.com/adswill/OnAir/issues/42), [#52](https://github.com/adswill/OnAir/issues/52), [#103](https://github.com/adswill/OnAir/issues/103) |
 | [bithunter-99](https://github.com/bithunter-99) | DECT receiver | idea | DECT cordless phones | [#94](https://github.com/adswill/OnAir/issues/94) |
 | [BSDnux](https://github.com/BSDnux) | List of analogue and MAC TV systems | idea | MAC; Analog TV | [#15](https://github.com/adswill/OnAir/issues/15), [#73](https://github.com/adswill/OnAir/issues/73) |
@@ -144,7 +146,7 @@ In the program: Help, Credits, tab Contributors. To add someone, edit `tools/con
 - **DTMB**: gmg2719, stdevPavelmc, xpwina, xxj737, YZYMC
 - **DVB**: A2ureIm4la, ar8001, Debegege, dhihacker, drelectro, F5OEO, zanco48
 - **DVB-C**: F5OEO, grue74
-- **DVB-S/S2**: DG9BFC, DL5BCA, dominik0815, F5OEO
+- **DVB-S/S2**: Arclamp (CasualArclamp), DG9BFC, DL5BCA, dominik0815, F5OEO
 - **FM**: A2ureIm4la, ffishman, lakisfm1, RedmiNote5User
 - **FT8**: drelectro
 - **FreeDV**: ffishman
@@ -168,6 +170,7 @@ In the program: Help, Credits, tab Contributors. To add someone, edit `tools/con
 - **P25**: drelectro
 - **QO-100**: ic706mk2, WolfgangSchreiner
 - **TETRAPOL**: f5gkw
+- **TV sat beacon decoder**: Arclamp (CasualArclamp)
 - **Time signals**: michaelgeorge001, tortyl
 - **VDL2**: IZ5RZR
 - **VDL4**: f0cyf

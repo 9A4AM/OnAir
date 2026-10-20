@@ -3447,3 +3447,30 @@ How long a tracker must stay with the receiver before the alert.	Quanto tempo um
 Near level	Nível de proximidade
 The averaged level from which a tracker counts as near. The radio's level, not a calibrated distance.	O nível médio a partir do qual um rastreador conta como próximo. O nível do rádio, não uma distância calibrada.
 Trackers, 2.4 GHz	Rastreadores, 2,4 GHz
+# Satellite beacon
+Telemetry	Telemetria
+start the receiver to see the beacon	inicie o recetor para ver o farol
+No narrow carrier found. Tune so that the beacon lies inside the capture: a Ku-band beacon seen through an LNB is usually within a few hundred kHz of the centre.	Nenhuma portadora estreita encontrada. Sintonize de modo que o farol fique dentro da captura: um farol em banda Ku visto através de um LNB costuma estar a algumas centenas de kHz do centro.
+Appends the carrier measurements and every frame to satellite_beacon.csv in the data folder, also when nobody watches the screen.	Acrescenta as medições da portadora e cada trama a satellite_beacon.csv na pasta de dados, mesmo quando ninguém olha para o ecrã.
+Copies the learned frames as hex lines.	Copia as tramas aprendidas como linhas hexadecimais.
+capture spectrum (dB over the noise): the narrow lines are carriers	espectro da captura (dB acima do ruído): as linhas estreitas são portadoras
+phase modulation of the carrier (dB over the floor): the telemetry tones stand out	modulação de fase da portadora (dB acima do piso de ruído): os tons de telemetria destacam-se
+No telemetry: the carrier is not phase modulated, or the tones are too weak.	Sem telemetria: a portadora não está modulada em fase ou os tons são demasiado fracos.
+Errors	Erros
+template	modelo
+fixed bits	bits fixos
+subcarrier	subportadora
+bit rate	taxa de bits
+other lines	outras linhas
+A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	Um farol de satélite é uma portadora, por vezes modulada em fase com telemetria, que as estações terrestres usam para medir a ligação. A portadora é seguida em frequência e nível; a telemetria é recuperada como tramas em bruto e o comprimento da trama é aprendido a partir da sua repetição. A estrutura das tramas de um satélite concreto não é descodificada.
+The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	O sinal de teste é uma portadora a 236 kHz do centro, com deriva como um LNB, com uma segunda portadora 545 kHz acima e telemetria bifase de 4800 bit/s numa subportadora de 48 kHz, em tramas de 256 bytes.
+Carrier, drift, telemetry frames	Portadora, deriva, tramas de telemetria
+# TV sat beacon decoder: decoded view
+decoded	descodificado
+estimated	estimado
+unknown meaning	significado desconhecido
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	descodificado: verificado com os dados. estimado: deduzido, o motivo aparece ao passar o rato. significado desconhecido: mostrado tal como está; o significado de uma palavra é do fabricante do satélite e nunca é adivinhado.
+Save JSON	Guardar JSON
+saved to	guardado em
+Value	Valor
+Raw	Bruto

@@ -105,6 +105,7 @@ This list is taken from the tables in `core/src/tx/tx.cpp` (`txModes()`).
 | goesdcs | GOES DCS | 109 | makeGoesDcsSynth |
 | modeac | Mode A/C | 107 | makeModeAcSynth |
 | bletracker | BLE tracker detector | 109 | makeBletrkSynth |
+| satbeacon | Satellite beacon | 109 | makeSatbeaconSynth |
 | vorils | VOR / ILS | 32 | makeVorSynth |
 | m17 | M17 | 33 | makeM17Synth |
 | dstar | D-STAR | 35 | makeDstarSynth |

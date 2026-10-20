@@ -54,7 +54,8 @@ std::vector<double> SpectrumEstimator::averaged() const {
     return p;
 }
 
-SpectrumResult SpectrumEstimator::analyse() const { return analysePsd(averaged(), fs_, std::max(1, segs_)); }
+SpectrumResult SpectrumEstimator::analyse() const { return analysePsd(averaged(), fs_, std::max(1, segs_), pickHz_, pick_); }
+std::vector<SpectrumResult> SpectrumEstimator::analyseAll(int maxCarriers) const { return analyseAllPsd(averaged(), fs_, std::max(1, segs_), maxCarriers); }
 
 void SpectrumEstimator::display(std::vector<float>& db, int points) const {
     const std::vector<double> p = averaged();
@@ -287,16 +288,16 @@ SpectrumResult analyseOne(const std::vector<double>& psd, double fs, int segment
 
 // A transponder carries several carriers side by side: the one wanted is the one the user tuned to, the one nearest the centre among those that are not
 // much weaker than the strongest. The strongest is found first, blanked out, and the search repeated.
-SpectrumResult analysePsd(const std::vector<double>& psd, double fs, int segments) {
+static std::vector<SpectrumResult> collectCarriers(const std::vector<double>& psd, double fs, int segments, int maxCarriers) {
     std::vector<double> p(psd);
     std::vector<SpectrumResult> found;
     const int n = (int)p.size();
-    for (int it = 0; it < 4; it++) {
+    for (int it = 0; it < maxCarriers; it++) {
         std::pair<int, int> reg{0, -1};
         const SpectrumResult r = analyseOne(p, fs, segments, &reg);
         if (!r.valid) {
             // a candidate that cannot be measured (cut by the edge of the band, say): blank it out and look at the next one
-            if (reg.second < reg.first || r.zscore < 8.f || it == 3) break;
+            if (reg.second < reg.first || r.zscore < 8.f || it == maxCarriers - 1) break;
             std::vector<double> s(p);
             std::sort(s.begin(), s.end());
             const double fl = s[(size_t)(n * 0.15)];
@@ -310,6 +311,23 @@ SpectrumResult analysePsd(const std::vector<double>& psd, double fs, int segment
         const int a = std::max(0, (int)std::floor((r.edgeLoHz - 0.35 * w) / bin + n / 2.0)), b = std::min(n - 1, (int)std::ceil((r.edgeHiHz + 0.35 * w) / bin + n / 2.0));
         const double floorLin = std::pow(10.0, r.floorDb / 10.0);
         for (int k = a; k <= b; k++) p[(size_t)k] = floorLin;
+    }
+    return found;
+}
+
+std::vector<SpectrumResult> analyseAllPsd(const std::vector<double>& psd, double fs, int segments, int maxCarriers) {
+    std::vector<SpectrumResult> v = collectCarriers(psd, fs, segments, std::max(1, std::min(maxCarriers, 32)));
+    std::sort(v.begin(), v.end(), [](const SpectrumResult& a, const SpectrumResult& b) { return a.centerHz < b.centerHz; });
+    return v;
+}
+
+SpectrumResult analysePsd(const std::vector<double>& psd, double fs, int segments, double pickHz, bool pick) {
+    std::vector<SpectrumResult> found = collectCarriers(psd, fs, segments, 4);
+    if (pick) found = collectCarriers(psd, fs, segments, 16);
+    if (pick && !found.empty()) {
+        const SpectrumResult* b = &found[0];
+        for (const auto& r : found) if (std::fabs(r.centerHz - pickHz) < std::fabs(b->centerHz - pickHz)) b = &r;
+        return *b;
     }
     if (found.empty()) return analyseOne(psd, fs, segments);
     double top = -1e30;

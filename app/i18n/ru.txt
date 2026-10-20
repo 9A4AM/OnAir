@@ -3447,3 +3447,30 @@ How long a tracker must stay with the receiver before the alert.	Как долг
 Near level	Уровень близости
 The averaged level from which a tracker counts as near. The radio's level, not a calibrated distance.	Усреднённый уровень, начиная с которого трекер считается близким. Уровень радио, а не откалиброванное расстояние.
 Trackers, 2.4 GHz	Трекеры, 2,4 ГГц
+# Satellite beacon
+Telemetry	Телеметрия
+start the receiver to see the beacon	запустите приёмник, чтобы увидеть маяк
+No narrow carrier found. Tune so that the beacon lies inside the capture: a Ku-band beacon seen through an LNB is usually within a few hundred kHz of the centre.	Узкая несущая не найдена. Настройтесь так, чтобы маяк попал в захват: маяк диапазона Ku, принимаемый через конвертер LNB, обычно находится в нескольких сотнях кГц от центра.
+Appends the carrier measurements and every frame to satellite_beacon.csv in the data folder, also when nobody watches the screen.	Дописывает измерения несущей и каждый кадр в satellite_beacon.csv в папке данных, даже когда никто не смотрит на экран.
+Copies the learned frames as hex lines.	Копирует выученные кадры в виде шестнадцатеричных строк.
+capture spectrum (dB over the noise): the narrow lines are carriers	спектр захвата (дБ над шумом): узкие линии — это несущие
+phase modulation of the carrier (dB over the floor): the telemetry tones stand out	фазовая модуляция несущей (дБ над уровнем шума): тоны телеметрии выделяются
+No telemetry: the carrier is not phase modulated, or the tones are too weak.	Телеметрии нет: несущая не модулирована по фазе или тоны слишком слабые.
+Errors	Ошибки
+template	шаблон
+fixed bits	неизменные биты
+subcarrier	поднесущая
+bit rate	скорость передачи
+other lines	другие линии
+A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	Спутниковый маяк — это несущая, иногда фазово модулированная телеметрией, по которой наземные станции измеряют линию связи. Несущая отслеживается по частоте и уровню; телеметрия восстанавливается в виде необработанных кадров, а длина кадра определяется по их повторению. Структура кадров конкретного спутника не декодируется.
+The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	Тестовый сигнал — несущая в 236 кГц от центра, дрейфующая как у LNB, со второй несущей на 545 кГц выше и бифазной телеметрией 4800 бит/с на поднесущей 48 кГц в кадрах по 256 байт.
+Carrier, drift, telemetry frames	Несущая, дрейф, кадры телеметрии
+# TV sat beacon decoder: decoded view
+decoded	декодировано
+estimated	оценка
+unknown meaning	значение неизвестно
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	декодировано: проверено по данным. оценка: выведено, причина видна при наведении. значение неизвестно: показано как есть; смысл слова определяет изготовитель спутника, и его никогда не угадывают.
+Save JSON	Сохранить JSON
+saved to	сохранено в
+Value	Значение
+Raw	Сырое

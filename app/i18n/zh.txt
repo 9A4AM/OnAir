@@ -3464,3 +3464,30 @@ How long a tracker must stay with the receiver before the alert.	追踪器在发
 Near level	近距电平
 The averaged level from which a tracker counts as near. The radio's level, not a calibrated distance.	追踪器被视为靠近的平均电平。这是电台的电平，不是校准过的距离。
 Trackers, 2.4 GHz	追踪器，2.4 GHz
+# Satellite beacon
+Telemetry	遥测
+start the receiver to see the beacon	启动接收机以查看信标
+No narrow carrier found. Tune so that the beacon lies inside the capture: a Ku-band beacon seen through an LNB is usually within a few hundred kHz of the centre.	未找到窄带载波。请调谐使信标落在采集范围内：通过 LNB 接收的 Ku 波段信标通常位于中心附近几百 kHz 以内。
+Appends the carrier measurements and every frame to satellite_beacon.csv in the data folder, also when nobody watches the screen.	把载波测量值和每一帧追加到数据文件夹中的 satellite_beacon.csv，即使无人查看屏幕也会记录。
+Copies the learned frames as hex lines.	将已学习的帧复制为十六进制行。
+capture spectrum (dB over the noise): the narrow lines are carriers	采集频谱（高于噪声的 dB）：窄线是载波
+phase modulation of the carrier (dB over the floor): the telemetry tones stand out	载波的相位调制（高于底噪的 dB）：遥测音调十分突出
+No telemetry: the carrier is not phase modulated, or the tones are too weak.	无遥测：载波未被相位调制，或音调太弱。
+Errors	错误
+template	模板
+fixed bits	固定比特
+subcarrier	副载波
+bit rate	比特率
+other lines	其他谱线
+A satellite beacon is a carrier, sometimes phase modulated with telemetry, that ground stations use to measure the link. The carrier is followed in frequency and level; the telemetry is recovered as raw frames and the frame length is learned from their repetition. The layout of a given satellite's frames is not decoded.	卫星信标是一种载波，有时用遥测对其进行相位调制，地面站用它来测量链路。程序按频率和电平跟踪载波；遥测被恢复为原始帧，帧长度则根据帧的重复规律学习得到。特定卫星的帧结构不会被解码。
+The test signal is a carrier 236 kHz off the centre, drifting like an LNB, with a second carrier 545 kHz above it and 4800 bit/s bi-phase telemetry on a 48 kHz subcarrier, in frames of 256 bytes.	测试信号是偏离中心 236 kHz、像 LNB 一样漂移的载波，其上方 545 kHz 处有第二个载波，并在 48 kHz 副载波上以双相码携带 4800 bit/s 的遥测，帧长 256 字节。
+Carrier, drift, telemetry frames	载波、漂移、遥测帧
+# TV sat beacon decoder: decoded view
+decoded	已解码
+estimated	估计
+unknown meaning	含义未知
+decoded: checked against the data. estimated: inferred, hover for the reason. unknown meaning: shown as it is; the meaning of a word is the spacecraft maker's and is never guessed.	已解码：已对照数据核实。估计：由推断得出，悬停可看原因。含义未知：原样显示；字的含义由卫星制造商决定，绝不猜测。
+Save JSON	保存 JSON
+saved to	已保存到
+Value	值
+Raw	原始值
