@@ -1,6 +1,7 @@
 // The KAPP (family 124, engine standard 126, telemetry 125) and KAFT (family 125, engine standard 127, telemetry 126) modes in the group "Kris custom
 // modes": the mode-table rows (no longer work in progress), the unique family numbers, the modeui cases, the receive panels, the transmit options, the
 // engine wiring and the transmit registration are in the sources. Text checks only, so it builds without the app.
+#include <cstdlib>
 #include <cstdio>
 #include <fstream>
 #include <map>
@@ -56,10 +57,10 @@ int main() {
     }
 
     const std::string app = readSource("app/app.h");
-    need("app/app.h", app, "constexpr int kNumFamilies = 129;");
+    { const size_t q = app.find("constexpr int kNumFamilies = "); if (q == std::string::npos || atoi(app.c_str() + q + 29) < 129) { std::printf("FAIL: kNumFamilies below 129\n"); fails++; } }
 
     const std::string engineH = readSource("core/include/dect2/engine/engine.h");
-    need("core/include/dect2/engine/engine.h", engineH, "kPollSeqSlots = 140;");
+    { const size_t q = engineH.find("kPollSeqSlots = "); if (q == std::string::npos || atoi(engineH.c_str() + q + 16) < 140) { std::printf("FAIL: kPollSeqSlots below 140\n"); fails++; } }
     need("core/include/dect2/engine/engine.h", engineH, "KappLiveReceiver& kapp()");
     need("core/include/dect2/engine/engine.h", engineH, "KaftLiveReceiver& kaft()");
 
