@@ -48,6 +48,7 @@ private:
 // encodeMessage: header words (preamble, type, station; zcount, seq, length, health) then the 24-bit data words
 // of 'extra', each with its 6 parity bits; one bit per entry (0 or 1). pol inverts the whole channel, since the
 // beacon's polarity is not known in advance.
+std::vector<uint8_t> encodeMessage(const Header& h, const std::vector<uint32_t>& extra, int pol);
 std::vector<std::complex<float>> modulate(const std::vector<uint8_t>& bits, double fs, double offsetHz, float amp);
 
 }  // namespace dect2::dgps
