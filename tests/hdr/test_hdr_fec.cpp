@@ -265,6 +265,79 @@ static void testL2() {
     printf("hdr fec: %s\n", fails ? "FAILED" : "ok");
 }
 
+// Long station name and universal short name through the SIS, a name change, and a station logo per service (PNG and JPEG-shaped files
+// split over several LOT fragments) through a transfer frame
+static void testNamesAndLogos() {
+    SisConfig sc;
+    sc.callSign = "KTLK"; sc.name = "Patriot"; sc.longName = "KTLK-FM 104.9 The Patriot 24 hours"; sc.slogan = "Talk radio for the whole valley";
+    sc.country = "US"; sc.facilityId = 1234;
+    sc.audio.push_back({0, 5, 0, 0});
+    sc.audio.push_back({1, 14, 0, 0});
+    L2Decoder dec;
+    auto run = [&](SisConfig& c) {
+        SisEncoder enc(c);
+        for (int i = 0; i < 200; i++) {
+            uint8_t f[80], l1[80];
+            enc.next(f);
+            for (int j = 0; j < 80; j++) l1[((j >> 3) << 3) + 7 - (j & 7)] = f[j];
+            dec.pushPids(l1);
+        }
+    };
+    run(sc);
+    HdrTelemetry t;
+    dec.fill(t);
+    CHECK(t.longName == "KTLK-FM 104.9 The Patriot 24 hours" && t.stationName == "Patriot" && t.callSign == "KTLK" && t.slogan == sc.slogan,
+          "names: '%s' '%s' '%s' '%s'", t.callSign.c_str(), t.stationName.c_str(), t.longName.c_str(), t.slogan.c_str());
+    sc.name = "Z107.7"; sc.longName = "KSLZ-FM Z107.7 St. Louis' Hit Music";
+    run(sc);
+    dec.fill(t);
+    CHECK(t.longName == sc.longName && t.stationName == "Z107.7", "changed names: '%s' '%s'", t.stationName.c_str(), t.longName.c_str());
+    // two audio services, each with its own logo service and a different file size
+    std::vector<uint8_t> png(700), jpg(1030);
+    for (size_t i = 0; i < png.size(); i++) png[i] = (uint8_t)(i * 7 + 1);
+    for (size_t i = 0; i < jpg.size(); i++) jpg[i] = (uint8_t)(i * 13 + 5);
+    png[0] = 0x89; png[1] = 'P'; jpg[0] = 0xFF; jpg[1] = 0xD8;
+    std::vector<SigService> sv(2);
+    sv[0].number = 1; sv[0].name = "The Patriot";
+    sv[0].comps.push_back({true, 0, 0, 0, kMimeHdc, -1});
+    sv[0].comps.push_back({false, 1, 0x1301, 3, kMimeStationLogo, 0});
+    sv[1].number = 2; sv[1].name = "Patriot Two";
+    sv[1].comps.push_back({true, 1, 1, 0, kMimeHdc, -1});
+    sv[1].comps.push_back({false, 2, 0x1302, 3, kMimeStationLogo, 0});
+    LotFile l1{3, "logo1.png", kMimePng, png}, l2{3, "logo2.jpg", kMimeJpeg, jpg};   // the same LOT id on two ports
+    CHECK(lotFragments(l2, 0).size() >= 4, "the JPEG should be split over several fragments");
+    for (int frame = 0; frame < 12; frame++) {
+        std::vector<uint8_t> hdlc = {0x7E}, sub;
+        hdlcAppend(hdlc, aasFrame(0x20, 0, sigTable(sv)));
+        // the fixed data of one frame holds one file at a time: the two logos take turns
+        if (frame % 2 == 0) for (const auto& fr : lotFragments(l1, 0)) hdlcAppend(hdlc, aasFrame(0x1301, 0, fr));
+        else for (const auto& fr : lotFragments(l2, 0)) hdlcAppend(hdlc, aasFrame(0x1302, 0, fr));
+        while (hdlc.size()) fixedBlock(hdlc, sub);
+        AudioPduSpec a;
+        a.codecMode = 0; a.program = 0; a.progType = 5; a.packetBytes.assign(32, 100);
+        std::vector<uint8_t> none = {0x7E};
+        a.psdRoom = 256 - audioPduHeaderBytes(a);
+        std::vector<uint8_t> pdu = audioPdu(a, none);
+        FixedSpec fs;
+        fs.subLen = 7 * 259;
+        std::vector<uint8_t> tail;
+        fixedRegion(fs, sub, tail);
+        pdu.resize((size_t)pduBytes(kP1LenFm) - tail.size(), 0);
+        pdu.insert(pdu.end(), tail.begin(), tail.end());
+        std::vector<uint8_t> bits((size_t)kP1LenFm);
+        packTransfer(pdu, kPciAudioFixed, kP1LenFm, bits.data());
+        dec.pushTransfer(bits.data(), kP1LenFm, 0);
+    }
+    dec.fill(t);
+    std::vector<uint8_t> g1, g2;
+    CHECK(dec.lotBytes(0x1301, 3, g1) && g1 == png, "logo of service 1 (%zu bytes)", g1.size());
+    CHECK(dec.lotBytes(0x1302, 3, g2) && g2 == jpg, "logo of service 2 (%zu bytes)", g2.size());
+    const HdrProgram *p0 = nullptr, *p1 = nullptr;
+    for (const auto& p : t.programs) { if (p.number == 0) p0 = &p; if (p.number == 1) p1 = &p; }
+    CHECK(p0 && p0->name == "The Patriot" && p0->logoPort == 0x1301, "service 1 name / logo port");
+    CHECK(p1 && p1->name == "Patriot Two" && p1->logoPort == 0x1302, "service 2 name / logo port %d", p1 ? p1->logoPort : -2);
+}
+
 int main() {
     testScrambler();
     testConv();
@@ -272,5 +345,6 @@ int main() {
     testInterleavers();
     testPx();
     testL2();
+    testNamesAndLogos();
     return fails ? 1 : 0;
 }

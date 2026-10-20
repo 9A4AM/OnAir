@@ -25,6 +25,7 @@ constexpr uint32_t kPciAudio = 0x38D8D3, kPciAudioOpp = 0xCE3634, kPciAudioFixed
 // ---- MIME hashes (nrsc5 nrsc5.h)
 constexpr uint32_t kMimePrimaryImage = 0xBE4B7536, kMimeStationLogo = 0xD9C72536, kMimeHdc = 0x4DC66C5A, kMimeText = 0xBB492AAC;
 constexpr uint32_t kMimeJpeg = 0x1E653E9C, kMimePng = 0x4F328CA0, kMimeTtnTraffic = 0xFF8422D7, kMimeTtnWeather = 0xEF042E96;
+constexpr uint32_t kLotMaxFrags = 2048, kLotMaxBytes = 1u << 20;   // limits of one received file (fragments, bytes)
 const char* mimeName(uint32_t mime);        // "station logo", "JPEG", ... or "" when unknown
 
 // ---- transfer frame geometry: where the PCI bits sit and how long the PDU is

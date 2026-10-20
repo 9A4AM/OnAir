@@ -122,7 +122,7 @@ void L2Decoder::sisDecode(const uint8_t* bits) {
             const int last = (int)getBits(b, o, 3), cur = (int)getBits(b, o, 3);
             int t = 55;
             const int seq = (int)getBits(b, t, 3);
-            if (cur == 0 && seq != S.longSeq) { memset(S.longName, 0, sizeof S.longName); memset(S.longHave, 0, sizeof S.longHave); S.longSeq = seq; S.longDone = false; }
+            if (seq != S.longSeq) { memset(S.longName, 0, sizeof S.longName); memset(S.longHave, 0, sizeof S.longHave); S.longSeq = seq; S.longDone = false; }
             for (int j = 0; j < 7; j++) S.longName[cur * 7 + j] = (char)getBits(b, o, 7);
             S.longHave[cur] = true;
             if (S.longSeq >= 0 && !S.longDone) {
@@ -185,10 +185,14 @@ void L2Decoder::sisDecode(const uint8_t* bits) {
             if (b[o++] == 0) {
                 if (cur >= 2) break;
                 if (cur == 0) {
-                    S.unameEnc = (int)getBits(b, o, 3);
-                    S.unameAppend = b[o++];
-                    S.unameLen = b[o++] + 1;
-                    for (int j = 0; j < 6; j++) S.uname[j] = (char)getBits(b, o, 8);
+                    const int enc = (int)getBits(b, o, 3), app = b[o++], len = b[o++] + 1;
+                    char first[6];
+                    for (int j = 0; j < 6; j++) first[j] = (char)getBits(b, o, 8);
+                    if (enc != S.unameEnc || app != S.unameAppend || len != S.unameLen || memcmp(first, S.uname, 6) != 0) {   // a changed name: collect it afresh
+                        memset(S.uname, 0, sizeof S.uname); memset(S.unameHave, 0, sizeof S.unameHave); S.unameDone = false;
+                    }
+                    S.unameEnc = enc; S.unameAppend = app; S.unameLen = len;
+                    memcpy(S.uname, first, 6);
                 } else {
                     o += 5;
                     for (int j = 0; j < 6; j++) S.uname[cur * 6 + j] = (char)getBits(b, o, 8);
