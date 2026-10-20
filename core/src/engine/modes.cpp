@@ -218,6 +218,8 @@
 #include "dect2/kait/kait_live.h"
 #include "dect2/kait/kait_tel.h"
 #include "dect2/kapp/kapp_live.h"
+#include "dect2/kavb/kavb_live.h"
+#include "dect2/kavb/kavb_tel.h"
 #include "dect2/kapp/kapp_tel.h"
 #include "dect2/kaft/kaft_live.h"
 #include "dect2/kaft/kaft_tel.h"
@@ -643,6 +645,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 130: return ltrSummary(t.ltr);
     case 131: return edacsSummary(t.edacs);
     case 132: return kaitSummary(t.kait);
+    case 124: return kavbSummary(t.kavb);
     case 125: return kappSummary(t.kapp);
     case 126: return kaftSummary(t.kaft);
     case 108: return cquamSummary(t.cquam);

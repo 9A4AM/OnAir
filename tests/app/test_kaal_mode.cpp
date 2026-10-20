@@ -1,5 +1,4 @@
-// The KAAL mode (family 122, engine standard 124, telemetry 123) and its neighbours in the group "Kris custom modes": KAVB (123, 125, still work in
-// progress), KAPP (124, 126) and KAFT (125, 127, both built: tests/app/test_kapp_kaft_mode.cpp): the mode-table rows, the group, the modeui cases, the panel strings, the engine wiring, the transmit
+// The KAAL mode (family 122, engine standard 124, telemetry 123) and its neighbours in the group "Kris custom modes": KAVB (123, 125, built: tests/app/test_kavb_mode.cpp), KAPP (124, 126) and KAFT (125, 127, both built: tests/app/test_kapp_kaft_mode.cpp): the mode-table rows, the group, the modeui cases, the panel strings, the engine wiring, the transmit
 // registration and the IQ-file destination are in the sources. Text checks only, so it builds without the app.
 #include <cstdio>
 #include <cstdlib>
@@ -31,7 +30,7 @@ int main() {
 
     const std::string table = readSource("app/ui/mode_table.cpp");
     need("app/ui/mode_table.cpp", table, "{122, \"KAAL\", 15,");
-    need("app/ui/mode_table.cpp", table, "{123, \"KAVB (WIP)\", 15,");
+    need("app/ui/mode_table.cpp", table, "{123, \"KAVB\", 15,");
     need("app/ui/mode_table.cpp", table, "{124, \"KAPP\", 15,");
     need("app/ui/mode_table.cpp", table, "{125, \"KAFT\", 15,");
     need("app/ui/mode_table.cpp", table, "N_(\"PLUGINS\"), \"Kris custom modes\"}");
@@ -73,11 +72,8 @@ int main() {
     need("app/kaal/kaal_ui.cpp", panel, "Send the beacon (station identity)");
     need("app/kaal/kaal_ui.cpp", panel, "tx.kaal.callsign");
 
-    const std::string wip = readSource("app/kaal/kris_wip_ui.cpp");
-    need("app/kaal/kris_wip_ui.cpp", wip, "const ModeUi kKavbUi");
-    need("app/kaal/kris_wip_ui.cpp", wip, "Work in progress: no receiver or transmitter yet.");
-    need("app/kaal/kris_wip_ui.cpp", wip, "ImGui::BeginDisabled(true);");
-    need("app/kaal/kris_wip_ui.cpp", wip, "1 to 2 MHz wide");
+    const std::string kavbUi = readSource("app/kavb/kavb_ui.cpp");   // KAVB has its own screen now (tests/app/test_kavb_mode.cpp)
+    need("app/kavb/kavb_ui.cpp", kavbUi, "const ModeUi kKavbUi");
 
     const std::string live = readSource("core/src/kaal/kaal_live.cpp");
     need("core/src/kaal/kaal_live.cpp", live, "t.stdMode = 124;");
@@ -105,8 +101,8 @@ int main() {
     const std::string start = readSource("core/src/engine/engine_start.cpp");
     need("core/src/engine/engine_start.cpp", start, "rxKaal_.configure(rate_);");
 
-    // KAVB has no engine case at all (KAPP and KAFT have: 125 and 126)
-    absent("core/src/engine/engine_telemetry.cpp", telemetry, "case 124: return pollStd");
+    // KAVB has its engine case now: 124 (tests/app/test_kavb_mode.cpp)
+    need("core/src/engine/engine_telemetry.cpp", telemetry, "case 124: return pollStd(rxKavb_, 124");
 
     // the transmit side
     const std::string tx = readSource("core/src/tx/tx.cpp");

@@ -186,6 +186,11 @@ TxRequest makeReq(const TxUi& s, const TxModeSpec& mode, bool carrier) {
         r.opt["kaal.beacon"] = s.kaalBeacon ? 1.0 : 0.0;
         r.opt["kaal.bitrate"] = s.kaalBitrate;
     }
+    if (std::string(mode.id) == "kavb") {
+        r.opt["kavb.profile"] = s.kavbProfile;
+        r.opt["kavb.fec"] = s.kavbFec;
+        r.opt["kavb.seconds"] = s.kavbSeconds;
+    }
     if (std::string(mode.id) == "kapp") {
         r.opt["kapp.profile"] = s.kappProfile;
         r.opt["kapp.repeat"] = s.kappPasses;
@@ -198,6 +203,7 @@ TxRequest makeReq(const TxUi& s, const TxModeSpec& mode, bool carrier) {
     r.dest = s.dest;
     r.path = s.path;
     r.file = s.file;
+    if (std::string(mode.id) == "kavb") r.file = s.kavbFile;
     if (std::string(mode.id) == "kapp") r.file = s.kappFile;   // their own file fields: the audio or video file of another mode is never sent as data
     if (std::string(mode.id) == "kaft") r.file = s.kaftFile;
     r.name = s.name;

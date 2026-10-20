@@ -35,7 +35,7 @@ int main() {
     need("app/ui/mode_table.cpp", table, "{125, \"KAFT\", 15,");
     absent("app/ui/mode_table.cpp", table, "KAPP (WIP)");
     absent("app/ui/mode_table.cpp", table, "KAFT (WIP)");
-    need("app/ui/mode_table.cpp", table, "{123, \"KAVB (WIP)\", 15,");   // the one that is still work in progress
+    need("app/ui/mode_table.cpp", table, "{123, \"KAVB\", 15,");
 
     // the family numbers of the rows are unique
     {
@@ -100,10 +100,10 @@ int main() {
     need("app/kaft/kaft_ui.cpp", kaft, "\"Width\"");
     need("app/kaft/kaft_ui.cpp", kaft, "tx.kaft.profile");
 
-    const std::string wip = readSource("app/kaal/kris_wip_ui.cpp");
-    need("app/kaal/kris_wip_ui.cpp", wip, "const ModeUi kKavbUi");
-    absent("app/kaal/kris_wip_ui.cpp", wip, "kKappUi");
-    absent("app/kaal/kris_wip_ui.cpp", wip, "kKaftUi");
+    const std::string kavbUi = readSource("app/kavb/kavb_ui.cpp");
+    need("app/kavb/kavb_ui.cpp", kavbUi, "const ModeUi kKavbUi");
+    absent("app/kavb/kavb_ui.cpp", kavbUi, "kKappUi");
+    absent("app/kavb/kavb_ui.cpp", kavbUi, "kKaftUi");
 
     const std::string live1 = readSource("core/src/kapp/kapp_live.cpp");
     need("core/src/kapp/kapp_live.cpp", live1, "t.stdMode = 126;");
@@ -122,7 +122,7 @@ int main() {
     const std::string telemetry = readSource("core/src/engine/engine_telemetry.cpp");
     need("core/src/engine/engine_telemetry.cpp", telemetry, "case 125: return pollStd(rxKapp_, 125");
     need("core/src/engine/engine_telemetry.cpp", telemetry, "case 126: return pollStd(rxKaft_, 126");
-    absent("core/src/engine/engine_telemetry.cpp", telemetry, "case 124: return pollStd");   // KAVB has no engine case
+    need("core/src/engine/engine_telemetry.cpp", telemetry, "case 124: return pollStd(rxKavb_, 124");   // KAVB is wired (tests/app/test_kavb_mode.cpp)
 
     const std::string engine = readSource("core/src/engine/engine.cpp");
     need("core/src/engine/engine.cpp", engine, "else if (a == 125) rxKapp_.feed(x, n); else if (a == 126) rxKaft_.feed(x, n);");

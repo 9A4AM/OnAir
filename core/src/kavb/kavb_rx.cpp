@@ -507,6 +507,10 @@ Receiver::St Receiver::tryFrame(double t0, double f0, RxFrame& rf, double& endSa
     rf.allOk = okCount == kBlocksPerFrame;
     rf.esn0Db = 10.0 * std::log10(1.0 / nv);
     rf.cfoHz = f2 * p.symRate;
+    {   // up to 400 of the equalised data symbols, evenly spread, for a constellation display
+        const size_t nd = rm.data.size(), step = std::max<size_t>(1, nd / 400);
+        for (size_t i = 0; i < nd; i += step) rf.dataSyms.push_back(zall[base + rm.data[i]]);
+    }
     endSample = t0 + static_cast<double>(F) * kSps;
     return St::Ok;
 }

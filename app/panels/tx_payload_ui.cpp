@@ -550,6 +550,9 @@ void payloadPanel(TxUi& s, const TxModeSpec& mode, bool running) {
     case TxPayloadKind::Kait:
         kaitPanel(s, running);
         break;
+    case TxPayloadKind::Kavb:
+        kavbPanel(s, running);
+        break;
     case TxPayloadKind::Kapp:
         kappPanel(s, running);
         break;

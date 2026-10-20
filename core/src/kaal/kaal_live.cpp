@@ -356,12 +356,4 @@ ModeTuning kaalTuning() {
     t.tuneOffsetHz = 0;
     return t;
 }
-
-ModeTuning kavbTuning() {
-    ModeTuning t;
-    t.stdMode = 125; t.id = "kavb"; t.name = "KAVB (WIP)";
-    t.minMhz = 100; t.maxMhz = 6000; t.defMhz = 1290;   // amateur UHF / SHF video; modeTuning() opens the range
-    t.sampleRate = 2.4e6; t.bandwidthMhz = 2.0; t.minSampleRate = 2e6;
-    return t;
-}
 } // namespace dect2

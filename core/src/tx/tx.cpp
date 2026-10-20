@@ -20,6 +20,7 @@
 #include "dect2/kaal/kaal_txgen.h"
 #include "dect2/kait/kait_txgen.h"
 #include "dect2/kapp/kapp_txgen.h"
+#include "dect2/kavb/kavb_txgen.h"
 #include "dect2/kaft/kaft_txgen.h"
 #include "dect2/engine/mode_tuning.h"
 #include "dect2/t2/t2.h"
@@ -187,6 +188,7 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("lbj", "LBJ", 83, "makeLbjSynth", kOpt, kUnv),
         mk("kait", "KAIT", 133, "makeKaitTxGenerator (kait::planBurst: wavelet image stream in layers, 10 s burst, sweeps, pilots)", "callsign, a PNG or PPM picture (empty: the demo picture), profile 0 balanced / 1 robust / 2 quality / 3 direct", kUnv, 0, 632000, false, 400000),
         mk("kaal", "KAAL", 124, "makeKaalTxGenerator (kaal::VoiceTx: 16 kbit/s voice codec, 16-QAM LDPC, beacon slice)", "callsign, grid, position, power, bio text, beacon on or off; the voice from a microphone or a WAV file", kUnv, 0, 48000, false, 48000),
+        mk("kavb", "KAVB", 125, "makeKavbTxGenerator (kavb::Transmitter: 16-QAM / 64-QAM LDPC frames with the V sweep, container packets in FEC groups)", "callsign, a file of bytes or the synthetic test stream, profile A to D (700 / 1050 / 1400 ksym/s), FEC profile, test stream seconds", kUnv, 0, 2.8e6, false, 1.12e6),
         mk("kapp", "KAPP", 126, "makeKappTxGenerator (kapp::buildBurst: BPSK to 1024-QAM LDPC bursts of selective-repeat blocks, sent one-way and repeated)", "callsign, message text or a file, profile 0 to 8, passes", kUnv, 0, 250000, false, 125000),
         mk("kaft", "KAFT", 127, "makeKaftTxGenerator (kaft::buildBurst: OPEN, data frames of LDPC blocks with CRC-32, FINISH; one-way and repeated)", "callsign, file, width 200 kHz / 500 kHz / 1 MHz, profile 0 to 9, passes", kUnv, 0, 2.4e6, false, 250000),
     };
@@ -289,6 +291,7 @@ TxPayloadKind txPayloadKind(const std::string& id) {
     if (id == "mac") return TxPayloadKind::Mac;
     if (id == "kaal") return TxPayloadKind::Kaal;
     if (id == "kait") return TxPayloadKind::Kait;
+    if (id == "kavb") return TxPayloadKind::Kavb;
     if (id == "kapp") return TxPayloadKind::Kapp;
     if (id == "kaft") return TxPayloadKind::Kaft;
     if (id == "vdl4" || id == "uat" || id == "wisun" || id == "zwave") return TxPayloadKind::SatScene;   // demo-traffic generators, no custom message
@@ -321,7 +324,7 @@ std::string txVocoderNote(const TxModeSpec& m) {
     return {};
 }
 
-bool txModeFinite(const TxModeSpec& m) { return m.id && (std::string(m.id) == "kapp" || std::string(m.id) == "kaft"); }
+bool txModeFinite(const TxModeSpec& m) { return m.id && (std::string(m.id) == "kapp" || std::string(m.id) == "kaft" || std::string(m.id) == "kavb"); }
 
 bool txModeNeedsAudio(const TxModeSpec& m, const TxRequest& r) {
     if (r.carrierTune) return false;
@@ -612,6 +615,7 @@ static SynthConfig cleanSynth(const SynthConfig& c, int stdMode) {
 }
 
 std::unique_ptr<TxGenerator> makeTxGenerator(const TxModeSpec& m, const TxRequest& r, double rateHz, std::string& err) {
+    if (m.stdMode == 125) return makeKavbTxGenerator(r, rateHz > 0 ? rateHz : m.nominalRateHz, err);   // KAVB: its own video-container transmitter at the radio's rate
     if (m.stdMode == 126) return makeKappTxGenerator(r, rateHz > 0 ? rateHz : m.nominalRateHz, err);   // KAPP: its own burst transmitter at the radio's rate
     if (m.stdMode == 127) return makeKaftTxGenerator(r, rateHz > 0 ? rateHz : m.nominalRateHz, err);   // KAFT: its own file transmitter at the radio's rate
     if (m.stdMode == 124) return makeKaalTxGenerator(r, rateHz > 0 ? rateHz : m.nominalRateHz, err);   // KAAL: its own transmitter chain at the radio's rate
