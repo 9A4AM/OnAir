@@ -35,7 +35,7 @@ std::string position(double lat, double lon) {
 
 void tab(App& a) {
     ImGui::PushTextWrapPos(0);
-    ImGui::TextDisabled("KAAL is a digital voice link 10 kHz wide: a 16 kbit/s voice codec on 16-QAM with LDPC, a sweep signature for synchronisation and "
+    ImGui::TextDisabled("KAAL is a digital voice link 10 kHz wide: a 12, 16, 24 or 32 kbit/s voice codec on 16-QAM with LDPC, a sweep signature for synchronisation and station ID, and "
                         "a narrow beacon side channel with the station identity. Tune to the signal; the speech plays through the sound output (the volume and "
                         "the mute of the top bar apply). To transmit, switch to TX and pick KAAL.");
     ImGui::PopTextWrapPos();
@@ -59,6 +59,8 @@ void tab(App& a) {
     row("CFO", b);
     snprintf(b, sizeof b, "%.1f dB", (double)t.sweepDb);
     row("sweep level", b);
+    if (t.bitrateKbps) { snprintf(b, sizeof b, "%d kbit/s (read from the frame header)", t.bitrateKbps); row("voice codec", b); }
+    row("sweep ID", t.sweepIdValid ? t.sweepId : std::string("not received yet (a full cycle takes 12 s)"));
 
     ImGui::TextDisabled("%s", "audio level");
     kvColumn(130 * gUi);
@@ -132,10 +134,25 @@ void kaalPanel(TxUi& s, bool running) {
         s.lon = p.getD("tx.kaal.lon", s.lon);
         s.kaalPower = p.getD("tx.kaal.power", 10);
         s.kaalBeacon = p.getB("tx.kaal.beacon", true);
+        s.kaalBitrate = (int)p.getD("tx.kaal.bitrate", 16);
+        if (s.kaalBitrate != 12 && s.kaalBitrate != 16 && s.kaalBitrate != 24 && s.kaalBitrate != 32) s.kaalBitrate = 16;
     }
     ImGui::TextWrapped("%s", "KAAL: digital voice, 10 kHz wide. The speech of the audio input below is coded and sent with the identity beacon. "
                               "Empty callsign and grid send the demo identity ONAIR / AA00aa. OnAir sets no limit on the frequency or the power.");
     ImGui::BeginDisabled(running);
+    {
+        static const int kRates[4] = {12, 16, 24, 32};
+        static const char* const kNames[4] = {"12 kbit/s (real time, most robust)", "16 kbit/s (real time)", "24 kbit/s (2x air time, not for a live microphone)",
+                                              "32 kbit/s (2x air time, not for a live microphone)"};
+        int cur = 1;
+        for (int i = 0; i < 4; i++) if (kRates[i] == s.kaalBitrate) cur = i;
+        ImGui::SetNextItemWidth(330 * gUi);
+        if (ImGui::BeginCombo("Voice codec", kNames[cur])) {
+            for (int i = 0; i < 4; i++) if (ImGui::Selectable(kNames[i], i == cur)) s.kaalBitrate = kRates[i];
+            ImGui::EndCombo();
+        }
+        ImGui::TextDisabled("%s", "The receiver reads the bitrate from the frame header. The callsign (6 characters + /P, /M, ...) is also sent in the sweep.");
+    }
     ImGui::Checkbox("Send the beacon (station identity)", &s.kaalBeacon);
     ImGui::BeginDisabled(!s.kaalBeacon);
     ImGui::SetNextItemWidth(160 * gUi);
@@ -158,11 +175,11 @@ void kaalPanel(TxUi& s, bool running) {
     audioSourceRow(s, running);
 
     char sig[600];
-    snprintf(sig, sizeof sig, "%s|%s|%s|%.6f|%.6f|%.2f|%d", s.callsign, s.grid, s.text, s.lat, s.lon, s.kaalPower, (int)s.kaalBeacon);
+    snprintf(sig, sizeof sig, "%s|%s|%s|%.6f|%.6f|%.2f|%d|%d", s.callsign, s.grid, s.text, s.lat, s.lon, s.kaalPower, (int)s.kaalBeacon, s.kaalBitrate);
     if (s.kaalSaved != sig) {   // saved when something changed
         s.kaalSaved = sig;
         p.setS("tx.kaal.callsign", s.callsign); p.setS("tx.kaal.grid", s.grid); p.setS("tx.kaal.text", s.text);
-        p.setD("tx.kaal.lat", s.lat); p.setD("tx.kaal.lon", s.lon); p.setD("tx.kaal.power", s.kaalPower); p.setB("tx.kaal.beacon", s.kaalBeacon);
+        p.setD("tx.kaal.lat", s.lat); p.setD("tx.kaal.lon", s.lon); p.setD("tx.kaal.power", s.kaalPower); p.setB("tx.kaal.beacon", s.kaalBeacon); p.setD("tx.kaal.bitrate", s.kaalBitrate);
     }
 }
 

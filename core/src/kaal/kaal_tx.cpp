@@ -1,10 +1,13 @@
 // KAAL voice transmitter, streaming port of kaal_tx.py.
 #include "dect2/kaal/kaal_tx.h"
 #include "dect2/kaal/kaal_codec.h"
+#include "dect2/kaal/kaal_codec3.h"
 #include "dect2/kaal/kaal_fec.h"
 #include "dect2/kaal/kaal_phy.h"
+#include "dect2/kaal/kaal_sweepid.h"
 #include <algorithm>
 #include <cmath>
+#include <array>
 #include <cstring>
 
 namespace dect2 {
@@ -72,7 +75,17 @@ private:
 };
 }  // namespace
 
+double kaalAirTimeRatio(int kbit) {
+    if (kbit == 12 || kbit == 16) return 1.0;
+    if (kbit == 24 || kbit == 32) return 2.0;
+    return (double)kFrameSymbols / (double)kRtFrameSymbols;   // legacy: 202 / 160 symbols per 20 ms
+}
+
 struct VoiceTx::Impl {
+    int bitrate = 0;                        // 0 = legacy v0.1, else codec v3 at that kbit/s
+    KaalCodec3 codec3;
+    std::vector<std::vector<uint8_t>> words;   // v3: coded 480-bit words waiting for a 4-word block
+    std::array<uint8_t, kIdCycle> idSyms{};    // v3: the sweep variant of every period of the ID cycle (all 0 = plain up sweep)
     double outRate = 48000;
     bool resample = false;
     Resampler rs;
@@ -106,6 +119,7 @@ struct VoiceTx::Impl {
         pcmQ.clear();
         prev.assign(kChunk, 0);
         frames.clear();
+        words.clear();
         started = false;
         for (cf& h : hist) h = cf(0, 0);
         sampleIdx = 0;
@@ -124,11 +138,43 @@ struct VoiceTx::Impl {
         int16_t w[2 * kChunk];
         std::memcpy(w, prev.data(), kChunk * sizeof(int16_t));
         std::memcpy(w + kChunk, cur320, kChunk * sizeof(int16_t));
-        const std::vector<uint8_t> bits = codec.encode(w, 2 * kChunk);   // 3 frames; the middle one covers exactly [prev, cur320)
-        frames.emplace_back(bits.begin() + KaalCodec::kBits, bits.begin() + 2 * KaalCodec::kBits);
         std::memcpy(prev.data(), cur320, kChunk * sizeof(int16_t));
         started = true;
+        if (bitrate) {
+            const std::vector<uint8_t> bits = codec3.encode(w, 2 * kChunk);   // 3 frames; the middle one covers exactly [prev, cur320)
+            const size_t fb = codec3.frameBits();
+            const int k = (bitrate == 12 || bitrate == 24) ? 240 : 320;
+            for (size_t o = 0; o < fb; o += (size_t)k) {   // one 160-symbol frame per k information bits
+                std::vector<uint8_t> word(kRtCodedBits);
+                ldpcEncodeRm(&bits[fb + o], k, word.data());
+                words.push_back(std::move(word));
+            }
+            while (words.size() >= (size_t)kRtBlockFrames) encodeBlockRt();
+            return;
+        }
+        const std::vector<uint8_t> bits = codec.encode(w, 2 * kChunk);   // 3 frames; the middle one covers exactly [prev, cur320)
+        frames.emplace_back(bits.begin() + KaalCodec::kBits, bits.begin() + 2 * KaalCodec::kBits);
         if (frames.size() == (size_t)4) encodeBlock();
+    }
+
+    // v3: 4 coded words -> interleave over 1920 bits -> 4 frames of 160 symbols
+    void encodeBlockRt() {
+        std::vector<uint8_t> coded;
+        coded.reserve((size_t)kRtBlockFrames * kRtCodedBits);
+        for (int f = 0; f < kRtBlockFrames; f++) coded.insert(coded.end(), words[(size_t)f].begin(), words[(size_t)f].end());
+        words.erase(words.begin(), words.begin() + kRtBlockFrames);
+        const std::vector<uint8_t> il = interleave(coded);
+        const cf pil = pilotSymbol();
+        const std::vector<cf> pre = preamble();
+        for (int f = 0; f < kRtBlockFrames; f++) {
+            const std::vector<cf> data = qam16Map(&il[(size_t)f * kRtCodedBits], kRtCodedBits);
+            for (const cf& sy : pre) emitSymbol(sy);
+            for (size_t j = 0; j < data.size(); j += kPilotEvery - 1) {
+                const size_t m = std::min<size_t>(kPilotEvery - 1, data.size() - j);
+                for (size_t q = 0; q < m; q++) emitSymbol(data[j + q]);
+                if (m == (size_t)(kPilotEvery - 1)) emitSymbol(pil);
+            }
+        }
     }
 
     void encodeBlock() {
@@ -159,8 +205,9 @@ struct VoiceTx::Impl {
     void emitSymbol(const cf& s) {
         for (int m = kHistSyms - 1; m > 0; m--) hist[m] = hist[m - 1];
         hist[0] = s;
-        const float beaconAmp = (float)std::sqrt(kTxDataPower * std::pow(10.0, kTxBeaconDb / 10.0));
-        const float sweepAmp = (float)std::sqrt(kTxDataPower * std::pow(10.0, kSweepPowerDb / 10.0));
+        const float beaconAmp = (float)std::sqrt((bitrate ? kTxDataPowerRt : kTxDataPower) * std::pow(10.0, kTxBeaconDb / 10.0));
+        const double dp = bitrate ? kTxDataPowerRt : kTxDataPower;
+        const float sweepAmp = (float)std::sqrt(dp * std::pow(10.0, kSweepPowerDb / 10.0));
         cf blk[kSps];
         for (int q = 0; q < kSps; q++) {
             double ar = 0, ai = 0;
@@ -171,12 +218,21 @@ struct VoiceTx::Impl {
                 ai += hist[m].imag() * rrc[ti];
             }
             // sweep signature: phase-continuous chirp from the start of the stream, as kaal_phy.sweep_template
-            const double t = (double)sampleIdx / kFs;
-            const double ph = std::fmod(t, kSweepPeriodS);
-            sweepAcc += kSweepLowHz + (kSweepHighHz - kSweepLowHz) * (ph / kSweepPeriodS);
-            if (sweepAcc > 1e12) sweepAcc = std::fmod(sweepAcc, (double)kFs);
-            const double a = 2 * kPi * sweepAcc / kFs;
-            double sr = ar + sweepAmp * std::cos(a), si = ai + sweepAmp * std::sin(a);
+            double sr, si;
+            if (bitrate) {   // v3: one of four variants per period of 24240 samples, the phase restarts at every period
+                const uint64_t per = sampleIdx / (uint64_t)kSwL;
+                const std::complex<double> z = sweepSampleAt(idSyms[(size_t)(per % kIdCycle)], (int)(sampleIdx % (uint64_t)kSwL));
+                sr = ar + sweepAmp * z.real();
+                si = ai + sweepAmp * z.imag();
+            } else {
+                const double t = (double)sampleIdx / kFs;
+                const double ph = std::fmod(t, kSweepPeriodS);
+                sweepAcc += kSweepLowHz + (kSweepHighHz - kSweepLowHz) * (ph / kSweepPeriodS);
+                if (sweepAcc > 1e12) sweepAcc = std::fmod(sweepAcc, (double)kFs);
+                const double a = 2 * kPi * sweepAcc / kFs;
+                sr = ar + sweepAmp * std::cos(a);
+                si = ai + sweepAmp * std::sin(a);
+            }
             startBeaconIfDue();
             if (curPos < cur.size()) {
                 sr += beaconAmp * cur[curPos].real();
@@ -206,6 +262,10 @@ struct VoiceTx::Impl {
         if (started) {
             const std::vector<int16_t> z(kChunk, 0);
             encodeWindow(z.data());   // the last half-overlapped frame, as the whole-signal encoder adds
+            if (bitrate) {
+                for (int guard = 0; !words.empty() && guard < 8; guard++) encodeWindow(z.data());   // fill the block with silent frames
+                words.clear();
+            }
             while (!frames.empty()) {   // fill the 4-frame block with all-zero info frames
                 frames.emplace_back(KaalCodec::kBits, (uint8_t)0);
                 if (frames.size() == (size_t)4) encodeBlock();
@@ -238,6 +298,24 @@ size_t VoiceTx::popIq(std::complex<float>* out, size_t maxSamples) {
     if (p_->head == p_->out.size()) { p_->out.clear(); p_->head = 0; }
     else if (p_->head > 65536) { p_->out.erase(p_->out.begin(), p_->out.begin() + p_->head); p_->head = 0; }
     return n;
+}
+bool VoiceTx::setBitrate(int kbit) {
+    if (kbit != 0 && !KaalCodec3::validBitrate(kbit)) return false;
+    p_->bitrate = kbit;
+    if (kbit) p_->codec3 = KaalCodec3(kbit);
+    p_->reset();
+    p_->out.clear();
+    p_->head = 0;
+    return true;
+}
+int VoiceTx::bitrate() const { return p_->bitrate; }
+bool VoiceTx::setSweepCallsign(const std::string& callsign) {
+    std::string base;
+    int sfx = 0;
+    p_->idSyms.fill(0);
+    if (!splitCallsign(callsign, base, sfx)) return false;
+    p_->idSyms = sweepIdSymbols(base, sfx);
+    return true;
 }
 void VoiceTx::setBeaconMix(bool on) { p_->beaconOn = on; }
 void VoiceTx::setBeacon(const BeaconFields& f, const std::string& text) {

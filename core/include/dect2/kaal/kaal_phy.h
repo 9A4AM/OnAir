@@ -20,6 +20,13 @@ constexpr int kCodedBits = 640;
 constexpr int kQamSymbols = kCodedBits / 4;                  // 160
 constexpr int kNPilots = kQamSymbols / (kPilotEvery - 1);    // 10
 constexpr int kFrameSymbols = kPreambleLen + kQamSymbols + kNPilots;
+// v3 voice frames of 160 symbols = 20 ms at 8000 sym/s: 32 preamble + 120 data + 8 pilots, 480 coded bits per frame (see kaal_fec.h,
+// ldpcEncodeRm). The block interleaver spans 4 frames (1920 bits).
+constexpr int kRtCodedBits = 480;
+constexpr int kRtQamSymbols = kRtCodedBits / 4;                       // 120
+constexpr int kRtNPilots = kRtQamSymbols / (kPilotEvery - 1);         // 8
+constexpr int kRtFrameSymbols = kPreambleLen + kRtQamSymbols + kRtNPilots;   // 160
+constexpr int kRtBlockFrames = 4;
 constexpr double kSweepPeriodS = 0.5;
 constexpr double kSweepLowHz = -5000.0;
 constexpr double kSweepHighHz = 5000.0;

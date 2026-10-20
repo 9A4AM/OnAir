@@ -128,6 +128,27 @@ bool ldpcDecode(const float* llr, uint8_t* info, int maxIter, float alpha, int* 
     return ok;
 }
 
+void ldpcEncodeRm(const uint8_t* info, int k, uint8_t* out) {
+    uint8_t full[kLdpcK] = {}, cw[kLdpcN];
+    for (int j = 0; j < k; j++) full[j] = info[j] & 1;
+    ldpcEncode(full, cw);
+    for (int j = 0; j < k; j++) out[j] = cw[j];
+    for (int j = 0; j < kRmCoded - k; j++) out[k + j] = cw[kLdpcK + j];
+}
+
+bool ldpcDecodeRm(const float* llr, int k, uint8_t* info, int maxIter, float alpha) {
+    float full[kLdpcN];
+    for (int j = 0; j < kLdpcN; j++) full[j] = 0.f;
+    for (int j = 0; j < k; j++) full[j] = llr[j];
+    for (int j = k; j < kLdpcK; j++) full[j] = 60.f;   // known zeros
+    for (int j = 0; j < kRmCoded - k; j++) full[kLdpcK + j] = llr[k + j];
+    uint8_t all[kLdpcK];
+    bool ok = ldpcDecode(full, all, maxIter, alpha, nullptr);
+    for (int j = k; j < kLdpcK; j++) if (all[j]) ok = false;   // a shortened bit decoded as one: wrong hypothesis
+    for (int j = 0; j < k; j++) info[j] = all[j];
+    return ok;
+}
+
 float ldpcSyndromeScore(const float* llr) {
     const Code& c = code();
     int bad = 0;

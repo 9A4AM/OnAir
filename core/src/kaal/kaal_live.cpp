@@ -21,6 +21,9 @@ struct KaalLiveReceiver::Impl {
     std::mutex pubMu;                        // the published telemetry and the callbacks
     kaal::VoiceRx vrx;
     kaal::BeaconSliceRx brx;
+    kaal::SweepIdScanner scan;               // station ID from the sweep alone, while the voice receiver is not locked
+    kaal::SweepIdResult scanId;              // the last ID the scanner found (kept while the voice receiver has the signal)
+    bool scanWasFed = false;
     double rate = 0;
     // The input goes to 48 kHz here, then a coarse carrier search (the two radios' oscillators differ by up to several kHz at UHF, more than the
     // receiver's own capture range): the centre of the 8 kHz wide signal in the averaged spectrum is mixed to 0 Hz while the receiver is not locked
@@ -168,6 +171,18 @@ struct KaalLiveReceiver::Impl {
             }
         }
         brx.feed(mixed.data(), n);
+        {   // the sweep-only scanner reads the signals the voice receiver cannot lock to
+            const bool vlocked = vrx.stats().locked;
+            if (!vlocked) { scan.feed(mixed.data(), n); scanWasFed = true; }
+            else if (scanWasFed) { scan.reset(); scanWasFed = false; }
+            kaal::SweepIdResult ir;
+            while (scan.poll(ir)) {
+                scanId = ir;
+                std::function<void(const std::string&)> lg;
+                { std::lock_guard<std::mutex> pk(pubMu); lg = log; }
+                if (lg) lg("KAAL sweep ID " + ir.callsign);
+            }
+        }
         sinceDecision += n;
         if (!locked && sinceDecision >= 24000 && psdCount > 20) { sinceDecision = 0; coarseDecide(); }
     }
@@ -181,6 +196,9 @@ struct KaalLiveReceiver::Impl {
         seg.clear(); psd.assign(1024, 0.0); psdCount = 0; carrier = 0; fine = 0; finePhase = 0; decided = false; mixPhase = 0; dcm = cf32(0, 0); locked = false; sinceDecision = 0;
         vrx.configure(48000.0);
         brx.configure(48000.0);
+        scan.configure(48000.0);
+        scanId = kaal::SweepIdResult();
+        scanWasFed = false;
         samples = 0; nextReport = (uint64_t)(0.25 * rate); level = 0; lastSample = 0;
         beaconValid = false; beacons = 0; beaconAtSec = 0; btext.clear(); bf = kaal::BeaconFields();
         wasLocked = false;
@@ -197,6 +215,9 @@ struct KaalLiveReceiver::Impl {
         t.audioLevel = level;
         level *= 0.7f;
         t.blocksOk = st.framesGood; t.blocksBad = st.framesBad;
+        t.bitrateKbps = st.bitrateKbps;
+        if (st.idValid) { t.sweepIdValid = true; t.sweepId = st.idCall; t.sweepIdGateDb = st.idGateDb; }
+        else if (scanId.valid) { t.sweepIdValid = true; t.sweepId = scanId.callsign; t.sweepIdGateDb = scanId.gateDb; }
         t.dataValid = st.locked && st.framesGood > 0;
         t.inputRate = rate;
         t.timeSec = rate > 0 ? (double)samples / rate : 0;
