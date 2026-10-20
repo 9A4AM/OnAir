@@ -3,6 +3,10 @@
 // An empty callsign or grid is the demo identity ONAIR / AA00aa, like the other modes.
 // Station identity (the beacon slice): TxRequest::callsign, grid, lat, lon, text (100 characters at most), opt "kaal.powerDbm" (-40 .. 87.5) and
 // opt "kaal.beacon" (1 = send the beacon slice, 0 = voice only). Nothing about mode, frequency or power is limited here.
+// opt "kaal.bitrate": the voice codec bitrate 12, 16 (default), 24 or 32 kbit/s. 12 and 16 are exactly real time (one 160-symbol frame per 20 ms
+// of speech); 24 and 32 take twice the air time (kaalAirTimeRatio), so a live microphone would run dry: for files and recordings.
+// The callsign (up to 6 characters of " A-Z0-9-/." plus one of the suffix classes /P /M ..., see kaal_sweepid.h) is also carried in the sweep;
+// a longer callsign is only sent in the beacon.
 #pragma once
 #include "dect2/tx/tx.h"
 #include <memory>

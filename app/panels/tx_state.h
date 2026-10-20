@@ -97,6 +97,7 @@ struct TxUi {
     // KAAL: the identity beacon and the power written in it (callsign, grid, latitude and longitude, bio text are the shared fields above)
     bool kaalBeacon = true;
     double kaalPower = 10;
+    int kaalBitrate = 16;                    // voice codec 12 / 16 / 24 / 32 kbit/s
     bool kaalLoaded = false;
     std::string kaalSaved;
     // KAIT: the profile (0 balanced, 1 robust, 2 quality, 3 direct); the callsign and the picture file are the shared fields above

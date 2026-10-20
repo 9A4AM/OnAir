@@ -23,6 +23,11 @@ struct KaalTelemetry {
     std::string callsign, grid, text;
     double lat = 0, lon = 0, powerDbm = 0;
     int linkQuality = 0;
+    // the codec profile of the last decoded frame (12, 16, 24 or 32 kbit/s, read from the frame header) and the station ID carried in the sweep
+    int bitrateKbps = 0;
+    bool sweepIdValid = false;
+    std::string sweepId;           // callsign with suffix, e.g. LY2ABC/P
+    float sweepIdGateDb = 0;
 };
 
 inline std::string kaalSummary(const KaalTelemetry& t) {
@@ -30,6 +35,7 @@ inline std::string kaalSummary(const KaalTelemetry& t) {
     if (t.state == 0) return "KAAL: waiting for samples";
     if (t.state == 1) return "KAAL: searching";
     if (t.beaconValid) snprintf(b, sizeof b, "KAAL: locked, %s %s", t.callsign.c_str(), t.grid.c_str());
+    else if (t.sweepIdValid) snprintf(b, sizeof b, "KAAL: locked, %s (sweep ID)", t.sweepId.c_str());
     else snprintf(b, sizeof b, "KAAL: locked, SNR %.0f dB", (double)t.snrDb);
     return b;
 }
