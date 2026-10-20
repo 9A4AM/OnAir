@@ -100,6 +100,7 @@
 #include "dect2/kait/kait_tel.h"
 #include "dect2/kapp/kapp_tel.h"
 #include "dect2/kavb/kavb_tel.h"
+#include "dect2/kaws/kaws_tel.h"
 #include "dect2/kaft/kaft_tel.h"
 #include "dect2/cquam/cquam_tel.h"
 #include "dect2/modeac/modeac_tel.h"
@@ -212,6 +213,7 @@ struct RxTelemetry {
     KaalTelemetry kaal;       // valid when standard == 123 (KAAL, engine standard 124)
     KaitTelemetry kait;       // valid when standard == 132 (KAIT, engine standard 133)
     KavbTelemetry kavb;       // valid when standard == 124 (KAVB, engine standard 125)
+    KawsTelemetry kaws;       // valid when standard == 134 (KAWS, engine standard 135)
     KappTelemetry kapp;       // valid when standard == 125 (KAPP, engine standard 126)
     KaftTelemetry kaft;       // valid when standard == 126 (KAFT, engine standard 127)
     CquamTelemetry cquam;     // valid when standard == 108 (AM stereo, C-QUAM)

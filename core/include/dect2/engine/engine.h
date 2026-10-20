@@ -104,6 +104,7 @@
 #include "dect2/kait/kait_live.h"
 #include "dect2/kapp/kapp_live.h"
 #include "dect2/kavb/kavb_live.h"
+#include "dect2/kaws/kaws_live.h"
 #include "dect2/kaft/kaft_live.h"
 #include "dect2/cquam/cquam_rx.h"
 #include "dect2/modeac/modeac_live.h"
@@ -410,6 +411,7 @@ public:
     KaalLiveReceiver& kaal() { return rxKaal_; }   // KAAL: volume, mute (telemetry through latestRx)
     KaitLiveReceiver& kait() { return rxKait_; }   // KAIT: picture bursts (telemetry through latestRx)
     KavbLiveReceiver& kavb() { return rxKavb_; }   // KAVB: the symbol rate (profile) to listen to, the output file, clear the counts (telemetry through latestRx)
+    KawsLiveReceiver& kaws() { return rxKaws_; }   // KAWS: clear the lists, the clock, listen only (telemetry through latestRx)
     KappLiveReceiver& kapp() { return rxKapp_; }   // KAPP: clear the packet list (telemetry through latestRx)
     KaftLiveReceiver& kaft() { return rxKaft_; }   // KAFT: the folder received files are saved to, clear the list (telemetry through latestRx)
     IfkpReceiver& ifkp() { return rxIfkp_; }   // IFKP: speed, clear the text (telemetry through latestRx)
@@ -701,6 +703,7 @@ private:
     KaitLiveReceiver rxKait_;
     KappLiveReceiver rxKapp_;
     KavbLiveReceiver rxKavb_;
+    KawsLiveReceiver rxKaws_;
     KaftLiveReceiver rxKaft_;
     CquamReceiver rxCq_;
     ArdopReceiver rxArd_;

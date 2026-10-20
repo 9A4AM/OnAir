@@ -231,6 +231,7 @@ void Engine::placeNarrowReceivers(const DeviceInfo& dev, const TuneSettings& tun
         rxTones_.setSignalOffset(o);
         rxSar_.setSignalOffset(o);
         rxMt63_.setSignalOffset(o);
+        rxKaws_.setSignalOffset(o);
         rxFsq_.setSignalOffset(o);
         rxIfkp_.setSignalOffset(o);
         rxCq_.setSignalOffset(o);
@@ -489,6 +490,8 @@ void Engine::configureDataReceivers(const DeviceInfo& dev, const TuneSettings& t
     rxKait_.setLogCallback([this](const std::string& s) { log(s); });
     rxKavb_.configure(rate_);
     rxKavb_.setLogCallback([this](const std::string& s) { log(s); });
+    rxKaws_.configure(rate_);
+    rxKaws_.setLogCallback([this](const std::string& s) { log(s); });
     rxKapp_.configure(rate_);
     rxKapp_.setLogCallback([this](const std::string& s) { log(s); });
     rxKaft_.configure(rate_);

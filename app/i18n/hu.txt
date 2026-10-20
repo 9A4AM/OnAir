@@ -3373,6 +3373,7 @@ no stations yet	még nincs állomás
 other modulations	egyéb modulációk
 quality %d/100	minőség %d/100
 tone offset	hangeltérés
+unreadable	olvashatatlan
 # GOES DCS
 Copies the reports as CSV: id, time, platform address, channel, frequency, bit rate, coding, level, data format, parity errors, data.	A jelentéseket CSV-ként másolja: azonosító, idő, platformcím, csatorna, frekvencia, bitsebesség, kódolás, szint, adatformátum, paritáshibák, adatok.
 Appends every report to goes_dcs.csv in the data folder, also when nobody watches the screen.	Minden jelentést hozzáfűz az adatmappa goes_dcs.csv fájljához, akkor is, ha senki sem nézi a képernyőt.

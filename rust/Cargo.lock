@@ -19,6 +19,7 @@ dependencies = [
  "onair_fec",
  "onair_files",
  "onair_hfdl",
+ "onair_kaws",
  "onair_kris",
  "onair_mesh",
  "onair_net",
@@ -125,6 +126,10 @@ version = "0.1.0"
 dependencies = [
  "onair_common",
 ]
+
+[[package]]
+name = "onair_kaws"
+version = "0.1.0"
 
 [[package]]
 name = "onair_kris"

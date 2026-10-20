@@ -299,6 +299,7 @@ int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
     case 123: return pollStd(rxKaal_, 123, t, seqs[116], &RxTelemetry::kaal);
     case 132: return pollStd(rxKait_, 132, t, seqs[132], &RxTelemetry::kait);   // KAIT picture bursts (slot 132)
     case 124: return pollStd(rxKavb_, 124, t, seqs[133], &RxTelemetry::kavb);   // KAVB (slot 133)
+    case 134: return pollStd(rxKaws_, 134, t, seqs[136], &RxTelemetry::kaws);   // KAWS HF weak-signal chat and beacons (slot 136)
     case 125: return pollStd(rxKapp_, 125, t, seqs[130], &RxTelemetry::kapp);   // KAPP (slot 130)
     case 126: return pollStd(rxKaft_, 126, t, seqs[131], &RxTelemetry::kaft);   // KAFT (slot 131)
     case 108: return pollStd(rxCq_, 108, t, seqs[104], &RxTelemetry::cquam);
