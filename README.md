@@ -2,7 +2,7 @@
 
 <h1 align="center">OnAir</h1>
 
-<p align="center"><b>Receive TV, radio, aircraft, ships, satellites, two-way radio, pagers, time signals and more: 120 modes with one software-defined radio.</b><br>
+<p align="center"><b>Receive TV, radio, aircraft, ships, satellites, two-way radio, pagers, time signals and more: 142 modes with one software-defined radio.</b><br>
 Free and open source, for macOS, Windows, Linux and Android.</p>
 
 <p align="center">
@@ -63,7 +63,7 @@ OnAir is a receiver first. It can also send test signals through a transmit-capa
 ## Contents
 
 - [What it does](#what-it-does)
-- [What is new in 0.2.7](#what-is-new-in-027) · [0.2.6](#what-is-new-in-026)
+- [What is new in 0.2.8](#what-is-new-in-028) · [0.2.7](#what-is-new-in-027) · [0.2.6](#what-is-new-in-026)
 - [Install](#install) · [Android app](#android-app) · [Development version](#development-version-nightly)
 - [Quick start](#quick-start)
 - [Modes](#modes) · [Tools and notes](#tools-and-notes)
@@ -96,9 +96,41 @@ OnAir is a receiver first. It can also send test signals through a transmit-capa
 
 **Many radios:** HackRF, RTL-SDR, Airspy, SDRplay, BladeRF, LimeSDR, USRP, Pluto, Fobos, RX888, RFNM, network radios, sound cards and Hamlib rigs. The mode counts are the rows of the mode list in the app. Details per mode are under [Modes](#modes).
 
-## What is new in 0.2.7
+## What is new in 0.2.8
 
 <details open>
+<summary><b>Show the 0.2.8 changes</b></summary>
+
+- **22 new modes** (142 in all): the **KA family** (KAAL, KAPP, KAFT, KAVB, KAIT, KAWS, see below), eLoran / Loran-C, MPT1327, LTR and EDACS trunking control channels, Yaesu Fusion, a military HF waveform identifier (identify only), ARDOP, GOES DCS, Mode A/C, a BLE tracker detector, AM stereo (C-QUAM), DGPS beacons, SITOR, DME, FSQ and IFKP. Several are marked *in development* in the app and here: they have only been tested on generated signals.
+- **Voice you install yourself:** TETRA voice (unencrypted calls only) and Yaesu Fusion voice through a user-installed codec plug-in, for example one built from [mbelib-neo](https://github.com/arancormonk/mbelib-neo). Nothing patented is bundled; see [docs/CODECS.md](docs/CODECS.md).
+- **Easier to use:** a command palette (Ctrl+K), a get-me-listening wizard, four guided tours, workspaces with crash restore, a recording library with re-analyse, a Report a problem dialog with a local diagnostics bundle, a typography choice (Current, Clean, Compact) and a larger-touch-targets option.
+- **Receiver and display:** the demod mode shown and settable in the FFT panel, with a name search in the mode list (#212); waterfall export as PNG frames and a timelapse; a Solar and Jupiter burst monitor; FM tone control and a warm preset; C-QUAM stereo; VHF DSC channel 70; a toolbar button that says Memory; contact lines between stations on the FT8 and JS8 maps.
+- **Satellite dishes:** a dish alignment assistant (beacon level meter and look angles), LNB calibration from a beacon, a rotator north-offset calibration, a LEO Doppler monitor (detect only) and a SatNOGS transmitter browser (in development).
+- **Radios:** DXpatrol SDR (RTL2832U based, HF direct sampling, #220); PlutoSDR no longer contacts network Plutos you did not add (#215); the Linux RX888 start and a failed LimeSDR probe now name the device (see the release notes).
+- **Fixes:** GOES-19 HRIT differentially coded (NRZ-M) frames decode, HD Radio long station names and per-service logos, HaLow 2 MHz sub-channel scan and vendor elements (#192, #167), LTE / NR scan filters (#164), ADS-B altitude colours and display options, spectrum analyser resolution, DVB-T2 HEVC software fallback (#203), Android USB (#201), Meteor-M Doppler retune (#199), a DAB crash (#210), CDR audio recovery (#138, #121), a mesh clock that keeps running through a receiver reset (PR #217, thanks @ffishman).
+- **DVB-S / S2:** carrier survey, symbol dump and DVB-RCS / DVB-CID work from the DecSAT code by Arclamp (GPL-3.0-or-later), in development.
+- The full list, with issue numbers and known limits, is in the release notes.
+
+### The KA family (own modes, in development)
+
+KAAL, KAPP, KAFT, KAVB, KAIT and KAWS are digital modes designed from scratch by Kristijonas Adomaitis for amateur radio and built into OnAir. Every transmission carries the sender's callsign, nothing is encrypted, and they use their own unpatented codecs. **All figures below were measured in simulation (generated signals with simulated noise); no KA mode has been on the air yet.**
+
+| Mode | Job | Width | Notes |
+|---|---|---|---|
+| KAAL | voice, beacon, station ID | about 10 kHz (8 ksym/s, 16-QAM) | own 12 / 16 kbit/s voice codec live; 24 / 32 kbit/s live at 16 ksym/s; the callsign is also hidden in a sweep signature |
+| KAPP | short messages and small data | 100 kHz | nine profiles, BPSK to 1024-QAM, selective-repeat bursts |
+| KAFT | file transfer | 200 / 500 / 1000 kHz | ten profiles, hash-checked files |
+| KAVB | video | 1 to 2 MHz | physical layer and container only; no video codec yet (in development) |
+| KAIT | still pictures | under 200 kHz | a picture in a 10 s burst, sent in layers |
+| KAWS | HF weak-signal chat and beacons | 2.4 kHz | chirp and OFDM profiles in UTC slots |
+
+KAAL, KAPP and KAFT can write an IQ file you can open in SDR++ or OnAir without a radio. KAPP and KAFT only listen: they send no acknowledgement.
+
+</details>
+
+## What is new in 0.2.7
+
+<details>
 <summary><b>Show the 0.2.7 changes</b></summary>
 
 - **About twenty new modes** (120 in all): Wireless M-Bus, tone decoders, COSPAS-SARSAT 406 MHz, MT63, Z-Wave, meteor scatter, analog FPV video, Wi-Fi HaLow, a P25 trunking follower, e-Czas, a working LBJ decoder, and KiwiSDR as a network radio.
@@ -191,10 +223,10 @@ No radio? Open an IQ recording through the *IQ recording file* source (cs8, cu8,
 
 ## Modes
 
-120 modes, grouped as in the app (the list in the app also has a Plugins entry for managing add-ons). Every receiver is built from the published specifications and tested on generated signals (carrier offsets, noise, echoes, clock errors) and, where recordings exist, on real captures. Reports and recordings from your own antenna help most: send them on [Discord](https://discord.gg/Kky9c6atm) or upload them to the [signal sample library](https://files.on-air.dev). Where a mode has a specific caveat it is said below. **Receive only** means nothing is transmitted, decrypted or joined.
+142 modes, grouped as in the app (the list in the app also has a Plugins entry for managing add-ons). Every receiver is built from the published specifications and tested on generated signals (carrier offsets, noise, echoes, clock errors) and, where recordings exist, on real captures. Reports and recordings from your own antenna help most: send them on [Discord](https://discord.gg/Kky9c6atm) or upload them to the [signal sample library](https://files.on-air.dev). Where a mode has a specific caveat it is said below. **Receive only** means nothing is transmitted, decrypted or joined.
 
 <details>
-<summary><b>All 120 modes, by family</b></summary>
+<summary><b>All 142 modes, by family</b></summary>
 
 ### TV
 
@@ -267,17 +299,30 @@ No radio? Open an IQ recording through the *IQ recording file* source (cs8, cu8,
 
 ### Amateur: digital
 
+- **FSQ** and **IFKP** keyboard chat (33 tones).
+- **ARDOP** and **SITOR** are listed under HF utility.
 - **WSJT family:** FT8, FT4, FT2, WSPR (with an optional spot upload to wsprnet.org), JT65, JT9, Q65, FST4 / FST4W, MSK144, and **JS8Call**.
 - **MT63** (500 / 1000 / 2000 Hz, short and long interleave found automatically, 64 carriers with Walsh-Hadamard coded characters; [details](docs/mt63.md)).
 - **Keyboard modes:** PSK31 / 63, RTTY, CW (every signal in a 14 kHz window), Olivia, Contestia, MFSK, THOR, DominoEX, Hellschreiber. Picture modes: **SSTV** and **HamDRM** (EasyPal).
 
 ### Amateur: voice and packet
 
+- **Yaesu Fusion** (C4FM, in development): callsigns, call mode and slow data; voice only through a codec plug-in you install.
 - **FreeDV** (codec2 included), **M17**, **D-STAR**, **APRS (AFSK)** / AX.25 packet (whole span at once), **LoRa APRS** and **MeshCom**.
 
 ### HF utility
 
+- **HF waveform ID** (identify only): estimates the baud rate, tone spacing and repetition of a military or government HF signal and ranks candidate waveforms; nothing is decoded.
+- **SITOR** (FEC-A and FEC-B, in development) and **ARDOP** (Winlink HF frames, monitor only).
 - **HF ALE** (2G calls, soundings, LQA), **HF beacons** (NCDXF / IARU propagation monitor), **Datawell Buoy HF Link** (wave-buoy telemetry, HXV format decoded; the 4FSK HVA format is not public) and **CODAR / HF ocean radar** (sweeps measured; propagation only, no positions).
+
+### Kris custom modes (KA family, in development)
+
+- **KAAL** voice and beacon (10 kHz, receive and transmit), **KAPP** packets (100 kHz), **KAFT** file transfer (200 kHz to 1 MHz), **KAVB** video (1 to 2 MHz, spec and physical layer only), **KAIT** pictures in 10 s bursts and **KAWS** HF weak-signal chat. Measured in simulation only, never on the air.
+
+### More 0.2.8 modes
+
+- **eLoran / Loran-C** (100 kHz, in development), **MPT1327**, **LTR** and **EDACS** trunking control channels (in development; control data only, no voice), **GOES DCS** (data collection platforms, 401.7 - 402.1 MHz), **Mode A/C** (squawk and altitude), **BLE tracker detector** (AirTag, Tile and others; warns about one that follows you), **AM stereo (C-QUAM)**, **DGPS beacon** and **DME** (in development).
 
 ### General and tools
 
@@ -613,6 +658,8 @@ OnAir stands on the work of many people. Full list with authors, licences and wh
 - **Decoders written from or ported from open-source receivers:** [nrsc5](https://github.com/theori-io/nrsc5) (HD Radio), [etisnoop](https://github.com/Opendigitalradio/etisnoop) (DAB), [WSJT-X](https://sourceforge.net/projects/wsjt/), JS8Call and fldigi (HF digital modes), [rtl_433](https://github.com/merbanan/rtl_433), [gr-dvbt2](https://github.com/drmpeg/gr-dvbt2), [gr-lora_sdr](https://github.com/tapparelj/gr-lora_sdr), [e-Czas](https://github.com/sp5wwp/e-Czas), [JAERO](https://github.com/jontio/JAERO), acarsdec, libacars, dumphfdl, dumpvdl2, iridium-toolkit, multimon-ng, Meshtastic, MeshCore, MeshCom.
 - **Libraries it uses:** [FFmpeg](https://ffmpeg.org), [GLFW](https://www.glfw.org), [libusb](https://libusb.info), [libhackrf](https://github.com/greatscottgadgets/hackrf), [Hamlib](https://hamlib.github.io), SoapySDR.
 - **Data:** map tiles and data (c) [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, aircraft data from adsbdb, aircraft photos from Planespotters.net with credit, satellite elements from CelesTrak.
+
+- **0.2.8 additions:** the DVB-S / DecSAT work uses code by **Arclamp** (GPL-3.0-or-later); the mesh clock fix is PR #217 by [@ffishman](https://github.com/ffishman); the recommended source for the TETRA and Yaesu Fusion voice plug-ins is [mbelib-neo](https://github.com/arancormonk/mbelib-neo) by arancormonk (GPL-2.0-or-later, not bundled); the NRSC-5 patch for HD Radio sound is from nrsc5 with [FAAD2](https://github.com/knik0/faad2). The KA modes are Kristijonas Adomaitis's own designs.
 
 If your work is used and not credited correctly, please open an issue.
 

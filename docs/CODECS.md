@@ -23,7 +23,9 @@ looks for, the exact folders it searches, an **Open codecs folder** button (it m
 | CDR (China Digital Radio) | DRA+ (patent and licence status not verified) | the **DRA+ add-on** (`libonair_dra`) that you build yourself (see [DRA+ (CDR sound)](#dra-cdr-sound)); sound is silent until you do |
 | FreeDV 700D / 700E / 1600, M17 | codec2 (open, LGPL) | **codec2**: comes with OnAir (the library `libcodec2` next to the program) |
 | FreeDV RADE | RADE neural modem (open, BSD) | **librade** (not codec2): optional; without it the RADE slot stays dark |
-| TETRA | its own speech codec | nothing from you: it is not mbelib and not codec2 |
+| TETRA voice (unencrypted calls only) | TETRA ACELP | a **speech codec plug-in** `onair-codec-tetra` that you build yourself, for example around **mbelib-neo** (see [Speech codec plug-ins](#speech-codec-plug-ins-voice-modes)); the cell, network and call information work without it |
+| Yaesu System Fusion (C4FM) voice | AMBE+2 (patented) | a **speech codec plug-in** with the codec id **`ysf`** (`onair-codec-ysf`) that you build yourself; callsigns, call mode and slow data work without it |
+| KA modes (KAAL, KAPP, KAFT, KAVB, KAIT, KAWS) | their own codecs (unpatented, written for OnAir) | nothing: nothing to install |
 | DAB, DRM, TV, FM | MP2, AAC, H.264 ... | nothing (FFmpeg is inside OnAir) |
 | ATSC 3.0 (US, South Korea) | Dolby AC-4 (patented) | optional **libavcodec + libavutil from an FFmpeg with an AC-4 decoder** (see below); without it the AC-4 sound is left out, picture and AAC / AC-3 sound still play |
 
@@ -130,7 +132,7 @@ as with mbelib. Listening to radio services is regulated in many countries as we
 
 The open-source **nrsc5** project (<https://github.com/theori-io/nrsc5>) decodes HDC with FAAD2 plus a patch of its own
 (`support/faad2-hdc-support.patch`). If you build that patched FAAD2 as a shared library, OnAir loads it and plays the program you select on
-the right (HD1, HD2, HD3 ...), with the volume and mute of the program. Steps (about five minutes):
+the right (HD1, HD2, HD3 ...), with the volume and mute of the program. Steps (about five minutes; use FAAD2 **2.11.2**, newer versions break the patch):
 
 The patch matches FAAD2 **2.11.2**; with a newer FAAD2 some hunks fail and the build stops with `call to undeclared function 'IS_HDC'` (issue #222). The `--branch 2.11.2` in the steps below keeps it working.
 
@@ -323,7 +325,7 @@ OnAir ships no AC-4 code, no FFmpeg patch and downloads nothing; the build scrip
 
 ## Speech codec plug-ins (voice modes)
 
-A voice mode that needs a speech codec OnAir does not ship (TETRA voice, later Iridium voice) loads it from your user folder, never from
+A voice mode that needs a speech codec OnAir does not ship (TETRA voice with the id `tetra`, Yaesu Fusion voice with the id `ysf`, later Iridium voice) loads it from your user folder, never from
 the program: `onair-codec-<id>.dylib` / `.so` / `.dll` in the codecs folder under the app data folder (macOS
 `~/Library/Application Support/OnAir/codecs/`, Linux `~/.local/share/onair/codecs/`, Windows `%LOCALAPPDATA%\OnAir\codecs\`). Without it the
 mode says "Codec not installed" and links here. The first time, OnAir shows a legal notice: you are responsible for following the laws
@@ -333,6 +335,12 @@ after you accept it once. The plug-in's C interface is in `core/include/dect2/co
 TETRA voice: OnAir removes the radio channel coding (ETSI EN 300 395-2 clause 5.5) and gives the plug-in one speech frame per call of `onair_speech_decode`: 137 bytes, one bit per byte (0 or 1), byte i is speech frame bit B(i+1) of table 4 of that standard (the output order of the source encoder). Two frames per burst, 30 ms each, in order. Frames whose CRC fails are dropped, not passed on. Encrypted calls, and calls whose set-up OnAir did not hear saying "clear", are never decoded and never reach the plug-in.
 
 Recommended source for a TETRA plug-in: mbelib-neo (https://github.com/arancormonk/mbelib-neo), GPL-2.0-or-later. It has a TETRA full-rate speech decoder (`mbe_tetraDecodeFrame`) that takes the same 137 bytes, one bit per byte, B(1)..B(137), so a small wrapper exporting the four `onair_speech_*` functions is enough. Its authors have not cleared the patent status of the TETRA codec, so check that you may use it where you live. You build it yourself; OnAir does not include it.
+
+Yaesu Fusion voice (id `ysf`): OnAir decodes the C4FM frames, removes the channel coding and gives the plug-in the AMBE+2 voice bits of each frame through the same four `onair_speech_*` functions. The decoder behind it is yours to supply, for example from mbelib-neo (it handles IMBE, AMBE and AMBE+2). The same rules apply: you build it, OnAir does not include it, and a legal notice is shown once. Without the plug-in the mode shows the callsigns and data and says "Codec not installed".
+
+## Nothing patented is bundled
+
+OnAir never includes, downloads or links a patented codec. That covers mbelib / mbelib-neo (IMBE, AMBE, AMBE+2 and the TETRA codec), the HD Radio HDC decoder (the patched FAAD2), DRA+, the AC-4 decoder and the Iridium and Inmarsat voice codecs: you build or install them yourself, they load from your user codecs folder, and the voice stays silent until you do. The **KA modes** (KAAL, KAPP, KAFT, KAVB, KAIT and KAWS) use their own codecs, written for OnAir and not covered by third-party patents as far as is known (KAAL voice uses its own MDCT codec, KAIT its own wavelet picture codec), so they need nothing from you. KAVB has no video or audio codec yet.
 
 ## Legal note
 
