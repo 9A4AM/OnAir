@@ -22,6 +22,30 @@ int main() {
         else CHECK(!m.kilometerValid && m.testFrame == (mileage == 9999888 || mileage == 8888888), "sentinel mileage");
     }
     CHECK(parseFrame(k, m) && m.actionCode == 0x92 && m.pressureKpa == 486 && m.tailId == "123456" && m.locomotive == "HXD3C-0375", "KLW fields");
+    struct Command { uint8_t code; const char* label; bool pressure; };
+    const Command commands[] = {
+        {0x24, "Vent", false}, {0x25, "Vent response", false},
+        {0x91, "Pressure query", true}, {0x92, "Pressure response", true},
+        {0x83, "Disconnect", false}, {0x84, "Disconnect response", false},
+        {0xB5, "Connect", false}, {0xB6, "Connect response", false},
+        {0x30, "Tail pressure alarm", true}, {0x31, "Pressure alarm response", true},
+        {0xB0, "Tail low battery alarm", false}, {0xB1, "Low battery response", false},
+        {0x5B, "Tail connection request", false},
+        {0x93, "Automatic pressure query", true}, {0x94, "Automatic pressure response", true},
+        {0xA1, "Clock calibration", false}, {0xA2, "Clock calibration response", false},
+        {0xA3, "Pressure calibration", true}, {0xA4, "Pressure calibration response", true},
+    };
+    for (const auto& command : commands) {
+        // Exercise the wire layouts through the public CRC-checked parser,
+        // including pressure-bearing versus unrelated numeric parameters.
+        for (const auto& payload : {std::vector<uint8_t>{0x12,0x34,0xAB,command.code,0x04,0x86},
+                std::vector<uint8_t>{0x23,0x90,0x03,0x75,0xAB,command.code,0x12,0x34,0x56,0x04,0x86},
+                std::vector<uint8_t>{0x12,0x34,0xAB,command.code,0x04,0x86,0x12,0x23,0x90,0x34,0x56,0,1,2,3}}) {
+            CHECK(parseFrame(frame(payload), m) && m.actionCode == command.code && m.action == command.label && m.commandReserved == 0xAB && m.parameter == "0486" && m.pressureKpa == (command.pressure ? 486 : -1), "KLW command 0x%02X length %zu", command.code, payload.size());
+        }
+    }
+    CHECK(parseFrame(frame({0x12,0x34,0,0x7E,0x04,0x86}), m) && m.action == "Unknown 0x7e" && m.parameter == "0486" && m.pressureKpa == -1, "unknown command is preserved without inventing pressure");
+    CHECK(parseFrame(frame({0x12,0x34,0,0x92,0,0}), m) && m.pressureKpa == 0, "zero pressure is a valid value");
     CHECK(parseFrame(frame({0x12,0x34,0,0x24,0xFF,0xA5}), m) && m.actionCode == 0x24 && m.locomotive == "1234" && m.parameter.empty(), "six-byte variant");
     CHECK(parseFrame(frame({0x12,0x34,0,0x92,0x05,0x00,0x12,0x23,0x90,0x34,0x56,0,1,2,3}), m) && m.tailId == "123456" && m.locomotive == "HXD3C-1234" && m.pressureKpa == 500 && m.extra == "00010203", "15-byte variant");
     CHECK(parseFrame(frame({0x23,0x90,0x03,0x75,0,0xA1,0x12,0x34,0x56,0xFF,0xFF,0x26,0x10,0x20,0x12,0x34,0x56}), m) && m.clockSync == "2026-10-20T12:34:56", "clock variant");

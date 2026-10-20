@@ -536,8 +536,8 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 81: return makeTetrapolSynth(cfg, sampleRate);
     case 82: return makeElektroSynth(cfg, sampleRate);
     case 83: return makeLbjSynth(cfg, sampleRate);
-    case 148: return makeRailwaySynth(cfg, sampleRate, railway::Protocol::Klw);
-    case 149: return makeRailwaySynth(cfg, sampleRate, railway::Protocol::Tdcs);
+    case railway::kKlwStandard: return makeRailwaySynth(cfg, sampleRate, railway::Protocol::Klw);
+    case railway::kTdcsStandard: return makeRailwaySynth(cfg, sampleRate, railway::Protocol::Tdcs);
     case 85: return makeUatSynth(cfg, sampleRate);
     case 77: return makeMultitoneSynth(cfg, sampleRate);
     case 73: return makeLoraRawSynth(cfg, sampleRate);
@@ -646,8 +646,8 @@ std::string modeSummary(const RxTelemetry& t) {
     case 80: return tetrapolSummary(t.tetrapol);
     case 81: return elektroSummary(t.elektro);
     case 82: return lbjSummary(t.lbj);
-    case 147: return railwaySummary(t.klw, "KLW");
-    case 148: return railwaySummary(t.tdcs, "TDCS");
+    case railway::kKlwActiveStandard: return railwaySummary(t.klw, "KLW");
+    case railway::kTdcsActiveStandard: return railwaySummary(t.tdcs, "TDCS");
     case 121: return dgpsSummary(t.dgps);
     case 127: return elLoranSummary(t.eloran);
     case 128: return mpt1327Summary(t.mpt1327);

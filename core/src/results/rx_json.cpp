@@ -87,10 +87,10 @@ std::string rxTelemetryJson(const RxTelemetry& rx, const QualityReport* q) {
         }
         d.raw("messages", rows + ']'); break;
     }
-    case 147:
-    case 148: {
-        const auto& t = rx.standard == 147 ? rx.klw : rx.tdcs;
-        d.str("mode", rx.standard == 147 ? "KLW" : "TDCS");
+    case railway::kKlwActiveStandard:
+    case railway::kTdcsActiveStandard: {
+        const auto& t = rx.standard == railway::kKlwActiveStandard ? rx.klw : rx.tdcs;
+        d.str("mode", rx.standard == railway::kKlwActiveStandard ? "KLW" : "TDCS");
         std::string rows = "[";
         for (const auto& m : t.messages) {
             J row;

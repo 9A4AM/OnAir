@@ -16,7 +16,7 @@ namespace {
 bool digits(const std::string& s) {
     return !s.empty() && std::all_of(s.begin(), s.end(), [](char c) { return c >= '0' && c <= '9'; });
 }
-std::string trim(std::string s) {
+std::string trim(const std::string& s) {
     const auto a = s.find_first_not_of(' '), b = s.find_last_not_of(' ');
     return a == std::string::npos ? "" : s.substr(a, b - a + 1);
 }

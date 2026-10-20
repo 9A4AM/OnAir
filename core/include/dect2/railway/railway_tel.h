@@ -1,5 +1,6 @@
 #pragma once
 #include "railway_proto.h"
+#include "railway_modes.h"
 #include <vector>
 namespace dect2 {
 struct RailwayTelemetry {

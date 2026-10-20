@@ -16,6 +16,14 @@ Frequencies are defaults and remain editable in OnAir. The KLW default is the
 passenger end-of-train channel used by the source project, not a claim that all
 KLW equipment uses that channel. These modes register no transmit capability.
 
+These are different numbering domains: `ModeTuning::stdMode` and
+`Engine::setStandard` use the engine standard; `feedReceiver`, `pollMode`,
+`RxTelemetry::standard` and result slots use `activeStdFor(engineStandard)`
+(engine standard minus one). UI families use engine standard minus two.
+`railway_modes.h` names these IDs consistently; changing KLW tuning to 147 or
+TDCS tuning to 148 would select the wrong engine standard. During mode switches,
+the panel waits for a snapshot belonging to its selected family.
+
 ## LBJ fields and association
 
 RIC 1234000 carries the numeric train number, speed in km/h, and mileage in
@@ -118,6 +126,17 @@ ctest --test-dir build --output-on-failure -R '^(lbj|railway)_'
 * `railway_proto`: CRC check vector, KLW payload variants, clock validation,
   TDCS mileage sentinels, mutations, both polarities, BCH errors, noise,
   recovery after a failed CRC and rejection of raw byte shortcuts.
+  All 19 KLW commands are checked in the 6/11/15-byte layouts, including exact
+  labels, reserved bytes, numeric parameters and pressure presence / absence.
+* `railway_modes`: checks the tuning numbers with the engine's actual
+  `activeStdFor` conversion and rejects stale snapshots from another UI mode.
+* `railway_telemetry`: parses the production JSON output for LBJ / KLW / TDCS,
+  checking mode isolation, fields, missing values, zero pressure, UTF-8 and
+  JSON escaping, time-only messages and empty histories.
+* `railway_engine`: links full `dect2core` and tests registry lookup, idle mode
+  switches and telemetry publication, independent Clear operations and disk
+  save/load through the registered LBJ / KLW / TDCS result slots. It needs the
+  full application dependency build; no radio or window is started.
 * `railway_rx`: audio in single-sample and larger callbacks, DC offset,
   polarity, real repeats, +/-0.3% symbol-clock drift; FM IQ at 240 and 960 kS/s,
   15 / 25 dB SNR, carrier offsets through +/-8 kHz, results persistence and
@@ -129,6 +148,12 @@ dependency build and cross-platform CI have not been run locally. No physical
 radio was used for this port. Source-project reception was previously checked
 against supplied KLW and DMIS WAVs; those recordings are not redistributed and
 are not a substitute for on-air testing of the C++ receiver.
+
+The PR review follow-up also passed the standalone `railway_modes` and
+`railway_telemetry` programs, bringing the local total to eight programs. The
+new full-core `railway_engine` integration test was compile-checked for Windows
+and Linux, but has not been executed locally because the full dependency build
+is unavailable. It is registered by the same normal CMake test glob.
 
 ## Provenance
 

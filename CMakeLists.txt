@@ -176,7 +176,7 @@ target_sources(dect2core PRIVATE core/src/net/remote_api.cpp core/src/results/rx
 target_sources(dect2core PRIVATE core/src/packs/packs.cpp)   # offline data packs: catalog, download with resume, checksums, disk guard, delete
 # TLS for the remote-control API (headless server): OpenSSL, off by default so the packages need no extra library (docs/headless-server.md)
 option(DECT2_WITH_TLS "Serve the remote-control API over HTTPS / wss (links OpenSSL)" OFF)
-target_sources(dect2core PRIVATE core/src/net/tls_conn.cpp)
+target_sources(dect2core PRIVATE core/src/net/tls_conn.cpp core/src/net/remote_json.cpp)
 if(DECT2_WITH_TLS)
   find_package(OpenSSL REQUIRED)
   target_compile_definitions(dect2core PRIVATE DECT2_TLS)

@@ -2,11 +2,11 @@
 #include "dect2/railway/railway_rx.h"
 #include <algorithm>
 namespace {
-bool tdcs(const App& a) { return a.rx.standard == 148; }
+bool tdcs(const App& a) { return a.family == dect2::railway::kTdcsFamily; }
 const dect2::RailwayTelemetry& telemetry(const App& a) { return tdcs(a) ? a.rx.tdcs : a.rx.klw; }
-bool live(const App& a) { return a.rx.standard == 147 || a.rx.standard == 148; }
+bool live(const App& a) { return dect2::railway::matchesMode(a.family, a.rx.standard); }
 void tab(App& a) {
-    const bool dispatch = a.family == 147;
+    const bool dispatch = tdcs(a);
     if (ImGui::SmallButton(tr("Clear"))) (dispatch ? a.engine.tdcs() : a.engine.klw()).clearMessages();
     ImGui::SameLine(); ImGui::TextDisabled("1200 bit/s FFSK, BCH(26,16), CRC-16");
     if (!live(a)) { ImGui::TextDisabled("%s", tr("Start the receiver to listen")); return; }
@@ -47,7 +47,7 @@ void tab(App& a) {
     ImGui::TextWrapped("%s", raw.c_str());
 }
 void summary(const App& a, std::string& l1, std::string& l2) {
-    l1 = a.family == 147 ? "TDCS" : "KLW"; if (live(a)) l2 = dect2::railwaySummary(telemetry(a), l1.c_str());
+    l1 = tdcs(a) ? "TDCS" : "KLW"; if (live(a)) l2 = dect2::railwaySummary(telemetry(a), l1.c_str());
 }
 } // namespace
 extern const ModeUi kKlwUi, kTdcsUi;

@@ -9,7 +9,9 @@ namespace dect2 {
 namespace {
 ModeTuning tuning(bool tdcs) {
     ModeTuning t;
-    t.stdMode = tdcs ? 149 : 148; t.id = tdcs ? "tdcs" : "klw"; t.name = tdcs ? "TDCS" : "KLW";
+    // Tuning uses engine standards; sample/telemetry routing uses active standards.
+    t.stdMode = tdcs ? railway::kTdcsStandard : railway::kKlwStandard;
+    t.id = tdcs ? "tdcs" : "klw"; t.name = tdcs ? "TDCS" : "KLW";
     t.minMhz = 400; t.maxMhz = 900; t.defMhz = tdcs ? 457.550 : 866.2375;
     t.sampleRate = 960000; t.basebandHz = 150000; t.bandwidthMhz = 0.035; t.minSampleRate = 192000; t.tuneOffsetHz = 50000;
     return t;
