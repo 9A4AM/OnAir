@@ -151,7 +151,7 @@ int ShipDb::importText(const std::string& text) {
     const std::string& f = lines[0];
     const char d = f.find('\t') != std::string::npos ? '\t' : f.find(';') != std::string::npos ? ';' : ',';
     // columns: indexes of mmsi, name, callsign, type, country, station, location, lat, lon
-    int col[9] = {0, 1, 2, 3, 4, -1, 5, -1, -1};
+    int col[9] = {0, 1, 2, 3, 4, 5, 6, 7, 8};   // headerless: the order of exportTsv
     size_t first = 0;
     const auto head = splitRow(lines[0], d);
     if (!nineDigits(trimS(head[0]))) {
@@ -185,6 +185,7 @@ int ShipDb::importText(const std::string& text) {
         set(r.name, col[1]); set(r.callsign, col[2]); set(r.type, col[3]); set(r.country, col[4]); set(r.station, col[5]); set(r.location, col[6]);
         double la, lo;
         if (numberOf(at(col[7]), la) && numberOf(at(col[8]), lo) && std::fabs(la) <= 90 && std::fabs(lo) <= 180) { r.hasPos = true; r.lat = la; r.lon = lo; }
+        if (r.name.empty() && r.callsign.empty() && r.type.empty() && r.country.empty() && r.station.empty() && r.location.empty() && !r.hasPos) continue;   // an MMSI alone carries nothing
         r.source = 1;
         m_[mmsi] = r;
         n++;

@@ -19,7 +19,8 @@ int main() {
         std::set<long> seen; int distress = 0;
         for (const auto& e : f) { CHECK(seen.insert((long)(e.hz * 10)).second, "duplicate %.1f", e.hz); if (e.group == DscGroup::Distress) distress++; }
         CHECK(distress == 6, "six MF/HF distress channels, got %d", distress);
-        CHECK(f.size() >= 60, "all calling channels: %zu", f.size());
+        // 6 MF/HF distress + VHF ch70 + 9 worldwide ship + 9 coast + 8+8 series A + 8+8 series B + 2 on 455 kHz = 59
+        CHECK(f.size() == 59, "all calling channels: %zu", f.size());
         bool has2177 = false, has4208 = false, has25208 = false, has4209 = false;
         for (const auto& e : f) { if (e.hz == 2177e3) has2177 = true; if (e.hz == 4208e3) has4208 = true; if (e.hz == 25208.5e3) has25208 = true; if (e.hz == 4209e3) has4209 = true; }
         CHECK(has2177 && has4208 && has25208 && has4209, "routine channels listed");
