@@ -48,7 +48,9 @@ static bool run(int opt, double maxSec) {
     if (!k.chats.empty()) CHECK(k.chats[0].from == "ONAIR" && k.chats[0].text.find("ONAIR KAWS TEST SIGNAL") == 0, "chat from '%s': '%s'", k.chats[0].from.c_str(), k.chats[0].text.c_str());
     CHECK(k.profile == (opt > 0 ? opt - 1 : 3), "profile %d", k.profile);
     CHECK(std::fabs(k.cfoHz - 30.0) < 20.0, "carrier offset read %.0f Hz, sent 30", k.cfoHz);
-    CHECK(std::fabs(k.clockErrSec) < 1.0, "burst %.2f s from slot start + 1.5 s", k.clockErrSec);
+    // the synthetic source runs on the computer clock through a paced queue, so a loaded machine delays the burst by up to a second or two;
+    // the receiver accepts the nominal start +- 3 s (kaws_sched.h), so that is the bound that matters
+    CHECK(std::fabs(k.clockErrSec) < 3.0, "burst %.2f s from slot start + 1.5 s", k.clockErrSec);
     CHECK(e.droppedSamples() == 0, "dropped %llu", (unsigned long long)e.droppedSamples());
     e.stop();
     return doneAt > 0;

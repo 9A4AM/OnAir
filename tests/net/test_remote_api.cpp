@@ -543,7 +543,7 @@ static void testEngine() {
     RemoteApiConfig c; c.on = true; c.port = 0;
     CHECK(srv.configure(c), "server for the engine test");
     const int port = srv.config().port;
-    Resp r = http("127.0.0.1", port, post("/api/v1/start", "{}", port));
+    Resp r = http("127.0.0.1", port, post("/api/v1/start", "{}", port), 40000);   // engine start runs inside the request: slow on a loaded CI machine
     CHECK(r.status == 200 && h.running, "start the engine through the API: %d %s", r.status, r.body.c_str());
     std::string buf, pl;
     int op = 0;
