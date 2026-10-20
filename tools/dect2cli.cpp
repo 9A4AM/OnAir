@@ -413,12 +413,12 @@ int main(int argc, char** argv) {
                 for (const auto& n : t.halow.nets)
                     printf("  halow: %s %-32s ch %3d %6.1f MHz %d MHz MCS %d x%d %-9s %-9s SNR %3.0f dB %6.1f dBFS %s\n", n.bssid.c_str(), n.hasSsid ? n.ssid.c_str() : n.hidden ? "(hidden)" : "(compressed SSID)", n.ccf, n.freqMhz,
                            n.seenWidthMhz, n.mcs, n.nss, n.security.c_str(), n.pre == 0 ? "S1G_SHORT" : n.pre == 1 ? "S1G_LONG" : "S1G_1M", n.snrDb, n.rssi, n.vendor.c_str());
-            if (t.standard == 131)   // GOES DCS: the newest reports
+            if (t.standard == 142)   // GOES DCS: the newest reports
                 for (size_t i = 0; i < t.goesdcs.messages.size() && i < 3; i++) {
                     const auto& p = t.goesdcs.messages[i];
                     printf("  dcs: %08X ch %d %d bps %5.1f dB %.60s\n", p.address, p.channel, p.bps, (double)p.snrDb, p.text.c_str());
                 }
-            if (t.standard == 132)   // Mode A/C: the newest codes
+            if (t.standard == 143)   // Mode A/C: the newest codes
                 for (size_t i = 0; i < t.modeac.codes.size() && i < 4; i++) {
                     const auto& c = t.modeac.codes[i];
                     printf("  code: squawk %04d  alt %s  type %s  %u replies  %.0f dBFS%s%s\n", c.squawk, c.altValid ? std::to_string(c.altFt).c_str() : "-", c.kind == 1 ? "A" : c.kind == 2 ? "C" : "A/C", c.count, (double)c.levelDbfs, c.spi ? "  SPI" : "", c.icao ? "  matched" : "");

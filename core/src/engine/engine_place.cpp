@@ -158,7 +158,7 @@ void Engine::configureReceiver(int a, double r) {
     case 127: rxEloran_.configure(r); break;
     case 128: rxMpt_.configure(r); break;
     case 129: rxFusion_.configure(r); break;
-    case 130: rxArd_.configure(r); break;
+    case 141: rxArd_.configure(r); break;
     case 84: rxUat_.configure(r); break;
     case 83: rxVdl4_.configure(r); break;
     case 76: rxMt_.configure(r); break;
@@ -176,9 +176,9 @@ void Engine::configureReceiver(int a, double r) {
     case 123: rxKaal_.configure(r); break;
     case 108: rxCq_.configure(r); break;
     case 105: rxMs_.configure(r); break;
-    case 131: rxGd_.configure(r); break;
-    case 132: rxModeAc_.configure(r); break;
-    case 133: rxBt_.configure(r); break;
+    case 142: rxGd_.configure(r); break;
+    case 143: rxModeAc_.configure(r); break;
+    case 144: rxBt_.configure(r); break;
     default: break;
     }
 }
@@ -277,7 +277,7 @@ void Engine::placeReceiver(int a, double o, double centreHz, double dialHz, doub
     case 127: rxEloran_.setSignalOffset(o); rxEloran_.setCenterHz(centreHz); break;
     case 128: rxMpt_.setSignalOffset(o); rxMpt_.setCenterHz(centreHz); break;
     case 129: rxFusion_.setSignalOffset(o); rxFusion_.setCenterHz(centreHz); break;
-    case 130: rxArd_.setSignalOffset(o); break;
+    case 141: rxArd_.setSignalOffset(o); break;
     case 84: rxUat_.setSignalOffset(o); break;
     case 83: rxVdl4_.setSignalOffset(o); rxVdl4_.setCenterHz(centreHz); break;
     case 76: rxMt_.setSignalOffset(o); break;
@@ -294,9 +294,9 @@ void Engine::placeReceiver(int a, double o, double centreHz, double dialHz, doub
     case 117: rxIfkp_.setSignalOffset(o); break;
     case 108: rxCq_.setSignalOffset(o); break;
     case 105: rxMs_.setSignalOffset(o); rxMs_.setCenterHz(centreHz); break;
-    case 131: rxGd_.setSignalOffset(o); rxGd_.setCenterHz(centreHz); break;
-    case 132: rxModeAc_.setSignalOffset(o); break;
-    case 133: rxBt_.setSignalOffset(o); rxBt_.setCenterHz(centreHz); break;
+    case 142: rxGd_.setSignalOffset(o); rxGd_.setCenterHz(centreHz); break;
+    case 143: rxModeAc_.setSignalOffset(o); break;
+    case 144: rxBt_.setSignalOffset(o); rxBt_.setCenterHz(centreHz); break;
     default: break;   // DMR, ADS-B, Mode S uplink: the channel on the centre, nothing to place
     }
 }

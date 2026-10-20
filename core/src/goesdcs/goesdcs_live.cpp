@@ -659,7 +659,7 @@ void GoesDcsReceiver::feed(const cf32* x, size_t n) {
 
 ModeTuning goesdcsTuning() {
     ModeTuning t;
-    t.stdMode = 132; t.id = "goesdcs"; t.name = "GOES DCS";
+    t.stdMode = 143; t.id = "goesdcs"; t.name = "GOES DCS";
     t.minMhz = 401.0; t.maxMhz = 403.0; t.defMhz = 401.85;
     t.sampleRate = 1e6;
     t.basebandHz = 0;

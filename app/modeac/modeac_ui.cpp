@@ -28,7 +28,7 @@ struct MState {
 };
 MState M;
 
-bool mlive(const App& a) { return a.rx.standard == 132; }
+bool mlive(const App& a) { return a.rx.standard == 143; }
 
 // The ADS-B screens read a.rx.adsb and expect the ADS-B mode to be running: give them the front end's aircraft for the length of the call
 struct AdsbView {

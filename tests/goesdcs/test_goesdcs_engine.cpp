@@ -1,4 +1,4 @@
-// GOES DCS through the engine (setStandard(132)): the synthetic source plays three platforms and the receiver reports through latestRx().
+// GOES DCS through the engine (setStandard(143)): the synthetic source plays three platforms and the receiver reports through latestRx().
 #include "dect2/engine/engine.h"
 #include "dect2/goesdcs/goesdcs_live.h"
 #include "dect2/goesdcs/goesdcs_tel.h"
@@ -15,17 +15,17 @@ int main() {
     DeviceInfo dev;
     TuneSettings t;
     t.centerHz = mt.defMhz * 1e6; t.bandwidthMhz = mt.bandwidthMhz; t.sampleRate = mt.sampleRate;
-    t.synth.mode = 132; t.synth.snrDb = 36;
+    t.synth.mode = 143; t.synth.snrDb = 36;
     FileOptions fo;
-    e.setStandard(132);
+    e.setStandard(143);
     CHECK(e.start(dev, t, fo), "engine start");
-    CHECK(e.activeStandard() == 131, "active standard %d", e.activeStandard());
+    CHECK(e.activeStandard() == 142, "active standard %d", e.activeStandard());
     RxTelemetry rx;
     uint64_t seq = 0;
     bool got = false;
     const auto t0 = std::chrono::steady_clock::now();
     while (std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count() < 60) {
-        if (e.latestRx(rx, seq)) { seq = rx.seq; if (rx.standard == 131 && rx.goesdcs.platforms.size() >= 3) { got = true; break; } }
+        if (e.latestRx(rx, seq)) { seq = rx.seq; if (rx.standard == 142 && rx.goesdcs.platforms.size() >= 3) { got = true; break; } }
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
     printf("  %s\n", dcsSummary(rx.goesdcs).c_str());

@@ -280,7 +280,7 @@ int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
     case 127: return pollStd(rxEloran_, 127, t, seqs[111], &RxTelemetry::eloran);   // eLoran / Loran-C (slot 111)
     case 128: return pollStd(rxMpt_, 128, t, seqs[112], &RxTelemetry::mpt1327);   // MPT1327 trunking (slot 112)
     case 129: return pollStd(rxFusion_, 129, t, seqs[117], &RxTelemetry::fusion);   // Yaesu Fusion (slot 117)
-    case 130: return pollStd(rxArd_, 130, t, seqs[118], &RxTelemetry::ardop);   // ARDOP (slot 118)
+    case 141: return pollStd(rxArd_, 141, t, seqs[118], &RxTelemetry::ardop);   // ARDOP (slot 118)
     case 82: return pollStd(rxLbj_, 82, t, seqs[76], &RxTelemetry::lbj);
     case 84: return pollStd(rxUat_, 84, t, seqs[78], &RxTelemetry::uat);
     case 83: return pollStd(rxVdl4_, 83, t, seqs[77], &RxTelemetry::vdl4);
@@ -299,9 +299,9 @@ int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
     case 123: return pollStd(rxKaal_, 123, t, seqs[116], &RxTelemetry::kaal);
     case 108: return pollStd(rxCq_, 108, t, seqs[104], &RxTelemetry::cquam);
     case 105: return pollStd(rxMs_, 105, t, seqs[101], &RxTelemetry::mscatter);
-    case 131: return pollStd(rxGd_, 131, t, seqs[119], &RxTelemetry::goesdcs);
-    case 132: return pollStd(rxModeAc_, 132, t, seqs[120], &RxTelemetry::modeac);   // Mode A/C (slot 120)
-    case 133: return pollStd(rxBt_, 133, t, seqs[121], &RxTelemetry::bletrk);   // BLE tracker detector (slot 121)
+    case 142: return pollStd(rxGd_, 142, t, seqs[119], &RxTelemetry::goesdcs);
+    case 143: return pollStd(rxModeAc_, 143, t, seqs[120], &RxTelemetry::modeac);   // Mode A/C (slot 120)
+    case 144: return pollStd(rxBt_, 144, t, seqs[121], &RxTelemetry::bletrk);   // BLE tracker detector (slot 121)
     default: return -1;
     }
 }

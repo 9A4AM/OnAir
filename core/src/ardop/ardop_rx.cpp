@@ -514,7 +514,7 @@ void ArdopReceiver::setListenTap(std::function<void(const float* x, size_t n)> c
 
 ModeTuning ardopTuning() {
     ModeTuning t;
-    t.stdMode = 131; t.id = "ardop"; t.name = "ARDOP";
+    t.stdMode = 142; t.id = "ardop"; t.name = "ARDOP";
     t.minMhz = 1.8; t.maxMhz = 30; t.defMhz = 14.103;   // the digital part of 20 m (upper sideband dial); gateways publish their own frequencies
     t.sampleRate = 2000000;
     t.basebandHz = 1750000;

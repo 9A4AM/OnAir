@@ -199,7 +199,7 @@ void ModeAcReceiver::feed(const cf32* x, size_t n) {
 
 ModeTuning modeacTuning() {
     ModeTuning t;
-    t.stdMode = 133; t.id = "modeac"; t.name = "Mode A/C";
+    t.stdMode = 144; t.id = "modeac"; t.name = "Mode A/C";
     t.minMhz = 1085; t.maxMhz = 1095; t.defMhz = 1090.0;
     t.sampleRate = 4000000.0; t.basebandHz = 3500000.0; t.bandwidthMhz = 2;   // as ADS-B: the same band, the same radio settings
     t.minSampleRate = 2000000.0;

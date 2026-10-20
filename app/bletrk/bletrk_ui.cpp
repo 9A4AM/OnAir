@@ -33,7 +33,7 @@ void loadState() {
     S.nearDb = std::max(-100, std::min(0, (int)plat::prefs().getI("bletrkNear", -60)));
 }
 
-bool live(const App& a) { return a.rx.standard == 133; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 144; }   // the engine reports its standard code minus one
 
 void kvRow(const App& a, const char* k, const char* fmt, ...) {
     ImGui::TextDisabled("%s", k); kvColumn(130 * gUi);

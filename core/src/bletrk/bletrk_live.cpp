@@ -125,7 +125,7 @@ void BletrkLiveReceiver::setLogCallback(std::function<void(const std::string&)> 
 
 ModeTuning bletrkTuning() {
     ModeTuning t = bleTuning();
-    t.stdMode = 134; t.id = "bletracker"; t.name = "BLE tracker detector";
+    t.stdMode = 145; t.id = "bletracker"; t.name = "BLE tracker detector";
     return t;
 }
 
