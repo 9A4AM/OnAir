@@ -1,0 +1,17 @@
+// KAPP test signal for the engine's synthetic source: repeating text messages (three different ones in turn, one pass each) from the real KAPP transmitter, with a 1 s gap between the passes.
+// It is the real transmitter's output (kapp_txgen.h, the one the TX panel uses) at the radio rate, with a carrier offset (the radios' oscillators) and a
+// little noise, played as a seamless loop (synth_loop.h). Nothing is transmitted: the samples only exist in memory or in a file.
+//
+// SynthConfig (makeKappSynth):
+//   snrDb       noise: the signal's rms over the noise rms across the whole sampled band (30 = a little noise)
+//   cfoHz       added to the built-in carrier offset of +1000 Hz
+//   modeOpt[0]  profile: 0 = the default (P2, QPSK 1/2), n = profile n-1 (1 .. 9 = P0 .. P8)
+#pragma once
+#include "dect2/engine/mode_synth.h"
+#include <memory>
+
+namespace dect2 {
+
+std::unique_ptr<ModeSynth> makeKappSynth(const SynthConfig& cfg, double sampleRate);
+
+} // namespace dect2

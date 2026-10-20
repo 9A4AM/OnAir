@@ -227,6 +227,11 @@
 #include "dect2/kaft/kaft_tel.h"
 #include "dect2/ifkp/ifkp_gen.h"
 #include "dect2/kaal/kaal_gen.h"
+#include "dect2/kapp/kapp_gen.h"
+#include "dect2/kaft/kaft_gen.h"
+#include "dect2/kait/kait_gen.h"
+#include "dect2/kavb/kavb_gen.h"
+#include "dect2/kaws/kaws_gen.h"
 #include "dect2/cquam/cquam_rx.h"
 #include "dect2/cquam/cquam_gen.h"
 #include "dect2/cquam/cquam_tel.h"
@@ -540,6 +545,11 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 115: return makeFsqSynth(cfg, sampleRate);
     case 118: return makeIfkpSynth(cfg, sampleRate);
     case 124: return makeKaalSynth(cfg, sampleRate);
+    case 125: return makeKavbSynth(cfg, sampleRate);
+    case 126: return makeKappSynth(cfg, sampleRate);
+    case 127: return makeKaftSynth(cfg, sampleRate);
+    case 133: return makeKaitSynth(cfg, sampleRate);
+    case 135: return makeKawsSynth(cfg, sampleRate);
     case 109: return makeCquamSynth(cfg, sampleRate);
     case 106: return makeMscatterSynth(cfg, sampleRate);
     case 143: return makeGoesDcsSynth(cfg, sampleRate);
