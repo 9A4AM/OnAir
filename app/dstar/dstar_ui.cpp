@@ -156,6 +156,7 @@ void mapView(App& a) {
     }
     const double lat0 = S.map.lat, lon0 = S.map.lon;
     adsbmap::draw(S.map, size);
+    adsbmap::fullCorner(p0, size);   // the shared full-screen button (#195)
     if (S.map.lat != lat0 || S.map.lon != lon0) S.mapFollow = false;
     ImDrawList* dl = ImGui::GetWindowDrawList();
     dl->PushClipRect(p0, ImVec2(p0.x + size.x, p0.y + size.y), true);
