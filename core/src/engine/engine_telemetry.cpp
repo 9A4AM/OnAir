@@ -276,6 +276,7 @@ int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
     case 79: return pollStd(rxDect_, 79, t, seqs[73], &RxTelemetry::dect);
     case 80: return pollStd(rxTetrapol_, 80, t, seqs[74], &RxTelemetry::tetrapol);
     case 81: return poll81(rxEl_, t, seqs);
+    case 146: return pollStd(rxMilhf_, 146, t, seqs[135], &RxTelemetry::milhf);   // HF waveform ID (slot 135)
     case 121: return pollStd(rxDgps_, 121, t, seqs[110], &RxTelemetry::dgps);   // DGPS beacons (slot 110)
     case 82: return pollStd(rxLbj_, 82, t, seqs[76], &RxTelemetry::lbj);
     case 84: return pollStd(rxUat_, 84, t, seqs[78], &RxTelemetry::uat);

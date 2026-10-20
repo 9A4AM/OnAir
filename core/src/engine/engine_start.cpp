@@ -259,6 +259,8 @@ void Engine::placeNarrowReceivers(const DeviceInfo& dev, const TuneSettings& tun
         rxLbj_.setSignalOffset(o);
         rxLbj_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);
         rxDgps_.setSignalOffset(o);
+        rxMilhf_.setSignalOffset(o);
+        rxMilhf_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);
         rxDgps_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);
         rxMt_.setSignalOffset(o);
         rxCd_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // which part of the HF radar bands the radio is on
@@ -435,6 +437,8 @@ void Engine::configureDataReceivers(const DeviceInfo& dev, const TuneSettings& t
     rxTetrapol_.setLogCallback([this](const std::string& s) { log(s); });
     rxLbj_.configure(rate_);
     rxLbj_.setLogCallback([this](const std::string& s) { log(s); });
+    rxMilhf_.configure(rate_);
+    rxMilhf_.setLogCallback([this](const std::string& s) { log(s); });
     rxDgps_.configure(rate_);
     rxDgps_.setLogCallback([this](const std::string& s) { log(s); });
     rxMt_.configure(rate_);
