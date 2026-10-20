@@ -469,7 +469,8 @@ static void menuBarRight(App& a) {
             ImGui::SameLine();
             supportButton();
         }
-        ImGui::SameLine(ImGui::GetWindowWidth() - rightReserve);
+        // the version/update button and Clear all sit right of Credits and Support: starting it at xBtn drew the two over each other
+        ImGui::SameLine(ImGui::GetWindowWidth() - (updW + 6.f * gUi + clearW + 12.f * gUi));
         updateButton(a);
         clearAllButton(a);
 }
