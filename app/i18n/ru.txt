@@ -3414,3 +3414,37 @@ Codes	Коды
 start the receiver to see the codes	запустите приёмник, чтобы увидеть коды
 Squawk and altitude, 1090 MHz	Сквок и высота, 1090 МГц
 Mode A is the squawk, Mode C the altitude in 100 ft steps. A reply does not say which of the two it is: a code shows as A/C until it can only be a squawk or is matched to a Mode S aircraft by its squawk or its altitude.	Режим A — это сквок, режим C — высота с шагом 100 футов. Ответ не говорит, какой из двух это: код показывается как A/C, пока он не может быть только сквоком или не сопоставлен с самолётом Mode S по сквоку или высоте.
+# BLE tracker detector
+Receive only: item trackers are recognised from their public advertisements. OnAir never connects to one, sends to one or reads its owner's data. Identifiers stay in memory for 30 minutes after a tracker was last heard, are shown as the last two address bytes only and are never saved.	Только приём: трекеры вещей распознаются по их открытым рекламным пакетам. OnAir никогда не подключается к трекеру, ничего ему не отправляет и не читает данные владельца. Идентификаторы хранятся в памяти 30 минут после последнего приёма, показываются только как два последних байта адреса и никогда не сохраняются.
+your own	ваш
+following you	следует за вами
+separated from its owner	отделён от владельца
+nearby	рядом
+start the receiver to see the trackers around you	запустите приёмник, чтобы увидеть трекеры вокруг
+Tracker	Трекер
+Stays	Остаётся
+Near	Близко
+Trend	Тенденция
+Addresses	Адреса
+closer	ближе
+farther	дальше
+steady	без изменений
+Unmark	Снять отметку
+Mark as mine	Отметить как мой
+no trackers heard yet	трекеры пока не слышны
+An alert is also sent to the watchlists: add the word tracker to a list of the Words kind to get a notification or a push message.	Тревога также отправляется в списки наблюдения: добавьте слово tracker в список типа Слова, чтобы получить уведомление или push-сообщение.
+Alert	Тревога
+no alerts yet	тревог пока нет
+Trackers	Трекеры
+packets	пакеты
+in the last minute	за последнюю минуту
+in the last 30 min	за последние 30 мин
+alert after	тревога через
+A tracker that stays near a fixed receiver, such as a neighbour's tag, is reported too, and the levels are the radio's own, not calibrated distances. The detector is meant for a receiver that travels with you.	Трекер, остающийся рядом с неподвижным приёмником, например чужая метка соседа, тоже будет показан, а уровни — это уровни радио, а не откалиброванные расстояния. Детектор рассчитан на приёмник, который перемещается вместе с вами.
+Adverts	Пакеты
+Trackers advertise on all three channels in turn, so any one of them hears every tracker.	Трекеры передают по очереди на всех трёх каналах, поэтому любой из них слышит все трекеры.
+Alert after	Тревога через
+How long a tracker must stay with the receiver before the alert.	Как долго трекер должен оставаться рядом с приёмником до тревоги.
+Near level	Уровень близости
+The averaged level from which a tracker counts as near. The radio's level, not a calibrated distance.	Усреднённый уровень, начиная с которого трекер считается близким. Уровень радио, а не откалиброванное расстояние.
+Trackers, 2.4 GHz	Трекеры, 2,4 ГГц

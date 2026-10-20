@@ -96,6 +96,8 @@ OnAir is a receiver first. It can also send test signals through a transmit-capa
 | **Amateur** | 30 | FT8, FT4, WSPR, JS8Call, RTTY, PSK, MT63, FSQ, IFKP, SSTV, FreeDV, APRS, LoRa APRS, MeshCom and more |
 | **Weather and science** | 8 | Radiosondes, HRPT, SAME alerts, time signals, e-Czas, ionospheric sounders, radio astronomy, meteor scatter |
 | **Amateur** | 29 | FT8, FT4, WSPR, JS8Call, RTTY, PSK, MT63, ARDOP, SSTV, FreeDV, APRS, LoRa APRS, MeshCom and more |
+| **IoT and sensors** | 15 | ISM sensors, LoRaWAN, Meshtastic, MeshCore, Bluetooth LE, BLE tracker detector, Zigbee, Wi-Fi, Wi-SUN, Wireless M-Bus, Z-Wave, DECT, ANT+ |
+| **Amateur** | 28 | FT8, FT4, WSPR, JS8Call, RTTY, PSK, MT63, SSTV, FreeDV, APRS, LoRa APRS, MeshCom and more |
 | **Weather and science** | 7 | Radiosondes, SAME alerts, time signals, ionospheric sounders, radio astronomy, meteor scatter |
 | **HF utility** | 4 | ALE, beacons, Datawell buoys, CODAR |
 | **Tools** | 4 | General receiver, spectrum analyser, spectrum explorer, signal workbench; also a gain optimiser, a direction finder, a pass planner and a remote-control API |
@@ -272,6 +274,7 @@ No radio? Open an IQ recording through the *IQ recording file* source (cs8, cu8,
 - **Radio astronomy** (21 cm hydrogen line and OH lines).
 - **GOES / Meteosat DCS** (river gauges, weather stations, tide gauges and buoys reporting on the 401.7 - 402.1 MHz uplink: every carrier in the capture followed, 100 / 300 / 1200 bps with NRZ or Manchester coding, the BCH-checked platform address, the channel and the ASCII or pseudo-binary sensor data, CSV logging; [details](docs/goes-dcs.md)).
 - **Meteor scatter** (pings of meteor trails reflecting a distant beacon such as GRAVES on 143.050 MHz: start, duration, peak level, Doppler, rates per hour and day with the showers marked, CSV logging; [details](docs/mscatter.md)).
+- **BLE tracker detector** (Apple Find My accessories such as AirTag, Tile, Chipolo, Samsung SmartTag and Google Find My Device tags recognised from their advertisements; how long and how close each stays, and an alert through the watchlists for one that follows you; receive only, identifiers kept for a short window and never saved; [details](docs/bletrk.md)).
 
 ### Amateur: digital
 

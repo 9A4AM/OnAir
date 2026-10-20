@@ -88,6 +88,7 @@ bool Engine::retune(const TuneSettings& tune) {
         if (lastDev_.kind != DeviceInfo::File) rxDw_.setCenterHz(radioTune(tune).centerHz);
         if (lastDev_.kind != DeviceInfo::File) rxMs_.setCenterHz(radioTune(tune).centerHz);
         if (lastDev_.kind != DeviceInfo::File) rxGd_.setCenterHz(radioTune(tune).centerHz);
+        if (lastDev_.kind != DeviceInfo::File) rxBt_.setCenterHz(radioTune(tune).centerHz);
     }
     refreshSecondary(moved);
     return true;
@@ -148,6 +149,7 @@ bool Engine::retuneReset(const TuneSettings& tune) {
         if (lastDev_.kind != DeviceInfo::File) rxDw_.setCenterHz(radioTune(tune).centerHz);
         if (lastDev_.kind != DeviceInfo::File) rxMs_.setCenterHz(radioTune(tune).centerHz);
         if (lastDev_.kind != DeviceInfo::File) rxGd_.setCenterHz(radioTune(tune).centerHz);
+        if (lastDev_.kind != DeviceInfo::File) rxBt_.setCenterHz(radioTune(tune).centerHz);
     }
     refreshSecondary(moved);
     resetReq_ = true;

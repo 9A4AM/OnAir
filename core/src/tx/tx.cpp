@@ -127,6 +127,7 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("mscatter", "Meteor scatter", 106, "makeMscatterSynth", kOpt, kUnv),
         mk("goesdcs", "GOES DCS", 132, "makeGoesDcsSynth", kOpt, kUnv),
         mk("modeac", "Mode A/C", 133, "makeModeAcSynth", kOpt, kUnv),
+        mk("bletracker", "BLE tracker detector", 134, "makeBletrkSynth", kOpt, kUnv),
         mk("vorils", "VOR / ILS", 32, "makeVorSynth", kOpt, kUnv),
         mk("m17", "M17", 33, "makeM17Synth", kOpt, kUnv),
         mk("dstar", "D-STAR", 35, "makeDstarSynth", kOpt, kUnv),

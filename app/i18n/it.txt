@@ -3414,3 +3414,37 @@ Codes	Codici
 start the receiver to see the codes	avvia il ricevitore per vedere i codici
 Squawk and altitude, 1090 MHz	Squawk e quota, 1090 MHz
 Mode A is the squawk, Mode C the altitude in 100 ft steps. A reply does not say which of the two it is: a code shows as A/C until it can only be a squawk or is matched to a Mode S aircraft by its squawk or its altitude.	Il modo A è lo squawk, il modo C la quota a passi di 100 ft. Una risposta non dice quale dei due sia: un codice appare come A/C finché può essere solo uno squawk o finché non viene associato a un aeromobile Mode S tramite squawk o quota.
+# BLE tracker detector
+Receive only: item trackers are recognised from their public advertisements. OnAir never connects to one, sends to one or reads its owner's data. Identifiers stay in memory for 30 minutes after a tracker was last heard, are shown as the last two address bytes only and are never saved.	Solo ricezione: i tracker di oggetti vengono riconosciuti dai loro annunci pubblici. OnAir non si connette mai a uno, non gli invia nulla e non legge i dati del suo proprietario. Gli identificativi restano in memoria per 30 minuti dopo l'ultima ricezione, sono mostrati solo come gli ultimi due byte dell'indirizzo e non vengono mai salvati.
+your own	tuo
+following you	ti segue
+separated from its owner	separato dal proprietario
+nearby	vicino
+start the receiver to see the trackers around you	avvia il ricevitore per vedere i tracker intorno a te
+Tracker	Tracker
+Stays	Resta
+Near	Vicino
+Trend	Tendenza
+Addresses	Indirizzi
+closer	più vicino
+farther	più lontano
+steady	stabile
+Unmark	Rimuovi il segno
+Mark as mine	Segna come mio
+no trackers heard yet	nessun tracker ancora ascoltato
+An alert is also sent to the watchlists: add the word tracker to a list of the Words kind to get a notification or a push message.	Un allarme viene inviato anche alle liste di controllo: aggiungi la parola tracker a una lista di tipo Parole per ricevere una notifica o un messaggio push.
+Alert	Allarme
+no alerts yet	ancora nessun allarme
+Trackers	Tracker
+packets	pacchetti
+in the last minute	nell'ultimo minuto
+in the last 30 min	negli ultimi 30 min
+alert after	allarme dopo
+A tracker that stays near a fixed receiver, such as a neighbour's tag, is reported too, and the levels are the radio's own, not calibrated distances. The detector is meant for a receiver that travels with you.	Un tracker che resta vicino a un ricevitore fisso, come l'etichetta di un vicino, viene segnalato comunque, e i livelli sono quelli della radio, non distanze calibrate. Il rilevatore è pensato per un ricevitore che viaggia con te.
+Adverts	Annunci
+Trackers advertise on all three channels in turn, so any one of them hears every tracker.	I tracker trasmettono a turno sui tre canali, quindi ognuno di essi sente tutti i tracker.
+Alert after	Allarme dopo
+How long a tracker must stay with the receiver before the alert.	Per quanto tempo un tracker deve restare col ricevitore prima dell'allarme.
+Near level	Livello di vicinanza
+The averaged level from which a tracker counts as near. The radio's level, not a calibrated distance.	Il livello medio da cui un tracker conta come vicino. Il livello della radio, non una distanza calibrata.
+Trackers, 2.4 GHz	Tracker, 2,4 GHz

@@ -3431,3 +3431,37 @@ Codes	Kodai
 start the receiver to see the codes	paleiskite imtuvą, kad pamatytumėte kodus
 Squawk and altitude, 1090 MHz	Squawk ir aukštis, 1090 MHz
 Mode A is the squawk, Mode C the altitude in 100 ft steps. A reply does not say which of the two it is: a code shows as A/C until it can only be a squawk or is matched to a Mode S aircraft by its squawk or its altitude.	A režimas yra squawk kodas, C režimas – aukštis 100 pėdų žingsniais. Atsakymas nenurodo, kuris iš jų tai yra: kodas rodomas kaip A/C, kol gali būti tik squawk arba kol pagal squawk ar aukštį nesusiejamas su Mode S orlaiviu.
+# BLE tracker detector
+Receive only: item trackers are recognised from their public advertisements. OnAir never connects to one, sends to one or reads its owner's data. Identifiers stay in memory for 30 minutes after a tracker was last heard, are shown as the last two address bytes only and are never saved.	Tik priėmimas: daiktų sekimo žymekliai atpažįstami pagal viešus skelbimus. OnAir niekada nesijungia prie žymeklio, nieko jam nesiunčia ir neskaito savininko duomenų. Identifikatoriai lieka atmintyje 30 minučių po paskutinio išgirdimo, rodomi tik kaip paskutiniai du adreso baitai ir niekada neišsaugomi.
+your own	jūsų
+following you	seka jus
+separated from its owner	atsiskyręs nuo savininko
+nearby	netoliese
+start the receiver to see the trackers around you	paleiskite imtuvą, kad pamatytumėte aplink esančius žymeklius
+Tracker	Žymeklis
+Stays	Išlieka
+Near	Arti
+Trend	Tendencija
+Addresses	Adresai
+closer	artėja
+farther	tolsta
+steady	stabilus
+Unmark	Panaikinti žymėjimą
+Mark as mine	Žymėti kaip mano
+no trackers heard yet	dar neišgirsta jokių žymeklių
+An alert is also sent to the watchlists: add the word tracker to a list of the Words kind to get a notification or a push message.	Įspėjimas siunčiamas ir į stebėjimo sąrašus: pridėkite žodį tracker į Žodžių tipo sąrašą, kad gautumėte pranešimą ar push žinutę.
+Alert	Įspėjimas
+no alerts yet	dar nėra įspėjimų
+Trackers	Žymekliai
+packets	paketai
+in the last minute	per paskutinę minutę
+in the last 30 min	per paskutines 30 min.
+alert after	įspėti po
+A tracker that stays near a fixed receiver, such as a neighbour's tag, is reported too, and the levels are the radio's own, not calibrated distances. The detector is meant for a receiver that travels with you.	Žymeklis, išliekantis šalia nejudančio imtuvo, pavyzdžiui, kaimyno, taip pat pranešamas, o lygiai yra radijo, ne kalibruoti atstumai. Detektorius skirtas imtuvui, kuris keliauja su jumis.
+Adverts	Skelbimai
+Trackers advertise on all three channels in turn, so any one of them hears every tracker.	Žymekliai skelbia paeiliui visais trimis kanalais, todėl bet kuris kanalas girdi visus žymeklius.
+Alert after	Įspėti po
+How long a tracker must stay with the receiver before the alert.	Kiek laiko žymeklis turi išlikti prie imtuvo iki įspėjimo.
+Near level	Artumo lygis
+The averaged level from which a tracker counts as near. The radio's level, not a calibrated distance.	Vidutinis lygis, nuo kurio žymeklis laikomas esančiu arti. Radijo lygis, ne kalibruotas atstumas.
+Trackers, 2.4 GHz	Žymekliai, 2,4 GHz

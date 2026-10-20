@@ -115,6 +115,7 @@ ardop	--mode ardop	Overview|ARDOP|Receiver|History
 mscatter	--mode mscatter	Overview|Meteors|Receiver|History
 goesdcs	--mode goesdcs	Overview|Platforms|Receiver|History
 modeac	--mode modeac	Overview|Replies|Receiver|History
+bletracker	--mode bletracker	Overview|Trackers|Receiver|History
 nbiot	--mode nbiot	Overview|NB-IoT|Receiver|History
 codar	--mode codar	Overview|Radar|Receiver|History
 wb	--mode wb	Overview|Workbench|Receiver|History

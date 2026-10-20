@@ -107,6 +107,7 @@
 #include "dect2/ardop/ardop_rx.h"
 #include "dect2/ardop/ardop_rx.h"
 #include "dect2/goesdcs/goesdcs_live.h"
+#include "dect2/bletrk/bletrk_live.h"
 #include "dect2/rid/rid_rx.h"
 #include "dect2/meteor/meteor_rx.h"
 #include "dect2/nr/nr_rx.h"
@@ -410,6 +411,7 @@ public:
     ZwaveReceiver& zwave() { return rxZw_; }   // Z-Wave: region, clear the tables (telemetry through latestRx)
     GoesDcsReceiver& goesdcs() { return rxGd_; }   // GOES DCS: CSV log file, carrier threshold, clear the lists (telemetry through latestRx)
     ModeAcReceiver& modeac() { return rxModeAc_; }   // Mode A/C replies: reference position, code confirmation and expiry, clear (telemetry through latestRx)
+    BletrkLiveReceiver& bletrk() { return rxBt_; }   // BLE tracker detector: alert time, near level, own trackers, clear (telemetry through latestRx)
     MscatterLiveReceiver& mscatter() { return rxMs_; }   // meteor scatter: threshold, CSV log file, clear the list (telemetry through latestRx)
     WisunReceiver& wisun() { return rxWs_; }   // Wi-SUN FAN: region, clear the tables (telemetry through latestRx)
     LoraRawReceiver& loraraw() { return rxLr_; }   // LoRa (raw): settings, clear the frame log (telemetry through latestRx)
@@ -689,6 +691,7 @@ private:
     MscatterLiveReceiver rxMs_;
     GoesDcsReceiver rxGd_;
     ModeAcReceiver rxModeAc_;
+    BletrkLiveReceiver rxBt_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;
