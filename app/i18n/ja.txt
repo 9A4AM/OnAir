@@ -3497,7 +3497,6 @@ Colour by altitude	高度で色分け
 Track width (px)	航跡の太さ (px)
 Never drop silent aircraft	受信が途絶えた機体を消さない
 Drop after (s)	消去までの時間 (秒)
-=======
 contact lines	交信ライン
 A line between the two stations of a contact, drawn from the decoded messages: the great circle from the caller to the station called.	デコードしたメッセージから描く、交信の2局を結ぶ線。呼び出した局から呼ばれた局への大圏コースです。
 show contact lines	交信ラインを表示
@@ -3512,4 +3511,3 @@ deselect	選択解除
 click a station on the map to select it	地図上の局をクリックして選択
 %zu stations by their locators, %zu contact lines	%zu局（ロケーター位置）、交信ライン%zu本
 %d stations at the centre of their grid squares, %zu contact lines	%d局（グリッドの中心）、交信ライン%zu本
->>>>>>> pub/map-contacts-028

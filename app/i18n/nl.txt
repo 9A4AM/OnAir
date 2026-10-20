@@ -3497,7 +3497,6 @@ Colour by altitude	Kleur op hoogte
 Track width (px)	Sporbreedte (px)
 Never drop silent aircraft	Stille vliegtuigen nooit verwijderen
 Drop after (s)	Verwijderen na (s)
-=======
 contact lines	contactlijnen
 A line between the two stations of a contact, drawn from the decoded messages: the great circle from the caller to the station called.	Een lijn tussen de twee stations van een contact, getekend uit de gedecodeerde berichten: de grootcirkel van de oproeper naar het opgeroepen station.
 show contact lines	contactlijnen tonen
@@ -3512,4 +3511,3 @@ deselect	selectie opheffen
 click a station on the map to select it	klik op een station op de kaart om het te kiezen
 %zu stations by their locators, %zu contact lines	%zu stations op hun locator, %zu contactlijnen
 %d stations at the centre of their grid squares, %zu contact lines	%d stations in het midden van hun vak, %zu contactlijnen
->>>>>>> pub/map-contacts-028

@@ -3483,7 +3483,6 @@ Colour by altitude	Színezés magasság szerint
 Track width (px)	Nyomvonal vastagsága (px)
 Never drop silent aircraft	Hallgató repülőket soha ne töröljön
 Drop after (s)	Törlés ennyi idő után (s)
-=======
 contact lines	kapcsolatvonalak
 A line between the two stations of a contact, drawn from the decoded messages: the great circle from the caller to the station called.	Vonal egy kapcsolat két állomása között, a dekódolt üzenetekből rajzolva: a főkör a hívótól a hívott állomásig.
 show contact lines	kapcsolatvonalak mutatása
@@ -3498,4 +3497,3 @@ deselect	kijelölés törlése
 click a station on the map to select it	kattints egy állomásra a térképen a kijelöléshez
 %zu stations by their locators, %zu contact lines	%zu állomás a lokátoruk szerint, %zu kapcsolatvonal
 %d stations at the centre of their grid squares, %zu contact lines	%d állomás a rácsnégyzetük közepén, %zu kapcsolatvonal
->>>>>>> pub/map-contacts-028

@@ -3497,7 +3497,6 @@ Colour by altitude	Kolor wg wysokości
 Track width (px)	Grubość śladu (px)
 Never drop silent aircraft	Nigdy nie usuwaj milczących samolotów
 Drop after (s)	Usuń po (s)
-=======
 contact lines	linie łączności
 A line between the two stations of a contact, drawn from the decoded messages: the great circle from the caller to the station called.	Linia między dwiema stacjami łączności, narysowana z zdekodowanych wiadomości: koło wielkie od wywołującego do wywołanej stacji.
 show contact lines	pokaż linie łączności
@@ -3512,4 +3511,3 @@ deselect	odznacz
 click a station on the map to select it	kliknij stację na mapie, aby ją wybrać
 %zu stations by their locators, %zu contact lines	%zu stacji według lokatorów, %zu linii łączności
 %d stations at the centre of their grid squares, %zu contact lines	%d stacji w środku swoich kwadratów, %zu linii łączności
->>>>>>> pub/map-contacts-028

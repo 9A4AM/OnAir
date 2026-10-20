@@ -3497,7 +3497,6 @@ Colour by altitude	按高度着色
 Track width (px)	轨迹宽度 (px)
 Never drop silent aircraft	从不移除无信号的飞机
 Drop after (s)	多少秒后移除
-=======
 contact lines	通联连线
 A line between the two stations of a contact, drawn from the decoded messages: the great circle from the caller to the station called.	根据解码消息绘制的通联双方电台之间的连线：从呼叫方到被呼叫电台的大圆路径。
 show contact lines	显示通联连线
@@ -3512,4 +3511,3 @@ deselect	取消选择
 click a station on the map to select it	点击地图上的电台以选中
 %zu stations by their locators, %zu contact lines	按网格定位的 %zu 个电台，%zu 条通联连线
 %d stations at the centre of their grid squares, %zu contact lines	位于网格中心的 %d 个电台，%zu 条通联连线
->>>>>>> pub/map-contacts-028
