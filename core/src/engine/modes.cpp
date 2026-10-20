@@ -673,6 +673,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 142: return dcsSummary(t.goesdcs);
     case 143: return modeAcSummary(t.modeac);
     case 144: return bletrkSummary(t.bletrk);
+    case 146: return milhfSummary(t.milhf);
     case 145: return sbSummary(t.satbeacon);
     case 57: return ridSummary(t.rid);
     case 60: return meteorSummary(t.meteor);

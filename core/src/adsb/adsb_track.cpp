@@ -337,7 +337,7 @@ void AdsbTracker::commitPosition(Rec& r, double lat, double lon, int kind, doubl
     r.lastPos = now;
     r.rejects = 0;
     if (r.lastTrack < 0 || now - r.lastTrack >= 5.0) {
-        a.track.push_back({(float)lat, (float)lon});
+        a.track.push_back({(float)lat, (float)lon, (int16_t)std::max(-3000, std::min(3000, a.altFt / 100)), a.hasAlt, a.ground});
         if (a.track.size() > kMaxTrack) a.track.erase(a.track.begin());
         r.lastTrack = now;
     }
@@ -525,7 +525,7 @@ void AdsbTracker::tick(double now) {
     }
     if (now >= stats_.nextSample) stats_.nextSample = now + 10;
     for (auto it = rec_.begin(); it != rec_.end();) {
-        if (now - it->second.lastSeen > opt_.expirySec) it = rec_.erase(it);
+        if (now - it->second.lastSeen > (opt_.dropSec > 0 ? opt_.dropSec : opt_.expirySec)) it = rec_.erase(it);
         else ++it;
     }
 }

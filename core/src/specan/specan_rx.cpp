@@ -3,6 +3,7 @@
 #include "dect2/specan/specan_rx.h"
 #include "dect2/specan/specan_dsp.h"
 #include "dect2/specan/specan_tel.h"
+#include "dect2/specan/specan_res.h"
 #include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <chrono>
@@ -49,9 +50,7 @@ struct SpecanReceiver::Impl {
         native = nat;
         const double r = native ? 20e6 : rate;
         if (r <= 0) return;
-        int n = 64;
-        const int maxN = native ? 4096 : 65536;
-        while (n < maxN && r / n > binHz * 1.01) n *= 2;
+        const int n = saPickRes(binHz, rate, native).nfft;
         nfft = n;
         fft = std::make_unique<Fft>(n);
         win.resize(n);

@@ -8,7 +8,12 @@
 
 namespace dect2 {
 
-struct AdsbTrackPoint { float lat = 0, lon = 0; };
+struct AdsbTrackPoint {   // alt100: barometric altitude in 100 ft steps for the altitude colours of the trail (valid when hasAlt)
+    float lat = 0, lon = 0;
+    int16_t alt100 = 0;
+    bool hasAlt = false, ground = false;
+    int altFt() const { return alt100 * 100; }
+};
 
 // One aircraft, as the table shows it. A value is only meaningful when its has... flag is set. Times are seconds of signal time.
 struct AdsbAircraft {

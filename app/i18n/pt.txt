@@ -3272,6 +3272,7 @@ pilot	piloto
 pilot checks	verificações do piloto
 separation	separação
 stereo phase	fase estéreo
+<<<<<<< HEAD
 
 # auto subtitles (captions)
 Generating captions from the sound	A criar legendas a partir do som
@@ -3476,3 +3477,9 @@ Value	Valor
 Raw	Bruto
 primary channel at	canal primário em
 vendor elements	elementos do fabricante
+=======
+Colour by altitude	Cor por altitude
+Track width (px)	Largura do rasto (px)
+Never drop silent aircraft	Nunca remover aviões sem sinal
+Drop after (s)	Remover após (s)
+>>>>>>> pub/adsb-specan-028

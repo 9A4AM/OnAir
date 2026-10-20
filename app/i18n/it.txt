@@ -3272,6 +3272,7 @@ pilot	pilota
 pilot checks	controlli del pilota
 separation	separazione
 stereo phase	fase stereo
+<<<<<<< HEAD
 
 # auto subtitles (captions)
 Generating captions from the sound	Creazione dei sottotitoli dal suono
@@ -3476,3 +3477,9 @@ Value	Valore
 Raw	Grezzo
 primary channel at	canale primario a
 vendor elements	elementi del produttore
+=======
+Colour by altitude	Colora per quota
+Track width (px)	Larghezza della traccia (px)
+Never drop silent aircraft	Non rimuovere mai gli aerei silenziosi
+Drop after (s)	Rimuovi dopo (s)
+>>>>>>> pub/adsb-specan-028

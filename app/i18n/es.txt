@@ -3289,6 +3289,7 @@ pilot	piloto
 pilot checks	comprobaciones del piloto
 separation	separación
 stereo phase	fase estéreo
+<<<<<<< HEAD
 
 # auto subtitles (captions)
 Generating captions from the sound	Generando subtítulos a partir del sonido
@@ -3493,3 +3494,9 @@ Value	Valor
 Raw	Crudo
 primary channel at	canal primario en
 vendor elements	elementos de fabricante
+=======
+Colour by altitude	Color por altitud
+Track width (px)	Ancho de la traza (px)
+Never drop silent aircraft	No quitar nunca aviones sin señal
+Drop after (s)	Quitar tras (s)
+>>>>>>> pub/adsb-specan-028

@@ -3289,6 +3289,7 @@ pilot	Pilot
 pilot checks	Pilotprüfungen
 separation	Trennung
 stereo phase	Stereophase
+<<<<<<< HEAD
 
 # auto subtitles (captions)
 Generating captions from the sound	Untertitel aus dem Ton werden erzeugt
@@ -3493,3 +3494,9 @@ Value	Wert
 Raw	Rohwert
 primary channel at	Primärkanal bei
 vendor elements	Herstellerelemente
+=======
+Colour by altitude	Nach Höhe einfärben
+Track width (px)	Spurbreite (px)
+Never drop silent aircraft	Stumme Flugzeuge nie entfernen
+Drop after (s)	Entfernen nach (s)
+>>>>>>> pub/adsb-specan-028

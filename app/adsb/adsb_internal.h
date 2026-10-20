@@ -10,6 +10,7 @@
 #include "dect2/adsb/adsb_msg.h"
 #include "dect2/adsb/adsb_reg.h"
 #include "dect2/adsb/adsb_jam.h"
+#include "dect2/adsb/adsb_display.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -35,6 +36,8 @@ struct State {
     dect2::adsbu::Units units;                  // display units (prefs adsbUnits, adsbSpeedUnit)
     dect2::GpsJamGrid jam;                      // GPS interference per 0.5 degree cell, from the accuracy the aircraft report (app clock, last hour)
     bool jamLayer = false;                      // draw it on the map (prefs adsbGpsJam)
+    dect2::adsbd::Options disp;                 // Display options: altitude colours, track width, drop time (prefs adsbAltColour, adsbTrackWidth, adsbDropSec)
+    int pushedDrop = -1;                        // the drop time last given to the receiver
     bool winds = false;                         // "winds aloft": wind arrows at the aircraft (from Comm-B)
     bool full = false;                          // the map or radar fills the whole window (Esc or the same button to leave)
     double ctxLat = 0, ctxLon = 0;              // where the map was right-clicked
@@ -73,6 +76,7 @@ std::string uAlt(double ft);
 std::string uSpd(double kt);
 std::string uDist(double nm, int dec = 1);
 void unitsControls();
+void displayControls();   // the "Display" popup: altitude colours, track width, drop time
 std::string typeText(const AdsbAircraft& ac);
 void aircraftTable(App& a, bool compact);
 void detail(const App& a);

@@ -3275,6 +3275,7 @@ pilot	pilot
 pilot checks	pilot-ellenőrzések
 separation	csatornaszétválás
 stereo phase	sztereó fázis
+<<<<<<< HEAD
 
 # auto subtitles (captions)
 Generating captions from the sound	Feliratok készítése a hangból
@@ -3479,3 +3480,9 @@ Value	Érték
 Raw	Nyers
 primary channel at	elsődleges csatorna:
 vendor elements	gyártói elemek
+=======
+Colour by altitude	Színezés magasság szerint
+Track width (px)	Nyomvonal vastagsága (px)
+Never drop silent aircraft	Hallgató repülőket soha ne töröljön
+Drop after (s)	Törlés ennyi idő után (s)
+>>>>>>> pub/adsb-specan-028

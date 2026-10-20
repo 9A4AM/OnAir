@@ -30,6 +30,7 @@ public:
     void setReference(double latDeg, double lonDeg);     // the receiver's position: local decoding of the first position, distance and bearing, surface positions
     void clearReference();
     void setCorrection(int bits);                        // error correction of DF11 / 17 / 18: 0 off, 1 one bit (default), 2 two bits
+    void setDropSec(double seconds);                     // the display option: how long a silent aircraft stays in the table and on the map (0: the expiry above; a huge value: never)
     void setExpiry(double seconds);                      // an aircraft that has been silent this long leaves the table (default 60)
     // Feeds in from other receivers (Beast or SBS over TCP, "host:port" each): their aircraft go into the same table. Positions from other
     // receivers are shown, not computed (no MLAT). Hosts outside the local network are refused unless allowNonLan. Works with or without a radio running.

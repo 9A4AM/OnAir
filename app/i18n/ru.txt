@@ -3272,6 +3272,7 @@ pilot	пилот
 pilot checks	проверки пилота
 separation	разделение
 stereo phase	фаза стерео
+<<<<<<< HEAD
 
 # auto subtitles (captions)
 Generating captions from the sound	Создание субтитров из звука
@@ -3476,3 +3477,9 @@ Value	Значение
 Raw	Сырое
 primary channel at	основной канал на
 vendor elements	элементы производителя
+=======
+Colour by altitude	Цвет по высоте
+Track width (px)	Толщина трека (px)
+Never drop silent aircraft	Не удалять молчащие самолёты
+Drop after (s)	Удалить через (с)
+>>>>>>> pub/adsb-specan-028

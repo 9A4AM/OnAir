@@ -3289,6 +3289,7 @@ pilot	パイロット
 pilot checks	パイロット検査
 separation	分離度
 stereo phase	ステレオ位相
+<<<<<<< HEAD
 
 # auto subtitles (captions)
 Generating captions from the sound	音声から字幕を作成中
@@ -3493,3 +3494,9 @@ Value	値
 Raw	生値
 primary channel at	プライマリチャネル
 vendor elements	ベンダー要素
+=======
+Colour by altitude	高度で色分け
+Track width (px)	航跡の太さ (px)
+Never drop silent aircraft	受信が途絶えた機体を消さない
+Drop after (s)	消去までの時間 (秒)
+>>>>>>> pub/adsb-specan-028

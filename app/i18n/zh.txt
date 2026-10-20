@@ -3289,6 +3289,7 @@ pilot	导频
 pilot checks	导频检查
 separation	分离度
 stereo phase	立体声相位
+<<<<<<< HEAD
 
 # auto subtitles (captions)
 Generating captions from the sound	正在根据声音生成字幕
@@ -3493,3 +3494,9 @@ Value	值
 Raw	原始值
 primary channel at	主信道位于
 vendor elements	厂商元素
+=======
+Colour by altitude	按高度着色
+Track width (px)	轨迹宽度 (px)
+Never drop silent aircraft	从不移除无信号的飞机
+Drop after (s)	多少秒后移除
+>>>>>>> pub/adsb-specan-028
