@@ -170,12 +170,17 @@ const HdrLotInfo* albumArt(const HdrTelemetry& t, const HdrProgram& p) {
     return l ? l : findLot(t, -1, p.xhdrLot);
 }
 
-// the station logo: the newest complete object on a port the guide marks as station logo
-const HdrLotInfo* stationLogo(const HdrTelemetry& t) {
-    for (const auto& d : t.dataServices) {
-        if (!d.fromSig || d.mime != dect2::hdr::kMimeStationLogo) continue;
-        for (const auto& l : t.lots) if (l.port == d.port && l.complete) return &l;
-    }
+// the station logo of a program: the logo service its own SIG entry lists, else the station-wide logo service of the guide, else any
+// complete file whose LOT header says station logo
+const HdrLotInfo* newestOn(const HdrTelemetry& t, int port) {
+    for (const auto& l : t.lots) if (l.port == port && l.complete) return &l;   // lots are sorted newest first
+    return nullptr;
+}
+const HdrLotInfo* stationLogo(const HdrTelemetry& t, const HdrProgram* p) {
+    if (p && p->logoPort >= 0) if (const HdrLotInfo* l = newestOn(t, p->logoPort)) return l;
+    for (const auto& d : t.dataServices)
+        if (d.fromSig && d.mime == dect2::hdr::kMimeStationLogo && d.program < 0) if (const HdrLotInfo* l = newestOn(t, d.port)) return l;
+    for (const auto& l : t.lots) if (l.complete && l.mime == dect2::hdr::kMimeStationLogo) return &l;
     return nullptr;
 }
 
@@ -379,7 +384,7 @@ void stationTab(App& a) {
         return;
     }
     // the station
-    const HdrLotInfo* logo = stationLogo(t);
+    const HdrLotInfo* logo = stationLogo(t, selected(t));
     const Pic* lp = logo ? picture(a, *logo) : nullptr;
     if (lp) { drawPicture(lp, 56 * gUi, nullptr); ImGui::SameLine(0, 10 * gUi); }
     ImGui::BeginGroup();
@@ -387,12 +392,16 @@ void stationTab(App& a) {
     ImGui::TextColored(pal::dev() ? pal::accent() : ImVec4(0.55f, 0.80f, 1.f, 1), "%s", t.callSign.empty() ? "----" : t.callSign.c_str());
     ImGui::PopFont();
     ImGui::PushTextWrapPos(0);
-    if (!t.stationName.empty() || !t.longName.empty()) {
-        ImGui::PushFont(a.ui, 18.f);
-        ImGui::TextUnformatted(!t.stationName.empty() ? t.stationName.c_str() : t.longName.c_str());
-        ImGui::PopFont();
+    {   // the long station name, else the universal short name; the other one below it when it differs
+        const std::string& big = !t.longName.empty() ? t.longName : t.stationName;
+        const std::string& small = !t.longName.empty() ? t.stationName : std::string();
+        if (!big.empty()) {
+            ImGui::PushFont(a.ui, 18.f);
+            ImGui::TextUnformatted(big.c_str());
+            ImGui::PopFont();
+        }
+        if (!small.empty() && small != big) ImGui::TextDisabled("%s", small.c_str());
     }
-    if (!t.longName.empty() && !t.stationName.empty()) ImGui::TextDisabled("%s", t.longName.c_str());
     if (!t.slogan.empty()) ImGui::TextUnformatted(t.slogan.c_str());
     ImGui::PopTextWrapPos();
     ImGui::EndGroup();

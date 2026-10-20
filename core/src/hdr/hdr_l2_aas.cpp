@@ -157,6 +157,7 @@ void L2Decoder::sig(const uint8_t* buf, size_t len) {
             Prog& P = prog(c.port);
             P.p.inSig = true;
             if (!s.name.empty()) P.p.name = s.name;
+            for (const SigService::Comp& d : s.comps) if (!d.audio && d.mime == kMimeStationLogo) P.p.logoPort = d.port;
             for (const SigService::Comp& d : s.comps) if (!d.audio && d.mime == kMimePrimaryImage) P.p.artPort = d.port;
         }
     }
@@ -169,7 +170,7 @@ void L2Decoder::lot(int port, const uint8_t* buf, size_t len) {
     int hdrlen = buf[0];
     const int lotId = buf[2] | (buf[3] << 8);
     const uint32_t seq = buf[4] | (buf[5] << 8) | (buf[6] << 16) | ((uint32_t)buf[7] << 24);
-    if (hdrlen < 8 || (size_t)hdrlen > len || seq >= 256) return;
+    if (hdrlen < 8 || (size_t)hdrlen > len || seq >= kLotMaxFrags) return;
     buf += 8; len -= 8; hdrlen -= 8;
     auto key = std::make_pair(port, lotId);
     auto it = lots_.find(key);
@@ -182,7 +183,7 @@ void L2Decoder::lot(int port, const uint8_t* buf, size_t len) {
         it = lots_.emplace(key, Lot()).first;
         it->second.info.port = port;
         it->second.info.lot = lotId;
-        it->second.frags.resize(256);
+        it->second.frags.resize(kLotMaxFrags);
     }
     Lot& L = it->second;
     L.info.timeSec = now_;
@@ -200,17 +201,18 @@ void L2Decoder::lot(int port, const uint8_t* buf, size_t len) {
             L.info.have = 0; L.info.complete = false;
             fresh = true;
         }
-        L.info.name = name; L.info.size = std::min<uint32_t>(size, 65536); L.info.mime = mime; L.info.expires = ex;
+        L.info.name = name; L.info.size = std::min<uint32_t>(size, kLotMaxBytes); L.info.mime = mime; L.info.expires = ex;
         buf += hdrlen; len -= (size_t)hdrlen;
     }
-    if (len > 256) return;
+    if (len > 4096) return;
     std::vector<uint8_t>& fr = L.frags[seq];
     if (fr.empty() && len) { fr.assign(buf, buf + len); L.info.have += (uint32_t)len; fresh = true; }
     if (fresh && L.info.size && !L.info.complete) {
-        const uint32_t nf = (L.info.size + 255) / 256;
-        bool all = true;
-        for (uint32_t i = 0; i < nf && all; i++) all = !L.frags[i].empty();
-        if (all) {
+        // complete when fragments 0..k are all there and together hold the announced size (no fixed fragment size is assumed)
+        uint64_t sum = 0;
+        uint32_t nf = 0;
+        while (nf < L.frags.size() && !L.frags[nf].empty() && sum < L.info.size) sum += L.frags[nf++].size();
+        if (sum >= L.info.size) {
             L.bytes.clear();
             for (uint32_t i = 0; i < nf; i++) L.bytes.insert(L.bytes.end(), L.frags[i].begin(), L.frags[i].end());
             L.bytes.resize(L.info.size);

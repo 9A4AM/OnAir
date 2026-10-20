@@ -30,6 +30,7 @@ struct HdrProgram {
     std::string comPrice, comSeller, comDesc, comUrl, comValid;   // commercial frame (COMR)
     int xhdrLot = -1;               // XHDR: the LOT object with the album art (-1: none)
     uint32_t xhdrMime = 0;
+    int logoPort = -1;              // the port of the program's own station logo service (from the SIG), -1 if it has none
     int artPort = -1;               // the port of the program's primary image service (from the SIG), -1 if unknown
 };
 
