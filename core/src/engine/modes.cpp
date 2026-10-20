@@ -212,6 +212,7 @@
 #include "dect2/kaal/kaal_live.h"
 #include "dect2/kaal/kaal_tel.h"
 #include "dect2/ifkp/ifkp_gen.h"
+#include "dect2/kaal/kaal_gen.h"
 #include "dect2/cquam/cquam_rx.h"
 #include "dect2/cquam/cquam_gen.h"
 #include "dect2/cquam/cquam_tel.h"
@@ -510,6 +511,7 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 97: return makeMt63Synth(cfg, sampleRate);
     case 115: return makeFsqSynth(cfg, sampleRate);
     case 118: return makeIfkpSynth(cfg, sampleRate);
+    case 124: return makeKaalSynth(cfg, sampleRate);
     case 109: return makeCquamSynth(cfg, sampleRate);
     case 106: return makeMscatterSynth(cfg, sampleRate);
     case 58: return makeRidSynth(cfg, sampleRate);
